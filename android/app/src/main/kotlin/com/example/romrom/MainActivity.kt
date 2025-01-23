@@ -1,4 +1,4 @@
-package com.example.romrom_fe
+package com.example.romrom
 
 import io.flutter.embedding.android.FlutterActivity
 
