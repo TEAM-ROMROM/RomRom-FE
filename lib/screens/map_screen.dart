@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -16,6 +19,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   late NaverMapController _mapController;
   NLatLng? _currentPosition;
+  String currentAdress = '';
 
   @override
   void initState() {
@@ -23,6 +27,7 @@ class _MapScreenState extends State<MapScreen> {
     _permission();
   }
 
+  // 위치 권한 요청
   void _permission() async {
     var requestStatus = await Permission.location.request();
     var status = await Permission.location.status;
@@ -33,6 +38,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // 현재 위치 불러오는 함수
   Future<void> _getCurrentPosition() async {
     try {
       final position = await Geolocator.getCurrentPosition();
@@ -56,6 +62,41 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _mapController.addOverlay(newNMarker);
     });
+  }
+
+  // 주소 요청 함수
+  Future<void> getAddress(NLatLng position) async {
+    const String apiUrl =
+        "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc";
+    String coords = "${position.longitude},${position.latitude}";
+    const String orders = "legalcode";
+    const String output = "json";
+    String apiKeyId = dotenv.get('NMF_CLIENT_ID');
+    String apiKeySecret = dotenv.get('NMF_CLIENT_SECRET');
+
+    Future<void> fetchData() async {
+      final response = await http.get(
+        Uri.parse("$apiUrl?coords=$coords&orders=$orders&output=$output"),
+        headers: {
+          "X-NCP-APIGW-API-KEY-ID": apiKeyId,
+          "X-NCP-APIGW-API-KEY": apiKeySecret,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // JSON 응답 파싱
+        final Map<String, dynamic> data = json.decode(response.body);
+        setState(() {
+          currentAdress = data["results"][0]["region"]["area3"]["name"];
+        });
+        log("Response Data: ${data["results"][0]["region"]["area3"]["name"]}");
+      } else {
+        // 요청 실패 처리
+        log("Failed to load data: ${response.statusCode}");
+      }
+    }
+
+    fetchData();
   }
 
   @override
@@ -92,15 +133,16 @@ class _MapScreenState extends State<MapScreen> {
                           onMapReady: (controller) async {
                             mapControllerCompleter.complete(controller);
                             _mapController = controller;
+                            await getAddress(_currentPosition!); // 현재 위치 주소로 표시
                             log("onMapReady", name: "onMapReady");
 
                             // 위치 추적 모드 활성화
                             await controller.setLocationTrackingMode(
                                 NLocationTrackingMode.follow);
                           },
-                          onMapTapped: (point, latLng) {
+                          onMapTapped: (point, latLng) async {
                             log("Map tapped at: $latLng", name: "MapTapEvent");
-                            _addMarker(latLng);
+                            _addMarker(latLng); // 지도에 마커 추가
                           },
                         ),
                       ),
@@ -121,8 +163,8 @@ class _MapScreenState extends State<MapScreen> {
                                     color: const Color(0xFFF2F3F7),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Text(
-                                      '현재 위치가 내 동네로 설정한 \'군자동\'내에 있어요'),
+                                  child: Text(
+                                      '현재 위치가 내 동네로 설정한 \'$currentAdress\'내에 있어요'),
                                 ),
                               ),
                             ],
