@@ -19,6 +19,9 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <meta-data
+              android:name="com.naver.maps.map.CLIENT_ID"
+              android:value="vx91soq32x" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -29,6 +32,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+    <!-- 위치 권한 요청 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.LOCATION_ALWAYS"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/> 
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility?hl=en and
