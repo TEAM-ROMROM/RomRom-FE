@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:romrom_fe/screens/map_screen.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +15,10 @@ void main() async {
       onAuthFailed: (ex) {
         print("********* 네이버맵 인증오류 : $ex *********");
       });
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const MyApp());
 }

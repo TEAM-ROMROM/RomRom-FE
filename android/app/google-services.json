@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "905325245238",
+    "project_id": "romrom-c4008",
+    "storage_bucket": "romrom-c4008.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:905325245238:android:21dc25f6a77bb12f1f3997",
+        "android_client_info": {
+          "package_name": "com.example.romrom"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHPgaOZ8KdNcgRdADyJmXAn9Mul7COq4c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
