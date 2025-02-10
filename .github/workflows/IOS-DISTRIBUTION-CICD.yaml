@@ -1,0 +1,50 @@
+name: ROMROM-iOS-Firebase-Distribution
+
+on:
+  push:
+    branches: ["main", "test"]
+  workflow_dispatch:
+
+jobs:
+  # IOS 빌드
+  build_ios:
+    name: Build & Deploy iOS
+    runs-on: macos-latest
+
+    steps:
+      # (1) 코드 체크아웃
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      # (2) Flutter 설치
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.3"
+          channel: stable
+
+      # (3) .env 생성
+      - name: Create .env file from secret
+        run: echo "${{ secrets.ENV }}" > .env
+
+      # (4) 의존성 설치
+      - name: Install dependencies
+        run: flutter pub get
+
+      # (5) IOS 빌드
+      - name: Build iOS
+        run: flutter build ipa --release
+
+      # (6) Firebase CLI 설치
+      - name: Install Firebase CLI
+        run: curl -sL https://firebase.tools | bash
+
+      # (7) Firebase에 IOS 배포
+      - name: Distribute iOS to Firebase
+        run: |
+          firebase appdistribution:distribute \
+            build/ios/archive/Runner.ipa \
+            --app "${{ secrets.FIREBASE_IOS_APP_ID }}" \
+            --groups "testers" \
+            --release-notes "iOS Build for ${{ github.ref_name }}" \
+            --token "${{ secrets.FIREBASE_TOKEN }}"
