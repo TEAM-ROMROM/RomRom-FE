@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/map_screen.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -13,6 +15,10 @@ void main() async {
       onAuthFailed: (ex) {
         print("********* 네이버맵 인증오류 : $ex *********");
       });
+
+  KakaoSdk.init(
+    nativeAppKey: dotenv.get('KAKAO_NATIVE_APP_KEY'),
+  );
 
   runApp(const MyApp());
 }
@@ -29,7 +35,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MapScreen(),
+      home: LoginScreen(),
     );
   }
 }
