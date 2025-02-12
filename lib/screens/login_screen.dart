@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/models/platforms.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 
@@ -7,7 +8,7 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> platforms = ['google', 'kakao']; // 로그인 플랫폼
+    const List<Platforms> platforms = Platforms.values; // 모든 플랫폼을 가져옴
 
     return Scaffold(
       body: Center(

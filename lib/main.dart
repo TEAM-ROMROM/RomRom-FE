@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
-import 'package:romrom_fe/screens/map_screen.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -23,6 +22,9 @@ void main() async {
   runApp(const MyApp());
 }
 
+const String baseUrl = "http://suh-project.synology.me:8085";
+// const String baseUrl = "https://api.romrom.xyz";
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -35,7 +37,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: LoginScreen(),
+      home: const LoginScreen(),
     );
   }
 }
