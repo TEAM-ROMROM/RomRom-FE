@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/platforms.dart';
-import '../services/kakao_auth_service.dart';
+import '../services/kakao_auth_manager.dart';
 
+/// 로그인 버튼
 class LoginButton extends StatelessWidget {
   const LoginButton({
     super.key,
@@ -10,7 +11,7 @@ class LoginButton extends StatelessWidget {
 
   final Platforms platform;
 
-  // 버튼 눌렀을 때 로그인 처리 함수
+  /// 버튼 눌렀을 때 로그인 처리 함수
   void handleLogin() {
     switch (platform) {
       case Platforms.KAKAO:
@@ -37,7 +38,7 @@ class LoginButton extends StatelessWidget {
   }
 }
 
-// 테스트용 로그아웃 버튼
+/// 테스트용 로그아웃 버튼
 class LogoutButton extends StatelessWidget {
   const LogoutButton({
     super.key,
@@ -46,7 +47,7 @@ class LogoutButton extends StatelessWidget {
 
   final Platforms platform;
 
-  // 버튼 눌렀을 때 로그아웃 처리 함수
+  /// 버튼 눌렀을 때 로그아웃 처리 함수
   void handleLogout() {
     switch (platform) {
       case Platforms.KAKAO:

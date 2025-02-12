@@ -1,34 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+
+import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:romrom_fe/services/app_initializer.dart';
+import 'package:romrom_fe/services/token_manage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env"); // 환경변수 파일 불러옴
 
-  // Naver Map SDK 초기화
-  await NaverMapSdk.instance.initialize(
-      clientId: dotenv.get('NMF_CLIENT_ID'),
-      onAuthFailed: (ex) {
-        print("********* 네이버맵 인증오류 : $ex *********");
-      });
+  await initialize(); // 초기화 실행
+  Widget initialScreen = await checkTokenStatus(); // 토큰 상태 확인 후 초기 화면 결정
 
-  KakaoSdk.init(
-    nativeAppKey: dotenv.get('KAKAO_NATIVE_APP_KEY'),
-  );
-
-  runApp(const MyApp());
+  runApp(MyApp(initialScreen: initialScreen));
 }
 
+/// API 기본 URL
 const String baseUrl = "http://suh-project.synology.me:8085";
 // const String baseUrl = "https://api.romrom.xyz";
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+/// 토큰 상태를 확인하여 초기 화면 결정
+Future<Widget> checkTokenStatus() async {
+  String? refreshToken = await getRefreshToken();
 
-  // This widget is the root of your application.
+  if (refreshToken == null) return const LoginScreen();
+  return await refreshAccessToken() ? const HomeScreen() : const LoginScreen();
+}
+
+/// 앱의 루트 위젯
+class MyApp extends StatelessWidget {
+  final Widget initialScreen;
+
+  const MyApp({super.key, required this.initialScreen});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -37,7 +40,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: initialScreen,
     );
   }
 }

@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:romrom_fe/main.dart';
+import 'package:romrom_fe/services/token_manage_service.dart';
 
-const storage = FlutterSecureStorage();
-
+/// 소셜 로그인 후 토큰 요청
 Future<void> signInWithSocial({
   required String socialPlatform,
   required String socialAuthToken,
@@ -38,9 +37,7 @@ Future<void> signInWithSocial({
       };
 
       // 로컬 저장소에 저장
-      for (var entry in tokens.entries) {
-        await storage.write(key: entry.key, value: entry.value);
-      }
+      saveTokens(tokens.entries.first.value, tokens.entries.last.value);
     } else {
       throw Exception('Failed to sign in: ${response.body}');
     }
