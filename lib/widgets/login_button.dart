@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:romrom_fe/models/platforms.dart';
 import '../services/kakao_auth_manager.dart';
 
@@ -19,7 +20,8 @@ class LoginButton extends StatelessWidget {
         kakaoAuthService.signInWithKakao();
         break;
       case Platforms.GOOGLE:
-      // 구글 로그인 로직 처리
+        // 구글 로그인 로직 처리
+        signInWithGoogle();
     }
   }
 
@@ -55,7 +57,8 @@ class LogoutButton extends StatelessWidget {
         kakaoAuthService.logoutWithKakaoAccount();
         break;
       case Platforms.GOOGLE:
-      // 구글 로그아웃 로직 처리
+        // 구글 로그아웃 로직 처리
+        GoogleSignIn().signOut();
     }
   }
 
@@ -71,5 +74,15 @@ class LogoutButton extends StatelessWidget {
         child: Text(platform.name),
       ),
     );
+  }
+}
+
+void signInWithGoogle() async {
+  final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+  if (googleUser != null) {
+    print('name = ${googleUser.displayName}');
+    print('email = ${googleUser.email}');
+    print('id = ${googleUser.id}');
   }
 }

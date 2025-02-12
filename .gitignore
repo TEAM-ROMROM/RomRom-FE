@@ -44,5 +44,12 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# 환경변수 ignore
 *.env
 lib/firebase_options.dart
+
+# Ignore iOS config files
+android/Google-Services.json
+ios/Runner/GoogleService-Info.plist
+
+ios/Flutter/Secrets.xcconfig

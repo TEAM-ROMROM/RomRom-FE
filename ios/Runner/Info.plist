@@ -29,8 +29,11 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>kakao7b71406fda1de0540d0f49371c14ddd3</string>
-			</array>
+				<!-- kakao login -->
+				<string>$(KAKAO_URL_SCHEMES)</string>
+				<!-- google login -->
+        		<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>		
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
