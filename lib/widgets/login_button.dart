@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:romrom_fe/models/platforms.dart';
-import '../services/kakao_auth_manager.dart';
+import 'package:romrom_fe/services/google_auth_manager.dart';
+import 'package:romrom_fe/services/kakao_auth_manager.dart';
 
 /// 로그인 버튼
 class LoginButton extends StatelessWidget {
-  const LoginButton({
+  LoginButton({
     super.key,
     required this.platform,
   });
 
   final Platforms platform;
+  final KakaoAuthService kakaoAuthService = KakaoAuthService();
+  final GoogleAuthService googleAuthService = GoogleAuthService();
 
   /// 버튼 눌렀을 때 로그인 처리 함수
   void handleLogin() {
     switch (platform) {
+      // 카카오 로그인
       case Platforms.KAKAO:
-        final KakaoAuthService kakaoAuthService = KakaoAuthService();
         kakaoAuthService.signInWithKakao();
         break;
+      // 구글 로그인
       case Platforms.GOOGLE:
-        // 구글 로그인 로직 처리
-        signInWithGoogle();
+        googleAuthService.checkAndSignInWithGoogle();
     }
   }
 
@@ -42,23 +45,25 @@ class LoginButton extends StatelessWidget {
 
 /// 테스트용 로그아웃 버튼
 class LogoutButton extends StatelessWidget {
-  const LogoutButton({
+  LogoutButton({
     super.key,
     required this.platform,
   });
 
   final Platforms platform;
+  final KakaoAuthService kakaoAuthService = KakaoAuthService();
+  final GoogleAuthService googleAuthService = GoogleAuthService();
 
   /// 버튼 눌렀을 때 로그아웃 처리 함수
   void handleLogout() {
     switch (platform) {
       case Platforms.KAKAO:
-        final KakaoAuthService kakaoAuthService = KakaoAuthService();
+        // 카카오 로그아웃 처리
         kakaoAuthService.logoutWithKakaoAccount();
         break;
       case Platforms.GOOGLE:
         // 구글 로그아웃 로직 처리
-        GoogleSignIn().signOut();
+        googleAuthService.logOutWithGoogle();
     }
   }
 
@@ -74,15 +79,5 @@ class LogoutButton extends StatelessWidget {
         child: Text(platform.name),
       ),
     );
-  }
-}
-
-void signInWithGoogle() async {
-  final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-  if (googleUser != null) {
-    print('name = ${googleUser.displayName}');
-    print('email = ${googleUser.email}');
-    print('id = ${googleUser.id}');
   }
 }
