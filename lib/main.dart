@@ -15,8 +15,7 @@ void main() async {
 }
 
 /// API 기본 URL
-const String baseUrl = "http://suh-project.synology.me:8085";
-// const String baseUrl = "https://api.romrom.xyz";
+const String baseUrl = "https://api.romrom.xyz";
 
 /// 토큰 상태를 확인하여 초기 화면 결정
 Future<Widget> checkTokenStatus() async {
