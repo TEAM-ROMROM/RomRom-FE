@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/main.dart';
-import 'package:romrom_fe/services/token_manage_service.dart';
+import 'package:romrom_fe/models/tokens.dart';
+import 'package:romrom_fe/services/secure_storage_manage.dart';
 
 /// 소셜 로그인 후 토큰 요청
 Future<void> signInWithSocial({
@@ -31,13 +32,14 @@ Future<void> signInWithSocial({
       debugPrint('Refresh Token: ${responseData['refreshToken']}');
       debugPrint('Is First Login: ${responseData['isFirstLogin']}');
 
+      // 토큰 매핑
       final tokens = {
-        'accessToken': responseData['accessToken'],
-        'refreshToken': responseData['refreshToken'],
+        Tokens.accessToken.name: responseData['accessToken'],
+        Tokens.refreshToken.name: responseData['refreshToken'],
       };
 
       // 로컬 저장소에 저장
-      saveTokens(tokens.entries.first.value, tokens.entries.last.value);
+      saveSecureData(tokens);
     } else {
       throw Exception('Failed to sign in: ${response.body}');
     }

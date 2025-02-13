@@ -4,26 +4,23 @@ import 'package:http/http.dart' as http;
 
 const storage = FlutterSecureStorage();
 
-/// 토큰 저장
-Future<void> saveTokens(String accessToken, String refreshToken) async {
-  await storage.write(key: 'access_token', value: accessToken);
-  await storage.write(key: 'refresh_token', value: refreshToken);
+/// storage에 값 저장
+Future<void> saveSecureData(Map<String, dynamic> obj) async {
+  for (var entry in obj.entries) {
+    await storage.write(key: entry.key, value: entry.value.toString());
+  }
 }
 
-/// 액세스 토큰 불러오기
-Future<String?> getAccessToken() async {
-  return await storage.read(key: 'access_token');
+/// storage에 저장된 값 가져오기
+Future<String?> getSecureData(String name) async {
+  return await storage.read(key: name);
 }
 
-/// 리프레시 토큰 불러오기
-Future<String?> getRefreshToken() async {
-  return await storage.read(key: 'refresh_token');
-}
-
-/// 토큰 삭제
-Future<void> deleteTokens() async {
-  await storage.delete(key: 'access_token');
-  await storage.delete(key: 'refresh_token');
+/// storage에 저장된 값 지우기
+Future<void> deleteSecureData(Map<String, dynamic> obj) async {
+  for (var entry in obj.entries) {
+    await storage.delete(key: entry.key);
+  }
 }
 
 /// 엑세스 토큰 재발급
