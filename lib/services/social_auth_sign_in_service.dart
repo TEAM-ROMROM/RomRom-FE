@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/main.dart';
 import 'package:romrom_fe/models/tokens.dart';
+import 'package:romrom_fe/models/user.dart';
 import 'package:romrom_fe/services/secure_storage_manage.dart';
 
 /// 소셜 로그인 후 토큰 요청
@@ -16,9 +17,18 @@ Future<void> signInWithSocial({
     // multipart 형식 요청
     var request = http.MultipartRequest('POST', Uri.parse(url));
 
+    var userInfo = UserInfo().getUserInfo();
+
     // 요청 파라미터 추가
+
+    // 기존 파라미터 (플랫폼, 토큰)
     request.fields['socialPlatform'] = socialPlatform;
     request.fields['socialAuthToken'] = socialAuthToken;
+
+    // 수정 파라미터 (유저 정보)
+    // userInfo.forEach((key, value) {
+    //   request.fields[key] = value ?? '';
+    // });
 
     // 요청 보내기
     var streamedResponse = await request.send();
