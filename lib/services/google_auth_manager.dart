@@ -2,10 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:romrom_fe/models/platforms.dart';
+import 'package:romrom_fe/models/user.dart';
 import 'package:romrom_fe/services/social_auth_sign_in_service.dart';
 
 class GoogleAuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  Future<void> getGoogleUserInfo(GoogleSignInAccount googleUser) async {
+    try {
+      debugPrint(
+          '사용자 정보 요청 성공: 닉네임: ${googleUser.displayName}, 이메일: ${googleUser.email}, 프로필 이미지: ${googleUser.photoUrl}');
+
+      // 사용자 정보 저장
+      UserInfo().setUserInfo(
+          '${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
+    } catch (error) {
+      debugPrint('사용자 정보 요청 실패: $error');
+    }
+  }
 
   /// 로그인 유지 여부 확인 및 로그인 진행
   Future<void> checkAndSignInWithGoogle() async {
