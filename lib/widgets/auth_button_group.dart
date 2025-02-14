@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// 버튼 그룹화해놓은 건데 디자인 나오면 수정
+//FIXME: 버튼 그룹화 디자인 수정 필요
+
 class AuthButtonGroup extends StatelessWidget {
   final List<Widget> buttons;
 

@@ -19,7 +19,7 @@ class LoginButton extends StatelessWidget {
         kakaoAuthService.signInWithKakao();
         break;
       case Platforms.GOOGLE:
-      // 구글 로그인 로직 처리
+      //TODO: 구글 로그인 로직 처리
     }
   }
 
@@ -55,7 +55,7 @@ class LogoutButton extends StatelessWidget {
         kakaoAuthService.logoutWithKakaoAccount();
         break;
       case Platforms.GOOGLE:
-      // 구글 로그아웃 로직 처리
+      //TODO: 구글 로그아웃 로직 처리
     }
   }
 
