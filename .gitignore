@@ -46,3 +46,6 @@ app.*.map.json
 
 *.env
 lib/firebase_options.dart
+/android/Google-services.json
+ios/Flutter/Secrets.xcconfig
+ios/Runner/GoogleService-Info.plist
