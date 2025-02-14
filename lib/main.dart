@@ -9,7 +9,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await initialize(); // 초기화 실행
-  Widget initialScreen = await checkTokenStatus(); // 토큰 상태 확인 후 초기 화면 결정
+  Widget initialScreen = await checkRefreshTokenStatus(); // 토큰 상태 확인 후 초기 화면 결정
 
   runApp(MyApp(initialScreen: initialScreen));
 }
@@ -18,7 +18,7 @@ void main() async {
 const String baseUrl = "https://api.romrom.xyz";
 
 /// 토큰 상태를 확인하여 초기 화면 결정
-Future<Widget> checkTokenStatus() async {
+Future<Widget> checkRefreshTokenStatus() async {
   String? refreshToken = await getRefreshToken();
 
   if (refreshToken == null) return const LoginScreen();
