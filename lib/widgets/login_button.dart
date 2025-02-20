@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:romrom_fe/models/platforms.dart';
+import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
 
@@ -16,22 +17,40 @@ class LoginButton extends StatelessWidget {
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
   /// 버튼 눌렀을 때 로그인 처리 함수
-  void handleLogin() {
-    switch (platform) {
-      // 카카오 로그인
-      case Platforms.KAKAO:
-        kakaoAuthService.signInWithKakao();
-        break;
-      // 구글 로그인
-      case Platforms.GOOGLE:
-        googleAuthService.checkAndSignInWithGoogle();
+  Future<void> handleLogin(BuildContext context) async {
+    try {
+      bool isSuccess = false;
+
+      switch (platform) {
+        // 카카오 로그인
+        case Platforms.KAKAO:
+          await kakaoAuthService.signInWithKakao();
+          isSuccess = true;
+          break;
+        // 구글 로그인
+        case Platforms.GOOGLE:
+          await googleAuthService.checkAndSignInWithGoogle();
+          isSuccess = true;
+          break;
+      }
+
+      if (isSuccess) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
+    } catch (e) {
+      debugPrint("$e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: handleLogin,
+      onTap: () async {
+        await handleLogin(context);
+      },
       child: Container(
         width: 150,
         height: 30,

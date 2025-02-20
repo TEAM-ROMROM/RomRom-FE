@@ -1,8 +1,8 @@
 /// 사용자 정보 싱글톤으로 관리
 class UserInfo {
-  String? name;
+  String? nickname;
   String? email;
-  String? profileImageUrl;
+  String? profileUrl;
 
   // Singleton 인스턴스를 저장할 변수
   static final UserInfo _instance = UserInfo._internal();
@@ -17,17 +17,17 @@ class UserInfo {
 
   // 사용자 정보 설정 메서드
   void setUserInfo(String? name, String? email, String? profileImageUrl) {
-    this.name = name ?? '';
+    nickname = name ?? '';
     this.email = email ?? '';
-    this.profileImageUrl = profileImageUrl ?? '';
+    profileUrl = profileImageUrl ?? '';
   }
 
   // 사용자 정보 반환 메서드
   Map<String, String?> getUserInfo() {
     return {
-      'name': name,
+      'name': nickname,
       'email': email,
-      'profileImageUrl': profileImageUrl,
+      'profileImageUrl': profileUrl,
     };
   }
 }

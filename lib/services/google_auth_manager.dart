@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:romrom_fe/models/platforms.dart';
-import 'package:romrom_fe/models/user.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/social_auth_sign_in_service.dart';
 
 class GoogleAuthService {
@@ -53,10 +53,10 @@ class GoogleAuthService {
       final String googleAccessToken = googleSignInAuthentication.accessToken!;
       debugPrint('구글로 로그인 성공: $googleAccessToken');
 
+      await getGoogleUserInfo(googleUser);
+
       // 구글 로그인 성공 후 토큰 발급
-      await signInWithSocial(
-          socialPlatform: Platforms.GOOGLE.name,
-          socialAuthToken: googleAccessToken);
+      await signInWithSocial(socialPlatform: Platforms.GOOGLE.name);
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');
     }

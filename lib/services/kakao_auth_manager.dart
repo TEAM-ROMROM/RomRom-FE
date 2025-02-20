@@ -3,7 +3,7 @@ import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:flutter/services.dart';
 
 import 'package:romrom_fe/models/platforms.dart';
-import 'package:romrom_fe/models/user.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/social_auth_sign_in_service.dart';
 
 /// 카카오 인증 관련 서비스
@@ -29,10 +29,8 @@ class KakaoAuthService {
   /// 로그인 성공 후 후처리 함수
   Future<void> _handleLoginSuccess(OAuthToken token) async {
     debugPrint('카카오 로그인 성공: ${token.accessToken}');
-    await signInWithSocial(
-        socialPlatform: Platforms.KAKAO.name,
-        socialAuthToken: token.accessToken);
     await getKakaoUserInfo();
+    await signInWithSocial(socialPlatform: Platforms.KAKAO.name);
   }
 
   /// 카카오 로그인 (토큰 확인 후 로그인 시도)
@@ -93,7 +91,7 @@ class KakaoAuthService {
   Future<void> logoutWithKakaoAccount() async {
     try {
       await UserApi.instance.logout();
-      debugPrint('로그아웃 성공, SDK에서 토큰 삭제');
+      debugPrint('로그아웃 성공, 카카오 SDK에서 토큰 삭제');
     } catch (error) {
       debugPrint('로그아웃 실패: $error');
     }
