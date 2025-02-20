@@ -1,0 +1,4 @@
+enum Tokens {
+  accessToken,
+  refreshToken;
+}
