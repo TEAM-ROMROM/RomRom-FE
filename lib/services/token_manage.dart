@@ -34,7 +34,7 @@ Future<bool> refreshAccessToken() async {
   //토큰 재발급 api 요청 주소
   String url = '$baseUrl/api/auth/reissue';
   try {
-    String? refreshToken = await getSecureData(Tokens.refreshToken.name);
+    String? refreshToken = await getSecureValueByKey(Tokens.refreshToken.name);
 
     if (refreshToken == null) {
       debugPrint('No refresh token found for user.');

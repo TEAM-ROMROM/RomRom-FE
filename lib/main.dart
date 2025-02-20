@@ -22,7 +22,7 @@ const String baseUrl = "https://api.romrom.xyz";
 
 /// 토큰 상태를 확인하여 초기 화면 결정
 Future<Widget> checkTokenStatus() async {
-  String? refreshToken = await getSecureData(Tokens.refreshToken.name);
+  String? refreshToken = await getSecureValueByKey(Tokens.refreshToken.name);
 
   if (refreshToken == null) return const LoginScreen();
   return await refreshAccessToken() ? const HomeScreen() : const LoginScreen();

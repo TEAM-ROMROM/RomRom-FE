@@ -13,7 +13,7 @@ Future<void> sendAuthenticatedRequest({
   try {
     String? accessToken = await getAccessToken();
     String? refreshToken = await getRefreshToken();
-
+    // TODO : exception enum 처리
     if (accessToken == null || refreshToken == null) {
       throw Exception('토큰이 없습니다.');
     }
@@ -26,7 +26,9 @@ Future<void> sendAuthenticatedRequest({
       body: body,
     );
 
+    // statusCode 200 일 때
     if (response.statusCode == 200) {
+      // 응답 비어있으면 오류나서 따로 처리
       if (response.body.isNotEmpty) {
         final responseData = jsonDecode(response.body);
         onSuccess(responseData);
@@ -34,9 +36,12 @@ Future<void> sendAuthenticatedRequest({
         debugPrint('서버 응답이 비어 있음. 빈 객체로 처리합니다.');
         onSuccess({});
       }
-    } else if (response.statusCode == 401) {
-      // 🔄 **토큰 갱신 후 재시도**
+    }
+    //  토큰 갱신 후 재시도
+    else if (response.statusCode == 401) {
       bool isRefreshed = await refreshAccessToken();
+
+      // 토큰 재발급 된 경우
       if (isRefreshed) {
         accessToken = await getAccessToken();
         refreshToken = await getRefreshToken();
@@ -48,7 +53,9 @@ Future<void> sendAuthenticatedRequest({
           body: body,
         );
 
+        // statusCode 200인 경우
         if (response.statusCode == 200) {
+          // 응답 비어있으면 오류나서 따로 처리
           if (response.body.isNotEmpty) {
             final responseData = jsonDecode(response.body);
             onSuccess(responseData);
@@ -79,18 +86,20 @@ Future<http.Response> _sendMultiPartRequest({
   required String accessToken,
   Map<String, dynamic>? body,
 }) async {
+  // url에 해당 method 로 요청
   var request = http.MultipartRequest(method, Uri.parse(url));
 
-  // Authorization 헤더 추가
+  // Authorization 헤더에 accessToken 추가
   request.headers['Authorization'] = 'Bearer $accessToken';
 
-  // body 필드 추가
+  // body에 필요한 필드 추가
   if (body != null) {
     body.forEach((key, value) {
       request.fields[key] = value.toString();
     });
   }
 
+  // 요청 보내고 응답 반환
   var streamedResponse = await request.send();
   return http.Response.fromStream(streamedResponse);
 }
