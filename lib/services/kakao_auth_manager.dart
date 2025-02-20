@@ -20,7 +20,8 @@ class KakaoAuthService {
       UserInfo().setUserInfo(
           '${user.kakaoAccount?.profile?.nickname}',
           '${user.kakaoAccount?.email}',
-          '${user.kakaoAccount?.profile?.profileImageUrl}');
+          '${user.kakaoAccount?.profile?.profileImageUrl}',
+          Platforms.KAKAO);
     } catch (error) {
       debugPrint('사용자 정보 요청 실패: $error');
     }

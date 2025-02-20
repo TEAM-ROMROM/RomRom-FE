@@ -1,8 +1,13 @@
+import 'dart:math';
+
+import 'package:romrom_fe/models/platforms.dart';
+
 /// 사용자 정보 싱글톤으로 관리
 class UserInfo {
   String? nickname;
   String? email;
   String? profileUrl;
+  Platforms? loginPlatform;
 
   // Singleton 인스턴스를 저장할 변수
   static final UserInfo _instance = UserInfo._internal();
@@ -16,10 +21,12 @@ class UserInfo {
   }
 
   // 사용자 정보 설정 메서드
-  void setUserInfo(String? name, String? email, String? profileImageUrl) {
+  void setUserInfo(String? name, String? email, String? profileImageUrl,
+      Platforms loginPlatform) {
     nickname = name ?? '';
     this.email = email ?? '';
     profileUrl = profileImageUrl ?? '';
+    this.loginPlatform = loginPlatform;
   }
 
   // 사용자 정보 반환 메서드
@@ -29,5 +36,10 @@ class UserInfo {
       'email': email,
       'profileImageUrl': profileUrl,
     };
+  }
+
+  // 로그인 플랫폼 반환 메서드
+  Platforms getLoginPlatform() {
+    return loginPlatform!;
   }
 }

@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/main.dart';
+import 'package:romrom_fe/models/platforms.dart';
 import 'package:romrom_fe/models/tokens.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/services/google_auth_manager.dart';
+import 'package:romrom_fe/services/kakao_auth_manager.dart';
 import 'package:romrom_fe/services/response_printer.dart';
 import 'package:romrom_fe/services/send_authenticated_request.dart';
 import 'package:romrom_fe/services/token_manage.dart';
@@ -60,9 +63,26 @@ Future<void> logOutWithSocial(BuildContext context) async {
         Tokens.accessToken.name: await getAccessToken(),
         Tokens.refreshToken.name: await getRefreshToken(),
       },
-      onSuccess: (responseData) {
+      onSuccess: (responseData) async {
         responsePrinter(url, responseData);
-        deleteTokens();
+        // 토큰 삭제
+        await deleteTokens();
+        // 소셜 로그아웃
+        Platforms platform = UserInfo().getLoginPlatform();
+        final KakaoAuthService kakaoAuthService = KakaoAuthService();
+        final GoogleAuthService googleAuthService = GoogleAuthService();
+
+        switch (platform) {
+          case Platforms.KAKAO:
+            // 카카오 로그아웃 처리
+            kakaoAuthService.logoutWithKakaoAccount();
+            break;
+          case Platforms.GOOGLE:
+            // 구글 로그아웃 로직 처리
+            googleAuthService.logOutWithGoogle();
+        }
+
+        // 로그인화면으로 이동
         Navigator.push<void>(
           context,
           MaterialPageRoute<void>(

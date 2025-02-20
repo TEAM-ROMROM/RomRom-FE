@@ -14,8 +14,8 @@ class GoogleAuthService {
           '사용자 정보 요청 성공: 닉네임: ${googleUser.displayName}, 이메일: ${googleUser.email}, 프로필 이미지: ${googleUser.photoUrl}');
 
       // 사용자 정보 저장
-      UserInfo().setUserInfo(
-          '${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
+      UserInfo().setUserInfo('${googleUser.displayName}', googleUser.email,
+          googleUser.photoUrl, Platforms.GOOGLE);
     } catch (error) {
       debugPrint('사용자 정보 요청 실패: $error');
     }
