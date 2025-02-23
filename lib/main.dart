@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
-import 'package:romrom_fe/services/token_manage.dart';
+import 'package:romrom_fe/services/token_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

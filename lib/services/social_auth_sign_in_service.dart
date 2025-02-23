@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:romrom_fe/main.dart';
-import 'package:romrom_fe/models/platforms.dart';
+import 'package:romrom_fe/enums/platforms.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
@@ -12,7 +12,7 @@ import 'package:romrom_fe/services/kakao_auth_manager.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/response_printer.dart';
 import 'package:romrom_fe/services/send_authenticated_request.dart';
-import 'package:romrom_fe/services/token_manage.dart';
+import 'package:romrom_fe/services/token_manager.dart';
 
 /// POST : `/api/auth/sign-in` 소셜 로그인
 Future<void> signInWithSocial({

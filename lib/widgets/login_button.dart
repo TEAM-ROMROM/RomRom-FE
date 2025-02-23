@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:romrom_fe/models/platforms.dart';
+import 'package:romrom_fe/enums/platforms.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
+import 'package:romrom_fe/screens/map_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
 
@@ -35,9 +37,16 @@ class LoginButton extends StatelessWidget {
       }
 
       if (isSuccess) {
+        var userInfo = UserInfo();
+        await UserInfo().getUserInfo(); // 사용자 정보 불러오기
+
+        // 처음 로그인 하면 위치 인증 화면으로 이동
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(
+              builder: (context) => userInfo.isFirstLogin
+                  ? const MapScreen()
+                  : const HomeScreen()),
         );
       }
     } catch (e) {

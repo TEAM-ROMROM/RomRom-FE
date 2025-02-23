@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'package:romrom_fe/models/platforms.dart';
+import 'package:romrom_fe/enums/platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/social_auth_sign_in_service.dart';
