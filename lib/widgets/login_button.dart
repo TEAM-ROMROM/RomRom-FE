@@ -23,12 +23,12 @@ class LoginButton extends StatelessWidget {
 
       switch (platform) {
         // 카카오 로그인
-        case Platforms.KAKAO:
+        case Platforms.kakao:
           await kakaoAuthService.signInWithKakao();
           isSuccess = true;
           break;
         // 구글 로그인
-        case Platforms.GOOGLE:
+        case Platforms.google:
           await googleAuthService.checkAndSignInWithGoogle();
           isSuccess = true;
           break;
@@ -76,11 +76,11 @@ class LogoutButton extends StatelessWidget {
   /// 버튼 눌렀을 때 로그아웃 처리 함수
   void handleLogout() {
     switch (platform) {
-      case Platforms.KAKAO:
+      case Platforms.kakao:
         // 카카오 로그아웃 처리
         kakaoAuthService.logoutWithKakaoAccount();
         break;
-      case Platforms.GOOGLE:
+      case Platforms.google:
         // 구글 로그아웃 로직 처리
         googleAuthService.logOutWithGoogle();
     }

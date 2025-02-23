@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import 'package:romrom_fe/main.dart';
 import 'package:romrom_fe/models/platforms.dart';
-import 'package:romrom_fe/models/tokens.dart';
+import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
+import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/response_printer.dart';
 import 'package:romrom_fe/services/send_authenticated_request.dart';
 import 'package:romrom_fe/services/token_manage.dart';
@@ -22,12 +24,17 @@ Future<void> signInWithSocial({
     // multipart 형식 요청
     var request = http.MultipartRequest('POST', Uri.parse(url));
 
-    var userInfo = UserInfo().getUserInfo();
+    // 사용자 정보 불러옴
+    var userInfo = UserInfo();
+    await userInfo.getUserInfo();
 
     // 요청 파라미터 추가 (플랫폼, 유저 정보)
     request.fields['socialPlatform'] = socialPlatform;
-    userInfo.forEach((key, value) {
-      request.fields[key] = value ?? '';
+    // 사용자 정보 추가
+    userInfo.toMap().forEach((key, value) {
+      if (value != null) {
+        request.fields[key] = value;
+      }
     });
 
     // 요청 보내기
@@ -41,10 +48,10 @@ Future<void> signInWithSocial({
       responsePrinter(url, responseData);
 
       // 로컬 저장소에 토큰 저장
-      String accessToken = responseData[Tokens.accessToken.name];
-      String refreshToken = responseData[Tokens.refreshToken.name];
+      String accessToken = responseData[TokenKeys.accessToken.name];
+      String refreshToken = responseData[TokenKeys.refreshToken.name];
 
-      saveTokens(accessToken, refreshToken);
+      TokenManager().saveTokens(accessToken, refreshToken);
     } else {
       throw Exception('Failed to sign in: ${response.body}');
     }
@@ -60,26 +67,24 @@ Future<void> logOutWithSocial(BuildContext context) async {
     await sendAuthenticatedRequest(
       url: url,
       body: {
-        Tokens.accessToken.name: await getAccessToken(),
-        Tokens.refreshToken.name: await getRefreshToken(),
+        TokenKeys.accessToken.name: await TokenManager().getAccessToken(),
+        TokenKeys.refreshToken.name: await TokenManager().getRefreshToken(),
       },
       onSuccess: (responseData) async {
         responsePrinter(url, responseData);
         // 토큰 삭제
-        await deleteTokens();
+        await TokenManager().deleteTokens();
         // 소셜 로그아웃
-        Platforms platform = UserInfo().getLoginPlatform();
+        String? platform = await LoginPlatformManager().getLoginPlatform();
         final KakaoAuthService kakaoAuthService = KakaoAuthService();
         final GoogleAuthService googleAuthService = GoogleAuthService();
 
-        switch (platform) {
-          case Platforms.KAKAO:
-            // 카카오 로그아웃 처리
-            kakaoAuthService.logoutWithKakaoAccount();
-            break;
-          case Platforms.GOOGLE:
-            // 구글 로그아웃 로직 처리
-            googleAuthService.logOutWithGoogle();
+        if (platform == Platforms.kakao.platformName) {
+          // 카카오 로그아웃 처리
+          kakaoAuthService.logoutWithKakaoAccount();
+        } else if (platform == Platforms.google.platformName) {
+          // 구글 로그아웃 로직 처리
+          googleAuthService.logOutWithGoogle();
         }
 
         // 로그인화면으로 이동

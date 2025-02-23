@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:romrom_fe/models/tokens.dart';
 
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
-import 'package:romrom_fe/services/kakao_auth_manager.dart';
-import 'package:romrom_fe/services/secure_storage_manage.dart';
 import 'package:romrom_fe/services/token_manage.dart';
 
 void main() async {
@@ -22,7 +19,7 @@ const String baseUrl = "https://api.romrom.xyz";
 
 /// 토큰 상태를 확인하여 초기 화면 결정
 Future<Widget> checkTokenStatus() async {
-  String? refreshToken = await getSecureValueByKey(Tokens.refreshToken.name);
+  String? refreshToken = await TokenManager().getRefreshToken();
 
   if (refreshToken == null) return const LoginScreen();
   return await refreshAccessToken() ? const HomeScreen() : const LoginScreen();

@@ -3,8 +3,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:romrom_fe/models/platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/social_auth_sign_in_service.dart';
 
+/// 구글 로그인 서비스 class
 class GoogleAuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
@@ -14,8 +16,10 @@ class GoogleAuthService {
           '사용자 정보 요청 성공: 닉네임: ${googleUser.displayName}, 이메일: ${googleUser.email}, 프로필 이미지: ${googleUser.photoUrl}');
 
       // 사용자 정보 저장
-      UserInfo().setUserInfo('${googleUser.displayName}', googleUser.email,
-          googleUser.photoUrl, Platforms.GOOGLE);
+      UserInfo().saveUserInfo(
+          '${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
+      // 로그인 플랫폼(Google) 저장
+      LoginPlatformManager().saveLoginPlatform(Platforms.google.platformName);
     } catch (error) {
       debugPrint('사용자 정보 요청 실패: $error');
     }
@@ -56,7 +60,7 @@ class GoogleAuthService {
       await getGoogleUserInfo(googleUser);
 
       // 구글 로그인 성공 후 토큰 발급
-      await signInWithSocial(socialPlatform: Platforms.GOOGLE.name);
+      await signInWithSocial(socialPlatform: Platforms.google.platformName);
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');
     }

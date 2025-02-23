@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'package:romrom_fe/models/platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/social_auth_sign_in_service.dart';
 
 /// 카카오 인증 관련 서비스
@@ -17,11 +18,12 @@ class KakaoAuthService {
           '사용자 정보 요청 성공: 이메일: ${user.kakaoAccount?.email}, 닉네임: ${user.kakaoAccount?.profile?.nickname}, 프로필 이미지: ${user.kakaoAccount?.profile?.profileImageUrl}');
 
       // 사용자 정보 저장
-      UserInfo().setUserInfo(
+      UserInfo().saveUserInfo(
           '${user.kakaoAccount?.profile?.nickname}',
           '${user.kakaoAccount?.email}',
-          '${user.kakaoAccount?.profile?.profileImageUrl}',
-          Platforms.KAKAO);
+          '${user.kakaoAccount?.profile?.profileImageUrl}');
+      // 로그인 플랫폼 저장
+      LoginPlatformManager().saveLoginPlatform(Platforms.kakao.platformName);
     } catch (error) {
       debugPrint('사용자 정보 요청 실패: $error');
     }
@@ -31,7 +33,7 @@ class KakaoAuthService {
   Future<void> _handleLoginSuccess(OAuthToken token) async {
     debugPrint('카카오 로그인 성공: ${token.accessToken}');
     await getKakaoUserInfo();
-    await signInWithSocial(socialPlatform: Platforms.KAKAO.name);
+    await signInWithSocial(socialPlatform: Platforms.kakao.platformName);
   }
 
   /// 카카오 로그인 (토큰 확인 후 로그인 시도)

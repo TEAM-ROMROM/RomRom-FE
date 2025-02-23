@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 enum Platforms {
-  KAKAO(color: Colors.amber),
-  GOOGLE(color: Colors.blue);
+  kakao(color: Colors.amber, platformName: 'KAKAO'),
+  google(color: Colors.blue, platformName: 'GOOGLE');
 
   final Color color;
+  final String platformName;
 
-  const Platforms({required this.color});
+  const Platforms({required this.color, required this.platformName});
 }
