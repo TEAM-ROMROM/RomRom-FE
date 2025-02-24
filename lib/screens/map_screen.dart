@@ -8,7 +8,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:romrom_fe/screens/category_screen.dart';
 
+// TODO : 지도 화면 리팩토링
+/// 위치 인증 화면
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -169,6 +172,22 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                      Flexible(
+                        flex: 1,
+                        child: TextButton(
+                          child: const Text('위치 인증하기'),
+                          onPressed: () {
+                            // TODO : 위치 인증 api 연결
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (BuildContext context) =>
+                                    const CategoryScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
