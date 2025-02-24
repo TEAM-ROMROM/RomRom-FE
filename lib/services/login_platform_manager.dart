@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:romrom_fe/enums/login_platform_keys.dart';
 
@@ -9,6 +10,7 @@ class LoginPlatformManager {
   Future<void> saveLoginPlatform(String platform) async {
     await _storage.write(
         key: LoginPlatformKeys.loginPlatforms.name, value: platform);
+    debugPrint('로그인 플랫폼 저장 성공 : $platform');
   }
 
   /// 로그인 플랫폼 가져오기
@@ -19,5 +21,6 @@ class LoginPlatformManager {
   /// 로그인 플랫폼 삭제
   Future<void> deleteLoginPlatform() async {
     await _storage.delete(key: LoginPlatformKeys.loginPlatforms.name);
+    debugPrint('로그인 플랫폼 삭제 성공');
   }
 }

@@ -52,6 +52,9 @@ Future<void> signInWithSocial({
       String refreshToken = responseData[TokenKeys.refreshToken.name];
 
       TokenManager().saveTokens(accessToken, refreshToken);
+
+      // 첫 번째 로그인인지 저장
+      await UserInfo().saveIsFirstLogin(responseData['isFirstLogin']);
     } else {
       throw Exception('Failed to sign in: ${response.body}');
     }

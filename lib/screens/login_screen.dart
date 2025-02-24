@@ -3,6 +3,7 @@ import 'package:romrom_fe/enums/platforms.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 
+/// 로그인 화면
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
