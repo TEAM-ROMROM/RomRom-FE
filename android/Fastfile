@@ -1,0 +1,20 @@
+lane :build do
+  short_commit_hash = ENV['SHORT_COMMIT_HASH']
+  flutter_build(
+    build: 'apk',
+    project_dir: '..',
+    output_name: "romrom-#{short_commit_hash}.apk"
+  )
+end
+
+def flutter_build(options)
+  sh(
+    "flutter",
+    "build",
+    options[:build],
+    "--release",
+    "--target-platform=android-arm,android-arm64,android-x64",
+    "-v"
+  )
+  sh("mv", "../build/app/outputs/apk/release/app-release.apk", "app/build/outputs/apk/release/romrom-#{ENV['SHORT_COMMIT_HASH']}.apk")
+end
