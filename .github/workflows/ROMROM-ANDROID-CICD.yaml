@@ -2,7 +2,7 @@ name: ROMROM-Android-CICD
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
 
 jobs:
   build-android:
@@ -25,7 +25,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.3'
+          flutter-version: "3.24.3"
           cache: true
           cache-key: flutter-${{ runner.os }}-3.24.3
 
@@ -35,8 +35,8 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v2
@@ -44,7 +44,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.1'
+          ruby-version: "3.4.1"
 
       - name: Install Fastlane
         run: gem install fastlane
@@ -56,7 +56,7 @@ jobs:
       - name: Build APK with Fastlane
         run: |
           cd android
-          fastlane build
+          fastlane build --verbose
           ls -la ./app/build/outputs/apk/release/ # 디버깅용
 
       - name: Upload APK as Artifact
@@ -92,8 +92,8 @@ jobs:
           username: ${{ secrets.WEB_FTP_USERNAME }}
           server: ${{ secrets.WEB_FTP_SERVER }}
           port: ${{ secrets.WEB_FTP_PORT }}
-          local_path: './apk/romrom-${{ env.SHORT_COMMIT_HASH }}.apk'
-          remote_path: '/romrom/downloads/romrom-${{ env.SHORT_COMMIT_HASH }}.apk'
+          local_path: "./apk/romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
+          remote_path: "/romrom/downloads/romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
           password: ${{ secrets.WEB_FTP_PASSWORD }}
 
       - name: Update romrom-cicd-history.json
