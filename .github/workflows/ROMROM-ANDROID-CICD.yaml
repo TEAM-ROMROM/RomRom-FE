@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-android:
-    name: Build & Deploy Android
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
@@ -40,10 +40,40 @@ jobs:
       - name: Install Fastlane
         run: gem install fastlane
 
+      - name: Calculate Short Commit Hash
+        id: short_hash
+        run: echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+
       - name: Build APK with Fastlane
         run: |
           cd android
           fastlane build
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: romrom-apk
+          path: ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
+
+  deploy-android:
+    name: Deploy Android APK
+    runs-on: ubuntu-latest
+    needs: build-android # build-android Job이 완료된 후 실행
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Get Full Commit History
+
+      - name: Download APK Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: romrom-apk
+          path: ./apk
+
+      - name: Calculate Short Commit Hash
+        id: short_hash
+        run: echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
 
       - name: Upload APK to Server
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
@@ -51,7 +81,7 @@ jobs:
           username: ${{ secrets.WEB_FTP_USERNAME }}
           server: ${{ secrets.WEB_FTP_SERVER }}
           port: ${{ secrets.WEB_FTP_PORT }}
-          local_path: './android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk'
+          local_path: './apk/romrom-${{ env.SHORT_COMMIT_HASH }}.apk'
           remote_path: '/romrom/downloads/romrom-${{ env.SHORT_COMMIT_HASH }}.apk'
           password: ${{ secrets.WEB_FTP_PASSWORD }}
 
@@ -61,7 +91,7 @@ jobs:
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
           APK_NAME="romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
-          FILE_SIZE=$(stat -c%s "./android/app/build/outputs/apk/release/$APK_NAME")
+          FILE_SIZE=$(stat -c%s "./apk/$APK_NAME")
           COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
           FULL_COMMIT_HASH="${{ github.sha }}"
 
@@ -82,6 +112,3 @@ jobs:
 
           # 업데이트된 JSON을 서버에 업로드
           curl -T updated.json ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }}
-
-    env:
-      SHORT_COMMIT_HASH: ${{ github.sha | substr(0,7) }}
