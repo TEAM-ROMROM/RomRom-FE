@@ -1,42 +1,87 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Dart
+name: Flutter Android CI/CD for romrom
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 
 jobs:
-  build:
+  build-android:
+    name: Build & Deploy Android
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Get Full Commit History
 
-      # Note: This workflow uses the latest stable version of the Dart SDK.
-      # You can specify other versions if desired, see documentation here:
-      # https://github.com/dart-lang/setup-dart/blob/main/README.md
-      # - uses: dart-lang/setup-dart@v1
-      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'  # Flutter Version
 
-      - name: Install dependencies
-        run: dart pub get
+      - name: Install Dependencies
+        run: flutter pub get
 
-      # Uncomment this step to verify the use of 'dart format' on each commit.
-      # - name: Verify formatting
-      #   run: dart format --output=none --set-exit-if-changed .
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-      # Consider passing '--fatal-infos' for slightly stricter analysis.
-      - name: Analyze project source
-        run: dart analyze
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
 
-      # Your project will need to have tests in test/ and a dependency on
-      # package:test for this step to succeed. Note that Flutter projects will
-      # want to change this to 'flutter test'.
-      - name: Run tests
-        run: dart test
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+
+      - name: Install Fastlane
+        run: gem install fastlane
+
+      - name: Build APK with Fastlane
+        run: |
+          cd android
+          fastlane build
+
+      - name: Upload APK to Server
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          username: ${{ secrets.WEB_FTP_USERNAME }}
+          server: ${{ secrets.WEB_FTP_SERVER }}
+          port: ${{ secrets.WEB_FTP_PORT }}
+          local_path: './android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk'
+          remote_path: '/romrom/downloads/romrom-${{ env.SHORT_COMMIT_HASH }}.apk'
+          password: ${{ secrets.WEB_FTP_PASSWORD }}
+
+      - name: Update romrom-cicd-history.json
+        run: |
+          # 서울 시간대 설정
+          export TZ='Asia/Seoul'
+          BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
+          APK_NAME="romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
+          FILE_SIZE=$(stat -c%s "./android/app/build/outputs/apk/release/$APK_NAME")
+          COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
+          FULL_COMMIT_HASH="${{ github.sha }}"
+
+          # 새로운 빌드 정보 JSON 객체 생성
+          NEW_BUILD_INFO=$(jq -n \
+            --arg apk_name "$APK_NAME" \
+            --arg file_size "$FILE_SIZE" \
+            --arg build_date "$BUILD_DATE" \
+            --arg commit_link "$COMMIT_LINK" \
+            --arg full_commit_hash "$FULL_COMMIT_HASH" \
+            '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
+
+          # 서버에서 romrom-cicd-history.json 가져오기, 없으면 초기화
+          curl -s --fail ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }} > romrom-cicd-history.json || echo '{"files": []}' > romrom-cicd-history.json
+
+          # 기존 JSON에 새로운 빌드 정보 추가
+          jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
+
+          # 업데이트된 JSON을 서버에 업로드
+          curl -T updated.json ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }}
+
+    env:
+      SHORT_COMMIT_HASH: ${{ github.sha | substr(0,7) }}
