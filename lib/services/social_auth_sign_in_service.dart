@@ -36,6 +36,10 @@ Future<void> signInWithSocial({
         request.fields[key] = value;
       }
     });
+    // test 용 요청
+    // request.fields['nickname'] = 'test';
+    // request.fields['email'] = 'test@test123.com';
+    // request.fields['profileUrl'] = '';
 
     // 요청 보내기
     var streamedResponse = await request.send();

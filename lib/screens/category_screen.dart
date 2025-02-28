@@ -50,7 +50,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             TextButton(
               onPressed: () {
                 selectedCategories.isNotEmpty
-                    ? Navigator.push<void>(
+                    ? Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (BuildContext context) => const HomeScreen(),
