@@ -1,4 +1,4 @@
-name: Flutter Android CI/CD for romrom
+name: ROMROM-Android-CICD
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.3'  # Flutter Version
+          flutter-version: '3.24.3'  # Flutter 버전 맞춰줘
 
       - name: Install Dependencies
         run: flutter pub get
@@ -48,25 +48,27 @@ jobs:
         run: |
           cd android
           fastlane build
+          ls -la ./app/build/outputs/apk/release/ # 디버깅용: 파일 확인
 
       - name: Upload APK as Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # v3 대신 v4로 업그레이드
         with:
           name: romrom-apk
           path: ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
+          retention-days: 1  # 아티팩트 보관 기간
 
   deploy-android:
     name: Deploy Android APK
     runs-on: ubuntu-latest
-    needs: build-android # build-android Job이 완료된 후 실행
+    needs: build-android
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Get Full Commit History
+          fetch-depth: 0
 
       - name: Download APK Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4  # v4로 업그레이드
         with:
           name: romrom-apk
           path: ./apk
