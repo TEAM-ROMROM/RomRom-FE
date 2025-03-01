@@ -69,12 +69,17 @@ android {
             KAKAO_NATIVE_APP_KEY : dotenv['KAKAO_NATIVE_APP_KEY'] ?: ""
         ]
     }
-
+     signingConfigs {
+        release {
+            storeFile file(dotenv["KEYSTORE_FILE"] ?: "keystore/key.jks")
+            storePassword dotenv["KEYSTORE_PASSWORD"]
+            keyAlias dotenv["KEY_ALIAS"]
+            keyPassword dotenv["KEY_PASSWORD"]
+        }
+    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 }
