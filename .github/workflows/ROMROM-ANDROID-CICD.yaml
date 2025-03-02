@@ -25,6 +25,11 @@ jobs:
       - name: Clear Gradle Cache #Gradle 캐시 무효화
         run: rm -rf ~/.gradle/caches
 
+      - name: Setup Gradle # Gradle 버전 명시
+        run: |
+          chmod +x ./gradlew
+          ./gradlew wrapper --gradle-version 8.2 --distribution-type=bin
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
