@@ -68,6 +68,7 @@ android {
             NMF_CLIENT_ID      : dotenv['NMF_CLIENT_ID'] ?: "",
             KAKAO_NATIVE_APP_KEY : dotenv['KAKAO_NATIVE_APP_KEY'] ?: ""
         ]
+        multiDexEnabled true
     }
     signingConfigs {
         release {
@@ -89,4 +90,5 @@ flutter {
 }
 
 dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
 }
