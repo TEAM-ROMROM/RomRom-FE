@@ -69,7 +69,7 @@ android {
             KAKAO_NATIVE_APP_KEY : dotenv['KAKAO_NATIVE_APP_KEY'] ?: ""
         ]
     }
-     signingConfigs {
+    signingConfigs {
         release {
             storeFile file(dotenv["KEYSTORE_FILE"] ?: "keystore/key.jks")
             storePassword dotenv["KEYSTORE_PASSWORD"]
