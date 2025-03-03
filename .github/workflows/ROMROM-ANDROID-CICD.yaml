@@ -37,8 +37,15 @@ jobs:
           key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-flutter-pub-
 
-      - name: Clear Gradle Cache #Gradle 캐시 무효화
-        run: rm -rf ~/.gradle/caches
+      - name: Cache Gradle dependencies # Gradle 캐시 저장/복원 추가
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Create local.properties
         run: |
@@ -61,7 +68,7 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v3
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
