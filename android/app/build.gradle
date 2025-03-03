@@ -15,6 +15,17 @@ if (envFile.exists()) {
     throw new FileNotFoundException("Could not find.env file at: ${envFile.path}")
 }
 
+// key.properties 파일 읽기 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+} else {
+    throw new FileNotFoundException("Could not find key.properties file")
+}
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -72,10 +83,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file(dotenv["KEYSTORE_FILE"] ?: "keystore/key.jks")
-            storePassword dotenv["KEYSTORE_PASSWORD"]
-            keyAlias dotenv["KEY_ALIAS"]
-            keyPassword dotenv["KEY_PASSWORD"]
+            storeFile file(keystoreProperties["storeFile"])
+            storePassword keystoreProperties["storePassword"]
+            keyAlias keystoreProperties["keyAlias"]
+            keyPassword keystoreProperties["keyPassword"]
         }
     }
     buildTypes {

@@ -23,6 +23,21 @@ jobs:
       - name: Check .env file
         run: ls -la .
 
+      - name: Setup Keystore and key.properties
+        run: |
+          mkdir -p android/app/keystore
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/keystore/key.jks
+          echo "storeFile=keystore/key.jks" > android/key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+        working-directory: .
+
+      - name: Check .env and Keystore (Debug)
+        run: |
+          ls -la .
+          ls -la android/app/keystore
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
