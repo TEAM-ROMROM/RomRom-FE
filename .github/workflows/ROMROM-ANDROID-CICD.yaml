@@ -124,7 +124,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y sshpass curl
+          sudo apt-get install -y sshpass curl jq
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -135,16 +135,25 @@ jobs:
       - name: List downloaded structure (Debug)
         run: ls -alR android/app/build/outputs
 
+      # 새로 추가하는 부분: APK 파일을 동적으로 찾음
+      - name: Find APK file
+        run: |
+          APK_FILE=$(find android/app/build/outputs/ -name "*.apk" | head -n 1)
+          echo "APK_FILE=$APK_FILE" >> $GITHUB_ENV
+
+          # 경로에서 파일명만 추출
+          APK_NAME=$(basename "$APK_FILE")
+          echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
+
       - name: Upload files to Synology NAS via FTP
         env:
           WEB_FTP_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
           WEB_FTP_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
         run: |
           FTP_URL="ftp://suh-project.synology.me/romrom/downloads/"
-          APK_NAME="romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
 
-          echo "Uploading APK file..."
-          curl -T "android/app/build/outputs/$APK_NAME" "$FTP_URL" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" --ftp-create-dirs --ftp-pasv
+          echo "Uploading APK file ${{ env.APK_NAME }}..."
+          curl -T "${{ env.APK_FILE }}" "$FTP_URL" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" --ftp-create-dirs --ftp-pasv
 
       - name: Update romrom-cicd-history.json
         env:
@@ -153,13 +162,12 @@ jobs:
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
-          APK_NAME="romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
-          FILE_SIZE=$(stat -c%s "android/app/build/outputs/$APK_NAME")
+          FILE_SIZE=$(stat -c%s "${{ env.APK_FILE }}")
           COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
           FULL_COMMIT_HASH="${{ github.sha }}"
 
           NEW_BUILD_INFO=$(jq -n \
-            --arg apk_name "$APK_NAME" \
+            --arg apk_name "${{ env.APK_NAME }}" \
             --arg file_size "$FILE_SIZE" \
             --arg build_date "$BUILD_DATE" \
             --arg commit_link "$COMMIT_LINK" \
