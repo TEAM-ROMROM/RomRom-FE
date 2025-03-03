@@ -78,11 +78,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
       selectedColor: AppColors.primary,
       backgroundColor: AppColors.background,
       shape: RoundedRectangleBorder(
-        side: const BorderSide(
-          color: AppColors.textColor_white,
-          strokeAlign: BorderSide.strokeAlignInside,
-          width: 1.0,
-        ),
+        side: isSelected
+            ? BorderSide.none
+            : const BorderSide(
+                color: AppColors.textColor_white,
+                strokeAlign: BorderSide.strokeAlignInside,
+                width: 1.0,
+              ),
         borderRadius: BorderRadiusDirectional.circular(100.r),
       ),
       showCheckmark: false,
