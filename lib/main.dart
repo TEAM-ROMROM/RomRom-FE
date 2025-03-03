@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/enums/font_family.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/screens/category_screen.dart';
 
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
@@ -36,10 +39,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'RomRom',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        scaffoldBackgroundColor: AppColors.background, // 앱 배경색 지정
         useMaterial3: true,
+        fontFamily: FontFamily.pretendard.fontName,
       ),
-      home: initialScreen,
+      home: const CategoryScreen(),
     );
   }
 }
