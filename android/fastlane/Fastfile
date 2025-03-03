@@ -19,10 +19,12 @@ def flutter_build(options)
       "-v"
     )
   end
-  sh("ls", "-la", "../build/")
-  sh("ls", "-la", "../build/app/")
-  sh("ls", "-la", "../build/app/outputs/")
-  sh("ls", "-la", "../build/app/outputs/flutter-apk/")
+  # 디버깅용 ls 명령은 실패해도 계속 진행하도록 error: false 추가
+  sh("ls", "-la", "../build/", error: false)
+  sh("ls", "-la", "../build/app/", error: false)
+  sh("ls", "-la", "../build/app/outputs/", error: false)
+  sh("ls", "-la", "../build/app/outputs/flutter-apk/", error: false)
+  # APK 이동만 보장
   sh("mkdir", "-p", "./app/build/outputs/apk/release/")
   sh("mv", "../build/app/outputs/flutter-apk/app-release.apk", "./app/build/outputs/apk/release/#{options[:output_name]}")
 end
