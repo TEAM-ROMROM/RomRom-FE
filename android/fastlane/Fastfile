@@ -17,6 +17,9 @@ def flutter_build(options)
     "--target-platform=android-arm64",
     "-v"
   )
-  sh("ls", "-la", "../build/app/outputs/apk/release/") # 디버깅용
-  sh("mv", "../build/app/outputs/apk/release/app-release.apk", "app/build/outputs/apk/release/#{options[:output_name]}")
+  sh("ls", "-la", "../build/") # 상위 디렉터리 확인
+  sh("ls", "-la", "../build/app/outputs/") # 출력 디렉터리 확인
+  sh("ls", "-la", "../build/app/outputs/flutter-apk/") # APK 위치 확인
+  sh("mkdir", "-p", "app/build/outputs/apk/release/") # 디렉터리 생성
+  sh("mv", "../build/app/outputs/flutter-apk/app-release.apk", "app/build/outputs/apk/release/#{options[:output_name]}")
 end

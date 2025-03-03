@@ -161,4 +161,4 @@ jobs:
 
           jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
 
-          curl -T updated.json ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }}
+          curl -T updated.json ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }}| | echo "Failed to upload romrom-cicd-history.json"
