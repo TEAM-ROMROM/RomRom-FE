@@ -1,9 +1,7 @@
 lane :build do
-  short_commit_hash = ENV['SHORT_COMMIT_HASH']
   flutter_build(
     build: 'apk',
-    project_dir: '..',
-    output_name: "romrom-#{short_commit_hash}.apk"
+    project_dir: '..'
   )
 end
 
@@ -19,6 +17,4 @@ def flutter_build(options)
       "-v"
     )
   end
-  sh("mkdir", "-p", "./app/build/outputs/apk/release/")
-  sh("mv", "../build/app/outputs/flutter-apk/app-release.apk", "./app/build/outputs/apk/release/#{options[:output_name]}")
 end

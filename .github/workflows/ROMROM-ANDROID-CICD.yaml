@@ -18,7 +18,6 @@ jobs:
       - name: Create .env file from GitHub Secret
         run: |
           printf "%s\n" "${{ secrets.ENV }}" > .env
-        working-directory: .
 
       - name: Check .env file
         run: ls -la .
@@ -31,7 +30,6 @@ jobs:
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-        working-directory: .
 
       - name: Check .env and Keystore (Debug)
         run: |
@@ -52,7 +50,7 @@ jobs:
           key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-flutter-pub-
 
-      - name: Cache Gradle dependencies # Gradle 캐시 저장/복원 추가
+      - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -67,11 +65,11 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
 
-      - name: Install dependencies # Flutter 패키지 설치
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Setup Gradle # Gradle 버전 명시
-        working-directory: android # Gradle 실행 위치 설정
+      - name: Setup Gradle
+        working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew wrapper --gradle-version 8.5 --distribution-type=bin --stacktrace
@@ -101,7 +99,12 @@ jobs:
         run: |
           cd android
           fastlane build --verbose
-          ls -la ../build/app/outputs/flutter-apk/ # 루트 기준 경로로 디버깅
+          ls -la ../build/app/outputs/flutter-apk/ || true # 디버깅용, 실패해도 진행
+
+      - name: Rename and Prepare APK
+        run: |
+          mkdir -p ./android/app/build/outputs/apk/release/
+          mv ./build/app/outputs/flutter-apk/app-release.apk ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
         working-directory: .
 
       - name: Upload APK as Artifact
@@ -149,7 +152,6 @@ jobs:
           FILE_SIZE=$(stat -c%s "./apk/$APK_NAME")
           COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
           FULL_COMMIT_HASH="${{ github.sha }}"
-
           NEW_BUILD_INFO=$(jq -n \
             --arg apk_name "$APK_NAME" \
             --arg file_size "$FILE_SIZE" \
@@ -157,9 +159,6 @@ jobs:
             --arg commit_link "$COMMIT_LINK" \
             --arg full_commit_hash "$FULL_COMMIT_HASH" \
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
-
           curl -s --fail ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }} > romrom-cicd-history.json || echo '{"files": []}' > romrom-cicd-history.json
-
           jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
-
-          curl -T updated.json ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }}| | echo "Failed to upload romrom-cicd-history.json"
+          curl -T updated.json ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }} || echo "Failed to upload romrom-cicd-history.json"
