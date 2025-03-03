@@ -28,8 +28,8 @@ jobs:
       - name: Setup Gradle # Gradle 버전 명시
         working-directory: android # Gradle 실행 위치 설정
         run: |
-          chmod +x android/gradlew
-          android/gradlew wrapper --gradle-version 8.5 --distribution-type=bin
+          chmod +x gradlew
+          ./gradlew wrapper --gradle-version 8.5 --distribution-type=bin
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
