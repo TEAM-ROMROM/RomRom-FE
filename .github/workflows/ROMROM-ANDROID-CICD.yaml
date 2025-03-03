@@ -99,8 +99,10 @@ jobs:
 
       - name: Build APK with Fastlane
         run: |
+          cd android
           fastlane build --verbose
-          ls -la ./build/app/outputs/flutter-apk/ # 디버깅용
+          ls -la ../build/app/outputs/flutter-apk/ # 루트 기준 경로로 디버깅
+        working-directory: .
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
