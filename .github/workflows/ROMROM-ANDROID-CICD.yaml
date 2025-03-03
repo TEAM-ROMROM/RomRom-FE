@@ -28,6 +28,7 @@ jobs:
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
 
       - name: Setup Gradle # Gradle 버전 명시
         working-directory: android # Gradle 실행 위치 설정
