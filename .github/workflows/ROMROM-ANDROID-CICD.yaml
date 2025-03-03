@@ -99,13 +99,12 @@ jobs:
         run: |
           cd android
           fastlane build --verbose
-          ls -la ../build/app/outputs/flutter-apk/ || true # 디버깅용, 실패해도 진행
+          ls -la ../build/app/outputs/flutter-apk/ || true
 
       - name: Rename and Prepare APK
         run: |
           mkdir -p ./android/app/build/outputs/apk/release/
           mv ./build/app/outputs/flutter-apk/app-release.apk ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
-        working-directory: .
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
@@ -119,39 +118,46 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-android
     steps:
-      - name: Check out repository
+      - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
-      - name: Download APK Artifact
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass curl
+
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: romrom-apk
-          path: ./apk
+          path: android/app/build/outputs/
 
-      - name: Calculate Short Commit Hash
-        id: short_hash
-        run: echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+      - name: List downloaded structure (Debug)
+        run: ls -alR android/app/build/outputs
 
-      - name: Upload APK to Server
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
-        with:
-          username: ${{ secrets.WEB_FTP_USERNAME }}
-          server: ${{ secrets.WEB_FTP_SERVER }}
-          port: ${{ secrets.WEB_FTP_PORT }}
-          local_path: "./apk/romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
-          remote_path: "/romrom/downloads/romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
-          password: ${{ secrets.WEB_FTP_PASSWORD }}
+      - name: Upload files to Synology NAS via FTP
+        env:
+          WEB_FTP_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
+          WEB_FTP_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
+        run: |
+          FTP_URL="ftp://suh-project.synology.me/romrom/downloads/"
+          APK_NAME="romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
+
+          echo "Uploading APK file..."
+          curl -T "android/app/build/outputs/$APK_NAME" "$FTP_URL" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" --ftp-create-dirs --ftp-pasv
 
       - name: Update romrom-cicd-history.json
+        env:
+          WEB_FTP_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
+          WEB_FTP_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
           APK_NAME="romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
-          FILE_SIZE=$(stat -c%s "./apk/$APK_NAME")
+          FILE_SIZE=$(stat -c%s "android/app/build/outputs/$APK_NAME")
           COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
           FULL_COMMIT_HASH="${{ github.sha }}"
+
           NEW_BUILD_INFO=$(jq -n \
             --arg apk_name "$APK_NAME" \
             --arg file_size "$FILE_SIZE" \
@@ -159,6 +165,11 @@ jobs:
             --arg commit_link "$COMMIT_LINK" \
             --arg full_commit_hash "$FULL_COMMIT_HASH" \
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
-          curl -s --fail ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }} > romrom-cicd-history.json || echo '{"files": []}' > romrom-cicd-history.json
+
+          FTP_URL="ftp://suh-project.synology.me/romrom/downloads/"
+          curl -s --fail "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" > romrom-cicd-history.json || echo '{"files": []}' > romrom-cicd-history.json
           jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
-          curl -T updated.json ftp://${{ secrets.WEB_FTP_SERVER }}/romrom/downloads/romrom-cicd-history.json --user ${{ secrets.WEB_FTP_USERNAME }}:${{ secrets.WEB_FTP_PASSWORD }} || echo "Failed to upload romrom-cicd-history.json"
+          curl -T updated.json "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" --ftp-create-dirs --ftp-pasv
+
+          echo "Verifying uploaded JSON file..."
+          curl "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD"
