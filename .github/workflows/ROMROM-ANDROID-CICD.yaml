@@ -15,6 +15,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Flutter
+            uses: subosito/flutter-action@v2
+            with:
+              flutter-version: "3.24.3"
+              cache: true
+              cache-key: flutter-${{ runner.os }}-3.24.3
+
       - name: Cache Flutter dependencies
         uses: actions/cache@v4
         with:
@@ -35,13 +42,6 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew wrapper --gradle-version 8.5 --distribution-type=bin
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.24.3"
-          cache: true
-          cache-key: flutter-${{ runner.os }}-3.24.3
 
       - name: Install Dependencies
         run: flutter pub get
