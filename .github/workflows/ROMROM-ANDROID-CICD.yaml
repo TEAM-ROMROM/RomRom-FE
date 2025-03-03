@@ -37,14 +37,14 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
 
+      - name: Install dependencies # Flutter 패키지 설치
+        run: flutter pub get
+
       - name: Setup Gradle # Gradle 버전 명시
         working-directory: android # Gradle 실행 위치 설정
         run: |
           chmod +x gradlew
           ./gradlew wrapper --gradle-version 8.5 --distribution-type=bin
-
-      - name: Install Dependencies
-        run: flutter pub get
 
       - name: Set up Java
         uses: actions/setup-java@v3
