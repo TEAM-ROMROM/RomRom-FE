@@ -26,8 +26,8 @@ Future<void> sendAuthenticatedRequest({
       body: body,
     );
 
-    // statusCode 200 일 때
-    if (response.statusCode == 200) {
+    // statusCode `200` 일 때
+    if (response.statusCode == 200 || response.statusCode == 201) {
       // 응답 비어있으면 오류나서 따로 처리
       if (response.body.isNotEmpty) {
         final responseData = jsonDecode(response.body);
@@ -37,7 +37,7 @@ Future<void> sendAuthenticatedRequest({
         onSuccess({});
       }
     }
-    //  토큰 갱신 후 재시도
+    // statusCode == `401` 일 때 토큰 갱신 후 재시도
     else if (response.statusCode == 401) {
       bool isRefreshed = await refreshAccessToken();
 
@@ -54,7 +54,7 @@ Future<void> sendAuthenticatedRequest({
         );
 
         // statusCode 200인 경우
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
           // 응답 비어있으면 오류나서 따로 처리
           if (response.body.isNotEmpty) {
             final responseData = jsonDecode(response.body);

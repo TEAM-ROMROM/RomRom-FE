@@ -40,7 +40,6 @@ class AppTheme {
         height: 1,
         letterSpacing: -0.32.sp,
       ),
-      // 필요한 경우 더 많은 텍스트 스타일 추가
     );
   }
 }

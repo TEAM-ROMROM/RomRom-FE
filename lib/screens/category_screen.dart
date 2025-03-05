@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/enums/category.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/screens/home_screen.dart';
+import 'package:romrom_fe/services/member_category_manage.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
@@ -116,7 +116,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
     return Center(
       child: TextButton(
-        onPressed: hasSelectedCategories ? _navigateToHomeScreen : null,
+        onPressed: () async {
+          hasSelectedCategories
+              ? await postCategoryPreferences(context, selectedCategories)
+              : null;
+        },
         style: TextButton.styleFrom(
           backgroundColor: hasSelectedCategories
               ? AppColors.primary
@@ -125,16 +129,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
               horizontal: 104.0.w, vertical: 16.0.h), // 여기에 padding 추가
         ),
         child: Text('선택 완료', style: buttonTextStyle),
-      ),
-    );
-  }
-
-  /// 홈 화면으로 라우팅
-  void _navigateToHomeScreen() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (BuildContext context) => const HomeScreen(),
       ),
     );
   }

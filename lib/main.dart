@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/category_screen.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'RomRom',
           theme: AppTheme.defaultTheme,
-          home: initialScreen, // initialScreen으로 변경 필요
+          home: const CategoryScreen(),
         );
       }),
     );
