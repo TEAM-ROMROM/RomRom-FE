@@ -5,7 +5,7 @@ class UserInfo {
   String? nickname;
   String? email;
   String? profileUrl;
-  bool isFirstLogin = true;
+  bool? isFirstLogin;
 
   static final UserInfo _instance = UserInfo._internal();
   factory UserInfo() => _instance;
@@ -37,7 +37,7 @@ class UserInfo {
     nickname = prefs.getString('nickname') ?? '';
     email = prefs.getString('email') ?? '';
     profileUrl = prefs.getString('profileUrl') ?? '';
-    isFirstLogin = prefs.getBool('isFirstLogin') ?? true;
+    isFirstLogin = prefs.getBool('isFirstLogin');
   }
 
   /// 사용자 정보를 Map 형태로 반환하는 함수

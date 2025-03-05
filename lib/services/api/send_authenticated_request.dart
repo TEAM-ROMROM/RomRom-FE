@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/response_printer.dart';
 
 /// ### 헤더에 토큰 포함한 API 요청 함수 (재사용 가능)
 Future<void> sendAuthenticatedRequest({
@@ -31,8 +32,10 @@ Future<void> sendAuthenticatedRequest({
       // 응답 비어있으면 오류나서 따로 처리
       if (response.body.isNotEmpty) {
         final responseData = jsonDecode(response.body);
+        responsePrinter(url, responseData);
         onSuccess(responseData);
       } else {
+        responsePrinter(url, null);
         debugPrint('서버 응답이 비어 있음. 빈 객체로 처리합니다.');
         onSuccess({});
       }

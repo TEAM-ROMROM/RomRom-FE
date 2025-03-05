@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:romrom_fe/enums/navigation_type.dart';
 import 'package:romrom_fe/enums/platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/map_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
+import 'package:romrom_fe/utils/navigation_extension.dart';
 
 /// 로그인 버튼
 class LoginButton extends StatelessWidget {
@@ -39,13 +41,10 @@ class LoginButton extends StatelessWidget {
         await UserInfo().getUserInfo(); // 사용자 정보 불러오기
 
         // 처음 로그인 하면 위치 인증 화면으로 이동
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => userInfo.isFirstLogin
-                  ? const MapScreen()
-                  : const HomeScreen()),
-        );
+        context.navigateTo(
+            screen:
+                userInfo.isFirstLogin! ? const MapScreen() : const HomeScreen(),
+            type: NavigationType.pushReplacement);
       }
     } catch (e) {
       debugPrint("$e");

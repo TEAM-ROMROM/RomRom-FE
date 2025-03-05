@@ -6,7 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:romrom_fe/main.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
-import 'package:romrom_fe/services/response_printer.dart';
+import 'package:romrom_fe/utils/response_printer.dart';
 
 class TokenManager {
   static const storage = FlutterSecureStorage();

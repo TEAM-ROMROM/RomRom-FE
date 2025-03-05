@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/enums/navigation_type.dart';
 import 'package:romrom_fe/main.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
-import 'package:romrom_fe/services/response_printer.dart';
-import 'package:romrom_fe/services/send_authenticated_request.dart';
+import 'package:romrom_fe/utils/navigation_extension.dart';
+import 'package:romrom_fe/services/api/send_authenticated_request.dart';
 
-/// `POST /api/members/post/category/preferences` 사용자 카테고리 api 요청
+/// ### POST : `/api/members/post/category/preferences` 사용자 카테고리 api 요청
 Future<void> postCategoryPreferences(
     BuildContext context, List<int> selectedCategory) async {
   const String url = '$baseUrl/api/members/post/category/preferences';
@@ -16,14 +17,9 @@ Future<void> postCategoryPreferences(
             selectedCategory.map((e) => e.toString()).join(','),
       },
       onSuccess: (responseData) async {
-        responsePrinter(url, responseData);
         // home 화면으로 이동
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => const HomeScreen(),
-          ),
-        );
+        context.navigateTo(
+            screen: const HomeScreen(), type: NavigationType.pushReplacement);
       },
     );
   } catch (error) {

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:romrom_fe/enums/platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
-import 'package:romrom_fe/services/social_auth_sign_in_service.dart';
+import 'package:romrom_fe/services/api/social_auth_sign_in_service.dart';
 
 /// 카카오 인증 관련 서비스
 class KakaoAuthService {

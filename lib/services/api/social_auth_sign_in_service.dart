@@ -10,8 +10,9 @@ import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
-import 'package:romrom_fe/services/response_printer.dart';
-import 'package:romrom_fe/services/send_authenticated_request.dart';
+import 'package:romrom_fe/utils/navigation_extension.dart';
+import 'package:romrom_fe/utils/response_printer.dart';
+import 'package:romrom_fe/services/api/send_authenticated_request.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 
 /// POST : `/api/auth/sign-in` 소셜 로그인
@@ -78,7 +79,6 @@ Future<void> logOutWithSocial(BuildContext context) async {
         TokenKeys.refreshToken.name: await TokenManager().getRefreshToken(),
       },
       onSuccess: (responseData) async {
-        responsePrinter(url, responseData);
         // 토큰 삭제
         await TokenManager().deleteTokens();
         // 소셜 로그아웃
@@ -95,12 +95,7 @@ Future<void> logOutWithSocial(BuildContext context) async {
         }
 
         // 로그인화면으로 이동
-        Navigator.push<void>(
-          context,
-          MaterialPageRoute<void>(
-            builder: (BuildContext context) => const LoginScreen(),
-          ),
-        );
+        context.navigateTo(screen: const LoginScreen());
       },
     );
   } catch (error) {

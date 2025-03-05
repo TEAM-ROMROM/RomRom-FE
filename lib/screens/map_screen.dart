@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 import 'package:romrom_fe/screens/category_screen.dart';
+import 'package:romrom_fe/utils/navigation_extension.dart';
 
 // TODO : 지도 화면 리팩토링
 /// 위치 인증 화면
@@ -180,13 +181,7 @@ class _MapScreenState extends State<MapScreen> {
                           child: const Text('위치 인증하기'),
                           onPressed: () {
                             // TODO : 위치 인증 api 연결
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (BuildContext context) =>
-                                    const CategoryScreen(),
-                              ),
-                            );
+                            context.navigateTo(screen: const CategoryScreen());
                           },
                         ),
                       ),

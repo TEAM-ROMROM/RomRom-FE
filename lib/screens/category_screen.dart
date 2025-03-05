@@ -3,7 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/enums/category.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/services/member_category_manage.dart';
+import 'package:romrom_fe/services/api/member_category_service.dart';
+import 'package:romrom_fe/widgets/category_completion_button.dart';
+import 'package:romrom_fe/widgets/category_header.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
@@ -15,7 +17,7 @@ class CategoryScreen extends StatefulWidget {
 class _CategoryScreenState extends State<CategoryScreen> {
   List<int> selectedCategories = [];
 
-  bool get hasSelectedCategories =>
+  bool get isSelectedCategories =>
       selectedCategories.isNotEmpty; // 카테고리 선택했는지 bool로 반환
 
   @override
@@ -27,27 +29,22 @@ class _CategoryScreenState extends State<CategoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 160.h),
-            _buildHeader(context), // 카테고리 선택 안내 문구 빌드
+            // 카테고리 화면 헤더 문구
+            const CategoryHeader(
+                headLine: '카테고리 선택', subHeadLine: '관심있는 분야를 선택해주세요!'),
             SizedBox(height: 32.h),
             _buildCategoryChips(context), // 카테고리 선택 choiceChip 빌드
             SizedBox(height: 56.0.h),
-            _buildCompletionButton(context), // 선택 완료 버튼 빌드
+            // 카테고리 선택 완료 버튼
+            CategoryCompletionButton(
+                isEnabled: isSelectedCategories,
+                enabledOnPressed: () async {
+                  await postCategoryPreferences(context, selectedCategories);
+                },
+                buttonText: '선택 완료')
           ],
         ),
       ),
-    );
-  }
-
-  /// 카테고리 선택 안내 문구 빌드
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('카테고리를 선택', style: Theme.of(context).textTheme.headlineLarge),
-        SizedBox(height: 12.h),
-        Text('관심있는 분야를 선택해주세요!',
-            style: Theme.of(context).textTheme.headlineMedium),
-      ],
     );
   }
 
@@ -69,8 +66,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
       label: Text(category.name),
       labelStyle: Theme.of(context).textTheme.headlineMedium?.copyWith(
             color: isSelected
-                ? AppColors.textColor_black
-                : AppColors.textColor_white,
+                ? AppColors.textColorBlack
+                : AppColors.textColorWhite,
           ),
       labelPadding: EdgeInsets.zero,
       padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 10.0.h),
@@ -81,7 +78,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
         side: isSelected
             ? BorderSide.none
             : const BorderSide(
-                color: AppColors.textColor_white,
+                color: AppColors.textColorWhite,
                 strokeAlign: BorderSide.strokeAlignInside,
                 width: 1.0,
               ),
@@ -101,35 +98,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       } else {
         selectedCategories.remove(categoryId);
       }
-      debugPrint("$selectedCategories");
+      debugPrint("선택 카테고리 : $selectedCategories");
     });
-  }
-
-  /// 선택 완료 버튼 빌드
-  Widget _buildCompletionButton(BuildContext context) {
-    final TextStyle? buttonTextStyle =
-        Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: hasSelectedCategories
-                  ? AppColors.textColor_black
-                  : AppColors.textColor_black.withValues(alpha: 0.7),
-            );
-
-    return Center(
-      child: TextButton(
-        onPressed: () async {
-          hasSelectedCategories
-              ? await postCategoryPreferences(context, selectedCategories)
-              : null;
-        },
-        style: TextButton.styleFrom(
-          backgroundColor: hasSelectedCategories
-              ? AppColors.primary
-              : AppColors.primary.withValues(alpha: 0.7),
-          padding: EdgeInsets.symmetric(
-              horizontal: 104.0.w, vertical: 16.0.h), // 여기에 padding 추가
-        ),
-        child: Text('선택 완료', style: buttonTextStyle),
-      ),
-    );
   }
 }
