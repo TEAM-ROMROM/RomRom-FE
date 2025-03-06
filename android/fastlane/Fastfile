@@ -1,0 +1,20 @@
+lane :build do
+  flutter_build(
+    build: 'apk',
+    project_dir: '..'
+  )
+end
+
+def flutter_build(options)
+  Dir.chdir(options[:project_dir]) do
+    sh(
+      "flutter",
+      "build",
+      options[:build],
+      "--release",
+      "--no-tree-shake-icons",
+      "--target-platform=android-arm64",
+      "-v"
+    )
+  end
+end

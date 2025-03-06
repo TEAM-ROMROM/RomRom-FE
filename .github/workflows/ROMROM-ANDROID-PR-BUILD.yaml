@@ -1,0 +1,89 @@
+name: ROMROM-Android-Build-Test
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test-android-build:
+    name: Test Android Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Create .env file from GitHub Secret
+        run: |
+          printf "%s\n" "${{ secrets.ENV }}" > .env
+
+      - name: Setup Keystore and key.properties
+        run: |
+          mkdir -p android/app/keystore
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/keystore/key.jks
+          echo "storeFile=keystore/key.jks" > android/key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.3"
+          cache: true
+          cache-key: flutter-${{ runner.os }}-3.27.3
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-flutter-pub-
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Setup Gradle
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew wrapper --gradle-version 8.5 --distribution-type=bin --stacktrace
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Run Flutter Analyze
+        run: flutter analyze
+
+      - name: Run Flutter Tests
+        run: flutter test
+
+      - name: Build APK (Test Build)
+        run: flutter build apk --debug
+
+      - name: Check Build Output
+        run: |
+          ls -la build/app/outputs/flutter-apk/
