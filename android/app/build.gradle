@@ -4,6 +4,28 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// 파일 상단 또는 defaultConfig 전에 .env 파일 읽기
+def dotenv = new Properties()
+def envFile = rootProject.file("../.env")
+if (envFile.exists()) {
+    envFile.withInputStream { stream ->
+        dotenv.load(stream)
+    }
+} else {
+    throw new FileNotFoundException("Could not find.env file at: ${envFile.path}")
+}
+
+// key.properties 파일 읽기 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+} else {
+    throw new FileNotFoundException("Could not find key.properties file")
+}
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -32,6 +54,10 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
+
     kotlinOptions {
         jvmTarget = '1.8'
     }
@@ -49,13 +75,23 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        manifestPlaceholders += [
+            NMF_CLIENT_ID      : dotenv['NMF_CLIENT_ID'] ?: "",
+            KAKAO_NATIVE_APP_KEY : dotenv['KAKAO_NATIVE_APP_KEY'] ?: ""
+        ]
+        multiDexEnabled true
     }
-
+    signingConfigs {
+        release {
+            storeFile file(keystoreProperties["storeFile"])
+            storePassword keystoreProperties["storePassword"]
+            keyAlias keystoreProperties["keyAlias"]
+            keyPassword keystoreProperties["keyPassword"]
+        }
+    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 }
@@ -65,4 +101,5 @@ flutter {
 }
 
 dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
 }

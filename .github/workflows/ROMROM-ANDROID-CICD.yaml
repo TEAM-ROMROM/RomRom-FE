@@ -1,0 +1,183 @@
+name: ROMROM-Android-CICD
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Create .env file from GitHub Secret
+        run: |
+          printf "%s\n" "${{ secrets.ENV }}" > .env
+
+      - name: Check .env file
+        run: ls -la .
+
+      - name: Setup Keystore and key.properties
+        run: |
+          mkdir -p android/app/keystore
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/keystore/key.jks
+          echo "storeFile=keystore/key.jks" > android/key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+
+      - name: Check .env and Keystore (Debug)
+        run: |
+          ls -la .
+          ls -la android/app/keystore
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.3"
+          cache: true
+          cache-key: flutter-${{ runner.os }}-3.27.3
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-flutter-pub-
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Setup Gradle
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew wrapper --gradle-version 8.5 --distribution-type=bin --stacktrace
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4.1"
+
+      - name: Install Fastlane
+        run: gem install fastlane
+
+      - name: Calculate Short Commit Hash
+        id: short_hash
+        run: echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Build APK with Fastlane
+        run: |
+          cd android
+          fastlane build --verbose
+          ls -la ../build/app/outputs/flutter-apk/ || true
+
+      - name: Rename and Prepare APK
+        run: |
+          mkdir -p ./android/app/build/outputs/apk/release/
+          mv ./build/app/outputs/flutter-apk/app-release.apk ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: romrom-apk
+          path: ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
+          retention-days: 1
+
+  deploy-android:
+    name: Deploy Android APK
+    runs-on: ubuntu-latest
+    needs: build-android
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass curl jq
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: romrom-apk
+          path: android/app/build/outputs/
+
+      - name: List downloaded structure (Debug)
+        run: ls -alR android/app/build/outputs
+
+      # 새로 추가하는 부분: APK 파일을 동적으로 찾음
+      - name: Find APK file
+        run: |
+          APK_FILE=$(find android/app/build/outputs/ -name "*.apk" | head -n 1)
+          echo "APK_FILE=$APK_FILE" >> $GITHUB_ENV
+
+          # 경로에서 파일명만 추출
+          APK_NAME=$(basename "$APK_FILE")
+          echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
+
+      - name: Upload files to Synology NAS via FTP
+        env:
+          WEB_FTP_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
+          WEB_FTP_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
+        run: |
+          FTP_URL="ftp://suh-project.synology.me/romrom/downloads/"
+
+          echo "Uploading APK file ${{ env.APK_NAME }}..."
+          curl -T "${{ env.APK_FILE }}" "$FTP_URL" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" --ftp-create-dirs --ftp-pasv
+
+      - name: Update romrom-cicd-history.json
+        env:
+          WEB_FTP_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
+          WEB_FTP_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
+        run: |
+          export TZ='Asia/Seoul'
+          BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
+          FILE_SIZE=$(stat -c%s "${{ env.APK_FILE }}")
+          COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
+          FULL_COMMIT_HASH="${{ github.sha }}"
+
+          NEW_BUILD_INFO=$(jq -n \
+            --arg apk_name "${{ env.APK_NAME }}" \
+            --arg file_size "$FILE_SIZE" \
+            --arg build_date "$BUILD_DATE" \
+            --arg commit_link "$COMMIT_LINK" \
+            --arg full_commit_hash "$FULL_COMMIT_HASH" \
+            '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
+
+          FTP_URL="ftp://suh-project.synology.me/romrom/downloads/"
+          curl -s --fail "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" > romrom-cicd-history.json || echo '{"files": []}' > romrom-cicd-history.json
+          jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
+          curl -T updated.json "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" --ftp-create-dirs --ftp-pasv
+
+          echo "Verifying uploaded JSON file..."
+          curl "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD"
