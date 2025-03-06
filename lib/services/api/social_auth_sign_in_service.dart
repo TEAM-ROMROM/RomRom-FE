@@ -95,6 +95,7 @@ Future<void> logOutWithSocial(BuildContext context) async {
         }
 
         // 로그인화면으로 이동
+        // ignore: use_build_context_synchronously
         context.navigateTo(screen: const LoginScreen());
       },
     );

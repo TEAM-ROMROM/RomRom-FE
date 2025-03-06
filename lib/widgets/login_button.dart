@@ -41,6 +41,7 @@ class LoginButton extends StatelessWidget {
         await UserInfo().getUserInfo(); // 사용자 정보 불러오기
 
         // 처음 로그인 하면 위치 인증 화면으로 이동
+        // ignore: use_build_context_synchronously
         context.navigateTo(
             screen:
                 userInfo.isFirstLogin! ? const MapScreen() : const HomeScreen(),

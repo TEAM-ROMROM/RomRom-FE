@@ -152,6 +152,7 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                       Flexible(
                         flex: 3,
+                        // ignore: avoid_unnecessary_containers
                         child: Container(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
