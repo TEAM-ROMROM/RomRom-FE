@@ -52,14 +52,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
   Widget _buildCategoryChips(BuildContext context) {
     return Wrap(
       spacing: 8.0.w,
-      children: Category.values
+      children: ItemCategory.values
           .map((category) => _buildCategoryChip(context, category))
           .toList(),
     );
   }
 
   /// 카테고리 chip css 일괄 지정
-  Widget _buildCategoryChip(BuildContext context, Category category) {
+  Widget _buildCategoryChip(BuildContext context, ItemCategory category) {
     final bool isSelected = selectedCategories.contains(category.id);
 
     return ChoiceChip(

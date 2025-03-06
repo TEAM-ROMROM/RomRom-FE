@@ -1,5 +1,5 @@
 /// 카테고리(대분류) `id` : id `name` : 카테고리 이름
-enum Category {
+enum ItemCategory {
   womensClothing(id: 1, name: '여성의류'),
   mensClothing(id: 2, name: '남성의류'),
   shoes(id: 3, name: '신발'),
@@ -30,5 +30,5 @@ enum Category {
   final int id;
   final String name;
 
-  const Category({required this.id, required this.name});
+  const ItemCategory({required this.id, required this.name});
 }
