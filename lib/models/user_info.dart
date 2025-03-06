@@ -1,45 +1,51 @@
-import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:romrom_fe/models/platforms.dart';
-
-/// 사용자 정보 싱글톤으로 관리
+/// 사용자 정보 관리 class
 class UserInfo {
   String? nickname;
   String? email;
   String? profileUrl;
-  Platforms? loginPlatform;
+  bool? isFirstLogin;
 
-  // Singleton 인스턴스를 저장할 변수
   static final UserInfo _instance = UserInfo._internal();
-
-  // private 생성자
+  factory UserInfo() => _instance;
   UserInfo._internal();
 
-  // Singleton 인스턴스를 반환하는 getter
-  factory UserInfo() {
-    return _instance;
+  /// 사용자 정보 저장 함수
+  Future<void> saveUserInfo(
+      String? name, String? email, String? profileImageUrl) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('nickname', name ?? '');
+    await prefs.setString('email', email ?? '');
+    await prefs.setString('profileUrl', profileImageUrl ?? '');
+
+    nickname = name;
+    this.email = email;
+    profileUrl = profileImageUrl;
   }
 
-  // 사용자 정보 설정 메서드
-  void setUserInfo(String? name, String? email, String? profileImageUrl,
-      Platforms loginPlatform) {
-    nickname = name ?? '';
-    this.email = email ?? '';
-    profileUrl = profileImageUrl ?? '';
-    this.loginPlatform = loginPlatform;
+  /// 첫 번째 로그인인지 저장
+  Future<void> saveIsFirstLogin(bool isFirst) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isFirstLogin', isFirst);
+    isFirstLogin = isFirst;
   }
 
-  // 사용자 정보 반환 메서드
-  Map<String, String?> getUserInfo() {
+  /// 사용자 정보 불러옴
+  Future<void> getUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    nickname = prefs.getString('nickname') ?? '';
+    email = prefs.getString('email') ?? '';
+    profileUrl = prefs.getString('profileUrl') ?? '';
+    isFirstLogin = prefs.getBool('isFirstLogin');
+  }
+
+  /// 사용자 정보를 Map 형태로 반환하는 함수
+  Map<String, String?> toMap() {
     return {
-      'name': nickname,
       'email': email,
-      'profileImageUrl': profileUrl,
+      'nickname': nickname,
+      'profileUrl': profileUrl,
     };
-  }
-
-  // 로그인 플랫폼 반환 메서드
-  Platforms getLoginPlatform() {
-    return loginPlatform!;
   }
 }

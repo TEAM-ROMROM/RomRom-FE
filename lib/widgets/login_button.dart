@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:romrom_fe/models/platforms.dart';
+import 'package:romrom_fe/enums/navigation_type.dart';
+import 'package:romrom_fe/enums/platforms.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
+import 'package:romrom_fe/screens/map_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
+import 'package:romrom_fe/utils/navigation_extension.dart';
 
 /// 로그인 버튼
 class LoginButton extends StatelessWidget {
@@ -23,22 +27,25 @@ class LoginButton extends StatelessWidget {
 
       switch (platform) {
         // 카카오 로그인
-        case Platforms.KAKAO:
-          await kakaoAuthService.signInWithKakao();
-          isSuccess = true;
+        case Platforms.kakao:
+          isSuccess = await kakaoAuthService.signInWithKakao();
           break;
         // 구글 로그인
-        case Platforms.GOOGLE:
-          await googleAuthService.checkAndSignInWithGoogle();
-          isSuccess = true;
+        case Platforms.google:
+          isSuccess = await googleAuthService.checkAndSignInWithGoogle();
           break;
       }
 
       if (isSuccess) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        var userInfo = UserInfo();
+        await UserInfo().getUserInfo(); // 사용자 정보 불러오기
+
+        // 처음 로그인 하면 위치 인증 화면으로 이동
+        // ignore: use_build_context_synchronously
+        context.navigateTo(
+            screen:
+                userInfo.isFirstLogin! ? const MapScreen() : const HomeScreen(),
+            type: NavigationType.pushReplacement);
       }
     } catch (e) {
       debugPrint("$e");
@@ -74,13 +81,14 @@ class LogoutButton extends StatelessWidget {
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
   /// 버튼 눌렀을 때 로그아웃 처리 함수
-  void handleLogout() {
+  void handleLogout() async {
     switch (platform) {
-      case Platforms.KAKAO:
+      case Platforms.kakao:
         // 카카오 로그아웃 처리
         kakaoAuthService.logoutWithKakaoAccount();
+
         break;
-      case Platforms.GOOGLE:
+      case Platforms.google:
         // 구글 로그아웃 로직 처리
         googleAuthService.logOutWithGoogle();
     }

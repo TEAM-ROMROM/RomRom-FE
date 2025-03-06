@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'package:romrom_fe/models/platforms.dart';
+import 'package:romrom_fe/enums/platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/services/social_auth_sign_in_service.dart';
+import 'package:romrom_fe/services/login_platform_manager.dart';
+import 'package:romrom_fe/services/api/social_auth_sign_in_service.dart';
 
+/// 구글 로그인 서비스 class
 class GoogleAuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
@@ -14,40 +16,48 @@ class GoogleAuthService {
           '사용자 정보 요청 성공: 닉네임: ${googleUser.displayName}, 이메일: ${googleUser.email}, 프로필 이미지: ${googleUser.photoUrl}');
 
       // 사용자 정보 저장
-      UserInfo().setUserInfo('${googleUser.displayName}', googleUser.email,
-          googleUser.photoUrl, Platforms.GOOGLE);
+      UserInfo().saveUserInfo(
+          '${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
+      // 로그인 플랫폼(Google) 저장
+      LoginPlatformManager().saveLoginPlatform(Platforms.google.platformName);
     } catch (error) {
       debugPrint('사용자 정보 요청 실패: $error');
     }
   }
 
   /// 로그인 유지 여부 확인 및 로그인 진행
-  Future<void> checkAndSignInWithGoogle() async {
+  Future<bool> checkAndSignInWithGoogle() async {
     try {
       GoogleSignInAccount? currentUser = _googleSignIn.currentUser;
 
       if (currentUser == null) {
         // 기존 로그인 정보가 없으면 로그인 진행
-        await logInWithGoogle();
+        return await logInWithGoogle(); // 로그인 시도 결과 반환
       } else {
         // 로그인 유지됨
         final GoogleSignInAuthentication auth =
             await currentUser.authentication;
         debugPrint('구글 로그인 유지됨: ${auth.accessToken}');
+        return true; // 로그인 유지 시 true 반환
       }
     } catch (error) {
       debugPrint('로그인 상태 확인 중 오류 발생: $error');
+      return false; // 오류 발생 시 false 반환
     }
   }
 
   /// 구글 로그인
-  Future<void> logInWithGoogle() async {
+  Future<bool> logInWithGoogle() async {
     try {
       // 구글로 로그인 진행
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        return false; // 사용자가 로그인 취소 시 false 반환
+      }
 
       final GoogleSignInAuthentication googleSignInAuthentication =
-          await googleUser!.authentication;
+          await googleUser.authentication;
 
       // 구글 OAuth2 토큰 받음
       final String googleAccessToken = googleSignInAuthentication.accessToken!;
@@ -56,9 +66,11 @@ class GoogleAuthService {
       await getGoogleUserInfo(googleUser);
 
       // 구글 로그인 성공 후 토큰 발급
-      await signInWithSocial(socialPlatform: Platforms.GOOGLE.name);
+      await signInWithSocial(socialPlatform: Platforms.google.platformName);
+      return true; // 성공 시 true 반환
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');
+      return false; // 실패 시 false 반환
     }
   }
 
@@ -67,6 +79,8 @@ class GoogleAuthService {
     try {
       await _googleSignIn.signOut();
       debugPrint('구글 로그아웃 성공');
+      // 로그인 플랫폼 정보 삭제
+      await LoginPlatformManager().deleteLoginPlatform();
     } catch (error) {
       debugPrint('구글 로그아웃 실패: $error');
     }
