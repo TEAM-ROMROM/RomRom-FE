@@ -41,7 +41,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 enabledOnPressed: () async {
                   await postCategoryPreferences(context, selectedCategories);
                 },
-                buttonText: '선택 완료')
+                buttonText: '선택 완료'),
+            Expanded(child: Container()),
           ],
         ),
       ),
