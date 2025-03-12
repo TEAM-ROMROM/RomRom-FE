@@ -6,10 +6,10 @@ import 'package:logging/logging.dart';
 
 /// 앱 초기화 함수
 Future<void> initialize() async {
-  await loadEnv();
-  await initNaverMap();
-  initKakaoSdk();
-  initLogger();
+  await loadEnv(); // env 파일 로딩
+  await initNaverMap(); // 네이버 지도 초기화
+  initKakaoSdk(); // 카카오 sdk 초기화
+  initLogger(); // logger 초기화
 }
 
 /// .env 파일 로드

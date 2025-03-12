@@ -28,11 +28,11 @@ class LoginButton extends StatelessWidget {
       switch (platform) {
         // 카카오 로그인
         case Platforms.kakao:
-          isSuccess = await kakaoAuthService.signInWithKakao();
+          isSuccess = await kakaoAuthService.loginWithKakao();
           break;
         // 구글 로그인
         case Platforms.google:
-          isSuccess = await googleAuthService.checkAndSignInWithGoogle();
+          isSuccess = await googleAuthService.logInWithGoogle();
           break;
       }
 

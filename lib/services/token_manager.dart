@@ -55,19 +55,17 @@ Future<bool> refreshAccessToken() async {
     // 요청 보내기
     var streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);
+    final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+    // 응답 데이터 출력
+    responsePrinter(url, responseData);
 
     if (response.statusCode == 200) {
-      debugPrint('access token 이 성공적으로 재발급됨');
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-
-      // 응답 데이터 출력
-      responsePrinter(url, responseData);
-
       // 로컬 저장소에 토큰 저장
       String accessToken = responseData[TokenKeys.accessToken.name];
 
       TokenManager().saveTokens(accessToken, refreshToken);
-
+      debugPrint('access token 이 성공적으로 재발급됨');
       return true;
     }
 

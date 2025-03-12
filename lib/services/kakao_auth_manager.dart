@@ -36,28 +36,6 @@ class KakaoAuthService {
     await signInWithSocial(socialPlatform: Platforms.kakao.platformName);
   }
 
-  /// 카카오 로그인 (토큰 확인 후 로그인 시도)
-  Future<bool> signInWithKakao() async {
-    if (await AuthApi.instance.hasToken()) {
-      try {
-        AccessTokenInfo tokenInfo = await UserApi.instance.accessTokenInfo();
-        debugPrint('토큰 유효성 체크 성공: ${tokenInfo.id} ${tokenInfo.expiresIn}');
-        return true; // 토큰 유효할 때 true 반환
-      } catch (error) {
-        if (error is KakaoException && error.isInvalidTokenError()) {
-          debugPrint('토큰 만료: $error');
-        } else {
-          debugPrint('토큰 정보 조회 실패: $error');
-        }
-        await loginWithKakao();
-        return false; // 토큰이 만료되어 재로그인 시도
-      }
-    } else {
-      debugPrint('발급된 토큰 없음');
-      return await loginWithKakao(); // 로그인 시도 결과 반환
-    }
-  }
-
   /// 카카오 로그인 (카톡앱 -> 카카오 계정 순서로 시도)
   Future<bool> loginWithKakao() async {
     if (await isKakaoTalkInstalled()) {
@@ -99,7 +77,7 @@ class KakaoAuthService {
   Future<void> logoutWithKakaoAccount() async {
     try {
       // 카카오 로그아웃
-      await UserApi.instance.logout();
+      await UserApi.instance.unlink();
       debugPrint('로그아웃 성공, 카카오 SDK에서 토큰 삭제');
       // 로그인 플랫폼 정보 삭제
       await LoginPlatformManager().deleteLoginPlatform();

@@ -25,27 +25,6 @@ class GoogleAuthService {
     }
   }
 
-  /// 로그인 유지 여부 확인 및 로그인 진행
-  Future<bool> checkAndSignInWithGoogle() async {
-    try {
-      GoogleSignInAccount? currentUser = _googleSignIn.currentUser;
-
-      if (currentUser == null) {
-        // 기존 로그인 정보가 없으면 로그인 진행
-        return await logInWithGoogle(); // 로그인 시도 결과 반환
-      } else {
-        // 로그인 유지됨
-        final GoogleSignInAuthentication auth =
-            await currentUser.authentication;
-        debugPrint('구글 로그인 유지됨: ${auth.accessToken}');
-        return true; // 로그인 유지 시 true 반환
-      }
-    } catch (error) {
-      debugPrint('로그인 상태 확인 중 오류 발생: $error');
-      return false; // 오류 발생 시 false 반환
-    }
-  }
-
   /// 구글 로그인
   Future<bool> logInWithGoogle() async {
     try {
@@ -77,7 +56,7 @@ class GoogleAuthService {
   /// 구글 로그아웃
   Future<void> logOutWithGoogle() async {
     try {
-      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect();
       debugPrint('구글 로그아웃 성공');
       // 로그인 플랫폼 정보 삭제
       await LoginPlatformManager().deleteLoginPlatform();

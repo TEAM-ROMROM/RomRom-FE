@@ -21,6 +21,7 @@ void main() async {
 /// 토큰 상태를 확인하여 초기 화면 결정
 Future<Widget> _determineInitialScreen() async {
   final TokenManager tokenManager = TokenManager();
+  // refreshToken 불러옴
   final String? refreshToken = await tokenManager.getRefreshToken();
 
   if (refreshToken == null) return const LoginScreen();
