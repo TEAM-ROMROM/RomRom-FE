@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:romrom_fe/services/token_manage.dart';
+import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/response_printer.dart';
 
-/// **재사용 가능한 API 요청 함수**
+/// ### 헤더에 토큰 포함한 API 요청 함수 (재사용 가능)
 Future<void> sendAuthenticatedRequest({
   required String url,
   String method = 'POST',
@@ -11,8 +12,8 @@ Future<void> sendAuthenticatedRequest({
   required Function(Map<String, dynamic>) onSuccess,
 }) async {
   try {
-    String? accessToken = await getAccessToken();
-    String? refreshToken = await getRefreshToken();
+    String? accessToken = await TokenManager().getAccessToken();
+    String? refreshToken = await TokenManager().getRefreshToken();
     // TODO : exception enum 처리
     if (accessToken == null || refreshToken == null) {
       throw Exception('토큰이 없습니다.');
@@ -26,25 +27,27 @@ Future<void> sendAuthenticatedRequest({
       body: body,
     );
 
-    // statusCode 200 일 때
-    if (response.statusCode == 200) {
+    // statusCode `200` 일 때
+    if (response.statusCode == 200 || response.statusCode == 201) {
       // 응답 비어있으면 오류나서 따로 처리
       if (response.body.isNotEmpty) {
         final responseData = jsonDecode(response.body);
+        responsePrinter(url, responseData);
         onSuccess(responseData);
       } else {
+        responsePrinter(url, null);
         debugPrint('서버 응답이 비어 있음. 빈 객체로 처리합니다.');
         onSuccess({});
       }
     }
-    //  토큰 갱신 후 재시도
+    // statusCode == `401` 일 때 토큰 갱신 후 재시도
     else if (response.statusCode == 401) {
       bool isRefreshed = await refreshAccessToken();
 
       // 토큰 재발급 된 경우
       if (isRefreshed) {
-        accessToken = await getAccessToken();
-        refreshToken = await getRefreshToken();
+        accessToken = await TokenManager().getAccessToken();
+        refreshToken = await TokenManager().getRefreshToken();
 
         response = await _sendMultiPartRequest(
           url: url,
@@ -54,7 +57,7 @@ Future<void> sendAuthenticatedRequest({
         );
 
         // statusCode 200인 경우
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
           // 응답 비어있으면 오류나서 따로 처리
           if (response.body.isNotEmpty) {
             final responseData = jsonDecode(response.body);
@@ -79,7 +82,7 @@ Future<void> sendAuthenticatedRequest({
   }
 }
 
-/// **실제 요청을 처리하는 함수**
+/// ### 실제 api 요청을 처리하는 함수
 Future<http.Response> _sendMultiPartRequest({
   required String url,
   required String method,
