@@ -174,7 +174,7 @@ jobs:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
           SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
-          SMB_URL="smb://suh-project.synology.me/romrom/downloads/"
+          SMB_URL="smb://suh-project.synology.me/web/romrom/downloads/"
           echo "Uploading APK file ${APK_NAME} to ${SMB_URL}..."
           smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "put ${APK_FILE} ${APK_NAME}" -d 2 || {
             echo "Error: Failed to upload ${APK_NAME}. Check share name, permissions, or path."
@@ -202,7 +202,7 @@ jobs:
             --arg full_commit_hash "$FULL_COMMIT_HASH" \
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
 
-          SMB_URL="smb://suh-project.synology.me/romrom/downloads/"
+          SMB_URL="smb://suh-project.synology.me/web/romrom/downloads/"
           
           # Download existing JSON or initialize it if it doesn't exist
           smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
