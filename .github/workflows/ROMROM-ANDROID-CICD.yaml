@@ -182,12 +182,12 @@ jobs:
           SMB_PATH=${{ secrets.WEB_SMB_PATH }}
 
           # 기존 JSON 파일 다운로드 (없으면 빈 배열 생성)
-          smbclient "//$SMB_SERVER:$SMB_PORT/$SMB_SHARE" -U "$SMB_USERNAME%$SMB_PASSWORD" -c "cd $SMB_PATH; get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
 
           # 새로운 빌드 정보 추가
           jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
 
           # 수정된 JSON 파일 업로드
-          smbclient "//$SMB_SERVER:$SMB_PORT/$SMB_SHARE" -U "$SMB_USERNAME%$SMB_PASSWORD" -c "cd $SMB_PATH; put updated.json romrom-cicd-history.json"
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; put updated.json romrom-cicd-history.json"
 
           echo "Updated romrom-cicd-history.json uploaded to SMB"
