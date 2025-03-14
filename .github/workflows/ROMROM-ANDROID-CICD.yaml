@@ -158,6 +158,17 @@ jobs:
             exit 1
           }
 
+      - name: List available SMB shares
+        env:
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+        run: |
+          echo "Listing available shares on smb://suh-project.synology.me..."
+          smbclient -L "smb://suh-project.synology.me" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -d 2 || {
+            echo "Error: Failed to list shares. Check credentials or host configuration."
+            exit 1
+          }
+
       - name: Upload files to Synology NAS via SMB
         env:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
@@ -166,9 +177,8 @@ jobs:
           SMB_URL="smb://suh-project.synology.me/romrom/downloads/"
           echo "Uploading APK file ${APK_NAME} to ${SMB_URL}..."
           smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "put ${APK_FILE} ${APK_NAME}" -d 2 || {
-            echo "Error: Failed to upload ${APK_NAME}. Detailed diagnostics:"
-            smbclient -L "smb://suh-project.synology.me" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 || echo "Cannot list shares. Check credentials or host."
-            smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "dir" || echo "Cannot access share. Check share path or permissions."
+            echo "Error: Failed to upload ${APK_NAME}. Check share name, permissions, or path."
+            smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "dir" -d 2 || echo "Cannot access share."
             exit 1
           }
           echo "Successfully uploaded ${APK_NAME}"
