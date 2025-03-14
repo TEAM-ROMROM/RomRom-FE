@@ -146,21 +146,21 @@ jobs:
 
       - name: Upload files to Synology NAS via SMB
         env:
-          SMB_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
-          SMB_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
-          SMB_SERVER="suh-project.synology.me"
-          SMB_PORT="44445"
-          SMB_SHARE="web"
-          SMB_PATH="romrom/downloads"
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
+          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
+          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
 
           echo "Uploading APK file ${{ env.APK_NAME }} to SMB..."
-          smbclient "//$SMB_SERVER:$SMB_PORT/$SMB_SHARE" -U "$SMB_USERNAME%$SMB_PASSWORD" -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}"
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}"
 
       - name: Update romrom-cicd-history.json
         env:
-          SMB_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
-          SMB_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
@@ -176,10 +176,10 @@ jobs:
             --arg full_commit_hash "$FULL_COMMIT_HASH" \
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
 
-          SMB_SERVER="suh-project.synology.me"
-          SMB_PORT="44445"
-          SMB_SHARE="web"
-          SMB_PATH="romrom/downloads"
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
+          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
+          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
 
           # 기존 JSON 파일 다운로드 (없으면 빈 배열 생성)
           smbclient "//$SMB_SERVER:$SMB_PORT/$SMB_SHARE" -U "$SMB_USERNAME%$SMB_PASSWORD" -c "cd $SMB_PATH; get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
