@@ -8,7 +8,7 @@ jobs:
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
-    # [Previous build-android steps remain unchanged, omitted for brevity]
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -124,7 +124,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y sshpass curl jq smbclient netcat-openbsd
+          sudo apt-get install -y smbclient jq
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -138,81 +138,56 @@ jobs:
       - name: Find APK file
         run: |
           APK_FILE=$(find android/app/build/outputs/ -name "*.apk" | head -n 1)
-          if [ -z "$APK_FILE" ]; then
-            echo "Error: No APK file found in android/app/build/outputs/"
-            exit 1
-          fi
           echo "APK_FILE=$APK_FILE" >> $GITHUB_ENV
+
+          # 경로에서 파일명만 추출
           APK_NAME=$(basename "$APK_FILE")
           echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
-          echo "Found APK: $APK_FILE"
-
-      - name: Test SMB server connectivity
-        env:
-          SMB_HOST: suh-project.synology.me
-          SMB_PORT: 44445
-        run: |
-          echo "Testing connectivity to ${SMB_HOST}:${SMB_PORT}..."
-          nc -zv -w 5 ${SMB_HOST} ${SMB_PORT} && echo "Port is open" || {
-            echo "Error: Cannot reach ${SMB_HOST} on port ${SMB_PORT}. Check NAS accessibility or firewall settings."
-            exit 1
-          }
-
-      - name: List available SMB shares
-        env:
-          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
-        run: |
-          echo "Listing available shares on smb://suh-project.synology.me..."
-          smbclient -L "smb://suh-project.synology.me" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -d 2 || {
-            echo "Error: Failed to list shares. Check credentials or host configuration."
-            exit 1
-          }
 
       - name: Upload files to Synology NAS via SMB
         env:
-          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+          SMB_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
         run: |
-          SMB_URL="smb://suh-project.synology.me/web/romrom/downloads/"
-          echo "Uploading APK file ${APK_NAME} to ${SMB_URL}..."
-          smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "put ${APK_FILE} ${APK_NAME}" -d 2 || {
-            echo "Error: Failed to upload ${APK_NAME}. Check share name, permissions, or path."
-            smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "dir" -d 2 || echo "Cannot access share."
-            exit 1
-          }
-          echo "Successfully uploaded ${APK_NAME}"
+          SMB_SERVER="suh-project.synology.me"
+          SMB_PORT="44445"
+          SMB_SHARE="web"
+          SMB_PATH="romrom/downloads"
+
+          echo "Uploading APK file ${{ env.APK_NAME }} to SMB..."
+          smbclient "//$SMB_SERVER:$SMB_PORT/$SMB_SHARE" -U "$SMB_USERNAME%$SMB_PASSWORD" -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}"
 
       - name: Update romrom-cicd-history.json
         env:
-          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+          SMB_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
-          FILE_SIZE=$(stat -c%s "${APK_FILE}")
+          FILE_SIZE=$(stat -c%s "${{ env.APK_FILE }}")
           COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
           FULL_COMMIT_HASH="${{ github.sha }}"
 
           NEW_BUILD_INFO=$(jq -n \
-            --arg apk_name "${APK_NAME}" \
+            --arg apk_name "${{ env.APK_NAME }}" \
             --arg file_size "$FILE_SIZE" \
             --arg build_date "$BUILD_DATE" \
             --arg commit_link "$COMMIT_LINK" \
             --arg full_commit_hash "$FULL_COMMIT_HASH" \
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
 
-          SMB_URL="smb://suh-project.synology.me/web/romrom/downloads/"
-          
-          # Download existing JSON or initialize it if it doesn't exist
-          smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
+          SMB_SERVER="suh-project.synology.me"
+          SMB_PORT="44445"
+          SMB_SHARE="web"
+          SMB_PATH="romrom/downloads"
+
+          # 기존 JSON 파일 다운로드 (없으면 빈 배열 생성)
+          smbclient "//$SMB_SERVER:$SMB_PORT/$SMB_SHARE" -U "$SMB_USERNAME%$SMB_PASSWORD" -c "cd $SMB_PATH; get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
+
+          # 새로운 빌드 정보 추가
           jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
-          
-          # Upload updated JSON
-          smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "put updated.json romrom-cicd-history.json" || {
-            echo "Error: Failed to upload updated romrom-cicd-history.json"
-            exit 1
-          }
-          echo "Verifying uploaded JSON file..."
-          smbclient "${SMB_URL}" -U "${SMB_USERNAME}%${SMB_PASSWORD}" -p 44445 -c "get romrom-cicd-history.json verified.json"
-          cat verified.json
+
+          # 수정된 JSON 파일 업로드
+          smbclient "//$SMB_SERVER:$SMB_PORT/$SMB_SHARE" -U "$SMB_USERNAME%$SMB_PASSWORD" -c "cd $SMB_PATH; put updated.json romrom-cicd-history.json"
+
+          echo "Updated romrom-cicd-history.json uploaded to SMB"
