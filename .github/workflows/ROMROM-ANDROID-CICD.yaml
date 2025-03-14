@@ -135,6 +135,15 @@ jobs:
       - name: List downloaded structure (Debug)
         run: ls -alR android/app/build/outputs
 
+      - name: Find APK file
+        run: |
+          APK_FILE=$(find android/app/build/outputs/ -name "*.apk" | head -n 1)
+          echo "APK_FILE=$APK_FILE" >> $GITHUB_ENV
+
+          # 경로에서 파일명만 추출
+          APK_NAME=$(basename "$APK_FILE")
+          echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
+
       - name: Upload files to Synology NAS via SMB
         env:
           WEB_SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
