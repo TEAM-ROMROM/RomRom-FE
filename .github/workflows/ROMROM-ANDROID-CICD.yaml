@@ -124,7 +124,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y sshpass curl jq
+          sudo apt-get install -y sshpass curl jq smbclient
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -139,34 +139,31 @@ jobs:
         run: |
           APK_FILE=$(find android/app/build/outputs/ -name "*.apk" | head -n 1)
           echo "APK_FILE=$APK_FILE" >> $GITHUB_ENV
-
-          # 경로에서 파일명만 추출
           APK_NAME=$(basename "$APK_FILE")
           echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
 
       - name: Upload files to Synology NAS via SMB
         env:
-          WEB_SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-          WEB_SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
           SMB_URL="smb://suh-project.synology.me/romrom/downloads/"
-
-          echo "Uploading APK file ${{ env.APK_NAME }}..."
+          echo "Uploading APK file ${APK_NAME}..."
           smbclient "$SMB_URL" -U "$SMB_USERNAME%$SMB_PASSWORD" -p 44445 -c "put ${APK_FILE} ${APK_NAME}"
 
       - name: Update romrom-cicd-history.json
         env:
-          WEB_SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-          WEB_SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
-          FILE_SIZE=$(stat -c%s "${{ env.APK_FILE }}")
+          FILE_SIZE=$(stat -c%s "${APK_FILE}")
           COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
           FULL_COMMIT_HASH="${{ github.sha }}"
 
           NEW_BUILD_INFO=$(jq -n \
-            --arg apk_name "${{ env.APK_NAME }}" \
+            --arg apk_name "${APK_NAME}" \
             --arg file_size "$FILE_SIZE" \
             --arg build_date "$BUILD_DATE" \
             --arg commit_link "$COMMIT_LINK" \
@@ -175,12 +172,8 @@ jobs:
 
           SMB_URL="smb://suh-project.synology.me/romrom/downloads/"
           
-          # JSON 파일을 가져와서 업데이트
           smbclient "$SMB_URL" -U "$SMB_USERNAME%$SMB_PASSWORD" -p 44445 -c "get romrom-cicd-history.json || echo '{\"files\": []}'" > romrom-cicd-history.json
           jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
-
-          # 업데이트된 JSON 파일을 SMB로 업로드
           smbclient "$SMB_URL" -U "$SMB_USERNAME%$SMB_PASSWORD" -p 44445 -c "put updated.json romrom-cicd-history.json"
-
           echo "Verifying uploaded JSON file..."
           smbclient "$SMB_URL" -U "$SMB_USERNAME%$SMB_PASSWORD" -p 44445 -c "get romrom-cicd-history.json"
