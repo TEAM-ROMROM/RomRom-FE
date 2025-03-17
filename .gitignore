@@ -57,3 +57,6 @@ android/Google-Services.json
 ios/Runner/GoogleService-Info.plist
 
 ios/Flutter/Secrets.xcconfig
+
+# key.jks.b64
+/android/app/keystore/key.jks.b64
