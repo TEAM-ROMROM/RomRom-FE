@@ -72,7 +72,6 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew wrapper --gradle-version 8.5 --distribution-type=bin --stacktrace
 
       - name: Set up Java
         uses: actions/setup-java@v3
