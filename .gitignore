@@ -45,6 +45,9 @@ app.*.map.json
 /android/app/release
 /android/app/keystore/key.jks
 
+# 안드로이드 빌드
+/android/app/.cxx/
+
 # 환경변수 ignore
 *.env
 lib/firebase_options.dart
