@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Repository 체크아웃 및 디버그용 출력
+      # Repository 체크아웃 및 목록 출력
       - name: Check out repository
         uses: actions/checkout@v3
         with:
@@ -27,29 +27,26 @@ jobs:
           echo "${{ secrets.ENV_FILE }}" > .env
           echo ".env file created"
           ls -la
-          cat .env
 
       # Keystore와 key.properties 설정
       - name: Setup Keystore and key.properties
         run: |
           mkdir -p android/app/keystore
           echo "${{ secrets.KEYSTORE_JKS }}" | base64 -d > android/app/keystore/key.jks
-          echo "Keystore file created at android/app/keystore/key.jks"
+          echo "Keystore created"
           ls -la android/app/keystore
           echo "${{ secrets.KEY_PROPERTIES }}" > android/key.properties
           echo "key.properties created"
           ls -la android/
-          cat android/key.properties
 
-      # local.properties 파일 생성 (CI 변수로 sdk와 flutter 경로 치환)
+      # local.properties 생성 및 CI 변수 치환
       - name: Create local.properties with dynamic sdk and flutter paths
         run: |
           echo "${{ secrets.LOCAL_PROPERTIES }}" > android/local.properties
           sed -i "s|^sdk.dir=.*|sdk.dir=${ANDROID_HOME}|g" android/local.properties
           sed -i "s|^flutter.sdk=.*|flutter.sdk=${FLUTTER_HOME}|g" android/local.properties
-          echo "local.properties created with dynamic sdk.dir and flutter.sdk"
+          echo "local.properties created"
           ls -la android/
-          cat android/local.properties
 
       # Google-services.json 생성
       - name: Create Google-services.json
@@ -57,9 +54,8 @@ jobs:
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/Google-services.json
           echo "Google-services.json created"
           ls -la android/
-          cat android/Google-services.json
 
-      # Flutter 설정
+      # Flutter 설정 및 버전 확인
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -72,7 +68,7 @@ jobs:
           echo "Flutter setup completed"
           flutter --version
 
-      # Flutter dependencies 캐시
+      # Flutter 및 Gradle 캐시
       - name: Cache Flutter dependencies
         uses: actions/cache@v4
         with:
@@ -104,7 +100,7 @@ jobs:
           chmod +x gradlew
           echo "Gradle wrapper permissions set"
 
-      # Java 셋업
+      # Java 설정 및 버전 확인
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
@@ -116,14 +112,14 @@ jobs:
           echo "Java setup completed"
           java -version
 
-      # Android SDK 셋업
+      # Android SDK 설정 및 확인
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Verify Android SDK setup
         run: echo "Android SDK setup completed"
 
-      # Ruby 셋업
+      # Ruby 설정 및 확인
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
