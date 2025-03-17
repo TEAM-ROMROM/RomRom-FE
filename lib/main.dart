@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/services/api/auth_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 
