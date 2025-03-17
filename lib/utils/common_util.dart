@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/enums/navigation_type.dart';
 
+/// api 요청 응답 프린터
+void responsePrinter(String url, Map<String, dynamic>? response) {
+  debugPrint("👽----$url----👽"); // api 요청 주소 출력
+  if (response != null) {
+    // 응답 출력
+    for (var entry in response.entries) {
+      debugPrint('${entry.key} : ${entry.value}');
+    }
+  }
+}
+
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
   /// 네비게이션 메서드

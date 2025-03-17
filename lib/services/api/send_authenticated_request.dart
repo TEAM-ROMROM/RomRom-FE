@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:romrom_fe/services/api/auth_api.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/response_printer.dart';
+import 'package:romrom_fe/utils/common_util.dart';
 
 /// ### 헤더에 토큰 포함한 API 요청 함수 (재사용 가능)
 Future<void> sendAuthenticatedRequest({
