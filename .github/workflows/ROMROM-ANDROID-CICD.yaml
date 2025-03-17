@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Repository 체크아웃 및 목록 출력
       - name: Check out repository
         uses: actions/checkout@v3
         with:
@@ -21,41 +20,34 @@ jobs:
           echo "Repository checked out"
           ls -la
 
-      # .env 파일 생성
-      - name: Create .env file from GitHub Secret
+      # 동적 파일 생성
+      - name: Create dynamic files from GitHub Secrets
         run: |
+          # .env 파일 생성
           echo "${{ secrets.ENV_FILE }}" > .env
           echo ".env file created"
-          ls -la
-
-      # Keystore와 key.properties 설정
-      - name: Setup Keystore and key.properties
-        run: |
+          
+          # Keystore와 key.properties 설정
           mkdir -p android/app/keystore
           echo "${{ secrets.KEYSTORE_JKS }}" | base64 -d > android/app/keystore/key.jks
           echo "Keystore created"
-          ls -la android/app/keystore
           echo "${{ secrets.KEY_PROPERTIES }}" > android/key.properties
           echo "key.properties created"
-          ls -la android/
-
-      # local.properties 생성 및 CI 변수 치환
-      - name: Create local.properties with dynamic sdk and flutter paths
-        run: |
+          
+          # local.properties 생성 및 변수 치환
           echo "${{ secrets.LOCAL_PROPERTIES }}" > android/local.properties
           sed -i "s|^sdk.dir=.*|sdk.dir=${ANDROID_HOME}|g" android/local.properties
           sed -i "s|^flutter.sdk=.*|flutter.sdk=${FLUTTER_HOME}|g" android/local.properties
           echo "local.properties created"
-          ls -la android/
-
-      # Google-services.json 생성
-      - name: Create Google-services.json
-        run: |
+          
+          # Google-services.json 생성
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/Google-services.json
           echo "Google-services.json created"
-          ls -la android/
+          
+          # 생성된 파일 목록 확인
+          ls -la .env android/app/keystore/key.jks android/key.properties android/local.properties android/Google-services.json
 
-      # Flutter 설정 및 버전 확인
+      # Flutter 설정 및 빌드 (기존 코드 유지, 생략)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -63,104 +55,45 @@ jobs:
           cache: true
           cache-key: flutter-${{ runner.os }}-3.27.3
 
-      - name: Verify Flutter version
-        run: |
-          echo "Flutter setup completed"
-          flutter --version
-
-      # Flutter 및 Gradle 캐시
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: ${{ runner.os }}-flutter-pub-
-
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # 프로젝트 의존성 설치
       - name: Install dependencies
-        run: |
-          flutter pub get
-          echo "Dependencies installed"
-          ls -la
+        run: flutter pub get
 
-      # Gradle 셋업
       - name: Setup Gradle
         working-directory: android
-        run: |
-          chmod +x gradlew
-          echo "Gradle wrapper permissions set"
+        run: chmod +x gradlew
 
-      # Java 설정 및 버전 확인
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Verify Java version
-        run: |
-          echo "Java setup completed"
-          java -version
-
-      # Android SDK 설정 및 확인
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Verify Android SDK setup
-        run: echo "Android SDK setup completed"
-
-      # Ruby 설정 및 확인
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.4.1"
 
-      - name: Verify Ruby version
-        run: |
-          echo "Ruby setup completed"
-          ruby -v
-
-      # Fastlane 설치
       - name: Install Fastlane
-        run: |
-          gem install fastlane
-          echo "Fastlane installed"
-          fastlane --version
+        run: gem install fastlane
 
-      # 짧은 커밋 해시 계산
       - name: Calculate Short Commit Hash
         id: short_hash
         run: |
           echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
-          echo "Short commit hash: ${{ env.SHORT_COMMIT_HASH }}"
 
-      # Fastlane을 이용하여 APK 빌드
       - name: Build APK with Fastlane
         run: |
           cd android
           fastlane build --verbose
-          ls -la ../build/app/outputs/flutter-apk/ || true
-          echo "APK built with Fastlane"
 
-      # APK 파일 이름 변경 및 준비
       - name: Rename and Prepare APK
         run: |
           mkdir -p ./android/app/build/outputs/apk/release/
           mv ./build/app/outputs/flutter-apk/app-release.apk ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
-          echo "APK renamed to romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
-          ls -la ./android/app/build/outputs/apk/release/
 
-      # APK를 아티팩트로 업로드
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -177,27 +110,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: List repository contents for deploy
-        run: |
-          echo "Repository checked out for deploy"
-          ls -la
-
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y smbclient jq
-          echo "SMB and jq dependencies installed"
+          sudo apt-get install -y smbclient jq sshpass
+          echo "SMB, jq, and sshpass dependencies installed"
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: romrom-apk
           path: android/app/build/outputs/
-
-      - name: List downloaded structure (Debug)
-        run: |
-          ls -alR android/app/build/outputs
-          echo "Downloaded structure listed"
 
       - name: Find APK file
         run: |
@@ -207,7 +130,7 @@ jobs:
           echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
           echo "APK file found: $APK_FILE"
 
-      - name: Upload files to Synology NAS via SMB
+      - name: Deploy to Synology NAS
         env:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
           SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
@@ -216,16 +139,67 @@ jobs:
           SMB_PORT=${{ secrets.WEB_SMB_PORT }}
           SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
           SMB_PATH=${{ secrets.WEB_SMB_PATH }}
+          PW=${{ secrets.WEB_SMB_PASSWORD }}  # SERVER_PASSWORD 대신 SMB_PASSWORD 사용
+          TARGET_DIR="/volume1/projects/romrom/github_secret/front"
+          export TZ='Asia/Seoul'
+
+          # APK 업로드
           echo "Uploading APK file ${{ env.APK_NAME }} to SMB..."
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}"
           echo "APK uploaded to SMB"
 
-      - name: Update romrom-cicd-history.json
-        env:
-          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
-        run: |
-          export TZ='Asia/Seoul'
+          # 동적 파일 업로드 및 JSON 관리
+          echo "Deploying dynamic files to Synology NAS..."
+          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER \
+            "echo $PW | sudo -S mkdir -p $TARGET_DIR"
+
+          # 파일 목록 정의 (동적으로 생성된 파일들)
+          declare -A FILES=(
+            [".env"]="${{ secrets.ENV_FILE }}"
+            ["android/app/keystore/key.jks"]="${{ secrets.KEYSTORE_JKS }}|base64 -d"
+            ["android/key.properties"]="${{ secrets.KEY_PROPERTIES }}"
+            ["android/local.properties"]="${{ secrets.LOCAL_PROPERTIES }}"
+            ["android/Google-services.json"]="${{ secrets.GOOGLE_SERVICES_JSON }}"
+          )
+
+          # 임시 JSON 파일 생성
+          TEMP_JSON=$(mktemp)
+          echo '{"files": []}' > $TEMP_JSON
+
+          # 기존 romrom-github-secret.json 가져오기
+          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER \
+            "echo $PW | sudo -S cat $TARGET_DIR/romrom-github-secret.json" > $TEMP_JSON 2>/dev/null || true
+
+          # 각 파일 업로드 및 JSON 업데이트
+          for FILE in "${!FILES[@]}"; do
+            echo "Processing $FILE..."
+            CONTENT="${FILES[$FILE]}"
+            if [[ "$CONTENT" =~ \|base64\ -d$ ]]; then
+              echo "${CONTENT%|*}" | base64 -d > temp_file
+            else
+              echo "$CONTENT" > temp_file
+            fi
+            sshpass -p "$PW" scp -P 2022 temp_file ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER:/tmp/$FILE
+            sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER \
+              "echo $PW | sudo -S mkdir -p $TARGET_DIR/$(dirname $FILE); echo $PW | sudo -S mv /tmp/$FILE $TARGET_DIR/$FILE"
+          
+            # JSON에 파일 정보 추가
+            FILE_INFO=$(jq -n \
+              --arg name "$FILE" \
+              --arg path "$TARGET_DIR/$FILE" \
+              '{name: $name, path: $path}')
+            jq --argjson new_file "$FILE_INFO" '.files |= (map(select(.name != $new_file.name)) + [$new_file])' $TEMP_JSON > updated.json
+            mv updated.json $TEMP_JSON
+          done
+
+          # 최종 JSON 업로드
+          sshpass -p "$PW" scp -P 2022 $TEMP_JSON ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER:/tmp/romrom-github-secret.json
+          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER \
+            "echo $PW | sudo -S mv /tmp/romrom-github-secret.json $TARGET_DIR/romrom-github-secret.json"
+          echo "Dynamic files and romrom-github-secret.json uploaded"
+
+          # romrom-cicd-history.json 업데이트 (기존 코드 유지)
+          echo "Updating romrom-cicd-history.json..."
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
           FILE_SIZE=$(stat -c%s "${{ env.APK_FILE }}")
           COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
@@ -237,15 +211,7 @@ jobs:
             --arg commit_link "$COMMIT_LINK" \
             --arg full_commit_hash "$FULL_COMMIT_HASH" \
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
-          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
-          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
-          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
-          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
-          echo "Downloaded or initialized romrom-cicd-history.json"
-          cat romrom-cicd-history.json
           jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
-          echo "Updated romrom-cicd-history.json with new build info"
-          cat updated.json
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; put updated.json romrom-cicd-history.json"
           echo "Updated romrom-cicd-history.json uploaded to SMB"
