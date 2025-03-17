@@ -124,7 +124,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y sshpass curl jq
+          sudo apt-get install -y smbclient jq
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -135,7 +135,6 @@ jobs:
       - name: List downloaded structure (Debug)
         run: ls -alR android/app/build/outputs
 
-      # 새로 추가하는 부분: APK 파일을 동적으로 찾음
       - name: Find APK file
         run: |
           APK_FILE=$(find android/app/build/outputs/ -name "*.apk" | head -n 1)
@@ -145,20 +144,23 @@ jobs:
           APK_NAME=$(basename "$APK_FILE")
           echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
 
-      - name: Upload files to Synology NAS via FTP
+      - name: Upload files to Synology NAS via SMB
         env:
-          WEB_FTP_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
-          WEB_FTP_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
-          FTP_URL="ftp://suh-project.synology.me/romrom/downloads/"
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
+          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
+          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
 
-          echo "Uploading APK file ${{ env.APK_NAME }}..."
-          curl -T "${{ env.APK_FILE }}" "$FTP_URL" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" --ftp-create-dirs --ftp-pasv
+          echo "Uploading APK file ${{ env.APK_NAME }} to SMB..."
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}"
 
       - name: Update romrom-cicd-history.json
         env:
-          WEB_FTP_USERNAME: ${{ secrets.WEB_FTP_USERNAME }}
-          WEB_FTP_PASSWORD: ${{ secrets.WEB_FTP_PASSWORD }}
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
@@ -174,10 +176,18 @@ jobs:
             --arg full_commit_hash "$FULL_COMMIT_HASH" \
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
 
-          FTP_URL="ftp://suh-project.synology.me/romrom/downloads/"
-          curl -s --fail "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" > romrom-cicd-history.json || echo '{"files": []}' > romrom-cicd-history.json
-          jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
-          curl -T updated.json "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD" --ftp-create-dirs --ftp-pasv
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
+          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
+          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
 
-          echo "Verifying uploaded JSON file..."
-          curl "$FTP_URL/romrom-cicd-history.json" --user "$WEB_FTP_USERNAME:$WEB_FTP_PASSWORD"
+          # 기존 JSON 파일 다운로드 (없으면 빈 배열 생성)
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
+
+          # 새로운 빌드 정보 추가
+          jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
+
+          # 수정된 JSON 파일 업로드
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; put updated.json romrom-cicd-history.json"
+
+          echo "Updated romrom-cicd-history.json uploaded to SMB"
