@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/enums/category.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/services/api/member_category_service.dart';
+import 'package:romrom_fe/services/api/member_api.dart';
 import 'package:romrom_fe/widgets/category_completion_button.dart';
 import 'package:romrom_fe/widgets/category_header.dart';
 

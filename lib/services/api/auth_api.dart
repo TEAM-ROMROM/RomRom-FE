@@ -10,10 +10,9 @@ import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
-import 'package:romrom_fe/utils/navigation_extension.dart';
-import 'package:romrom_fe/utils/response_printer.dart';
 import 'package:romrom_fe/services/api/send_authenticated_request.dart';
 import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/common_util.dart';
 
 /// POST : `/api/auth/sign-in` 소셜 로그인
 Future<void> signInWithSocial({

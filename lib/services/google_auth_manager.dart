@@ -3,8 +3,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:romrom_fe/enums/platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/services/api/auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
-import 'package:romrom_fe/services/api/social_auth_sign_in_service.dart';
 
 /// 구글 로그인 서비스 class
 class GoogleAuthService {

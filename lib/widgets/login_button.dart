@@ -7,7 +7,7 @@ import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/map_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
-import 'package:romrom_fe/utils/navigation_extension.dart';
+import 'package:romrom_fe/utils/common_util.dart';
 
 /// 로그인 버튼
 class LoginButton extends StatelessWidget {

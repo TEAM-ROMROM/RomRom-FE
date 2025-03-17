@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/services/api/auth_api.dart';
 
-import 'package:romrom_fe/services/api/social_auth_sign_in_service.dart';
 
 /// 홈 화면
 class HomeScreen extends StatelessWidget {

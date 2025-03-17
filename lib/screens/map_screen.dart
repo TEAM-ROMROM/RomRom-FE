@@ -9,7 +9,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:romrom_fe/screens/category_screen.dart';
-import 'package:romrom_fe/utils/navigation_extension.dart';
+import 'package:romrom_fe/utils/common_util.dart';
 
 // TODO : 지도 화면 리팩토링
 /// 위치 인증 화면
