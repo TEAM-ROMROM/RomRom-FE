@@ -141,36 +141,43 @@ jobs:
           TARGET_DIR="/volume1/projects/romrom/github_secret/front"
           export TZ='Asia/Seoul'
 
-          # APK 업로드 (SMB 유지)
+          # APK 업로드 (SMB 사용)
           echo "Uploading APK file ${{ env.APK_NAME }} to SMB..."
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}"
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}" || { echo "Failed to upload APK to SMB"; exit 1; }
           echo "APK uploaded to SMB"
 
-          # SSH로 동적 파일 및 JSON 처리
-          echo "Deploying dynamic files and managing JSONs on Synology NAS..."
-          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER << 'EOF'
-            # 타겟 디렉토리 생성
-            echo "$PW" | sudo -S mkdir -p $TARGET_DIR
+          # SSH로 동적 파일 및 romrom-github-secret.json 처리
+          echo "Deploying dynamic files and managing JSONs on Synology NAS via SSH..."
+          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER << EOF
+            # 디버깅용 출력
+            echo "Connected to Synology NAS via SSH"
 
-            # 동적 파일 생성 (모두 TARGET_DIR에 평평하게 저장)
-            echo "Creating dynamic files..."
-            echo "${{ secrets.ENV_FILE }}" | sudo tee $TARGET_DIR/.env > /dev/null
-            echo "${{ secrets.KEYSTORE_JKS }}" | base64 -d | sudo tee $TARGET_DIR/key.jks > /dev/null
-            echo "${{ secrets.KEY_PROPERTIES }}" | sudo tee $TARGET_DIR/key.properties > /dev/null
-            echo "${{ secrets.LOCAL_PROPERTIES }}" | sudo tee $TARGET_DIR/local.properties > /dev/null
-            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | sudo tee $TARGET_DIR/Google-services.json > /dev/null
+            # 타겟 디렉토리 생성
+            echo "$PW" | sudo -S mkdir -p $TARGET_DIR || { echo "Failed to create directory $TARGET_DIR"; exit 1; }
+            echo "Target directory $TARGET_DIR created or already exists"
+
+            # 동적 파일 생성
+            echo "Creating dynamic files in $TARGET_DIR..."
+            echo "${{ secrets.ENV_FILE }}" | sudo tee $TARGET_DIR/.env > /dev/null || echo "Failed to create .env"
+            echo "${{ secrets.KEYSTORE_JKS }}" | base64 -d | sudo tee $TARGET_DIR/key.jks > /dev/null || echo "Failed to create key.jks"
+            echo "${{ secrets.KEY_PROPERTIES }}" | sudo tee $TARGET_DIR/key.properties > /dev/null || echo "Failed to create key.properties"
+            echo "${{ secrets.LOCAL_PROPERTIES }}" | sudo tee $TARGET_DIR/local.properties > /dev/null || echo "Failed to create local.properties"
+            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | sudo tee $TARGET_DIR/Google-services.json > /dev/null || echo "Failed to create Google-services.json"
             echo "Dynamic files created"
+
+            # 생성된 파일 확인
+            ls -la $TARGET_DIR || echo "Failed to list directory $TARGET_DIR"
 
             # romrom-github-secret.json 생성/업데이트
             echo "Updating romrom-github-secret.json..."
             TEMP_JSON=/tmp/romrom-github-secret.json
             if [ -f $TARGET_DIR/romrom-github-secret.json ]; then
-              echo "$PW" | sudo -S cp $TARGET_DIR/romrom-github-secret.json $TEMP_JSON
+              echo "$PW" | sudo -S cp $TARGET_DIR/romrom-github-secret.json $TEMP_JSON || echo "Failed to copy existing romrom-github-secret.json"
             else
-              echo '{"files": []}' | sudo tee $TEMP_JSON > /dev/null
+              echo '{"files": []}' | sudo tee $TEMP_JSON > /dev/null || echo "Failed to create initial romrom-github-secret.json"
             fi
 
-            # 파일 목록 추가 (원래 filepath를 JSON에 기록)
+            # 파일 목록 추가
             declare -A FILEPATHS
             FILEPATHS[".env"]=".env"
             FILEPATHS["key.jks"]="android/app/keystore/key.jks"
@@ -183,16 +190,16 @@ jobs:
                 --arg name "$FILENAME" \
                 --arg path "$TARGET_DIR/$FILENAME" \
                 --arg filepath "${FILEPATHS[$FILENAME]}" \
-                '{name: $name, path: $path, filepath: $filepath}')
-              jq --argjson new_file "$FILE_INFO" '.files |= (map(select(.name != $new_file.name)) + [$new_file])' $TEMP_JSON > $TEMP_JSON.tmp
-              mv $TEMP_JSON.tmp $TEMP_JSON
+                '{name: $name, path: $path, filepath: $filepath}') || echo "Failed to generate FILE_INFO for $FILENAME"
+              jq --argjson new_file "$FILE_INFO" '.files |= (map(select(.name != $new_file.name)) + [$new_file])' $TEMP_JSON > $TEMP_JSON.tmp || echo "Failed to update JSON for $FILENAME"
+              mv $TEMP_JSON.tmp $TEMP_JSON || echo "Failed to move temp JSON for $FILENAME"
             done
-            echo "$PW" | sudo -S mv $TEMP_JSON $TARGET_DIR/romrom-github-secret.json
+            echo "$PW" | sudo -S mv $TEMP_JSON $TARGET_DIR/romrom-github-secret.json || echo "Failed to move final romrom-github-secret.json"
             echo "romrom-github-secret.json updated"
           EOF
 
-          # romrom-cicd-history.json 업데이트 (SMB 사용 유지)
-          echo "Updating romrom-cicd-history.json..."
+          # romrom-cicd-history.json 업데이트 (SMB 사용)
+          echo "Updating romrom-cicd-history.json via SMB..."
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
           FILE_SIZE=$(stat -c%s "${{ env.APK_FILE }}")
           COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
@@ -206,5 +213,5 @@ jobs:
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
           jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-cicd-history.json > updated.json
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; put updated.json romrom-cicd-history.json"
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; put updated.json romrom-cicd-history.json" || { echo "Failed to upload romrom-cicd-history.json to SMB"; exit 1; }
           echo "Updated romrom-cicd-history.json uploaded to SMB"
