@@ -20,7 +20,6 @@ jobs:
           echo "Repository checked out"
           ls -la
 
-      # 동적 파일 생성
       - name: Create dynamic files from GitHub Secrets
         run: |
           # .env 파일 생성
@@ -47,7 +46,6 @@ jobs:
           # 생성된 파일 목록 확인
           ls -la .env android/app/keystore/key.jks android/key.properties android/local.properties android/Google-services.json
 
-      # Flutter 설정 및 빌드 (기존 코드 유지, 생략)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -139,66 +137,61 @@ jobs:
           SMB_PORT=${{ secrets.WEB_SMB_PORT }}
           SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
           SMB_PATH=${{ secrets.WEB_SMB_PATH }}
-          PW=${{ secrets.WEB_SMB_PASSWORD }}  # SERVER_PASSWORD 대신 SMB_PASSWORD 사용
+          PW=${{ secrets.WEB_SMB_PASSWORD }}
           TARGET_DIR="/volume1/projects/romrom/github_secret/front"
           export TZ='Asia/Seoul'
 
-          # APK 업로드
+          # APK 업로드 (SMB 유지)
           echo "Uploading APK file ${{ env.APK_NAME }} to SMB..."
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}"
           echo "APK uploaded to SMB"
 
-          # 동적 파일 업로드 및 JSON 관리
-          echo "Deploying dynamic files to Synology NAS..."
-          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER \
-            "echo $PW | sudo -S mkdir -p $TARGET_DIR"
+          # SSH로 동적 파일 및 JSON 처리
+          echo "Deploying dynamic files and managing JSONs on Synology NAS..."
+          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER << 'EOF'
+            # 타겟 디렉토리 생성
+            echo "$PW" | sudo -S mkdir -p $TARGET_DIR
 
-          # 파일 목록 정의 (동적으로 생성된 파일들)
-          declare -A FILES=(
-            [".env"]="${{ secrets.ENV_FILE }}"
-            ["android/app/keystore/key.jks"]="${{ secrets.KEYSTORE_JKS }}|base64 -d"
-            ["android/key.properties"]="${{ secrets.KEY_PROPERTIES }}"
-            ["android/local.properties"]="${{ secrets.LOCAL_PROPERTIES }}"
-            ["android/Google-services.json"]="${{ secrets.GOOGLE_SERVICES_JSON }}"
-          )
+            # 동적 파일 생성 (모두 TARGET_DIR에 평평하게 저장)
+            echo "Creating dynamic files..."
+            echo "${{ secrets.ENV_FILE }}" | sudo tee $TARGET_DIR/.env > /dev/null
+            echo "${{ secrets.KEYSTORE_JKS }}" | base64 -d | sudo tee $TARGET_DIR/key.jks > /dev/null
+            echo "${{ secrets.KEY_PROPERTIES }}" | sudo tee $TARGET_DIR/key.properties > /dev/null
+            echo "${{ secrets.LOCAL_PROPERTIES }}" | sudo tee $TARGET_DIR/local.properties > /dev/null
+            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | sudo tee $TARGET_DIR/Google-services.json > /dev/null
+            echo "Dynamic files created"
 
-          # 임시 JSON 파일 생성
-          TEMP_JSON=$(mktemp)
-          echo '{"files": []}' > $TEMP_JSON
-
-          # 기존 romrom-github-secret.json 가져오기
-          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER \
-            "echo $PW | sudo -S cat $TARGET_DIR/romrom-github-secret.json" > $TEMP_JSON 2>/dev/null || true
-
-          # 각 파일 업로드 및 JSON 업데이트
-          for FILE in "${!FILES[@]}"; do
-            echo "Processing $FILE..."
-            CONTENT="${FILES[$FILE]}"
-            if [[ "$CONTENT" =~ \|base64\ -d$ ]]; then
-              echo "${CONTENT%|*}" | base64 -d > temp_file
+            # romrom-github-secret.json 생성/업데이트
+            echo "Updating romrom-github-secret.json..."
+            TEMP_JSON=/tmp/romrom-github-secret.json
+            if [ -f $TARGET_DIR/romrom-github-secret.json ]; then
+              echo "$PW" | sudo -S cp $TARGET_DIR/romrom-github-secret.json $TEMP_JSON
             else
-              echo "$CONTENT" > temp_file
+              echo '{"files": []}' | sudo tee $TEMP_JSON > /dev/null
             fi
-            sshpass -p "$PW" scp -P 2022 temp_file ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER:/tmp/$FILE
-            sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER \
-              "echo $PW | sudo -S mkdir -p $TARGET_DIR/$(dirname $FILE); echo $PW | sudo -S mv /tmp/$FILE $TARGET_DIR/$FILE"
-          
-            # JSON에 파일 정보 추가
-            FILE_INFO=$(jq -n \
-              --arg name "$FILE" \
-              --arg path "$TARGET_DIR/$FILE" \
-              '{name: $name, path: $path}')
-            jq --argjson new_file "$FILE_INFO" '.files |= (map(select(.name != $new_file.name)) + [$new_file])' $TEMP_JSON > updated.json
-            mv updated.json $TEMP_JSON
-          done
 
-          # 최종 JSON 업로드
-          sshpass -p "$PW" scp -P 2022 $TEMP_JSON ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER:/tmp/romrom-github-secret.json
-          sshpass -p "$PW" ssh -p 2022 -o StrictHostKeyChecking=no ${{ secrets.WEB_SMB_USERNAME }}@$SMB_SERVER \
-            "echo $PW | sudo -S mv /tmp/romrom-github-secret.json $TARGET_DIR/romrom-github-secret.json"
-          echo "Dynamic files and romrom-github-secret.json uploaded"
+            # 파일 목록 추가 (원래 filepath를 JSON에 기록)
+            declare -A FILEPATHS
+            FILEPATHS[".env"]=".env"
+            FILEPATHS["key.jks"]="android/app/keystore/key.jks"
+            FILEPATHS["key.properties"]="android/key.properties"
+            FILEPATHS["local.properties"]="android/local.properties"
+            FILEPATHS["Google-services.json"]="android/Google-services.json"
 
-          # romrom-cicd-history.json 업데이트 (기존 코드 유지)
+            for FILENAME in ".env" "key.jks" "key.properties" "local.properties" "Google-services.json"; do
+              FILE_INFO=$(jq -n \
+                --arg name "$FILENAME" \
+                --arg path "$TARGET_DIR/$FILENAME" \
+                --arg filepath "${FILEPATHS[$FILENAME]}" \
+                '{name: $name, path: $path, filepath: $filepath}')
+              jq --argjson new_file "$FILE_INFO" '.files |= (map(select(.name != $new_file.name)) + [$new_file])' $TEMP_JSON > $TEMP_JSON.tmp
+              mv $TEMP_JSON.tmp $TEMP_JSON
+            done
+            echo "$PW" | sudo -S mv $TEMP_JSON $TARGET_DIR/romrom-github-secret.json
+            echo "romrom-github-secret.json updated"
+          EOF
+
+          # romrom-cicd-history.json 업데이트 (SMB 사용 유지)
           echo "Updating romrom-cicd-history.json..."
           BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
           FILE_SIZE=$(stat -c%s "${{ env.APK_FILE }}")
