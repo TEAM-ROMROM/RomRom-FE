@@ -21,6 +21,15 @@ jobs:
           echo "Repository checked out"
           ls -la
 
+      # Debug Keystore 설정
+      - name: Setup Debug Keystore
+        run: |
+          mkdir -p ~/.android
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > ~/.android/debug.keystore
+          echo "Debug Keystore created"
+          ls -la ~/.android/
+          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+
       # .env 파일 생성
       - name: Create .env file from GitHub Secret
         run: |
@@ -39,14 +48,14 @@ jobs:
           echo "key.properties created"
           ls -la android/
 
-      # local.properties 생성 및 CI 변수 치환
-      - name: Create local.properties with dynamic sdk and flutter paths
-        run: |
-          echo "${{ secrets.LOCAL_PROPERTIES }}" > android/local.properties
-          sed -i "s|^sdk.dir=.*|sdk.dir=${ANDROID_HOME}|g" android/local.properties
-          sed -i "s|^flutter.sdk=.*|flutter.sdk=${FLUTTER_HOME}|g" android/local.properties
-          echo "local.properties created"
-          ls -la android/
+#      # local.properties_stable 생성 및 CI 변수 치환
+#      - name: Create local.properties_stable with dynamic sdk and flutter paths
+#        run: |
+#          echo "${{ secrets.LOCAL_PROPERTIES }}" > android/local.properties_stable
+#          sed -i "s|^sdk.dir=.*|sdk.dir=${ANDROID_HOME}|g" android/local.properties_stable
+#          sed -i "s|^flutter.sdk=.*|flutter.sdk=${FLUTTER_HOME}|g" android/local.properties_stable
+#          echo "local.properties_stable created"
+#          ls -la android/
 
       # Google-services.json 생성
       - name: Create Google-services.json
