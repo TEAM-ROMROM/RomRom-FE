@@ -16,7 +16,7 @@ class GoogleAuthService {
           '사용자 정보 요청 성공: 닉네임: ${googleUser.displayName}, 이메일: ${googleUser.email}, 프로필 이미지: ${googleUser.photoUrl}');
 
       // 사용자 정보 저장
-      UserInfo().saveUserInfo(
+      await UserInfo().saveUserInfo(
           '${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
       // 로그인 플랫폼(Google) 저장
       LoginPlatformManager().saveLoginPlatform(Platforms.google.platformName);
