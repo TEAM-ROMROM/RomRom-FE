@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import 'package:romrom_fe/enums/category.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/api/member_api.dart';
 import 'package:romrom_fe/widgets/category_completion_button.dart';
@@ -53,14 +53,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
   Widget _buildCategoryChips(BuildContext context) {
     return Wrap(
       spacing: 8.0.w,
-      children: ItemCategory.values
+      children: ItemCategories.values
           .map((category) => _buildCategoryChip(context, category))
           .toList(),
     );
   }
 
   /// 카테고리 chip css 일괄 지정
-  Widget _buildCategoryChip(BuildContext context, ItemCategory category) {
+  Widget _buildCategoryChip(BuildContext context, ItemCategories category) {
     final bool isSelected = selectedCategories.contains(category.id);
 
     return ChoiceChip(

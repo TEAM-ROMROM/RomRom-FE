@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:romrom_fe/enums/navigation_type.dart';
-import 'package:romrom_fe/enums/platforms.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/map_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
-import 'package:romrom_fe/utils/common_util.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 로그인 버튼
 class LoginButton extends StatelessWidget {
@@ -16,7 +16,7 @@ class LoginButton extends StatelessWidget {
     required this.platform,
   });
 
-  final Platforms platform;
+  final loginPlatforms platform;
   final KakaoAuthService kakaoAuthService = KakaoAuthService();
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
@@ -27,11 +27,11 @@ class LoginButton extends StatelessWidget {
 
       switch (platform) {
         // 카카오 로그인
-        case Platforms.kakao:
+        case loginPlatforms.kakao:
           isSuccess = await kakaoAuthService.loginWithKakao();
           break;
         // 구글 로그인
-        case Platforms.google:
+        case loginPlatforms.google:
           isSuccess = await googleAuthService.logInWithGoogle();
           break;
       }
@@ -45,7 +45,7 @@ class LoginButton extends StatelessWidget {
         context.navigateTo(
             screen:
                 userInfo.isFirstLogin! ? const MapScreen() : const HomeScreen(),
-            type: NavigationType.pushReplacement);
+            type: NavigationTypes.pushReplacement);
       }
     } catch (e) {
       debugPrint("$e");
@@ -76,19 +76,19 @@ class LogoutButton extends StatelessWidget {
     required this.platform,
   });
 
-  final Platforms platform;
+  final loginPlatforms platform;
   final KakaoAuthService kakaoAuthService = KakaoAuthService();
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
   /// 버튼 눌렀을 때 로그아웃 처리 함수
   void handleLogout() async {
     switch (platform) {
-      case Platforms.kakao:
+      case loginPlatforms.kakao:
         // 카카오 로그아웃 처리
         kakaoAuthService.logoutWithKakaoAccount();
 
         break;
-      case Platforms.google:
+      case loginPlatforms.google:
         // 구글 로그아웃 로직 처리
         googleAuthService.logOutWithGoogle();
     }
