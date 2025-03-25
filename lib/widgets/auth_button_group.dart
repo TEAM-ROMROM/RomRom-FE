@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// TODO : 버튼 그룹화해놓은 건데 디자인 나오면 수정
 class AuthButtonGroup extends StatelessWidget {
   final List<Widget> buttons;
 
@@ -8,10 +7,8 @@ class AuthButtonGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      alignment: WrapAlignment.center,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: buttons,
     );
   }

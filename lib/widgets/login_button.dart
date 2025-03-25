@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
@@ -59,11 +60,40 @@ class LoginButton extends StatelessWidget {
         await handleLogin(context);
       },
       child: Container(
-        width: 150,
-        height: 30,
-        color: platform.color,
-        alignment: Alignment.center,
-        child: Text(platform.name),
+        width: 300,
+        height: 50,
+        margin: const EdgeInsets.symmetric(vertical: 10), // 버튼 세로 간격
+        decoration: BoxDecoration(
+          color: platform.backgroundColor, // 배경색
+          borderRadius: BorderRadius.circular(25), // 둥근 모서리
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 아이콘
+            SvgPicture.asset(
+              platform.iconPath,
+              width: 25,
+              height: 24,
+              placeholderBuilder: (context) => const Icon(
+                Icons.error,
+                size: 24,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(width: 10), // 아이콘 - 텍스트 간격
+            // 테스트
+            Text(
+              platform.displayText,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontFamily: 'Pretendard',
+                fontWeight: FontWeight.w500
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -101,7 +131,7 @@ class LogoutButton extends StatelessWidget {
       child: Container(
         width: 150,
         height: 30,
-        color: platform.color.withValues(alpha: 0.5),
+        color: platform.backgroundColor.withValues(alpha: 0.5),
         alignment: Alignment.center,
         child: Text(platform.name),
       ),

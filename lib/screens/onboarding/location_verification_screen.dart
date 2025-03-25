@@ -172,6 +172,7 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
                                       '현재 위치가 내 동네로 설정한 \'$currentAdress\'내에 있어요'),
                                 ),
                               ),
+
                             ],
                           ),
                         ),
