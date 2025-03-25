@@ -48,15 +48,6 @@ jobs:
           echo "key.properties created"
           ls -la android/
 
-#      # local.properties_stable 생성 및 CI 변수 치환
-#      - name: Create local.properties_stable with dynamic sdk and flutter paths
-#        run: |
-#          echo "${{ secrets.LOCAL_PROPERTIES }}" > android/local.properties_stable
-#          sed -i "s|^sdk.dir=.*|sdk.dir=${ANDROID_HOME}|g" android/local.properties_stable
-#          sed -i "s|^flutter.sdk=.*|flutter.sdk=${FLUTTER_HOME}|g" android/local.properties_stable
-#          echo "local.properties_stable created"
-#          ls -la android/
-
       # Google-services.json 생성
       - name: Create Google-services.json
         run: |
