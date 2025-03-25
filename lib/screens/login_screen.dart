@@ -9,7 +9,7 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const List<loginPlatforms> platforms = loginPlatforms.values; // 모든 플랫폼을 가져옴
+    const List<LoginPlatforms> platforms = LoginPlatforms.values; // 모든 플랫폼을 가져옴
 
     return Scaffold(
       body: Center(

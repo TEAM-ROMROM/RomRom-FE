@@ -19,7 +19,7 @@ class GoogleAuthService {
       await UserInfo().saveUserInfo(
           '${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
       // 로그인 플랫폼(Google) 저장
-      LoginPlatformManager().saveLoginPlatform(loginPlatforms.google.platformName);
+      LoginPlatformManager().saveLoginPlatform(LoginPlatforms.google.platformName);
     } catch (error) {
       debugPrint('사용자 정보 요청 실패: $error');
     }
@@ -45,7 +45,7 @@ class GoogleAuthService {
       await getGoogleUserInfo(googleUser);
 
       // 구글 로그인 성공 후 토큰 발급
-      await signInWithSocial(socialPlatform: loginPlatforms.google.platformName);
+      await signInWithSocial(socialPlatform: LoginPlatforms.google.platformName);
       return true; // 성공 시 true 반환
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');
