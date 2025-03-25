@@ -47,6 +47,7 @@ app.*.map.json
 
 # 안드로이드 빌드
 /android/app/.cxx/
+lib/generated/
 
 # 환경변수 ignore
 *.env
