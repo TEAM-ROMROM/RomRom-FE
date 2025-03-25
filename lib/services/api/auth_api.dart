@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:romrom_fe/main.dart';
-import 'package:romrom_fe/enums/platforms.dart';
+import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
@@ -12,7 +12,8 @@ import 'package:romrom_fe/services/kakao_auth_manager.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/api/send_authenticated_request.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/common_util.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/log_utils.dart';
 
 /// POST : `/api/auth/sign-in` 소셜 로그인
 Future<void> signInWithSocial({
@@ -134,10 +135,10 @@ Future<void> logOutWithSocial(BuildContext context) async {
         final KakaoAuthService kakaoAuthService = KakaoAuthService();
         final GoogleAuthService googleAuthService = GoogleAuthService();
 
-        if (platform == Platforms.kakao.platformName) {
+        if (platform == loginPlatforms.kakao.platformName) {
           // 카카오 로그아웃 처리
           kakaoAuthService.logoutWithKakaoAccount();
-        } else if (platform == Platforms.google.platformName) {
+        } else if (platform == loginPlatforms.google.platformName) {
           // 구글 로그아웃 로직 처리
           googleAuthService.logOutWithGoogle();
         }

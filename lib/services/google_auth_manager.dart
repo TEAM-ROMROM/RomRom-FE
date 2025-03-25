@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'package:romrom_fe/enums/platforms.dart';
+import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/api/auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
@@ -19,7 +19,7 @@ class GoogleAuthService {
       await UserInfo().saveUserInfo(
           '${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
       // 로그인 플랫폼(Google) 저장
-      LoginPlatformManager().saveLoginPlatform(Platforms.google.platformName);
+      LoginPlatformManager().saveLoginPlatform(loginPlatforms.google.platformName);
     } catch (error) {
       debugPrint('사용자 정보 요청 실패: $error');
     }
@@ -45,7 +45,7 @@ class GoogleAuthService {
       await getGoogleUserInfo(googleUser);
 
       // 구글 로그인 성공 후 토큰 발급
-      await signInWithSocial(socialPlatform: Platforms.google.platformName);
+      await signInWithSocial(socialPlatform: loginPlatforms.google.platformName);
       return true; // 성공 시 true 반환
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');

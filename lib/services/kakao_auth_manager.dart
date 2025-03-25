@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:flutter/services.dart';
 
-import 'package:romrom_fe/enums/platforms.dart';
+import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/api/auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
@@ -23,7 +23,7 @@ class KakaoAuthService {
           '${user.kakaoAccount?.email}',
           '${user.kakaoAccount?.profile?.profileImageUrl}');
       // 로그인 플랫폼 저장
-      LoginPlatformManager().saveLoginPlatform(Platforms.kakao.platformName);
+      LoginPlatformManager().saveLoginPlatform(loginPlatforms.kakao.platformName);
     } catch (error) {
       debugPrint('사용자 정보 요청 실패: $error');
     }
@@ -33,7 +33,7 @@ class KakaoAuthService {
   Future<void> _handleLoginSuccess(OAuthToken token) async {
     debugPrint('카카오 로그인 성공: ${token.accessToken}');
     await getKakaoUserInfo();
-    await signInWithSocial(socialPlatform: Platforms.kakao.platformName);
+    await signInWithSocial(socialPlatform: loginPlatforms.kakao.platformName);
   }
 
   /// 카카오 로그인 (카톡앱 -> 카카오 계정 순서로 시도)
