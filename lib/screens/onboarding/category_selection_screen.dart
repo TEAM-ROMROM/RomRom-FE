@@ -7,14 +7,14 @@ import 'package:romrom_fe/services/api/member_api.dart';
 import 'package:romrom_fe/widgets/category_completion_button.dart';
 import 'package:romrom_fe/widgets/category_header.dart';
 
-class CategoryScreen extends StatefulWidget {
-  const CategoryScreen({super.key});
+class CategorySelectionScreen extends StatefulWidget {
+  const CategorySelectionScreen({super.key});
 
   @override
-  State<CategoryScreen> createState() => _CategoryScreenState();
+  State<CategorySelectionScreen> createState() => _CategorySelectionScreenState();
 }
 
-class _CategoryScreenState extends State<CategoryScreen> {
+class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   List<int> selectedCategories = [];
 
   bool get isSelectedCategories =>
