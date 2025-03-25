@@ -13,7 +13,7 @@ class LoginScreen extends StatelessWidget {
     const List<LoginPlatforms> platforms = LoginPlatforms.values; // 모든 플랫폼을 가져옴
 
     return Scaffold(
-      backgroundColor: Colors.black, // 배경색을 검정색으로 설정 (이미지와 유사하게)
+      backgroundColor: Colors.black,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -21,7 +21,7 @@ class LoginScreen extends StatelessWidget {
             // 로고 (SVG)
             SvgPicture.asset(
               'assets/icons/temp-logo.svg',
-              width: 100, // 로고 크기 조정 (필요에 따라 수정)
+              width: 100,
               height: 100,
             ),
             const SizedBox(height: 50), // 간격 추가
