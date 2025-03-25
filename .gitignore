@@ -57,7 +57,18 @@ lib/firebase_options.dart
 android/Google-Services.json
 ios/Runner/GoogleService-Info.plist
 
+# IOS 빌드
 ios/Flutter/Secrets.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/Runner/GeneratedPluginRegistrant.*
+ios/XCBuildData/
 
 # key.jks.b64
 /android/app/keystore/key.jks.b64
