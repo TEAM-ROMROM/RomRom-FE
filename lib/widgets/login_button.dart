@@ -16,7 +16,7 @@ class LoginButton extends StatelessWidget {
     required this.platform,
   });
 
-  final loginPlatforms platform;
+  final LoginPlatforms platform;
   final KakaoAuthService kakaoAuthService = KakaoAuthService();
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
@@ -27,11 +27,11 @@ class LoginButton extends StatelessWidget {
 
       switch (platform) {
         // 카카오 로그인
-        case loginPlatforms.kakao:
+        case LoginPlatforms.kakao:
           isSuccess = await kakaoAuthService.loginWithKakao();
           break;
         // 구글 로그인
-        case loginPlatforms.google:
+        case LoginPlatforms.google:
           isSuccess = await googleAuthService.logInWithGoogle();
           break;
       }
@@ -76,19 +76,19 @@ class LogoutButton extends StatelessWidget {
     required this.platform,
   });
 
-  final loginPlatforms platform;
+  final LoginPlatforms platform;
   final KakaoAuthService kakaoAuthService = KakaoAuthService();
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
   /// 버튼 눌렀을 때 로그아웃 처리 함수
   void handleLogout() async {
     switch (platform) {
-      case loginPlatforms.kakao:
+      case LoginPlatforms.kakao:
         // 카카오 로그아웃 처리
         kakaoAuthService.logoutWithKakaoAccount();
 
         break;
-      case loginPlatforms.google:
+      case LoginPlatforms.google:
         // 구글 로그아웃 로직 처리
         googleAuthService.logOutWithGoogle();
     }

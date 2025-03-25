@@ -135,10 +135,10 @@ Future<void> logOutWithSocial(BuildContext context) async {
         final KakaoAuthService kakaoAuthService = KakaoAuthService();
         final GoogleAuthService googleAuthService = GoogleAuthService();
 
-        if (platform == loginPlatforms.kakao.platformName) {
+        if (platform == LoginPlatforms.kakao.platformName) {
           // 카카오 로그아웃 처리
           kakaoAuthService.logoutWithKakaoAccount();
-        } else if (platform == loginPlatforms.google.platformName) {
+        } else if (platform == LoginPlatforms.google.platformName) {
           // 구글 로그아웃 로직 처리
           googleAuthService.logOutWithGoogle();
         }
