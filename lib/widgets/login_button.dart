@@ -4,7 +4,7 @@ import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
-import 'package:romrom_fe/screens/map_screen.dart';
+import 'package:romrom_fe/screens/onboarding/location_verification_screen.dart';
 import 'package:romrom_fe/services/google_auth_manager.dart';
 import 'package:romrom_fe/services/kakao_auth_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -44,7 +44,7 @@ class LoginButton extends StatelessWidget {
         // ignore: use_build_context_synchronously
         context.navigateTo(
             screen:
-                userInfo.isFirstLogin! ? const MapScreen() : const HomeScreen(),
+                userInfo.isFirstLogin! ? const LocationVerificationScreen() : const HomeScreen(),
             type: NavigationTypes.pushReplacement);
       }
     } catch (e) {

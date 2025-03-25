@@ -8,19 +8,19 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'package:romrom_fe/screens/category_screen.dart';
+import 'package:romrom_fe/screens/onboarding/category_selection_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
 // TODO : 지도 화면 리팩토링
 /// 위치 인증 화면
-class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+class LocationVerificationScreen extends StatefulWidget {
+  const LocationVerificationScreen({super.key});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  State<LocationVerificationScreen> createState() => _LocationVerificationScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _LocationVerificationScreenState extends State<LocationVerificationScreen> {
   late NaverMapController _mapController;
   NLatLng? _currentPosition;
   String currentAdress = '';
@@ -182,7 +182,7 @@ class _MapScreenState extends State<MapScreen> {
                           child: const Text('위치 인증하기'),
                           onPressed: () {
                             // TODO : 위치 인증 api 연결
-                            context.navigateTo(screen: const CategoryScreen());
+                            context.navigateTo(screen: const CategorySelectionScreen());
                           },
                         ),
                       ),
