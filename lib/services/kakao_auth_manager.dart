@@ -7,7 +7,6 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/api/auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
 
-
 /// 카카오 인증 관련 서비스
 class KakaoAuthService {
   /// 사용자 정보 가져오기
@@ -19,7 +18,7 @@ class KakaoAuthService {
           '사용자 정보 요청 성공: 이메일: ${user.kakaoAccount?.email}, 닉네임: ${user.kakaoAccount?.profile?.nickname}, 프로필 이미지: ${user.kakaoAccount?.profile?.profileImageUrl}');
 
       // 사용자 정보 저장
-      UserInfo().saveUserInfo(
+      await UserInfo().saveUserInfo(
           '${user.kakaoAccount?.profile?.nickname}',
           '${user.kakaoAccount?.email}',
           '${user.kakaoAccount?.profile?.profileImageUrl}');
