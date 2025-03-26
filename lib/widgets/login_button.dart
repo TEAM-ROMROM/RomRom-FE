@@ -70,7 +70,7 @@ class LoginButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 아이콘
+            // 아이콘  //FIXME: 아이콘 전환 필요
             SvgPicture.asset(
               platform.iconPath,
               width: 25,
@@ -82,7 +82,7 @@ class LoginButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10), // 아이콘 - 텍스트 간격
-            // 테스트
+            // 로그인 플랫폼 변 텍스트 //FIXME: TextStyle 공통인것 사용 필요
             Text(
               platform.displayText,
               style: const TextStyle(

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/models/app_colors.dart';
 
 enum LoginPlatforms {
   kakao(
     iconPath: 'assets/icons/kakao-icon.svg',
     displayText: '카카오로 시작하기',
-    backgroundColor: Colors.yellow,
+    backgroundColor: AppColors.kakao,
     platformName: 'KAKAO',
   ),
   google(
     iconPath: 'assets/icons/google-icon.svg',
     displayText: '구글로 시작하기',
-    backgroundColor: Colors.white,
+    backgroundColor: AppColors.google,
     platformName: 'GOOGLE',
   );
 
