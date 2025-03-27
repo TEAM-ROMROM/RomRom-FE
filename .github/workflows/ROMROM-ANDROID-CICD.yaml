@@ -21,14 +21,14 @@ jobs:
           echo "Repository checked out"
           ls -la
 
-      # Debug Keystore 설정
+      # Debug Keystore 설정 (디버깅 용도로만 유지)
       - name: Setup Debug Keystore
         run: |
           mkdir -p ~/.android
-          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > ~/.android/debug.keystore
-          echo "Debug Keystore created"
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > ~/.android/debug.keystore || echo "Base64 decoding failed"
+          echo "Debug Keystore created (for debugging)"
           ls -la ~/.android/
-          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android || echo "Keytool failed"
 
       # .env 파일 생성
       - name: Create .env file from GitHub Secret
@@ -37,15 +37,19 @@ jobs:
           echo ".env file created"
           ls -la
 
-      # Keystore와 key.properties 설정
+      # Keystore와 key.properties 설정 (친구의 debug.keystore를 key.jks로 사용)
       - name: Setup Keystore and key.properties
         run: |
           mkdir -p android/app/keystore
-          echo "${{ secrets.KEYSTORE_JKS }}" | base64 -d > android/app/keystore/key.jks
-          echo "Keystore created"
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > android/app/keystore/key.jks || echo "Base64 decoding failed"
+          echo "Keystore created from DEBUG_KEYSTORE"
           ls -la android/app/keystore
-          echo "${{ secrets.KEY_PROPERTIES }}" > android/key.properties
+          echo "storeFile=keystore/key.jks" > android/key.properties
+          echo "storePassword=android" >> android/key.properties
+          echo "keyAlias=androiddebugkey" >> android/key.properties
+          echo "keyPassword=android" >> android/key.properties
           echo "key.properties created"
+          cat android/key.properties  # 디버깅용으로 내용 출력
           ls -la android/
 
       # Google-services.json 생성
@@ -144,7 +148,7 @@ jobs:
           echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
           echo "Short commit hash: ${{ env.SHORT_COMMIT_HASH }}"
 
-      # Fastlane을 이용하여 APK 빌드
+      # Fastlane을 이용하여 APK 빌드 (릴리스 빌드 유지)
       - name: Build APK with Fastlane
         run: |
           cd android
