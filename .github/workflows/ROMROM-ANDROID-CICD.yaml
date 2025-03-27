@@ -21,7 +21,7 @@ jobs:
           echo "Repository checked out"
           ls -la
 
-      # Debug Keystore 설정 (디버깅 용도로만 유지)
+      # Debug Keystore 설정 (디버깅 용도 유지)
       - name: Setup Debug Keystore
         run: |
           mkdir -p ~/.android
@@ -37,7 +37,7 @@ jobs:
           echo ".env file created"
           ls -la
 
-      # Keystore와 key.properties 설정 (친구의 debug.keystore를 key.jks로 사용)
+      # Keystore와 key.properties 설정
       - name: Setup Keystore and key.properties
         run: |
           mkdir -p android/app/keystore
@@ -49,7 +49,6 @@ jobs:
           echo "keyAlias=androiddebugkey" >> android/key.properties
           echo "keyPassword=android" >> android/key.properties
           echo "key.properties created"
-          cat android/key.properties  # 디버깅용으로 내용 출력
           ls -la android/
 
       # Google-services.json 생성
