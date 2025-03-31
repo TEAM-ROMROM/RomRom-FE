@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:romrom_fe/services/api/auth_api.dart';
+import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 
 
 /// 홈 화면
@@ -9,7 +9,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     void handleBtnTap() {
-      logOutWithSocial(context);
+      final authApi = RomAuthApi();
+      authApi.logoutWithSocial(context);
     }
 
     return Scaffold(
