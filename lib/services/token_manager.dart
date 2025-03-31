@@ -3,6 +3,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 
 class TokenManager {
+  // 싱글톤 구현
+  static final TokenManager _instance = TokenManager._internal();
+  factory TokenManager() => _instance;
+  TokenManager._internal();
+
   static const storage = FlutterSecureStorage();
 
   /// 토큰 저장

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/services/api/member_api.dart';
+import 'package:romrom_fe/screens/home_screen.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/category_completion_button.dart';
 import 'package:romrom_fe/widgets/category_header.dart';
 
@@ -15,6 +18,7 @@ class CategorySelectionScreen extends StatefulWidget {
 }
 
 class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
+  final memberApi = MemberApi();
   List<int> selectedCategories = [];
 
   bool get isSelectedCategories =>
@@ -39,9 +43,27 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             CategoryCompletionButton(
                 isEnabled: isSelectedCategories,
                 enabledOnPressed: () async {
-                  await postCategoryPreferences(context, selectedCategories);
+                  try {
+                    final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
+
+                    if (context.mounted) {
+                      if (isSuccess) {
+                        context.navigateTo(
+                            screen: const HomeScreen(),
+                            type: NavigationTypes.pushReplacement
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('카테고리 저장 실패: $e')),
+                      );
+                    }
+                  }
                 },
-                buttonText: '선택 완료'),
+                buttonText: '선택 완료'
+            ),
             Expanded(child: Container()),
           ],
         ),
@@ -103,3 +125,4 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     });
   }
 }
+
