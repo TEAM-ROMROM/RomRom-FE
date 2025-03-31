@@ -46,18 +46,18 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                   try {
                     final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
 
-                    if (isSuccess && mounted) {
+                    if (!mounted) return;
+                    if (isSuccess) {
                       context.navigateTo(
                           screen: const HomeScreen(),
                           type: NavigationTypes.pushReplacement
                       );
                     }
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('카테고리 저장 실패: $e')),
-                      );
-                    }
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('카테고리 저장 실패: $e')),
+                    );
                   }
                 },
                 buttonText: '선택 완료'
