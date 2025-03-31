@@ -13,7 +13,6 @@ class SocialLogoutService {
   factory SocialLogoutService() => _instance;
   SocialLogoutService._internal();
 
-
   final TokenManager _tokenManager = TokenManager();
   final LoginPlatformManager _loginPlatformManager = LoginPlatformManager();
 
@@ -48,7 +47,7 @@ class SocialLogoutService {
     }
   }
 
-  /// 소셜 로그���웃 처리 함수 (소셜 서비스에서 호출)
+  /// 소셜 로그아웃 처리 함수 (소셜 서비스에서 호출)
   Future<void> performSocialLogout() async {
     String? platform = await _loginPlatformManager.getLoginPlatform();
     if (platform != null) {
