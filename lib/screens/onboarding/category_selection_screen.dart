@@ -43,6 +43,8 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             CategoryCompletionButton(
                 isEnabled: isSelectedCategories,
                 enabledOnPressed: () async {
+                  if (!mounted) return;
+                  final context = this.context; // 비동기 작업 전에 context를 저장
                   try {
                     final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
 
@@ -123,3 +125,4 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     });
   }
 }
+
