@@ -3,17 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:romrom_fe/main.dart';
-import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/screens/login_screen.dart';
-import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
-import 'package:romrom_fe/services/google_auth_service.dart';
-import 'package:romrom_fe/services/kakao_auth_service.dart';
-import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/log_utils.dart';
 
 // AuthApi -> RomAuthApi 이름 변경 : kakao SDK ApiAuth 와 충돌
@@ -24,7 +17,6 @@ class RomAuthApi {
   RomAuthApi._internal();
 
   final TokenManager _tokenManager = TokenManager();
-  final LoginPlatformManager _loginPlatformManager = LoginPlatformManager();
 
   /// POST : `/api/auth/sign-in` 소셜 로그인
   Future<void> signInWithSocial({

@@ -1,6 +1,5 @@
 // lib/services/social_logout_service.dart
 import 'package:flutter/material.dart';
-import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/api_client.dart';
@@ -30,7 +29,7 @@ class SocialLogoutService {
           TokenKeys.accessToken.name: await _tokenManager.getAccessToken(),
           TokenKeys.refreshToken.name: await _tokenManager.getRefreshToken(),
         },
-        isAuthRequired: false,
+        isAuthRequired: true,
         onSuccess: (responseData) async {
           // 토큰 삭제
           await _tokenManager.deleteTokens();

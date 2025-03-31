@@ -46,19 +46,18 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                   try {
                     final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
 
-                    if (isSuccess) {
-                      // API 호출 성공 후 홈 화면으로 이동
-                      // ignore: use_build_context_synchronously
+                    if (isSuccess && mounted) {
                       context.navigateTo(
                           screen: const HomeScreen(),
                           type: NavigationTypes.pushReplacement
                       );
                     }
                   } catch (e) {
-                    // 오류 처리
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('카테고리 저장 실패: $e')),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('카테고리 저장 실패: $e')),
+                      );
+                    }
                   }
                 },
                 buttonText: '선택 완료'
