@@ -43,23 +43,23 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             CategoryCompletionButton(
                 isEnabled: isSelectedCategories,
                 enabledOnPressed: () async {
-                  if (!mounted) return;
-                  final context = this.context; // 비동기 작업 전에 context를 저장
                   try {
                     final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
 
-                    if (!mounted) return;
-                    if (isSuccess) {
-                      context.navigateTo(
-                          screen: const HomeScreen(),
-                          type: NavigationTypes.pushReplacement
-                      );
+                    if (context.mounted) {
+                      if (isSuccess) {
+                        context.navigateTo(
+                            screen: const HomeScreen(),
+                            type: NavigationTypes.pushReplacement
+                        );
+                      }
                     }
                   } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('카테고리 저장 실패: $e')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('카테고리 저장 실패: $e')),
+                      );
+                    }
                   }
                 },
                 buttonText: '선택 완료'
