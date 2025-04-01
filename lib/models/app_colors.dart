@@ -12,6 +12,7 @@ class AppColors {
   static const Color google = Color(0xFFF3F4F4); // 구글 배경
   static const Color loginDescriptionText = Color(0x99FFFFFF); // 서비스 소개 텍스트
 
+  // 텍스트 색상
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);
 }
