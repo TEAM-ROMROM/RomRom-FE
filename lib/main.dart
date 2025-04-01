@@ -45,8 +45,7 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'RomRom',
           theme: AppTheme.defaultTheme,
-          // home: initialScreen,
-          home: const LoginScreen(),
+          home: initialScreen,
         );
       }),
     );
