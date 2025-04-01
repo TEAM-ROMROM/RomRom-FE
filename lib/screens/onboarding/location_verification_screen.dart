@@ -208,8 +208,10 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
                         eupMyoenDong: eupMyoenDong,
                         ri: ri,
                       );
-                      // 물품 선호 카테고리 선택 화면 이동
-                      context.navigateTo(screen: const CategorySelectionScreen());
+                      if (context.mounted) {
+                        // 물품 선호 카테고리 선택 화면 이동
+                        context.navigateTo(screen: const CategorySelectionScreen());
+                      }
                     } catch (e) {
                       log("위치 정보 저장 실패: $e");
                       // 에러 처리 (필요시 사용자에게 알림)

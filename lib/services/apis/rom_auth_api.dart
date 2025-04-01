@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:romrom_fe/main.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/user_info.dart';
