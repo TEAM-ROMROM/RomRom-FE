@@ -8,38 +8,50 @@ class AppTheme {
   /// 앱의 기본 테마 설정
   static ThemeData get defaultTheme {
     return ThemeData(
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: AppColors.main_131419, // 앱 전체 기본 배경 색상
       useMaterial3: true,
-      fontFamily: FontFamily.pretendard.fontName,
-      textTheme: _buildTextTheme(),
-      // 필요한 경우 여기에 다른 테마 속성 추가 (버튼, 입력 필드 등)
+      fontFamily: FontFamily.pretendard.fontName, // 기본 글씨체 : `Pretendard`
     );
   }
 
-  /// 앱의 텍스트 테마 정의
-  static TextTheme _buildTextTheme() {
-    return TextTheme(
-      headlineLarge: TextStyle(
-        fontSize: 24.sp,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textColorWhite,
-        height: 1,
-        letterSpacing: -0.32.sp,
-      ),
-      headlineMedium: TextStyle(
-        fontSize: 14.sp,
-        fontWeight: FontWeight.w500,
-        color: AppColors.textColorWhite,
-        height: 1,
-        letterSpacing: -0.32.sp,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 16.sp,
-        fontWeight: FontWeight.w500,
-        color: AppColors.textColorBlack,
-        height: 1,
-        letterSpacing: -0.32.sp,
-      ),
-    );
-  }
+  static CustomTextStyles get textStyles => CustomTextStyles();
+}
+
+/// 커스텀 텍스트 스타일 모음 (fimga 디자인 시스템과 동일)
+class CustomTextStyles {
+  /// h1 : 24px
+  static TextStyle h1 = TextStyle(
+    fontWeight: FontWeight.w600,
+    fontSize: 24.sp,
+    height: 1,
+    letterSpacing: 0.sp,
+    color: AppColors.textColorWhite,
+  );
+
+  /// h3 : 18px
+  static TextStyle h3 = TextStyle(
+    fontWeight: FontWeight.w500,
+    fontSize: 18.sp,
+    height: 1,
+    letterSpacing: 0.sp,
+    color: AppColors.textColorWhite,
+  );
+
+  /// p1 : 16px
+  static TextStyle p1 = TextStyle(
+    fontWeight: FontWeight.w700,
+    fontSize: 16.sp,
+    height: 1,
+    letterSpacing: 0.sp,
+    color: AppColors.textColorWhite,
+  );
+
+  /// p2 : 14px
+  static TextStyle p2 = TextStyle(
+    fontWeight: FontWeight.w500,
+    fontSize: 14.sp,
+    height: 1,
+    letterSpacing: 0.sp,
+    color: AppColors.textColorWhite,
+  );
 }
