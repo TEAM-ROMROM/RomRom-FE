@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/onboarding/location_verification_screen.dart';
@@ -44,8 +45,9 @@ class LoginButton extends StatelessWidget {
         // 처음 로그인 하면 위치 인증 화면으로 이동
         // ignore: use_build_context_synchronously
         context.navigateTo(
-            screen:
-                userInfo.isFirstLogin! ? const LocationVerificationScreen() : const HomeScreen(),
+            screen: userInfo.isFirstLogin!
+                ? const LocationVerificationScreen()
+                : const HomeScreen(),
             type: NavigationTypes.pushReplacement);
       }
     } catch (e) {
@@ -85,12 +87,13 @@ class LoginButton extends StatelessWidget {
             // 로그인 플랫폼 변 텍스트 //FIXME: TextStyle 공통인것 사용 필요
             Text(
               platform.displayText,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontFamily: 'Pretendard',
-                fontWeight: FontWeight.w500
-              ),
+              // style: const TextStyle(
+              //   color: Colors.black,
+              //   fontSize: 16,
+              //   fontFamily: 'Pretendard',
+              //   fontWeight: FontWeight.w500
+              // ),
+              // style: AppTheme.textStyles.customBody,
             )
           ],
         ),

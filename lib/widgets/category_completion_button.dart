@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 
 class CategoryCompletionButton extends StatelessWidget {
   final bool isEnabled; // 버튼 활성화
@@ -30,8 +31,9 @@ class CategoryCompletionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // 버튼 배경 색 결정
     final Color backgroundColor = isEnabled
-        ? enabledBackgroundColor ?? AppColors.primary
-        : disabledBackgroundColor ?? AppColors.primary.withValues(alpha: 0.7);
+        ? enabledBackgroundColor ?? AppColors.main_FFC300
+        : disabledBackgroundColor ??
+            AppColors.main_FFC300.withValues(alpha: 0.7);
 
     // 버튼 문구 색 결정
     final Color textColor = isEnabled
@@ -39,10 +41,9 @@ class CategoryCompletionButton extends StatelessWidget {
         : disabledTextColor ?? AppColors.textColorBlack.withValues(alpha: 0.7);
 
     // 버튼 문구  결정
-    final TextStyle? buttonTextStyle =
-        Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: textColor,
-            );
+    final TextStyle buttonTextStyle = CustomTextStyles.p1.copyWith(
+      color: textColor,
+    );
 
     return Center(
       child: TextButton(
