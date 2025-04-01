@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/onboarding/location_verification_screen.dart';
