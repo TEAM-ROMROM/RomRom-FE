@@ -4,11 +4,17 @@ import 'package:flutter/services.dart';
 
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/services/api/auth_api.dart';
+import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
 
 /// 카카오 인증 관련 서비스
 class KakaoAuthService {
+  // 싱글톤 구현
+  static final KakaoAuthService _instance = KakaoAuthService._internal();
+  factory KakaoAuthService() => _instance;
+  KakaoAuthService._internal();
+  final romAuthApi = RomAuthApi();
+
   /// 사용자 정보 가져오기
   Future<void> getKakaoUserInfo() async {
     try {
@@ -33,7 +39,7 @@ class KakaoAuthService {
   Future<void> _handleLoginSuccess(OAuthToken token) async {
     debugPrint('카카오 로그인 성공: ${token.accessToken}');
     await getKakaoUserInfo();
-    await signInWithSocial(socialPlatform: LoginPlatforms.kakao.platformName);
+    await romAuthApi.signInWithSocial(socialPlatform: LoginPlatforms.kakao.platformName);
   }
 
   /// 카카오 로그인 (카톡앱 -> 카카오 계정 순서로 시도)

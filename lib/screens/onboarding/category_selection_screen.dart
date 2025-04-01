@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/services/api/member_api.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/widgets/category_completion_button.dart';
 import 'package:romrom_fe/widgets/category_header.dart';
 
@@ -17,6 +17,7 @@ class CategorySelectionScreen extends StatefulWidget {
 }
 
 class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
+  final memberApi = MemberApi();
   List<int> selectedCategories = [];
 
   bool get isSelectedCategories =>
@@ -25,29 +26,27 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 100.h),
-              // 카테고리 화면 헤더 문구
-              const CategoryHeader(
-                  headLine: '카테고리 선택', subHeadLine: '관심있는 분야를 선택해주세요!'),
-              SizedBox(height: 32.h),
-              _buildCategoryChips(context), // 카테고리 선택 choiceChip 빌드
-              SizedBox(height: 56.0.h),
-              // 카테고리 선택 완료 버튼
-              CategoryCompletionButton(
-                  isEnabled: isSelectedCategories,
-                  enabledOnPressed: () async {
-                    await postCategoryPreferences(context, selectedCategories);
-                  },
-                  buttonText: '선택 완료'),
-              Expanded(child: Container()),
-            ],
-          ),
+      body: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 160.h),
+            // 카테고리 화면 헤더 문구
+            const CategoryHeader(
+                headLine: '카테고리 선택', subHeadLine: '관심있는 분야를 선택해주세요!'),
+            SizedBox(height: 32.h),
+            _buildCategoryChips(context), // 카테고리 선택 choiceChip 빌드
+            SizedBox(height: 56.0.h),
+            // 카테고리 선택 완료 버튼
+            CategoryCompletionButton(
+                isEnabled: isSelectedCategories,
+                enabledOnPressed: () async {
+                  await memberApi.savePreferredCategories(selectedCategories);
+                },
+                buttonText: '선택 완료'),
+            Expanded(child: Container()),
+          ],
         ),
       ),
     );

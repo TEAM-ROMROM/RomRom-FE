@@ -1,0 +1,74 @@
+name: CICD file creation
+
+# 테스트 브랜체서도 하고싶어
+on:
+  push:
+    branches:
+      - main
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create CI/CD Info JSON file
+        run: |
+          export TZ='Asia/Seoul'
+          BUILD_DATE=$(date '+%Y-%m-%d %H:%M')
+          cat <<EOF > cicd-gitignore-file.json
+          {
+            "builds": [
+              {
+                "workflow": {
+                  "name": "${GITHUB_WORKFLOW}",
+                  "run_id": "${GITHUB_RUN_ID}",
+                  "run_number": "${GITHUB_RUN_NUMBER}",
+                  "job": "${GITHUB_JOB}",
+                  "event": "${GITHUB_EVENT_NAME}"
+                },
+                "repository": {
+                  "name": "${GITHUB_REPOSITORY}",
+                  "owner": "${GITHUB_REPOSITORY_OWNER}",
+                  "branch": "${GITHUB_REF_NAME}"
+                },
+                "commit": {
+                  "hash": "${GITHUB_SHA}",
+                  "short_hash": "$(echo ${GITHUB_SHA} | cut -c1-7)",
+                  "url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+                },
+                "triggered_by": "${GITHUB_ACTOR}",
+                "build_date": "${BUILD_DATE}",
+                "runner_os": "${RUNNER_OS}",
+                "files": [
+                  {
+                    "file_name": ".env",
+                    "file_path": "/"
+                  },
+                  {
+                    "file_name": "key.jks",
+                    "file_path": "android/app/keystore/"
+                  },
+                  {
+                    "file_name": "Google-services.json",
+                    "file_path": "android/"
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload CI/CD JSON to remote server
+        env:
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+        run: |
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
+          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
+          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
+          
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put cicd-gitignore-file.json"
+        shell: bash

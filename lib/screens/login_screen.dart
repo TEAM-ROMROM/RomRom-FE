@@ -1,6 +1,6 @@
 // ignore_for_file: prefer_const_constructors
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart'; // SVG 이미지를 사용하기 위해 추가
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
