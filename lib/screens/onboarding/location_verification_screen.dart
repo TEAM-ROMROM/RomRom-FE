@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'package:romrom_fe/screens/onboarding/category_selection_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/services/apis/member_api.dart'; // MemberApi import 추가
 
 // TODO : 지도 화면 리팩토링
 /// 위치 인증 화면
@@ -24,6 +25,11 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
   late NaverMapController _mapController;
   NLatLng? _currentPosition;
   String currentAdress = '';
+  String siDo = ''; // 시도 정보 추가
+  String siGunGu = ''; // 시군구 정보 추가
+  String eupMyeonDong = ''; // 읍면동 정보 추가
+  final MemberApi _memberApi = MemberApi(); // MemberApi 인스턴스 생성
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -90,10 +96,17 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
       if (response.statusCode == 200) {
         // JSON 응답 파싱
         final Map<String, dynamic> data = json.decode(response.body);
+        final results = data["results"][0];
+        final region = results["region"];
+
         setState(() {
-          currentAdress = data["results"][0]["region"]["area3"]["name"];
+          siDo = region["area1"]["name"];
+          siGunGu = region["area2"]["name"];
+          eupMyeonDong = region["area3"]["name"];
+          currentAdress = eupMyeonDong; // 화면에 표시할 주소는 읍면동으로 설정
         });
-        log("Response Data: ${data["results"][0]["region"]["area3"]["name"]}");
+
+        log("Response Data: $siDo $siGunGu $eupMyeonDong");
       } else {
         // 요청 실패 처리
         log("Failed to load data: ${response.statusCode}");
@@ -179,11 +192,48 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
                       ),
                       Flexible(
                         flex: 1,
-                        child: TextButton(
+                        child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : TextButton(
                           child: const Text('위치 인증하기'),
-                          onPressed: () {
-                            // TODO : 위치 인증 api 연결
-                            context.navigateTo(screen: const CategorySelectionScreen());
+                          onPressed: () async {
+                            // 버튼 클릭 시 로딩 상태로 변경
+                            setState(() {
+                              _isLoading = true;
+                            });
+
+                            try {
+                              // 위치 정보 로그 출력으로 확인
+                              log('위도: ${_currentPosition!.latitude}, 경도: ${_currentPosition!.longitude}', name: 'Location');
+                              log('주소: $siDo $siGunGu $eupMyeonDong', name: 'Address');
+
+                              // MemberApi를 통해 위치 정보 저장 - 올바른 파라미터 전달
+                              await _memberApi.saveMemberLocation(
+                                latitude: _currentPosition!.latitude,
+                                longitude: _currentPosition!.longitude,
+                                siDo: siDo,
+                                siGunGu: siGunGu,
+                                eupMyoenDong: eupMyeonDong, // 파라미터 이름 eupMyoenDong으로 수정
+                              );
+
+                              // API 호출 성공 시 다음 화면으로 이동
+                              if (!context.mounted) return;
+                              context.navigateTo(screen: const CategorySelectionScreen());
+                            } catch (e) {
+                              // 에러 처리
+                              log('위치 저장 중 오류 발생: $e', name: 'Error');
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('위치 인증에 실패했습니다: $e')),
+                              );
+                            } finally {
+                              // 로딩 상태 해제
+                              if (mounted) {
+                                setState(() {
+                                  _isLoading = false;
+                                });
+                              }
+                            }
                           },
                         ),
                       ),
@@ -193,3 +243,4 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
     );
   }
 }
+
