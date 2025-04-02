@@ -44,6 +44,11 @@ flutter:
     - assets/images/
 
   fonts:
+    # icons
+    - family: AppIcons
+      fonts:
+        - asset: assets/fonts/AppIcons.ttf
+    # fonts
     - family: Pretendard
       fonts:
         - asset: assets/fonts/pretendard/Pretendard-Thin.otf
