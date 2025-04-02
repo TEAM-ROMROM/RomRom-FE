@@ -1,11 +1,9 @@
 name: CICD file creation
 
-# 테스트 브랜체서도 하고싶어
 on:
   push:
     branches:
       - main
-
 
 jobs:
   build:
@@ -13,11 +11,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install smbclient
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y smbclient
+          echo "smbclient installed"
+          smbclient --version
+
       - name: Create CI/CD Info JSON file
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date '+%Y-%m-%d %H:%M')
-          cat <<EOF > cicd-gitignore-file.json
+          cat <<EOF > github-cicd-file-info.json
           {
             "builds": [
               {
@@ -59,6 +64,8 @@ jobs:
             ]
           }
           EOF
+          echo "github-cicd-file-info.json created"
+          cat github-cicd-file-info.json  # 디버깅 출력
 
       - name: Upload CI/CD JSON to remote server
         env:
@@ -69,6 +76,7 @@ jobs:
           SMB_PORT=${{ secrets.WEB_SMB_PORT }}
           SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
           SMB_PATH=${{ secrets.WEB_SMB_PATH }}
-          
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put cicd-gitignore-file.json"
+          echo "Uploading github-cicd-file-info.json to SMB..."
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put github-cicd-file-info.json" -d 10
+          echo "github-cicd-file-info.json uploaded to SMB"
         shell: bash
