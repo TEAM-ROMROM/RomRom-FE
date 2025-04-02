@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -20,30 +22,27 @@ class LoginScreen extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 로고 (SVG) //FIXME: 아이콘 전환 필요
-            SvgPicture.asset(
-              'assets/icons/temp-logo.svg',
-              width: 100,
-              height: 100,
-            ),
-            SizedBox(height: 50), // 간격 추가
+            Icon(AppIcons.tempLogo,
+                size: 74.h, color: AppColors.textColorWhite),
+            SizedBox(height: 55.h), // 간격 추가
             // 서비스 간단 소개 텍스트
             Text(
               '손쉬운 물건 교환',
-              style: TextStyle(
+              style: CustomTextStyles.p1.copyWith(
                 color: AppColors.textColorWhite.withValues(alpha: 0.6),
-                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 13.0.h), // 간격 추가
+            SizedBox(height: 17.0.h), // 간격 추가
             // "romrom" 이미지
             SvgPicture.asset(
               'assets/images/login-romrom-text.svg',
-              width: 30,
-              height: 20,
+              width: 124.w,
+              height: 17.h,
             ),
-            SizedBox(height: 170.0.h), // 간격 추가
+            SizedBox(height: 174.0.h), // 간격 추가
             // 로그인 버튼 그룹
             AuthButtonGroup(
               buttons: loginPlatforms

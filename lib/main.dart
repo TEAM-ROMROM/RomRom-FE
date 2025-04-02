@@ -27,7 +27,9 @@ Future<Widget> _determineInitialScreen() async {
   final String? refreshToken = await tokenManager.getRefreshToken();
 
   if (refreshToken == null) return const LoginScreen();
-  return await romAuthApi.refreshAccessToken() ? const HomeScreen() : const LoginScreen();
+  return await romAuthApi.refreshAccessToken()
+      ? const HomeScreen()
+      : const LoginScreen();
 }
 
 /// 앱의 루트 위젯
