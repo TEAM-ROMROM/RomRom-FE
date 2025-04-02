@@ -13,7 +13,8 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const List<LoginPlatforms> loginPlatforms = LoginPlatforms.values; // 모든 플랫폼을 가져옴
+    const List<LoginPlatforms> loginPlatforms =
+        LoginPlatforms.values; // 모든 플랫폼을 가져옴
 
     return Scaffold(
       body: Center(
@@ -28,10 +29,10 @@ class LoginScreen extends StatelessWidget {
             ),
             SizedBox(height: 50), // 간격 추가
             // 서비스 간단 소개 텍스트
-            const Text(
+            Text(
               '손쉬운 물건 교환',
               style: TextStyle(
-                color: AppColors.loginDescriptionText,
+                color: AppColors.textColorWhite.withValues(alpha: 0.6),
                 fontSize: 16,
               ),
             ),

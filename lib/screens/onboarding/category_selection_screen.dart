@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/enums/item_categories.dart';
-import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/screens/home_screen.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/category_completion_button.dart';
 import 'package:romrom_fe/widgets/category_header.dart';
 
@@ -14,7 +12,8 @@ class CategorySelectionScreen extends StatefulWidget {
   const CategorySelectionScreen({super.key});
 
   @override
-  State<CategorySelectionScreen> createState() => _CategorySelectionScreenState();
+  State<CategorySelectionScreen> createState() =>
+      _CategorySelectionScreenState();
 }
 
 class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
@@ -43,27 +42,9 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             CategoryCompletionButton(
                 isEnabled: isSelectedCategories,
                 enabledOnPressed: () async {
-                  try {
-                    final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
-
-                    if (context.mounted) {
-                      if (isSuccess) {
-                        context.navigateTo(
-                            screen: const HomeScreen(),
-                            type: NavigationTypes.pushReplacement
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('카테고리 저장 실패: $e')),
-                      );
-                    }
-                  }
+                  await memberApi.savePreferredCategories(selectedCategories);
                 },
-                buttonText: '선택 완료'
-            ),
+                buttonText: '선택 완료'),
             Expanded(child: Container()),
           ],
         ),
@@ -87,23 +68,21 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
 
     return ChoiceChip(
       label: Text(category.name),
-      labelStyle: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: isSelected
-                ? AppColors.textColorBlack
-                : AppColors.textColorWhite,
-          ),
+      labelStyle: CustomTextStyles.p2.copyWith(
+        color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
+      ),
       labelPadding: EdgeInsets.zero,
       padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 10.0.h),
       selected: isSelected,
-      selectedColor: AppColors.primary,
-      backgroundColor: AppColors.background,
+      selectedColor: AppColors.primaryYello,
+      backgroundColor: AppColors.primaryBlack,
       shape: RoundedRectangleBorder(
         side: isSelected
             ? BorderSide.none
-            : const BorderSide(
+            : BorderSide(
                 color: AppColors.textColorWhite,
                 strokeAlign: BorderSide.strokeAlignInside,
-                width: 1.0,
+                width: 1.0.w,
               ),
         borderRadius: BorderRadiusDirectional.circular(100.r),
       ),
@@ -125,4 +104,3 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     });
   }
 }
-

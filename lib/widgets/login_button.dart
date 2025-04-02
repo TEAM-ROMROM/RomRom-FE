@@ -42,11 +42,13 @@ class LoginButton extends StatelessWidget {
         await UserInfo().getUserInfo(); // 사용자 정보 불러오기
 
         // 처음 로그인 하면 위치 인증 화면으로 이동
-        // ignore: use_build_context_synchronously
-        context.navigateTo(
-            screen:
-                userInfo.isFirstLogin! ? const LocationVerificationScreen() : const HomeScreen(),
-            type: NavigationTypes.pushReplacement);
+        if (context.mounted) {
+          context.navigateTo(
+              screen: userInfo.isFirstLogin!
+                  ? const LocationVerificationScreen()
+                  : const HomeScreen(),
+              type: NavigationTypes.pushReplacement);
+        }
       }
     } catch (e) {
       debugPrint("$e");
@@ -85,12 +87,13 @@ class LoginButton extends StatelessWidget {
             // 로그인 플랫폼 변 텍스트 //FIXME: TextStyle 공통인것 사용 필요
             Text(
               platform.displayText,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontFamily: 'Pretendard',
-                fontWeight: FontWeight.w500
-              ),
+              // style: const TextStyle(
+              //   color: Colors.black,
+              //   fontSize: 16,
+              //   fontFamily: 'Pretendard',
+              //   fontWeight: FontWeight.w500
+              // ),
+              // style: AppTheme.textStyles.customBody,
             )
           ],
         ),
