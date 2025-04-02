@@ -8,7 +8,7 @@ class AppTheme {
   /// 앱의 기본 테마 설정
   static ThemeData get defaultTheme {
     return ThemeData(
-      scaffoldBackgroundColor: AppColors.main_131419, // 앱 전체 기본 배경 색상
+      scaffoldBackgroundColor: AppColors.primaryBlack, // 앱 전체 기본 배경 색상
       useMaterial3: true,
       fontFamily: FontFamily.pretendard.fontName, // 기본 글씨체 : `Pretendard`
     );

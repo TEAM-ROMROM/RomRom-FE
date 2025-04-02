@@ -74,8 +74,8 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
       labelPadding: EdgeInsets.zero,
       padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 10.0.h),
       selected: isSelected,
-      selectedColor: AppColors.main_FFC300,
-      backgroundColor: AppColors.main_131419,
+      selectedColor: AppColors.primaryYello,
+      backgroundColor: AppColors.primaryBlack,
       shape: RoundedRectangleBorder(
         side: isSelected
             ? BorderSide.none

@@ -31,9 +31,9 @@ class CategoryCompletionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // 버튼 배경 색 결정
     final Color backgroundColor = isEnabled
-        ? enabledBackgroundColor ?? AppColors.main_FFC300
+        ? enabledBackgroundColor ?? AppColors.primaryYello
         : disabledBackgroundColor ??
-            AppColors.main_FFC300.withValues(alpha: 0.7);
+            AppColors.primaryYello.withValues(alpha: 0.7);
 
     // 버튼 문구 색 결정
     final Color textColor = isEnabled
