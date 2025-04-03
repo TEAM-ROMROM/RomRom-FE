@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/category_completion_button.dart';
 import 'package:romrom_fe/widgets/category_header.dart';
 
@@ -56,6 +57,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   Widget _buildCategoryChips(BuildContext context) {
     return Wrap(
       spacing: 8.0.w,
+      runSpacing: 12.0.h,
       children: ItemCategories.values
           .map((category) => _buildCategoryChip(context, category))
           .toList(),
@@ -66,27 +68,33 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   Widget _buildCategoryChip(BuildContext context, ItemCategories category) {
     final bool isSelected = selectedCategories.contains(category.id);
 
-    return ChoiceChip(
-      label: Text(category.name),
-      labelStyle: CustomTextStyles.p2.copyWith(
-        color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
+    return RawChip(
+      label: Text(
+        category.name,
+        style: CustomTextStyles.p2.copyWith(
+          fontSize: adjustedFontSize(context, 14.0),
+          color:
+              isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
+          wordSpacing: -0.32.w,
+        ),
       ),
       labelPadding: EdgeInsets.zero,
       padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 10.0.h),
       selected: isSelected,
-      selectedColor: AppColors.primaryYello,
+      selectedColor: AppColors.primaryYellow,
       backgroundColor: AppColors.primaryBlack,
       shape: RoundedRectangleBorder(
-        side: isSelected
-            ? BorderSide.none
-            : BorderSide(
-                color: AppColors.textColorWhite,
-                strokeAlign: BorderSide.strokeAlignInside,
-                width: 1.0.w,
-              ),
+        side: BorderSide(
+          color:
+              isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
+          strokeAlign: BorderSide.strokeAlignInside,
+          width: 1.0.w,
+        ),
         borderRadius: BorderRadiusDirectional.circular(100.r),
       ),
+      checkmarkColor: Colors.transparent,
       showCheckmark: false,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       onSelected: (bool selected) =>
           _toggleCategorySelection(category.id, selected),
     );
