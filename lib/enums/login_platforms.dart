@@ -3,13 +3,13 @@ import 'package:romrom_fe/models/app_colors.dart';
 
 enum LoginPlatforms {
   kakao(
-    iconPath: 'assets/icons/kakao-icon.svg',
+    iconPath: 'assets/images/kakao-logo.svg',
     displayText: '카카오로 시작하기',
     backgroundColor: AppColors.kakao,
     platformName: 'KAKAO',
   ),
   google(
-    iconPath: 'assets/icons/google-icon.svg',
+    iconPath: 'assets/images/google-logo.svg',
     displayText: '구글로 시작하기',
     backgroundColor: AppColors.google,
     platformName: 'GOOGLE',
