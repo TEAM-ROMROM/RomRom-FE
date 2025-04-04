@@ -8,9 +8,6 @@ import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 
-/// API 기본 URL
-const String baseUrl = "https://api.romrom.xyz";
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initialize(); // 초기화 실행

@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:romrom_fe/main.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
+import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
@@ -22,7 +22,7 @@ class RomAuthApi {
   Future<void> signInWithSocial({
     required String socialPlatform,
   }) async {
-    const String url = '$baseUrl/api/auth/sign-in';
+    const String url = '${AppUrls.baseUrl}/api/auth/sign-in';
 
     try {
       // multipart 형식 요청
@@ -74,7 +74,7 @@ class RomAuthApi {
   /// ### POST : `/api/auth/reissue` (accessToken 재발급)
   Future<bool> refreshAccessToken() async {
     //토큰 재발급 api 요청 주소
-    String url = '$baseUrl/api/auth/reissue';
+    String url = '${AppUrls.baseUrl}/api/auth/reissue';
     try {
       String? refreshToken = await _tokenManager.getRefreshToken();
 
