@@ -22,7 +22,7 @@ class CategoryHeader extends StatelessWidget {
       children: [
         Text(headLine, style: CustomTextStyles.h1),
         SizedBox(height: betweenGap.h),
-        Text(subHeadLine, style: CustomTextStyles.p1),
+        Text(subHeadLine, style: CustomTextStyles.p2),
       ],
     );
   }

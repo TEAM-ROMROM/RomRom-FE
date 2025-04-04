@@ -19,7 +19,7 @@ class AppTheme {
 
 /// 커스텀 텍스트 스타일 모음 (fimga 디자인 시스템과 동일)
 class CustomTextStyles {
-  /// h1 : 24px
+  /// h1 : 24px, semibold
   static TextStyle h1 = TextStyle(
     fontWeight: FontWeight.w600,
     fontSize: 24.sp,
@@ -28,7 +28,7 @@ class CustomTextStyles {
     color: AppColors.textColorWhite,
   );
 
-  /// h3 : 18px
+  /// h3 : 18px, medium
   static TextStyle h3 = TextStyle(
     fontWeight: FontWeight.w500,
     fontSize: 18.sp,
@@ -37,7 +37,7 @@ class CustomTextStyles {
     color: AppColors.textColorWhite,
   );
 
-  /// p1 : 16px
+  /// p1 : 16px, bold
   static TextStyle p1 = TextStyle(
     fontWeight: FontWeight.w700,
     fontSize: 16.sp,
@@ -46,7 +46,7 @@ class CustomTextStyles {
     color: AppColors.textColorWhite,
   );
 
-  /// p2 : 14px
+  /// p2 : 14px, medium
   static TextStyle p2 = TextStyle(
     fontWeight: FontWeight.w500,
     fontSize: 14.sp,
