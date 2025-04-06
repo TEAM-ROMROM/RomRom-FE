@@ -24,7 +24,9 @@ Future<Widget> _determineInitialScreen() async {
   final String? refreshToken = await tokenManager.getRefreshToken();
 
   if (refreshToken == null) return const LoginScreen();
-  return await romAuthApi.refreshAccessToken() ? const HomeScreen() : const LoginScreen();
+  return await romAuthApi.refreshAccessToken()
+      ? const HomeScreen()
+      : const LoginScreen();
 }
 
 /// 앱의 루트 위젯
@@ -37,6 +39,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ScreenUtilInit(
       designSize: const Size(393, 852),
+      useInheritedMediaQuery: true,
       minTextAdapt: true,
       child: Builder(builder: (context) {
         return MaterialApp(

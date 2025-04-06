@@ -31,9 +31,9 @@ class CategoryCompletionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // 버튼 배경 색 결정
     final Color backgroundColor = isEnabled
-        ? enabledBackgroundColor ?? AppColors.primaryYello
+        ? enabledBackgroundColor ?? AppColors.primaryYellow
         : disabledBackgroundColor ??
-            AppColors.primaryYello.withValues(alpha: 0.7);
+            AppColors.primaryYellow.withValues(alpha: 0.7);
 
     // 버튼 문구 색 결정
     final Color textColor = isEnabled
@@ -52,7 +52,7 @@ class CategoryCompletionButton extends StatelessWidget {
             : disabledOnPressed, // 활성화와 비활성화 일 때 onPressed 별로 처리
         style: TextButton.styleFrom(
           backgroundColor: backgroundColor,
-          padding: EdgeInsets.symmetric(horizontal: 104.0.w, vertical: 16.0.h),
+          padding: EdgeInsets.symmetric(horizontal: 128.0.w, vertical: 20.0.h),
         ),
         child: Text(buttonText, style: buttonTextStyle),
       ),

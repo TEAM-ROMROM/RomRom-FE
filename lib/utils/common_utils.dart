@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
@@ -40,5 +41,16 @@ extension NavigationExtension on BuildContext {
         );
         break;
     }
+  }
+}
+
+/// 화면 크기에 따라 폰트 크기를 조정하는 함수
+double adjustedFontSize(BuildContext context, double spSize) {
+  final shortestSide = MediaQuery.of(context).size.shortestSide;
+  if (shortestSide > 600) {
+    // 태블릿 크기 기준
+    return (spSize * 0.8).sp; // 태블릿에서는 80% 크기로 조정
+  } else {
+    return spSize.sp;
   }
 }

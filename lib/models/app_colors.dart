@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   // 공통
   static const Color primaryBlack = Color(0xFF131419);
-  static const Color primaryYello = Color(0xFFFFC300);
+  static const Color primaryYellow = Color(0xFFFFC300);
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
