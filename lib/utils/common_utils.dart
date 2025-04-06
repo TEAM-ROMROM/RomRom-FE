@@ -44,6 +44,7 @@ extension NavigationExtension on BuildContext {
   }
 }
 
+/// 화면 크기에 따라 폰트 크기를 조정하는 함수
 double adjustedFontSize(BuildContext context, double spSize) {
   final shortestSide = MediaQuery.of(context).size.shortestSide;
   if (shortestSide > 600) {
