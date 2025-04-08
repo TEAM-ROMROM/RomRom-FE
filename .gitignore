@@ -103,3 +103,9 @@ lib/generated/
 firebase.json
 firebase-debug.log
 .env.*
+
+# macOS Xcode DerivedData
+macos/DerivedData/
+
+# Xcode 프로젝트 파일 임시명 (만약 project.pbxproj_temp 같은 이름이 계속 생긴다면)
+*.pbxproj_temp
