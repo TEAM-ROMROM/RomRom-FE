@@ -75,3 +75,31 @@ ios/XCBuildData/
 
 # 빌드 디렉토리 전체 무시
 build/
+
+
+# 새로추가
+# CocoaPods and iOS workspace
+ios/Pods/
+ios/Podfile.lock
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcworkspace/xcuserdata/
+ios/DerivedData/
+
+# Xcode temporary artifacts
+ios/.symlinks/
+ios/.flutter-plugins
+ios/.dart_tool/
+
+# Web build cache
+web/.dart_tool/
+web/build/
+
+# Localization
+lib/l10n/*.arb
+lib/generated/
+
+# Firebase and env
+firebase.json
+firebase-debug.log
+.env.*
