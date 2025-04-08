@@ -18,11 +18,6 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -76,36 +71,24 @@ ios/XCBuildData/
 # 빌드 디렉토리 전체 무시
 build/
 
-
-# 새로추가
-# CocoaPods and iOS workspace
-ios/Pods/
-ios/Podfile.lock
-ios/Runner.xcworkspace/
-ios/Runner.xcodeproj/xcuserdata/
-ios/Runner.xcworkspace/xcuserdata/
-ios/DerivedData/
-
-# Xcode temporary artifacts
-ios/.symlinks/
-ios/.flutter-plugins
-ios/.dart_tool/
-
-# Web build cache
-web/.dart_tool/
-web/build/
-
-# Localization
-lib/l10n/*.arb
-lib/generated/
-
-# Firebase and env
-firebase.json
-firebase-debug.log
-.env.*
-
-# macOS Xcode DerivedData
-macos/DerivedData/
-
-# Xcode 프로젝트 파일 임시명 (만약 project.pbxproj_temp 같은 이름이 계속 생긴다면)
+**/DerivedData/
+**/Pods/
+**/.symlinks/
+xcuserdata/
+*.mode1v3
+*.mode2v3
+*.pbxuser
+*.perspectivev3
+**/*sync/
+.sconsign.dblite
 *.pbxproj_temp
+Flutter/ephemeral/
+Flutter/app.flx
+Flutter/app.zip
+Flutter/flutter_assets/
+
+# Exceptions
+!default.mode1v3
+!default.mode2v3
+!default.pbxuser
+!default.perspectivev3
