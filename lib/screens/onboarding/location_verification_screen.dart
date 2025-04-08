@@ -181,7 +181,6 @@ class _LocationVerificationScreenState
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
         title: const Text('동네 인증하기'),
       ),
       body: _currentPosition == null
@@ -258,7 +257,7 @@ class _LocationVerificationScreenState
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
             child: TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.primaryBlack,
                 foregroundColor: AppColors.textColorBlack,
                 padding: const EdgeInsets.symmetric(
                     horizontal: 24.0, vertical: 12.0),
