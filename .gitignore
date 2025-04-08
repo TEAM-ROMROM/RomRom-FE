@@ -72,3 +72,6 @@ ios/XCBuildData/
 
 # key.jks.b64
 /android/app/keystore/key.jks.b64
+
+# 빌드 디렉토리 전체 무시
+build/
