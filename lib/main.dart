@@ -45,10 +45,15 @@ class MyApp extends StatelessWidget {
       useInheritedMediaQuery: true,
       minTextAdapt: true,
       child: Builder(builder: (context) {
-        return MaterialApp(
-          title: 'RomRom',
-          theme: AppTheme.defaultTheme,
-          home: initialScreen,
+        return MediaQuery(
+          // textScaleFactor: 1.0으로 설정하여 텍스트 크기 조정 방지
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(1.0)),
+          child: MaterialApp(
+            title: 'RomRom',
+            theme: AppTheme.defaultTheme,
+            home: initialScreen,
+          ),
         );
       }),
     );
