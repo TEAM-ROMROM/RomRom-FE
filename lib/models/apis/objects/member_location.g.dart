@@ -22,8 +22,6 @@ MemberLocation _$MemberLocationFromJson(Map<String, dynamic> json) =>
       siGunGu: json['siGunGu'] as String?,
       eupMyoenDong: json['eupMyoenDong'] as String?,
       ri: json['ri'] as String?,
-      fullAddress: json['fullAddress'] as String?,
-      roadAddress: json['roadAddress'] as String?,
     );
 
 Map<String, dynamic> _$MemberLocationToJson(MemberLocation instance) =>
@@ -38,6 +36,4 @@ Map<String, dynamic> _$MemberLocationToJson(MemberLocation instance) =>
       'siGunGu': instance.siGunGu,
       'eupMyoenDong': instance.eupMyoenDong,
       'ri': instance.ri,
-      'fullAddress': instance.fullAddress,
-      'roadAddress': instance.roadAddress,
     };
