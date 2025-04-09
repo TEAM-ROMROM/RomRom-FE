@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
@@ -65,73 +64,6 @@ class _LocationVerificationScreenState
     }
   }
 
-  // 커스텀 마커 생성 함수 (숫자 포함)
-  Future<NOverlayImage> _createNumberedMarkerIcon(int number) async {
-    // 숫자가 포함된 커스텀 마커 이미지를 생성
-    final pictureRecorder = PictureRecorder();
-    final canvas = Canvas(pictureRecorder);
-    final paint = Paint()..color = Colors.yellow;
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: number.toString(),
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    // 원형 마커 배경
-    canvas.drawCircle(const Offset(25, 25), 25, paint);
-    // 숫자 텍스트를 중앙에 배치
-    textPainter.paint(canvas, const Offset(25 - 10, 25 - 10));
-
-    final picture = pictureRecorder.endRecording();
-    final image = await picture.toImage(50, 50);
-    final byteData = await image.toByteData(format: ImageByteFormat.png);
-    final buffer = byteData!.buffer.asUint8List();
-
-    return NOverlayImage.fromByteArray(buffer);
-  }
-
-  // 마커 추가 함수
-  void _addMarker(NLatLng position, {int? number}) async {
-    final marker = NMarker(
-      id: number != null ? 'marker_$number' : '${DateTime.timestamp()}',
-      position: position,
-      size: const Size(32, 45),
-    );
-
-    // 숫자가 있으면 커스텀 마커로 설정
-    if (number != null) {
-      final icon = await _createNumberedMarkerIcon(number);
-      marker.setIcon(icon);
-    }
-
-    setState(() {
-      _mapController.addOverlay(marker);
-    });
-  }
-
-  // 주변 POI에 마커 추가 (예시 위치)
-  void _addNearbyMarkers() async {
-    if (_currentPosition == null) return;
-
-    // 현재 위치를 기준으로 주변에 마커를 추가 (예시 좌표)
-    final nearbyPositions = [
-      NLatLng(_currentPosition!.latitude + 0.001, _currentPosition!.longitude + 0.001),
-      NLatLng(_currentPosition!.latitude - 0.001, _currentPosition!.longitude - 0.001),
-      NLatLng(_currentPosition!.latitude + 0.002, _currentPosition!.longitude - 0.002),
-      NLatLng(_currentPosition!.latitude - 0.002, _currentPosition!.longitude + 0.002),
-    ];
-
-    for (int i = 0; i < nearbyPositions.length; i++) {
-      _addMarker(nearbyPositions[i], number: i + 1);
-    }
-  }
-
   // 네이버 API : 현재 주소 요청
   Future<void> getAddressByNaverApi(NLatLng position) async {
     const String naverReverseGeoCodeApiUrl = AppUrls.naverReverseGeoCodeApiUrl;
@@ -140,14 +72,20 @@ class _LocationVerificationScreenState
     const String output = "json";
 
     try {
+      final requestUrl = "$naverReverseGeoCodeApiUrl?coords=$coords&orders=$orders&output=$output";
+      log("네이버 API 요청 URL: $requestUrl");
+      log("네이버 API 헤더: Client ID: ${dotenv.get('NMF_CLIENT_ID').substring(0, 5)}...");
+
       final response = await http.get(
-        Uri.parse(
-            "$naverReverseGeoCodeApiUrl?coords=$coords&orders=$orders&output=$output"),
+        Uri.parse(requestUrl),
         headers: {
           "X-NCP-APIGW-API-KEY-ID": dotenv.get('NMF_CLIENT_ID'),
           "X-NCP-APIGW-API-KEY": dotenv.get('NMF_CLIENT_SECRET'),
         },
       );
+
+      log("네이버 API 응답 상태 코드: ${response.statusCode}");
+      log("네이버 API 응답 바디: ${response.body}");
 
       if (response.statusCode == 200) {
         final NaverAddressResponse addressData =
@@ -166,9 +104,11 @@ class _LocationVerificationScreenState
           });
 
           log("주소 데이터: $siDo $siGunGu $eupMyoenDong ${ri ?? ''}");
+        } else {
+          log("응답에 결과가 없습니다.");
         }
       } else {
-        log("주소 데이터 로드 실패: ${response.statusCode}");
+        log("주소 데이터 로드 실패: ${response.statusCode}, 응답: ${response.body}");
       }
     } catch (e) {
       log("주소 요청 중 오류 발생: $e");
@@ -208,15 +148,6 @@ class _LocationVerificationScreenState
                 log("onMapReady", name: "onMapReady");
                 await controller.setLocationTrackingMode(
                     NLocationTrackingMode.follow);
-
-                // 현재 위치에 기본 마커 추가
-                _addMarker(_currentPosition!);
-                // 주변 POI 마커 추가
-                _addNearbyMarkers();
-              },
-              onMapTapped: (point, latLng) async {
-                log("Map tapped at: $latLng", name: "MapTapEvent");
-                _addMarker(latLng);
               },
             ),
           ),
@@ -265,6 +196,31 @@ class _LocationVerificationScreenState
               onPressed: () async {
                 if (_currentPosition != null) {
                   try {
+                    log("위치 정보 저장 요청 파라미터:");
+                    log("longitude: ${_currentPosition!.longitude}");
+                    log("latitude: ${_currentPosition!.latitude}");
+                    log("siDo: $siDo");
+                    log("siGunGu: $siGunGu");
+                    log("eupMyoenDong: $eupMyoenDong");
+                    log("ri: $ri");
+
+                    // 위치 정보가 비어있는지 확인
+                    if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
+                      log("위치 정보 누락: 주소 정보가 정상적으로 로드되지 않았습니다.");
+                      // 네이버 API를 다시 호출하여 위치 정보 업데이트 시도
+                      await getAddressByNaverApi(_currentPosition!);
+
+                      // 여전히 비어있다면 사용자에게 알림
+                      if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('위치 정보를 가져오지 못했습니다. 다시 시도해주세요.')),
+                          );
+                        }
+                        return;
+                      }
+                    }
+
                     await MemberApi().saveMemberLocation(
                       longitude: _currentPosition!.longitude,
                       latitude: _currentPosition!.latitude,
@@ -279,6 +235,11 @@ class _LocationVerificationScreenState
                     }
                   } catch (e) {
                     log("위치 정보 저장 실패: $e");
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('위치 저장에 실패했습니다: $e')),
+                      );
+                    }
                   }
                 }
               },
@@ -290,3 +251,4 @@ class _LocationVerificationScreenState
     );
   }
 }
+
