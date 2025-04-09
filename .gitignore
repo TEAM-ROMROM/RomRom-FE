@@ -50,7 +50,7 @@ lib/firebase_options.dart
 
 # Ignore iOS config files
 android/Google-Services.json
-ios/Runner/GoogleService-Info.plist
+ios/GoogleService-Info.plist
 
 # IOS 빌드
 ios/Flutter/Secrets.xcconfig
