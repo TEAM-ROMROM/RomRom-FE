@@ -25,7 +25,7 @@ class LocationVerificationScreen extends StatefulWidget {
 
 class _LocationVerificationScreenState
     extends State<LocationVerificationScreen> {
-  ㅑNLatLng? _currentPosition;
+  NLatLng? _currentPosition;
   String currentAdress = '';
 
   // 위치 정보 저장
@@ -71,7 +71,8 @@ class _LocationVerificationScreenState
     const String output = "json";
 
     try {
-      final requestUrl = "$naverReverseGeoCodeApiUrl?coords=$coords&orders=$orders&output=$output";
+      final requestUrl =
+          "$naverReverseGeoCodeApiUrl?coords=$coords&orders=$orders&output=$output";
       log("네이버 API 요청 URL: $requestUrl");
       log("네이버 API 헤더: Client ID: ${dotenv.get('NMF_CLIENT_ID').substring(0, 5)}...");
 
@@ -88,7 +89,7 @@ class _LocationVerificationScreenState
 
       if (response.statusCode == 200) {
         final NaverAddressResponse addressData =
-        NaverAddressResponse.fromJson(json.decode(response.body));
+            NaverAddressResponse.fromJson(json.decode(response.body));
 
         if (addressData.results.isNotEmpty) {
           final region = addressData.results[0].region;
@@ -124,129 +125,135 @@ class _LocationVerificationScreenState
       ),
       body: _currentPosition == null
           ? const Center(
-        child: CircularProgressIndicator(),
-      )
+              child: CircularProgressIndicator(),
+            )
           : Column(
-        children: [
-          Expanded(
-            flex: 3,
-            child: NaverMap(
-              options: NaverMapViewOptions(
-                initialCameraPosition: NCameraPosition(
-                  target: _currentPosition!,
-                  zoom: 15,
-                ),
-                indoorEnable: true,
-                locationButtonEnable: true,
-                consumeSymbolTapEvents: false,
-              ),
-              onMapReady: (controller) async {
-                mapControllerCompleter.complete(controller);
-                await getAddressByNaverApi(_currentPosition!);
-                log("onMapReady", name: "onMapReady");
-                await controller.setLocationTrackingMode(
-                    NLocationTrackingMode.follow);
-              },
-            ),
-          ),
-          const SizedBox(height: 16.0),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  '현재 위치가 내 동네로 설정한 \'$currentAdress\'내에 있어요',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16.0,
+                Expanded(
+                  flex: 3,
+                  child: NaverMap(
+                    options: NaverMapViewOptions(
+                      initialCameraPosition: NCameraPosition(
+                        target: _currentPosition!,
+                        zoom: 15,
+                      ),
+                      indoorEnable: true,
+                      locationButtonEnable: true,
+                      consumeSymbolTapEvents: false,
+                    ),
+                    onMapReady: (controller) async {
+                      mapControllerCompleter.complete(controller);
+                      await getAddressByNaverApi(_currentPosition!);
+                      log("onMapReady", name: "onMapReady");
+                      await controller.setLocationTrackingMode(
+                          NLocationTrackingMode.follow);
+                    },
                   ),
                 ),
                 const SizedBox(height: 16.0),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 12.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(12.0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '현재 위치가 내 동네로 설정한 \'$currentAdress\'내에 있어요',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16.0,
+                        ),
+                      ),
+                      const SizedBox(height: 16.0),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 12.0),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        child: Text(
+                          '현재 위치가 내 동네로 설정한 \'$currentAdress\' 내에 있어요',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 16.0,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    '현재 위치가 내 동네로 설정한 \'$currentAdress\' 내에 있어요',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 16.0,
+                ),
+                const SizedBox(height: 24.0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 16.0),
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlack,
+                      foregroundColor: AppColors.textColorBlack,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 12.0),
                     ),
+                    onPressed: () async {
+                      if (_currentPosition != null) {
+                        try {
+                          log("위치 정보 저장 요청 파라미터:");
+                          log("longitude: ${_currentPosition!.longitude}");
+                          log("latitude: ${_currentPosition!.latitude}");
+                          log("siDo: $siDo");
+                          log("siGunGu: $siGunGu");
+                          log("eupMyoenDong: $eupMyoenDong");
+                          log("ri: $ri");
+
+                          // 위치 정보가 비어있는지 확인
+                          if (siDo.isEmpty ||
+                              siGunGu.isEmpty ||
+                              eupMyoenDong.isEmpty) {
+                            log("위치 정보 누락: 주소 정보가 정상적으로 로드되지 않았습니다.");
+                            // 네이버 API를 다시 호출하여 위치 정보 업데이트 시도
+                            await getAddressByNaverApi(_currentPosition!);
+
+                            // 여전히 비어있다면 사용자에게 알림
+                            if (siDo.isEmpty ||
+                                siGunGu.isEmpty ||
+                                eupMyoenDong.isEmpty) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          '위치 정보를 가져오지 못했습니다. 다시 시도해주세요.')),
+                                );
+                              }
+                              return;
+                            }
+                          }
+
+                          await MemberApi().saveMemberLocation(
+                            longitude: _currentPosition!.longitude,
+                            latitude: _currentPosition!.latitude,
+                            siDo: siDo,
+                            siGunGu: siGunGu,
+                            eupMyoenDong: eupMyoenDong,
+                            ri: ri,
+                          );
+                          if (context.mounted) {
+                            context.navigateTo(
+                                screen: const CategorySelectionScreen());
+                          }
+                        } catch (e) {
+                          log("위치 정보 저장 실패: $e");
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('위치 저장에 실패했습니다: $e')),
+                            );
+                          }
+                        }
+                      }
+                    },
+                    child: const Text('위치 인증하기'),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 24.0),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-            child: TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: AppColors.primaryBlack,
-                foregroundColor: AppColors.textColorBlack,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0, vertical: 12.0),
-              ),
-              onPressed: () async {
-                if (_currentPosition != null) {
-                  try {
-                    log("위치 정보 저장 요청 파라미터:");
-                    log("longitude: ${_currentPosition!.longitude}");
-                    log("latitude: ${_currentPosition!.latitude}");
-                    log("siDo: $siDo");
-                    log("siGunGu: $siGunGu");
-                    log("eupMyoenDong: $eupMyoenDong");
-                    log("ri: $ri");
-
-                    // 위치 정보가 비어있는지 확인
-                    if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
-                      log("위치 정보 누락: 주소 정보가 정상적으로 로드되지 않았습니다.");
-                      // 네이버 API를 다시 호출하여 위치 정보 업데이트 시도
-                      await getAddressByNaverApi(_currentPosition!);
-
-                      // 여전히 비어있다면 사용자에게 알림
-                      if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('위치 정보를 가져오지 못했습니다. 다시 시도해주세요.')),
-                          );
-                        }
-                        return;
-                      }
-                    }
-
-                    await MemberApi().saveMemberLocation(
-                      longitude: _currentPosition!.longitude,
-                      latitude: _currentPosition!.latitude,
-                      siDo: siDo,
-                      siGunGu: siGunGu,
-                      eupMyoenDong: eupMyoenDong,
-                      ri: ri,
-                    );
-                    if (context.mounted) {
-                      context.navigateTo(
-                          screen: const CategorySelectionScreen());
-                    }
-                  } catch (e) {
-                    log("위치 정보 저장 실패: $e");
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('위치 저장에 실패했습니다: $e')),
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('위치 인증하기'),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
-
