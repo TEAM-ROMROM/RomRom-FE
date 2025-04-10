@@ -47,8 +47,8 @@ class HomeScreen extends StatelessWidget {
     return TextButton(
       onPressed: onPressed,
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all(backgroundColor),
-        padding: MaterialStateProperty.all(
+        backgroundColor: WidgetStateProperty.all(backgroundColor),
+        padding: WidgetStateProperty.all(
           EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
         ),
       ),
@@ -101,10 +101,16 @@ class HomeScreen extends StatelessWidget {
     final memberApi = MemberApi();
     final isSuccess = await memberApi.deleteMember();
 
-    if (isSuccess && context.mounted) {
+    // context가 여전히 유효한지 확인
+    if (!context.mounted) return;
+
+    if (isSuccess) {
       // 토큰 삭제 후 로그인 화면으로 이동
       final tokenManager = TokenManager();
       await tokenManager.deleteTokens();
+
+      // context가 여전히 유효한지 다시 확인
+      if (!context.mounted) return;
 
       // 로그인 페이지로 이동
       Navigator.pushAndRemoveUntil(
@@ -112,7 +118,7 @@ class HomeScreen extends StatelessWidget {
         MaterialPageRoute(builder: (context) => const LoginScreen()),
         (route) => false, // 모든 이전 라우트 제거
       );
-    } else if (context.mounted) {
+    } else {
       // 실패 안내
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('회원 탈퇴에 실패했습니다. 다시 시도해주세요.')),

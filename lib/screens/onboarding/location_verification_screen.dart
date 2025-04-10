@@ -25,8 +25,7 @@ class LocationVerificationScreen extends StatefulWidget {
 
 class _LocationVerificationScreenState
     extends State<LocationVerificationScreen> {
-  late NaverMapController _mapController;
-  NLatLng? _currentPosition;
+  ㅑNLatLng? _currentPosition;
   String currentAdress = '';
 
   // 위치 정보 저장
@@ -143,7 +142,6 @@ class _LocationVerificationScreenState
               ),
               onMapReady: (controller) async {
                 mapControllerCompleter.complete(controller);
-                _mapController = controller;
                 await getAddressByNaverApi(_currentPosition!);
                 log("onMapReady", name: "onMapReady");
                 await controller.setLocationTrackingMode(
