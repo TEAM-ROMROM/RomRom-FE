@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 홈 화면
 class HomeScreen extends StatelessWidget {
@@ -109,14 +112,17 @@ class HomeScreen extends StatelessWidget {
       final tokenManager = TokenManager();
       await tokenManager.deleteTokens();
 
+      // 소셜 플랫폼별 로그아웃 처리
+      final socialLogoutService = SocialLogoutService();
+      await socialLogoutService.performSocialLogout();
+
       // context가 여전히 유효한지 다시 확인
       if (!context.mounted) return;
 
       // 로그인 페이지로 이동
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false, // 모든 이전 라우트 제거
+      context.navigateTo(
+        screen: const LoginScreen(),
+        type: NavigationTypes.pushAndRemoveUntil
       );
     } else {
       // 실패 안내
@@ -126,3 +132,4 @@ class HomeScreen extends StatelessWidget {
     }
   }
 }
+
