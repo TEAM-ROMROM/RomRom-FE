@@ -7,23 +7,26 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_urls.dart';
-
 import 'package:romrom_fe/screens/onboarding/category_selection_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/apis/responses/naver_address_response.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 위치 인증 화면
 class LocationVerificationScreen extends StatefulWidget {
   const LocationVerificationScreen({super.key});
 
   @override
-  State<LocationVerificationScreen> createState() => _LocationVerificationScreenState();
+  State<LocationVerificationScreen> createState() =>
+      _LocationVerificationScreenState();
 }
 
-class _LocationVerificationScreenState extends State<LocationVerificationScreen> {
-  late NaverMapController _mapController;
+class _LocationVerificationScreenState
+    extends State<LocationVerificationScreen> {
+  // _mapController 필드 제거 (사용되지 않음)
   NLatLng? _currentPosition;
   String currentAdress = '';
 
@@ -62,20 +65,6 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
     }
   }
 
-  // marker 추가 함수
-  void _addMarker(NLatLng position) {
-    // 추가할 마커 커스텀
-    final newNMarker = NMarker(
-      id: '${DateTime.timestamp()}',
-      position: position, // 마커 위치
-      size: const Size(32, 45),
-    );
-
-    setState(() {
-      _mapController.addOverlay(newNMarker);
-    });
-  }
-
   // 네이버 API : 현재 주소 요청
   Future<void> getAddressByNaverApi(NLatLng position) async {
     const String naverReverseGeoCodeApiUrl = AppUrls.naverReverseGeoCodeApiUrl;
@@ -84,18 +73,25 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
     const String output = "json";
 
     try {
+      final requestUrl = "$naverReverseGeoCodeApiUrl?coords=$coords&orders=$orders&output=$output";
+      log("네이버 API 요청 URL: $requestUrl");
+      log("네이버 API 헤더: Client ID: ${dotenv.get('NMF_CLIENT_ID').substring(0, 5)}...");
+
       final response = await http.get(
-        Uri.parse("$naverReverseGeoCodeApiUrl?coords=$coords&orders=$orders&output=$output"),
+        Uri.parse(requestUrl),
         headers: {
           "X-NCP-APIGW-API-KEY-ID": dotenv.get('NMF_CLIENT_ID'),
           "X-NCP-APIGW-API-KEY": dotenv.get('NMF_CLIENT_SECRET'),
         },
       );
 
-      if (response.statusCode == 200) {
-        final NaverAddressResponse addressData = NaverAddressResponse.fromJson(json.decode(response.body));
+      log("네이버 API 응답 상태 코드: ${response.statusCode}");
+      log("네이버 API 응답 바디: ${response.body}");
 
-        // 주소 데이터가 존재하는 경우
+      if (response.statusCode == 200) {
+        final NaverAddressResponse addressData =
+        NaverAddressResponse.fromJson(json.decode(response.body));
+
         if (addressData.results.isNotEmpty) {
           final region = addressData.results[0].region;
 
@@ -109,9 +105,11 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
           });
 
           log("주소 데이터: $siDo $siGunGu $eupMyoenDong ${ri ?? ''}");
+        } else {
+          log("응답에 결과가 없습니다.");
         }
       } else {
-        log("주소 데이터 로드 실패: ${response.statusCode}");
+        log("주소 데이터 로드 실패: ${response.statusCode}, 응답: ${response.body}");
       }
     } catch (e) {
       log("주소 요청 중 오류 발생: $e");
@@ -120,109 +118,138 @@ class _LocationVerificationScreenState extends State<LocationVerificationScreen>
 
   @override
   Widget build(BuildContext context) {
-    // NaverMapController 객체의 비동기 작업 완료를 나타내는 Completer 생성
     final Completer<NaverMapController> mapControllerCompleter = Completer();
 
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          title: const Text('동네 인증하기'),
-        ),
-        body: // 현재 위치를 가져오기 전이라면 로딩 화면 표시
-        _currentPosition == null
-            ? const Center(
-          child: CircularProgressIndicator(), // 로딩 인디케이터
-        )
-            : Flex(
-          direction: Axis.vertical,
-          children: [
-            Flexible(
-              flex: 2,
-              child: NaverMap(
-                options: NaverMapViewOptions(
-                  initialCameraPosition: NCameraPosition(
-                    target: _currentPosition!,
-                    zoom: 15,
+    return Scaffold(
+      appBar: const CommonAppBar(
+        title: '동네 인증하기',
+      ),
+      body: _currentPosition == null
+          ? const Center(
+        child: CircularProgressIndicator(),
+      )
+          : Column(
+        children: [
+          Expanded(
+            flex: 3,
+            child: NaverMap(
+              options: NaverMapViewOptions(
+                initialCameraPosition: NCameraPosition(
+                  target: _currentPosition!,
+                  zoom: 15,
+                ),
+                indoorEnable: true,
+                locationButtonEnable: true,
+                consumeSymbolTapEvents: false,
+              ),
+              onMapReady: (controller) async {
+                mapControllerCompleter.complete(controller);
+                // _mapController = controller; - 제거됨
+                await getAddressByNaverApi(_currentPosition!);
+                log("onMapReady", name: "onMapReady");
+                await controller.setLocationTrackingMode(
+                    NLocationTrackingMode.follow);
+              },
+            ),
+          ),
+          const SizedBox(height: 16.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  '현재 위치가 내 동네로 설정한 \'$currentAdress\'내에 있어요',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16.0,
                   ),
-                  indoorEnable: true, // 실내 맵 사용 가능 여부 설정
-                  locationButtonEnable: true, // 위치 버튼 표시 여부 설정
-                  consumeSymbolTapEvents: false, // 심볼 탭 이벤트 소비 여부 설정
                 ),
-                onMapReady: (controller) async {
-                  mapControllerCompleter.complete(controller);
-                  _mapController = controller;
-                  await getAddressByNaverApi(_currentPosition!); // 현재 위치 주소로 표시
-                  log("onMapReady", name: "onMapReady");
-
-                  // 위치 추적 모드 활성화
-                  await controller.setLocationTrackingMode(
-                      NLocationTrackingMode.follow);
-                },
-                onMapTapped: (point, latLng) async {
-                  log("Map tapped at: $latLng", name: "MapTapEvent");
-                  _addMarker(latLng); // 지도에 마커 추가
-                },
-              ),
-            ),
-            Flexible(
-              flex: 3,
-              // ignore: avoid_unnecessary_containers
-              child: Container(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24.0, vertical: 16.0),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18.0, vertical: 16.0),
-                        width: double.maxFinite,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF2F3F7),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                            '현재 위치가 내 동네로 설정한 \'$currentAdress\'내에 있어요'),
-                      ),
+                const SizedBox(height: 16.0),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 12.0),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: Text(
+                    '현재 위치가 내 동네로 설정한 \'$currentAdress\' 내에 있어요',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 16.0,
                     ),
-
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            Flexible(
-              flex: 1,
-              child: TextButton(
-                child: const Text('위치 인증하기'),
-                onPressed: () async {
-                  if (_currentPosition != null) {
-                    try {
-                      // 위치 정보 저장
-                      await MemberApi().saveMemberLocation(
-                        longitude: _currentPosition!.longitude,
-                        latitude: _currentPosition!.latitude,
-                        siDo: siDo,
-                        siGunGu: siGunGu,
-                        eupMyoenDong: eupMyoenDong,
-                        ri: ri,
-                      );
-                      if (context.mounted) {
-                        // 물품 선호 카테고리 선택 화면 이동
-                        context.navigateTo(screen: const CategorySelectionScreen());
+          ),
+          const SizedBox(height: 24.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            child: TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.primaryBlack,
+                foregroundColor: AppColors.textColorBlack,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 12.0),
+              ),
+              onPressed: () async {
+                if (_currentPosition != null) {
+                  try {
+                    log("위치 정보 저장 요청 파라미터:");
+                    log("longitude: ${_currentPosition!.longitude}");
+                    log("latitude: ${_currentPosition!.latitude}");
+                    log("siDo: $siDo");
+                    log("siGunGu: $siGunGu");
+                    log("eupMyoenDong: $eupMyoenDong");
+                    log("ri: $ri");
+
+                    // 위치 정보가 비어있는지 확인
+                    if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
+                      log("위치 정보 누락: 주소 정보가 정상적으로 로드되지 않았습니다.");
+                      // 네이버 API를 다시 호출하여 위치 정보 업데이트 시도
+                      await getAddressByNaverApi(_currentPosition!);
+
+                      // 여전히 비어있다면 사용자에게 알림
+                      if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('위치 정보를 가져오지 못했습니다. 다시 시도해주세요.')),
+                          );
+                        }
+                        return;
                       }
-                    } catch (e) {
-                      log("위치 정보 저장 실패: $e");
-                      // 에러 처리 (필요시 사용자에게 알림)
+                    }
+
+                    await MemberApi().saveMemberLocation(
+                      longitude: _currentPosition!.longitude,
+                      latitude: _currentPosition!.latitude,
+                      siDo: siDo,
+                      siGunGu: siGunGu,
+                      eupMyoenDong: eupMyoenDong,
+                      ri: ri,
+                    );
+                    if (context.mounted) {
+                      context.navigateTo(
+                          screen: const CategorySelectionScreen());
+                    }
+                  } catch (e) {
+                    log("위치 정보 저장 실패: $e");
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('위치 저장에 실패했습니다: $e')),
+                      );
                     }
                   }
-                },
-              ),
+                }
+              },
+              child: const Text('위치 인증하기'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+

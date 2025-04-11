@@ -8,7 +8,7 @@
   "glyphs": [
     {
       "uid": "d19e1d3913d25ff0e209baf6e288df2e",
-      "css": "temp-logo",
+      "css": "tempLogo",
       "code": 59408,
       "src": "custom_icons",
       "selected": true,
@@ -19,6 +19,12 @@
       "search": [
         "temp-logo"
       ]
+    },
+    {
+      "uid": "2deb4ec1f87cc6db938eb0a437ec58e3",
+      "css": "navigateBefore",
+      "code": 59947,
+      "src": "material"
     }
   ]
 }

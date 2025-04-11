@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/category_completion_button.dart';
@@ -44,6 +45,15 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                 isEnabled: isSelectedCategories,
                 enabledOnPressed: () async {
                   await memberApi.savePreferredCategories(selectedCategories);
+                  // 카테고리 선택 완료 후 홈화면 이동
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const HomeScreen()),
+                          (route) => false,
+                    );
+                  }
                 },
                 buttonText: '선택 완료'),
             Expanded(child: Container()),
