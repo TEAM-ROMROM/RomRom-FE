@@ -21,14 +21,16 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
+      toolbarHeight: 82.h,
       leadingWidth: 56.w,
       leading: IconButton(
         icon: Icon(
           AppIcons.navigateBefore,
-          size: 74.h,
+          size: 24.h,
           color: AppColors.textColorWhite,
         ),
         onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
+        padding: EdgeInsets.zero,
       ),
       title: Text(
         title,
