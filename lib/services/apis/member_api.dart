@@ -19,7 +19,7 @@ class MemberApi {
         '${AppUrls.baseUrl}/api/members/post/category/preferences';
     bool isSuccess = false;
 
-    await ApiClient.sendRequest(
+    await ApiClient.sendMultipartRequest(
       url: url,
       fields: {
         "preferredCategories":
@@ -55,7 +55,7 @@ class MemberApi {
       if (ri != null) 'ri': ri,
     };
 
-    await ApiClient.sendRequest(
+    await ApiClient.sendMultipartRequest(
       url: url,
       fields: fields,
       isAuthRequired: true,
@@ -71,7 +71,7 @@ class MemberApi {
     const String url = '${AppUrls.baseUrl}/api/members/get';
     late MemberResponse memberResponse;
 
-    await ApiClient.sendRequest(
+    await ApiClient.sendMultipartRequest(
       url: url,
       isAuthRequired: true,
       onSuccess: (responseData) {
@@ -89,7 +89,7 @@ class MemberApi {
     const String url = '${AppUrls.baseUrl}/api/members/delete';
     bool isSuccess = false;
 
-    await ApiClient.sendRequest(
+    await ApiClient.sendMultipartRequest(
       url: url,
       isAuthRequired: true,
       onSuccess: (_) {

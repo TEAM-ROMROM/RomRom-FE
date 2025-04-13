@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/log_utils.dart';
+import 'package:romrom_fe/services/api_client.dart';
 
 // AuthApi -> RomAuthApi 이름 변경 : kakao SDK ApiAuth 와 충돌
 class RomAuthApi {
@@ -25,47 +26,39 @@ class RomAuthApi {
     const String url = '${AppUrls.baseUrl}/api/auth/sign-in';
 
     try {
-      // multipart 형식 요청
-      var request = http.MultipartRequest('POST', Uri.parse(url));
-
       // 사용자 정보 불러옴
       var userInfo = UserInfo();
       await userInfo.getUserInfo();
 
-      // 요청 파라미터 추가 (플랫폼, 유저 정보)
-      request.fields['socialPlatform'] = socialPlatform;
-      // 사용자 정보 추가
+      // 요청 파라미터 준비 (플랫폼, 유저 정보)
+      Map<String, dynamic> fields = {
+        'socialPlatform': socialPlatform,
+      };
+
+      // 사용자 정보 필드에 추가
       userInfo.toMap().forEach((key, value) {
         if (value != null) {
-          request.fields[key] = value;
+          fields[key] = value;
         }
       });
-      // test 용 요청
-      // request.fields['nickname'] = 'test';
-      // request.fields['email'] = 'test@test123.com';
-      // request.fields['profileUrl'] = '';
 
-      // 요청 보내기
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      // HTTP 요청
+      await ApiClient.sendMultipartRequest(
+        url: url,
+        method: 'POST',
+        fields: fields,
+        isAuthRequired: false, // 소셜 로그인은 인증이 필요하지 않음
+        onSuccess: (responseData) {
+          // 로컬 저장소에 토큰 저장
+          String accessToken = responseData[TokenKeys.accessToken.name];
+          String refreshToken = responseData[TokenKeys.refreshToken.name];
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
+          _tokenManager.saveTokens(accessToken, refreshToken);
 
-        // 응답 데이터 출력
-        responsePrinter(url, responseData);
-
-        // 로컬 저장소에 토큰 저장
-        String accessToken = responseData[TokenKeys.accessToken.name];
-        String refreshToken = responseData[TokenKeys.refreshToken.name];
-
-        _tokenManager.saveTokens(accessToken, refreshToken);
-
-        // 첫 번째 로그인인지 저장
-        await UserInfo().saveIsFirstLogin(responseData['isFirstLogin']);
-      } else {
-        throw Exception('Failed to sign in: ${response.body}');
-      }
+          // 첫 번째 로그인인지 저장
+          UserInfo().saveIsFirstLogin(responseData['isFirstLogin']);
+        },
+      );
     } catch (error) {
       throw Exception('Error during sign-in: $error');
     }
@@ -83,19 +76,23 @@ class RomAuthApi {
         return false;
       }
 
-      // multipart 형식 요청
-      var request = http.MultipartRequest('POST', Uri.parse(url));
+      // 요청 파라미터 준비
+      Map<String, dynamic> fields = {
+        TokenKeys.refreshToken.name: refreshToken,
+      };
 
-      // 요청 파라미터 추가
-      request.fields[TokenKeys.refreshToken.name] = refreshToken;
+      // 요청 보냄
+      http.Response response = await ApiClient.sendMultipartRequest(
+        url: url,
+        method: 'POST',
+        fields: fields,
+        isAuthRequired: false, // 토큰 갱신에는 인증이 필요하지 않음
+        onSuccess: (responseData) {
+          // onSuccess는 필요하지만 여기서 실제 처리는 하지 않음
+        },
+      );
 
-      // 요청 보내기
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
       final Map<String, dynamic> responseData = jsonDecode(response.body);
-
-      // 응답 데이터 출력
-      responsePrinter(url, responseData);
 
       if (response.statusCode == 200) {
         // 로컬 저장소에 토큰 저장
