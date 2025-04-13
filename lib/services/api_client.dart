@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
 import 'package:romrom_fe/utils/log_utils.dart';
 
 /// 모든 HTTP 요청을 처리
@@ -47,7 +48,6 @@ class ApiClient {
         await _handleResponse(response: response, url: url, onSuccess: onSuccess);
         return;
       }
-
       // 인증 실패 시 토큰 갱신 시도 (401)
       else if (isAuthRequired && response.statusCode == 401) {
         bool isRefreshed = await _refreshToken();
@@ -90,6 +90,7 @@ class ApiClient {
     Map<String, dynamic>? fields,
     Map<String, List<File>>? files,
   }) async {
+    // MultipartRequest 생성
     var request = http.MultipartRequest(method, Uri.parse(url));
 
     // 인증 헤더 추가 (토큰이 있는 경우에만)
@@ -121,7 +122,10 @@ class ApiClient {
       }
     }
 
-    var streamedResponse = await request.send();
+    // FIXME: LoggingHttpClient 요청 전송
+    final client = LoggingHttpClient(http.Client());
+    var streamedResponse = await client.send(request);
+
     return await http.Response.fromStream(streamedResponse);
   }
 
@@ -144,13 +148,7 @@ class ApiClient {
 
   /// 토큰 갱신
   static Future<bool> _refreshToken() async {
-    // refreshAccessToken() 함수 호출 (auth_api.dart에서 가져옴)
-    // 여기서는 외부 함수를 호출하는 대신 직접 구현해도 됩니다
     try {
-      // 외부 auth_api.dart의 함수를 import 하여 사용
-      // return await refreshAccessToken();
-
-      // 또는 직접 구현
       final refreshToken = await _tokenManager.getRefreshToken();
       if (refreshToken == null) return false;
 
@@ -158,7 +156,10 @@ class ApiClient {
       var request = http.MultipartRequest('POST', Uri.parse(url));
       request.fields['refreshToken'] = refreshToken;
 
-      var streamedResponse = await request.send();
+      // FIXME: LoggingHttpClient 요청 전송
+      final client = LoggingHttpClient(http.Client());
+      var streamedResponse = await client.send(request);
+
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
