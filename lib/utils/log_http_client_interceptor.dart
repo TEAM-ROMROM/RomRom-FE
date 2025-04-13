@@ -13,12 +13,11 @@ class LoggingHttpClient extends http.BaseClient {
     try {
       var encoder = const JsonEncoder.withIndent('  ');
       if (json is String) {
-        // 문자열이 JSON인지 확인
         try {
           var decoded = jsonDecode(json);
           return encoder.convert(decoded);
         } catch (_) {
-          return json; // JSON이 아닌 문자열은 그대로 반환
+          return json;
         }
       } else {
         return encoder.convert(json);
@@ -34,21 +33,22 @@ class LoggingHttpClient extends http.BaseClient {
     final requestId = request.hashCode.toRadixString(16).padLeft(8, '0');
 
     // 요청 로깅
-    debugPrint("📤 [${request.method}] #$requestId ${request.url} 📤");
+    debugPrint("====================================");
+    debugPrint("[${_formatTime(startTime)}] [${request.method}] ${request.url} [uid: $requestId]");
     request.headers.forEach((key, value) {
       debugPrint("   $key: $value");
     });
 
     // 요청 본문 로깅
     if (request is http.MultipartRequest) {
-      debugPrint("   📋 Form Fields:");
+      debugPrint("   [Form Fields]");
       debugPrint("   ${_prettyJson(request.fields)}");
-      
+
       if (request.files.isNotEmpty) {
-        debugPrint("   📎 Files: ${request.files.map((f) => f.filename).toList()}");
+        debugPrint("   [Files] ${request.files.map((f) => f.filename).toList()}");
       }
     } else if (request is http.Request && request.body.isNotEmpty) {
-      debugPrint("   📋 Body:");
+      debugPrint("   [Body]");
       debugPrint("   ${_prettyJson(request.body)}");
     }
 
@@ -56,22 +56,24 @@ class LoggingHttpClient extends http.BaseClient {
       // 실제 요청 전송
       final streamedResponse = await _inner.send(request);
       final duration = DateTime.now().difference(startTime).inMilliseconds;
-      
-      // 전체 응답 본문 읽기 (StreamedResponse는 한 번만 읽을 수 있음)
+
+      // 전체 응답 본문 읽기
       final responseBytes = await streamedResponse.stream.toBytes();
       final responseString = utf8.decode(responseBytes, allowMalformed: true);
-      
+
       // 응답 본문 출력
-      debugPrint("📥 [${streamedResponse.statusCode}] #$requestId ${request.url} (${duration}ms) 📥");
-      
+      debugPrint("[${_formatTime(DateTime.now())}] [${streamedResponse.statusCode}] ${request.url} [uid: $requestId]");
+      debugPrint("   [Duration] ${duration}ms");
+
       if (responseString.isNotEmpty) {
         try {
-          debugPrint("   📋 Response:");
+          debugPrint("   [Response]");
           debugPrint("   ${_prettyJson(responseString)}");
         } catch (e) {
-          debugPrint("   📋 Response: $responseString");
+          debugPrint("   [Response] $responseString");
         }
       }
+      debugPrint("====================================");
 
       // 원본 StreamedResponse와 동일한 새 StreamedResponse 반환
       return http.StreamedResponse(
@@ -86,8 +88,19 @@ class LoggingHttpClient extends http.BaseClient {
       );
     } catch (error) {
       final duration = DateTime.now().difference(startTime).inMilliseconds;
-      debugPrint("⚠️ Error #$requestId ${request.url} (${duration}ms): $error ⚠️");
+      debugPrint("[${_formatTime(DateTime.now())}] [Error] ${request.url} [uid: $requestId]");
+      debugPrint("   [Duration] ${duration}ms");
+      debugPrint("   $error");
+      debugPrint("====================================");
       rethrow;
     }
+  }
+
+  // 시간을 HH:mm:ss.SSS 형식으로 포맷팅
+  String _formatTime(DateTime time) {
+    return "${time.hour.toString().padLeft(2, '0')}:"
+        "${time.minute.toString().padLeft(2, '0')}:"
+        "${time.second.toString().padLeft(2, '0')}"
+        ".${time.millisecond.toString().padLeft(3, '0')}";
   }
 }
