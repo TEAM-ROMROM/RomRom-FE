@@ -22,7 +22,7 @@ class SocialLogoutService {
   Future<void> logout(BuildContext context) async {
     const String url = '$baseUrl/api/auth/logout';
     try {
-      await ApiClient.sendRequest(
+      await ApiClient.sendMultipartRequest(
         url: url,
         fields: {
           TokenKeys.accessToken.name: await _tokenManager.getAccessToken(),
