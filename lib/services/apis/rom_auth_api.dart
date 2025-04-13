@@ -43,22 +43,32 @@ class RomAuthApi {
       });
 
       // HTTP 요청
-      await ApiClient.sendMultipartRequest(
+      http.Response response = await ApiClient.sendMultipartRequest(
         url: url,
         method: 'POST',
         fields: fields,
         isAuthRequired: false, // 소셜 로그인은 인증이 필요하지 않음
         onSuccess: (responseData) {
-          // 로컬 저장소에 토큰 저장
-          String accessToken = responseData[TokenKeys.accessToken.name];
-          String refreshToken = responseData[TokenKeys.refreshToken.name];
-
-          _tokenManager.saveTokens(accessToken, refreshToken);
-
-          // 첫 번째 로그인인지 저장
-          UserInfo().saveIsFirstLogin(responseData['isFirstLogin']);
+          // 콜백은 호출되지 않고 있지만 일단 유지
         },
       );
+
+      // 응답을 직접 처리
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        // 로컬 저장소에 토큰 저장
+        String accessToken = responseData[TokenKeys.accessToken.name];
+        String refreshToken = responseData[TokenKeys.refreshToken.name];
+
+        await _tokenManager.saveTokens(accessToken, refreshToken);
+        debugPrint('토큰 저장 성공: accessToken=${accessToken.substring(0, 15)}...');
+
+        // 첫 번째 로그인인지 저장
+        UserInfo().saveIsFirstLogin(responseData['isFirstLogin']);
+      } else {
+        throw Exception('소셜 로그인 실패: ${response.statusCode}, ${response.body}');
+      }
     } catch (error) {
       throw Exception('Error during sign-in: $error');
     }

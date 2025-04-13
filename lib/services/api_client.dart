@@ -47,6 +47,17 @@ class ApiClient {
 
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (response.body.isNotEmpty) {
+          try {
+            final responseData = jsonDecode(response.body);
+            // 응답이 성공적이면 onSuccess 콜백 실행
+            onSuccess(responseData);
+          } catch (e) {
+            debugPrint('응답 데이터 처리 중 오류: $e');
+          }
+        } else {
+          onSuccess({});
+        }
         return response;
       }
       // 인증 실패 시 토큰 갱신 시도 (401)
@@ -66,6 +77,16 @@ class ApiClient {
           );
 
           if (response.statusCode >= 200 && response.statusCode < 300) {
+            if (response.body.isNotEmpty) {
+              try {
+                final responseData = jsonDecode(response.body);
+                onSuccess(responseData);
+              } catch (e) {
+                debugPrint('응답 데이터 처리 중 오류: $e');
+              }
+            } else {
+              onSuccess({});
+            }
             return response;
           } else {
             throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
