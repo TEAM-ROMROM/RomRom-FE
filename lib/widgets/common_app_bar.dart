@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onBackPressed;
   final List<Widget>? actions;
-  
+
   const CommonAppBar({
     super.key,
     required this.title,
@@ -22,8 +23,9 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       centerTitle: true,
       toolbarHeight: 82.h,
-      leadingWidth: 56.w,
+      leadingWidth: 52.w,
       leading: IconButton(
+        alignment: Alignment.centerRight,
         icon: Icon(
           AppIcons.navigateBefore,
           size: 24.h,
@@ -34,11 +36,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: Text(
         title,
-        style: TextStyle(
-          color: AppColors.textColorWhite,
-          fontSize: 18.sp,
-          fontWeight: FontWeight.w500,
-        ),
+        style: CustomTextStyles.h2,
       ),
       actions: actions,
     );
