@@ -61,8 +61,12 @@ class RomAuthApi {
 
         _tokenManager.saveTokens(accessToken, refreshToken);
 
-        // 첫 번째 로그인인지 저장
-        await UserInfo().saveIsFirstLogin(responseData['isFirstLogin']);
+        // 로그인 상태(첫 로그인 여부, 카테고리 선택 여부, 위치 인증 여부) 저장
+        await UserInfo().saveFirstLoginStatus(
+            isFirstLogin: responseData['isFirstLogin'],
+            isFirstItemPosted: responseData['isFirstItemPosted'],
+            isItemCategorySaved: responseData['isItemCategorySaved'],
+            isMemberLocationSaved: responseData['isMemberLocationSaved']);
       } else {
         throw Exception('Failed to sign in: ${response.body}');
       }
@@ -124,5 +128,4 @@ class RomAuthApi {
   Future<void> logoutWithSocial(BuildContext context) async {
     await SocialLogoutService().logout(context);
   }
-
 }

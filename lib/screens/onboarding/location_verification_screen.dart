@@ -8,10 +8,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/onboarding/category_selection_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/apis/responses/naver_address_response.dart';
@@ -124,7 +127,6 @@ class _LocationVerificationScreenState
 
   @override
   void dispose() {
-    // TODO: implement dispose
     if (mapControllerCompleter.isCompleted) {
       mapControllerCompleter.future.then((controller) {
         controller.clearOverlays(); // 필요 시 맵 정리
@@ -309,10 +311,16 @@ class _LocationVerificationScreenState
                                     eupMyoenDong: eupMyoenDong,
                                     ri: ri,
                                   );
+                                  var userInfo = UserInfo();
+                                  await UserInfo().getUserInfo(); // 사용자 정보 불러오기
+
                                   if (context.mounted) {
                                     context.navigateTo(
-                                        screen:
-                                            const CategorySelectionScreen());
+                                        screen: userInfo.isFirstLogin! &&
+                                                !userInfo.isItemCategorySaved!
+                                            ? const CategorySelectionScreen()
+                                            : const HomeScreen(),
+                                        type: NavigationTypes.push);
                                   }
                                 } catch (e) {
                                   log("위치 정보 저장 실패: $e");
