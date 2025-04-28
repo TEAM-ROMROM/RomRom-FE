@@ -51,7 +51,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                       context,
                       MaterialPageRoute(
                           builder: (context) => const HomeScreen()),
-                          (route) => false,
+                      (route) => false,
                     );
                   }
                 },
