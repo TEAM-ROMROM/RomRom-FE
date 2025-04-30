@@ -68,3 +68,15 @@ flutter:
           weight: 800
         - asset: assets/fonts/pretendard/Pretendard-Black.otf
           weight: 900
+
+    # fonts
+    - family: NEXON-Lv2-Gothic
+      fonts:
+        - asset: assets/fonts/pretendard/NEXON-Lv2-Gothic-Light.otf
+          weight: 300
+        - asset: assets/fonts/pretendard/NEXON-Lv2-Gothic.otf
+          weight: 400
+        - asset: assets/fonts/pretendard/NEXON-Lv2-Gothic-Medium.otf
+          weight: 500
+        - asset: assets/fonts/pretendard/NEXON-Lv2-Gothic-Bold.otf
+          weight: 700
