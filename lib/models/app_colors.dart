@@ -20,6 +20,17 @@ class AppColors {
   static const Color currentLocationButtonBorder =
       Color(0xFFB7B7B7); // 현재 위치 버튼 테두리
 
+  // 물품 카드
+  static Color goodsCardBackground =
+      const Color(0xFFFFFFFF).withValues(alpha: 0.8); // 물품 카트 배경 색상
+  static Color goodsCardBorder =
+      const Color(0xFFFFFFFF).withValues(alpha: 0.6); // 물품 카드 테두리 색상
+  static const Color goodsCardShadow =
+      Color(0x26000000); // 물품 카드 그림자 색상 , 검정색, opacity 15%
+  static const Color goodsCardText = Color(0xFF131419); // 물품 카드 텍스트 색상
+  static const Color goodsCardOptionChip =
+      Color(0xFFD2D2D2); // 물품 카드 요청 옵션 칩 색상
+
   // 텍스트 색상
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);
