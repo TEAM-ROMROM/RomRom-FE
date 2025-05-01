@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
 
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/home_screen.dart';
@@ -9,7 +9,6 @@ import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/goods_card_scale_utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,12 +18,7 @@ void main() async {
       overlays: [SystemUiOverlay.top]); // 하단바 숨기기
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => GoodsCardScaleProvider()),
-      ],
-      child: MyApp(initialScreen: initialScreen),
-    ),
+    ProviderScope(child: MyApp(initialScreen: initialScreen)),
   );
 }
 

@@ -9,7 +9,7 @@ import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/widgets/goods_card.dart';
+import 'package:romrom_fe/widgets/item_card.dart';
 
 /// 홈 화면
 class HomeScreen extends StatelessWidget {
@@ -28,10 +28,19 @@ class HomeScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: 310.w,
-                  child: const GoodsCard(
-                    goodsCategoryLabel: '스포츠/레저',
-                    goodsName: '윌슨 블레이드 V9',
+                  width: 210.w,
+                  child: const ItemCard(
+                    itemCategoryLabel: '스포츠/레저',
+                    itemName: '윌슨 블레이드 V9',
+                    itemId: 'demoCard1',
+                  ),
+                ),
+                SizedBox(
+                  width: 85.w,
+                  child: const ItemCard(
+                    itemCategoryLabel: '스포츠/레저',
+                    itemName: '윌슨 블레이드 V9',
+                    itemId: 'demoCard2',
                   ),
                 ),
                 _buildActionButton(
