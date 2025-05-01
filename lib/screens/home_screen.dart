@@ -21,27 +21,34 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('홈', style: CustomTextStyles.h3),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const GoodsCard(
-              goodsCategoryLabel: '스포츠/레저',
-              goodsName: '윌슨 블레이드 V9',
+      body: Column(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 310.w,
+                  child: const GoodsCard(
+                    goodsCategoryLabel: '스포츠/레저',
+                    goodsName: '윌슨 블레이드 V9',
+                  ),
+                ),
+                _buildActionButton(
+                  onPressed: () => _handleLogoutBtnTap(context),
+                  backgroundColor: Colors.pink[300],
+                  text: '로그아웃',
+                ),
+                SizedBox(height: 20.h),
+                _buildActionButton(
+                  onPressed: () => _handleDeleteMemberBtnTap(context),
+                  backgroundColor: Colors.red[400],
+                  text: '회원탈퇴',
+                ),
+              ],
             ),
-            _buildActionButton(
-              onPressed: () => _handleLogoutBtnTap(context),
-              backgroundColor: Colors.pink[300],
-              text: '로그아웃',
-            ),
-            SizedBox(height: 20.h),
-            _buildActionButton(
-              onPressed: () => _handleDeleteMemberBtnTap(context),
-              backgroundColor: Colors.red[400],
-              text: '회원탈퇴',
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

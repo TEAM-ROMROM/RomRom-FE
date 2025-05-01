@@ -1,148 +1,171 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import 'package:romrom_fe/enums/font_family.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/goods_card_scale_utils.dart';
 import 'package:romrom_fe/widgets/goods_card_option_chip.dart';
 
-// 물품 카드 위젯
 class GoodsCard extends StatelessWidget {
   final String goodsCategoryLabel;
   final String goodsName;
   final List<String> goodsOptions;
   final String goodsCardImageUrl;
 
-  final int width; // 카드 가로 길이
-  const GoodsCard(
-      {super.key,
-      this.goodsCategoryLabel = '물품 카테고리',
-      this.goodsName = '물품 이름',
-      this.goodsOptions = const ['옵션1', '옵션2', '옵션3'],
-      this.goodsCardImageUrl = 'https://picsum.photos/400/300', // 매번 다른 랜덤 이미지
-
-      this.width = 310});
+  const GoodsCard({
+    super.key,
+    this.goodsCategoryLabel = '물품 카테고리',
+    this.goodsName = '물품 이름',
+    this.goodsOptions = const ['추가금', '직거래', '택배'],
+    this.goodsCardImageUrl = 'https://picsum.photos/400/300',
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width.w,
-      color: Colors.transparent,
-      child: AspectRatio(
-        aspectRatio: 310 / 496,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.goodsCardBackground,
-            borderRadius: BorderRadius.circular(10.r),
-            border: Border.all(
-              color: AppColors.goodsCardBorder,
-              style: BorderStyle.solid,
-              strokeAlign: BorderSide.strokeAlignOutside,
-              width: 4.w,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.goodsCardShadow,
-                offset: Offset(0, 4.h),
-                blurRadius: 4.r,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          context.read<GoodsCardScaleProvider>().setScale(310.0, cardWidth);
+        });
+        // 비율 설정
+        final cs = context.watch<GoodsCardScaleProvider>().scale;
+
+        return ClipRRect(
+          borderRadius: cs.radius(10),
+          child: Padding(
+            padding: cs.padding(4, 4),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: cs.s(30),
+                sigmaY: cs.s(30),
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Flexible(
-                flex: 350,
-                fit: FlexFit.tight,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(10.r),
-                    topRight: Radius.circular(10.r),
+              child: Container(
+                width: cardWidth,
+                decoration: BoxDecoration(
+                  color: AppColors.goodsCardBackground,
+                  borderRadius: cs.radius(10),
+                  border: Border.all(
+                    color: AppColors.goodsCardBorder,
+                    width: cs.s(4),
+                    style: BorderStyle.solid,
+                    strokeAlign: BorderSide.strokeAlignOutside,
                   ),
-                  child: Image.network(
-                    goodsCardImageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: 250.h,
-                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.goodsCardShadow,
+                      offset: Offset(4, 4),
+                      blurRadius: 10,
+                    ),
+                  ],
                 ),
-              ),
-              Flexible(
-                flex: 146,
-                fit: FlexFit.tight,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18.0, vertical: 12.0),
+                    SizedBox(
+                      height: cs.s(350),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(cs.s(10)),
+                          topRight: Radius.circular(cs.s(10)),
+                        ),
+                        child: Image.network(
+                          goodsCardImageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: cs.s(146),
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          Text(
-                            goodsCategoryLabel,
-                            style: CustomTextStyles.p2.copyWith(
-                              color: AppColors.goodsCardText
-                                  .withValues(alpha: 0.5),
-                              fontWeight: FontWeight.w400,
+                          Padding(
+                            padding: cs.padding(18, 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Text(
+                                  goodsCategoryLabel,
+                                  style: CustomTextStyles.p2.copyWith(
+                                    fontSize: cs.fontSize(
+                                        CustomTextStyles.p2.fontSize!),
+                                    color: AppColors.goodsCardText
+                                        .withValues(alpha: 0.5),
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                                cs.sizedBoxH(8),
+                                Text(
+                                  goodsName,
+                                  style: CustomTextStyles.p1.copyWith(
+                                    fontSize: cs.fontSize(
+                                        CustomTextStyles.p1.fontSize!),
+                                    color: AppColors.goodsCardText,
+                                    fontFamily:
+                                        FontFamily.nexonLv2Gothic.fontName,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          SizedBox(height: 8.h),
-                          Text(
-                            goodsName,
-                            style: CustomTextStyles.p1.copyWith(
-                              color: AppColors.goodsCardText,
-                              fontFamily: FontFamily.nexonLv2Gothic.fontName,
+                          Container(
+                            width: double.infinity,
+                            margin: EdgeInsets.only(
+                                top: cs.s(3),
+                                bottom: cs.s(4),
+                                right: cs.s(4),
+                                left: cs.s(4)),
+                            height: cs.s(75),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFFFF)
+                                  .withValues(alpha: 0.3),
+                              borderRadius: cs.radius(6),
+                            ),
+                            child: Padding(
+                              padding: cs.padding(14, 10),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '요청 옵션',
+                                    style: CustomTextStyles.p3.copyWith(
+                                      fontSize: cs.fontSize(
+                                          CustomTextStyles.p3.fontSize!),
+                                      color: AppColors.goodsCardText
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  cs.sizedBoxH(10),
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Wrap(
+                                      spacing: cs.s(10), // 가로 간격
+                                      children: goodsOptions
+                                          .map((option) => GoodsCardOptionChip(
+                                              goodsOption: option))
+                                          .toList(),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(
-                          top: 3.0, bottom: 4.0, right: 4.0, left: 4.0),
-                      height: 75.h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFFFFF).withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14.0, vertical: 12.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '요청 옵션',
-                              style: CustomTextStyles.p3.copyWith(
-                                color: AppColors.goodsCardText
-                                    .withValues(alpha: 0.5),
-                              ),
-                            ),
-                            SizedBox(height: 10.h),
-                            SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Wrap(
-                                  spacing: 10, // 가로 간격
-                                  runSpacing: 8, // 줄바꿈 시 간격 (필요한 경우)
-                                  children: goodsOptions
-                                      .map((option) => GoodsCardOptionChip(
-                                          goodsOption: option))
-                                      .toList(),
-                                )),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
