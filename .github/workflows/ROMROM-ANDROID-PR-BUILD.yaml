@@ -146,39 +146,69 @@ jobs:
             exit 1
           fi
 
-      - name: 빌드 상태 저장
-        if: always()
+      - name: 실패한 단계 찾기
+        id: find-failure
+        if: failure()
         run: |
-          mkdir -p build-status
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ 프로젝트 빌드 성공! 모든 단계가 정상적으로 완료되었습니다." > build-status/status.txt
-          else
-            echo "❌ 프로젝트 빌드 실패! 자세한 오류 정보는 로그를 확인해주세요." > build-status/status.txt
-          fi
+          echo "failed_step=${{ steps.checkout.outcome == 'failure' && '소스코드 체크아웃' ||
+            steps.create-env.outcome == 'failure' && '환경 변수 파일 생성' ||
+            steps.setup-keystore.outcome == 'failure' && '키스토어 설정' ||
+            steps.setup-flutter.outcome == 'failure' && 'Flutter 설정' ||
+            steps.create-local-props.outcome == 'failure' && 'local.properties 생성' ||
+            steps.install-deps.outcome == 'failure' && '의존성 설치' ||
+            steps.setup-gradle.outcome == 'failure' && 'Gradle 설정' ||
+            steps.setup-java.outcome == 'failure' && 'Java 설정' ||
+            steps.setup-android.outcome == 'failure' && 'Android SDK 설정' ||
+            steps.flutter-analyze.outcome == 'failure' && '코드 분석' ||
+            steps.build-apk.outcome == 'failure' && 'APK 빌드' ||
+            steps.check-output.outcome == 'failure' && '빌드 결과 확인' ||
+            '알 수 없는 단계' }}" >> $GITHUB_OUTPUT
 
-      - name: 빌드 상태 업로드
-        if: always()
-        # Upload-artifact v3에서 v4로 업데이트
-        uses: actions/upload-artifact@v4
+      - name: PR에 성공 메시지 작성
+        if: success()
+        uses: actions/github-script@v7
         with:
-          name: build-status
-          path: build-status/
-          retention-days: 7
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ✅ 프로젝트 빌드 성공!
+            
+              모든 단계가 성공적으로 완료되었습니다.
+            
+              ### 빌드 정보
+              - 빌드 시간: ${new Date().toISOString()}
+              - 커밋: ${context.sha.substring(0, 7)}
+              - 브랜치: ${context.ref.replace('refs/heads/', '')}
+            
+              빌드된 앱이 정상적으로 생성되었습니다. 👍`
+            })
 
-    outputs:
-      build_status: ${{ job.status }}
-
-  notify:
-    name: 빌드 상태 알림
-    needs: test-project-build
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: 빌드 상태 표시
-        run: |
-          if [ "${{ needs.test-project-build.outputs.build_status }}" == "success" ]; then
-            echo "::notice title=빌드 상태::✅ 프로젝트 빌드 성공! 모든 단계가 정상적으로 완료되었습니다."
-          else
-            echo "::error title=빌드 상태::❌ 프로젝트 빌드 실패! 빌드 로그에서 자세한 오류 정보를 확인하세요."
-          fi
+      - name: PR에 실패 메시지 작성
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let errorLog = '';
+            
+            try {
+              // 실패한 단계 정보 가져오기
+              const failedStep = '${{ steps.find-failure.outputs.failed_step }}';
+            
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## ❌ 프로젝트 빌드 실패!
+            
+                ### 실패한 단계: ${failedStep}
+            
+                자세한 오류 내용은 [워크플로우 실행 로그](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})에서 확인할 수 있습니다.
+            
+                빌드 문제를 해결한 후 다시 시도해주세요. 🔍`
+              })
+            } catch (error) {
+              console.log(`Error creating comment: ${error}`);
+            }
