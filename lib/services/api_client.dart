@@ -264,6 +264,7 @@ class ApiClient {
   }
 
   /// 응답 처리
+  /// ignore: unused_element
   static Future<void> _handleResponse({
     required http.Response response,
     required String url,

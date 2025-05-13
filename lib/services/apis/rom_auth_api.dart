@@ -7,7 +7,6 @@ import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/log_utils.dart';
 import 'package:romrom_fe/services/api_client.dart';
 
 // AuthApi -> RomAuthApi 이름 변경 : kakao SDK ApiAuth 와 충돌

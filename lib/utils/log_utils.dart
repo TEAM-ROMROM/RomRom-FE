@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// api 요청 응답 프린터
+/// ignore: unused_element
 void responsePrinter(String url, Map<String, dynamic>? response) {
   debugPrint("👽----$url----👽"); // api 요청 주소 출력
   if (response != null) {
