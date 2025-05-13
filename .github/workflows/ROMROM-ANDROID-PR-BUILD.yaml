@@ -15,24 +15,35 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-        continue-on-error: false
 
       - name: 환경 변수 파일 생성
         id: create-env
         run: |
           printf "%s\n" "${{ secrets.ENV }}" > .env
-        continue-on-error: false
+          if [ $? -ne 0 ]; then
+            echo "::error::환경 변수 파일 생성 실패!"
+            exit 1
+          fi
 
       - name: 키스토어 설정
         id: setup-keystore
         run: |
           mkdir -p android/app/keystore
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/keystore/key.jks
+          if [ $? -ne 0 ]; then
+            echo "::error::키스토어 파일 생성 실패!"
+            exit 1
+          fi
+          
           echo "storeFile=keystore/key.jks" > android/key.properties
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-        continue-on-error: false
+          
+          if [ ! -f android/key.properties ]; then
+            echo "::error::key.properties 파일 생성 실패!"
+            exit 1
+          fi
 
       - name: Flutter 설정
         id: setup-flutter
@@ -41,7 +52,6 @@ jobs:
           flutter-version: "3.27.3"
           cache: true
           cache-key: flutter-${{ runner.os }}-3.27.3
-        continue-on-error: false
 
       - name: Flutter 의존성 캐싱
         id: cache-flutter
@@ -50,7 +60,6 @@ jobs:
           path: ~/.pub-cache
           key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-flutter-pub-
-        continue-on-error: true
 
       - name: Gradle 의존성 캐싱
         id: cache-gradle
@@ -62,26 +71,36 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-        continue-on-error: true
 
       - name: local.properties 생성
         id: create-local-props
         run: |
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
-        continue-on-error: false
+          
+          if [ ! -f android/local.properties ]; then
+            echo "::error::local.properties 파일 생성 실패!"
+            exit 1
+          fi
 
       - name: 의존성 설치
         id: install-deps
-        run: flutter pub get
-        continue-on-error: false
+        run: |
+          flutter pub get
+          if [ $? -ne 0 ]; then
+            echo "::error::Flutter 의존성 설치 실패!"
+            exit 1
+          fi
 
       - name: Gradle 설정
         id: setup-gradle
         working-directory: android
         run: |
           chmod +x gradlew
-        continue-on-error: false
+          if [ $? -ne 0 ]; then
+            echo "::error::Gradle 설정 실패!"
+            exit 1
+          fi
 
       - name: Java 설정
         id: setup-java
@@ -89,112 +108,58 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
-        continue-on-error: false
 
       - name: Android SDK 설정
         id: setup-android
         uses: android-actions/setup-android@v3
-        continue-on-error: false
 
       - name: 코드 분석 실행
         id: flutter-analyze
-        run: flutter analyze
-        continue-on-error: false
+        run: |
+          flutter analyze
+          if [ $? -ne 0 ]; then
+            echo "::error::코드 분석 실패! 코드를 확인해주세요."
+            exit 1
+          fi
 
       - name: APK 빌드
         id: build-apk
-        run: flutter build apk --debug
-        continue-on-error: false
+        run: |
+          flutter build apk --debug
+          if [ $? -ne 0 ]; then
+            echo "::error::APK 빌드 실패!"
+            exit 1
+          fi
 
       - name: 빌드 결과 확인
         id: check-output
         run: |
+          if [ ! -d "build/app/outputs/flutter-apk/" ]; then
+            echo "::error::빌드 결과물 디렉토리가 존재하지 않습니다!"
+            exit 1
+          fi
+          
           ls -la build/app/outputs/flutter-apk/
-        continue-on-error: false
+          
+          if [ ! -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
+            echo "::error::APK 파일이 생성되지 않았습니다!"
+            exit 1
+          fi
 
-      - name: 빌드 결과 요약
-        id: build-summary
-        if: always()
-        run: |
-          echo "::group::빌드 상태 요약"
-          
-          if [[ ${{ steps.checkout.outcome }} == 'failure' ]]; then
-            echo "❌ 소스코드 체크아웃 실패!"
-            exit 1
-          fi
-          
-          if [[ ${{ steps.create-env.outcome }} == 'failure' ]]; then
-            echo "❌ 환경 변수 파일 생성 실패! ENV 시크릿을 확인해주세요."
-            exit 1
-          fi
-          
-          if [[ ${{ steps.setup-keystore.outcome }} == 'failure' ]]; then
-            echo "❌ 키스토어 설정 실패! 키스토어 시크릿을 확인해주세요."
-            exit 1
-          fi
-          
-          if [[ ${{ steps.setup-flutter.outcome }} == 'failure' ]]; then
-            echo "❌ Flutter 환경 설정 실패!"
-            exit 1
-          fi
-          
-          if [[ ${{ steps.create-local-props.outcome }} == 'failure' ]]; then
-            echo "❌ local.properties 파일 생성 실패!"
-            exit 1
-          fi
-          
-          if [[ ${{ steps.install-deps.outcome }} == 'failure' ]]; then
-            echo "❌ 의존성 설치 실패! pubspec.yaml 파일을 확인해주세요."
-            exit 1
-          fi
-          
-          if [[ ${{ steps.setup-gradle.outcome }} == 'failure' ]]; then
-            echo "❌ Gradle 설정 실패!"
-            exit 1
-          fi
-          
-          if [[ ${{ steps.setup-java.outcome }} == 'failure' ]]; then
-            echo "❌ Java 환경 설정 실패!"
-            exit 1
-          fi
-          
-          if [[ ${{ steps.setup-android.outcome }} == 'failure' ]]; then
-            echo "❌ Android SDK 설정 실패!"
-            exit 1
-          fi
-          
-          if [[ ${{ steps.flutter-analyze.outcome }} == 'failure' ]]; then
-            echo "❌ 코드 분석 실패! 코드 내 문제를 수정해주세요."
-            exit 1
-          fi
-          
-          if [[ ${{ steps.build-apk.outcome }} == 'failure' ]]; then
-            echo "❌ APK 빌드 실패! 빌드 로그에서 자세한 오류 정보를 확인하세요."
-            exit 1
-          fi
-          
-          if [[ ${{ steps.check-output.outcome }} == 'failure' ]]; then
-            echo "❌ 빌드 결과물 확인 실패!"
-            exit 1
-          fi
-          
-          echo "✅ 프로젝트 빌드 성공! 모든 단계가 정상적으로 완료되었습니다."
-          echo "::endgroup::"
-        shell: bash
-
-      - name: 빌드 상태 파일 생성
+      - name: 빌드 상태 저장
         if: always()
         run: |
           mkdir -p build-status
-          if [[ ${{ job.status }} == 'success' ]]; then
-            echo "✅ 프로젝트 빌드 성공! 모든 테스트를 통과했습니다." > build-status/status.txt
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ 프로젝트 빌드 성공! 모든 단계가 정상적으로 완료되었습니다." > build-status/status.txt
           else
             echo "❌ 프로젝트 빌드 실패! 자세한 오류 정보는 로그를 확인해주세요." > build-status/status.txt
           fi
 
       - name: 빌드 상태 업로드
         if: always()
-        uses: actions/upload-artifact@v3
+        # Upload-artifact v3에서 v4로 업데이트
+        uses: actions/upload-artifact@v4
         with:
           name: build-status
           path: build-status/
@@ -212,7 +177,7 @@ jobs:
     steps:
       - name: 빌드 상태 표시
         run: |
-          if [[ ${{ needs.test-project-build.outputs.build_status }} == 'success' ]]; then
+          if [ "${{ needs.test-project-build.outputs.build_status }}" == "success" ]; then
             echo "::notice title=빌드 상태::✅ 프로젝트 빌드 성공! 모든 단계가 정상적으로 완료되었습니다."
           else
             echo "::error title=빌드 상태::❌ 프로젝트 빌드 실패! 빌드 로그에서 자세한 오류 정보를 확인하세요."
