@@ -63,9 +63,22 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// 로그아웃 처리
-  void _handleLogoutBtnTap(BuildContext context) {
-    final authApi = RomAuthApi();
-    authApi.logoutWithSocial(context);
+  void _handleLogoutBtnTap(BuildContext context) async {
+    try {
+      // 로그아웃 API 호출 시도
+      final authApi = RomAuthApi();
+      await authApi.logoutWithSocial(context);
+    } catch (e) {
+      debugPrint('로그아웃 중 오류 발생: $e');
+    } finally {
+      // API 성공/실패 여부와 관계없이 로그인 화면으로 이동
+      if (context.mounted) {
+        context.navigateTo(
+          screen: const LoginScreen(),
+          type: NavigationTypes.pushAndRemoveUntil
+        );
+      }
+    }
   }
 
   /// 회원 탈퇴 처리
