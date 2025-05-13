@@ -47,10 +47,10 @@ class LoginButton extends StatelessWidget {
         // 처음 로그인 하면 위치 인증 화면으로 이동
         if (context.mounted) {
           context.navigateTo(
-              screen: userInfo.isFirstLogin!
+              screen: userInfo.isFirstLogin! && !userInfo.isMemberLocationSaved!
                   ? const LocationVerificationScreen()
                   : const HomeScreen(),
-              type: NavigationTypes.pushReplacement);
+              type: NavigationTypes.push);
         }
       }
     } catch (e) {

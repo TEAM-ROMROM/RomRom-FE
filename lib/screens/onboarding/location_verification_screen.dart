@@ -8,9 +8,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/screens/home_screen.dart';
 import 'package:romrom_fe/screens/onboarding/category_selection_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/apis/responses/naver_address_response.dart';
@@ -37,6 +41,8 @@ class _LocationVerificationScreenState
   String siGunGu = '';
   String eupMyoenDong = '';
   String? ri;
+
+  final Completer<NaverMapController> mapControllerCompleter = Completer();
 
   @override
   void initState() {
@@ -120,9 +126,19 @@ class _LocationVerificationScreenState
   }
 
   @override
-  Widget build(BuildContext context) {
-    final Completer<NaverMapController> mapControllerCompleter = Completer();
+  void dispose() {
+    if (mapControllerCompleter.isCompleted) {
+      mapControllerCompleter.future.then((controller) {
+        controller.clearOverlays(); // 필요 시 맵 정리
+        controller.setLocationTrackingMode(NLocationTrackingMode.none);
+        controller.dispose();
+      });
+    }
+    super.dispose();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CommonAppBar(
         title: '동네 인증하기',
@@ -135,24 +151,85 @@ class _LocationVerificationScreenState
               children: [
                 Expanded(
                   flex: 341,
-                  child: NaverMap(
-                    options: NaverMapViewOptions(
-                      initialCameraPosition: NCameraPosition(
-                        target: _currentPosition!,
-                        zoom: 15,
+                  child: Stack(
+                    children: [
+                      NaverMap(
+                        options: NaverMapViewOptions(
+                          initialCameraPosition: NCameraPosition(
+                            target: _currentPosition!,
+                            zoom: 15,
+                          ),
+                          logoAlign: NLogoAlign.leftBottom,
+                          logoMargin: NEdgeInsets.fromEdgeInsets(
+                            EdgeInsets.only(
+                                left: 24.w, bottom: 20.h), // naver 로고 위치 조정
+                          ),
+                          indoorEnable: true,
+                          locationButtonEnable: false, // 위치 버튼 비활성화
+                          consumeSymbolTapEvents: false,
+                        ),
+                        forceGesture: false,
+                        onMapReady: (controller) async {
+                          if (!mapControllerCompleter.isCompleted) {
+                            mapControllerCompleter.complete(controller);
+                          }
+                          await getAddressByNaverApi(_currentPosition!);
+                          log("onMapReady", name: "onMapReady");
+                          await controller.setLocationTrackingMode(
+                              NLocationTrackingMode.follow);
+                        },
                       ),
-                      indoorEnable: true,
-                      locationButtonEnable: true,
-                      consumeSymbolTapEvents: false,
-                    ),
-                    onMapReady: (controller) async {
-                      mapControllerCompleter.complete(controller);
-                      // _mapController = controller; - 제거됨
-                      await getAddressByNaverApi(_currentPosition!);
-                      log("onMapReady", name: "onMapReady");
-                      await controller.setLocationTrackingMode(
-                          NLocationTrackingMode.follow);
-                    },
+                      // Custom 현재 위치 버튼
+                      Positioned(
+                        bottom: 48.h,
+                        left: 24.w,
+                        child: GestureDetector(
+                          onTap: () async {
+                            final controller =
+                                await mapControllerCompleter.future;
+                            await controller.setLocationTrackingMode(
+                                NLocationTrackingMode.follow);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.currentLocationButtonBg,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: AppColors.currentLocationButtonBorder,
+                                  width: 0.15.w,
+                                  strokeAlign: BorderSide.strokeAlignInside),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.currentLocationButtonShadow
+                                      .withValues(alpha: 0.25),
+                                  blurRadius: 2.0,
+                                  offset: const Offset(0, 0),
+                                ),
+                                BoxShadow(
+                                  color: AppColors.currentLocationButtonShadow
+                                      .withValues(alpha: 0.25),
+                                  blurRadius: 2.0,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              onPressed: () async {
+                                final controller =
+                                    await mapControllerCompleter.future;
+                                await controller.setLocationTrackingMode(
+                                    NLocationTrackingMode.follow);
+                              },
+                              iconSize: 24.h,
+                              icon: const Icon(
+                                AppIcons.currentLocation,
+                                color: AppColors.currentLocationButtonIcon,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
                 ),
                 Expanded(
@@ -169,11 +246,11 @@ class _LocationVerificationScreenState
                         ),
                         SizedBox(height: 20.0.w),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0, vertical: 12.0),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 20.0.w, vertical: 12.0.h),
                           decoration: BoxDecoration(
                             color: AppColors.locationVerificationAreaLabel,
-                            borderRadius: BorderRadius.circular(100.0),
+                            borderRadius: BorderRadius.circular(100.0.r),
                           ),
                           child: Text(
                             "$siDo $siGunGu $eupMyoenDong",
@@ -187,8 +264,7 @@ class _LocationVerificationScreenState
                             style: TextButton.styleFrom(
                               backgroundColor: AppColors.primaryYellow,
                               foregroundColor: AppColors.textColorBlack,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 20.0),
+                              padding: EdgeInsets.symmetric(vertical: 20.0.h),
                               minimumSize: Size(316.w, 0),
                             ),
                             onPressed: () async {
@@ -235,16 +311,21 @@ class _LocationVerificationScreenState
                                     eupMyoenDong: eupMyoenDong,
                                     ri: ri,
                                   );
+                                  var userInfo = UserInfo();
+                                  await UserInfo().getUserInfo(); // 사용자 정보 불러오기
+
                                   if (context.mounted) {
                                     context.navigateTo(
-                                        screen:
-                                            const CategorySelectionScreen());
+                                        screen: userInfo.isFirstLogin! &&
+                                                !userInfo.isItemCategorySaved!
+                                            ? const CategorySelectionScreen()
+                                            : const HomeScreen(),
+                                        type: NavigationTypes.push);
                                   }
                                 } catch (e) {
                                   log("위치 정보 저장 실패: $e");
                                   if (context.mounted) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
+                                    ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                           content: Text('위치 저장에 실패했습니다: $e')),
                                     );
