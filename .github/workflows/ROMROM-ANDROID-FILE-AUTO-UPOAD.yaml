@@ -1,28 +1,74 @@
-name: CICD file creation
+name: ROMROM Configuration Files Management
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
-  build:
+  config-files-management:
+    name: Manage Configuration Files
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
 
-      - name: Install smbclient
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: List repository contents
+        run: |
+          echo "Repository checked out"
+          ls -la
+
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y smbclient
-          echo "smbclient installed"
-          smbclient --version
+          sudo apt-get install -y smbclient jq
+          echo "SMB and jq dependencies installed"
 
+      # Create the environment files from secrets
+      - name: Create .env file from GitHub Secret
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo ".env file created"
+
+      # Setup Keystore
+      - name: Setup Keystore and key.properties
+        run: |
+          mkdir -p android/app/keystore
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > android/app/keystore/key.jks || echo "Base64 decoding failed"
+          echo "storeFile=keystore/key.jks" > android/key.properties
+          echo "storePassword=android" >> android/key.properties
+          echo "keyAlias=androiddebugkey" >> android/key.properties
+          echo "keyPassword=android" >> android/key.properties
+          echo "Keystore and key.properties created"
+
+      # Google Services JSON
+      - name: Create Google-services.json
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/Google-services.json
+          echo "Google-services.json created"
+
+      # Calculate short commit hash for reference
+      - name: Calculate Short Commit Hash
+        id: short_hash
+        run: |
+          echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+          echo "Short commit hash: ${{ env.SHORT_COMMIT_HASH }}"
+
+      # Create comprehensive CI/CD info JSON file
       - name: Create CI/CD Info JSON file
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date '+%Y-%m-%d %H:%M')
-          cat <<EOF > github-cicd-file-info.json
+          
+          # Get file sizes
+          ENV_SIZE=$(stat -c%s ".env" 2>/dev/null || echo "0")
+          KEY_SIZE=$(stat -c%s "android/app/keystore/key.jks" 2>/dev/null || echo "0")
+          GOOGLE_SERVICES_SIZE=$(stat -c%s "android/Google-services.json" 2>/dev/null || echo "0")
+          
+          cat <<EOF > cicd-gitignore-file.json
           {
             "builds": [
               {
@@ -40,7 +86,7 @@ jobs:
                 },
                 "commit": {
                   "hash": "${GITHUB_SHA}",
-                  "short_hash": "$(echo ${GITHUB_SHA} | cut -c1-7)",
+                  "short_hash": "${env.SHORT_COMMIT_HASH}",
                   "url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
                 },
                 "triggered_by": "${GITHUB_ACTOR}",
@@ -49,25 +95,49 @@ jobs:
                 "files": [
                   {
                     "file_name": ".env",
-                    "file_path": "/"
+                    "file_path": "/",
+                    "file_size": "${ENV_SIZE}",
+                    "last_updated": "${BUILD_DATE}"
                   },
                   {
                     "file_name": "key.jks",
-                    "file_path": "android/app/keystore/"
+                    "file_path": "android/app/keystore/",
+                    "file_size": "${KEY_SIZE}",
+                    "last_updated": "${BUILD_DATE}"
+                  },
+                  {
+                    "file_name": "key.properties",
+                    "file_path": "android/",
+                    "last_updated": "${BUILD_DATE}"
                   },
                   {
                     "file_name": "Google-services.json",
-                    "file_path": "android/"
+                    "file_path": "android/",
+                    "file_size": "${GOOGLE_SERVICES_SIZE}",
+                    "last_updated": "${BUILD_DATE}"
                   }
                 ]
               }
             ]
           }
           EOF
-          echo "github-cicd-file-info.json created"
-          cat github-cicd-file-info.json  # 디버깅 출력
+          echo "cicd-gitignore-file.json created"
+          cat cicd-gitignore-file.json
 
-      - name: Upload CI/CD JSON to remote server
+      # Create a directory to store all gitignore files
+      - name: Prepare gitignore files directory
+        run: |
+          mkdir -p gitignore_files
+          cp .env gitignore_files/
+          cp android/app/keystore/key.jks gitignore_files/
+          cp android/key.properties gitignore_files/
+          cp android/Google-services.json gitignore_files/
+          cp cicd-gitignore-file.json gitignore_files/
+          echo "Files prepared for upload"
+          ls -la gitignore_files/
+
+      # Upload the files and JSON to SMB server
+      - name: Upload files to Synology NAS via SMB
         env:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
           SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
@@ -75,8 +145,49 @@ jobs:
           SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
           SMB_PORT=${{ secrets.WEB_SMB_PORT }}
           SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
-          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
-          echo "Uploading github-cicd-file-info.json to SMB..."
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put github-cicd-file-info.json" -d 10
-          echo "github-cicd-file-info.json uploaded to SMB"
-        shell: bash
+          SMB_PATH="${{ secrets.WEB_SMB_PATH }}/github_secret/front"
+          
+          # Create target directory if it doesn't exist
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "mkdir $SMB_PATH; ls"
+          
+          # Upload each file individually
+          echo "Uploading config files to SMB..."
+          cd gitignore_files
+          for file in *; do
+            echo "Uploading $file..."
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put \"$file\""
+          done
+          
+          echo "All files uploaded to $SMB_PATH"
+
+      # Update history file to track changes over time
+      - name: Update config files history
+        env:
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+        run: |
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
+          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
+          SMB_PATH="${{ secrets.WEB_SMB_PATH }}/github_secret/front"
+          
+          # Try to download existing history file or create a new one
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; get config-history.json" || echo '{"history": []}' > config-history.json
+          
+          export TZ='Asia/Seoul'
+          BUILD_DATE=$(date '+%Y-%m-%d %H:%M')
+          
+          # Create new entry for this run
+          NEW_ENTRY=$(jq -n \
+            --arg date "$BUILD_DATE" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg commit "${{ env.SHORT_COMMIT_HASH }}" \
+            --arg workflow "$GITHUB_WORKFLOW" \
+            '{date: $date, actor: $actor, commit: $commit, workflow: $workflow}')
+          
+          # Add new entry to history
+          jq --argjson new_entry "$NEW_ENTRY" '.history += [$new_entry]' config-history.json > updated-history.json
+          
+          # Upload updated history file
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put updated-history.json config-history.json"
+          echo "Config history updated"
