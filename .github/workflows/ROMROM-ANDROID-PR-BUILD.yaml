@@ -4,6 +4,11 @@ on:
   pull_request:
     branches: ["main"]
 
+# PR 댓글을 위한 권한 추가
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   test-project-build:
     name: 프로젝트 빌드 테스트
@@ -39,11 +44,6 @@ jobs:
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-          
-          if [ ! -f android/key.properties ]; then
-            echo "::error::key.properties 파일 생성 실패!"
-            exit 1
-          fi
 
       - name: Flutter 설정
         id: setup-flutter
@@ -77,30 +77,15 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
-          
-          if [ ! -f android/local.properties ]; then
-            echo "::error::local.properties 파일 생성 실패!"
-            exit 1
-          fi
 
       - name: 의존성 설치
         id: install-deps
-        run: |
-          flutter pub get
-          if [ $? -ne 0 ]; then
-            echo "::error::Flutter 의존성 설치 실패!"
-            exit 1
-          fi
+        run: flutter pub get
 
       - name: Gradle 설정
         id: setup-gradle
         working-directory: android
-        run: |
-          chmod +x gradlew
-          if [ $? -ne 0 ]; then
-            echo "::error::Gradle 설정 실패!"
-            exit 1
-          fi
+        run: chmod +x gradlew
 
       - name: Java 설정
         id: setup-java
@@ -115,21 +100,11 @@ jobs:
 
       - name: 코드 분석 실행
         id: flutter-analyze
-        run: |
-          flutter analyze
-          if [ $? -ne 0 ]; then
-            echo "::error::코드 분석 실패! 코드를 확인해주세요."
-            exit 1
-          fi
+        run: flutter analyze
 
       - name: APK 빌드
         id: build-apk
-        run: |
-          flutter build apk --debug
-          if [ $? -ne 0 ]; then
-            echo "::error::APK 빌드 실패!"
-            exit 1
-          fi
+        run: flutter build apk --debug
 
       - name: 빌드 결과 확인
         id: check-output
@@ -146,69 +121,61 @@ jobs:
             exit 1
           fi
 
+      # 실패한 단계 찾기
       - name: 실패한 단계 찾기
         id: find-failure
         if: failure()
         run: |
-          echo "failed_step=${{ steps.checkout.outcome == 'failure' && '소스코드 체크아웃' ||
-            steps.create-env.outcome == 'failure' && '환경 변수 파일 생성' ||
-            steps.setup-keystore.outcome == 'failure' && '키스토어 설정' ||
-            steps.setup-flutter.outcome == 'failure' && 'Flutter 설정' ||
-            steps.create-local-props.outcome == 'failure' && 'local.properties 생성' ||
-            steps.install-deps.outcome == 'failure' && '의존성 설치' ||
-            steps.setup-gradle.outcome == 'failure' && 'Gradle 설정' ||
-            steps.setup-java.outcome == 'failure' && 'Java 설정' ||
-            steps.setup-android.outcome == 'failure' && 'Android SDK 설정' ||
-            steps.flutter-analyze.outcome == 'failure' && '코드 분석' ||
-            steps.build-apk.outcome == 'failure' && 'APK 빌드' ||
-            steps.check-output.outcome == 'failure' && '빌드 결과 확인' ||
-            '알 수 없는 단계' }}" >> $GITHUB_OUTPUT
+          if [ "${{ steps.checkout.outcome }}" == "failure" ]; then
+            echo "failed_step=소스코드 체크아웃" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.create-env.outcome }}" == "failure" ]; then
+            echo "failed_step=환경 변수 파일 생성" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.setup-keystore.outcome }}" == "failure" ]; then
+            echo "failed_step=키스토어 설정" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.setup-flutter.outcome }}" == "failure" ]; then
+            echo "failed_step=Flutter 설정" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.create-local-props.outcome }}" == "failure" ]; then
+            echo "failed_step=local.properties 생성" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.install-deps.outcome }}" == "failure" ]; then
+            echo "failed_step=의존성 설치" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.setup-gradle.outcome }}" == "failure" ]; then
+            echo "failed_step=Gradle 설정" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.setup-java.outcome }}" == "failure" ]; then
+            echo "failed_step=Java 설정" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.setup-android.outcome }}" == "failure" ]; then
+            echo "failed_step=Android SDK 설정" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.flutter-analyze.outcome }}" == "failure" ]; then
+            echo "failed_step=코드 분석" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.build-apk.outcome }}" == "failure" ]; then
+            echo "failed_step=APK 빌드" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.check-output.outcome }}" == "failure" ]; then
+            echo "failed_step=빌드 결과 확인" >> $GITHUB_OUTPUT
+          else
+            echo "failed_step=알 수 없는 단계" >> $GITHUB_OUTPUT
+          fi
 
-      - name: PR에 성공 메시지 작성
+      - name: 빌드 성공 댓글 작성
         if: success()
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ✅ 프로젝트 빌드 성공!
-            
-              모든 단계가 성공적으로 완료되었습니다.
-            
-              ### 빌드 정보
-              - 빌드 시간: ${new Date().toISOString()}
-              - 커밋: ${context.sha.substring(0, 7)}
-              - 브랜치: ${context.ref.replace('refs/heads/', '')}
-            
-              빌드된 앱이 정상적으로 생성되었습니다. 👍`
+              body: `✅ 프로젝트 빌드 성공`
             })
 
-      - name: PR에 실패 메시지 작성
+      - name: 빌드 실패 댓글 작성
         if: failure()
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            let errorLog = '';
-            
-            try {
-              // 실패한 단계 정보 가져오기
-              const failedStep = '${{ steps.find-failure.outputs.failed_step }}';
-            
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `## ❌ 프로젝트 빌드 실패!
-            
-                ### 실패한 단계: ${failedStep}
-            
-                자세한 오류 내용은 [워크플로우 실행 로그](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})에서 확인할 수 있습니다.
-            
-                빌드 문제를 해결한 후 다시 시도해주세요. 🔍`
-              })
-            } catch (error) {
-              console.log(`Error creating comment: ${error}`);
-            }
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ 프로젝트 빌드 실패\n\n실패한 단계: ${{ steps.find-failure.outputs.failed_step }}`
+            })
