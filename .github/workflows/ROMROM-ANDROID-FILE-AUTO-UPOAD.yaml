@@ -148,10 +148,9 @@ jobs:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
           SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
-          # 하드코딩된 SMB 정보 사용
-          SMB_SERVER="suh-project.iptime.org"
-          SMB_PORT="445"
-          SMB_SHARE="romrom"
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
+          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
           SMB_BASE_PATH="volume1/projects/romrom/github_secret/front"
           
           echo "SMB 서버에 연결 중..."
