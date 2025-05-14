@@ -3,72 +3,73 @@ name: ROMROM Configuration Files Management
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:
+  workflow_dispatch:  # 수동 실행 허용
 
 jobs:
   config-files-management:
-    name: Manage Configuration Files
+    name: 설정 파일 관리
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 코드 체크아웃
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: List repository contents
+      - name: 디버그용 디렉토리 내용 출력
         run: |
-          echo "Repository checked out"
+          echo "저장소 체크아웃 완료"
           ls -la
 
-      - name: Install dependencies
+      - name: 필요 패키지 설치
         run: |
           sudo apt-get update
           sudo apt-get install -y smbclient jq
-          echo "SMB and jq dependencies installed"
+          echo "SMB와 jq 의존성 설치 완료"
 
-      # Create the environment files from secrets
-      - name: Create .env file from GitHub Secret
+      # GitHub Secret에서 환경 파일 생성
+      - name: .env 파일 생성
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
-          echo ".env file created"
+          echo ".env 파일 생성 완료"
 
-      # Setup Keystore
-      - name: Setup Keystore and key.properties
+      # Keystore 설정
+      - name: Keystore 및 key.properties 설정
         run: |
           mkdir -p android/app/keystore
-          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > android/app/keystore/key.jks || echo "Base64 decoding failed"
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > android/app/keystore/key.jks || echo "Base64 디코딩 실패"
           echo "storeFile=keystore/key.jks" > android/key.properties
           echo "storePassword=android" >> android/key.properties
           echo "keyAlias=androiddebugkey" >> android/key.properties
           echo "keyPassword=android" >> android/key.properties
-          echo "Keystore and key.properties created"
+          echo "Keystore와 key.properties 생성 완료"
 
-      # Google Services JSON
-      - name: Create Google-services.json
+      # Google Services JSON 생성
+      - name: Google-services.json 생성
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/Google-services.json
-          echo "Google-services.json created"
+          echo "Google-services.json 생성 완료"
 
-      # Calculate short commit hash for reference
-      - name: Calculate Short Commit Hash
+      # 짧은 커밋 해시 계산
+      - name: 짧은 커밋 해시 계산
         id: short_hash
         run: |
           echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
-          echo "Short commit hash: ${{ env.SHORT_COMMIT_HASH }}"
+          echo "짧은 커밋 해시: $(echo ${{ github.sha }} | cut -c1-7)"
 
-      # Create comprehensive CI/CD info JSON file
-      - name: Create CI/CD Info JSON file
+      # CICD 정보 JSON 파일 생성 - 수정된 부분
+      - name: CI/CD 정보 JSON 파일 생성
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date '+%Y-%m-%d %H:%M')
           
-          # Get file sizes
+          # 파일 크기 확인
           ENV_SIZE=$(stat -c%s ".env" 2>/dev/null || echo "0")
           KEY_SIZE=$(stat -c%s "android/app/keystore/key.jks" 2>/dev/null || echo "0")
           GOOGLE_SERVICES_SIZE=$(stat -c%s "android/Google-services.json" 2>/dev/null || echo "0")
           
-          cat <<EOF > cicd-gitignore-file.json
+          # JSON 파일 생성 (문법 오류 수정)
+          cat > cicd-gitignore-file.json << EOF
           {
             "builds": [
               {
@@ -86,7 +87,7 @@ jobs:
                 },
                 "commit": {
                   "hash": "${GITHUB_SHA}",
-                  "short_hash": "${env.SHORT_COMMIT_HASH}",
+                  "short_hash": "${SHORT_COMMIT_HASH}",
                   "url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
                 },
                 "triggered_by": "${GITHUB_ACTOR}",
@@ -121,11 +122,11 @@ jobs:
             ]
           }
           EOF
-          echo "cicd-gitignore-file.json created"
+          echo "cicd-gitignore-file.json 파일 생성 완료"
           cat cicd-gitignore-file.json
 
-      # Create a directory to store all gitignore files
-      - name: Prepare gitignore files directory
+      # 업로드할 파일 준비
+      - name: gitignore 파일 디렉토리 준비
         run: |
           mkdir -p gitignore_files
           cp .env gitignore_files/
@@ -133,11 +134,11 @@ jobs:
           cp android/key.properties gitignore_files/
           cp android/Google-services.json gitignore_files/
           cp cicd-gitignore-file.json gitignore_files/
-          echo "Files prepared for upload"
+          echo "업로드 준비 완료"
           ls -la gitignore_files/
 
-      # Upload the files and JSON to SMB server
-      - name: Upload files to Synology NAS via SMB
+      # SMB를 통해 파일 업로드
+      - name: SMB를 통해 Synology NAS에 파일 업로드
         env:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
           SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
@@ -147,21 +148,22 @@ jobs:
           SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
           SMB_PATH="${{ secrets.WEB_SMB_PATH }}/github_secret/front"
           
-          # Create target directory if it doesn't exist
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "mkdir $SMB_PATH; ls"
+          # 대상 디렉토리 생성
+          echo "대상 디렉토리 생성 시도: $SMB_PATH"
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "mkdir -p $SMB_PATH; ls"
           
-          # Upload each file individually
-          echo "Uploading config files to SMB..."
+          # 각 파일 개별 업로드
+          echo "설정 파일 SMB 업로드 시작..."
           cd gitignore_files
           for file in *; do
-            echo "Uploading $file..."
+            echo "파일 업로드 중: $file"
             smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put \"$file\""
           done
           
-          echo "All files uploaded to $SMB_PATH"
+          echo "모든 파일이 $SMB_PATH 경로에 업로드 되었습니다"
 
-      # Update history file to track changes over time
-      - name: Update config files history
+      # 설정 파일 히스토리 업데이트
+      - name: 설정 파일 히스토리 업데이트
         env:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
           SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
@@ -171,23 +173,23 @@ jobs:
           SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
           SMB_PATH="${{ secrets.WEB_SMB_PATH }}/github_secret/front"
           
-          # Try to download existing history file or create a new one
+          # 기존 히스토리 파일 다운로드 시도
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; get config-history.json" || echo '{"history": []}' > config-history.json
           
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date '+%Y-%m-%d %H:%M')
           
-          # Create new entry for this run
+          # 새 항목 생성
           NEW_ENTRY=$(jq -n \
             --arg date "$BUILD_DATE" \
             --arg actor "$GITHUB_ACTOR" \
-            --arg commit "${{ env.SHORT_COMMIT_HASH }}" \
+            --arg commit "${SHORT_COMMIT_HASH}" \
             --arg workflow "$GITHUB_WORKFLOW" \
             '{date: $date, actor: $actor, commit: $commit, workflow: $workflow}')
           
-          # Add new entry to history
+          # 히스토리에 새 항목 추가
           jq --argjson new_entry "$NEW_ENTRY" '.history += [$new_entry]' config-history.json > updated-history.json
           
-          # Upload updated history file
+          # 업데이트된 히스토리 파일 업로드
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put updated-history.json config-history.json"
-          echo "Config history updated"
+          echo "설정 히스토리 업데이트 완료"
