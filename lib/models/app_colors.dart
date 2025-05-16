@@ -21,7 +21,7 @@ class AppColors {
       Color(0xFFB7B7B7); // 현재 위치 버튼 테두리
 
   static const Color bottomNavigationDisableIcon =
-  Color(0xFF666666); // 하단 네비게이션바 비활성화 아이콘
+      Color(0xFF676767); // 하단 네비게이션바 비활성화 아이콘
 
   // 텍스트 색상
   static const Color textColorWhite = Color(0xFFFFFFFF);

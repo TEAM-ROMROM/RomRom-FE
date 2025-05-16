@@ -19,11 +19,11 @@ class CustomBottomNavigationBar extends StatelessWidget {
     return Container(
       width: MediaQuery.of(context).size.width,
       height: 100.h,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.black,
         border: Border(
           top: BorderSide(
-            color: Color(0x1A000000),
+            color: const Color(0xFF000000).withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -60,7 +60,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
                   : AppColors.bottomNavigationDisableIcon,
               size: 24.sp,
             ),
-            SizedBox(height: 9.h), // 아이콘과 텍스트 사이 간격
+            SizedBox(height: 12.h), // 아이콘과 텍스트 사이 간격
             // 텍스트 (선택됨: 흰색, 선택 안됨: 회색)
             Text(
               label,
