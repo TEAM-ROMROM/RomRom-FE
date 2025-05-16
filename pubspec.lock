@@ -800,6 +800,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.6"
+  playing_cards_layouts:
+    dependency: "direct main"
+    description:
+      name: playing_cards_layouts
+      sha256: b902e35bfe3676351901e9032442d3effa0caed55d8cc1ea221f1ff6a9b8b120
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   plugin_platform_interface:
     dependency: transitive
     description:
