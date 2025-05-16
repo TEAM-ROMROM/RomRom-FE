@@ -20,7 +20,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
       width: MediaQuery.of(context).size.width,
       height: 100.h,
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: AppColors.primaryBlack,
         border: Border(
           top: BorderSide(
             color: const Color(0xFF000000).withValues(alpha: 0.1),
