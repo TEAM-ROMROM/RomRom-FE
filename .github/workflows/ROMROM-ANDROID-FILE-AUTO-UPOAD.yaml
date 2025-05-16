@@ -15,7 +15,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          
+
+      - name: 필요 패키지 설치
+        run: |
+          sudo apt-get install -y smbclient jq
+          echo "SMB와 jq 설치 완료"
+
       # 타임스탬프 폴더 생성
       - name: 타임스탬프 폴더명 생성
         run: |
