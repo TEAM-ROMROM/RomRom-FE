@@ -24,8 +24,10 @@ jobs:
       # 타임스탬프 폴더 생성
       - name: 타임스탬프 폴더명 생성
         run: |
+          # Asia/Seoul 로컬타임 사용
           export TZ='Asia/Seoul'
-          TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+          # YYYY-MM-DD_HH-MM-SS 형식
+          TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
           echo "생성된 타임스탬프: $TIMESTAMP"
 
