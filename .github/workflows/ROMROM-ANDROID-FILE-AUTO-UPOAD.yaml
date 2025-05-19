@@ -31,39 +31,62 @@ jobs:
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
           echo "생성된 타임스탬프: $TIMESTAMP"
 
-      # GitHub Secret에서 환경 파일 생성
-      - name: .env 파일 생성
+      # GitHub Secret에서 환경 파일들 생성 및 확인
+      - name: 환경 파일 생성 및 확인
         run: |
+          # .env 파일 생성 및 확인
           echo "${{ secrets.ENV_FILE }}" > .env
-          echo ".env 파일 생성 완료"
-          ls -la .env
+          if [ -s ".env" ]; then
+            echo ".env 파일 생성 성공 (크기: $(stat -c%s ".env") 바이트)"
+            head -n 1 .env | grep -v "=" || echo ".env 첫 줄 확인 (내용 가림)"
+          else
+            echo "경고: .env 파일이 비어 있거나 생성되지 않았습니다"
+          fi
 
-      # Debug Keystore 설정
-      - name: Debug Keystore 설정
-        run: |
+          # Debug Keystore 설정
           mkdir -p ~/.android
-          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > ~/.android/debug.keystore || echo "Base64 디코딩 실패"
-          echo "Debug Keystore 생성 완료"
-          ls -la ~/.android/debug.keystore
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > ~/.android/debug.keystore
+          if [ -s "~/.android/debug.keystore" ]; then
+            echo "Debug Keystore 생성 성공 (크기: $(stat -c%s ~/.android/debug.keystore 2>/dev/null || echo "0") 바이트)"
+          else
+            echo "경고: Debug Keystore가 비어 있거나 생성되지 않았습니다"
+          fi
 
-      # Keystore 설정
-      - name: Keystore 및 key.properties 설정
-        run: |
+          # Keystore 및 key.properties 설정
           mkdir -p android/app/keystore
-          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > android/app/keystore/key.jks || echo "Base64 디코딩 실패"
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > android/app/keystore/key.jks
+          if [ -s "android/app/keystore/key.jks" ]; then
+            echo "key.jks 생성 성공 (크기: $(stat -c%s android/app/keystore/key.jks) 바이트)"
+          else
+            echo "경고: key.jks가 비어 있거나 생성되지 않았습니다"
+          fi
+
+          # key.properties 생성
           echo "storeFile=keystore/key.jks" > android/key.properties
           echo "storePassword=android" >> android/key.properties
           echo "keyAlias=androiddebugkey" >> android/key.properties
           echo "keyPassword=android" >> android/key.properties
-          echo "Keystore와 key.properties 생성 완료"
-          ls -la android/app/keystore/key.jks android/key.properties
+          if [ -s "android/key.properties" ]; then
+            echo "key.properties 생성 성공 (크기: $(stat -c%s android/key.properties) 바이트)"
+          else
+            echo "경고: key.properties가 비어 있거나 생성되지 않았습니다"
+          fi
 
-      # Google Services JSON
-      - name: Google-services.json 생성
-        run: |
+          # Google Services JSON
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/Google-services.json
-          echo "Google-services.json 생성 완료"
-          ls -la android/Google-services.json
+          if [ -s "android/Google-services.json" ]; then
+            echo "Google-services.json 생성 성공 (크기: $(stat -c%s android/Google-services.json) 바이트)"
+          else
+            echo "경고: Google-services.json이 비어 있거나 생성되지 않았습니다"
+          fi
+
+          # 파일 목록 확인
+          echo "=== 현재 디렉토리 (/): ==="
+          ls -la .env
+          echo "=== android/ 디렉토리: ==="
+          ls -la android/key.properties android/Google-services.json
+          echo "=== android/app/keystore/ 디렉토리: ==="
+          ls -la android/app/keystore/key.jks
 
       # 짧은 커밋 해시 계산
       - name: 짧은 커밋 해시 계산
@@ -79,7 +102,7 @@ jobs:
           
           # 파일 크기 확인
           ENV_SIZE=$(stat -c%s ".env" 2>/dev/null || echo "0")
-          DEBUG_KEYSTORE_SIZE=$(stat -c%s "~/.android/debug.keystore" 2>/dev/null || echo "0")
+          DEBUG_KEYSTORE_SIZE=$(stat -c%s ~/.android/debug.keystore 2>/dev/null || echo "0")
           KEY_SIZE=$(stat -c%s "android/app/keystore/key.jks" 2>/dev/null || echo "0")
           KEY_PROPERTIES_SIZE=$(stat -c%s "android/key.properties" 2>/dev/null || echo "0")
           GOOGLE_SERVICES_SIZE=$(stat -c%s "android/Google-services.json" 2>/dev/null || echo "0")
@@ -139,20 +162,29 @@ jobs:
           }
           EOF
           echo "cicd-gitignore-file.json 파일 생성 완료"
-          cat cicd-gitignore-file.json
 
-      # 타임스탬프 폴더에 파일 준비
+      # 타임스탬프 폴더에 파일 준비 - 특히 .env 파일 처리 강조
       - name: 타임스탬프 폴더에 파일 준비
         run: |
           mkdir -p gitignore_files/${TIMESTAMP}
           
-          # 모든 Secret 파일 복사
-          cp .env gitignore_files/${TIMESTAMP}/ || echo ".env 파일 복사 실패"
-          cp ~/.android/debug.keystore gitignore_files/${TIMESTAMP}/ || echo "debug.keystore 파일 복사 실패"
-          cp android/app/keystore/key.jks gitignore_files/${TIMESTAMP}/ || echo "key.jks 파일 복사 실패"
-          cp android/key.properties gitignore_files/${TIMESTAMP}/ || echo "key.properties 파일 복사 실패"
-          cp android/Google-services.json gitignore_files/${TIMESTAMP}/ || echo "Google-services.json 파일 복사 실패"
-          cp cicd-gitignore-file.json gitignore_files/${TIMESTAMP}/ || echo "cicd-gitignore-file.json 파일 복사 실패"
+          # .env 파일 특별 처리 (.env 파일은 종종 숨겨진 파일로 인식될 수 있음)
+          if [ -f ".env" ]; then
+            cp -v .env gitignore_files/${TIMESTAMP}/
+            echo ".env 파일 복사 성공 (크기: $(stat -c%s gitignore_files/${TIMESTAMP}/.env) 바이트)"
+          else
+            echo "경고: .env 파일이 존재하지 않습니다!"
+            # 파일이 없는 경우 다시 생성 시도
+            echo "${{ secrets.ENV_FILE }}" > gitignore_files/${TIMESTAMP}/.env
+            echo ".env 파일 직접 생성 시도 (크기: $(stat -c%s gitignore_files/${TIMESTAMP}/.env 2>/dev/null || echo "0") 바이트)"
+          fi
+          
+          # 나머지 파일들 복사
+          cp -v ~/.android/debug.keystore gitignore_files/${TIMESTAMP}/ 2>/dev/null || echo "debug.keystore 파일 복사 실패"
+          cp -v android/app/keystore/key.jks gitignore_files/${TIMESTAMP}/ || echo "key.jks 파일 복사 실패"
+          cp -v android/key.properties gitignore_files/${TIMESTAMP}/ || echo "key.properties 파일 복사 실패"
+          cp -v android/Google-services.json gitignore_files/${TIMESTAMP}/ || echo "Google-services.json 파일 복사 실패"
+          cp -v cicd-gitignore-file.json gitignore_files/${TIMESTAMP}/ || echo "cicd-gitignore-file.json 파일 복사 실패"
           
           echo "타임스탬프 폴더 파일 준비 완료:"
           ls -la gitignore_files/${TIMESTAMP}/
@@ -162,18 +194,28 @@ jobs:
         run: |
           mkdir -p gitignore_files/latest
           
-          # 최신 버전 파일 복사
-          cp .env gitignore_files/latest/ || echo ".env 파일 복사 실패"
-          cp ~/.android/debug.keystore gitignore_files/latest/ || echo "debug.keystore 파일 복사 실패"
-          cp android/app/keystore/key.jks gitignore_files/latest/ || echo "key.jks 파일 복사 실패"
-          cp android/key.properties gitignore_files/latest/ || echo "key.properties 파일 복사 실패"
-          cp android/Google-services.json gitignore_files/latest/ || echo "Google-services.json 파일 복사 실패"
-          cp cicd-gitignore-file.json gitignore_files/latest/ || echo "cicd-gitignore-file.json 파일 복사 실패"
+          # .env 파일 특별 처리
+          if [ -f ".env" ]; then
+            cp -v .env gitignore_files/latest/
+            echo ".env 파일 최신 폴더에 복사 성공"
+          else
+            echo "경고: .env 파일이 존재하지 않습니다!"
+            # 파일이 없는 경우 다시 생성 시도
+            echo "${{ secrets.ENV_FILE }}" > gitignore_files/latest/.env
+            echo ".env 파일 직접 생성 시도 (최신 폴더)"
+          fi
+          
+          # 나머지 파일들 복사
+          cp -v ~/.android/debug.keystore gitignore_files/latest/ 2>/dev/null || echo "debug.keystore 파일 복사 실패"
+          cp -v android/app/keystore/key.jks gitignore_files/latest/ || echo "key.jks 파일 복사 실패"
+          cp -v android/key.properties gitignore_files/latest/ || echo "key.properties 파일 복사 실패"
+          cp -v android/Google-services.json gitignore_files/latest/ || echo "Google-services.json 파일 복사 실패"
+          cp -v cicd-gitignore-file.json gitignore_files/latest/ || echo "cicd-gitignore-file.json 파일 복사 실패"
           
           echo "최신 파일 폴더 준비 완료:"
           ls -la gitignore_files/latest/
 
-      # SMB를 통해 파일 업로드
+      # SMB를 통해 파일 업로드 - 개별 파일 업로드 확인 강화
       - name: SMB를 통해 파일 업로드
         env:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
@@ -189,20 +231,47 @@ jobs:
           # 타임스탬프 디렉토리 생성
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_BASE_PATH; mkdir ${TIMESTAMP}"
           
-          # 타임스탬프 폴더에 파일 업로드 - 파일명 출력 및 상세 로깅 추가
+          # .env 파일 특별 처리 - 먼저 업로드
+          echo "타임스탬프 폴더에 .env 파일 업로드 시작 (특별 처리)..."
+          if [ -f "gitignore_files/${TIMESTAMP}/.env" ]; then
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH/${TIMESTAMP}; put \"gitignore_files/${TIMESTAMP}/.env\" \".env\""
+            echo ".env 파일 업로드 완료 (타임스탬프 폴더)"
+          else
+            # 직접 업로드 시도
+            echo "${{ secrets.ENV_FILE }}" > /tmp/.env.tmp
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH/${TIMESTAMP}; put \"/tmp/.env.tmp\" \".env\""
+            echo ".env 파일 직접 업로드 시도 (타임스탬프 폴더)"
+            rm -f /tmp/.env.tmp
+          fi
+          
+          # 타임스탬프 폴더에 나머지 파일 업로드
           cd gitignore_files/${TIMESTAMP}
           for file in *; do
-            if [ -f "$file" ]; then
+            if [ -f "$file" ] && [ "$file" != ".env" ]; then  # .env는 이미 처리했으므로 제외
               echo "타임스탬프 폴더에 파일 업로드 중: $file (크기: $(stat -c%s "$file") 바이트)"
               smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH/${TIMESTAMP}; put \"$file\"" || echo "파일 업로드 실패: $file"
               echo "$file 업로드 완료"
             fi
           done
           
-          # 최신 파일도 루트에 업로드 (항상 최신 버전으로 유지)
-          cd ../../gitignore_files/latest
+          # 최신 폴더에 .env 파일 특별 처리
+          cd ../../
+          echo "루트 폴더에 .env 파일 업로드 시작 (특별 처리)..."
+          if [ -f "gitignore_files/latest/.env" ]; then
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH; put \"gitignore_files/latest/.env\" \".env\""
+            echo ".env 파일 업로드 완료 (루트 폴더)"
+          else
+            # 직접 업로드 시도
+            echo "${{ secrets.ENV_FILE }}" > /tmp/.env.tmp
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH; put \"/tmp/.env.tmp\" \".env\""
+            echo ".env 파일 직접 업로드 시도 (루트 폴더)"
+            rm -f /tmp/.env.tmp
+          fi
+          
+          # 최신 폴더에 나머지 파일 업로드
+          cd gitignore_files/latest
           for file in *; do
-            if [ -f "$file" ]; then
+            if [ -f "$file" ] && [ "$file" != ".env" ]; then  # .env는 이미 처리했으므로 제외
               echo "루트 폴더에 최신 파일 업로드 중: $file (크기: $(stat -c%s "$file") 바이트)"
               smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH; put \"$file\"" || echo "파일 업로드 실패: $file"
               echo "$file 업로드 완료"
