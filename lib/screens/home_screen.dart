@@ -28,19 +28,11 @@ class HomeScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: 210.w,
-                  child: const ItemCard(
-                    itemCategoryLabel: '스포츠/레저',
-                    itemName: '윌슨 블레이드 V9',
-                    itemId: 'demoCard1',
-                  ),
-                ),
-                SizedBox(
                   width: 85.w,
                   child: const ItemCard(
                     itemCategoryLabel: '스포츠/레저',
                     itemName: '윌슨 블레이드 V9',
-                    itemId: 'demoCard2',
+                    itemId: 'demoCard1',
                   ),
                 ),
                 _buildActionButton(

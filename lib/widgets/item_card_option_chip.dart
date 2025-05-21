@@ -5,7 +5,7 @@ import 'package:romrom_fe/utils/item_card_scale_utils.dart';
 import '../models/app_colors.dart';
 import '../models/app_theme.dart';
 
-/// 물품 카드 옵션 칩 위젯
+/// 물품 카드 옵션 토글칩 위젯
 /// : 추가금, 직거래, 택배 여부 선택하는 칩
 class ItemCardOptionChip extends ConsumerWidget {
   final String itemId; // 각 물품의 고유 ID

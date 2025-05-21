@@ -1,11 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/item_card_scale_utils.dart';
-import '../models/app_colors.dart';
-import '../models/app_theme.dart';
-import 'item_card_option_chip.dart';
+import 'package:romrom_fe/widgets/item_card_option_chip.dart';
 
 /// 물품 카드 위젯
 class ItemCard extends ConsumerWidget {
@@ -133,30 +133,36 @@ class ItemCard extends ConsumerWidget {
                               ),
                             ),
                             // 옵션 선택 영역
-                            Container(
-                              width: double.infinity,
-                              margin: boxMargin,
-                              height: optionHeight,
-                              decoration: buildBoxDecoration(
-                                  Colors.white.withValues(alpha: 0.3),
-                                  optionRadius),
-                              child: Padding(
-                                padding: optionPadding,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('요청 옵션', style: optionTextStyle),
-                                    cs.sizedBoxH(10),
-                                    Wrap(
-                                      spacing: cs.s(10),
-                                      children: itemOptions
-                                          .map((option) => ItemCardOptionChip(
-                                                itemId: itemId,
-                                                itemOption: option,
-                                              ))
-                                          .toList(),
-                                    ),
-                                  ],
+                            Expanded(
+                              child: Container(
+                                width: double.infinity,
+                                margin: boxMargin,
+                                height: optionHeight,
+                                decoration: buildBoxDecoration(
+                                    Colors.white.withValues(alpha: 0.3),
+                                    optionRadius),
+                                child: Padding(
+                                  padding: optionPadding,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('요청 옵션', style: optionTextStyle),
+                                      cs.sizedBoxH(10),
+                                      Expanded(
+                                        child: Wrap(
+                                          spacing: cs.s(10),
+                                          children: itemOptions
+                                              .map((option) =>
+                                                  ItemCardOptionChip(
+                                                    itemId: itemId,
+                                                    itemOption: option,
+                                                  ))
+                                              .toList(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
