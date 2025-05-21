@@ -9,11 +9,19 @@ import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
 
 /// 홈 화면
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState(); // 상태 클래스 추가
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0; // 선택된 탭 인덱스 관리
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +59,17 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
+      // 바텀 네비게이션 바 추가
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+          // 여기에 각 탭에 대한 처리를 추가할 수 있습니다
+          // 지금은 상태만 업데이트하고 나중에 화면 전환 로직을 구현할 수 있습니다
+        },
+      ),
     );
   }
 
@@ -74,9 +93,21 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// 로그아웃 처리
-  void _handleLogoutBtnTap(BuildContext context) {
-    final authApi = RomAuthApi();
-    authApi.logoutWithSocial(context);
+  void _handleLogoutBtnTap(BuildContext context) async {
+    try {
+      // 로그아웃 API 호출 시도
+      final authApi = RomAuthApi();
+      await authApi.logoutWithSocial(context);
+    } catch (e) {
+      debugPrint('로그아웃 중 오류 발생: $e');
+    } finally {
+      // API 성공/실패 여부와 관계없이 로그인 화면으로 이동
+      if (context.mounted) {
+        context.navigateTo(
+            screen: const LoginScreen(),
+            type: NavigationTypes.pushAndRemoveUntil);
+      }
+    }
   }
 
   /// 회원 탈퇴 처리

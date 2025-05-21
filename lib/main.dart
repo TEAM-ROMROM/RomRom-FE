@@ -14,8 +14,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initialize(); // 초기화 실행
   final initialScreen = await _determineInitialScreen();
+
+  // 옵션 1: 하단 오버레이를 포함하도록 수정 (권장)
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-      overlays: [SystemUiOverlay.top]); // 하단바 숨기기
+      overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
+
+  // 옵션 2: 또는 이 라인을 완전히 제거하여 기본값 사용
+  // (SystemChrome.setEnabledSystemUIMode 관련 코드 제거)
 
   runApp(
     ProviderScope(child: MyApp(initialScreen: initialScreen)),

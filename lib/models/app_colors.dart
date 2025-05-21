@@ -20,6 +20,9 @@ class AppColors {
   static const Color currentLocationButtonBorder =
       Color(0xFFB7B7B7); // 현재 위치 버튼 테두리
 
+  static const Color bottomNavigationDisableIcon =
+      Color(0xFF676767); // 하단 네비게이션바 비활성화 아이콘
+
   // 물품 카드
   static Color itemCardBackground =
       const Color(0xFFFFFFFF).withValues(alpha: 0.8); // 물품 카트 배경 색상

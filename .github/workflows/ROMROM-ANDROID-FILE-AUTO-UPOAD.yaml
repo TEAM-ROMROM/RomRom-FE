@@ -1,82 +1,293 @@
-name: CICD file creation
+name: ROMROM 설정 파일 관리
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
-  build:
+  config-files-management:
+    name: 설정 파일 관리
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: 코드 체크아웃
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Install smbclient
+      - name: 필요 패키지 설치
         run: |
-          sudo apt-get update
-          sudo apt-get install -y smbclient
-          echo "smbclient installed"
-          smbclient --version
+          sudo apt-get install -y smbclient jq
+          echo "SMB와 jq 설치 완료"
 
-      - name: Create CI/CD Info JSON file
+      # 타임스탬프 폴더 생성
+      - name: 타임스탬프 폴더명 생성
+        run: |
+          # Asia/Seoul 로컬타임 사용
+          export TZ='Asia/Seoul'
+          # YYYY-MM-DD_HH-MM-SS 형식
+          TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+          echo "생성된 타임스탬프: $TIMESTAMP"
+
+      # GitHub Secret에서 환경 파일들 생성 및 확인
+      - name: 환경 파일 생성 및 확인
+        run: |
+          # .env 파일 생성 및 확인
+          echo "${{ secrets.ENV_FILE }}" > .env
+          if [ -s ".env" ]; then
+            echo ".env 파일 생성 성공 (크기: $(stat -c%s ".env") 바이트)"
+            head -n 1 .env | grep -v "=" || echo ".env 첫 줄 확인 (내용 가림)"
+          else
+            echo "경고: .env 파일이 비어 있거나 생성되지 않았습니다"
+          fi
+
+          # Debug Keystore 설정
+          mkdir -p ~/.android
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > ~/.android/debug.keystore
+          if [ -s "~/.android/debug.keystore" ]; then
+            echo "Debug Keystore 생성 성공 (크기: $(stat -c%s ~/.android/debug.keystore 2>/dev/null || echo "0") 바이트)"
+          else
+            echo "경고: Debug Keystore가 비어 있거나 생성되지 않았습니다"
+          fi
+
+          # Keystore 및 key.properties 설정
+          mkdir -p android/app/keystore
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > android/app/keystore/key.jks
+          if [ -s "android/app/keystore/key.jks" ]; then
+            echo "key.jks 생성 성공 (크기: $(stat -c%s android/app/keystore/key.jks) 바이트)"
+          else
+            echo "경고: key.jks가 비어 있거나 생성되지 않았습니다"
+          fi
+
+          # key.properties 생성
+          echo "storeFile=keystore/key.jks" > android/key.properties
+          echo "storePassword=android" >> android/key.properties
+          echo "keyAlias=androiddebugkey" >> android/key.properties
+          echo "keyPassword=android" >> android/key.properties
+          if [ -s "android/key.properties" ]; then
+            echo "key.properties 생성 성공 (크기: $(stat -c%s android/key.properties) 바이트)"
+          else
+            echo "경고: key.properties가 비어 있거나 생성되지 않았습니다"
+          fi
+
+          # Google Services JSON
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/Google-services.json
+          if [ -s "android/Google-services.json" ]; then
+            echo "Google-services.json 생성 성공 (크기: $(stat -c%s android/Google-services.json) 바이트)"
+          else
+            echo "경고: Google-services.json이 비어 있거나 생성되지 않았습니다"
+          fi
+
+          # 파일 목록 확인
+          echo "=== 현재 디렉토리 (/): ==="
+          ls -la .env
+          echo "=== android/ 디렉토리: ==="
+          ls -la android/key.properties android/Google-services.json
+          echo "=== android/app/keystore/ 디렉토리: ==="
+          ls -la android/app/keystore/key.jks
+
+      # 짧은 커밋 해시 계산
+      - name: 짧은 커밋 해시 계산
+        run: |
+          echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+          echo "짧은 커밋 해시: $(echo ${{ github.sha }} | cut -c1-7)"
+
+      # 시간 기반 정보 디렉토리 생성
+      - name: CI/CD 정보 JSON 파일 생성
         run: |
           export TZ='Asia/Seoul'
           BUILD_DATE=$(date '+%Y-%m-%d %H:%M')
-          cat <<EOF > github-cicd-file-info.json
+          
+          # 파일 크기 확인
+          ENV_SIZE=$(stat -c%s ".env" 2>/dev/null || echo "0")
+          DEBUG_KEYSTORE_SIZE=$(stat -c%s ~/.android/debug.keystore 2>/dev/null || echo "0")
+          KEY_SIZE=$(stat -c%s "android/app/keystore/key.jks" 2>/dev/null || echo "0")
+          KEY_PROPERTIES_SIZE=$(stat -c%s "android/key.properties" 2>/dev/null || echo "0")
+          GOOGLE_SERVICES_SIZE=$(stat -c%s "android/Google-services.json" 2>/dev/null || echo "0")
+          
+          # JSON 파일 생성
+          cat > cicd-gitignore-file.json << EOF
           {
-            "builds": [
+            "build_info": {
+              "timestamp": "${TIMESTAMP}",
+              "workflow": "${GITHUB_WORKFLOW}",
+              "run_id": "${GITHUB_RUN_ID}",
+              "run_number": "${GITHUB_RUN_NUMBER}",
+              "job": "${GITHUB_JOB}",
+              "event": "${GITHUB_EVENT_NAME}",
+              "repository": "${GITHUB_REPOSITORY}",
+              "owner": "${GITHUB_REPOSITORY_OWNER}",
+              "branch": "${GITHUB_REF_NAME}",
+              "commit_hash": "${GITHUB_SHA}",
+              "short_hash": "${SHORT_COMMIT_HASH}",
+              "commit_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}",
+              "actor": "${GITHUB_ACTOR}",
+              "build_date": "${BUILD_DATE}",
+              "runner_os": "${RUNNER_OS}"
+            },
+            "files": [
               {
-                "workflow": {
-                  "name": "${GITHUB_WORKFLOW}",
-                  "run_id": "${GITHUB_RUN_ID}",
-                  "run_number": "${GITHUB_RUN_NUMBER}",
-                  "job": "${GITHUB_JOB}",
-                  "event": "${GITHUB_EVENT_NAME}"
-                },
-                "repository": {
-                  "name": "${GITHUB_REPOSITORY}",
-                  "owner": "${GITHUB_REPOSITORY_OWNER}",
-                  "branch": "${GITHUB_REF_NAME}"
-                },
-                "commit": {
-                  "hash": "${GITHUB_SHA}",
-                  "short_hash": "$(echo ${GITHUB_SHA} | cut -c1-7)",
-                  "url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
-                },
-                "triggered_by": "${GITHUB_ACTOR}",
-                "build_date": "${BUILD_DATE}",
-                "runner_os": "${RUNNER_OS}",
-                "files": [
-                  {
-                    "file_name": ".env",
-                    "file_path": "/"
-                  },
-                  {
-                    "file_name": "key.jks",
-                    "file_path": "android/app/keystore/"
-                  },
-                  {
-                    "file_name": "Google-services.json",
-                    "file_path": "android/"
-                  }
-                ]
+                "file_name": ".env",
+                "file_path": "/",
+                "file_size": "${ENV_SIZE}",
+                "last_updated": "${BUILD_DATE}"
+              },
+              {
+                "file_name": "debug.keystore",
+                "file_path": "~/.android/",
+                "file_size": "${DEBUG_KEYSTORE_SIZE}",
+                "last_updated": "${BUILD_DATE}"
+              },
+              {
+                "file_name": "key.jks",
+                "file_path": "android/app/keystore/",
+                "file_size": "${KEY_SIZE}",
+                "last_updated": "${BUILD_DATE}"
+              },
+              {
+                "file_name": "key.properties",
+                "file_path": "android/",
+                "file_size": "${KEY_PROPERTIES_SIZE}",
+                "last_updated": "${BUILD_DATE}"
+              },
+              {
+                "file_name": "Google-services.json",
+                "file_path": "android/",
+                "file_size": "${GOOGLE_SERVICES_SIZE}",
+                "last_updated": "${BUILD_DATE}"
               }
             ]
           }
           EOF
-          echo "github-cicd-file-info.json created"
-          cat github-cicd-file-info.json  # 디버깅 출력
+          echo "cicd-gitignore-file.json 파일 생성 완료"
 
-      - name: Upload CI/CD JSON to remote server
+      # 타임스탬프 폴더에 파일 준비 - 특히 .env 파일 처리 강조
+      - name: 타임스탬프 폴더에 파일 준비
+        run: |
+          mkdir -p gitignore_files/${TIMESTAMP}
+          
+          # .env 파일 특별 처리 (.env 파일은 종종 숨겨진 파일로 인식될 수 있음)
+          if [ -f ".env" ]; then
+            cp -v .env gitignore_files/${TIMESTAMP}/
+            echo ".env 파일 복사 성공 (크기: $(stat -c%s gitignore_files/${TIMESTAMP}/.env) 바이트)"
+          else
+            echo "경고: .env 파일이 존재하지 않습니다!"
+            # 파일이 없는 경우 다시 생성 시도
+            echo "${{ secrets.ENV_FILE }}" > gitignore_files/${TIMESTAMP}/.env
+            echo ".env 파일 직접 생성 시도 (크기: $(stat -c%s gitignore_files/${TIMESTAMP}/.env 2>/dev/null || echo "0") 바이트)"
+          fi
+          
+          # 나머지 파일들 복사
+          cp -v ~/.android/debug.keystore gitignore_files/${TIMESTAMP}/ 2>/dev/null || echo "debug.keystore 파일 복사 실패"
+          cp -v android/app/keystore/key.jks gitignore_files/${TIMESTAMP}/ || echo "key.jks 파일 복사 실패"
+          cp -v android/key.properties gitignore_files/${TIMESTAMP}/ || echo "key.properties 파일 복사 실패"
+          cp -v android/Google-services.json gitignore_files/${TIMESTAMP}/ || echo "Google-services.json 파일 복사 실패"
+          cp -v cicd-gitignore-file.json gitignore_files/${TIMESTAMP}/ || echo "cicd-gitignore-file.json 파일 복사 실패"
+          
+          echo "타임스탬프 폴더 파일 준비 완료:"
+          ls -la gitignore_files/${TIMESTAMP}/
+
+      # 최신 파일 심볼릭 링크를 위한 복사본 준비
+      - name: 최신 파일 복사본 준비
+        run: |
+          mkdir -p gitignore_files/latest
+          
+          # .env 파일 특별 처리
+          if [ -f ".env" ]; then
+            cp -v .env gitignore_files/latest/
+            echo ".env 파일 최신 폴더에 복사 성공"
+          else
+            echo "경고: .env 파일이 존재하지 않습니다!"
+            # 파일이 없는 경우 다시 생성 시도
+            echo "${{ secrets.ENV_FILE }}" > gitignore_files/latest/.env
+            echo ".env 파일 직접 생성 시도 (최신 폴더)"
+          fi
+          
+          # 나머지 파일들 복사
+          cp -v ~/.android/debug.keystore gitignore_files/latest/ 2>/dev/null || echo "debug.keystore 파일 복사 실패"
+          cp -v android/app/keystore/key.jks gitignore_files/latest/ || echo "key.jks 파일 복사 실패"
+          cp -v android/key.properties gitignore_files/latest/ || echo "key.properties 파일 복사 실패"
+          cp -v android/Google-services.json gitignore_files/latest/ || echo "Google-services.json 파일 복사 실패"
+          cp -v cicd-gitignore-file.json gitignore_files/latest/ || echo "cicd-gitignore-file.json 파일 복사 실패"
+          
+          echo "최신 파일 폴더 준비 완료:"
+          ls -la gitignore_files/latest/
+
+      # SMB를 통해 파일 업로드 - 개별 파일 업로드 확인 강화
+      - name: SMB를 통해 파일 업로드
         env:
           SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
           SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
           SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
           SMB_PORT=${{ secrets.WEB_SMB_PORT }}
-          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
-          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
-          echo "Uploading github-cicd-file-info.json to SMB..."
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put github-cicd-file-info.json" -d 10
-          echo "github-cicd-file-info.json uploaded to SMB"
-        shell: bash
+          SMB_SHARE="projects"
+          SMB_BASE_PATH="/romrom/github_secret/front"
+          
+          echo "SMB 서버에 연결 중..."
+          
+          # 타임스탬프 디렉토리 생성
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_BASE_PATH; mkdir ${TIMESTAMP}"
+          
+          # .env 파일 특별 처리 - 먼저 업로드
+          echo "타임스탬프 폴더에 .env 파일 업로드 시작 (특별 처리)..."
+          if [ -f "gitignore_files/${TIMESTAMP}/.env" ]; then
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH/${TIMESTAMP}; put \"gitignore_files/${TIMESTAMP}/.env\" \".env\""
+            echo ".env 파일 업로드 완료 (타임스탬프 폴더)"
+          else
+            # 직접 업로드 시도
+            echo "${{ secrets.ENV_FILE }}" > /tmp/.env.tmp
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH/${TIMESTAMP}; put \"/tmp/.env.tmp\" \".env\""
+            echo ".env 파일 직접 업로드 시도 (타임스탬프 폴더)"
+            rm -f /tmp/.env.tmp
+          fi
+          
+          # 타임스탬프 폴더에 나머지 파일 업로드
+          cd gitignore_files/${TIMESTAMP}
+          for file in *; do
+            if [ -f "$file" ] && [ "$file" != ".env" ]; then  # .env는 이미 처리했으므로 제외
+              echo "타임스탬프 폴더에 파일 업로드 중: $file (크기: $(stat -c%s "$file") 바이트)"
+              smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH/${TIMESTAMP}; put \"$file\"" || echo "파일 업로드 실패: $file"
+              echo "$file 업로드 완료"
+            fi
+          done
+          
+          # 최신 폴더에 .env 파일 특별 처리
+          cd ../../
+          echo "루트 폴더에 .env 파일 업로드 시작 (특별 처리)..."
+          if [ -f "gitignore_files/latest/.env" ]; then
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH; put \"gitignore_files/latest/.env\" \".env\""
+            echo ".env 파일 업로드 완료 (루트 폴더)"
+          else
+            # 직접 업로드 시도
+            echo "${{ secrets.ENV_FILE }}" > /tmp/.env.tmp
+            smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH; put \"/tmp/.env.tmp\" \".env\""
+            echo ".env 파일 직접 업로드 시도 (루트 폴더)"
+            rm -f /tmp/.env.tmp
+          fi
+          
+          # 최신 폴더에 나머지 파일 업로드
+          cd gitignore_files/latest
+          for file in *; do
+            if [ -f "$file" ] && [ "$file" != ".env" ]; then  # .env는 이미 처리했으므로 제외
+              echo "루트 폴더에 최신 파일 업로드 중: $file (크기: $(stat -c%s "$file") 바이트)"
+              smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 2 -c "cd $SMB_BASE_PATH; put \"$file\"" || echo "파일 업로드 실패: $file"
+              echo "$file 업로드 완료"
+            fi
+          done
+          
+          # 업로드 성공 확인
+          cd ../..
+          echo "{\"last_updated\": \"${TIMESTAMP}\", \"commit\": \"${SHORT_COMMIT_HASH}\", \"actor\": \"${GITHUB_ACTOR}\", \"status\": \"completed\"}" > timestamp_index.json
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_BASE_PATH; put timestamp_index.json"
+          
+          # 최종 업로드 파일 목록 확인
+          echo "타임스탬프 폴더 파일 목록 확인:"
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_BASE_PATH/${TIMESTAMP}; ls"
+          
+          echo "루트 폴더 파일 목록 확인:"
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_BASE_PATH; ls"
+          
+          echo "모든 파일 업로드 완료"
