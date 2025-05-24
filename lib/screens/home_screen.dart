@@ -10,6 +10,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
+import 'package:romrom_fe/widgets/item_card.dart';
 
 /// 홈 화면
 class HomeScreen extends StatefulWidget {
@@ -28,23 +29,35 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('홈', style: CustomTextStyles.h3),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildActionButton(
-              onPressed: () => _handleLogoutBtnTap(context),
-              backgroundColor: Colors.pink[300],
-              text: '로그아웃',
+      body: Column(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 85.w,
+                  child: const ItemCard(
+                    itemCategoryLabel: '스포츠/레저',
+                    itemName: '윌슨 블레이드 V9',
+                    itemId: 'demoCard1',
+                  ),
+                ),
+                _buildActionButton(
+                  onPressed: () => _handleLogoutBtnTap(context),
+                  backgroundColor: Colors.pink[300],
+                  text: '로그아웃',
+                ),
+                SizedBox(height: 20.h),
+                _buildActionButton(
+                  onPressed: () => _handleDeleteMemberBtnTap(context),
+                  backgroundColor: Colors.red[400],
+                  text: '회원탈퇴',
+                ),
+              ],
             ),
-            SizedBox(height: 20.h),
-            _buildActionButton(
-              onPressed: () => _handleDeleteMemberBtnTap(context),
-              backgroundColor: Colors.red[400],
-              text: '회원탈퇴',
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       // 바텀 네비게이션 바 추가
       bottomNavigationBar: CustomBottomNavigationBar(
@@ -74,10 +87,8 @@ class _HomeScreenState extends State<HomeScreen> {
           EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
         ),
       ),
-      child: Text(
-          text,
-          style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite)
-      ),
+      child: Text(text,
+          style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite)),
     );
   }
 
@@ -94,8 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (context.mounted) {
         context.navigateTo(
             screen: const LoginScreen(),
-            type: NavigationTypes.pushAndRemoveUntil
-        );
+            type: NavigationTypes.pushAndRemoveUntil);
       }
     }
   }
@@ -129,7 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// 회원 탈퇴 확인 후 처리
-  Future<void> _confirmDeleteMember(BuildContext dialogContext, BuildContext context) async {
+  Future<void> _confirmDeleteMember(
+      BuildContext dialogContext, BuildContext context) async {
     Navigator.pop(dialogContext); // 다이얼로그 닫기
 
     // 회원 탈퇴 진행
@@ -154,8 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // 로그인 페이지로 이동
       context.navigateTo(
           screen: const LoginScreen(),
-          type: NavigationTypes.pushAndRemoveUntil
-      );
+          type: NavigationTypes.pushAndRemoveUntil);
     } else {
       // 실패 안내
       ScaffoldMessenger.of(context).showSnackBar(

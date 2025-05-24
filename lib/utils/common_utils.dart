@@ -54,3 +54,9 @@ double adjustedFontSize(BuildContext context, double spSize) {
     return spSize.sp;
   }
 }
+
+/// Boxdecoration 색상, radius 설정
+/// : color, radius를 인자로 받아 BoxDecoration을 반환
+BoxDecoration buildBoxDecoration(Color color, BorderRadius radius) {
+  return BoxDecoration(color: color, borderRadius: radius);
+}

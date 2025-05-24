@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/models/app_theme.dart';
@@ -21,7 +22,9 @@ void main() async {
   // 옵션 2: 또는 이 라인을 완전히 제거하여 기본값 사용
   // (SystemChrome.setEnabledSystemUIMode 관련 코드 제거)
 
-  runApp(MyApp(initialScreen: initialScreen));
+  runApp(
+    ProviderScope(child: MyApp(initialScreen: initialScreen)),
+  );
 }
 
 /// 토큰 상태를 확인하여 초기 화면 결정
