@@ -17,7 +17,7 @@ class AppTheme {
   static CustomTextStyles get textStyles => CustomTextStyles();
 }
 
-/// 커스텀 텍스트 스타일 모음 (fimga 디자인 시스템과 동일)
+/// 커스텀 텍스트 스타일 (Figma 디자인)
 class CustomTextStyles {
   /// h1 : 24px, semibold
   static TextStyle h1 = TextStyle(

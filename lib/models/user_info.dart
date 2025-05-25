@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 사용자 정보 관리 class
+/// 사용자 정보 관리
 class UserInfo {
   String? nickname;
   String? email;
