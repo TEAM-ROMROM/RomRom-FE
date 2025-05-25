@@ -29,13 +29,13 @@ class MyPageTabScreen extends StatelessWidget {
             ),
           ),
           _buildActionButton(
-            onPressed: () => _handleLogoutBtnTap(context),
+            onPressed: () => _handleLogoutButtonTap(context),
             backgroundColor: Colors.pink[300],
             text: '로그아웃',
           ),
           SizedBox(height: 20.h),
           _buildActionButton(
-            onPressed: () => _handleDeleteMemberBtnTap(context),
+            onPressed: () => _handleDeleteMemberButtonTap(context),
             backgroundColor: Colors.red[400],
             text: '회원탈퇴',
           ),
@@ -64,7 +64,7 @@ class MyPageTabScreen extends StatelessWidget {
   }
 
   /// 로그아웃 처리
-  void _handleLogoutBtnTap(BuildContext context) async {
+  void _handleLogoutButtonTap(BuildContext context) async {
     try {
       // 로그아웃 API 호출 시도
       final authApi = RomAuthApi();
@@ -82,7 +82,7 @@ class MyPageTabScreen extends StatelessWidget {
   }
 
   /// 회원 탈퇴 처리
-  void _handleDeleteMemberBtnTap(BuildContext context) {
+  void _handleDeleteMemberButtonTap(BuildContext context) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
