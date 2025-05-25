@@ -33,7 +33,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
         children: NavigationTabItems.values.map((tab) => _buildNavItem(
           context,
           tab.index,
-          tab.icon,
+          tab.iconData,
           tab.title,
         )).toList(),
       ),
