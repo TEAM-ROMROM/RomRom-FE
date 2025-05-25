@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 
-/// 홈 피드의 개별 아이템을 표시하는 위젯
-///
-/// 전체 화면을 차지하는 피드 아이템으로, 사용자는 수직으로 스와이프하여 다음 아이템으로 이동 가능
-/// 각 아이템은 이미지 슬라이더, 가격 정보, 위치 및 날짜 정보, 그리고 상품 상태와 거래 방식 관련 태그 포함
 class HomeFeedItemWidget extends StatefulWidget {
-  /// 표시할 피드 아이템 데이터
   final HomeFeedItem item;
 
   const HomeFeedItemWidget({
@@ -24,7 +20,6 @@ class HomeFeedItemWidget extends StatefulWidget {
 }
 
 class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
-  /// 현재 표시 중인 이미지의 인덱스
   int _currentImageIndex = 0;
 
   @override
@@ -130,21 +125,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         style: CustomTextStyles.h1,
                       ),
                       SizedBox(width: 12.w),
-                      // AI 분석 적정가
-                      if (widget.item.hasAiAnalysis)
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 8.w, vertical: 4.h),
-                          decoration: BoxDecoration(
-                            color: AppColors.opacity70Black,
-                            borderRadius: BorderRadius.circular(16.r),
-                          ),
-                          child: Text(
-                            'AI 분석 적정가',
-                            style: CustomTextStyles.p3
-                                .copyWith(color: AppColors.primaryYellow),
-                          ),
-                        ),
+                      if (widget.item.priceTag != null)
+                        _buildPriceTag(widget.item.priceTag!),
                     ],
                   ),
                   SizedBox(height: 8.h),
@@ -176,19 +158,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         ),
                       ),
                       const Spacer(),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 16.w, vertical: 8.h),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryYellow,
-                          borderRadius: BorderRadius.circular(20.r),
-                        ),
-                        child: Text(
-                          'AI 분석',
-                          style:
-                              CustomTextStyles.p3.copyWith(color: Colors.black),
-                        ),
-                      ),
+                      widget.item.hasAiAnalysis
+                          ? _buildActiveAiButton()
+                          : _buildInactiveAiButton(),
                     ],
                   ),
                 ],
@@ -196,6 +168,103 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 가격 태그 생성
+  Widget _buildPriceTag(PriceTag tag) {
+    if (tag == PriceTag.aiAnalyzed) {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+        decoration: BoxDecoration(
+          color: AppColors.aiTagBackground,
+          borderRadius: BorderRadius.circular(100.r),
+          border: Border.all(
+            color: AppColors.aiTagBorder,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(width: 8.w),
+            Text(
+              tag.name,
+              style: CustomTextStyles.p3.copyWith(color: AppColors.aiTagBorder),
+            ),
+            SizedBox(width: 8.w),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(100.r),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(width: 8.w),
+            Text(
+              tag.name,
+              style: CustomTextStyles.p3.copyWith(color: Colors.black),
+            ),
+            SizedBox(width: 8.w),
+          ],
+        ),
+      );
+    }
+  }
+
+  /// 활성화된 AI 분석 버튼
+  Widget _buildActiveAiButton() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(100.r),
+      ),
+      child: Text(
+        'AI 분석',
+        style: CustomTextStyles.p3.copyWith(color: Colors.black),
+      ),
+    );
+  }
+
+  /// 비활성화된 AI 분석 버튼
+  Widget _buildInactiveAiButton() {
+    return Container(
+      width: 67.w,
+      height: 23.h,
+      decoration: BoxDecoration(
+        color: AppColors.aiTagBackground,
+        borderRadius: BorderRadius.circular(100.r),
+        border: Border.all(
+          color: AppColors.aiTagBorder,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withOpacity(0.3),
+            blurRadius: 2,
+            offset: const Offset(0, -1),
+          ),
+          const BoxShadow(
+            color: AppColors.aiButtonGlow,
+            blurRadius: 5,
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          'AI 분석',
+          style: CustomTextStyles.p3.copyWith(color: AppColors.aiTagBorder),
+        ),
       ),
     );
   }

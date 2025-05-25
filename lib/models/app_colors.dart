@@ -35,10 +35,15 @@ class AppColors {
   static const Color itemCardText = Color(0xFF131419); // 물품 카드 텍스트 색상
   static const Color itemCardOptionChip = Color(0xFFD2D2D2); // 물품 카드 요청 옵션 칩 색상
 
-  // 태그 배경
+  // Item 내부 태그
   static const Color conditionTagBackground = Color(0xFFFFF2C5); // 사용감 태그 (노란색 계열)
   static const Color transactionTagBackground = Color(0xFFC9CBFF); // 거래 방식 태그 (보라색)
   static const Color priceTagBackground = Color(0xFFE8E8E8); // 가격 태그 (회색)
+
+  // AI 태그 및 버튼
+  static const Color aiTagBackground = Color(0xFF121A1A); // 어두운 배경
+  static const Color aiTagBorder = Color(0xFF598AF2); // 파란 테두리
+  static const Color aiButtonGlow = Color(0x4D7A00FF); // 보라색 그림자 (30% 투명도)
 
   // 텍스트 색상
   static const Color textColorWhite = Color(0xFFFFFFFF);
