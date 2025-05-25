@@ -4,9 +4,17 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
+/// 공통 앱바 위젯
+/// 뒤로가기 버튼과 중앙 정렬된 제목을 기본 제공
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
+  /// 앱바에 표시될 제목
   final String title;
+
+  /// 뒤로가기 버튼 클릭 시 실행될 콜백
+  /// 제공되지 않을 경우 기본적으로 Navigator.pop()이 실행됨
   final VoidCallback? onBackPressed;
+
+  /// 앱바 오른쪽에 표시될 추가 액션 위젯 목록
   final List<Widget>? actions;
 
   const CommonAppBar({
@@ -19,29 +27,30 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      centerTitle: true,
-      toolbarHeight: 82.h,
-      leadingWidth: 52.w,
+      backgroundColor: Colors.transparent, // 투명 배경으로 설정
+      elevation: 0, // 그림자 효과 제거
+      centerTitle: true, // 제목을 중앙에 배치
+      toolbarHeight: 82.h, // 앱바 높이 설정
+      leadingWidth: 52.w, // 뒤로가기 버튼 영역 너비 설정
       leading: IconButton(
-        alignment: Alignment.centerRight,
+        alignment: Alignment.centerRight, // 아이콘 버튼을 오른쪽 정렬
         icon: Icon(
-          AppIcons.navigateBefore,
+          AppIcons.navigateBefore, // 뒤로가기 아이콘
           size: 24.h,
           color: AppColors.textColorWhite,
         ),
-        onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-        padding: EdgeInsets.zero,
+        onPressed: onBackPressed ?? () => Navigator.of(context).pop(), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
+        padding: EdgeInsets.zero, // 패딩 제거
       ),
       title: Text(
         title,
         style: CustomTextStyles.h2,
       ),
-      actions: actions,
+      actions: actions, // 추가 액션 버튼들
     );
   }
 
+  /// 앱바의 기본 크기 (높이는 82.h로 고정)
   @override
   Size get preferredSize => Size.fromHeight(82.h);
 }
