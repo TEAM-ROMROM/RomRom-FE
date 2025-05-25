@@ -33,6 +33,6 @@
   },
   "context": {
     "documentationFiles": [".github/copilot/context.md"],
-    "prioritizeStructure": ["models", "enums", "icons", "widgets"],
+    "prioritizeStructure": ["models", "enums", "icons", "widgets"]
   }
 }
