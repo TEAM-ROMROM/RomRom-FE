@@ -32,25 +32,28 @@ class LocationVerificationScreen extends StatefulWidget {
 
 class _LocationVerificationScreenState
     extends State<LocationVerificationScreen> {
-  // _mapController 필드 제거 (사용되지 않음)
+  // 사용자의 현재 위치 좌표
   NLatLng? _currentPosition;
+
+  // 현재 위치의 주소 정보 (동 단위)
   String currentAdress = '';
 
   // 위치 정보 저장
-  String siDo = '';
-  String siGunGu = '';
-  String eupMyoenDong = '';
-  String? ri;
+  String siDo = '';           // 시/도 (예: 서울특별시)
+  String siGunGu = '';        // 시/군/구 (예: 강남구)
+  String eupMyoenDong = '';   // 읍/면/동 (예: 삼성동)
+  String? ri;                 // 리 (없는 경우 null)
 
+  // 네이버 맵 컨트롤러
   final Completer<NaverMapController> mapControllerCompleter = Completer();
 
   @override
   void initState() {
     super.initState();
-    _permission();
+    _permission(); // 앱 시작시 위치 권한 요청
   }
 
-  // 위치 권한 요청
+  /// 위치 권한 요청 : 위치 접근 권한을 요청, 권한이 영구 거부된 경우 설정 앱 열기
   void _permission() async {
     var requestStatus = await Permission.location.request();
     var status = await Permission.location.status;
@@ -61,7 +64,7 @@ class _LocationVerificationScreenState
     }
   }
 
-  // 현재 위치 불러오는 함수
+  /// 현재 위치 정보 가져오기 : GPS 위치 좌표 가져오기
   Future<void> _getCurrentPosition() async {
     try {
       final position = await Geolocator.getCurrentPosition();

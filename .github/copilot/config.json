@@ -1,0 +1,38 @@
+{
+  "commentStyle": {
+    "language": "ko",
+    "formats": {
+      "class": "/// {클래스명} 클래스\n/// \n/// {설명}",
+      "method": "/// {메소드명} 메소드\n/// \n/// {매개변수설명}\n/// {반환값설명}",
+      "todo": "// TODO: {할일}",
+      "fixme": "// FIXME: {수정사항}"
+    }
+  },
+  "namingConventions": {
+    "variables": "descriptive_camelCase",
+    "classes": "PascalCase",
+    "constants": "SCREAMING_SNAKE_CASE",
+    "avoidAbbreviations": true
+  },
+  "projectReferences": {
+    "models": [
+      "lib/models/app_colors.dart",
+      "lib/models/app_theme.dart",
+      "lib/models/app_urls.dart"
+    ],
+    "utilities": [
+      "lib/icons/app_icons.dart",
+      "lib/enums/login_platforms.dart"
+    ]
+  },
+  "codingStandards": {
+    "preferKoreanComments": true,
+    "lineLength": 100,
+    "indentation": 2,
+    "preferSingleQuotes": true
+  },
+  "context": {
+    "documentationFiles": [".github/copilot/context.md"],
+    "prioritizeStructure": ["models", "enums", "icons", "widgets"],
+  }
+}
