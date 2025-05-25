@@ -14,7 +14,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/screens/home_screen.dart';
+import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/category_selection_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/apis/responses/naver_address_response.dart';
@@ -322,7 +322,7 @@ class _LocationVerificationScreenState
                                         screen: userInfo.isFirstLogin! &&
                                                 !userInfo.isItemCategorySaved!
                                             ? const CategorySelectionScreen()
-                                            : const HomeScreen(),
+                                            : const MainScreen(),
                                         type: NavigationTypes.push);
                                   }
                                 } catch (e) {
