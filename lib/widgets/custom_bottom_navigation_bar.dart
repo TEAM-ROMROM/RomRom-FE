@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/enums/navigation_tab_items.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -30,13 +30,12 @@ class CustomBottomNavigationBar extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(context, 0, AppIcons.home, '홈'),
-          _buildNavItem(context, 1, AppIcons.requestManagement, '요청 관리'),
-          _buildNavItem(context, 2, AppIcons.register, '등록'),
-          _buildNavItem(context, 3, AppIcons.chat, '채팅'),
-          _buildNavItem(context, 4, AppIcons.myPage, '마이페이지'),
-        ],
+        children: NavigationTabItems.values.map((tab) => _buildNavItem(
+          context,
+          tab.index,
+          tab.icon,
+          tab.title,
+        )).toList(),
       ),
     );
   }
