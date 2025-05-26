@@ -180,8 +180,7 @@ class _FanCardDialState extends State<FanCardDial> {
             bottom: 0,
             left: 0,
             right: 0,
-            child: Container(
-              color: const Color.fromARGB(255, 30, 233, 196),
+            child: SizedBox(
               width: MediaQuery.of(context).size.width,
               height: 200,
               child: Stack(
