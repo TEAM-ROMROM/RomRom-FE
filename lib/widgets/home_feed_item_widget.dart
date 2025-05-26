@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
@@ -193,9 +194,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         ),
                       ),
                       const Spacer(),
-                      widget.item.hasAiAnalysis
-                          ? _buildActiveAiButton()
-                          : _buildInactiveAiButton(),
+                      _buildAiAnalysisButton(widget.item.hasAiAnalysis)
                     ],
                   ),
                 ],
@@ -207,132 +206,146 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     );
   }
 
-  /// 가격 태그 생성
+  /// AI 분석 적정가 태그 생성
   Widget _buildPriceTag(PriceTag tag) {
-    if (tag == PriceTag.aiAnalyzed) {
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
-        decoration: BoxDecoration(
-          color: AppColors.aiTagBackground,
-          borderRadius: BorderRadius.circular(100.r),
-          border: Border.all(
-            color: AppColors.aiTagBorder,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(width: 8.w),
-            Text(
-              tag.name,
-              style: CustomTextStyles.p3.copyWith(color: AppColors.aiTagBorder),
-            ),
-            SizedBox(width: 8.w),
-          ],
-        ),
-      );
-    } else {
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(100.r),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(width: 8.w),
-            Text(
-              tag.name,
-              style: CustomTextStyles.p3.copyWith(color: Colors.black),
-            ),
-            SizedBox(width: 8.w),
-          ],
-        ),
-      );
-    }
-  }
-
-  /// 활성화된 AI 분석 버튼
-  Widget _buildActiveAiButton() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(100.r),
-      ),
-      child: Text(
-        'AI 분석',
-        style: CustomTextStyles.p3.copyWith(color: Colors.black),
-      ),
-    );
-  }
-
-  /// 비활성화된 AI 분석 버튼
-  Widget _buildInactiveAiButton() {
-    return Container(
-      width: 67.w,
-      height: 23.h,
-      decoration: BoxDecoration(
-        color: AppColors.aiTagBackground,
-        borderRadius: BorderRadius.circular(100.r),
-        border: Border.all(
-          color: AppColors.aiTagBorder,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white.withOpacity(0.3),
-            blurRadius: 2,
-            offset: const Offset(0, -1),
-          ),
-          const BoxShadow(
-            color: AppColors.aiButtonGlow,
-            blurRadius: 5,
-          ),
+    // border
+    final gradientBorder = GradientBoxBorder(
+      gradient: LinearGradient(
+        colors: [
+          AppColors.aiTagGradientBorder1.withValues(alpha: 1.0),
+          AppColors.aiTagGradientBorder2.withValues(alpha: 1.0),
+          AppColors.aiTagGradientBorder3.withValues(alpha: 1.0),
+          AppColors.aiTagGradientBorder4.withValues(alpha: 1.0),
         ],
+        stops: const [0.0, 0.35, 0.70, 1.0],
       ),
-      child: Center(
-        child: Text(
-          'AI 분석',
-          style: CustomTextStyles.p3.copyWith(color: AppColors.aiTagBorder),
-        ),
-      ),
+      width: 1.w,
     );
-  }
 
-  /// itemCondition 태그 생성
-  Widget _buildConditionTag(ItemCondition condition) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: AppColors.conditionTagBackground,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Text(
-        condition.name,
-        style: CustomTextStyles.p3.copyWith(color: Colors.black),
-      ),
-    );
+    return tag == PriceTag.aiAnalyzed
+        ? Container(
+            width: 64.w,
+            height: 17.h,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlack,
+              borderRadius: BorderRadius.circular(100.r),
+              border: gradientBorder,
+            ),
+            child: Text(
+              tag.name,
+              style: CustomTextStyles.p3.copyWith(fontSize: 9.sp),
+            ),
+          )
+        : Container(
+            width: 46.w,
+            height: 17.h,
+            decoration: BoxDecoration(
+              color: AppColors.opacity80White,
+              borderRadius: BorderRadius.circular(100.r),
+            ),
+            child: Row(
+              // mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  tag.name,
+                  style: CustomTextStyles.p3
+                      .copyWith(fontSize: 9.sp, color: AppColors.primaryBlack),
+                ),
+              ],
+            ),
+          );
   }
+}
 
-  /// transactionType 태그 생성
-  Widget _buildTransactionTag(TransactionType type) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: AppColors.transactionTagBackground,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Text(
-        type.name,
-        style: CustomTextStyles.p3.copyWith(color: Colors.black),
-      ),
-    );
-  }
+/// 활성화된 AI 분석 버튼
+Widget _buildAiAnalysisButton(bool isActive) {
+  // border
+  final gradientBorder = GradientBoxBorder(
+    gradient: LinearGradient(
+      colors: [
+        AppColors.aiTagGradientBorder1.withValues(alpha: isActive ? 1.0 : 0.4),
+        AppColors.aiTagGradientBorder2.withValues(alpha: isActive ? 1.0 : 0.4),
+        AppColors.aiTagGradientBorder3.withValues(alpha: isActive ? 1.0 : 0.4),
+        AppColors.aiTagGradientBorder4.withValues(alpha: isActive ? 1.0 : 0.4),
+      ],
+      stops: const [0.0, 0.35, 0.70, 1.0],
+    ),
+    width: 1.w,
+  );
+
+  // 그림자
+  final boxShadows = [
+    BoxShadow(
+      color: AppColors.aiButtonGlow
+          .withValues(alpha: isActive ? 0.7 : 0.3), // 첫 번째 그림자 투명도 조절
+      offset: const Offset(0, 0),
+      blurRadius: 10.r,
+      spreadRadius: 0.r,
+    ),
+    BoxShadow(
+      color: Colors.white
+          .withValues(alpha: isActive ? 1.0 : 0.3), // 두 번째 그림자 투명도 조절
+      offset: const Offset(0, -1),
+      blurRadius: 4.r,
+      spreadRadius: 0.r,
+    ),
+  ];
+
+  return Container(
+    width: 67.w,
+    height: 24.h,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: AppColors.primaryBlack,
+      borderRadius: BorderRadius.circular(100.r),
+      border: gradientBorder,
+      boxShadow: boxShadows,
+    ),
+    child: Text(
+      'AI 분석',
+      style: CustomTextStyles.p3.copyWith(fontSize: 10.sp),
+    ),
+  );
+}
+
+/// itemCondition 태그 생성
+Widget _buildConditionTag(ItemCondition condition) {
+  return Container(
+    height: 24.h,
+    constraints: BoxConstraints(
+      minWidth: 62.w, // 최소 가로 길이
+    ),
+    alignment: Alignment.center,
+    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+    decoration: BoxDecoration(
+      color: AppColors.conditionTagBackground,
+      borderRadius: BorderRadius.circular(100.r),
+    ),
+    child: Text(
+      condition.name,
+      style: CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
+    ),
+  );
+}
+
+/// transactionType 태그 생성
+Widget _buildTransactionTag(TransactionType type) {
+  return Container(
+    width: 62.w,
+    height: 24.h,
+    alignment: Alignment.center,
+    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+    decoration: BoxDecoration(
+      color: AppColors.transactionTagBackground,
+      borderRadius: BorderRadius.circular(100.r),
+    ),
+    child: Text(
+      type.name,
+      style: CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
+    ),
+  );
 }
 
 /// 검정색 그라데이션 컨테이너
@@ -350,9 +363,9 @@ class BlackGradientContainer extends StatelessWidget {
         colors: [
           Colors.black,
           Colors.black.withValues(alpha: 0.28),
-          Colors.transparent,
+          Colors.white.withValues(alpha: 0.0),
         ],
-        stops: const [0.0, 0.12, 0.19],
+        stops: const [0.0, 0.24, 0.38],
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
       )),

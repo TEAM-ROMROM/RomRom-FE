@@ -136,7 +136,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           date: '2025년 1월 ${id + 1}일',
           itemCondition: itemConditions[random.nextInt(itemConditions.length)],
           transactionTypes: selectedTransactionTypes,
-          priceTag: isEven ? priceTags[0] : null,
+          priceTag: isEven ? priceTags[0] : priceTags[1],
           // 짝수 ID는 AI 분석 적정가 표시
           profileImageUrl: 'https://picsum.photos/100/100?random=$id',
           likeCount: isEven ? 4 : 12 + id,

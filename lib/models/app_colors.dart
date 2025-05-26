@@ -38,15 +38,22 @@ class AppColors {
 
   // Item 내부 태그
   static const Color conditionTagBackground =
-      Color(0xFFFFF2C5); // 사용감 태그 (노란색 계열)
+      Color(0xFFFFF1C4); // 사용감 태그 (노란색 계열)
   static const Color transactionTagBackground =
-      Color(0xFFC9CBFF); // 거래 방식 태그 (보라색)
+      Color(0xFFCACDFF); // 거래 방식 태그 (보라색)
   static const Color priceTagBackground = Color(0xFFE8E8E8); // 가격 태그 (회색)
 
   // AI 태그 및 버튼
   static const Color aiTagBackground = Color(0xFF121A1A); // 어두운 배경
-  static const Color aiTagBorder = Color(0xFF598AF2); // 파란 테두리
-  static const Color aiButtonGlow = Color(0x4D7A00FF); // 보라색 그림자 (30% 투명도)
+  static const Color aiTagGradientBorder1 =
+      Color(0xFF5889F2); // 파란 테두리(Gradient 1)
+  static const Color aiTagGradientBorder2 =
+      Color(0xFF9858F2); // 보라 테두리(Gradient 2)
+  static const Color aiTagGradientBorder3 =
+      Color(0xFFF258F2); // 핑크 테두리(Gradient 3)
+  static const Color aiTagGradientBorder4 =
+      Color(0xFFF25893); // 다홍 테두리(Gradient 4)
+  static const Color aiButtonGlow = Color(0xFF7B00FF); // 보라색 그림자 (30% 투명도)
 
   // 텍스트 색상
   static const Color textColorWhite = Color(0xFFFFFFFF);
