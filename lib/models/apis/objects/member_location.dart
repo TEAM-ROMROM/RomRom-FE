@@ -14,8 +14,6 @@ class MemberLocation extends BaseEntity {
   final String? siGunGu;
   final String? eupMyoenDong;
   final String? ri;
-  final String? fullAddress;
-  final String? roadAddress;
 
   MemberLocation({
     super.createdDate,
@@ -28,8 +26,6 @@ class MemberLocation extends BaseEntity {
     this.siGunGu,
     this.eupMyoenDong,
     this.ri,
-    this.fullAddress,
-    this.roadAddress,
   });
 
   factory MemberLocation.fromJson(Map<String, dynamic> json) =>

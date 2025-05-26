@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
-import 'package:romrom_fe/widgets/fac_card_dial.dart';
+import 'package:romrom_fe/widgets/fan_card_dial.dart';
 
 /// 홈 화면
 class HomeScreen extends StatelessWidget {

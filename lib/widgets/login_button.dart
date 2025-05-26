@@ -7,7 +7,7 @@ import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/screens/home_screen.dart';
+import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/location_verification_screen.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
@@ -47,10 +47,10 @@ class LoginButton extends StatelessWidget {
         // 처음 로그인 하면 위치 인증 화면으로 이동
         if (context.mounted) {
           context.navigateTo(
-              screen: userInfo.isFirstLogin!
+              screen: userInfo.isFirstLogin! && !userInfo.isMemberLocationSaved!
                   ? const LocationVerificationScreen()
-                  : const HomeScreen(),
-              type: NavigationTypes.pushReplacement);
+                  : const MainScreen(),
+              type: NavigationTypes.push);
         }
       }
     } catch (e) {

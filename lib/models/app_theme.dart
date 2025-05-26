@@ -28,6 +28,15 @@ class CustomTextStyles {
     color: AppColors.textColorWhite,
   );
 
+  /// h2 : 20px, medium
+  static TextStyle h2 = TextStyle(
+    fontWeight: FontWeight.w500,
+    fontSize: 20.sp,
+    height: 1,
+    letterSpacing: 0.sp,
+    color: AppColors.textColorWhite,
+  );
+
   /// h3 : 18px, medium
   static TextStyle h3 = TextStyle(
     fontWeight: FontWeight.w500,
@@ -50,6 +59,15 @@ class CustomTextStyles {
   static TextStyle p2 = TextStyle(
     fontWeight: FontWeight.w500,
     fontSize: 14.sp,
+    height: 1,
+    letterSpacing: 0.sp,
+    color: AppColors.textColorWhite,
+  );
+
+  /// p3 : 12px, semi-bold
+  static TextStyle p3 = TextStyle(
+    fontWeight: FontWeight.w600,
+    fontSize: 12.sp,
     height: 1,
     letterSpacing: 0.sp,
     color: AppColors.textColorWhite,

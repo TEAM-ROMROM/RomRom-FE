@@ -18,11 +18,6 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -72,3 +67,29 @@ ios/XCBuildData/
 
 # key.jks.b64
 /android/app/keystore/key.jks.b64
+
+# 빌드 디렉토리 전체 무시
+build/
+
+**/DerivedData/
+**/Pods/
+**/.symlinks/
+xcuserdata/
+*.mode1v3
+*.mode2v3
+*.pbxuser
+*.perspectivev3
+**/*sync/
+.sconsign.dblite
+*.pbxproj_temp
+Flutter/ephemeral/
+Flutter/app.flx
+Flutter/app.zip
+Flutter/flutter_assets/
+
+# Exceptions
+!default.mode1v3
+!default.mode2v3
+!default.pbxuser
+!default.perspectivev3
+/ios/GoogleService-Info.plist
