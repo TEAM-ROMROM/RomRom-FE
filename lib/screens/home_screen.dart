@@ -82,12 +82,23 @@ class _FanCardDialState extends State<FanCardDial> {
   }
 
   List<Widget> buildFanCardWidgets() {
+    // 클래스 상단에 상수 정의
+    const double fanSpacing = 0.69;
+    const double fanRadius = 200.0;
+    const double cardDisplayWidth = 80.0;
+
+    const double baseXOffset = 210.0; // 화면 중앙 X 오프셋
+    const double baseYOffset = 260.0; // 화면 하단 Y 오프셋
+    const double rotationCenter = 200.0; // 회전 중심점
+    const double cardGap = 10.0; // 카드 간 추가 간격
+
+// buildFanCardWidgets 메서드에서 사용
     List<Map<String, dynamic>> positionedCards = fanCards(rawCards, {
       "flow": "horizontal",
       "fanDirection": "n",
-      "spacing": 0.69,
-      "radius": 200.0,
-      "width": 80.0,
+      "spacing": fanSpacing,
+      "radius": fanRadius,
+      "width": cardDisplayWidth,
     });
 
     int midIndex = (positionedCards.length - 1) ~/ 2;
@@ -106,12 +117,15 @@ class _FanCardDialState extends State<FanCardDial> {
           double x = (card["coords"]?["x"] ?? 0).toDouble();
           double y = (card["coords"]?["y"] ?? 0).toDouble();
 
-          double extraGap = 10.0;
-          double rotatedX = 210 +
-              (x - 200 + (index - midIndex) * extraGap) * cos(angleOffset) -
-              (y - 200) * sin(angleOffset);
-          double rotatedY =
-              260 + (x - 200) * sin(angleOffset) + (y - 200) * cos(angleOffset);
+// 카드 위치 계산
+          double extraGap = cardGap;
+          double rotatedX = baseXOffset +
+              (x - rotationCenter + (index - midIndex) * extraGap) *
+                  cos(angleOffset) -
+              (y - rotationCenter) * sin(angleOffset);
+          double rotatedY = baseYOffset +
+              (x - rotationCenter) * sin(angleOffset) +
+              (y - rotationCenter) * cos(angleOffset);
 
           double baseY = rotatedY;
 
@@ -209,10 +223,10 @@ class MyCustomCard extends StatelessWidget {
         color: color,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Center(
+      child: Center(
         child: Text(
-          '',
-          style: TextStyle(color: Colors.white, fontSize: 20),
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 20),
         ),
       ),
     );
