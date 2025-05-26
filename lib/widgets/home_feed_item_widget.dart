@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/enums/transaction_type.dart';
@@ -7,6 +8,8 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 
+/// 홈 피드 아이템 위젯
+/// 각 아이템의 상세 정보를 표시하는 위젯
 class HomeFeedItemWidget extends StatefulWidget {
   final HomeFeedItem item;
 
@@ -21,9 +24,13 @@ class HomeFeedItemWidget extends StatefulWidget {
 
 class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   int _currentImageIndex = 0;
+  final formatter = NumberFormat('#,###원');
 
   @override
   Widget build(BuildContext context) {
+    int price = (widget.item.price);
+    String formattedPrice = formatter.format(price);
+
     return Container(
       height: MediaQuery.of(context).size.height,
       width: MediaQuery.of(context).size.width,
@@ -61,7 +68,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
           // 이미지 인디케이터 (하단 점)
           Positioned(
-            bottom: 220.h,
+            bottom: 206.h,
             left: 0,
             right: 0,
             child: Row(
@@ -69,8 +76,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
               children: List.generate(
                 widget.item.imageUrls.length,
                 (index) => Container(
-                  width: 8.w,
-                  height: 8.w,
+                  width: 6.w,
+                  height: 6.w,
                   margin: EdgeInsets.symmetric(horizontal: 4.w),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -93,7 +100,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   icon: Icon(
                     Icons.favorite_border,
                     color: Colors.white,
-                    size: 32.sp,
+                    size: 30.sp,
                   ),
                   onPressed: () {
                     // FIXME: 좋아요 기능 API 연동 필요
@@ -111,9 +118,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 80.h,
+            bottom: 91.h,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -121,39 +128,43 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   Row(
                     children: [
                       Text(
-                        '${widget.item.price.toStringAsFixed(0)}원',
-                        style: CustomTextStyles.h1,
+                        formattedPrice,
+                        style: CustomTextStyles.h3
+                            .copyWith(fontWeight: FontWeight.w600),
                       ),
                       SizedBox(width: 12.w),
                       if (widget.item.priceTag != null)
                         _buildPriceTag(widget.item.priceTag!),
                     ],
                   ),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 12.h),
 
                   // 위치 및 날짜 정보
                   Row(
                     children: [
-                      Icon(Icons.location_on, color: Colors.white, size: 16.sp),
+                      // FIXME 위치 아이콘 교체 필요
+                      Icon(Icons.location_on_outlined,
+                          color: AppColors.opacity80White, size: 13.sp),
                       SizedBox(width: 4.w),
                       Text(
                         '${widget.item.location} • ${widget.item.date}',
-                        style: CustomTextStyles.p2,
+                        style: CustomTextStyles.p3
+                            .copyWith(fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 18.h),
 
                   // 태그 행 (상품 상태, 거래 방식, AI 분석 버튼)
                   Row(
                     children: [
                       // 사용감 태그
                       _buildConditionTag(widget.item.itemCondition),
-                      SizedBox(width: 8.w),
+                      SizedBox(width: 4.w),
                       // 거래 방식 태그들
                       ...widget.item.transactionTypes.map(
                         (type) => Padding(
-                          padding: EdgeInsets.only(right: 8.w),
+                          padding: EdgeInsets.only(right: 4.w),
                           child: _buildTransactionTag(type),
                         ),
                       ),

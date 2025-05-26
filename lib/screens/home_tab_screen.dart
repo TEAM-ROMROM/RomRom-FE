@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 
+/// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
   const HomeTabScreen({super.key});
 
@@ -19,9 +20,9 @@ class HomeTabScreen extends StatefulWidget {
 class _HomeTabScreenState extends State<HomeTabScreen> {
   final PageController _pageController = PageController();
   List<HomeFeedItem> _feedItems = [];
-  bool _isLoading = true;
-  bool _isLoadingMore = false;
-  bool _hasMoreItems = true;
+  bool _isLoading = true; // 초기 로딩 상태
+  bool _isLoadingMore = false; // 추가 아이템 로딩 상태
+  bool _hasMoreItems = true; // 더 로드할 아이템이 있는지 여부
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     _loadInitialItems();
   }
 
+  /// 초기 아이템 로드
   Future<void> _loadInitialItems() async {
     if (!mounted) return;
 
@@ -57,6 +59,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
   }
 
+  /// 추가 아이템 로드
   Future<void> _loadMoreItems() async {
     if (_isLoadingMore || !_hasMoreItems) return;
 
@@ -91,6 +94,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
   }
 
+  /// 테스트용 아이템 생성
+  /// FIXME: 실제 앱에서는 API를 통해 데이터를 받아와야 함.
   List<HomeFeedItem> _getMockItems({int startId = 1}) {
     // 테스트용 이미지 URL
     final List<String> placeholderImages = [
@@ -159,6 +164,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       );
     }
 
+    // 피드 아이템이 없을 때 메시지 표시
     if (_feedItems.isEmpty) {
       return Center(
         child: Column(
@@ -179,6 +185,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       );
     }
 
+    // 페이지 뷰로 피드 아이템 표시
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
         // 리스트의 끝에 가까워지면 더 많은 아이템 로드
