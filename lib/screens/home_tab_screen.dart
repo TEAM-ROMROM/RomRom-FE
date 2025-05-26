@@ -7,6 +7,7 @@ import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/widgets/fan_card_dial.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 
 /// 홈 탭 화면
@@ -186,35 +187,43 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
 
     // 페이지 뷰로 피드 아이템 표시
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        // 리스트의 끝에 가까워지면 더 많은 아이템 로드
-        if (scrollInfo is ScrollEndNotification) {
-          final currentPage = _pageController.page?.round() ?? 0;
-          if (currentPage >= _feedItems.length - 2 &&
-              !_isLoadingMore &&
-              _hasMoreItems) {
-            _loadMoreItems();
-          }
-        }
-        return false;
-      },
-      child: PageView.builder(
-        scrollDirection: Axis.vertical,
-        controller: _pageController,
-        itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= _feedItems.length) {
-            // 리스트 끝에 로딩 인디케이터 표시
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryYellow),
-            );
-          }
-          return HomeFeedItemWidget(item: _feedItems[index]);
-        },
-        // 스크롤 시 페이지에 스냅되도록 설정
-        physics: const PageScrollPhysics(),
-      ),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              // 리스트의 끝에 가까워지면 더 많은 아이템 로드
+              if (scrollInfo is ScrollEndNotification) {
+                final currentPage = _pageController.page?.round() ?? 0;
+                if (currentPage >= _feedItems.length - 2 &&
+                    !_isLoadingMore &&
+                    _hasMoreItems) {
+                  _loadMoreItems();
+                }
+              }
+              return false;
+            },
+            child: PageView.builder(
+              scrollDirection: Axis.vertical,
+              controller: _pageController,
+              itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index >= _feedItems.length) {
+                  // 리스트 끝에 로딩 인디케이터 표시
+                  return const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.primaryYellow),
+                  );
+                }
+                return HomeFeedItemWidget(item: _feedItems[index]);
+              },
+              // 스크롤 시 페이지에 스냅되도록 설정
+              physics: const PageScrollPhysics(),
+            ),
+          ),
+        ),
+        const Positioned(child: FanCardDial())
+      ],
     );
   }
 

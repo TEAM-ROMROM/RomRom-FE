@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:playing_cards_layouts/playing_cards_layouts.dart';
+import 'package:romrom_fe/widgets/item_card.dart';
 
 /// 부채꼴 모양 카드
 class FanCardDial extends StatefulWidget {
@@ -250,18 +252,12 @@ class MyCustomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 85,
-      height: 135,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 20),
-        ),
+    return SizedBox(
+      width: 85.w,
+      child: const ItemCard(
+        itemCategoryLabel: '스포츠/레저',
+        itemName: '윌슨 블레이드 V9',
+        itemId: 'demoCard1',
       ),
     );
   }

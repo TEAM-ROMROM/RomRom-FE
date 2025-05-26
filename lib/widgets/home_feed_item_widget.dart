@@ -84,7 +84,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   ),
                   SizedBox(
                     height: 125.h,
-                    child: const FanCardDial(),
+                    // child: const FanCardDial(),
                   ),
                 ],
               );
