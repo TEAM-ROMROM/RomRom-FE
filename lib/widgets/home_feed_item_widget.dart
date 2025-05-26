@@ -8,7 +8,6 @@ import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
-import 'package:romrom_fe/widgets/fan_card_dial.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -117,20 +116,21 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
           // 좋아요 버튼 및 카운트
           Positioned(
-            right: 16.w,
-            bottom: 180.h,
+            right: 33.w,
+            bottom: 202.h,
             child: Column(
               children: [
-                IconButton(
-                  icon: Icon(
+                GestureDetector(
+                  onTap: () {
+                    // FIXME: 좋아요 기능 API 연동 필요
+                  },
+                  child: Icon(
                     Icons.favorite_border,
                     color: Colors.white,
                     size: 30.sp,
                   ),
-                  onPressed: () {
-                    // FIXME: 좋아요 기능 API 연동 필요
-                  },
                 ),
+                SizedBox(height: 2.h),
                 Text(
                   widget.item.likeCount.toString(),
                   style: CustomTextStyles.p2,
@@ -149,35 +149,57 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 가격 및 AI 분석 라벨
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Text(
-                        formattedPrice,
-                        style: CustomTextStyles.h3
-                            .copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      SizedBox(width: 12.w),
-                      if (widget.item.priceTag != null)
-                        _buildPriceTag(widget.item.priceTag!),
-                    ],
-                  ),
-                  SizedBox(height: 12.h),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        // 가격 및 AI 분석 라벨
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                formattedPrice,
+                                style: CustomTextStyles.h3
+                                    .copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              SizedBox(width: 12.w),
+                              if (widget.item.priceTag != null)
+                                _buildPriceTag(widget.item.priceTag!),
+                            ],
+                          ),
+                          SizedBox(height: 12.h),
 
-                  // 위치 및 날짜 정보
-                  Row(
-                    children: [
-                      // FIXME 위치 아이콘 교체 필요
-                      Icon(Icons.location_on_outlined,
-                          color: AppColors.opacity80White, size: 13.sp),
-                      SizedBox(width: 4.w),
-                      Text(
-                        '${widget.item.location} • ${widget.item.date}',
-                        style: CustomTextStyles.p3
-                            .copyWith(fontWeight: FontWeight.w500),
+                          // 위치 및 날짜 정보
+                          Row(
+                            children: [
+                              // FIXME 위치 아이콘 교체 필요
+                              Icon(Icons.location_on_outlined,
+                                  color: AppColors.opacity80White, size: 13.sp),
+                              SizedBox(width: 4.w),
+                              Text(
+                                '${widget.item.location} • ${widget.item.date}',
+                                style: CustomTextStyles.p3
+                                    .copyWith(fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      // 프로필 이미지
+                      //FIXME: 프로필 이미지 API 연동 필요
+                      Container(
+                        width: 50.w,
+                        height: 50.h,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
+
                   SizedBox(height: 18.h),
 
                   // 태그 행 (상품 상태, 거래 방식, AI 분석 버튼)
