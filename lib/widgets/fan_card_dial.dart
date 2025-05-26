@@ -152,7 +152,7 @@ class _FanCardDialState extends State<FanCardDial> {
       child: Stack(
         children: [
           Positioned(
-            bottom: 0,
+            bottom: -100,
             left: 0,
             right: 0,
             child: SizedBox(
