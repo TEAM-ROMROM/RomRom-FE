@@ -7,6 +7,7 @@ import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/widgets/fan_card_dial.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -34,7 +35,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     return Container(
       height: MediaQuery.of(context).size.height,
       width: MediaQuery.of(context).size.width,
-      color: AppColors.primaryBlack,
+      color: Colors.black,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -47,21 +48,44 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
               });
             },
             itemBuilder: (context, index) {
-              return Image.network(
-                widget.item.imageUrls[index],
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primaryYellow,
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              (loadingProgress.expectedTotalBytes ?? 1)
-                          : null,
-                    ),
-                  );
-                },
+              return Column(
+                children: [
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(4.r),
+                            topRight: Radius.circular(4.r),
+                            bottomRight: Radius.circular(20.r),
+                            bottomLeft: Radius.circular(20.r)),
+                        child: Image.network(
+                          widget.item.imageUrls[index],
+                          fit: BoxFit.cover,
+                          height: 615.h,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryYellow,
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        (loadingProgress.expectedTotalBytes ??
+                                            1)
+                                    : null,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const BlackGradientContainer(),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 125.h,
+                    child: const FanCardDial(),
+                  ),
+                ],
               );
             },
           ),
@@ -307,6 +331,31 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
         type.name,
         style: CustomTextStyles.p3.copyWith(color: Colors.black),
       ),
+    );
+  }
+}
+
+/// 검정색 그라데이션 컨테이너
+class BlackGradientContainer extends StatelessWidget {
+  const BlackGradientContainer({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 627.h,
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+        colors: [
+          Colors.black,
+          Colors.black.withValues(alpha: 0.28),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.12, 0.19],
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+      )),
     );
   }
 }
