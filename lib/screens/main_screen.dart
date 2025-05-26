@@ -8,7 +8,7 @@ import 'package:romrom_fe/screens/register_tab_screen.dart';
 import 'package:romrom_fe/screens/request_management_tab_screen.dart';
 import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 
-/// 홈 화면
+/// 메인 화면
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
