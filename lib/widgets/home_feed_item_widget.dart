@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:intl/intl.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -28,8 +28,6 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   int _currentImageIndex = 0;
   late PageController pageController;
 
-  final formatter = NumberFormat('#,###원');
-
   @override
   void initState() {
     super.initState();
@@ -44,8 +42,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
   @override
   Widget build(BuildContext context) {
-    int price = (widget.item.price);
-    String formattedPrice = formatter.format(price);
+    String formattedPrice = formatPrice(widget.item.price);
 
     return Container(
       height: MediaQuery.of(context).size.height,
@@ -77,6 +74,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                                     const Duration(milliseconds: 1000),
                                 pageBuilder: (_, __, ___) =>
                                     ItemDetailDescriptionScreen(
+                                  item: widget.item,
                                   imageUrls: widget.item.imageUrls,
                                   imageSize: Size(
                                     MediaQuery.of(context).size.width,

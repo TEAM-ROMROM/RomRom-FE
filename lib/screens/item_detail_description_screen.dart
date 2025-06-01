@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
+import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
+  final HomeFeedItem item;
+
   final List<String> imageUrls;
   final Size imageSize; // 이미지 크기
   final int currentImageIndex; // 현재 이미지 인덱스
@@ -11,6 +19,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
 
   const ItemDetailDescriptionScreen({
     super.key,
+    required this.item,
     required this.imageUrls,
     required this.imageSize,
     required this.currentImageIndex,
@@ -42,6 +51,8 @@ class _ItemDetailDescriptionScreenState
 
   @override
   Widget build(BuildContext context) {
+    String formattedPrice = formatPrice(widget.item.price);
+
     return Scaffold(
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
@@ -164,18 +175,64 @@ class _ItemDetailDescriptionScreenState
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
                 children: [
-                  /// TODO : 사용자 프사, 위치, 닉네임, 좋아요 수
+                  /// 사용자 프사, 위치, 닉네임, 좋아요 수
                   Container(
                     height: 40.h,
                     width: double.infinity,
-                    color: Colors.yellow[400],
                     margin: EdgeInsets.symmetric(vertical: 16.h),
-                    child: Text(
-                      '사용자 프사, 위치, 닉네임, 좋아요 수 영역',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: AppColors.textColorBlack,
-                      ),
+                    child: Row(
+                      children: [
+                        const UserProfileCircularAvatar(
+                          avatarSize: Size(40, 40),
+                        ),
+                        SizedBox(width: 10.w),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            /// FIXME : 닉네임, 위치 사용자 정보에서 불러오기
+                            Text(
+                              '닉네임',
+                              style: CustomTextStyles.p2,
+                            ),
+                            Text(
+                              '화양동',
+                              style: CustomTextStyles.p3.copyWith(
+                                  color: const Color(0xFFEEEEEE)
+                                      .withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w500),
+                            )
+                          ],
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 11.w,
+                            vertical: 4.h,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(100.r),
+                            border: Border.all(
+                              color: AppColors.opacity30White,
+                              width: 1.w,
+                              strokeAlign: BorderSide.strokeAlignInside,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              SvgPicture.asset(
+                                'assets/images/dislike-heart-icon.svg',
+                                width: 16.w,
+                                height: 16.h,
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                '4',
+                                style: CustomTextStyles.p2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
@@ -184,18 +241,71 @@ class _ItemDetailDescriptionScreenState
                     height: 1.h,
                   ),
 
-                  /// TODO : 물품 정보 및 설명
+                  /// 물품 정보 및 설명
                   Container(
-                    height: 197.h,
                     width: double.infinity,
-                    color: Colors.green[400],
                     margin: EdgeInsets.symmetric(vertical: 16.h),
-                    child: Text(
-                      '물품 정보 및 설명 영역',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: AppColors.textColorBlack,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: TextSpan(
+                            text: '스포츠/레저 · ',
+                            style: CustomTextStyles.p3.copyWith(
+                                color: AppColors.opacity50White,
+                                fontWeight: FontWeight.w400),
+                            children: [
+                              TextSpan(
+                                text: widget.item.date,
+                                style: CustomTextStyles.p3.copyWith(
+                                    color: AppColors.opacity50White,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+
+                        /// FIXME : 물품 설명 사용자 정보에서 불러오기
+                        Text(
+                          '요넥스 이존 260g',
+                          style: CustomTextStyles.h3.copyWith(),
+                        ),
+                        SizedBox(height: 16.h),
+
+                        Row(
+                          children: [
+                            HomeFeedConditionTag(
+                                condition: widget.item.itemCondition),
+                            SizedBox(width: 4.w),
+                            HomeFeedTransactionTypeTag(
+                              type: widget.item.transactionTypes[0],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16.h),
+
+                        Row(
+                          children: [
+                            Text(
+                              formattedPrice,
+                              style: CustomTextStyles.h3.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            HomeFeedAiAnalysisTag(tag: widget.item.priceTag!),
+                          ],
+                        ),
+                        SizedBox(height: 24.h),
+                        Text(
+                          widget.item.description,
+                          // '누구나 이런 밤의 세계에 익숙하지 못한 사람은\n좀 무서워질 것입니다만. 어머나, 저렇게 많아.\n참 기막히게 아름답구나. 저렇게 많은 별은 생전 처음이야.',
+                          style: CustomTextStyles.p2.copyWith(
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
@@ -204,18 +314,44 @@ class _ItemDetailDescriptionScreenState
                     height: 1.h,
                   ),
 
-                  /// TODO : 거래 희망 장소
+                  /// 거래 희망 장소
                   Container(
-                    height: 258.h,
                     width: double.infinity,
-                    color: Colors.blue[400],
                     margin: EdgeInsets.symmetric(vertical: 16.h),
-                    child: Text(
-                      '거래 희망 장소 영역',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: AppColors.textColorBlack,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '거래희망장소',
+                          style: CustomTextStyles.p2.copyWith(
+                            fontWeight: FontWeight.w600,
+                            height: 1.4,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Row(
+                          children: [
+                            Icon(AppIcons.location,
+                                size: 13.sp, color: AppColors.opacity80White),
+                            SizedBox(width: 4.w),
+                            Text(
+                              widget.item.location,
+                              style: CustomTextStyles.p2.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16.h),
+                        Container(
+                          width: double.infinity,
+                          height: 200.h,
+                          decoration: BoxDecoration(
+                            color: AppColors.opacity30White,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

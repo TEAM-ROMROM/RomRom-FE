@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
@@ -59,4 +60,10 @@ double adjustedFontSize(BuildContext context, double spSize) {
 /// : color, radius를 인자로 받아 BoxDecoration을 반환
 BoxDecoration buildBoxDecoration(Color color, BorderRadius radius) {
   return BoxDecoration(color: color, borderRadius: radius);
+}
+
+/// 가격을 "1,000원" 형식으로 반환
+String formatPrice(int price) {
+  final formatter = NumberFormat('#,###원');
+  return formatter.format(price);
 }
