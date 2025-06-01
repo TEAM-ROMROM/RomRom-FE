@@ -215,30 +215,33 @@ class _FanCardDialState extends State<FanCardDial> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: resetDeck,
-      onHorizontalDragUpdate: (details) {
-        setState(() {
-          angleOffset += details.delta.dx * 0.002;
-          angleOffset = angleOffset.clamp(-pi / 4, 0.0);
-        });
-      },
-      child: Stack(
-        children: [
-          Positioned(
-            bottom: -100,
-            left: 0,
-            right: 0,
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: 200,
-              child: Stack(
-                children: buildFanCardWidgets(),
+    return SizedBox(
+      height: 200.h,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: resetDeck,
+        onHorizontalDragUpdate: (details) {
+          setState(() {
+            angleOffset += details.delta.dx * 0.002;
+            angleOffset = angleOffset.clamp(-pi / 4, 0.0);
+          });
+        },
+        child: Stack(
+          children: [
+            Positioned(
+              bottom: -100,
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width,
+                height: 300,
+                child: Stack(
+                  children: buildFanCardWidgets(),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -217,12 +217,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                 }
                 return HomeFeedItemWidget(item: _feedItems[index]);
               },
-              // 스크롤 시 페이지에 스냅되도록 설정
-              physics: const PageScrollPhysics(),
             ),
           ),
         ),
-        const Positioned(child: FanCardDial())
+        // 하단 고정 카드 덱 (터치 영역 분리)
+        const Positioned(
+          left: 0,
+          right: 0,
+          bottom: -100,
+          child: FanCardDial(),
+        ),
       ],
     );
   }
