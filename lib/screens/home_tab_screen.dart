@@ -237,7 +237,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               GestureDetector(
-                onTap: null, // TODO: 더보기 기능 구현
+                onTap: () {
+                  // TODO: 더보기 기능 구현
+                  debugPrint('더보기 버튼 클릭 - 기능 구현 예정');
+                },
                 child: Icon(Icons.more_vert,
                     size: 30.sp, color: AppColors.textColorWhite),
               ),

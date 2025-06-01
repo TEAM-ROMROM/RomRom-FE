@@ -279,95 +279,101 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
             ),
           );
   }
-}
 
-/// 활성화된 AI 분석 버튼
-Widget _buildAiAnalysisButton(bool isActive) {
-  // border
-  final gradientBorder = GradientBoxBorder(
-    gradient: LinearGradient(
-      colors: [
-        AppColors.aiTagGradientBorder1.withValues(alpha: isActive ? 1.0 : 0.4),
-        AppColors.aiTagGradientBorder2.withValues(alpha: isActive ? 1.0 : 0.4),
-        AppColors.aiTagGradientBorder3.withValues(alpha: isActive ? 1.0 : 0.4),
-        AppColors.aiTagGradientBorder4.withValues(alpha: isActive ? 1.0 : 0.4),
-      ],
-      stops: const [0.0, 0.35, 0.70, 1.0],
-    ),
-    width: 1.w,
-  );
+  /// 활성화된 AI 분석 버튼
+  Widget _buildAiAnalysisButton(bool isActive) {
+    // border
+    final gradientBorder = GradientBoxBorder(
+      gradient: LinearGradient(
+        colors: [
+          AppColors.aiTagGradientBorder1
+              .withValues(alpha: isActive ? 1.0 : 0.4),
+          AppColors.aiTagGradientBorder2
+              .withValues(alpha: isActive ? 1.0 : 0.4),
+          AppColors.aiTagGradientBorder3
+              .withValues(alpha: isActive ? 1.0 : 0.4),
+          AppColors.aiTagGradientBorder4
+              .withValues(alpha: isActive ? 1.0 : 0.4),
+        ],
+        stops: const [0.0, 0.35, 0.70, 1.0],
+      ),
+      width: 1.w,
+    );
 
-  // 그림자
-  final boxShadows = [
-    BoxShadow(
-      color: AppColors.aiButtonGlow
-          .withValues(alpha: isActive ? 0.7 : 0.3), // 첫 번째 그림자 투명도 조절
-      offset: const Offset(0, 0),
-      blurRadius: 10.r,
-      spreadRadius: 0.r,
-    ),
-    BoxShadow(
-      color: Colors.white
-          .withValues(alpha: isActive ? 1.0 : 0.3), // 두 번째 그림자 투명도 조절
-      offset: const Offset(0, -1),
-      blurRadius: 4.r,
-      spreadRadius: 0.r,
-    ),
-  ];
+    // 그림자
+    final boxShadows = [
+      BoxShadow(
+        color: AppColors.aiButtonGlow
+            .withValues(alpha: isActive ? 0.7 : 0.3), // 첫 번째 그림자 투명도 조절
+        offset: const Offset(0, 0),
+        blurRadius: 10.r,
+        spreadRadius: 0.r,
+      ),
+      BoxShadow(
+        color: Colors.white
+            .withValues(alpha: isActive ? 1.0 : 0.3), // 두 번째 그림자 투명도 조절
+        offset: const Offset(0, -1),
+        blurRadius: 4.r,
+        spreadRadius: 0.r,
+      ),
+    ];
 
-  return Container(
-    width: 67.w,
-    height: 24.h,
-    alignment: Alignment.center,
-    decoration: BoxDecoration(
-      color: AppColors.primaryBlack,
-      borderRadius: BorderRadius.circular(100.r),
-      border: gradientBorder,
-      boxShadow: boxShadows,
-    ),
-    child: Text(
-      'AI 분석',
-      style: CustomTextStyles.p3.copyWith(fontSize: 10.sp),
-    ),
-  );
-}
+    return Container(
+      width: 67.w,
+      height: 24.h,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.primaryBlack,
+        borderRadius: BorderRadius.circular(100.r),
+        border: gradientBorder,
+        boxShadow: boxShadows,
+      ),
+      child: Text(
+        'AI 분석',
+        style: CustomTextStyles.p3.copyWith(fontSize: 10.sp),
+      ),
+    );
+  }
 
-/// itemCondition 태그 생성
-Widget _buildConditionTag(ItemCondition condition) {
-  return Container(
-    height: 24.h,
-    constraints: BoxConstraints(
-      minWidth: 62.w, // 최소 가로 길이
-    ),
-    alignment: Alignment.center,
-    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
-    decoration: BoxDecoration(
-      color: AppColors.conditionTagBackground,
-      borderRadius: BorderRadius.circular(100.r),
-    ),
-    child: Text(
-      condition.name,
-      style: CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
-    ),
-  );
-}
+  /// itemCondition 태그 생성
+  Widget _buildConditionTag(ItemCondition condition) {
+    return Container(
+      height: 24.h,
+      constraints: BoxConstraints(
+        minWidth: 62.w, // 최소 가로 길이
+      ),
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        color: AppColors.conditionTagBackground,
+        borderRadius: BorderRadius.circular(100.r),
+      ),
+      child: Text(
+        condition.name,
+        style:
+            CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
+      ),
+    );
+  }
 
-/// transactionType 태그 생성
-Widget _buildTransactionTag(TransactionType type) {
-  return Container(
-    width: 62.w,
-    height: 24.h,
-    alignment: Alignment.center,
-    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
-    decoration: BoxDecoration(
-      color: AppColors.transactionTagBackground,
-      borderRadius: BorderRadius.circular(100.r),
-    ),
-    child: Text(
-      type.name,
-      style: CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
-    ),
-  );
+  /// transactionType 태그 생성
+  Widget _buildTransactionTag(TransactionType type) {
+    return Container(
+      width: 62.w,
+      height: 24.h,
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        color: AppColors.transactionTagBackground,
+        borderRadius: BorderRadius.circular(100.r),
+      ),
+      child: Text(
+        type.name,
+        style:
+            CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
+      ),
+    );
+  }
 }
 
 /// 검정색 그라데이션 컨테이너
