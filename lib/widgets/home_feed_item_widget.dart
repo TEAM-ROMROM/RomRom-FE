@@ -8,6 +8,7 @@ import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -25,7 +26,21 @@ class HomeFeedItemWidget extends StatefulWidget {
 
 class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   int _currentImageIndex = 0;
+  late PageController pageController;
+
   final formatter = NumberFormat('#,###원');
+
+  @override
+  void initState() {
+    super.initState();
+    pageController = PageController(initialPage: _currentImageIndex);
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +57,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           // 배경 이미지 (가로 스와이프 가능)
           PageView.builder(
             itemCount: widget.item.imageUrls.length,
+            controller: pageController,
             onPageChanged: (index) {
               setState(() {
                 _currentImageIndex = index;
@@ -52,33 +68,67 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                 children: [
                   Stack(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(4.r),
-                            topRight: Radius.circular(4.r),
-                            bottomRight: Radius.circular(20.r),
-                            bottomLeft: Radius.circular(20.r)),
-                        child: Image.network(
-                          widget.item.imageUrls[index],
-                          fit: BoxFit.cover,
-                          height: 615.h,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.primaryYellow,
-                                value: loadingProgress.expectedTotalBytes !=
-                                        null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        (loadingProgress.expectedTotalBytes ??
-                                            1)
-                                    : null,
-                              ),
-                            );
-                          },
+                      GestureDetector(
+                        onTap: () async {
+                          final resultIndex = await Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                transitionDuration:
+                                    const Duration(milliseconds: 1000),
+                                pageBuilder: (_, __, ___) =>
+                                    ItemDetailDescriptionScreen(
+                                  imageUrls: widget.item.imageUrls,
+                                  imageSize: Size(
+                                    MediaQuery.of(context).size.width,
+                                    MediaQuery.of(context).size.width,
+                                  ),
+                                  currentImageIndex: index,
+                                  heroTag: 'itemImage_${widget.item.id}',
+                                ),
+                              ));
+
+                          if (resultIndex != null && resultIndex is int) {
+                            setState(() {
+                              _currentImageIndex = resultIndex;
+                            });
+                            pageController.jumpToPage(
+                                _currentImageIndex); // 또는 animateToPage()
+                          }
+                        },
+                        child: Hero(
+                          tag: 'itemImage_${widget.item.id}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(4.r),
+                                topRight: Radius.circular(4.r),
+                                bottomRight: Radius.circular(20.r),
+                                bottomLeft: Radius.circular(20.r)),
+                            child: Image.network(
+                              widget.item.imageUrls[index],
+                              fit: BoxFit.cover,
+                              height: 615.h,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primaryYellow,
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            (loadingProgress
+                                                    .expectedTotalBytes ??
+                                                1)
+                                        : null,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
-                      const BlackGradientContainer(),
+                      const IgnorePointer(child: BlackGradientContainer()),
                     ],
                   ),
                   SizedBox(
