@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/enums/transaction_type.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -174,10 +176,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   onTap: () {
                     // FIXME: 좋아요 기능 API 연동 필요
                   },
-                  child: Icon(
-                    Icons.favorite_border,
-                    color: Colors.white,
-                    size: 30.sp,
+                  child: SvgPicture.asset(
+                    widget.item.hasAiAnalysis
+                        ? 'assets/images/dislike-heart-icon.svg'
+                        : 'assets/images/like-heart-icon.svg',
                   ),
                 ),
                 SizedBox(height: 2.h),
@@ -224,7 +226,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           Row(
                             children: [
                               // FIXME 위치 아이콘 교체 필요
-                              Icon(Icons.location_on_outlined,
+                              Icon(AppIcons.location,
                                   color: AppColors.opacity80White, size: 13.sp),
                               SizedBox(width: 4.w),
                               Text(
