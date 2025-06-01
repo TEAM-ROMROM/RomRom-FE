@@ -223,7 +223,7 @@ class _FanCardDialState extends State<FanCardDial> {
         onHorizontalDragUpdate: (details) {
           setState(() {
             angleOffset += details.delta.dx * 0.002;
-            angleOffset = angleOffset.clamp(-pi / 4, 0.0);
+            angleOffset = angleOffset.clamp(-pi / 4, pi / 4);
           });
         },
         child: Stack(
