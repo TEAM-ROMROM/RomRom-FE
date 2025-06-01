@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:playing_cards_layouts/playing_cards_layouts.dart';
+import 'package:romrom_fe/widgets/item_card.dart';
 
 /// 부채꼴 모양 카드
 class FanCardDial extends StatefulWidget {
@@ -213,30 +215,33 @@ class _FanCardDialState extends State<FanCardDial> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: resetDeck,
-      onHorizontalDragUpdate: (details) {
-        setState(() {
-          angleOffset += details.delta.dx * 0.002;
-          angleOffset = angleOffset.clamp(-pi / 4, 0.0);
-        });
-      },
-      child: Stack(
-        children: [
-          Positioned(
-            bottom: -100,
-            left: 0,
-            right: 0,
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: 200,
-              child: Stack(
-                children: buildFanCardWidgets(),
+    return SizedBox(
+      height: 200.h,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: resetDeck,
+        onHorizontalDragUpdate: (details) {
+          setState(() {
+            angleOffset += details.delta.dx * 0.002;
+            angleOffset = angleOffset.clamp(-pi / 4, pi / 4);
+          });
+        },
+        child: Stack(
+          children: [
+            Positioned(
+              bottom: -100,
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width,
+                height: 300,
+                child: Stack(
+                  children: buildFanCardWidgets(),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -250,18 +255,12 @@ class MyCustomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 85,
-      height: 135,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 20),
-        ),
+    return SizedBox(
+      width: 85.w,
+      child: const ItemCard(
+        itemCategoryLabel: '스포츠/레저',
+        itemName: '윌슨 블레이드 V9',
+        itemId: 'demoCard1',
       ),
     );
   }

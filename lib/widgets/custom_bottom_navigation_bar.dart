@@ -30,12 +30,14 @@ class CustomBottomNavigationBar extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: NavigationTabItems.values.map((tab) => _buildNavItem(
-          context,
-          tab.index,
-          tab.iconData,
-          tab.title,
-        )).toList(),
+        children: NavigationTabItems.values
+            .map((tab) => _buildNavItem(
+                  context,
+                  tab.index,
+                  tab.iconData,
+                  tab.title,
+                ))
+            .toList(),
       ),
     );
   }
