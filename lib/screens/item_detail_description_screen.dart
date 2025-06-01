@@ -60,43 +60,74 @@ class _ItemDetailDescriptionScreenState
             child: Column(
               children: [
                 /// 배경 이미지 (가로 스와이프 가능)
-                SizedBox(
-                  height: widget.imageSize.height,
-                  width: widget.imageSize.width,
-                  child: PageView.builder(
-                    itemCount: widget.imageUrls.length,
-                    controller: pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        currentImageIndex = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      return Hero(
-                        tag: widget.heroTag,
-                        child: Image.network(
-                          widget.imageUrls[index],
-                          fit: BoxFit.cover,
-                          width: widget.imageSize.width,
-                          height: widget.imageSize.height,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.primaryYellow,
-                                value: loadingProgress.expectedTotalBytes !=
-                                        null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        (loadingProgress.expectedTotalBytes ??
-                                            1)
-                                    : null,
-                              ),
-                            );
-                          },
+                Stack(
+                  children: [
+                    SizedBox(
+                      height: widget.imageSize.height,
+                      width: widget.imageSize.width,
+                      child: PageView.builder(
+                        itemCount: widget.imageUrls.length,
+                        controller: pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            currentImageIndex = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          return Hero(
+                            tag: widget.heroTag,
+                            child: Image.network(
+                              widget.imageUrls[index],
+                              fit: BoxFit.cover,
+                              width: widget.imageSize.width,
+                              height: widget.imageSize.height,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primaryYellow,
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            (loadingProgress
+                                                    .expectedTotalBytes ??
+                                                1)
+                                        : null,
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    /// 이미지 인디케이터
+                    Positioned(
+                      bottom: 24.h,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          widget.imageUrls.length,
+                          (index) => Container(
+                            width: 6.w,
+                            height: 6.w,
+                            margin: EdgeInsets.symmetric(horizontal: 4.w),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: currentImageIndex == index
+                                  ? Colors.white
+                                  : AppColors.opacity50White,
+                            ),
+                          ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
 
                 /// 아이템 설명 영역
@@ -288,30 +319,6 @@ class _ItemDetailDescriptionScreenState
               onTap: () => debugPrint('더보기 버튼 클릭'),
               child: Icon(AppIcons.dotsVertical,
                   size: 30.sp, color: AppColors.textColorWhite),
-            ),
-          ),
-
-          /// 이미지 인디케이터
-          Positioned(
-            bottom: MediaQuery.of(context).padding.top + 24.h,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                widget.imageUrls.length,
-                (index) => Container(
-                  width: 6.w,
-                  height: 6.w,
-                  margin: EdgeInsets.symmetric(horizontal: 4.w),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: currentImageIndex == index
-                        ? Colors.white
-                        : AppColors.opacity50White,
-                  ),
-                ),
-              ),
             ),
           ),
         ],
