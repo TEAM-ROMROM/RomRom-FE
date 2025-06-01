@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -283,12 +284,12 @@ class _ItemDetailDescriptionScreenState
                               ],
                             ),
                             SizedBox(height: 16.h),
-                            Container(
+                            SizedBox(
                               width: double.infinity,
                               height: 200.h,
-                              decoration: BoxDecoration(
-                                color: AppColors.opacity30White,
+                              child: ClipRRect(
                                 borderRadius: BorderRadius.circular(4.r),
+                                child: const NaverMap(),
                               ),
                             ),
                           ],
