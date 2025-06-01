@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // 공통
-  static const Color primaryBlack = Color(0xFF131419);
+  static const Color primaryBlack = Color(0xFF1D1E27);
   static const Color primaryYellow = Color(0xFFFFC300);
 
   // 로그인 화면
