@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/enums/transaction_type.dart';
@@ -226,6 +227,22 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           right: 0,
           bottom: -100,
           child: FanCardDial(),
+        ),
+
+        /// 더보기 아이콘 버튼
+        Positioned(
+          right: 24,
+          top: MediaQuery.of(context).padding.top, // SafeArea 기준으로 margin 줌
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              GestureDetector(
+                onTap: null, // TODO: 더보기 기능 구현
+                child: Icon(Icons.more_vert,
+                    size: 30.sp, color: AppColors.textColorWhite),
+              ),
+            ],
+          ),
         ),
       ],
     );
