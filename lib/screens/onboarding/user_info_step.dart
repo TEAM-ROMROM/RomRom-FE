@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/category_completion_button.dart';
 
 class UserInfoStep extends StatefulWidget {
   final VoidCallback onNext;
@@ -106,25 +107,13 @@ class _UserInfoStepState extends State<UserInfoStep> {
           // 다음 단계 버튼
           Padding(
             padding: EdgeInsets.only(bottom: 48.h),
-            child: ElevatedButton(
-              onPressed: _isButtonEnabled
-                  ? () async {
-                      // 여기에 사용자 정보 저장 로직 추가
-                      widget.onNext();
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isButtonEnabled
-                    ? AppColors.primaryYellow
-                    : AppColors.primaryYellow.withOpacity(0.3),
-                minimumSize: Size(double.infinity, 56.h),
-              ),
-              child: Text(
-                '다음',
-                style: CustomTextStyles.p1.copyWith(
-                  color: _isButtonEnabled ? Colors.black : Colors.black54,
-                ),
-              ),
+            child: CategoryCompletionButton(
+              isEnabled: _isButtonEnabled,
+              enabledOnPressed: () async {
+                //TODO: 로직 추가
+                widget.onNext();
+              },
+              buttonText: '다음',
             ),
           ),
         ],
