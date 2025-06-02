@@ -318,6 +318,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       ),
     ];
 
+    // textColor
+    final textColor = isActive ? Colors.white : AppColors.opacity30White;
+
     return Container(
       width: 67.w,
       height: 24.h,
@@ -330,7 +333,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       ),
       child: Text(
         'AI 분석',
-        style: CustomTextStyles.p3.copyWith(fontSize: 10.sp),
+        style: CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: textColor),
       ),
     );
   }

@@ -4,6 +4,7 @@ class AppColors {
   // 공통
   static const Color primaryBlack = Color(0xFF1D1E27);
   static const Color primaryYellow = Color(0xFFFFC300);
+  static const Color opacity30White = Color(0x4DFFFFFF); // 30% 불투명도 흰색
   static const Color opacity50White = Color(0x80FFFFFF); // 50% 불투명도 흰색
   static const Color opacity80White = Color(0xCCFFFFFF); // 80% 불투명도 흰색
   static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정
