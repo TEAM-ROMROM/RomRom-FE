@@ -15,7 +15,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
-import 'package:romrom_fe/screens/onboarding/category_selection_screen.dart';
+import 'package:romrom_fe/deprecated/category_selection_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/apis/responses/naver_address_response.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';

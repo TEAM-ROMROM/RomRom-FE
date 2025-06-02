@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
-import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
+import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -29,7 +29,7 @@ class MyPageTabScreen extends StatelessWidget {
             ),
           ),
           _buildActionButton(
-            onPressed: () => _handleLogoutButtonTap(context),
+            onPressed: () => AuthService().logout(context),
             backgroundColor: Colors.pink[300],
             text: '로그아웃',
           ),
@@ -61,24 +61,6 @@ class MyPageTabScreen extends StatelessWidget {
       child: Text(text,
           style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite)),
     );
-  }
-
-  /// 로그아웃 처리
-  void _handleLogoutButtonTap(BuildContext context) async {
-    try {
-      // 로그아웃 API 호출 시도
-      final authApi = RomAuthApi();
-      await authApi.logoutWithSocial(context);
-    } catch (e) {
-      debugPrint('로그아웃 중 오류 발생: $e');
-    } finally {
-      // API 성공/실패 여부와 관계없이 로그인 화면으로 이동
-      if (context.mounted) {
-        context.navigateTo(
-            screen: const LoginScreen(),
-            type: NavigationTypes.pushAndRemoveUntil);
-      }
-    }
   }
 
   /// 회원 탈퇴 처리
