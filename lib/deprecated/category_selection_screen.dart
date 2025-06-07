@@ -82,6 +82,14 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                           }
                         } catch (e) {
                           debugPrint("Error: $e");
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('카테고리 저장에 실패했습니다. 다시 시도해주세요.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                       buttonText: '완료',

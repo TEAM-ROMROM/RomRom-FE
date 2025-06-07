@@ -44,7 +44,13 @@ Future<Widget> _determineInitialScreen() async {
 
   // 사용자 정보 확인
   var userInfo = UserInfo();
-  await userInfo.getUserInfo();
+  try {
+    await userInfo.getUserInfo();
+  } catch (e) {
+    debugPrint('사용자 정보 조회 실패: $e');
+    // 사용자 정보 조회 실패시 > 로그인 화면
+    return const LoginScreen();
+  }
 
   // 온보딩이 필요한 경우
   if (userInfo.isFirstLogin == true) {
