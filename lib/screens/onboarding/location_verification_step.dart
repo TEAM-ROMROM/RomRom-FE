@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -185,12 +184,11 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
         if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
           await getAddressByNaverApi(_currentPosition!);
 
+          if (!mounted) return;
           if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('위치 정보를 가져오지 못했습니다. 다시 시도해주세요.')),
-              );
-            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('위치 정보를 가져오지 못했습니다. 다시 시도해주세요.')),
+            );
             return;
           }
         }
@@ -207,11 +205,10 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
         // 다음 단계로 이동
         widget.onNext();
       } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('위치 저장에 실패했습니다: $e')),
-          );
-        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('위치 저장에 실패했습니다: $e')),
+        );
       }
     }
   }

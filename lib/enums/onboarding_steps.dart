@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
-
-/// 온보딩 단계를 정의하는 enum
+/// 온보딩 단계
 enum OnboardingSteps {
   userInfo(
     step: 1,
