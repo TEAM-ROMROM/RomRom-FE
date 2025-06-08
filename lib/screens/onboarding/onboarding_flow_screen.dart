@@ -3,7 +3,7 @@ import 'package:romrom_fe/enums/onboarding_steps.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/category_selection_step.dart';
 import 'package:romrom_fe/screens/onboarding/location_verification_step.dart';
-import 'package:romrom_fe/screens/onboarding/user_info_step.dart';
+import 'package:romrom_fe/screens/onboarding/term_agreement_step.dart';
 import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/widgets/onboarding_progress_header.dart';
 import 'package:romrom_fe/widgets/onboarding_title_header.dart';
@@ -97,7 +97,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(), // 사용자 스와이프 비활성화
               children: [
-                UserInfoStep(onNext: _goToNextPage),
+                TermAgreementStep(onNext: _goToNextPage),
                 LocationVerificationStep(onNext: _goToNextPage),
                 CategorySelectionStep(onComplete: _completeOnboarding),
               ],

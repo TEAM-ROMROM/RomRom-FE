@@ -1,6 +1,6 @@
 /// 온보딩 단계
 enum OnboardingSteps {
-  userInfo(
+  termAgreement(
     step: 1,
     title: '이용약관 동의',
     subtitle: '회원가입전, romrom 약관들을 확인해주세요',
@@ -30,7 +30,7 @@ enum OnboardingSteps {
   static OnboardingSteps fromStep(int step) {
     return values.firstWhere(
       (element) => element.step == step,
-      orElse: () => userInfo,
+      orElse: () => termAgreement,
     );
   }
 }
