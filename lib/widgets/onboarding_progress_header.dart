@@ -214,7 +214,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
           child: Text(
             '$step',
             style: CustomTextStyles.p3.copyWith(
-              color: AppColors.primaryYellow,
+              color: AppColors.textColorWhite,
             ),
           ),
         ),

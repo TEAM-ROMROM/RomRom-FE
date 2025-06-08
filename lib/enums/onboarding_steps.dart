@@ -2,8 +2,8 @@
 enum OnboardingSteps {
   userInfo(
     step: 1,
-    title: '기본정보 입력',
-    subtitle: '프로필 작성을 위한 정보를 입력해주세요',
+    title: '이용약관 동의',
+    subtitle: '회원가입전, romrom 약관들을 확인해주세요',
   ),
   locationVerification(
     step: 2,

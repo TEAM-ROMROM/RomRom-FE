@@ -5,7 +5,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/widgets/category_completion_button.dart';
+import 'package:romrom_fe/widgets/common/completion_button.dart';
 
 class CategorySelectionStep extends StatefulWidget {
   final VoidCallback onComplete;
@@ -41,7 +41,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
           Padding(
             padding: EdgeInsets.only(bottom: 48.h),
             child: Center(
-              child: CategoryCompletionButton(
+              child: CompletionButton(
                 isEnabled: isSelectedCategories,
                 enabledOnPressed: () async {
                   try {
