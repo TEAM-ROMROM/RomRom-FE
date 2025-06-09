@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/data/terms_data.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/term_type.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/onboarding/term_detail_screen.dart';
@@ -186,6 +187,8 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+
+        // 상세 보기 버튼
         GestureDetector(
           onTap: () {
             final termsContent = TermsData.termsContents[term]!;
@@ -194,14 +197,10 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
               type: NavigationTypes.push,
             );
           },
-          child: SizedBox(
-            width: 18.w,
-            height: 18.h,
-            child: SvgPicture.asset(
-              'assets/images/detailView.svg',
-              width: 18.w,
-              height: 18.h,
-            ),
+          child: Icon(
+            AppIcons.detailView,
+            size: 18.h,
+            color: AppColors.textColorWhite,
           ),
         ),
       ],
