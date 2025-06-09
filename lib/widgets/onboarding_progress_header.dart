@@ -186,12 +186,15 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
           color: AppColors.primaryYellow,
         ),
         child: Center(
-          child: SvgPicture.asset(
-            'assets/images/onboardingProgressCheck.svg',
-            width: 12.w,
-            height: 12.h,
-            colorFilter: const ColorFilter.mode(
-                AppColors.textColorBlack, BlendMode.srcIn),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 6.0.w,
+            ),
+            child: SvgPicture.asset(
+              'assets/images/onboardingProgressCheck.svg',
+              colorFilter: const ColorFilter.mode(
+                  AppColors.textColorBlack, BlendMode.srcIn),
+            ),
           ),
         ),
       );
