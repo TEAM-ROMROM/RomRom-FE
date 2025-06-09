@@ -51,7 +51,11 @@ class TermDetailScreen extends StatelessWidget {
                 child: SingleChildScrollView(
                   child: Text(
                     termsContent.content,
-                    style: CustomTextStyles.p3,
+                    style: CustomTextStyles.p3.copyWith(
+                      color: AppColors.textColorWhite.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w400,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ),

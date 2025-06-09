@@ -17,7 +17,7 @@ enum TermsType {
     contentKey: 'location',
   ),
   marketing(
-    title: '마케팅정보수신 동의',
+    title: '마케팅 정보수신 동의',
     isRequired: false,
     contentKey: 'marketing',
     description: '(이메일, SMS, 푸시알림 등)',

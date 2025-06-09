@@ -43,7 +43,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 56.h), // 상단 공간
+          SizedBox(height: 40.h), // 상단 공간
 
           // 약관 전체 동의
           Row(
@@ -61,9 +61,13 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
                     });
                   },
                   activeColor: AppColors.primaryYellow,
-                  checkColor: AppColors.textColorBlack,
+                  checkColor: AppColors.primaryBlack,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  side: BorderSide(
+                    color: AppColors.primaryYellow,
+                    width: 1.w,
                   ),
                 ),
               ),
@@ -83,7 +87,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
           Container(
             width: 345.w,
             height: 1.h,
-            color: const Color(0xFFFFFF33).withOpacity(0.2),
+            color: AppColors.textColorWhite.withValues(alpha: 0.2),
           ),
 
           SizedBox(height: 24.h),
@@ -105,7 +109,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
                       term.description!,
                       style: CustomTextStyles.p3.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textColorWhite.withOpacity(0.6),
+                        color: AppColors.textColorWhite.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -120,7 +124,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
                 SizedBox(height: 32.h),
               ],
             );
-          }).toList(),
+          }),
 
           // 하단 여백 채우기
           const Spacer(),
@@ -156,9 +160,13 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
               });
             },
             activeColor: AppColors.primaryYellow,
-            checkColor: AppColors.textColorBlack,
+            checkColor: AppColors.primaryBlack,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(4.r),
+            ),
+            side: BorderSide(
+              color: AppColors.primaryYellow,
+              width: 1.w,
             ),
           ),
         ),
@@ -166,8 +174,8 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
         Text(
           term.isRequired ? '[필수] ' : '[선택]',
           style: CustomTextStyles.p1.copyWith(
-            color: AppColors.primaryYellow,
-            fontWeight: FontWeight.w500,
+            color: AppColors.primaryYellow.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w400,
           ),
         ),
         SizedBox(width: 9.w),

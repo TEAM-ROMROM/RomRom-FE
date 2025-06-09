@@ -3,7 +3,7 @@ enum OnboardingSteps {
   termAgreement(
     step: 1,
     title: '이용약관 동의',
-    subtitle: '회원가입전, romrom 약관들을 확인해주세요',
+    subtitle: '회원가입 전, romrom 약관들을 확인해주세요',
   ),
   locationVerification(
     step: 2,
