@@ -7,7 +7,7 @@
 // import 'package:romrom_fe/screens/main_screen.dart';
 // import 'package:romrom_fe/services/apis/member_api.dart';
 // import 'package:romrom_fe/utils/common_utils.dart';
-// import 'package:romrom_fe/widgets/category_completion_button.dart';
+// import 'package:romrom_fe/widgets/completion_button.dart';
 // import 'package:romrom_fe/widgets/onboarding_progress_header.dart';
 // import 'package:romrom_fe/widgets/onboarding_title_header.dart';
 //

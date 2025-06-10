@@ -127,3 +127,28 @@ class ErrorHandler {
 - 오류의 원인과 해결 방법을 간결하게 제시
 - 부정적 표현보다 긍정적/중립적 어조 사용
 - 필요 시 재시도 또는 다른 방법 안내
+
+## 네비게이션 가이드라인
+
+### 화면 전환 표준 방식
+모든 화면 전환은 `common_utils.dart`에 정의된 `navigateTo()` 확장 메서드를 사용합니다.
+직접 `Navigator.push()` 등의 메서드를 사용하지 않고, 항상 확장 메서드를 사용하세요.
+
+```dart
+// 기본 화면 이동 (push)
+context.navigateTo(
+  screen: TargetScreen(),
+  type: NavigationTypes.push,
+);
+
+// 이전 화면 대체 (pushReplacement)
+context.navigateTo(
+  screen: TargetScreen(),
+  type: NavigationTypes.pushReplacement,
+);
+
+// 모든 이전 화면 제거 후 이동 (pushAndRemoveUntil)
+context.navigateTo(
+  screen: TargetScreen(),
+  type: NavigationTypes.pushAndRemoveUntil,
+);

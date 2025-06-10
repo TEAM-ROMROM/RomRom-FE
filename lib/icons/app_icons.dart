@@ -9,6 +9,8 @@ class AppIcons {
   static const IconData requestManagement =
       IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData navigateBefore =
+      IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData detailView =
       IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData cancel =
       IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
@@ -28,6 +30,4 @@ class AppIcons {
       IconData(0xe80d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData tempLogo =
       IconData(0xe810, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData onBoardingProgressCheck =
-      IconData(0xe816, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }
