@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/data/terms_data.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/term_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/term_contents.dart';
 import 'package:romrom_fe/screens/onboarding/term_detail_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
@@ -28,6 +28,10 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
     TermsType.marketing: false,
   };
 
+  // 약관 내용 저장용
+  Map<TermsType, TermContents>? _termsContents;
+  bool _isLoading = true;
+
   // 필수 약관만 체크하는 getter
   bool get _allRequiredChecked => TermsType.values
       .where((term) => term.isRequired)
@@ -37,7 +41,37 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
   bool get _allTermsChecked => _termsChecked.values.every((checked) => checked);
 
   @override
+  void initState() {
+    super.initState();
+    _loadTermsContents();
+  }
+
+  // 약관 내용 로드
+  Future<void> _loadTermsContents() async {
+    try {
+      final termsContents = await TermContents.loadAll();
+      setState(() {
+        _termsContents = termsContents;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      // 에러 처리 (필요시 스낵바 등으로 사용자에게 알림)
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primaryYellow,
+        ),
+      );
+    }
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.0.w),
       child: Column(
@@ -189,12 +223,14 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
 
         // 상세 보기 버튼
         GestureDetector(
-          onTap: () {
-            final termsContent = TermsData.termsContents[term]!;
-            context.navigateTo(
-              screen: TermDetailScreen(termsContent: termsContent),
-              type: NavigationTypes.push,
-            );
+          onTap: () async {
+            if (_termsContents != null) {
+              final termsContent = _termsContents![term]!;
+              context.navigateTo(
+                screen: TermDetailScreen(termsContent: termsContent),
+                type: NavigationTypes.push,
+              );
+            }
           },
           child: Icon(
             AppIcons.detailView,
