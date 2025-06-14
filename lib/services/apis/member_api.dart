@@ -12,6 +12,29 @@ class MemberApi {
 
   MemberApi._internal();
 
+  /// 이용약관 동의 API
+  /// `POST /api/members/terms`
+  Future<bool> saveTermsAgreement({
+    required bool isMarketingInfoAgreed,
+  }) async {
+    const String url = '${AppUrls.baseUrl}/api/members/terms';
+    bool isSuccess = false;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {
+        'isMarketingInfoAgreed': isMarketingInfoAgreed.toString(),
+      },
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        debugPrint('이용약관 동의 저장 성공');
+        debugPrint('Response: $responseData');
+        isSuccess = true;
+      },
+    );
+    return isSuccess;
+  }
+
   /// 회원 선호 카테고리 저장 API
   /// `POST /api/members/post/category/preferences`
   Future<bool> savePreferredCategories(List<int> preferredCategories) async {

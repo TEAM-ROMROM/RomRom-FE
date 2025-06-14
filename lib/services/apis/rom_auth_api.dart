@@ -63,12 +63,15 @@ class RomAuthApi {
         await _tokenManager.saveTokens(accessToken, refreshToken);
         debugPrint('토큰 저장 성공: accessToken=${accessToken.substring(0, 15)}...');
 
-        // 로그인 상태(첫 로그인 여부, 카테고리 선택 여부, 위치 인증 여부) 저장
-        await UserInfo().saveFirstLoginStatus(
-            isFirstLogin: responseData['isFirstLogin'],
-            isFirstItemPosted: responseData['isFirstItemPosted'],
-            isItemCategorySaved: responseData['isItemCategorySaved'],
-            isMemberLocationSaved: responseData['isMemberLocationSaved']);
+        // 로그인 상태 저장
+        await UserInfo().saveLoginStatus(
+          isFirstLogin: responseData['isFirstLogin'] ?? false,
+          isFirstItemPosted: responseData['isFirstItemPosted'] ?? false,
+          isItemCategorySaved: responseData['isItemCategorySaved'] ?? false,
+          isMemberLocationSaved: responseData['isMemberLocationSaved'] ?? false,
+          isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
+          isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
+        );
       } else {
         throw Exception('소셜 로그인 실패: ${response.statusCode}, ${response.body}');
       }

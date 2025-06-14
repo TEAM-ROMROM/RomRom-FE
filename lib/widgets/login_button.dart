@@ -42,19 +42,30 @@ class LoginButton extends StatelessWidget {
 
       if (isSuccess) {
         var userInfo = UserInfo();
-        await UserInfo().getUserInfo(); // 사용자 정보 불러오기
+        await userInfo.getUserInfo(); // 사용자 정보 불러오기
 
-        // 처음 로그인 하면 위치 인증 화면으로 이동
+        // 온보딩이 필요한지 확인하여 라우팅
         if (context.mounted) {
+          Widget nextScreen;
+          
+          if (userInfo.needsOnboarding) {
+            // 온보딩이 필요한 경우
+            nextScreen = OnboardingFlowScreen(
+              initialStep: userInfo.nextOnboardingStep,
+            );
+          } else {
+            // 온보딩이 완료된 경우
+            nextScreen = const MainScreen();
+          }
+
           context.navigateTo(
-              screen: userInfo.isFirstLogin! && !userInfo.isMemberLocationSaved!
-                  ? const OnboardingFlowScreen()
-                  : const MainScreen(),
-              type: NavigationTypes.push);
+            screen: nextScreen,
+            type: NavigationTypes.pushReplacement,
+          );
         }
       }
     } catch (e) {
-      debugPrint("$e");
+      debugPrint("로그인 처리 중 오류: $e");
     }
   }
 
@@ -120,7 +131,6 @@ class LogoutButton extends StatelessWidget {
       case LoginPlatforms.kakao:
         // 카카오 로그아웃 처리
         kakaoAuthService.logoutWithKakaoAccount();
-
         break;
       case LoginPlatforms.google:
         // 구글 로그아웃 로직 처리
