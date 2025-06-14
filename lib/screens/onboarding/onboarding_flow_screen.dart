@@ -9,19 +9,31 @@ import 'package:romrom_fe/widgets/onboarding_progress_header.dart';
 import 'package:romrom_fe/widgets/onboarding_title_header.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
-  const OnboardingFlowScreen({super.key});
+  final int initialStep;
+  
+  const OnboardingFlowScreen({
+    super.key,
+    this.initialStep = 1,
+  });
 
   @override
   State<OnboardingFlowScreen> createState() => _OnboardingFlowScreenState();
 }
 
 class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
-  final PageController _pageController = PageController();
-  int _currentStep = 1;
+  late final PageController _pageController;
+  late int _currentStep;
   final int _totalSteps = OnboardingSteps.values.length;
 
   // 현재 단계 정보
   OnboardingSteps get currentStepInfo => OnboardingSteps.fromStep(_currentStep);
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStep = widget.initialStep;
+    _pageController = PageController(initialPage: _currentStep - 1);
+  }
 
   @override
   void dispose() {

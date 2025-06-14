@@ -36,9 +36,10 @@ Future<Widget> _determineInitialScreen() async {
   final TokenManager tokenManager = TokenManager();
   final String? refreshToken = await tokenManager.getRefreshToken();
 
+  // 리프레시 토큰이 없으면 로그인 화면
   if (refreshToken == null) return const LoginScreen();
 
-  // 로그인은 되어있지만 온보딩이 필요한지 확인
+  // 토큰으로 로그인 시도
   final isLoggedIn = await romAuthApi.refreshAccessToken();
   if (!isLoggedIn) return const LoginScreen();
 
@@ -48,16 +49,17 @@ Future<Widget> _determineInitialScreen() async {
     await userInfo.getUserInfo();
   } catch (e) {
     debugPrint('사용자 정보 조회 실패: $e');
-    // 사용자 정보 조회 실패시 > 로그인 화면
     return const LoginScreen();
   }
 
-  // 온보딩이 필요한 경우
-  if (userInfo.isFirstLogin == true) {
-    return const OnboardingFlowScreen();
+  // 온보딩이 필요한지 확인
+  if (userInfo.needsOnboarding) {
+    return OnboardingFlowScreen(
+      initialStep: userInfo.nextOnboardingStep,
+    );
   }
 
-  // 온보딩이 완료된 경우
+  // 온보딩이 완료된 경우 메인 화면
   return const MainScreen();
 }
 
