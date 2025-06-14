@@ -6,7 +6,9 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/term_contents.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/onboarding/term_detail_screen.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 
@@ -31,6 +33,9 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
   // 약관 내용 저장용
   Map<TermsType, TermContents>? _termsContents;
   bool _isLoading = true;
+  bool _isSaving = false; // API 호출 중 상태
+
+  final MemberApi _memberApi = MemberApi();
 
   // 필수 약관만 체크하는 getter
   bool get _allRequiredChecked => TermsType.values
@@ -58,7 +63,61 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
       setState(() {
         _isLoading = false;
       });
-      // 에러 처리 (필요시 스낵바 등으로 사용자에게 알림)
+      debugPrint('약관 로드 실패: $e');
+    }
+  }
+
+  // 약관 동의 처리 및 API 호출
+  Future<void> _handleTermsAgreement() async {
+    if (_isSaving) return; // 중복 호출 방지
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      // 마케팅 동의 여부 확인
+      final isMarketingAgreed = _termsChecked[TermsType.marketing] ?? false;
+
+      // 백엔드에 약관 동의 정보 전송
+      final success = await _memberApi.saveTermsAgreement(
+        isMarketingInfoAgreed: isMarketingAgreed,
+      );
+
+      if (success) {
+        // 사용자 정보 업데이트
+        final userInfo = UserInfo();
+        await userInfo.getUserInfo(); // 최신 정보 재로드
+
+        // 다음 단계로 이동
+        widget.onNext();
+      } else {
+        // 실패 시 스낵바 표시
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('약관 동의 저장에 실패했습니다. 다시 시도해주세요.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('약관 동의 처리 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('오류가 발생했습니다. 다시 시도해주세요.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -167,11 +226,9 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
           Padding(
             padding: EdgeInsets.only(bottom: 48.h),
             child: CompletionButton(
-              isEnabled: _allRequiredChecked,
-              enabledOnPressed: () {
-                widget.onNext();
-              },
-              buttonText: '동의하고 계속하기',
+              isEnabled: _allRequiredChecked && !_isSaving,
+              enabledOnPressed: _handleTermsAgreement,
+              buttonText: _isSaving ? '처리 중...' : '동의하고 계속하기',
             ),
           ),
         ],
@@ -179,7 +236,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
     );
   }
 
-  // enum을 활용한 약관 항목 생성 함수
+  // 약관 항목 생성 함수
   Widget _buildTermsItem(TermsType term) {
     return Row(
       children: [
