@@ -77,8 +77,7 @@ class UserInfo {
 
   /// 온보딩이 필요한지 확인
   bool get needsOnboarding {
-    return isFirstLogin == true || 
-           isRequiredTermsAgreed != true ||
+    return isRequiredTermsAgreed != true ||
            isMemberLocationSaved != true ||
            isItemCategorySaved != true;
   }
