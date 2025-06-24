@@ -35,6 +35,7 @@ class _ItemDetailDescriptionScreenState
     extends State<ItemDetailDescriptionScreen> {
   late PageController pageController;
   late int currentImageIndex;
+  bool like = true;
 
   @override
   void initState() {
@@ -163,27 +164,36 @@ class _ItemDetailDescriptionScreenState
                               ],
                             ),
                             const Spacer(),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 11.w, vertical: 4.h),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(100.r),
-                                border: Border.all(
-                                  color: AppColors.opacity30White,
-                                  width: 1.w,
-                                  strokeAlign: BorderSide.strokeAlignInside,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  SvgPicture.asset(
-                                    'assets/images/dislike-heart-icon.svg',
-                                    width: 16.w,
-                                    height: 16.h,
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  like = !like;
+                                });
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 11.w, vertical: 4.h),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(100.r),
+                                  border: Border.all(
+                                    color: AppColors.opacity30White,
+                                    width: 1.w,
+                                    strokeAlign: BorderSide.strokeAlignInside,
                                   ),
-                                  SizedBox(width: 4.w),
-                                  Text('4', style: CustomTextStyles.p2),
-                                ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    SvgPicture.asset(
+                                      like == true
+                                          ? 'assets/images/like-heart-icon.svg'
+                                          : 'assets/images/dislike-heart-icon.svg',
+                                      width: 16.w,
+                                      height: 16.h,
+                                    ),
+                                    SizedBox(width: 4.w),
+                                    Text('4', style: CustomTextStyles.p2),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
