@@ -79,20 +79,21 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
       // 마케팅 동의 여부 확인
       final isMarketingAgreed = _termsChecked[TermsType.marketing] ?? false;
 
-      // 백엔드에 약관 동의 정보 전송
-      final success = await _memberApi.saveTermsAgreement(
+      // 약관 동의 정보 전송
+      final isSuccess = await _memberApi.saveTermsAgreement(
         isMarketingInfoAgreed: isMarketingAgreed,
       );
 
-      if (success) {
+      if (isSuccess) {
         // 사용자 정보 업데이트
         final userInfo = UserInfo();
-        await userInfo.getUserInfo(); // 최신 정보 재로드
+        // 최신 회원 정보 재로드
+        await userInfo.getUserInfo();
 
         // 다음 단계로 이동
         widget.onNext();
       } else {
-        // 실패 시 스낵바 표시
+        // 실패 시
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
