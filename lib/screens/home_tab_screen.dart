@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/enums/transaction_type.dart';
@@ -11,6 +12,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/widgets/fan_card_dial.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -26,11 +28,26 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   bool _isLoading = true; // 초기 로딩 상태
   bool _isLoadingMore = false; // 추가 아이템 로딩 상태
   bool _hasMoreItems = true; // 더 로드할 아이템이 있는지 여부
+  bool _showBlur = false;
 
   @override
   void initState() {
     super.initState();
     _loadInitialItems();
+    _checkFirstMainScreen();
+  }
+
+  Future<void> _checkFirstMainScreen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirst = prefs.getBool('isFirstMainScreen') ?? false;
+    setState(() {
+      _showBlur = isFirst;
+    });
+  }
+
+  Future<void> _clearFirstMainScreenFlag() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isFirstMainScreen', false);
   }
 
   /// 초기 아이템 로드
@@ -217,37 +234,52 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                         color: AppColors.primaryYellow),
                   );
                 }
-                return HomeFeedItemWidget(item: _feedItems[index]);
+                return HomeFeedItemWidget(
+                  item: _feedItems[index],
+                  showBlur: _showBlur,
+                );
               },
             ),
           ),
         ),
         // 하단 고정 카드 덱 (터치 영역 분리)
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: -100.h,
-          child: const FanCardDial(),
-        ),
+        if (!_showBlur)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -100.h,
+            child: const FanCardDial(),
+          )
+        else
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 10.h,
+            child: SvgPicture.asset(
+              'assets/images/first-item-post-text.svg',
+              width: 145.w,
+            ),
+          ),
 
         /// 더보기 아이콘 버튼
-        Positioned(
-          right: 24.w,
-          top: MediaQuery.of(context).padding.top, // SafeArea 기준으로 margin 줌
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  // TODO: 더보기 기능 구현
-                  debugPrint('더보기 버튼 클릭 - 기능 구현 예정');
-                },
-                child: Icon(AppIcons.dotsVertical,
-                    size: 30.sp, color: AppColors.textColorWhite),
-              ),
-            ],
+        if (!_showBlur)
+          Positioned(
+            right: 24.w,
+            top: MediaQuery.of(context).padding.top, // SafeArea 기준으로 margin 줌
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    // TODO: 더보기 기능 구현
+                    debugPrint('더보기 버튼 클릭 - 기능 구현 예정');
+                  },
+                  child: Icon(AppIcons.dotsVertical,
+                      size: 30.sp, color: AppColors.textColorWhite),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -255,6 +287,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _clearFirstMainScreenFlag();
     super.dispose();
   }
 }

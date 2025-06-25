@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -7,6 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -14,10 +17,12 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 /// 각 아이템의 상세 정보를 표시하는 위젯
 class HomeFeedItemWidget extends StatefulWidget {
   final HomeFeedItem item;
+  final bool showBlur;
 
   const HomeFeedItemWidget({
     super.key,
     required this.item,
+    required this.showBlur,
   });
 
   @override
@@ -131,7 +136,13 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   ),
                   SizedBox(
                     height: 125.h,
-                    // child: const FanCardDial(),
+                  ),
+                  BackdropFilter(
+                    enabled: widget.showBlur,
+                    filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+                    child: Container(
+                      color: AppColors.opacity10Black,
+                    ),
                   ),
                 ],
               );
@@ -139,53 +150,55 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           ),
 
           // 이미지 인디케이터 (하단 점)
-          Positioned(
-            bottom: 206.h,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                widget.item.imageUrls.length,
-                (index) => Container(
-                  width: 6.w,
-                  height: 6.w,
-                  margin: EdgeInsets.symmetric(horizontal: 4.w),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _currentImageIndex == index
-                        ? Colors.white
-                        : AppColors.opacity50White,
+          if (!widget.showBlur)
+            Positioned(
+              bottom: 206.h,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  widget.item.imageUrls.length,
+                  (index) => Container(
+                    width: 6.w,
+                    height: 6.w,
+                    margin: EdgeInsets.symmetric(horizontal: 4.w),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentImageIndex == index
+                          ? Colors.white
+                          : AppColors.opacity50White,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
           // 좋아요 버튼 및 카운트
-          Positioned(
-            right: 33.w,
-            bottom: 202.h,
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    // FIXME: 좋아요 기능 API 연동 필요
-                  },
-                  child: SvgPicture.asset(
-                    widget.item.hasAiAnalysis
-                        ? 'assets/images/dislike-heart-icon.svg'
-                        : 'assets/images/like-heart-icon.svg',
+          if (!widget.showBlur)
+            Positioned(
+              right: 33.w,
+              bottom: 202.h,
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      // FIXME: 좋아요 기능 API 연동 필요
+                    },
+                    child: SvgPicture.asset(
+                      widget.item.hasAiAnalysis
+                          ? 'assets/images/dislike-heart-icon.svg'
+                          : 'assets/images/like-heart-icon.svg',
+                    ),
                   ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  widget.item.likeCount.toString(),
-                  style: CustomTextStyles.p2,
-                ),
-              ],
+                  SizedBox(height: 2.h),
+                  Text(
+                    widget.item.likeCount.toString(),
+                    style: CustomTextStyles.p2,
+                  ),
+                ],
+              ),
             ),
-          ),
 
           // 하단 정보 패널
           Positioned(
@@ -200,46 +213,55 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        // 가격 및 AI 분석 라벨
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                formattedPrice,
-                                style: CustomTextStyles.h3
-                                    .copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              SizedBox(width: 12.w),
-                              if (widget.item.priceTag != null)
-                                HomeFeedAiAnalysisTag(
-                                    tag: widget.item.priceTag!)
-                            ],
-                          ),
-                          SizedBox(height: 12.h),
+                      BlurWrapper(
+                        enabled: widget.showBlur,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          // 가격 및 AI 분석 라벨
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  formattedPrice,
+                                  style: CustomTextStyles.h3
+                                      .copyWith(fontWeight: FontWeight.w600),
+                                ),
+                                SizedBox(width: 12.w),
+                                if (widget.item.priceTag != null)
+                                  HomeFeedAiAnalysisTag(
+                                      tag: widget.item.priceTag!)
+                              ],
+                            ),
+                            SizedBox(height: 12.h),
 
-                          // 위치 및 날짜 정보
-                          Row(
-                            children: [
-                              // FIXME 위치 아이콘 교체 필요
-                              Icon(AppIcons.location,
-                                  color: AppColors.opacity80White, size: 13.sp),
-                              SizedBox(width: 4.w),
-                              Text(
-                                '${widget.item.location} • ${widget.item.date}',
-                                style: CustomTextStyles.p3
-                                    .copyWith(fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                        ],
+                            // 위치 및 날짜 정보
+                            Row(
+                              children: [
+                                // FIXME 위치 아이콘 교체 필요
+                                Icon(AppIcons.location,
+                                    color: AppColors.opacity80White,
+                                    size: 13.sp),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  '${widget.item.location} • ${widget.item.date}',
+                                  style: CustomTextStyles.p3
+                                      .copyWith(fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                       const Spacer(),
 
                       // 프로필 이미지
-                      const UserProfileCircularAvatar(
-                        avatarSize: Size(50, 50),
+                      ClipOval(
+                        child: BlurWrapper(
+                          enabled: widget.showBlur,
+                          child: const UserProfileCircularAvatar(
+                            avatarSize: Size(50, 50),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -247,30 +269,68 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   SizedBox(height: 18.h),
 
                   // 태그 행 (상품 상태, 거래 방식, AI 분석 버튼)
-                  Row(
-                    children: [
-                      // 사용감 태그
-                      /// itemCondition 태그 생성
-                      HomeFeedConditionTag(
-                          condition: widget.item.itemCondition),
-                      SizedBox(width: 4.w),
-                      // 거래 방식 태그들
-                      ...widget.item.transactionTypes.map(
-                        (type) => Padding(
-                          padding: EdgeInsets.only(right: 4.w),
-                          child: HomeFeedTransactionTypeTag(type: type),
+                  BlurWrapper(
+                    enabled: widget.showBlur,
+                    child: Row(
+                      children: [
+                        // 사용감 태그
+                        /// itemCondition 태그 생성
+                        HomeFeedConditionTag(
+                            condition: widget.item.itemCondition),
+                        SizedBox(width: 4.w),
+                        // 거래 방식 태그들
+                        ...widget.item.transactionTypes.map(
+                          (type) => Padding(
+                            padding: EdgeInsets.only(right: 4.w),
+                            child: HomeFeedTransactionTypeTag(type: type),
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      HomeFeedAiTag(
-                        isActive: widget.item.hasAiAnalysis,
-                      ),
-                    ],
+                        const Spacer(),
+                        HomeFeedAiTag(
+                          isActive: widget.item.hasAiAnalysis,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+
+          if (widget.showBlur)
+            Positioned(
+              top: 205.h,
+              left: 0,
+              right: 0,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      style: CustomTextStyles.h3.copyWith(color: Colors.white),
+                      children: [
+                        TextSpan(
+                          text: '내 물건을 등록',
+                          style: CustomTextStyles.h1.copyWith(
+                              color: AppColors.primaryYellow, height: 1.3),
+                        ),
+                        TextSpan(
+                          text: '하고\n물건을 교환해보세요!',
+                          style: CustomTextStyles.h1.copyWith(height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    height: 56.h,
+                  ),
+                  SvgPicture.asset(
+                    'assets/images/first-item-post-box.svg',
+                    width: 133.w,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

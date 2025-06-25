@@ -10,6 +10,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MyPageTabScreen extends StatelessWidget {
   const MyPageTabScreen({super.key});
@@ -111,6 +112,10 @@ class MyPageTabScreen extends StatelessWidget {
       // 소셜 플랫폼별 로그아웃 처리
       final socialLogoutService = SocialLogoutService();
       await socialLogoutService.performSocialLogout();
+
+      // 메인 화면 블러 처리 변수 삭제
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('isFirstMainScreen');
 
       // context가 여전히 유효한지 다시 확인
       if (!context.mounted) return;

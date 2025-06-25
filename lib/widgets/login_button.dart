@@ -12,6 +12,7 @@ import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 로그인 버튼
 class LoginButton extends StatelessWidget {
@@ -47,7 +48,15 @@ class LoginButton extends StatelessWidget {
         // 온보딩이 필요한지 확인하여 라우팅
         if (context.mounted) {
           Widget nextScreen;
-          
+
+          // 회원가입 후
+          final prefs = await SharedPreferences.getInstance();
+
+          // 첫 로그인 시 메인화면 블러처리
+          if (userInfo.isFirstLogin == null || true) {
+            await prefs.setBool('isFirstMainScreen', true);
+          }
+
           if (userInfo.needsOnboarding) {
             // 온보딩이 필요한 경우
             nextScreen = OnboardingFlowScreen(
