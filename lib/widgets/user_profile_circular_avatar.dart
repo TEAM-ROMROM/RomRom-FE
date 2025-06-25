@@ -26,12 +26,19 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
   }
 
   Future<void> _loadUserProfile() async {
-    final userInfo = UserInfo();
-    await userInfo.getUserInfo(); // 사용자 정보 로딩
-    setState(() {
-      _avatarUrl = userInfo.profileUrl;
-      _isLoading = false;
-    });
+    try {
+      final userInfo = UserInfo();
+      await userInfo.getUserInfo(); // 사용자 정보 로딩
+      setState(() {
+        _avatarUrl = userInfo.profileUrl;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _avatarUrl = null;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
