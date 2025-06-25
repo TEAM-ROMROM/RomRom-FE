@@ -57,6 +57,16 @@ class AppColors {
       Color(0xFFF25893); // 다홍 테두리(Gradient 4)
   static const Color aiButtonGlow = Color(0xFF7B00FF); // 보라색 광택 효과
 
+  // 온보딩 프로그레스 헤더
+  static final Color onboardingProgressInactiveLine =
+      primaryYellow.withValues(alpha: 0.1); // 비활성화 프로그레스 선
+  static const Color onboardingProgressStepPendingBg =
+      Color(0xFF1D1E27); // 대기 단계 배경색 (primaryBlack과 동일)
+  static final Color onboardingProgressStepPendingBorder =
+      primaryYellow.withValues(alpha: 0.1); // 대기 단계 테두리
+  static final Color onboardingProgressStepPendingText =
+      primaryYellow.withValues(alpha: 0.3); // 대기 단계 텍스트
+
   // 텍스트 색상
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);

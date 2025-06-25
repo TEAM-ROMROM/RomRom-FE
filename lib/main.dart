@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/token_manager.dart';
+
+import 'screens/onboarding/onboarding_flow_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,13 +34,33 @@ void main() async {
 Future<Widget> _determineInitialScreen() async {
   final romAuthApi = RomAuthApi();
   final TokenManager tokenManager = TokenManager();
-  // refreshToken 불러옴
   final String? refreshToken = await tokenManager.getRefreshToken();
 
+  // 리프레시 토큰이 없으면 로그인 화면
   if (refreshToken == null) return const LoginScreen();
-  return await romAuthApi.refreshAccessToken()
-      ? const MainScreen()
-      : const LoginScreen();
+
+  // 토큰으로 로그인 시도
+  final isLoggedIn = await romAuthApi.refreshAccessToken();
+  if (!isLoggedIn) return const LoginScreen();
+
+  // 사용자 정보 확인
+  var userInfo = UserInfo();
+  try {
+    await userInfo.getUserInfo();
+  } catch (e) {
+    debugPrint('사용자 정보 조회 실패: $e');
+    return const LoginScreen();
+  }
+
+  // 온보딩이 필요한지 확인
+  if (userInfo.needsOnboarding) {
+    return OnboardingFlowScreen(
+      initialStep: userInfo.nextOnboardingStep,
+    );
+  }
+
+  // 온보딩이 완료된 경우 메인 화면
+  return const MainScreen();
 }
 
 /// 앱의 루트 위젯

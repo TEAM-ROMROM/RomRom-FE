@@ -9,6 +9,8 @@ class UserInfo {
   bool? isFirstItemPosted;
   bool? isItemCategorySaved;
   bool? isMemberLocationSaved;
+  bool? isMarketingInfoAgreed;    // 마케팅 정보 수신 동의 여부
+  bool? isRequiredTermsAgreed;    // 필수 이용약관 동의 여부
 
   static final UserInfo _instance = UserInfo._internal();
   factory UserInfo() => _instance;
@@ -27,12 +29,14 @@ class UserInfo {
     profileUrl = profileImageUrl;
   }
 
-  // 로그인 상태(첫 로그인 여부, 카테고리 선택 여부, 위치 인증 여부) 저장
-  Future<void> saveFirstLoginStatus({
+  /// 로그인 상태 저장 (업데이트된 필드 포함)
+  Future<void> saveLoginStatus({
     required bool isFirstLogin,
     required bool isFirstItemPosted,
     required bool isItemCategorySaved,
     required bool isMemberLocationSaved,
+    required bool isMarketingInfoAgreed,
+    required bool isRequiredTermsAgreed,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -41,6 +45,8 @@ class UserInfo {
       'isFirstItemPosted': isFirstItemPosted,
       'isItemCategorySaved': isItemCategorySaved,
       'isMemberLocationSaved': isMemberLocationSaved,
+      'isMarketingInfoAgreed': isMarketingInfoAgreed,
+      'isRequiredTermsAgreed': isRequiredTermsAgreed,
     };
 
     for (final entry in statusMap.entries) {
@@ -51,6 +57,8 @@ class UserInfo {
     this.isFirstItemPosted = isFirstItemPosted;
     this.isItemCategorySaved = isItemCategorySaved;
     this.isMemberLocationSaved = isMemberLocationSaved;
+    this.isMarketingInfoAgreed = isMarketingInfoAgreed;
+    this.isRequiredTermsAgreed = isRequiredTermsAgreed;
   }
 
   /// 사용자 정보 불러옴
@@ -63,6 +71,23 @@ class UserInfo {
     isFirstItemPosted = prefs.getBool('isFirstItemPosted');
     isItemCategorySaved = prefs.getBool('isItemCategorySaved');
     isMemberLocationSaved = prefs.getBool('isMemberLocationSaved');
+    isMarketingInfoAgreed = prefs.getBool('isMarketingInfoAgreed');
+    isRequiredTermsAgreed = prefs.getBool('isRequiredTermsAgreed');
+  }
+
+  /// 온보딩이 필요한지 확인
+  bool get needsOnboarding {
+    return isRequiredTermsAgreed != true ||
+           isMemberLocationSaved != true ||
+           isItemCategorySaved != true;
+  }
+
+  /// 다음 온보딩 단계 결정
+  int get nextOnboardingStep {
+    if (isRequiredTermsAgreed != true) return 1;  // 이용약관 동의
+    if (isMemberLocationSaved != true) return 2;  // 위치 인증
+    if (isItemCategorySaved != true) return 3;    // 카테고리 선택
+    return 1; // 기본값
   }
 
   /// 사용자 정보를 Map 형태로 반환하는 함수
