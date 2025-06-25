@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/enums/transaction_type.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -222,16 +223,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           ),
         ),
         // 하단 고정 카드 덱 (터치 영역 분리)
-        const Positioned(
+        Positioned(
           left: 0,
           right: 0,
-          bottom: -100,
-          child: FanCardDial(),
+          bottom: -100.h,
+          child: const FanCardDial(),
         ),
 
         /// 더보기 아이콘 버튼
         Positioned(
-          right: 24,
+          right: 24.w,
           top: MediaQuery.of(context).padding.top, // SafeArea 기준으로 margin 줌
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -241,7 +242,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                   // TODO: 더보기 기능 구현
                   debugPrint('더보기 버튼 클릭 - 기능 구현 예정');
                 },
-                child: Icon(Icons.more_vert,
+                child: Icon(AppIcons.dotsVertical,
                     size: 30.sp, color: AppColors.textColorWhite),
               ),
             ],

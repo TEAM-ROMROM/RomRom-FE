@@ -291,7 +291,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
             }
           },
           child: Icon(
-            AppIcons.detailView,
+            AppIcons.dotsVertical,
             size: 18.h,
             color: AppColors.textColorWhite,
           ),
