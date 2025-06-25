@@ -30,7 +30,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.transparent, // 투명 배경으로 설정
       elevation: 0, // 그림자 효과 제거
       centerTitle: true, // 제목을 중앙에 배치
-      toolbarHeight: 82.h, // 앱바 높이 설정
+      toolbarHeight: 72.h, // 앱바 높이 설정
       leadingWidth: 52.w, // 뒤로가기 버튼 영역 너비 설정
       leading: IconButton(
         alignment: Alignment.centerRight, // 아이콘 버튼을 오른쪽 정렬
@@ -39,18 +39,25 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           size: 24.h,
           color: AppColors.textColorWhite,
         ),
-        onPressed: onBackPressed ?? () => Navigator.of(context).pop(), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
+        onPressed: onBackPressed ??
+            () => Navigator.of(context)
+                .pop(), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
         padding: EdgeInsets.zero, // 패딩 제거
       ),
-      title: Text(
-        title,
-        style: CustomTextStyles.h2,
+      title: Padding(
+        padding: EdgeInsets.only(top: 16.h, bottom: 32.h),
+        child: Text(
+          title,
+          style: CustomTextStyles.h1,
+        ),
       ),
+
+      shape: const Border(bottom: BorderSide(color: AppColors.opacity10White)),
       actions: actions, // 추가 액션 버튼들
     );
   }
 
-  /// 앱바의 기본 크기 (높이는 82.h로 고정)
+  /// 앱바의 기본 크기 (높이는 72.h로 고정)
   @override
-  Size get preferredSize => Size.fromHeight(82.h);
+  Size get preferredSize => Size.fromHeight(72.h);
 }
