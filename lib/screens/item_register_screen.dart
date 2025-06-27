@@ -1,3 +1,4 @@
+import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -22,6 +23,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   int imageCount = 0;
   String? selectedCategory;
   String? selectedCondition;
+  List<String> selectedItemConditionTypes = [];
   List<String> selectedTransactionTypes = [];
   bool useAiPrice = false;
 
@@ -77,7 +79,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
 
               // 제목
               _LabeledField(
@@ -173,13 +175,16 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                       .map((option) => RegisterOptionChip(
                             itemOption: option,
                             isSelected:
-                                selectedTransactionTypes.contains(option),
+                                selectedItemConditionTypes.contains(option),
                             onTap: () {
                               setState(() {
-                                if (selectedTransactionTypes.contains(option)) {
-                                  selectedTransactionTypes.remove(option);
+                                if (selectedItemConditionTypes
+                                    .contains(option)) {
+                                  selectedItemConditionTypes.clear();
                                 } else {
-                                  selectedTransactionTypes.add(option);
+                                  selectedItemConditionTypes
+                                    ..clear()
+                                    ..add(option);
                                 }
                               });
                             },
@@ -216,7 +221,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
               Row(
                 children: [
                   const _Label(label: '적정 가격'),
-                  const SizedBox(width: 8),
+                  const Spacer(),
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -227,11 +232,39 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     child: const Text('AI 추천 가격',
                         style: TextStyle(color: Colors.white, fontSize: 12)),
                   ),
-                  const Spacer(),
-                  Switch(
-                    value: useAiPrice,
-                    onChanged: (v) => setState(() => useAiPrice = v),
-                    activeColor: Colors.amber,
+                  AnimatedToggleSwitch.dual(
+                    current: useAiPrice,
+                    first: false,
+                    second: true,
+                    spacing: 2.0.w,
+                    height: 20.h,
+                    style: ToggleStyle(
+                      indicatorColor: AppColors.textColorWhite,
+                      borderRadius: BorderRadius.all(Radius.circular(100.r)),
+                      indicatorBoxShadow: [
+                        const BoxShadow(
+                            color: AppColors.toggleSwitchIndicatorShadow,
+                            offset: Offset(-1, 0),
+                            blurRadius: 2)
+                      ],
+                    ),
+                    indicatorSize: Size(18.w, 18.h),
+                    borderWidth: 0,
+                    padding: EdgeInsets.all(1.w),
+                    onChanged: (b) => setState(() => useAiPrice = b),
+                    styleBuilder: (b) => ToggleStyle(
+                      backgroundGradient: b
+                          ? const LinearGradient(colors: [
+                              AppColors.aiTagGradientBorder1,
+                              AppColors.aiTagGradientBorder2,
+                              AppColors.aiTagGradientBorder3,
+                              AppColors.aiTagGradientBorder4,
+                            ])
+                          : const LinearGradient(colors: [
+                              AppColors.opacity40White,
+                              AppColors.opacity40White
+                            ]),
+                    ),
                   ),
                 ],
               ),
@@ -273,7 +306,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   }
 }
 
-// 라벨
+/// 라벨
 class _Label extends StatelessWidget {
   final String label;
   const _Label({required this.label});
@@ -286,6 +319,7 @@ class _Label extends StatelessWidget {
   }
 }
 
+/// 내용 입력 Field
 class _CustomTextField extends StatelessWidget {
   final String hintText;
   final int? maxLength;
@@ -359,6 +393,7 @@ class _CustomTextField extends StatelessWidget {
   }
 }
 
+/// 라벨 + 내용 Field
 class _LabeledField extends StatelessWidget {
   final String label;
   final Widget field;

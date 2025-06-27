@@ -73,4 +73,8 @@ class AppColors {
   // 텍스트 색상
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);
+
+  // 물품 교환 AI 추천 가격 토글 Switch
+  static const Color toggleSwitchIndicatorShadow =
+      Color(0x40000000); // 검은색, opacity 25%
 }
