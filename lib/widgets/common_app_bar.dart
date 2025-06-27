@@ -31,6 +31,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0, // 그림자 효과 제거
       centerTitle: true, // 제목을 중앙에 배치
       toolbarHeight: 72.h, // 앱바 높이 설정
+      scrolledUnderElevation: 0, // 스크롤 할 때 그림자 효과 제거
       leadingWidth: 52.w, // 뒤로가기 버튼 영역 너비 설정
       leading: IconButton(
         alignment: Alignment.centerRight, // 아이콘 버튼을 오른쪽 정렬
