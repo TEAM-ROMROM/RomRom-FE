@@ -43,6 +43,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
             child: Center(
               child: CompletionButton(
                 isEnabled: isSelectedCategories,
+                buttonType: 1,
                 enabledOnPressed: () async {
                   try {
                     await memberApi.savePreferredCategories(selectedCategories);
@@ -84,7 +85,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
         style: CustomTextStyles.p2.copyWith(
           fontSize: adjustedFontSize(context, 14.0),
           color:
-          isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
+              isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
           wordSpacing: -0.32.w,
         ),
       ),
@@ -96,7 +97,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
       shape: RoundedRectangleBorder(
         side: BorderSide(
           color:
-          isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
+              isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
           strokeAlign: BorderSide.strokeAlignInside,
           width: 1.0.w,
         ),

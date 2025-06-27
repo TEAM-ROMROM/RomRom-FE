@@ -8,6 +8,7 @@ class CompletionButton extends StatelessWidget {
   final VoidCallback? enabledOnPressed; // 활성화 상태일 때 눌렀을 때 실행 함수
   final VoidCallback? disabledOnPressed; // 비활성화 상태일 때 눌렀을 때 실행 함수
   final String buttonText; // 버튼 중앙 문구
+  final int buttonType; // 버튼 종류 (1 or 2)
 
   // 색 정의
   final Color? enabledBackgroundColor; // 활성화 배경 색
@@ -21,6 +22,7 @@ class CompletionButton extends StatelessWidget {
     this.enabledOnPressed,
     this.disabledOnPressed,
     required this.buttonText,
+    required this.buttonType,
     this.enabledBackgroundColor,
     this.disabledBackgroundColor,
     this.enabledTextColor,
@@ -33,7 +35,7 @@ class CompletionButton extends StatelessWidget {
     final Color backgroundColor = isEnabled
         ? enabledBackgroundColor ?? AppColors.primaryYellow
         : disabledBackgroundColor ??
-        AppColors.primaryYellow.withValues(alpha: 0.3);
+            AppColors.primaryYellow.withValues(alpha: 0.3);
 
     // 버튼 문구 색 결정
     final Color textColor = isEnabled
@@ -45,6 +47,9 @@ class CompletionButton extends StatelessWidget {
       color: textColor,
     );
 
+    // 버튼 테두리 굴곡 설정
+    final List borderRadius = [100, 10];
+
     return Center(
       child: SizedBox(
         width: double.infinity, // 전체 너비 사용
@@ -53,9 +58,13 @@ class CompletionButton extends StatelessWidget {
               ? enabledOnPressed
               : disabledOnPressed, // 활성화와 비활성화 일 때 onPressed 별로 처리
           style: TextButton.styleFrom(
-              backgroundColor: backgroundColor,
-              padding: EdgeInsets.symmetric(vertical: 20.0.h),
-              minimumSize: Size(316.w, 0)), // 최소 너비 설정, 높이 자동
+            backgroundColor: backgroundColor,
+            padding: EdgeInsets.symmetric(vertical: 20.0.h),
+            minimumSize: Size(316.w, 0),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                    borderRadius[buttonType - 1].toDouble())),
+          ), // 최소 너비 설정, 높이 자동
           child: Text(
             buttonText,
             style: buttonTextStyle,
