@@ -8,6 +8,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 
@@ -224,13 +225,23 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                   const Spacer(),
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
                     decoration: BoxDecoration(
-                      color: Colors.deepPurple,
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppColors.aiSuggestionContainerBackground,
+                      borderRadius: BorderRadius.circular(4.r),
                     ),
-                    child: const Text('AI 추천 가격',
-                        style: TextStyle(color: Colors.white, fontSize: 12)),
+                    child: GradientText(
+                      text: 'AI 추천 가격',
+                      style:
+                          CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
+                      gradient: const LinearGradient(
+                        colors: AppColors.aiGradient,
+                        stops: [0.0, 0.35, 0.7, 1.0],
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 4.w,
                   ),
                   AnimatedToggleSwitch.dual(
                     current: useAiPrice,
@@ -254,12 +265,9 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     onChanged: (b) => setState(() => useAiPrice = b),
                     styleBuilder: (b) => ToggleStyle(
                       backgroundGradient: b
-                          ? const LinearGradient(colors: [
-                              AppColors.aiTagGradientBorder1,
-                              AppColors.aiTagGradientBorder2,
-                              AppColors.aiTagGradientBorder3,
-                              AppColors.aiTagGradientBorder4,
-                            ])
+                          ? const LinearGradient(
+                              colors: AppColors.aiGradient,
+                            )
                           : const LinearGradient(colors: [
                               AppColors.opacity40White,
                               AppColors.opacity40White

@@ -50,14 +50,6 @@ class AppColors {
 
   // AI 태그 및 버튼
   static const Color aiTagBackground = Color(0xFF121A1A); // 어두운 배경
-  static const Color aiTagGradientBorder1 =
-      Color(0xFF5889F2); // 파란 테두리(Gradient 1)
-  static const Color aiTagGradientBorder2 =
-      Color(0xFF9858F2); // 보라 테두리(Gradient 2)
-  static const Color aiTagGradientBorder3 =
-      Color(0xFFF258F2); // 핑크 테두리(Gradient 3)
-  static const Color aiTagGradientBorder4 =
-      Color(0xFFF25893); // 다홍 테두리(Gradient 4)
   static const Color aiButtonGlow = Color(0xFF7B00FF); // 보라색 광택 효과
 
   // 온보딩 프로그레스 헤더
@@ -74,7 +66,18 @@ class AppColors {
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);
 
+  // 물품 등록 화면
   // 물품 교환 AI 추천 가격 토글 Switch
   static const Color toggleSwitchIndicatorShadow =
       Color(0x40000000); // 검은색, opacity 25%
+  static const Color aiSuggestionContainerBackground =
+      Color(0x4DCF7DFF); // ai 추천 가격 태그 배경색
+
+  // ai 그라데이션
+  static const List<Color> aiGradient = [
+    Color(0xFF5889F2), // 파란 테두리(Gradient 1)
+    Color(0xFF9858F2), // 보라 테두리(Gradient 2)
+    Color(0xFFF258F2), // 핑크 테두리(Gradient 3)
+    Color(0xFFF25893), // 다홍 테두리(Gradient 4)
+  ];
 }

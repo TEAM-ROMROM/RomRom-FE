@@ -82,16 +82,9 @@ class HomeFeedAiTag extends StatelessWidget {
     // border
     final gradientBorder = GradientBoxBorder(
       gradient: LinearGradient(
-        colors: [
-          AppColors.aiTagGradientBorder1
-              .withValues(alpha: isActive ? 1.0 : 0.4),
-          AppColors.aiTagGradientBorder2
-              .withValues(alpha: isActive ? 1.0 : 0.4),
-          AppColors.aiTagGradientBorder3
-              .withValues(alpha: isActive ? 1.0 : 0.4),
-          AppColors.aiTagGradientBorder4
-              .withValues(alpha: isActive ? 1.0 : 0.4),
-        ],
+        colors: AppColors.aiGradient
+            .map((color) => color.withValues(alpha: isActive ? 1.0 : 0.4))
+            .toList(),
         stops: const [0.0, 0.35, 0.70, 1.0],
       ),
       width: 1.w,
@@ -142,14 +135,9 @@ class HomeFeedAiAnalysisTag extends StatelessWidget {
   Widget build(BuildContext context) {
     // border
     final gradientBorder = GradientBoxBorder(
-      gradient: LinearGradient(
-        colors: [
-          AppColors.aiTagGradientBorder1.withValues(alpha: 1.0),
-          AppColors.aiTagGradientBorder2.withValues(alpha: 1.0),
-          AppColors.aiTagGradientBorder3.withValues(alpha: 1.0),
-          AppColors.aiTagGradientBorder4.withValues(alpha: 1.0),
-        ],
-        stops: const [0.0, 0.35, 0.70, 1.0],
+      gradient: const LinearGradient(
+        colors: AppColors.aiGradient,
+        stops: [0.0, 0.35, 0.70, 1.0],
       ),
       width: 1.w,
     );
