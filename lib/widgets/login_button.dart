@@ -45,28 +45,37 @@ class LoginButton extends StatelessWidget {
         var userInfo = UserInfo();
         await userInfo.getUserInfo(); // 사용자 정보 불러오기
 
-        // 온보딩이 필요한지 확인하여 라우팅
+        final prefs = await SharedPreferences.getInstance();
+        
+        // 첫 로그인인 경우에만 코치마크 설정 초기화
+        if (userInfo.isFirstLogin == true) {
+          // 첫 로그인 시 코치마크 표시를 위한 설정
+          await prefs.setBool('isFirstMainScreen', true);
+          // 다음부터 보지 않기 설정 초기화 (첫 사용자는 무조건 봐야 함)
+          await prefs.setBool('dontShowCoachMark', false);
+          debugPrint('첫 로그인: 코치마크 설정 초기화');
+        } else {
+          // 기존 사용자의 경우 설정 유지 (필요시에만 설정)
+          if (!prefs.containsKey('isFirstMainScreen')) {
+            await prefs.setBool('isFirstMainScreen', false);
+          }
+          debugPrint('기존 사용자: 코치마크 설정 유지');
+        }
+        
+        // 다음 화면 결정
+        Widget nextScreen;
+        if (userInfo.needsOnboarding) {
+          // 온보딩이 필요한 경우
+          nextScreen = OnboardingFlowScreen(
+            initialStep: userInfo.nextOnboardingStep,
+          );
+        } else {
+          // 온보딩이 완료된 경우
+          nextScreen = const MainScreen();
+        }
+        
+        // 모든 비동기 작업 완료 후 context 확인
         if (context.mounted) {
-          Widget nextScreen;
-
-          // 회원가입 후
-          final prefs = await SharedPreferences.getInstance();
-
-          // 첫 로그인 시 메인화면 블러처리
-          if (userInfo.isFirstLogin == null || true) {
-            await prefs.setBool('isFirstMainScreen', true);
-          }
-
-          if (userInfo.needsOnboarding) {
-            // 온보딩이 필요한 경우
-            nextScreen = OnboardingFlowScreen(
-              initialStep: userInfo.nextOnboardingStep,
-            );
-          } else {
-            // 온보딩이 완료된 경우
-            nextScreen = const MainScreen();
-          }
-
           context.navigateTo(
             screen: nextScreen,
             type: NavigationTypes.pushReplacement,
