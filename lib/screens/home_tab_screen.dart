@@ -24,11 +24,26 @@ class HomeTabScreen extends StatefulWidget {
 
 class _HomeTabScreenState extends State<HomeTabScreen> {
   final PageController _pageController = PageController();
+  final PageController _coachMarkPageController = PageController(); // 코치마크 전용 페이지 컨트롤러
   List<HomeFeedItem> _feedItems = [];
   bool _isLoading = true; // 초기 로딩 상태
   bool _isLoadingMore = false; // 추가 아이템 로딩 상태
   bool _hasMoreItems = true; // 더 로드할 아이템이 있는지 여부
   bool _showBlur = false;
+  bool _showCoachMark = false; // 코치마크 표시 여부
+  int _currentCoachMarkPage = 0; // 현재 코치마크 페이지
+  bool _dontShowCoachMarkAgain = false; // 다음부터 보지 않기 체크 여부
+  OverlayEntry? _overlayEntry; // 오버레이 엔트리
+
+  // 코치마크 이미지 목록
+  final List<String> _coachMarkImages = [
+    'assets/images/coachMark1.png',
+    'assets/images/coachMark2.png',
+    'assets/images/coachMark3.png',
+    'assets/images/coachMark4.png',
+    'assets/images/coachMark5.png',
+    'assets/images/coachMark6.png',
+  ];
 
   @override
   void initState() {
@@ -37,17 +52,207 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     _checkFirstMainScreen();
   }
 
+  @override
+  void dispose() {
+    _removeCoachMarkOverlay();
+    _pageController.dispose();
+    _coachMarkPageController.dispose(); // 코치마크 페이지 컨트롤러 해제
+    super.dispose();
+  }
+
   Future<void> _checkFirstMainScreen() async {
     final prefs = await SharedPreferences.getInstance();
-    final isFirst = prefs.getBool('isFirstMainScreen') ?? false;
+    final isFirst = prefs.getBool('isFirstMainScreen') ?? true; // 처음에는 true로 설정
+    final dontShowAgain = prefs.getBool('dontShowCoachMark') ?? false;
+    
+    // 코치마크 표시
     setState(() {
       _showBlur = isFirst;
+      _showCoachMark = isFirst && !dontShowAgain;
     });
+
+    // 코치마크를 표시해야 하는 경우
+    if (_showCoachMark) {
+      // 위젯이 완전히 빌드된 후 오버레이 표시
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showCoachMarkOverlay();
+      });
+    }
   }
 
   Future<void> _clearFirstMainScreenFlag() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isFirstMainScreen', false);
+    if (_dontShowCoachMarkAgain) {
+      await prefs.setBool('dontShowCoachMark', true);
+    }
+  }
+
+  // 코치마크 페이지 변경 시 호출
+  void _onCoachMarkPageChanged(int page) {
+    setState(() {
+      _currentCoachMarkPage = page;
+    });
+  }
+
+  // 코치마크 닫기
+  void _closeCoachMark() {
+    _removeCoachMarkOverlay();
+    _clearFirstMainScreenFlag();
+  }
+
+  // 코치마크 오버레이 표시
+  void _showCoachMarkOverlay() {
+    // 기존 오버레이가 있으면 제거
+    if (_overlayEntry != null) {
+      try {
+        _overlayEntry!.remove();
+      } catch (e) {
+        print('오버레이 제거 오류: $e');
+      }
+      _overlayEntry = null;
+    }
+    
+    // 새 오버레이 생성
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Material(
+        color: Colors.transparent,
+        child: Container(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          color: AppColors.opacity70Black,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (_currentCoachMarkPage < _coachMarkImages.length - 1) {
+                      // 다음 페이지로 이동
+                      _coachMarkPageController.animateToPage(
+                        _currentCoachMarkPage + 1,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      // 마지막 페이지에서는 코치마크 닫기
+                      _closeCoachMark();
+                    }
+                  },
+                  child: PageView.builder(
+                    controller: _coachMarkPageController,
+                    onPageChanged: _onCoachMarkPageChanged,
+                    itemCount: _coachMarkImages.length,
+                    itemBuilder: (context, index) {
+                      return Image.asset(
+                        _coachMarkImages[index],
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          print('이미지 로드 에러: $error');
+                          return Center(
+                            child: Text(
+                              '이미지 로드 실패: ${_coachMarkImages[index]}',
+                              style: TextStyle(color: AppColors.textColorWhite),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _coachMarkImages.length,
+                  (index) => GestureDetector(
+                    onTap: () {
+                      // 인디케이터 탭 시 해당 페이지로 이동
+                      _coachMarkPageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: 4.w),
+                      width: index == _currentCoachMarkPage ? 12.w : 8.w,
+                      height: index == _currentCoachMarkPage ? 12.w : 8.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: index == _currentCoachMarkPage
+                            ? AppColors.primaryYellow
+                            : AppColors.opacity50White,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _dontShowCoachMarkAgain,
+                          onChanged: (value) {
+                            setState(() {
+                              _dontShowCoachMarkAgain = value ?? false;
+                            });
+                          },
+                          checkColor: Colors.black,
+                          activeColor: AppColors.primaryYellow,
+                        ),
+                        Text(
+                          '다음부터 보지 않기',
+                          style: TextStyle(color: AppColors.textColorWhite, fontSize: 14.sp),
+                        ),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: _closeCoachMark,
+                      child: Text(
+                        '닫기',
+                        style: TextStyle(color: AppColors.textColorWhite, fontSize: 14.sp),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 32.h),
+            ],
+          ),
+        ),
+      ),
+    );
+    
+    // 오버레이 삽입
+    if (mounted) {
+      try {
+        Overlay.of(context).insert(_overlayEntry!);
+      } catch (e) {
+        print('오버레이 삽입 오류: $e');
+      }
+    }
+  }
+
+  // 코치마크 오버레이 업데이트
+  void _updateCoachMarkOverlay() {
+    // 인디케이터 업데이트는 setState로 처리되므로 별도 오버레이 업데이트 필요 없음
+  }
+
+  // 코치마크 오버레이 제거
+  void _removeCoachMarkOverlay() {
+    if (_overlayEntry != null) {
+      try {
+        _overlayEntry!.remove();
+      } catch (e) {
+        print('오버레이 제거 오류: $e');
+      }
+      _overlayEntry = null;
+    }
   }
 
   /// 초기 아이템 로드
@@ -205,20 +410,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       );
     }
 
-    // 페이지 뷰로 피드 아이템 표시
     return Stack(
       children: [
         Positioned.fill(
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
-              // 리스트의 끝에 가까워지면 더 많은 아이템 로드
-              if (scrollInfo is ScrollEndNotification) {
-                final currentPage = _pageController.page?.round() ?? 0;
-                if (currentPage >= _feedItems.length - 2 &&
-                    !_isLoadingMore &&
-                    _hasMoreItems) {
-                  _loadMoreItems();
-                }
+              if (!_isLoadingMore &&
+                  _hasMoreItems &&
+                  scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+                _loadMoreItems();
               }
               return false;
             },
@@ -282,12 +482,5 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _clearFirstMainScreenFlag();
-    super.dispose();
   }
 }
