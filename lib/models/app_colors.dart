@@ -12,6 +12,7 @@ class AppColors {
   static const Color opacity80White = Color(0xCCFFFFFF); // 80% 불투명도 흰색
   static const Color opacity10Black = Color(0x1A000000); // 10% 불투명도 검정
   static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정
+  static const Color opacity80Black = Color(0xCC000000); // 70% 불투명도 검정
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
@@ -72,6 +73,9 @@ class AppColors {
       Color(0x40000000); // 검은색, opacity 25%
   static const Color aiSuggestionContainerBackground =
       Color(0x4DCF7DFF); // ai 추천 가격 태그 배경색
+  // 물품 사진
+  static const Color itemPictureRemoveButtonBackground =
+      Color(0xFFD2D2D2); // 물품 사진 삭제 버튼 배경색
 
   // ai 그라데이션
   static const List<Color> aiGradient = [

@@ -1,17 +1,23 @@
+import 'dart:io';
+
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 
+/// 물품 등록 화면
 class ItemRegisterScreen extends StatefulWidget {
   const ItemRegisterScreen({super.key});
 
@@ -39,6 +45,19 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   // itemConditonOptions ItemCondition의 name 리스트로 변경
   List itemConditonOptions = ItemCondition.values.map((e) => e.name).toList();
 
+  final ImagePicker _picker = ImagePicker();
+  List<XFile> imageFiles = []; // 선택된 이미지 저장
+
+  Future<void> _pickImage() async {
+    final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        imageFiles.add(picked);
+        imageCount = imageFiles.length.clamp(0, 10);
+      });
+    }
+  }
+
   @override
   void dispose() {
     titleController.dispose();
@@ -55,32 +74,103 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
       child: Scaffold(
         appBar: const CommonAppBar(title: '물건 등록하기'),
         body: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
+          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 이미지 업로드
-              Container(
-                width: 80.w,
-                height: 80.h,
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(
-                        color: AppColors.opacity40White, width: 1.5.w)),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset('assets/images/item-register-photo.svg'),
-                    SizedBox(
-                      height: 4.h,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // 이미지 업로드 버튼
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: 80.w,
+                      height: 80.h,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                            color: AppColors.opacity40White, width: 1.5.w),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(
+                              'assets/images/item-register-photo.svg'),
+                          SizedBox(height: 4.h),
+                          Text('$imageCount/10',
+                              style: CustomTextStyles.p3
+                                  .copyWith(color: AppColors.opacity40White)),
+                        ],
+                      ),
                     ),
-                    Text('$imageCount/10',
-                        style: CustomTextStyles.p3
-                            .copyWith(color: AppColors.opacity40White)),
-                  ],
-                ),
+                  ),
+
+                  SizedBox(width: 8.w),
+
+                  // 이미지 미리보기 썸네일
+                  Expanded(
+                    child: SizedBox(
+                      height: 88.h,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: imageFiles.length,
+                        separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                        padding: EdgeInsets.only(top: 8.h),
+                        itemBuilder: (context, index) {
+                          return SizedBox(
+                            height: 88.h,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  child: Image.file(
+                                    File(imageFiles[index].path),
+                                    width: 80.w,
+                                    height: 80.h,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: -8.h,
+                                  right: -8.w,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        imageFiles.removeAt(index);
+                                        imageCount = imageFiles.length;
+                                      });
+                                    },
+                                    child: Container(
+                                      width: 24.w,
+                                      height: 24.h,
+                                      decoration: const BoxDecoration(
+                                        color: AppColors
+                                            .itemPictureRemoveButtonBackground,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        AppIcons.cancel,
+                                        color: AppColors.primaryBlack,
+                                        size: 16.w,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 24.h),
+              SizedBox(
+                height: 24.h,
+              ),
 
               // 제목
               _LabeledField(
@@ -95,62 +185,95 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
               // 카테고리
               _LabeledField(
                 label: '카테고리',
-                field: _CustomTextField(
-                  hintText: '카테고리를 선택하세요',
-                  controller:
-                      TextEditingController(text: selectedCategory ?? ''),
-                  readOnly: true,
-                  onTap: () async {
-                    final categories = ['전자기기', '의류', '도서', '가구', '기타'];
-                    final selected = await showModalBottomSheet<String>(
-                      context: context,
-                      backgroundColor: Colors.grey[900],
-                      shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(16)),
-                      ),
-                      isScrollControlled: true,
-                      builder: (context) {
+                field: StatefulBuilder(
+                  builder: (context, setModalState) {
+                    return _CustomTextField(
+                      hintText: '카테고리를 선택하세요',
+                      controller:
+                          TextEditingController(text: selectedCategory ?? ''),
+                      readOnly: true,
+                      onTap: () async {
+                        const categories = ItemCategories.values;
                         String? tempSelected = selectedCategory;
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: MediaQuery.of(context).viewInsets.bottom,
-                            left: 0,
-                            right: 0,
-                            top: 24,
+                        await showModalBottomSheet<void>(
+                          context: context,
+                          backgroundColor: AppColors.primaryBlack,
+                          barrierColor: AppColors.opacity80Black,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(16)),
                           ),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Wrap(
-                                spacing: 8,
-                                children: categories.map((category) {
-                                  return ChoiceChip(
-                                    label: Text(category,
-                                        style: const TextStyle(
-                                            color: Colors.white)),
-                                    selected: tempSelected == category,
-                                    selectedColor: Colors.amber,
-                                    backgroundColor: Colors.grey[800],
-                                    onSelected: (_) {
-                                      tempSelected = category;
-                                      Navigator.pop(context, category);
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
+                          isScrollControlled: true,
+                          builder: (context) {
+                            return StatefulBuilder(
+                              builder: (context, setInnerState) {
+                                return SizedBox(
+                                  height: 502.h,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 14.0.h),
+                                          child: Container(
+                                            width: 50.w,
+                                            height: 4.h,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.opacity50White,
+                                              borderRadius:
+                                                  BorderRadius.circular(5.r),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.only(left: 26.w),
+                                        child: Text(
+                                          '카테고리',
+                                          style: CustomTextStyles.h2.copyWith(
+                                              fontWeight: FontWeight.w700),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                              right: 26.w,
+                                              left: 26.w,
+                                              top: 24.h),
+                                          child: Wrap(
+                                            spacing: 8.0.w,
+                                            runSpacing: 12.0.h,
+                                            children:
+                                                categories.map((category) {
+                                              final isSelected =
+                                                  tempSelected == category.name;
+                                              return CategoryChip(
+                                                label: category.name,
+                                                isSelected: isSelected,
+                                                onTap: () {
+                                                  setInnerState(() {
+                                                    tempSelected =
+                                                        category.name;
+                                                  });
+                                                },
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         );
+                        setState(() {}); // 선택 후 화면 갱신
                       },
                     );
-                    if (selected != null) {
-                      setState(() {
-                        selectedCategory = selected;
-                      });
-                    }
                   },
                 ),
               ),
@@ -220,8 +343,9 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
 
               // 적정 가격 + AI 추천 가격
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const _Label(label: '적정 가격'),
+                  Text('적정 가격', style: CustomTextStyles.p1),
                   const Spacer(),
                   Container(
                     padding:
@@ -276,6 +400,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                   ),
                 ],
               ),
+              SizedBox(height: 8.w),
               _CustomTextField(
                 hintText: '10000원',
                 keyboardType: TextInputType.number,
