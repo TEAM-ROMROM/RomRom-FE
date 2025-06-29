@@ -73,15 +73,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   Future<void> _checkFirstMainScreen() async {
     final prefs = await SharedPreferences.getInstance();
-    final isFirst = prefs.getBool('isFirstMainScreen') ?? true;
-    final dontShowAgain = prefs.getBool('dontShowCoachMark') ?? false;
+    final isFirstMainScreen = prefs.getBool('isFirstMainScreen') ?? true;
+    final isCoachMarkDontShowAgainChecked = prefs.getBool('dontShowCoachMark') ?? false;
     
     setState(() {
-      _showBlur = isFirst;
-/*
-      _showCoachMark = isFirst && !dontShowAgain;
-*/
-      _showCoachMark = true;
+      _showBlur = isFirstMainScreen;
+      _showCoachMark = isFirstMainScreen && !isCoachMarkDontShowAgainChecked;
     });
 
     if (_showCoachMark) {
