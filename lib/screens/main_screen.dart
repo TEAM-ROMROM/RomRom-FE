@@ -35,6 +35,8 @@ class _MainScreenState extends State<MainScreen> {
         NavigationTabItems.fromIndex(_currentTabIndex);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
+      extendBody: false,
       appBar: _currentTabIndex != 0
           ? AppBar(
               backgroundColor: Colors.transparent,

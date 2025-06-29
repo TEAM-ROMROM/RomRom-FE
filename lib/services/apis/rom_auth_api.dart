@@ -113,9 +113,26 @@ class RomAuthApi {
       if (response.statusCode == 200) {
         // 로컬 저장소에 토큰 저장
         String accessToken = responseData[TokenKeys.accessToken.name];
-
-        _tokenManager.saveTokens(accessToken, refreshToken);
+        
+        // API 응답에서 refreshToken이 있으면 새 토큰 사용, 아니면 기존 토큰 유지
+        String? newRefreshToken = responseData[TokenKeys.refreshToken.name];
+        String tokenToSave = newRefreshToken ?? refreshToken;
+        
+        await _tokenManager.saveTokens(accessToken, tokenToSave);
+        
+        // 회원 상태 정보 업데이트
+        await UserInfo().saveLoginStatus(
+          isFirstLogin: responseData['isFirstLogin'] ?? false,
+          isFirstItemPosted: responseData['isFirstItemPosted'] ?? false,
+          isItemCategorySaved: responseData['isItemCategorySaved'] ?? false,
+          isMemberLocationSaved: responseData['isMemberLocationSaved'] ?? false,
+          isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
+          isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
+        );
+        
+        debugPrint('====================================');
         debugPrint('access token 이 성공적으로 재발급됨');
+        debugPrint('====================================');
         return true;
       }
 

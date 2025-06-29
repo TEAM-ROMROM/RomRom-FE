@@ -18,12 +18,14 @@ void main() async {
   await initialize(); // 초기화 실행
   final initialScreen = await _determineInitialScreen();
 
-  // 옵션 1: 하단 오버레이를 포함하도록 수정 (권장)
-  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-      overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
-
-  // 옵션 2: 또는 이 라인을 완전히 제거하여 기본값 사용
-  // (SystemChrome.setEnabledSystemUIMode 관련 코드 제거)
+  // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  
+  // 시스템 오버레이 색상 설정
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    systemNavigationBarColor: Colors.transparent,
+    statusBarColor: Colors.transparent,
+  ));
 
   runApp(
     ProviderScope(child: MyApp(initialScreen: initialScreen)),
@@ -37,30 +39,38 @@ Future<Widget> _determineInitialScreen() async {
   final String? refreshToken = await tokenManager.getRefreshToken();
 
   // 리프레시 토큰이 없으면 로그인 화면
-  if (refreshToken == null) return const LoginScreen();
+  if (refreshToken == null) {
+    debugPrint('리프레시 토큰 없음: 로그인 화면으로 이동');
+    return const LoginScreen();
+  }
 
   // 토큰으로 로그인 시도
   final isLoggedIn = await romAuthApi.refreshAccessToken();
-  if (!isLoggedIn) return const LoginScreen();
+  if (!isLoggedIn) {
+    debugPrint('토큰 갱신 실패: 로그인 화면으로 이동');
+    return const LoginScreen();
+  }
 
   // 사용자 정보 확인
   var userInfo = UserInfo();
   try {
     await userInfo.getUserInfo();
+    
+    // 토큰은 유효하나 필수 정보가 없으면 온보딩으로 이동
+    if (userInfo.needsOnboarding) {
+      debugPrint('온보딩 필요: ${userInfo.nextOnboardingStep} 단계로 이동');
+      return OnboardingFlowScreen(
+        initialStep: userInfo.nextOnboardingStep,
+      );
+    }
+    
+    // 모든 정보가 있고 토큰도 유효하면 메인 화면
+    debugPrint('토큰 유효 및 온보딩 완료: 메인 화면으로 이동');
+    return const MainScreen();
   } catch (e) {
     debugPrint('사용자 정보 조회 실패: $e');
     return const LoginScreen();
   }
-
-  // 온보딩이 필요한지 확인
-  if (userInfo.needsOnboarding) {
-    return OnboardingFlowScreen(
-      initialStep: userInfo.nextOnboardingStep,
-    );
-  }
-
-  // 온보딩이 완료된 경우 메인 화면
-  return const MainScreen();
 }
 
 /// 앱의 루트 위젯
