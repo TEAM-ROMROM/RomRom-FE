@@ -83,7 +83,8 @@ class MyApp extends StatelessWidget {
           child: MaterialApp(
             title: 'RomRom',
             theme: AppTheme.defaultTheme,
-            home: initialScreen,
+            // home: initialScreen,
+            home: const MainScreen(),
           ),
         );
       }),

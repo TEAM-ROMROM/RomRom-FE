@@ -19,7 +19,8 @@ import 'package:romrom_fe/widgets/register_option_chip.dart';
 
 /// 물품 등록 화면
 class ItemRegisterScreen extends StatefulWidget {
-  const ItemRegisterScreen({super.key});
+  final VoidCallback? onClose;
+  const ItemRegisterScreen({super.key, this.onClose});
 
   @override
   State<ItemRegisterScreen> createState() => _ItemRegisterScreenState();
@@ -32,12 +33,13 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   String? selectedCondition;
   List<String> selectedItemConditionTypes = [];
   List<String> selectedTransactionTypes = [];
-  bool useAiPrice = false;
+  bool useAiPrice = true;
 
   // 각 TextField의 controller 추가
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
+  final TextEditingController priceController =
+      TextEditingController(text: 'AI가 측정해준 가격이다냥');
   final TextEditingController locationController = TextEditingController();
   // itemMethodOptions TransactionType name 리스트로 변경
   List<String> itemTransactionOptions =
@@ -48,6 +50,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   final ImagePicker _picker = ImagePicker();
   List<XFile> imageFiles = []; // 선택된 이미지 저장
 
+  // 상품사진 갤러리에서 가져오는 함수
   Future<void> _pickImage() async {
     final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
@@ -56,6 +59,22 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
         imageCount = imageFiles.length.clamp(0, 10);
       });
     }
+  }
+
+  // ai 가격 측정 함수
+  Future<void> _measureAiPrice() async {
+    const int aiPrice = 10;
+    setState(() {
+      priceController.text = aiPrice.toString();
+      debugPrint("AI 가격 측정 api 필요 - 임시 가격입니다.");
+    });
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    _measureAiPrice();
+    super.initState();
   }
 
   @override
@@ -72,7 +91,14 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        appBar: const CommonAppBar(title: '물건 등록하기'),
+        appBar: CommonAppBar(
+          title: '물건 등록하기',
+          onBackPressed: () {
+            if (widget.onClose != null) {
+              widget.onClose!();
+            }
+          },
+        ),
         body: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
           child: Column(
@@ -285,7 +311,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                   hintText: '물건의 자세한 설명을 적어주세요',
                   controller: descriptionController,
                   maxLength: 1000,
-                  maxLines: 5,
+                  maxLines: 8,
                 ),
               ),
 
@@ -402,7 +428,8 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
               ),
               SizedBox(height: 8.w),
               _CustomTextField(
-                hintText: '10000원',
+                hintText: '가격을 입력해주세요',
+                suffixText: '원',
                 keyboardType: TextInputType.number,
                 controller: priceController,
               ),
@@ -461,6 +488,7 @@ class _CustomTextField extends StatelessWidget {
   final TextEditingController? controller;
   final bool readOnly;
   final Widget? suffixIcon;
+  final String suffixText;
   final VoidCallback? onTap;
 
   const _CustomTextField({
@@ -471,6 +499,7 @@ class _CustomTextField extends StatelessWidget {
     this.controller,
     this.readOnly = false,
     this.suffixIcon,
+    this.suffixText = '',
     this.onTap,
   });
 
@@ -478,7 +507,11 @@ class _CustomTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     OutlineInputBorder inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(8.r),
-      borderSide: const BorderSide(color: AppColors.opacity30White, width: 1.5),
+      borderSide: BorderSide(
+        color: AppColors.opacity30White,
+        width: 1.5.h,
+        strokeAlign: BorderSide.strokeAlignInside,
+      ),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -505,12 +538,16 @@ class _CustomTextField extends StatelessWidget {
             contentPadding:
                 EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
             suffixIcon: suffixIcon,
+            suffixText: suffixText,
+            suffixStyle:
+                CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
           ),
         ),
-        if (maxLength != null)
-          Builder(
-            builder: (context) {
-              final currentLength = controller?.text.length ?? 0;
+        if (maxLength != null && controller != null)
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller!,
+            builder: (context, value, child) {
+              final currentLength = value.text.length;
               return Padding(
                 padding: EdgeInsets.only(top: 8.0.h),
                 child: Text(
