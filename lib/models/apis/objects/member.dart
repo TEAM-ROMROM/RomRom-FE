@@ -1,6 +1,5 @@
 // lib/models/apis/objects/member.dart
 import 'package:json_annotation/json_annotation.dart';
-import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 
 part 'member.g.dart';
 

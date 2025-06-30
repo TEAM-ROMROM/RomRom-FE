@@ -45,33 +45,37 @@ class LoginButton extends StatelessWidget {
         var userInfo = UserInfo();
         await userInfo.getUserInfo(); // 사용자 정보 불러오기
 
+        // context가 여전히 유효한지 확인
+        if (!context.mounted) return;
+
         // 온보딩이 필요한지 확인하여 라우팅
-        if (context.mounted) {
-          Widget nextScreen;
+        Widget nextScreen;
 
-          // 회원가입 후
-          final prefs = await SharedPreferences.getInstance();
+        // 회원가입 후
+        final prefs = await SharedPreferences.getInstance();
 
-          // 첫 로그인 시 메인화면 블러처리
-          if (userInfo.isFirstLogin == null || true) {
-            await prefs.setBool('isFirstMainScreen', true);
-          }
-
-          if (userInfo.needsOnboarding) {
-            // 온보딩이 필요한 경우
-            nextScreen = OnboardingFlowScreen(
-              initialStep: userInfo.nextOnboardingStep,
-            );
-          } else {
-            // 온보딩이 완료된 경우
-            nextScreen = const MainScreen();
-          }
-
-          context.navigateTo(
-            screen: nextScreen,
-            type: NavigationTypes.pushReplacement,
-          );
+        // 첫 로그인 시 메인화면 블러처리
+        if (userInfo.isFirstLogin == null || true) {
+          await prefs.setBool('isFirstMainScreen', true);
         }
+
+        // 다시 context가 유효한지 확인
+        if (!context.mounted) return;
+
+        if (userInfo.needsOnboarding) {
+          // 온보딩이 필요한 경우
+          nextScreen = OnboardingFlowScreen(
+            initialStep: userInfo.nextOnboardingStep,
+          );
+        } else {
+          // 온보딩이 완료된 경우
+          nextScreen = const MainScreen();
+        }
+
+        context.navigateTo(
+          screen: nextScreen,
+          type: NavigationTypes.pushReplacement,
+        );
       }
     } catch (e) {
       debugPrint("로그인 처리 중 오류: $e");

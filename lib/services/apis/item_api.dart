@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/responses/item_response.dart';
@@ -28,15 +30,16 @@ class ItemApi {
       'itemCustomTags': request.itemCustomTags?.join(','),
     };
 
-    final files = <String, List<dynamic>>{};
+    // 타입 안전하게 파일 처리
+    Map<String, List<File>>? fileMap;
     if (request.itemImages != null && request.itemImages!.isNotEmpty) {
-      files['itemImages'] = request.itemImages!;
+      fileMap = {'itemImages': request.itemImages!};
     }
 
     await ApiClient.sendMultipartRequest(
       url: url,
       fields: fields,
-      files: files.isEmpty ? null : files,
+      files: fileMap,
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);

@@ -7,7 +7,7 @@ part 'item_request.g.dart';
 @JsonSerializable()
 class ItemRequest {
   String? memberId;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<File>? itemImages;
   String? itemName;
   String? itemDescription;
