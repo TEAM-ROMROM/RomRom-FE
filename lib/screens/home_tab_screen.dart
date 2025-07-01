@@ -41,8 +41,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   bool _isCoachMarkShown = false;
   // 현재 코치마크 페이지
   int _currentCoachMarkPage = 0;
-  // 다음부터 보지 않기 체크 여부
-  bool _isDontShowCoachMarkAgain = false;
   // 오버레이 엔트리
   OverlayEntry? _overlayEntry;
 
@@ -75,7 +73,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     final prefs = await SharedPreferences.getInstance();
     final isFirst = prefs.getBool('isFirstMainScreen') ?? true;
     final dontShowAgain = prefs.getBool('dontShowCoachMark') ?? false;
-    
+
     setState(() {
       _isBlurShown = isFirst;
       _isCoachMarkShown = isFirst && !dontShowAgain;
@@ -91,9 +89,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   Future<void> _clearFirstMainScreenFlag() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isFirstMainScreen', false);
-    if (_isDontShowCoachMarkAgain) {
-      await prefs.setBool('dontShowCoachMark', true);
-    }
   }
 
   // 코치마크 닫기
@@ -113,149 +108,127 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       }
       _overlayEntry = null;
     }
-    
+
     // 새 오버레이 생성
     _overlayEntry = OverlayEntry(
       builder: (context) {
         // 현재 페이지를 확인하기 위한 StatefulBuilder 사용
-        return StatefulBuilder(
-          builder: (context, setStateOverlay) {
-            return Material(
-              color: Colors.transparent,
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height,
-                color: AppColors.opacity70Black,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: PageView(
-                        controller: _coachMarkPageController,
-                        onPageChanged: (page) {
-                          // 페이지 변경 시 오버레이 내부 상태도 함께 업데이트
-                          debugPrint('코치마크 페이징: 페이지 변경 $page');
-                          setStateOverlay(() {
-                            _currentCoachMarkPage = page;
-                          });
-                          setState(() {
-                            _currentCoachMarkPage = page;
-                          });
-                        },
-                        children: List.generate(_coachMarkImages.length, (index) {
-                          return GestureDetector(
-                            onTap: () {
-                              if (index < _coachMarkImages.length - 1) {
-                                // 다음 페이지로 이동
-                                debugPrint('코치마크 이벤트: 이미지 탭 - 다음 페이지 ${index + 1}');
-                                _coachMarkPageController.animateToPage(
-                                  index + 1,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              } else {
-                                // 마지막 페이지에서는 코치마크 닫기
-                                debugPrint('코치마크 이벤트: 마지막 이미지 탭 - 코치마크 닫기');
-                                _closeCoachMark();
-                              }
-                            },
-                            child: Image.asset(
-                              _coachMarkImages[index],
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                debugPrint('오류: 이미지 로드 실패 - ${_coachMarkImages[index]} - $error');
-                                return Center(
-                                  child: Text(
-                                    '이미지 로드 실패: ${_coachMarkImages[index]}',
-                                    style: const TextStyle(color: AppColors.textColorWhite),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _coachMarkImages.length,
-                        (index) {
-                          // 현재 페이지 확인을 위한 디버깅 로그
-                          final isCurrentPage = index == _currentCoachMarkPage;
-                          debugPrint('코치마크 인디케이터: 인덱스 $index, 현재 페이지 $_currentCoachMarkPage, 활성화 $isCurrentPage');
-                          
-                          return GestureDetector(
-                            onTap: () {
-                              // 인디케이터 탭 시 해당 페이지로 이동
-                              debugPrint('코치마크 이벤트: 인디케이터 탭 - 페이지 $index');
+        return StatefulBuilder(builder: (context, setStateOverlay) {
+          return Material(
+            color: Colors.transparent,
+            child: Container(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              color: AppColors.opacity70Black,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: PageView(
+                      controller: _coachMarkPageController,
+                      onPageChanged: (page) {
+                        // 페이지 변경 시 오버레이 내부 상태도 함께 업데이트
+                        debugPrint('코치마크 페이징: 페이지 변경 $page');
+                        setStateOverlay(() {
+                          _currentCoachMarkPage = page;
+                        });
+                        setState(() {
+                          _currentCoachMarkPage = page;
+                        });
+                      },
+                      children: List.generate(_coachMarkImages.length, (index) {
+                        return GestureDetector(
+                          onTap: () {
+                            if (index < _coachMarkImages.length - 1) {
+                              // 다음 페이지로 이동
+                              debugPrint(
+                                  '코치마크 이벤트: 이미지 탭 - 다음 페이지 ${index + 1}');
                               _coachMarkPageController.animateToPage(
-                                index,
+                                index + 1,
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
                               );
+                            } else {
+                              // 마지막 페이지에서는 코치마크 닫기
+                              debugPrint('코치마크 이벤트: 마지막 이미지 탭 - 코치마크 닫기');
+                              _closeCoachMark();
+                            }
+                          },
+                          child: Image.asset(
+                            _coachMarkImages[index],
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              debugPrint(
+                                  '오류: 이미지 로드 실패 - ${_coachMarkImages[index]} - $error');
+                              return Center(
+                                child: Text(
+                                  '이미지 로드 실패: ${_coachMarkImages[index]}',
+                                  style: const TextStyle(
+                                      color: AppColors.textColorWhite),
+                                ),
+                              );
                             },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              width: isCurrentPage ? 12.w : 8.w,
-                              height: isCurrentPage ? 12.w : 8.w,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isCurrentPage
-                                    ? AppColors.primaryYellow
-                                    : AppColors.opacity50White,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _isDontShowCoachMarkAgain,
-                                onChanged: (value) {
-                                  setStateOverlay(() {
-                                    _isDontShowCoachMarkAgain = value ?? false;
-                                  });
-                                  setState(() {
-                                    _isDontShowCoachMarkAgain = value ?? false;
-                                  });
-                                },
-                                checkColor: Colors.black,
-                                activeColor: AppColors.primaryYellow,
-                              ),
-                              Text(
-                                '다음부터 보지 않기',
-                                style: TextStyle(color: AppColors.textColorWhite, fontSize: 14.sp),
-                              ),
-                            ],
                           ),
-                          TextButton(
-                            onPressed: _closeCoachMark,
-                            child: const Text(
-                              '닫기',
-                              style: TextStyle(color: Colors.white, fontSize: 14),
+                        );
+                      }),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      _coachMarkImages.length,
+                      (index) {
+                        // 현재 페이지 확인을 위한 디버깅 로그
+                        final isCurrentPage = index == _currentCoachMarkPage;
+                        debugPrint(
+                            '코치마크 인디케이터: 인덱스 $index, 현재 페이지 $_currentCoachMarkPage, 활성화 $isCurrentPage');
+
+                        return GestureDetector(
+                          onTap: () {
+                            // 인디케이터 탭 시 해당 페이지로 이동
+                            debugPrint('코치마크 이벤트: 인디케이터 탭 - 페이지 $index');
+                            _coachMarkPageController.animateToPage(
+                              index,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isCurrentPage ? 12.w : 8.w,
+                            height: isCurrentPage ? 12.w : 8.w,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isCurrentPage
+                                  ? AppColors.primaryYellow
+                                  : AppColors.opacity50White,
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                    SizedBox(height: 32.h),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 16.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: _closeCoachMark,
+                        child: const Text(
+                          '닫기',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 32.h),
+                ],
               ),
-            );
-          }
-        );
+            ),
+          );
+        });
       },
     );
-    
+
     // 오버레이 삽입
     if (mounted) {
       try {
@@ -442,7 +415,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             onNotification: (ScrollNotification scrollInfo) {
               if (!_isLoadingMore &&
                   _hasMoreItems &&
-                  scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+                  scrollInfo.metrics.pixels ==
+                      scrollInfo.metrics.maxScrollExtent) {
                 _loadMoreItems();
               }
               return false;
