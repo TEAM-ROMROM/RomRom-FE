@@ -56,6 +56,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     final availableHeight = screenHeight -
         bottomPadding -
         navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
+    final registerBlurTextTopPosition = 205.h;
 
     return Container(
       height: screenHeight,
@@ -308,7 +309,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
           if (widget.showBlur)
             Positioned(
-              top: 150.h,
+              top: registerBlurTextTopPosition,
               left: 0,
               right: 0,
               child: Column(
