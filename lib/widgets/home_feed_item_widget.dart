@@ -48,10 +48,19 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   @override
   Widget build(BuildContext context) {
     String formattedPrice = formatPrice(widget.item.price);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    // 네비게이션바 && 상태바 높이 : 실제 사용 가능 높이 계산
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final navigationBarHeight = 100.h; // 네비게이션바 높이 (80.h)
+    final availableHeight = screenHeight -
+        bottomPadding -
+        navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
+    final registerBlurTextTopPosition = 205.h;
 
     return Container(
-      height: MediaQuery.of(context).size.height,
-      width: MediaQuery.of(context).size.width,
+      height: screenHeight,
+      width: screenWidth,
       color: Colors.black,
       child: Stack(
         fit: StackFit.expand,
@@ -66,84 +75,85 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
               });
             },
             itemBuilder: (context, index) {
-              return Column(
+              return Stack(
                 children: [
-                  Stack(
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          final resultIndex = await Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                transitionDuration:
-                                    const Duration(milliseconds: 1000),
-                                pageBuilder: (_, __, ___) =>
-                                    ItemDetailDescriptionScreen(
-                                  item: widget.item,
-                                  imageUrls: widget.item.imageUrls,
-                                  imageSize: Size(
-                                    MediaQuery.of(context).size.width,
-                                    MediaQuery.of(context).size.width,
-                                  ),
-                                  currentImageIndex: index,
-                                  heroTag: 'itemImage_${widget.item.id}',
+                  // 이미지와 그라디언트
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () async {
+                        final resultIndex = await Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              transitionDuration:
+                                  const Duration(milliseconds: 1000),
+                              pageBuilder: (_, __, ___) =>
+                                  ItemDetailDescriptionScreen(
+                                item: widget.item,
+                                imageUrls: widget.item.imageUrls,
+                                imageSize: Size(
+                                  screenWidth,
+                                  screenWidth,
                                 ),
-                              ));
+                                currentImageIndex: index,
+                                heroTag: 'itemImage_${widget.item.id}',
+                              ),
+                            ));
 
-                          if (resultIndex != null && resultIndex is int) {
-                            setState(() {
-                              _currentImageIndex = resultIndex;
-                            });
-                            pageController.jumpToPage(
-                                _currentImageIndex); // 또는 animateToPage()
-                          }
-                        },
-                        child: Hero(
-                          tag: 'itemImage_${widget.item.id}',
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(4.r),
-                                topRight: Radius.circular(4.r),
-                                bottomRight: Radius.circular(20.r),
-                                bottomLeft: Radius.circular(20.r)),
-                            child: Image.network(
-                              widget.item.imageUrls[index],
-                              fit: BoxFit.cover,
-                              height: 615.h,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.primaryYellow,
-                                    value: loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                .cumulativeBytesLoaded /
-                                            (loadingProgress
-                                                    .expectedTotalBytes ??
-                                                1)
-                                        : null,
-                                  ),
-                                );
-                              },
-                            ),
+                        if (resultIndex != null && resultIndex is int) {
+                          setState(() {
+                            _currentImageIndex = resultIndex;
+                          });
+                          pageController.jumpToPage(_currentImageIndex);
+                        }
+                      },
+                      child: Hero(
+                        tag: 'itemImage_${widget.item.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(4.r),
+                              topRight: Radius.circular(4.r),
+                              bottomRight: Radius.circular(20.r),
+                              bottomLeft: Radius.circular(20.r)),
+                          child: Image.network(
+                            widget.item.imageUrls[index],
+                            fit: BoxFit.cover,
+                            height: availableHeight - navigationBarHeight,
+                            width: screenWidth,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primaryYellow,
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          (loadingProgress.expectedTotalBytes ??
+                                              1)
+                                      : null,
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
-                      const IgnorePointer(child: BlackGradientContainer()),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 125.h,
-                  ),
-                  BackdropFilter(
-                    enabled: widget.showBlur,
-                    filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-                    child: Container(
-                      color: AppColors.opacity10Black,
                     ),
                   ),
+
+                  // 그라디언트 오버레이
+                  const Positioned.fill(
+                    child: IgnorePointer(child: BlackGradientContainer()),
+                  ),
+
+                  // 블러 효과
+                  if (widget.showBlur)
+                    Positioned.fill(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+                        child: Container(
+                          color: AppColors.opacity10Black,
+                        ),
+                      ),
+                    ),
                 ],
               );
             },
@@ -152,7 +162,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           // 이미지 인디케이터 (하단 점)
           if (!widget.showBlur)
             Positioned(
-              bottom: 206.h,
+              bottom: 180.h,
               left: 0,
               right: 0,
               child: Row(
@@ -178,7 +188,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           if (!widget.showBlur)
             Positioned(
               right: 33.w,
-              bottom: 202.h,
+              bottom: 180.h,
               child: Column(
                 children: [
                   GestureDetector(
@@ -204,7 +214,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 91.h,
+            bottom: 70.h,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
@@ -299,7 +309,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
           if (widget.showBlur)
             Positioned(
-              top: 205.h,
+              top: registerBlurTextTopPosition,
               left: 0,
               right: 0,
               child: Column(
@@ -345,8 +355,9 @@ class BlackGradientContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 화면 크기 : 그라디언트 높이 동적 조정
     return Container(
-      height: 627.h,
+      height: double.infinity,
       decoration: BoxDecoration(
           gradient: LinearGradient(
         colors: [
