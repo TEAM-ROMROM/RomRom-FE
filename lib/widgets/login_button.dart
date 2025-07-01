@@ -67,6 +67,7 @@ class LoginButton extends StatelessWidget {
             nextScreen = const MainScreen();
           }
 
+          // ignore: use_build_context_synchronously
           context.navigateTo(
             screen: nextScreen,
             type: NavigationTypes.pushReplacement,

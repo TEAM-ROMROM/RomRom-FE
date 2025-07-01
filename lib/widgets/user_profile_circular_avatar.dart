@@ -70,9 +70,13 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
   }
 
   Widget _buildDefaultImage() {
-    return Image.asset(
-      'assets/images/default_avatar.png',
-      fit: BoxFit.cover,
+    return Container(
+      color: Colors.grey[300],
+      child: Icon(
+        Icons.person,
+        size: 40, // 아이콘 크기 조정
+        color: Colors.grey[700], // 아이콘 색상
+      ),
     );
   }
 }

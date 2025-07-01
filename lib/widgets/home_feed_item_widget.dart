@@ -52,8 +52,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     final screenWidth = MediaQuery.of(context).size.width;
     // 네비게이션바 && 상태바 높이 : 실제 사용 가능 높이 계산
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final topPadding = MediaQuery.of(context).padding.top;
-    final availableHeight = screenHeight - bottomPadding - 80.h; // 네비게이션바 높이(80.h)를 고려
+    final navigationBarHeight = 100.h; // 네비게이션바 높이 (80.h)
+    final availableHeight = screenHeight -
+        bottomPadding -
+        navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
 
     return Container(
       height: screenHeight,
@@ -100,8 +102,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           setState(() {
                             _currentImageIndex = resultIndex;
                           });
-                          pageController.jumpToPage(
-                              _currentImageIndex);
+                          pageController.jumpToPage(_currentImageIndex);
                         }
                       },
                       child: Hero(
@@ -115,20 +116,17 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           child: Image.network(
                             widget.item.imageUrls[index],
                             fit: BoxFit.cover,
-                            height: availableHeight - 100.h,
+                            height: availableHeight - navigationBarHeight,
                             width: screenWidth,
-                            loadingBuilder:
-                                (context, child, loadingProgress) {
+                            loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return Center(
                                 child: CircularProgressIndicator(
                                   color: AppColors.primaryYellow,
                                   value: loadingProgress.expectedTotalBytes !=
                                           null
-                                      ? loadingProgress
-                                              .cumulativeBytesLoaded /
-                                          (loadingProgress
-                                                  .expectedTotalBytes ??
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          (loadingProgress.expectedTotalBytes ??
                                               1)
                                       : null,
                                 ),
@@ -139,12 +137,12 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       ),
                     ),
                   ),
-                  
+
                   // 그라디언트 오버레이
                   const Positioned.fill(
                     child: IgnorePointer(child: BlackGradientContainer()),
                   ),
-                  
+
                   // 블러 효과
                   if (widget.showBlur)
                     Positioned.fill(
