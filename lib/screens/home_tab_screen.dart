@@ -446,7 +446,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: -100.h,
+            bottom: -75.h,
             child: const FanCardDial(),
           )
         else

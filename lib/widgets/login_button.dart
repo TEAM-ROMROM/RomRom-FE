@@ -46,7 +46,7 @@ class LoginButton extends StatelessWidget {
         await userInfo.getUserInfo(); // 사용자 정보 불러오기
 
         final prefs = await SharedPreferences.getInstance();
-        
+
         // 첫 로그인인 경우에만 코치마크 설정 초기화
         if (userInfo.isFirstLogin == true) {
           // 첫 로그인 시 코치마크 표시를 위한 설정
@@ -61,7 +61,7 @@ class LoginButton extends StatelessWidget {
           }
           debugPrint('기존 사용자: 코치마크 설정 유지');
         }
-        
+
         // 다음 화면 결정
         Widget nextScreen;
         if (userInfo.needsOnboarding) {
@@ -73,7 +73,7 @@ class LoginButton extends StatelessWidget {
           // 온보딩이 완료된 경우
           nextScreen = const MainScreen();
         }
-        
+
         // 모든 비동기 작업 완료 후 context 확인
         if (context.mounted) {
           context.navigateTo(
