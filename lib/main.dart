@@ -36,6 +36,9 @@ void main() async {
   if (Platform.isAndroid) {
     isGestureMode = await AndroidNavigationMode.isGestureMode();
     debugPrint('[main.dart] isGestureMode: $isGestureMode');
+  } else {
+    // iOS에서는 제스처 모드가 없으므로 기본값 사용
+    isGestureMode = true;
   }
 
   runApp(
