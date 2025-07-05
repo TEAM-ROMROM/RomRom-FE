@@ -15,6 +15,7 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(MyApp(
       initialScreen: Container(),
+      isGestureMode: false, // Set to false for testing purposes
     ));
 
     // Verify that our counter starts at 0.
