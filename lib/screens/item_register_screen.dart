@@ -100,9 +100,8 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
           },
         ),
         body: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
+          padding: EdgeInsets.only(top: 24.h, bottom: 24.h, left: 24.w),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 이미지 업로드
               Row(
@@ -194,270 +193,286 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                   ),
                 ],
               ),
-              SizedBox(
-                height: 24.h,
-              ),
-
-              // 제목
-              _LabeledField(
-                label: '제목',
-                field: _CustomTextField(
-                  hintText: '제목을 입력하세요',
-                  maxLength: 20,
-                  controller: titleController,
-                ),
-              ),
-
-              // 카테고리
-              _LabeledField(
-                label: '카테고리',
-                field: StatefulBuilder(
-                  builder: (context, setModalState) {
-                    return _CustomTextField(
-                      hintText: '카테고리를 선택하세요',
-                      controller:
-                          TextEditingController(text: selectedCategory ?? ''),
-                      readOnly: true,
-                      onTap: () async {
-                        const categories = ItemCategories.values;
-                        String? tempSelected = selectedCategory;
-                        await showModalBottomSheet<void>(
-                          context: context,
-                          backgroundColor: AppColors.primaryBlack,
-                          barrierColor: AppColors.opacity80Black,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.vertical(top: Radius.circular(16)),
-                          ),
-                          isScrollControlled: true,
-                          builder: (context) {
-                            return StatefulBuilder(
-                              builder: (context, setInnerState) {
-                                return SizedBox(
-                                  height: 502.h,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 14.0.h),
-                                          child: Container(
-                                            width: 50.w,
-                                            height: 4.h,
-                                            decoration: BoxDecoration(
-                                              color: AppColors.opacity50White,
-                                              borderRadius:
-                                                  BorderRadius.circular(5.r),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.only(left: 26.w),
-                                        child: Text(
-                                          '카테고리',
-                                          style: CustomTextStyles.h2.copyWith(
-                                              fontWeight: FontWeight.w700),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: Padding(
-                                          padding: EdgeInsets.only(
-                                              right: 26.w,
-                                              left: 26.w,
-                                              top: 24.h),
-                                          child: Wrap(
-                                            spacing: 8.0.w,
-                                            runSpacing: 12.0.h,
-                                            children:
-                                                categories.map((category) {
-                                              final isSelected =
-                                                  tempSelected == category.name;
-                                              return CategoryChip(
-                                                label: category.name,
-                                                isSelected: isSelected,
-                                                onTap: () {
-                                                  setInnerState(() {
-                                                    tempSelected =
-                                                        category.name;
-                                                  });
-                                                },
-                                              );
-                                            }).toList(),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        );
-                        setState(() {}); // 선택 후 화면 갱신
-                      },
-                    );
-                  },
-                ),
-              ),
-
-              // 물건 설명
-              _LabeledField(
-                label: '물건 설명',
-                field: _CustomTextField(
-                  hintText: '물건의 자세한 설명을 적어주세요',
-                  controller: descriptionController,
-                  maxLength: 1000,
-                  maxLines: 8,
-                ),
-              ),
-
-              // 물건 상태
-              _LabeledField(
-                label: '물건 상태',
-                field: Wrap(
-                  spacing: 8.w,
-                  runSpacing: 8.w,
-                  children: itemConditonOptions
-                      .map((option) => RegisterOptionChip(
-                            itemOption: option,
-                            isSelected:
-                                selectedItemConditionTypes.contains(option),
-                            onTap: () {
-                              setState(() {
-                                if (selectedItemConditionTypes
-                                    .contains(option)) {
-                                  selectedItemConditionTypes.clear();
-                                } else {
-                                  selectedItemConditionTypes
-                                    ..clear()
-                                    ..add(option);
-                                }
-                              });
-                            },
-                          ))
-                      .toList(),
-                ),
-              ),
-
-              // 거래방식
-              _LabeledField(
-                label: '거래방식',
-                field: Wrap(
-                  spacing: 8.w,
-                  children: itemTransactionOptions
-                      .map((option) => RegisterOptionChip(
-                            itemOption: option,
-                            isSelected:
-                                selectedTransactionTypes.contains(option),
-                            onTap: () {
-                              setState(() {
-                                if (selectedTransactionTypes.contains(option)) {
-                                  selectedTransactionTypes.remove(option);
-                                } else {
-                                  selectedTransactionTypes.add(option);
-                                }
-                              });
-                            },
-                          ))
-                      .toList(),
-                ),
-              ),
-
-              // 적정 가격 + AI 추천 가격
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text('적정 가격', style: CustomTextStyles.p1),
-                  const Spacer(),
-                  Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.aiSuggestionContainerBackground,
-                      borderRadius: BorderRadius.circular(4.r),
+              Padding(
+                padding: EdgeInsets.only(right: 24.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 24.h,
                     ),
-                    child: GradientText(
-                      text: 'AI 추천 가격',
-                      style:
-                          CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
-                      gradient: const LinearGradient(
-                        colors: AppColors.aiGradient,
-                        stops: [0.0, 0.35, 0.7, 1.0],
+
+                    // 제목
+                    _LabeledField(
+                      label: '제목',
+                      field: _CustomTextField(
+                        hintText: '제목을 입력하세요',
+                        maxLength: 20,
+                        controller: titleController,
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 4.w,
-                  ),
-                  AnimatedToggleSwitch.dual(
-                    current: useAiPrice,
-                    first: false,
-                    second: true,
-                    spacing: 2.0.w,
-                    height: 20.h,
-                    style: ToggleStyle(
-                      indicatorColor: AppColors.textColorWhite,
-                      borderRadius: BorderRadius.all(Radius.circular(100.r)),
-                      indicatorBoxShadow: [
-                        const BoxShadow(
-                            color: AppColors.toggleSwitchIndicatorShadow,
-                            offset: Offset(-1, 0),
-                            blurRadius: 2)
+
+                    // 카테고리
+                    _LabeledField(
+                      label: '카테고리',
+                      field: StatefulBuilder(
+                        builder: (context, setModalState) {
+                          return _CustomTextField(
+                            hintText: '카테고리를 선택하세요',
+                            controller: TextEditingController(
+                                text: selectedCategory ?? ''),
+                            readOnly: true,
+                            onTap: () async {
+                              const categories = ItemCategories.values;
+                              String? tempSelected = selectedCategory;
+                              await showModalBottomSheet<void>(
+                                context: context,
+                                backgroundColor: AppColors.primaryBlack,
+                                barrierColor: AppColors.opacity80Black,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(16)),
+                                ),
+                                isScrollControlled: true,
+                                builder: (context) {
+                                  return StatefulBuilder(
+                                    builder: (context, setInnerState) {
+                                      return SizedBox(
+                                        height: 502.h,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Center(
+                                              child: Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                    vertical: 14.0.h),
+                                                child: Container(
+                                                  width: 50.w,
+                                                  height: 4.h,
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors
+                                                        .opacity50White,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            5.r),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding:
+                                                  EdgeInsets.only(left: 26.w),
+                                              child: Text(
+                                                '카테고리',
+                                                style: CustomTextStyles.h2
+                                                    .copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w700),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: Padding(
+                                                padding: EdgeInsets.only(
+                                                    right: 26.w,
+                                                    left: 26.w,
+                                                    top: 24.h),
+                                                child: Wrap(
+                                                  spacing: 8.0.w,
+                                                  runSpacing: 12.0.h,
+                                                  children: categories
+                                                      .map((category) {
+                                                    final isSelected =
+                                                        tempSelected ==
+                                                            category.name;
+                                                    return CategoryChip(
+                                                      label: category.name,
+                                                      isSelected: isSelected,
+                                                      onTap: () {
+                                                        setInnerState(() {
+                                                          tempSelected =
+                                                              category.name;
+                                                        });
+                                                      },
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+                              setState(() {}); // 선택 후 화면 갱신
+                            },
+                          );
+                        },
+                      ),
+                    ),
+
+                    // 물건 설명
+                    _LabeledField(
+                      label: '물건 설명',
+                      field: _CustomTextField(
+                        hintText: '물건의 자세한 설명을 적어주세요',
+                        controller: descriptionController,
+                        maxLength: 1000,
+                        maxLines: 8,
+                      ),
+                    ),
+
+                    // 물건 상태
+                    _LabeledField(
+                      label: '물건 상태',
+                      field: Wrap(
+                        spacing: 8.w,
+                        runSpacing: 8.w,
+                        children: itemConditonOptions
+                            .map((option) => RegisterOptionChip(
+                                  itemOption: option,
+                                  isSelected: selectedItemConditionTypes
+                                      .contains(option),
+                                  onTap: () {
+                                    setState(() {
+                                      if (selectedItemConditionTypes
+                                          .contains(option)) {
+                                        selectedItemConditionTypes.clear();
+                                      } else {
+                                        selectedItemConditionTypes
+                                          ..clear()
+                                          ..add(option);
+                                      }
+                                    });
+                                  },
+                                ))
+                            .toList(),
+                      ),
+                    ),
+
+                    // 거래방식
+                    _LabeledField(
+                      label: '거래방식',
+                      field: Wrap(
+                        spacing: 8.w,
+                        children: itemTransactionOptions
+                            .map((option) => RegisterOptionChip(
+                                  itemOption: option,
+                                  isSelected:
+                                      selectedTransactionTypes.contains(option),
+                                  onTap: () {
+                                    setState(() {
+                                      if (selectedTransactionTypes
+                                          .contains(option)) {
+                                        selectedTransactionTypes.remove(option);
+                                      } else {
+                                        selectedTransactionTypes.add(option);
+                                      }
+                                    });
+                                  },
+                                ))
+                            .toList(),
+                      ),
+                    ),
+
+                    // 적정 가격 + AI 추천 가격
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text('적정 가격', style: CustomTextStyles.p1),
+                        const Spacer(),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 5.w, vertical: 4.h),
+                          decoration: BoxDecoration(
+                            color: AppColors.aiSuggestionContainerBackground,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: GradientText(
+                            text: 'AI 추천 가격',
+                            style: CustomTextStyles.p3
+                                .copyWith(letterSpacing: -0.5.sp),
+                            gradient: const LinearGradient(
+                              colors: AppColors.aiGradient,
+                              stops: [0.0, 0.35, 0.7, 1.0],
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 4.w,
+                        ),
+                        AnimatedToggleSwitch.dual(
+                          current: useAiPrice,
+                          first: false,
+                          second: true,
+                          spacing: 2.0.w,
+                          height: 20.h,
+                          style: ToggleStyle(
+                            indicatorColor: AppColors.textColorWhite,
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(100.r)),
+                            indicatorBoxShadow: [
+                              const BoxShadow(
+                                  color: AppColors.toggleSwitchIndicatorShadow,
+                                  offset: Offset(-1, 0),
+                                  blurRadius: 2)
+                            ],
+                          ),
+                          indicatorSize: Size(18.w, 18.h),
+                          borderWidth: 0,
+                          padding: EdgeInsets.all(1.w),
+                          onChanged: (b) => setState(() => useAiPrice = b),
+                          styleBuilder: (b) => ToggleStyle(
+                            backgroundGradient: b
+                                ? const LinearGradient(
+                                    colors: AppColors.aiGradient,
+                                  )
+                                : const LinearGradient(colors: [
+                                    AppColors.opacity40White,
+                                    AppColors.opacity40White
+                                  ]),
+                          ),
+                        ),
                       ],
                     ),
-                    indicatorSize: Size(18.w, 18.h),
-                    borderWidth: 0,
-                    padding: EdgeInsets.all(1.w),
-                    onChanged: (b) => setState(() => useAiPrice = b),
-                    styleBuilder: (b) => ToggleStyle(
-                      backgroundGradient: b
-                          ? const LinearGradient(
-                              colors: AppColors.aiGradient,
-                            )
-                          : const LinearGradient(colors: [
-                              AppColors.opacity40White,
-                              AppColors.opacity40White
-                            ]),
+                    SizedBox(height: 8.w),
+                    _CustomTextField(
+                      hintText: '가격을 입력해주세요',
+                      suffixText: '원',
+                      keyboardType: TextInputType.number,
+                      controller: priceController,
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8.w),
-              _CustomTextField(
-                hintText: '가격을 입력해주세요',
-                suffixText: '원',
-                keyboardType: TextInputType.number,
-                controller: priceController,
-              ),
-              SizedBox(height: 24.w),
+                    SizedBox(height: 24.w),
 
-              // 거래 희망 위치
-              _LabeledField(
-                label: '거래 희망 위치',
-                field: _CustomTextField(
-                  readOnly: true,
-                  hintText: '거래 희망 위치를 선택하세요',
-                  suffixIcon: Icon(
-                    AppIcons.detailView,
-                    color: AppColors.textColorWhite,
-                    size: 18.w,
-                  ),
-                  controller: locationController,
+                    // 거래 희망 위치
+                    _LabeledField(
+                      label: '거래 희망 위치',
+                      field: _CustomTextField(
+                        readOnly: true,
+                        hintText: '거래 희망 위치를 선택하세요',
+                        suffixIcon: Icon(
+                          AppIcons.detailView,
+                          color: AppColors.textColorWhite,
+                          size: 18.w,
+                        ),
+                        controller: locationController,
+                      ),
+                      spacing: 32,
+                    ),
+
+                    // 등록 완료 버튼
+                    const CompletionButton(
+                      isEnabled: true,
+                      buttonText: '등록 완료',
+                      buttonType: 2,
+                    ),
+                    SizedBox(height: 24.w),
+                  ],
                 ),
-                spacing: 32,
               ),
-
-              // 등록 완료 버튼
-              const CompletionButton(
-                isEnabled: true,
-                buttonText: '등록 완료',
-                buttonType: 2,
-              ),
-              SizedBox(height: 24.w),
             ],
           ),
         ),
