@@ -11,11 +11,14 @@ import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/location_address.dart';
+import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
+import 'package:romrom_fe/widgets/register_text_field.dart';
 
 /// 물품 등록 화면
 class ItemRegisterScreen extends StatefulWidget {
@@ -63,11 +66,24 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
 
   // ai 가격 측정 함수
   Future<void> _measureAiPrice() async {
-    const int aiPrice = 10;
+    const int aiPrice = 0;
     setState(() {
       priceController.text = aiPrice.toString();
       debugPrint("AI 가격 측정 api 필요 - 임시 가격입니다.");
     });
+  }
+
+  /// 폼 유효성 검사
+  /// 모든 필드가 채워져 있는지 확인
+  bool get isFormValid {
+    return titleController.text.isNotEmpty &&
+        selectedCategory != null &&
+        descriptionController.text.isNotEmpty &&
+        selectedItemConditionTypes.isNotEmpty &&
+        selectedTransactionTypes.isNotEmpty &&
+        priceController.text != '0' &&
+        locationController.text.isNotEmpty &&
+        imageFiles.isNotEmpty;
   }
 
   @override
@@ -98,6 +114,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
               widget.onClose!();
             }
           },
+          showBottomBorder: true,
         ),
         body: SingleChildScrollView(
           padding: EdgeInsets.only(top: 24.h, bottom: 24.h, left: 24.w),
@@ -202,22 +219,22 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                       height: 24.h,
                     ),
 
-                    // 제목
-                    _LabeledField(
+                    // 제목 필드
+                    RegisterCustomLabeledField(
                       label: '제목',
-                      field: _CustomTextField(
+                      field: RegisterCustomTextField(
                         hintText: '제목을 입력하세요',
                         maxLength: 20,
                         controller: titleController,
                       ),
                     ),
 
-                    // 카테고리
-                    _LabeledField(
+                    // 카테고리 필드
+                    RegisterCustomLabeledField(
                       label: '카테고리',
                       field: StatefulBuilder(
                         builder: (context, setModalState) {
-                          return _CustomTextField(
+                          return RegisterCustomTextField(
                             hintText: '카테고리를 선택하세요',
                             controller: TextEditingController(
                                 text: selectedCategory ?? ''),
@@ -307,7 +324,9 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                                   );
                                 },
                               );
-                              setState(() {}); // 선택 후 화면 갱신
+                              setState(() {
+                                selectedCategory = tempSelected;
+                              }); // 선택 후 화면 갱신
                             },
                           );
                         },
@@ -315,9 +334,9 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     ),
 
                     // 물건 설명
-                    _LabeledField(
+                    RegisterCustomLabeledField(
                       label: '물건 설명',
-                      field: _CustomTextField(
+                      field: RegisterCustomTextField(
                         hintText: '물건의 자세한 설명을 적어주세요',
                         controller: descriptionController,
                         maxLength: 1000,
@@ -326,7 +345,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     ),
 
                     // 물건 상태
-                    _LabeledField(
+                    RegisterCustomLabeledField(
                       label: '물건 상태',
                       field: Wrap(
                         spacing: 8.w,
@@ -354,7 +373,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     ),
 
                     // 거래방식
-                    _LabeledField(
+                    RegisterCustomLabeledField(
                       label: '거래방식',
                       field: Wrap(
                         spacing: 8.w,
@@ -401,9 +420,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(
-                          width: 4.w,
-                        ),
+                        SizedBox(width: 4.w),
                         AnimatedToggleSwitch.dual(
                           current: useAiPrice,
                           first: false,
@@ -439,7 +456,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                       ],
                     ),
                     SizedBox(height: 8.w),
-                    _CustomTextField(
+                    RegisterCustomTextField(
                       hintText: '가격을 입력해주세요',
                       suffixText: '원',
                       keyboardType: TextInputType.number,
@@ -448,9 +465,9 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     SizedBox(height: 24.w),
 
                     // 거래 희망 위치
-                    _LabeledField(
+                    RegisterCustomLabeledField(
                       label: '거래 희망 위치',
-                      field: _CustomTextField(
+                      field: RegisterCustomTextField(
                         readOnly: true,
                         hintText: '거래 희망 위치를 선택하세요',
                         suffixIcon: Icon(
@@ -459,13 +476,32 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                           size: 18.w,
                         ),
                         controller: locationController,
+                        onTap: () async {
+                          final result =
+                              await Navigator.of(context).push<LocationAddress>(
+                            MaterialPageRoute(
+                              builder: (_) => ItemRegisterLocationScreen(
+                                onLocationSelected: (address) {
+                                  locationController.text =
+                                      '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                                  // 필요하다면 address 전체를 상태로 저장
+                                },
+                              ),
+                            ),
+                          );
+                          // Navigator.pop으로만 돌아온 경우도 처리
+                          if (result != null) {
+                            locationController.text =
+                                '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
+                          }
+                        },
                       ),
                       spacing: 32,
                     ),
 
                     // 등록 완료 버튼
-                    const CompletionButton(
-                      isEnabled: true,
+                    CompletionButton(
+                      isEnabled: isFormValid,
                       buttonText: '등록 완료',
                       buttonType: 2,
                     ),
@@ -477,128 +513,6 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// 라벨
-class _Label extends StatelessWidget {
-  final String label;
-  const _Label({required this.label});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.0.h),
-      child: Text(label, style: CustomTextStyles.p1),
-    );
-  }
-}
-
-/// 내용 입력 Field
-class _CustomTextField extends StatelessWidget {
-  final String hintText;
-  final int? maxLength;
-  final int? maxLines;
-  final TextInputType? keyboardType;
-  final TextEditingController? controller;
-  final bool readOnly;
-  final Widget? suffixIcon;
-  final String suffixText;
-  final VoidCallback? onTap;
-
-  const _CustomTextField({
-    required this.hintText,
-    this.maxLength,
-    this.maxLines = 1,
-    this.keyboardType,
-    this.controller,
-    this.readOnly = false,
-    this.suffixIcon,
-    this.suffixText = '',
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    OutlineInputBorder inputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8.r),
-      borderSide: BorderSide(
-        color: AppColors.opacity30White,
-        width: 1.5.h,
-        strokeAlign: BorderSide.strokeAlignInside,
-      ),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        TextField(
-          controller: controller,
-          maxLength: maxLength,
-          maxLines: maxLines,
-          keyboardType: keyboardType,
-          readOnly: readOnly,
-          onTap: onTap,
-          style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
-          cursorColor: AppColors.textColorWhite,
-          decoration: InputDecoration(
-            hintText: hintText,
-            filled: true,
-            fillColor: AppColors.opacity10White,
-            border: inputBorder,
-            enabledBorder: inputBorder,
-            focusedBorder: inputBorder,
-            hintStyle:
-                CustomTextStyles.p2.copyWith(color: AppColors.opacity40White),
-            counterText: '', // 기본 counter 숨김
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-            suffixIcon: suffixIcon,
-            suffixText: suffixText,
-            suffixStyle:
-                CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
-          ),
-        ),
-        if (maxLength != null && controller != null)
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller!,
-            builder: (context, value, child) {
-              final currentLength = value.text.length;
-              return Padding(
-                padding: EdgeInsets.only(top: 8.0.h),
-                child: Text(
-                  '$currentLength/$maxLength',
-                  style: CustomTextStyles.p3
-                      .copyWith(color: AppColors.opacity50White),
-                ),
-              );
-            },
-          ),
-      ],
-    );
-  }
-}
-
-/// 라벨 + 내용 Field
-class _LabeledField extends StatelessWidget {
-  final String label;
-  final Widget field;
-  final double spacing;
-
-  const _LabeledField({
-    required this.label,
-    required this.field,
-    this.spacing = 24,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _Label(label: label),
-        field,
-        SizedBox(height: spacing.h),
-      ],
     );
   }
 }

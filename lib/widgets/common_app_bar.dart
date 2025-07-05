@@ -17,11 +17,16 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// 앱바 오른쪽에 표시될 추가 액션 위젯 목록
   final List<Widget>? actions;
 
+  /// 앱바 하단 border 여부
+  /// 기본값은 true로 설정되어 있으며, false로 설정하면 하단 border가 표시되지 않음
+  final bool showBottomBorder;
+
   const CommonAppBar({
     super.key,
     required this.title,
     this.onBackPressed,
     this.actions,
+    this.showBottomBorder = false,
   });
 
   @override
@@ -53,7 +58,12 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
 
-      shape: const Border(bottom: BorderSide(color: AppColors.opacity10White)),
+      shape: Border(
+          bottom: BorderSide(
+              color: showBottomBorder
+                  ? AppColors.opacity10White
+                  : Colors.transparent,
+              width: 1.w)), // 하단 border 설정
       actions: actions, // 추가 액션 버튼들
     );
   }

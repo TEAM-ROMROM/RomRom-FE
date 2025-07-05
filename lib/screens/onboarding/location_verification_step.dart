@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/widgets/common/current_location_button.dart';
 
 class LocationVerificationStep extends StatefulWidget {
   final VoidCallback onNext;
@@ -76,48 +77,13 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
               Positioned(
                 bottom: 48.h,
                 left: 24.w,
-                child: GestureDetector(
+                child: CurrentLocationButton(
                   onTap: () async {
                     final controller = await mapControllerCompleter.future;
                     await controller
                         .setLocationTrackingMode(NLocationTrackingMode.follow);
                   },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.currentLocationButtonBg,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: AppColors.currentLocationButtonBorder,
-                          width: 0.15.w,
-                          strokeAlign: BorderSide.strokeAlignInside),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.currentLocationButtonShadow
-                              .withValues(alpha: 0.25),
-                          blurRadius: 2.0,
-                          offset: const Offset(0, 0),
-                        ),
-                        BoxShadow(
-                          color: AppColors.currentLocationButtonShadow
-                              .withValues(alpha: 0.25),
-                          blurRadius: 2.0,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      onPressed: () async {
-                        final controller = await mapControllerCompleter.future;
-                        await controller.setLocationTrackingMode(
-                            NLocationTrackingMode.follow);
-                      },
-                      iconSize: 24.h,
-                      icon: const Icon(
-                        AppIcons.currentLocation,
-                        color: AppColors.currentLocationButtonIcon,
-                      ),
-                    ),
-                  ),
+                  iconSize: 24.h,
                 ),
               )
             ],
@@ -228,7 +194,8 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
 
   // 주소 정보 로드 메서드
   Future<void> _loadAddressInfo(NLatLng position) async {
-    final addressInfo = await _locationService.getAddressFromCoordinates(position);
+    final addressInfo =
+        await _locationService.getAddressFromCoordinates(position);
 
     if (addressInfo != null) {
       setState(() {
