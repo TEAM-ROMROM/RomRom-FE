@@ -1,22 +1,38 @@
 package com.example.romrom
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import android.provider.Settings
+import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        requestNotificationPermission()
+    private val CHANNEL = "romrom/navigation_mode"
+
+    override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            CHANNEL
+        ).setMethodCallHandler { call, result ->
+            if (call.method == "isGesture") {
+                val isGesture = isGestureNavigationEnabled()
+                result.success(isGesture)
+            } else {
+                result.notImplemented()
+            }
+        }
     }
 
-    private fun requestNotificationPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
-        }
+    private fun isGestureNavigationEnabled(): Boolean {
+        val navMode = Settings.Secure.getInt(
+            contentResolver,
+            "navigation_mode",
+            0
+        )
+        // 2 = gesture, 0 or 1 = buttons
+        return navMode == 2
     }
 }
