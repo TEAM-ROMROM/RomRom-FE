@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+ import 'dart:async';
 
 class RegisterTabScreen extends StatefulWidget {
   const RegisterTabScreen({super.key});
@@ -15,6 +16,8 @@ class RegisterTabScreen extends StatefulWidget {
 class _RegisterTabScreenState extends State<RegisterTabScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
+  bool _isScrolling = false;
+  Timer? _scrollTimer;
 
   @override
   void initState() {
@@ -26,10 +29,26 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
   void dispose() {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    _scrollTimer?.cancel();
     super.dispose();
   }
 
   void _scrollListener() {
+    // 스크롤 중임을 표시
+    setState(() {
+      _isScrolling = true;
+    });
+    
+    // 기존 타이머 취소
+    _scrollTimer?.cancel();
+    
+    // 스크롤이 멈춘 후 0.3초 후에 스크롤이 끝났다고 판단
+    _scrollTimer = Timer(const Duration(milliseconds: 700), () {
+      setState(() {
+        _isScrolling = false;
+      });
+    });
+    
     if (_scrollController.offset > 50 && !_isScrolled) {
       setState(() {
         _isScrolled = true;
@@ -70,17 +89,20 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                 ),
               ),
               centerTitle: true,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Padding(
-                  padding: EdgeInsets.fromLTRB(24.w, 56.h, 24.w, 40.h),
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
-                      child: Text(
-                        '나의 등록된 물건',
-                        style: CustomTextStyles.h1,
+              flexibleSpace: Container(
+                color: AppColors.primaryBlack,
+                child: FlexibleSpaceBar(
+                  background: Padding(
+                    padding: EdgeInsets.fromLTRB(24.w, 56.h, 24.w, 40.h),
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
+                        child: Text(
+                          '나의 등록된 물건',
+                          style: CustomTextStyles.h1,
+                        ),
                       ),
                     ),
                   ),
@@ -218,34 +240,40 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
   }
 
   Widget _buildRegisterFab() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 32.h),
-      width: 144.w,
-      height: 56.h,
-      child: FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryYellow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28.r),
-        ),
-        onPressed: () {
-          // 등록하기 화면으로 이동
-        },
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 200),
+      scale: _isScrolling ? 0.0 : 1.0,
+      curve: Curves.easeInOut,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: _isScrolling ? 0.0 : 1.0,
+        child: Container(
+          margin: EdgeInsets.only(bottom: 32.h),
+          child: FloatingActionButton.extended(
+            backgroundColor: AppColors.primaryYellow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28.r),
+            ),
+            onPressed: () {
+              // 등록하기 화면으로 이동
+            },
+            extendedPadding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 16.h),
+            icon: Icon(
               AppIcons.addItemPlus,
               size: 16.sp,
               color: AppColors.textColorBlack,
             ),
-            SizedBox(width: 8.w),
-            Text(
+            label: Text(
               '등록하기',
-              style: CustomTextStyles.h3.copyWith(
-                color: AppColors.textColorBlack,
+              style: TextStyle(
+                color: Color(0xFF000000),
+                fontFamily: 'Pretendard',
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w600,
+                height: 1.0, // 100% line-height
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
