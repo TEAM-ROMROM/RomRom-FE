@@ -23,6 +23,7 @@ class AppIcons {
 
   static const IconData requestManagement = IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData navigateBefore = IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData addItemPlus = IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData cancel = IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData location = IconData(0xe804, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData dotsVertical = IconData(0xe805, fontFamily: _kFontFam, fontPackage: _kFontPkg);
@@ -32,5 +33,4 @@ class AppIcons {
   static const IconData currentLocation = IconData(0xe80c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData chat = IconData(0xe80d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData tempLogo = IconData(0xe810, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData additemplus = IconData(0xe82f, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

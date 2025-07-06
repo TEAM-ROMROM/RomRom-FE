@@ -50,28 +50,29 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
         child: NestedScrollView(
           controller: _scrollController,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            SliverToBoxAdapter(
-              child: SizedBox(height: 56.h),
-            ),
             SliverAppBar(
               pinned: true,
               backgroundColor: AppColors.primaryBlack,
-              expandedHeight: 40.h,
-              toolbarHeight: 0,
+              expandedHeight: 120.h,
+              toolbarHeight: 58.h,
+              titleSpacing: 0,
               elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
               automaticallyImplyLeading: false,
-              title: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
-                child: Text(
-                  '나의 등록된 물건',
-                  style: CustomTextStyles.h3,
+              title: Padding(
+                padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
+                  child: Text(
+                    '나의 등록된 물건',
+                    style: CustomTextStyles.h3,
+                  ),
                 ),
               ),
               centerTitle: true,
               flexibleSpace: FlexibleSpaceBar(
                 background: Padding(
-                  padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 0),
+                  padding: EdgeInsets.fromLTRB(24.w, 56.h, 24.w, 40.h),
                   child: Align(
                     alignment: Alignment.topLeft,
                     child: AnimatedOpacity(
@@ -86,14 +87,12 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(height: 40.h),
-            ),
           ],
           body: _buildItemsList(),
         ),
       ),
       floatingActionButton: _buildRegisterFab(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -116,7 +115,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
       itemBuilder: (context, index) => _buildItemTile(items[index]),
       separatorBuilder: (context, index) => Divider(
         thickness: 1,
-        color: const Color(0xFF2C2D36),
+        color: AppColors.opacity10Black,
         height: 24.h,
       ),
     );
@@ -135,7 +134,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                 width: 90.w,
                 height: 90.h,
                 decoration: BoxDecoration(
-                  color: Colors.grey[800],
+                  color: AppColors.opacity20White,
                   borderRadius: BorderRadius.circular(4.r),
                 ),
                 // 실제 이미지 구현 시 Image.network() 사용
@@ -149,20 +148,24 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                   children: [
                     Text(
                       item['title'] as String,
-                      style: CustomTextStyles.h3,
+                      style: CustomTextStyles.h3.copyWith(
+                        color: AppColors.textColorWhite,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 8.h),
                     Text(
                       item['uploadTime'] as String,
                       style: CustomTextStyles.p2.copyWith(
-                        color: const Color(0xFFB0B0B0),
+                        color: AppColors.opacity50White,
                       ),
                     ),
                     SizedBox(height: 8.h),
                     Text(
                       item['price'] as String,
-                      style: CustomTextStyles.p1,
+                      style: CustomTextStyles.p1.copyWith(
+                        color: AppColors.textColorWhite,
+                      ),
                     ),
                     SizedBox(height: 8.h),
                     Row(
@@ -176,7 +179,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                         Text(
                           '${item['likes']}',
                           style: CustomTextStyles.p2.copyWith(
-                            color: const Color(0xFFB0B0B0),
+                            color: AppColors.opacity50White,
                           ),
                         ),
                       ],
@@ -202,7 +205,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                 icon: Icon(
                   AppIcons.dotsVertical,
                   size: 24.sp,
-                  color: const Color(0xFFB0B0B0),
+                  color: AppColors.opacity50White,
                 ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -216,7 +219,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
 
   Widget _buildRegisterFab() {
     return Container(
-      margin: EdgeInsets.only(bottom: 96.h, right: 0),
+      margin: EdgeInsets.only(bottom: 32.h),
       width: 144.w,
       height: 56.h,
       child: FloatingActionButton.extended(
@@ -228,17 +231,18 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
           // 등록하기 화면으로 이동
         },
         label: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              AppIcons.register,
-              size: 20.sp,
-              color: AppColors.primaryBlack,
+              AppIcons.addItemPlus,
+              size: 16.sp,
+              color: AppColors.textColorBlack,
             ),
             SizedBox(width: 8.w),
             Text(
               '등록하기',
               style: CustomTextStyles.h3.copyWith(
-                color: AppColors.primaryBlack,
+                color: AppColors.textColorBlack,
               ),
             ),
           ],
