@@ -146,8 +146,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
   }
 
   Widget _buildItemTile(Map<String, dynamic> item, int index) {
-    final GlobalKey optionsIconKey = GlobalKey();
-    
     return SizedBox(
       height: 90.h,
       child: Stack(

@@ -13,14 +13,14 @@ class WarningDialog extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const WarningDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     this.cancelText = '취소',
     this.confirmText = '삭제',
     required this.onCancel,
     required this.onConfirm,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
