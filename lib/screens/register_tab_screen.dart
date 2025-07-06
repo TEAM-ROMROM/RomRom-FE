@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -146,7 +147,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
 
   Widget _buildItemTile(Map<String, dynamic> item, int index) {
     final GlobalKey optionsIconKey = GlobalKey();
-
+    
     return SizedBox(
       height: 90.h,
       child: Stack(
@@ -195,10 +196,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                     SizedBox(height: 8.h),
                     Row(
                       children: [
-                        Icon(
-                          AppIcons.itemRegisterHeart,
-                          size: 14.sp,
-                          color: AppColors.opacity60White,
+                        SvgPicture.asset(
+                          'assets/images/itemRegisterHeart.svg',
+                          width: 14.w,
+                          height: 14.h,
                         ),
                         SizedBox(width: 4.w),
                         Text(
@@ -223,37 +224,24 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
             child: SizedBox(
               width: 30.w,
               height: 30.h,
-              child: IconButton(
-                key: optionsIconKey,
-                onPressed: () {
-                  showItemOptionsMenu(
-                    context: context,
-                    iconKey: optionsIconKey,
-                    onEditPressed: () {
-                      // 수정 기능 구현
-                      debugPrint('${item['title']} 수정 버튼 클릭');
-                    },
-                    onDeletePressed: () async {
-                      // 삭제 기능 구현
-                      final result = await context.showWarningDialog(
-                        title: '물건을 삭제하시겠습니까?',
-                        description: '삭제된 물건은 복구할 수 없습니다.',
-                      );
-
-                      if (result == true) {
-                        // 확인 버튼이 눌렸을 때 삭제 로직
-                        debugPrint('${item['title']} 삭제 확인');
-                      }
-                    },
-                  );
+              child: ItemOptionsMenuButton(
+                onEditPressed: () {
+                  // 수정 기능 구현
+                  debugPrint('${item['title']} 수정 버튼 클릭');
                 },
-                icon: Icon(
-                  AppIcons.dotsVertical,
-                  size: 24.sp,
-                  color: AppColors.opacity50White,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+                onDeletePressed: () async {
+                  // 삭제 기능 구현
+                  final result = await context.showWarningDialog(
+                    title: '물건을 삭제하시겠습니까?',
+                    description: '삭제된 물건은 복구할 수 없습니다.',
+                  );
+                  
+                  if (result == true) {
+                    // 확인 버튼이 눌렸을 때 삭제 로직
+                    debugPrint('${item['title']} 삭제 확인');
+                    // 여기에 실제 삭제 API 호출 로직 추가
+                  }
+                },
               ),
             ),
           ),

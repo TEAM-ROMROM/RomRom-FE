@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../models/app_colors.dart';
-import '../../enums/font_family.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 
 class WarningDialog extends StatelessWidget {
   final String title;
@@ -29,64 +30,70 @@ class WarningDialog extends StatelessWidget {
       ),
       elevation: 0,
       backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: 24.w),
       child: Container(
-        width: 312,
-        height: 216,
+        width: 312.w,
+        height: 216.h,
         decoration: BoxDecoration(
-          color: const Color(0xFF34353D),
+          color: AppColors.secondaryBlack,
           borderRadius: BorderRadius.circular(16),
           boxShadow: const [
             BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.15),
+              color: AppColors.opacity15Black,
               blurRadius: 10,
               offset: Offset(2, 2),
             ),
           ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 24),
-            SvgPicture.asset(
-              'assets/images/temp/warning.svg',
-              width: 40,
-              height: 40,
+            SizedBox(height: 24.h),
+            Center(
+              child: SvgPicture.asset(
+                'assets/images/warning.svg',
+                width: 40.w,
+                height: 40.h,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.warningRed,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
+            const Spacer(),
             Text(
               title,
-              style: const TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+              style: CustomTextStyles.p2.copyWith(
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+                color: AppColors.opacity80White,
               ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               description,
-              style: const TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+              style: CustomTextStyles.p2.copyWith(
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+                color: AppColors.opacity80White,
               ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const Spacer(),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.only(left: 24.w, right: 24.w, bottom: 24.h),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildButton(
                     text: cancelText,
-                    backgroundColor: const Color(0xFF1D1E27).withOpacity(0.3),
+                    backgroundColor: AppColors.opacity30PrimaryBlack,
                     onPressed: onCancel,
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 8.w),
                   _buildButton(
                     text: confirmText,
-                    backgroundColor: const Color(0xFFFF5656),
+                    backgroundColor: AppColors.warningRed,
                     onPressed: onConfirm,
                   ),
                 ],
@@ -103,30 +110,27 @@ class WarningDialog extends StatelessWidget {
     required Color backgroundColor,
     required VoidCallback onPressed,
   }) {
-    return Expanded(
-      child: SizedBox(
-        height: 56,
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: backgroundColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 0,
-            padding: EdgeInsets.zero,
+    return SizedBox(
+      width: 128.w,
+      height: 44.h,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+          elevation: 0,
+          padding: EdgeInsets.zero,
+        ),
+        child: Text(
+          text,
+          style: CustomTextStyles.p1.copyWith(
+            color: AppColors.textColorWhite,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
   }
-} 
+}
