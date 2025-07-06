@@ -4,7 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
- import 'dart:async';
+import 'package:romrom_fe/widgets/common/item_options_menu.dart';
+import 'dart:async';
+import '../utils/common_utils.dart';
 
 class RegisterTabScreen extends StatefulWidget {
   const RegisterTabScreen({super.key});
@@ -134,7 +136,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
       physics: const BouncingScrollPhysics(),
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       itemCount: items.length,
-      itemBuilder: (context, index) => _buildItemTile(items[index]),
+      itemBuilder: (context, index) => _buildItemTile(items[index], index),
       separatorBuilder: (context, index) => Divider(
         thickness: 1,
         color: AppColors.opacity10Black,
@@ -143,7 +145,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
     );
   }
 
-  Widget _buildItemTile(Map<String, dynamic> item) {
+  Widget _buildItemTile(Map<String, dynamic> item, int index) {
+    final GlobalKey optionsIconKey = GlobalKey();
+    
     return SizedBox(
       height: 90.h,
       child: Stack(
@@ -221,8 +225,28 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
               width: 30.w,
               height: 30.h,
               child: IconButton(
+                key: optionsIconKey,
                 onPressed: () {
-                  // 더보기 메뉴 구현
+                  showItemOptionsMenu(
+                    context: context,
+                    iconKey: optionsIconKey,
+                    onEditPressed: () {
+                      // 수정 기능 구현
+                      debugPrint('${item['title']} 수정 버튼 클릭');
+                    },
+                    onDeletePressed: () async {
+                      // 삭제 기능 구현
+                      final result = await context.showWarningDialog(
+                        title: '물건을 삭제하시겠습니까?',
+                        description: '삭제된 물건은 복구할 수 없습니다.',
+                      );
+                      
+                      if (result == true) {
+                        // 확인 버튼이 눌렸을 때 삭제 로직
+                        debugPrint('${item['title']} 삭제 확인');
+                      }
+                    },
+                  );
                 },
                 icon: Icon(
                   AppIcons.dotsVertical,
