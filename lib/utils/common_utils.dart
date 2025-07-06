@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
+import '../widgets/common/warning_dialog.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
@@ -66,4 +67,26 @@ BoxDecoration buildBoxDecoration(Color color, BorderRadius radius) {
 String formatPrice(int price) {
   final formatter = NumberFormat('#,###원');
   return formatter.format(price);
+}
+
+extension ContextExtension on BuildContext {
+  Future<bool?> showWarningDialog({
+    required String title,
+    required String description,
+    String cancelText = '취소',
+    String confirmText = '삭제',
+  }) async {
+    return showDialog<bool>(
+      context: this,
+      barrierDismissible: false,
+      builder: (context) => WarningDialog(
+        title: title,
+        description: description,
+        cancelText: cancelText,
+        confirmText: confirmText,
+        onCancel: () => Navigator.of(context).pop(false),
+        onConfirm: () => Navigator.of(context).pop(true),
+      ),
+    );
+  }
 }
