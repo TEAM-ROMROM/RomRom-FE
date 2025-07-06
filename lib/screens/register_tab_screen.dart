@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
- import 'dart:async';
+import 'dart:async';
 
 class RegisterTabScreen extends StatefulWidget {
   const RegisterTabScreen({super.key});
@@ -38,17 +37,17 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
     setState(() {
       _isScrolling = true;
     });
-    
+
     // 기존 타이머 취소
     _scrollTimer?.cancel();
-    
+
     // 스크롤이 멈춘 후 0.3초 후에 스크롤이 끝났다고 판단
     _scrollTimer = Timer(const Duration(milliseconds: 700), () {
       setState(() {
         _isScrolling = false;
       });
     });
-    
+
     if (_scrollController.offset > 50 && !_isScrolled) {
       setState(() {
         _isScrolled = true;
@@ -192,10 +191,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                     SizedBox(height: 8.h),
                     Row(
                       children: [
-                        SvgPicture.asset(
-                          'assets/images/itemRegisterHeart.svg',
-                          width: 14.w,
-                          height: 14.h,
+                        Icon(
+                          AppIcons.itemRegisterHeart,
+                          size: 14.sp,
+                          color: AppColors.opacity60White,
                         ),
                         SizedBox(width: 4.w),
                         Text(
@@ -257,7 +256,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
             onPressed: () {
               // 등록하기 화면으로 이동
             },
-            extendedPadding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 16.h),
+            extendedPadding:
+                EdgeInsets.symmetric(horizontal: 18.w, vertical: 16.h),
             icon: Icon(
               AppIcons.addItemPlus,
               size: 16.sp,
@@ -266,7 +266,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
             label: Text(
               '등록하기',
               style: TextStyle(
-                color: Color(0xFF000000),
+                color: const Color(0xFF000000),
                 fontFamily: 'Pretendard',
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w600,

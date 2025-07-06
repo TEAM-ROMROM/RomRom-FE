@@ -8,6 +8,7 @@ class AppColors {
   static const Color opacity20White = Color(0x33FFFFFF); // 20% 불투명도 흰색
   static const Color opacity30White = Color(0x4DFFFFFF); // 30% 불투명도 흰색
   static const Color opacity50White = Color(0x80FFFFFF); // 50% 불투명도 흰색
+  static const Color opacity60White = Color(0x99FFFFFF); // 60% 불투명도 흰색
   static const Color opacity80White = Color(0xCCFFFFFF); // 80% 불투명도 흰색
   static const Color opacity10Black = Color(0x1A000000); // 10% 불투명도 검정
   static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정

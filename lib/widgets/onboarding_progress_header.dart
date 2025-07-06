@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -185,16 +184,12 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
           shape: BoxShape.circle,
           color: AppColors.primaryYellow,
         ),
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 6.0.w,
-            ),
-            child: SvgPicture.asset(
-              'assets/images/onboardingProgressCheck.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppColors.textColorBlack, BlendMode.srcIn),
-            ),
+        child: Padding(
+          padding: EdgeInsets.all(6.w),
+          child: Icon(
+            AppIcons.onboardingProgressCheck,
+            size: 9.sp,
+            color: AppColors.textColorBlack,
           ),
         ),
       );
