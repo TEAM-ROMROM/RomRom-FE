@@ -47,7 +47,7 @@ class RegisterCustomTextField extends StatelessWidget {
       borderRadius: BorderRadius.circular(8.r),
       borderSide: BorderSide(
         color: AppColors.opacity30White,
-        width: 1.5.h,
+        width: 1.5.w,
         strokeAlign: BorderSide.strokeAlignInside,
       ),
     );

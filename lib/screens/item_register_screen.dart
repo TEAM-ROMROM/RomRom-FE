@@ -67,16 +67,23 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
 
   // ai 가격 측정 함수
   Future<void> _measureAiPrice() async {
-    final predictedPrice = await ItemApi().pricePredict(ItemRequest(
-      itemName: titleController.text,
-      itemDescription: descriptionController.text,
-      itemCondition: selectedItemConditionTypes.isNotEmpty
-          ? selectedItemConditionTypes.first.serverName
-          : null,
-    ));
-    setState(() {
-      priceController.text = predictedPrice.toString();
-    });
+    try {
+      final predictedPrice = await ItemApi().pricePredict(ItemRequest(
+        itemName: titleController.text,
+        itemDescription: descriptionController.text,
+        itemCondition: selectedItemConditionTypes.isNotEmpty
+            ? selectedItemConditionTypes.first.serverName
+            : null,
+      ));
+      setState(() {
+        priceController.text = predictedPrice.toString();
+      });
+    } catch (e) {
+      // 에러 처리 (스낵바 표시 등)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
+      );
+    }
   }
 
   /// 폼 유효성 검사
@@ -237,103 +244,92 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     // 카테고리 필드
                     RegisterCustomLabeledField(
                       label: '카테고리',
-                      field: StatefulBuilder(
-                        builder: (context, setModalState) {
-                          return RegisterCustomTextField(
-                            hintText: '카테고리를 선택하세요',
-                            controller: TextEditingController(
-                                text: selectedCategory?.name ?? ''),
-                            readOnly: true,
-                            onTap: () async {
-                              const categories = ItemCategories.values;
-                              ItemCategories? tempSelected = selectedCategory;
-                              await showModalBottomSheet<void>(
-                                context: context,
-                                backgroundColor: AppColors.primaryBlack,
-                                barrierColor: AppColors.opacity80Black,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(16)),
-                                ),
-                                isScrollControlled: true,
-                                builder: (context) {
-                                  return StatefulBuilder(
-                                    builder: (context, setInnerState) {
-                                      return SizedBox(
-                                        height: 502.h,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Center(
-                                              child: Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                    vertical: 14.0.h),
-                                                child: Container(
-                                                  width: 50.w,
-                                                  height: 4.h,
-                                                  decoration: BoxDecoration(
-                                                    color: AppColors
-                                                        .opacity50White,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            5.r),
-                                                  ),
-                                                ),
+                      field: RegisterCustomTextField(
+                        hintText: '카테고리를 선택하세요',
+                        readOnly: true,
+                        controller: TextEditingController(
+                            text: selectedCategory?.name ?? ''),
+                        onTap: () async {
+                          const categories = ItemCategories.values;
+                          ItemCategories? tempSelected = selectedCategory;
+                          await showModalBottomSheet<void>(
+                            context: context,
+                            backgroundColor: AppColors.primaryBlack,
+                            barrierColor: AppColors.opacity80Black,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(16)),
+                            ),
+                            isScrollControlled: true,
+                            builder: (context) {
+                              return StatefulBuilder(
+                                builder: (context, setInnerState) {
+                                  return SizedBox(
+                                    height: 502.h,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Center(
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                vertical: 14.0.h),
+                                            child: Container(
+                                              width: 50.w,
+                                              height: 4.h,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.opacity50White,
+                                                borderRadius:
+                                                    BorderRadius.circular(5.r),
                                               ),
                                             ),
-                                            Padding(
-                                              padding:
-                                                  EdgeInsets.only(left: 26.w),
-                                              child: Text(
-                                                '카테고리',
-                                                style: CustomTextStyles.h2
-                                                    .copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w700),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              width: double.infinity,
-                                              child: Padding(
-                                                padding: EdgeInsets.only(
-                                                    right: 26.w,
-                                                    left: 26.w,
-                                                    top: 24.h),
-                                                child: Wrap(
-                                                  spacing: 8.0.w,
-                                                  runSpacing: 12.0.h,
-                                                  children: categories
-                                                      .map((category) {
-                                                    final isSelected =
-                                                        tempSelected ==
-                                                            category;
-                                                    return CategoryChip(
-                                                      label: category.name,
-                                                      isSelected: isSelected,
-                                                      onTap: () {
-                                                        setInnerState(() {
-                                                          tempSelected =
-                                                              category;
-                                                        });
-                                                      },
-                                                    );
-                                                  }).toList(),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                          ),
                                         ),
-                                      );
-                                    },
+                                        Padding(
+                                          padding: EdgeInsets.only(left: 26.w),
+                                          child: Text(
+                                            '카테고리',
+                                            style: CustomTextStyles.h2.copyWith(
+                                                fontWeight: FontWeight.w700),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: Padding(
+                                            padding: EdgeInsets.only(
+                                                right: 26.w,
+                                                left: 26.w,
+                                                top: 24.h),
+                                            child: Wrap(
+                                              spacing: 8.0.w,
+                                              runSpacing: 12.0.h,
+                                              children:
+                                                  categories.map((category) {
+                                                final isSelected =
+                                                    tempSelected == category;
+                                                return CategoryChip(
+                                                  label: category.name,
+                                                  isSelected: isSelected,
+                                                  onTap: () {
+                                                    setInnerState(() {
+                                                      tempSelected = category;
+                                                    });
+                                                  },
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               );
-                              setState(() {
-                                selectedCategory = tempSelected;
-                              }); // 선택 후 화면 갱신
                             },
                           );
+                          setState(() {
+                            selectedCategory = tempSelected;
+                          });
                         },
                       ),
                     ),
@@ -517,22 +513,37 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                       isEnabled: isFormValid,
                       buttonText: '등록 완료',
                       buttonType: 2,
-                      enabledOnPressed: () {
-                        ItemApi().postItem(ItemRequest(
-                          itemName: titleController.text,
-                          itemDescription: descriptionController.text,
-                          itemCategory: selectedCategory!.serverName,
-                          itemCondition: selectedItemConditionTypes.isNotEmpty
-                              ? selectedItemConditionTypes.first.serverName
-                              : null,
-                          itemTradeOptions: selectedTradeOptions
-                              .map((e) => e.serverName)
-                              .toList(),
-                          itemPrice: int.parse(priceController.text),
-                          itemCustomTags: [],
-                          itemImages:
-                              imageFiles.map((e) => File(e.path)).toList(),
-                        ));
+                      enabledOnPressed: () async {
+                        try {
+                          await ItemApi().postItem(ItemRequest(
+                            itemName: titleController.text,
+                            itemDescription: descriptionController.text,
+                            itemCategory: selectedCategory!.serverName,
+                            itemCondition: selectedItemConditionTypes.isNotEmpty
+                                ? selectedItemConditionTypes.first.serverName
+                                : null,
+                            itemTradeOptions: selectedTradeOptions
+                                .map((e) => e.serverName)
+                                .toList(),
+                            itemPrice: int.parse(priceController.text),
+                            itemCustomTags: [],
+                            itemImages:
+                                imageFiles.map((e) => File(e.path)).toList(),
+                          ));
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('물품이 성공적으로 등록되었습니다.')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('물품 등록에 실패했습니다: $e')),
+                            );
+                          }
+                        }
                       },
                     ),
                     SizedBox(height: 24.w),
