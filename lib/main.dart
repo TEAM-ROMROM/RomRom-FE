@@ -112,10 +112,10 @@ class MyApp extends StatelessWidget {
             data: MediaQuery.of(context)
                 .copyWith(textScaler: const TextScaler.linear(1.0)),
             child: MaterialApp(
-                title: 'RomRom',
-                theme: AppTheme.defaultTheme,
-                // home: initialScreen,
-                home: const MainScreen()),
+              title: 'RomRom',
+              theme: AppTheme.defaultTheme,
+              home: initialScreen,
+            ),
           ),
         );
       }),
