@@ -8,7 +8,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 enum NavigationTabItems {
   home(title: '홈', iconData: AppIcons.home),
   requestManagement(title: '요청 관리', iconData: AppIcons.requestManagement),
-  register(title: '등록', iconData: AppIcons.register),
+  register(title: '내 물건', iconData: AppIcons.register),
   chat(title: '채팅', iconData: AppIcons.chat),
   myPage(title: '마이페이지', iconData: AppIcons.myPage);
 
