@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 class AppColors {
   // 공통
   static const Color primaryBlack = Color(0xFF1D1E27);
-  static const Color opacity30PrimaryBlack = Color(0x4D1D1E27); // 30% 불투명도 primaryBlack
+  static const Color opacity30PrimaryBlack =
+      Color(0x4D1D1E27); // 30% 불투명도 primaryBlack
   static const Color primaryYellow = Color(0xFFFFC300);
   static const Color secondaryBlack = Color(0xFF34353D);
   static const Color opacity10White = Color(0x1AFFFFFF); // 10% 불투명도 흰색
@@ -14,8 +15,9 @@ class AppColors {
   static const Color opacity80White = Color(0xCCFFFFFF); // 80% 불투명도 흰색
 
   static const Color opacity10Black = Color(0x1A000000); // 10% 불투명도 검정
-  static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정
   static const Color opacity15Black = Color(0x26000000); // 15% 불투명도 검정
+  static const Color opacity20Black = Color(0x33000000); // 20% 불투명도 검정
+  static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
@@ -85,5 +87,6 @@ class AppColors {
   static const Color warningRed = Color(0xFFFF5656); // 경고 아이콘 및 버튼 색상
 
   // 다이얼로그 배리어 (배경 오버레이)
-  static const Color dialogBarrier = Color(0x80000000); // 50% 불투명도 검정 (다이얼로그 배경)
+  static const Color dialogBarrier =
+      Color(0x80000000); // 50% 불투명도 검정 (다이얼로그 배경)
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 
 // 옵션 메뉴 항목 정의
 enum ItemMenuOption {
@@ -23,7 +24,7 @@ class ItemOptionsMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<ItemMenuOption>(
-      offset: Offset(0, 30.h),
+      offset: Offset(0, 12.h),
       position: PopupMenuPosition.under,
       color: AppColors.secondaryBlack,
       elevation: 4,
@@ -33,30 +34,25 @@ class ItemOptionsMenuButton extends StatelessWidget {
       constraints: BoxConstraints(
         minWidth: 146.w,
         maxWidth: 146.w,
+        maxHeight: 92.h,
       ),
       padding: EdgeInsets.zero,
+      menuPadding: EdgeInsets.zero,
       icon: Icon(
         AppIcons.dotsVertical,
-        size: 24.sp,
-        color: AppColors.opacity50White,
+        size: 30.sp,
+        color: AppColors.textColorWhite,
       ),
       itemBuilder: (context) => [
         // 수정 옵션
         PopupMenuItem<ItemMenuOption>(
           value: ItemMenuOption.edit,
-          height: 48.h,
-          padding: EdgeInsets.zero,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
-            child: Text(
-              '수정',
-              style: TextStyle(
-                color: AppColors.textColorWhite,
-                fontFamily: 'Pretendard',
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                height: 1.0,
-              ),
+          padding: EdgeInsets.only(left: 12.w),
+          height: 46.h,
+          child: Text(
+            '수정',
+            style: CustomTextStyles.p2.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -64,30 +60,25 @@ class ItemOptionsMenuButton extends StatelessWidget {
         PopupMenuItem<ItemMenuOption>(
           enabled: false,
           height: 1.h,
-          padding: EdgeInsets.symmetric(horizontal: 12.w),
-          child: Container(
-            width: 122.w,
+          padding: EdgeInsets.zero,
+          child: Divider(
+            color: AppColors.opacity10White,
+            thickness: 1.h,
             height: 1.h,
-            color: AppColors.textColorWhite.withValues(alpha: 10),
+            indent: 12.w,
+            endIndent: 12.w,
           ),
         ),
         // 삭제 옵션
         PopupMenuItem<ItemMenuOption>(
           value: ItemMenuOption.delete,
-          height: 48.h,
-          padding: EdgeInsets.zero,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
-            child: Text(
-              '삭제',
-              style: TextStyle(
-                color: AppColors.itemOptionsMenuDeleteText,
-                fontFamily: 'Pretendard',
-                fontSize: 14.sp,
+          padding: EdgeInsets.only(left: 12.w),
+          height: 46.h,
+          child: Text(
+            '삭제',
+            style: CustomTextStyles.p2.copyWith(
                 fontWeight: FontWeight.w600,
-                height: 1.0,
-              ),
-            ),
+                color: AppColors.itemOptionsMenuDeleteText),
           ),
         ),
       ],

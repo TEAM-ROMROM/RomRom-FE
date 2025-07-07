@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -26,17 +26,17 @@ class WarningDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8.r),
       ),
       elevation: 0,
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.symmetric(horizontal: 24.w),
+      backgroundColor: AppColors.secondaryBlack,
+      insetPadding: EdgeInsets.symmetric(horizontal: 40.w),
       child: Container(
         width: 312.w,
         height: 216.h,
         decoration: BoxDecoration(
           color: AppColors.secondaryBlack,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8.r),
           boxShadow: const [
             BoxShadow(
               color: AppColors.opacity15Black,
@@ -45,44 +45,38 @@ class WarningDialog extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          children: [
-            SizedBox(height: 24.h),
-            Center(
-              child: SvgPicture.asset(
-                'assets/images/warning.svg',
-                width: 40.w,
-                height: 40.h,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.warningRed,
-                  BlendMode.srcIn,
+        child: Padding(
+          padding: EdgeInsets.all(24.0.w),
+          child: Column(
+            children: [
+              Center(
+                child: Container(
+                  width: 40.w,
+                  height: 40.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.warningRed.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    AppIcons.warning,
+                    size: 28.h,
+                    color: AppColors.warningRed,
+                  ),
                 ),
               ),
-            ),
-            const Spacer(),
-            Text(
-              title,
-              style: CustomTextStyles.p2.copyWith(
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-                color: AppColors.opacity80White,
+              SizedBox(height: 16.h),
+              Text(
+                "$title\n$description",
+                style: CustomTextStyles.p2.copyWith(
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                  color: AppColors.opacity80White,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              description,
-              style: CustomTextStyles.p2.copyWith(
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-                color: AppColors.opacity80White,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const Spacer(),
-            Padding(
-              padding: EdgeInsets.only(left: 24.w, right: 24.w, bottom: 24.h),
-              child: Row(
+              SizedBox(height: 32.h),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildButton(
@@ -98,13 +92,14 @@ class WarningDialog extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  /// 취소, 삭제 버튼을 생성하는 메소드
   Widget _buildButton({
     required String text,
     required Color backgroundColor,
@@ -118,16 +113,14 @@ class WarningDialog extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
           elevation: 0,
           padding: EdgeInsets.zero,
         ),
         child: Text(
           text,
-          style: CustomTextStyles.p1.copyWith(
-            color: AppColors.textColorWhite,
-          ),
+          style: CustomTextStyles.p1,
           textAlign: TextAlign.center,
         ),
       ),
