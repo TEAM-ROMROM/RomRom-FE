@@ -398,6 +398,53 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                       ),
                     ),
 
+                    Container(
+                      height: 58.h,
+                      margin: EdgeInsets.only(bottom: 24.w),
+                      padding: EdgeInsets.only(left: 12.w, right: 23.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.aiSuggestionContainerBackground,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 5.w, vertical: 4.h),
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(4.r),
+                              border: Border.all(
+                                  color: AppColors.textColorWhite,
+                                  width: 0.5.w,
+                                  strokeAlign: BorderSide.strokeAlignInside),
+                            ),
+                            child: GradientText(
+                              text: 'AI 추천 가격',
+                              style: CustomTextStyles.p3
+                                  .copyWith(letterSpacing: -0.5.sp),
+                              gradient: const LinearGradient(
+                                colors: AppColors.aiGradient,
+                                stops: [0.0, 0.35, 0.7, 1.0],
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Text(
+                              'AI가 측정한 추천 가격이에요. 상황에 맞춰 조정해 최종 거래가는 직접 결정해 주세요 ',
+                              style: CustomTextStyles.p3.copyWith(
+                                fontWeight: FontWeight.w500,
+                                height: 1.4,
+                              ),
+                              maxLines: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     // 적정 가격 + AI 추천 가격
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -467,7 +514,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     SizedBox(height: 8.w),
                     RegisterCustomTextField(
                       hintText: '가격을 입력해주세요',
-                      suffixText: '원',
+                      prefixText: '₩',
                       keyboardType: TextInputType.number,
                       controller: priceController,
                     ),

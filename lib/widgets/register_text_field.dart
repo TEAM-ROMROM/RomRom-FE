@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -25,7 +26,7 @@ class RegisterCustomTextField extends StatelessWidget {
   final TextEditingController? controller;
   final bool readOnly;
   final Widget? suffixIcon;
-  final String suffixText;
+  final String prefixText;
   final VoidCallback? onTap;
 
   const RegisterCustomTextField({
@@ -37,9 +38,16 @@ class RegisterCustomTextField extends StatelessWidget {
     this.controller,
     this.readOnly = false,
     this.suffixIcon,
-    this.suffixText = '',
+    this.prefixText = '',
     this.onTap,
   });
+
+  String _formatNumber(String value) {
+    if (value.isEmpty) return '';
+    final number = int.tryParse(value.replaceAll(',', ''));
+    if (number == null) return value;
+    return NumberFormat('#,###').format(number);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,36 +59,98 @@ class RegisterCustomTextField extends StatelessWidget {
         strokeAlign: BorderSide.strokeAlignInside,
       ),
     );
+    final isNumberField = keyboardType == TextInputType.number;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        TextField(
-          controller: controller,
-          maxLength: maxLength,
-          maxLines: maxLines,
-          keyboardType: keyboardType,
-          readOnly: readOnly,
-          onTap: onTap,
-          style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
-          cursorColor: AppColors.textColorWhite,
-          decoration: InputDecoration(
-            hintText: hintText,
-            filled: true,
-            fillColor: AppColors.opacity10White,
-            border: inputBorder,
-            enabledBorder: inputBorder,
-            focusedBorder: inputBorder,
-            hintStyle:
-                CustomTextStyles.p2.copyWith(color: AppColors.opacity40White),
-            counterText: '', // 기본 counter 숨김
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-            suffixIcon: suffixIcon,
-            suffixText: suffixText,
-            suffixStyle:
-                CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
-          ),
-        ),
+        isNumberField && controller != null
+            ? ValueListenableBuilder<TextEditingValue>(
+                valueListenable: controller!,
+                builder: (context, value, child) {
+                  // 커서 위치 보정
+                  final selection = value.selection;
+                  final formatted = _formatNumber(value.text);
+                  if (value.text != formatted) {
+                    controller!.value = TextEditingValue(
+                      text: formatted,
+                      selection: TextSelection.collapsed(
+                        offset: formatted.length,
+                      ),
+                    );
+                  }
+                  return TextField(
+                    controller: controller,
+                    maxLength: maxLength,
+                    maxLines: maxLines,
+                    keyboardType: keyboardType,
+                    readOnly: readOnly,
+                    onTap: onTap,
+                    style: CustomTextStyles.p2
+                        .copyWith(color: AppColors.textColorWhite),
+                    cursorColor: AppColors.textColorWhite,
+                    decoration: InputDecoration(
+                      hintText: hintText,
+                      filled: true,
+                      fillColor: AppColors.opacity10White,
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      focusedBorder: inputBorder,
+                      hintStyle: CustomTextStyles.p2
+                          .copyWith(color: AppColors.opacity40White),
+                      counterText: '',
+                      contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w, vertical: 16.h),
+                      suffixIcon: suffixIcon,
+                      prefix: prefixText.isNotEmpty
+                          ? Padding(
+                              padding: EdgeInsets.only(right: 8.0.w),
+                              child: Text(
+                                prefixText,
+                                style: CustomTextStyles.p2
+                                    .copyWith(color: AppColors.textColorWhite),
+                              ),
+                            )
+                          : null,
+                    ),
+                  );
+                },
+              )
+            : TextField(
+                controller: controller,
+                maxLength: maxLength,
+                maxLines: maxLines,
+                keyboardType: keyboardType,
+                readOnly: readOnly,
+                onTap: onTap,
+                style: CustomTextStyles.p2
+                    .copyWith(color: AppColors.textColorWhite),
+                cursorColor: AppColors.textColorWhite,
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  filled: true,
+                  fillColor: AppColors.opacity10White,
+                  border: inputBorder,
+                  enabledBorder: inputBorder,
+                  focusedBorder: inputBorder,
+                  hintStyle: CustomTextStyles.p2
+                      .copyWith(color: AppColors.opacity40White),
+                  counterText: '',
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                  suffixIcon: suffixIcon,
+                  prefix: prefixText.isNotEmpty
+                      ? Padding(
+                          padding: EdgeInsets.only(right: 8.0.w),
+                          child: Text(
+                            prefixText,
+                            style: CustomTextStyles.p2
+                                .copyWith(color: AppColors.textColorWhite),
+                          ),
+                        )
+                      : null,
+                ),
+              ),
         if (maxLength != null && controller != null)
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller!,
