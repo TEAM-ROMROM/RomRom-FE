@@ -69,7 +69,6 @@ class RegisterCustomTextField extends StatelessWidget {
                 valueListenable: controller!,
                 builder: (context, value, child) {
                   // 커서 위치 보정
-                  final selection = value.selection;
                   final formatted = _formatNumber(value.text);
                   if (value.text != formatted) {
                     controller!.value = TextEditingValue(
