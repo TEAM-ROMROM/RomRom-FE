@@ -12,8 +12,6 @@ class AppIcons {
       IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData addItemPlus =
       IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData detailView =
-      IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData cancel =
       IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData location =
@@ -34,6 +32,8 @@ class AppIcons {
       IconData(0xe80e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData tempLogo =
       IconData(0xe810, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData detailView =
+      IconData(0xe81e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData itemRegisterHeart =
       IconData(0xe82b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData onboardingProgressCheck =

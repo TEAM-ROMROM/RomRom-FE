@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
-import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -43,7 +43,7 @@ class HomeFeedConditionTag extends StatelessWidget {
 /// transactionType 태그
 /// : 직거래, 택배, 추가금
 class HomeFeedTransactionTypeTag extends StatelessWidget {
-  final TransactionType type;
+  final ItemTradeOption type;
   const HomeFeedTransactionTypeTag({
     super.key,
     required this.type,

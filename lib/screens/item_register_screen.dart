@@ -7,12 +7,14 @@ import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
-import 'package:romrom_fe/enums/transaction_type.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
+import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
@@ -32,10 +34,10 @@ class ItemRegisterScreen extends StatefulWidget {
 class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   // 임시 상태 변수들
   int imageCount = 0;
-  String? selectedCategory;
-  String? selectedCondition;
-  List<String> selectedItemConditionTypes = [];
-  List<String> selectedTransactionTypes = [];
+  ItemCategories? selectedCategory;
+  ItemCondition? selectedCondition;
+  List<ItemCondition> selectedItemConditionTypes = [];
+  List<ItemTradeOption> selectedTradeOptions = [];
   bool useAiPrice = true;
 
   // 각 TextField의 controller 추가
@@ -44,11 +46,10 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   final TextEditingController priceController =
       TextEditingController(text: 'AI가 측정해준 가격이다냥');
   final TextEditingController locationController = TextEditingController();
-  // itemMethodOptions TransactionType name 리스트로 변경
-  List<String> itemTransactionOptions =
-      TransactionType.values.map((e) => e.name).toList();
+  // itemMethodOptions ItemTradeOption name 리스트로 변경
+  List<ItemTradeOption> itemTradeOptions = ItemTradeOption.values;
   // itemConditonOptions ItemCondition의 name 리스트로 변경
-  List itemConditonOptions = ItemCondition.values.map((e) => e.name).toList();
+  List<ItemCondition> itemConditonOptions = ItemCondition.values;
 
   final ImagePicker _picker = ImagePicker();
   List<XFile> imageFiles = []; // 선택된 이미지 저장
@@ -80,7 +81,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
         selectedCategory != null &&
         descriptionController.text.isNotEmpty &&
         selectedItemConditionTypes.isNotEmpty &&
-        selectedTransactionTypes.isNotEmpty &&
+        selectedTradeOptions.isNotEmpty &&
         priceController.text != '0' &&
         locationController.text.isNotEmpty &&
         imageFiles.isNotEmpty;
@@ -237,11 +238,11 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                           return RegisterCustomTextField(
                             hintText: '카테고리를 선택하세요',
                             controller: TextEditingController(
-                                text: selectedCategory ?? ''),
+                                text: selectedCategory?.name ?? ''),
                             readOnly: true,
                             onTap: () async {
                               const categories = ItemCategories.values;
-                              String? tempSelected = selectedCategory;
+                              ItemCategories? tempSelected = selectedCategory;
                               await showModalBottomSheet<void>(
                                 context: context,
                                 backgroundColor: AppColors.primaryBlack,
@@ -302,14 +303,14 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                                                       .map((category) {
                                                     final isSelected =
                                                         tempSelected ==
-                                                            category.name;
+                                                            category;
                                                     return CategoryChip(
                                                       label: category.name,
                                                       isSelected: isSelected,
                                                       onTap: () {
                                                         setInnerState(() {
                                                           tempSelected =
-                                                              category.name;
+                                                              category;
                                                         });
                                                       },
                                                     );
@@ -352,7 +353,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                         runSpacing: 8.w,
                         children: itemConditonOptions
                             .map((option) => RegisterOptionChip(
-                                  itemOption: option,
+                                  itemOption: option.name,
                                   isSelected: selectedItemConditionTypes
                                       .contains(option),
                                   onTap: () {
@@ -377,18 +378,18 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                       label: '거래방식',
                       field: Wrap(
                         spacing: 8.w,
-                        children: itemTransactionOptions
+                        children: itemTradeOptions
                             .map((option) => RegisterOptionChip(
-                                  itemOption: option,
+                                  itemOption: option.name,
                                   isSelected:
-                                      selectedTransactionTypes.contains(option),
+                                      selectedTradeOptions.contains(option),
                                   onTap: () {
                                     setState(() {
-                                      if (selectedTransactionTypes
+                                      if (selectedTradeOptions
                                           .contains(option)) {
-                                        selectedTransactionTypes.remove(option);
+                                        selectedTradeOptions.remove(option);
                                       } else {
-                                        selectedTransactionTypes.add(option);
+                                        selectedTradeOptions.add(option);
                                       }
                                     });
                                   },
@@ -504,6 +505,23 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                       isEnabled: isFormValid,
                       buttonText: '등록 완료',
                       buttonType: 2,
+                      enabledOnPressed: () {
+                        ItemApi().postItem(ItemRequest(
+                          itemName: titleController.text,
+                          itemDescription: descriptionController.text,
+                          itemCategory: selectedCategory!.serverName,
+                          itemCondition: selectedItemConditionTypes.isNotEmpty
+                              ? selectedItemConditionTypes.first.serverName
+                              : null,
+                          itemTradeOptions: selectedTradeOptions
+                              .map((e) => e.serverName)
+                              .toList(),
+                          itemPrice: int.parse(priceController.text),
+                          itemCustomTags: [],
+                          itemImages:
+                              imageFiles.map((e) => File(e.path)).toList(),
+                        ));
+                      },
                     ),
                     SizedBox(height: 24.w),
                   ],

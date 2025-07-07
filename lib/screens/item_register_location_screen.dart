@@ -37,13 +37,28 @@ class _ItemRegisterLocationScreenState
 
   Future<void> _initializeLocation() async {
     final hasPermission = await _locationService.requestPermission();
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      // FIXME : 디버깅용: 위치 권한 없을 때 서울 시청 좌표로 세팅
+      const seoulCityHall = NLatLng(37.5665, 126.9780);
+      setState(() {
+        _currentPosition = seoulCityHall;
+      });
+      await _updateAddress(seoulCityHall);
+      return;
+    }
     final position = await _locationService.getCurrentPosition();
     if (position != null) {
       setState(() {
         _currentPosition = _locationService.positionToLatLng(position);
       });
       await _updateAddress(_currentPosition!);
+    } else {
+      //FIXME : 디버깅용: 위치 못 받아올 때 서울 시청 좌표로 세팅
+      const seoulCityHall = NLatLng(37.5665, 126.9780);
+      setState(() {
+        _currentPosition = seoulCityHall;
+      });
+      await _updateAddress(seoulCityHall);
     }
   }
 
@@ -136,6 +151,10 @@ class _ItemRegisterLocationScreenState
                       isEnabled: _selectedAddress != null,
                       buttonText: '선택 완료',
                       buttonType: 2,
+                      enabledOnPressed: () {
+                        widget.onLocationSelected?.call(_selectedAddress!);
+                        Navigator.pop(context);
+                      },
                     ),
                   ),
                 ),
