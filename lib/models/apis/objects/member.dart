@@ -1,11 +1,10 @@
 // lib/models/apis/objects/member.dart
 import 'package:json_annotation/json_annotation.dart';
-import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 
 part 'member.g.dart';
 
-@JsonSerializable(explicitToJson: true)
-class Member extends BaseEntity {
+@JsonSerializable()
+class Member {
   final String? memberId;
   final String? email;
   final String? nickname;
@@ -13,12 +12,14 @@ class Member extends BaseEntity {
   final String? profileUrl;
   final String? role;
   final String? accountStatus;
-  final bool? isFirstItemPosted;
   final bool? isFirstLogin;
+  final bool? isItemCategorySaved;
+  final bool? isFirstItemPosted;
+  final bool? isMemberLocationSaved;
+  final bool? isRequiredTermsAgreed;
+  final bool? isMarketingInfoAgreed;
 
   Member({
-    super.createdDate,
-    super.updatedDate,
     this.memberId,
     this.email,
     this.nickname,
@@ -26,12 +27,14 @@ class Member extends BaseEntity {
     this.profileUrl,
     this.role,
     this.accountStatus,
-    this.isFirstItemPosted,
     this.isFirstLogin,
+    this.isItemCategorySaved,
+    this.isFirstItemPosted,
+    this.isMemberLocationSaved,
+    this.isRequiredTermsAgreed,
+    this.isMarketingInfoAgreed,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);
-
-  @override
   Map<String, dynamic> toJson() => _$MemberToJson(this);
 }

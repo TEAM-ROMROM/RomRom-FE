@@ -10,6 +10,8 @@ class AppIcons {
       IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData navigateBefore =
       IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData addItemPlus =
+      IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData detailView =
       IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData cancel =
@@ -28,6 +30,12 @@ class AppIcons {
       IconData(0xe80c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData chat =
       IconData(0xe80d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData warning =
+      IconData(0xe80e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData tempLogo =
       IconData(0xe810, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData itemRegisterHeart =
+      IconData(0xe82b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData onboardingProgressCheck =
+      IconData(0xe82c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

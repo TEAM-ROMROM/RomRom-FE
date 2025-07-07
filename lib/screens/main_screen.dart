@@ -35,12 +35,14 @@ class _MainScreenState extends State<MainScreen> {
         NavigationTabItems.fromIndex(_currentTabIndex);
 
     return Scaffold(
-      appBar: _currentTabIndex != 0
+      resizeToAvoidBottomInset: true,
+      extendBody: false,
+      appBar: (_currentTabIndex != 0 && _currentTabIndex != 2)
           ? AppBar(
               backgroundColor: Colors.transparent,
               title: Text(currentTab.title, style: CustomTextStyles.h3),
             )
-          : null, // 홈 탭에서는 AppBar 숨김
+          : null, // 홈 탭과 등록 탭에서는 AppBar 숨김
       body: _navigationTabScreens[_currentTabIndex],
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _currentTabIndex,

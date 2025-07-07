@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
+import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 
 import 'screens/onboarding/onboarding_flow_screen.dart';
@@ -16,17 +19,35 @@ import 'screens/onboarding/onboarding_flow_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initialize(); // 초기화 실행
+
   final initialScreen = await _determineInitialScreen();
 
-  // 옵션 1: 하단 오버레이를 포함하도록 수정 (권장)
-  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-      overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
+  // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  // 옵션 2: 또는 이 라인을 완전히 제거하여 기본값 사용
-  // (SystemChrome.setEnabledSystemUIMode 관련 코드 제거)
+  // 시스템 오버레이 색상 설정
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    systemNavigationBarColor: Colors.transparent,
+    statusBarColor: Colors.transparent,
+  ));
+
+  // 안드로이드에서 제스처 모드인지 확인
+  bool isGestureMode = false;
+  if (Platform.isAndroid) {
+    isGestureMode = await AndroidNavigationMode.isGestureMode();
+    debugPrint('[main.dart] isGestureMode: $isGestureMode');
+  } else {
+    // iOS에서는 제스처 모드가 없으므로 기본값 사용
+    isGestureMode = true;
+  }
 
   runApp(
-    ProviderScope(child: MyApp(initialScreen: initialScreen)),
+    ProviderScope(
+      child: MyApp(
+        initialScreen: initialScreen,
+        isGestureMode: isGestureMode,
+      ),
+    ),
   );
 }
 
@@ -36,38 +57,46 @@ Future<Widget> _determineInitialScreen() async {
   final TokenManager tokenManager = TokenManager();
   final String? refreshToken = await tokenManager.getRefreshToken();
 
-  // 리프레시 토큰이 없으면 로그인 화면
-  if (refreshToken == null) return const LoginScreen();
+  if (refreshToken == null) {
+    debugPrint('리프레시 토큰 없음: 로그인 화면으로 이동');
+    return const LoginScreen();
+  }
 
-  // 토큰으로 로그인 시도
   final isLoggedIn = await romAuthApi.refreshAccessToken();
-  if (!isLoggedIn) return const LoginScreen();
+  if (!isLoggedIn) {
+    debugPrint('토큰 갱신 실패: 로그인 화면으로 이동');
+    return const LoginScreen();
+  }
 
-  // 사용자 정보 확인
   var userInfo = UserInfo();
   try {
     await userInfo.getUserInfo();
+
+    if (userInfo.needsOnboarding) {
+      debugPrint('온보딩 필요: ${userInfo.nextOnboardingStep} 단계로 이동');
+      return OnboardingFlowScreen(
+        initialStep: userInfo.nextOnboardingStep,
+      );
+    }
+
+    debugPrint('토큰 유효 및 온보딩 완료: 메인 화면으로 이동');
+    return const MainScreen();
   } catch (e) {
     debugPrint('사용자 정보 조회 실패: $e');
     return const LoginScreen();
   }
-
-  // 온보딩이 필요한지 확인
-  if (userInfo.needsOnboarding) {
-    return OnboardingFlowScreen(
-      initialStep: userInfo.nextOnboardingStep,
-    );
-  }
-
-  // 온보딩이 완료된 경우 메인 화면
-  return const MainScreen();
 }
 
 /// 앱의 루트 위젯
 class MyApp extends StatelessWidget {
   final Widget initialScreen;
+  final bool isGestureMode;
 
-  const MyApp({super.key, required this.initialScreen});
+  const MyApp({
+    super.key,
+    required this.initialScreen,
+    required this.isGestureMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -76,15 +105,17 @@ class MyApp extends StatelessWidget {
       useInheritedMediaQuery: true,
       minTextAdapt: true,
       child: Builder(builder: (context) {
-        return MediaQuery(
-          // textScaleFactor: 1.0으로 설정하여 텍스트 크기 조정 방지
-          data: MediaQuery.of(context)
-              .copyWith(textScaler: const TextScaler.linear(1.0)),
-          child: MaterialApp(
-            title: 'RomRom',
-            theme: AppTheme.defaultTheme,
-            // home: initialScreen,
-            home: const MainScreen(),
+        return SafeArea(
+          top: false,
+          bottom: !isGestureMode,
+          child: MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(1.0)),
+            child: MaterialApp(
+              title: 'RomRom',
+              theme: AppTheme.defaultTheme,
+              home: initialScreen,
+            ),
           ),
         );
       }),
