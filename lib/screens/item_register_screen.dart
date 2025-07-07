@@ -38,13 +38,13 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   ItemCondition? selectedCondition;
   List<ItemCondition> selectedItemConditionTypes = [];
   List<ItemTradeOption> selectedTradeOptions = [];
-  bool useAiPrice = true;
+  bool useAiPrice = false;
 
   // 각 TextField의 controller 추가
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController priceController =
-      TextEditingController(text: 'AI가 측정해준 가격이다냥');
+      TextEditingController(text: '0');
   final TextEditingController locationController = TextEditingController();
   // itemMethodOptions ItemTradeOption name 리스트로 변경
   List<ItemTradeOption> itemTradeOptions = ItemTradeOption.values;
@@ -67,10 +67,15 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
 
   // ai 가격 측정 함수
   Future<void> _measureAiPrice() async {
-    const int aiPrice = 0;
+    final predictedPrice = await ItemApi().pricePredict(ItemRequest(
+      itemName: titleController.text,
+      itemDescription: descriptionController.text,
+      itemCondition: selectedItemConditionTypes.isNotEmpty
+          ? selectedItemConditionTypes.first.serverName
+          : null,
+    ));
     setState(() {
-      priceController.text = aiPrice.toString();
-      debugPrint("AI 가격 측정 api 필요 - 임시 가격입니다.");
+      priceController.text = predictedPrice.toString();
     });
   }
 
@@ -90,7 +95,6 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   @override
   void initState() {
     // TODO: implement initState
-    _measureAiPrice();
     super.initState();
   }
 
@@ -442,7 +446,15 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                           indicatorSize: Size(18.w, 18.h),
                           borderWidth: 0,
                           padding: EdgeInsets.all(1.w),
-                          onChanged: (b) => setState(() => useAiPrice = b),
+                          onChanged: (b) {
+                            setState(() => useAiPrice = b);
+                            if (b &&
+                                titleController.text.isNotEmpty &&
+                                descriptionController.text.isNotEmpty &&
+                                selectedItemConditionTypes.isNotEmpty) {
+                              _measureAiPrice();
+                            }
+                          },
                           styleBuilder: (b) => ToggleStyle(
                             backgroundGradient: b
                                 ? const LinearGradient(

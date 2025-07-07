@@ -89,7 +89,8 @@ class ApiClient {
             }
             return response;
           } else {
-            throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
+            throw Exception(
+                'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
           }
         } else {
           throw Exception('토큰 갱신 실패: 재로그인 필요');
@@ -156,7 +157,8 @@ class ApiClient {
           if (response.statusCode >= 200 && response.statusCode < 300) {
             return response;
           } else {
-            throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
+            throw Exception(
+                'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
           }
         } else {
           throw Exception('토큰 갱신 실패: 재로그인 필요');
@@ -227,18 +229,18 @@ class ApiClient {
     Map<String, String> headers = {
       'Content-Type': 'application/json',
     };
-    
+
     if (accessToken != null) {
       headers['Authorization'] = 'Bearer $accessToken';
     }
-    
+
     String? jsonBody;
     if (body != null) {
       jsonBody = jsonEncode(body);
     }
-    
+
     http.Response response;
-    
+
     // HTTP 메소드에 따라 요청 실행
     switch (method.toUpperCase()) {
       case 'GET':
@@ -259,7 +261,7 @@ class ApiClient {
       default:
         throw Exception('지원하지 않는 HTTP 메소드: $method');
     }
-    
+
     return response;
   }
 

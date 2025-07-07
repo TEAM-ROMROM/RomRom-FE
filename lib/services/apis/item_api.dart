@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -90,10 +91,36 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
+        debugPrint(
+            '물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
       },
     );
 
     return itemResponse;
   }
-} 
+
+  /// AI 가격 예측 API
+  /// `POST /api/item/price/predict`
+  Future<int> pricePredict(ItemRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/item/price/predict';
+    int predictedPrice = 0;
+
+    final Map<String, dynamic> fields = {
+      'itemName': request.itemName,
+      'itemDescription': request.itemDescription,
+      'itemCondition': request.itemCondition,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        predictedPrice = responseData['data'];
+        debugPrint('AI 가격 예측 성공: $predictedPrice');
+      },
+    );
+
+    return predictedPrice;
+  }
+}
