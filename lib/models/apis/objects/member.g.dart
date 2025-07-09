@@ -7,6 +7,12 @@ part of 'member.dart';
 // **************************************************************************
 
 Member _$MemberFromJson(Map<String, dynamic> json) => Member(
+      createdDate: json['createdDate'] == null
+          ? null
+          : DateTime.parse(json['createdDate'] as String),
+      updatedDate: json['updatedDate'] == null
+          ? null
+          : DateTime.parse(json['updatedDate'] as String),
       memberId: json['memberId'] as String?,
       email: json['email'] as String?,
       nickname: json['nickname'] as String?,
@@ -23,6 +29,8 @@ Member _$MemberFromJson(Map<String, dynamic> json) => Member(
     );
 
 Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
+      'createdDate': instance.createdDate?.toIso8601String(),
+      'updatedDate': instance.updatedDate?.toIso8601String(),
       'memberId': instance.memberId,
       'email': instance.email,
       'nickname': instance.nickname,

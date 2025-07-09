@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
@@ -20,7 +21,7 @@ class ApiClient {
     Map<String, dynamic>? fields,
     Map<String, List<File>>? files,
     bool isAuthRequired = true,
-    required Function(Map<String, dynamic>) onSuccess,
+    required Function(dynamic) onSuccess,
   }) async {
     try {
       // 인증이 필요한 경우 토큰 불러옴
@@ -195,17 +196,30 @@ class ApiClient {
       });
     }
 
-    // 파일 추가
+    // 파일 추가 (MIME type 명시)
     if (files != null) {
       for (var entry in files.entries) {
         for (var file in entry.value) {
           var stream = http.ByteStream(file.openRead());
           var length = await file.length();
+
+          // 파일 확장자로 MIME 타입 추정
+          String path = file.path.toLowerCase();
+          String mimeType = 'application/octet-stream';
+          if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+            mimeType = 'image/jpeg';
+          } else if (path.endsWith('.png')) {
+            mimeType = 'image/png';
+          } else if (path.endsWith('.gif')) {
+            mimeType = 'image/gif';
+          }
+
           var multipartFile = http.MultipartFile(
             entry.key,
             stream,
             length,
             filename: file.path.split('/').last,
+            contentType: MediaType.parse(mimeType), // MIME 타입 명시
           );
           request.files.add(multipartFile);
         }

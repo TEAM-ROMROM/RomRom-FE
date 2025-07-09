@@ -14,7 +14,9 @@ ItemImage _$ItemImageFromJson(Map<String, dynamic> json) => ItemImage(
           ? null
           : DateTime.parse(json['updatedDate'] as String),
       itemImageId: json['itemImageId'] as String?,
-      item: json['item'] as String?,
+      item: json['item'] == null
+          ? null
+          : Item.fromJson(json['item'] as Map<String, dynamic>),
       imageUrl: json['imageUrl'] as String?,
       filePath: json['filePath'] as String?,
       originalFileName: json['originalFileName'] as String?,
@@ -26,7 +28,7 @@ Map<String, dynamic> _$ItemImageToJson(ItemImage instance) => <String, dynamic>{
       'createdDate': instance.createdDate?.toIso8601String(),
       'updatedDate': instance.updatedDate?.toIso8601String(),
       'itemImageId': instance.itemImageId,
-      'item': instance.item,
+      'item': instance.item?.toJson(),
       'imageUrl': instance.imageUrl,
       'filePath': instance.filePath,
       'originalFileName': instance.originalFileName,
