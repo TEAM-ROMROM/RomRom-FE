@@ -572,7 +572,8 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                             itemTradeOptions: selectedTradeOptions
                                 .map((e) => e.serverName)
                                 .toList(),
-                            itemPrice: int.parse(priceController.text),
+                            itemPrice: int.parse(
+                                priceController.text.replaceAll(',', '')),
                             itemCustomTags: [],
                             itemImages:
                                 imageFiles.map((e) => File(e.path)).toList(),
