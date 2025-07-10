@@ -90,10 +90,43 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
+        debugPrint(
+            '물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
       },
     );
 
     return itemResponse;
   }
-} 
+
+  /// AI 가격 예측 API
+  /// `POST /api/item/price/predict`
+  Future<int> pricePredict(ItemRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/item/price/predict';
+    int predictedPrice = 0;
+
+    final Map<String, dynamic> fields = {
+      'itemName': request.itemName,
+      'itemDescription': request.itemDescription,
+      'itemCondition': request.itemCondition,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        // 응답이 int형이거나 Map형일 수 있으므로 안전하게 처리
+        if (responseData is int) {
+          predictedPrice = responseData;
+        } else if (responseData is Map<String, dynamic>) {
+          predictedPrice = responseData['data'] ?? 0;
+        } else {
+          predictedPrice = 0;
+        }
+        debugPrint('AI 가격 예측 성공: $predictedPrice');
+      },
+    );
+
+    return predictedPrice;
+  }
+}

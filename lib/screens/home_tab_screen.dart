@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
-import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -340,7 +340,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       // 랜덤으로 거래 유형 선택 (1~3개)
       final transactionTypeCount = random.nextInt(2) + 1; // 1~3개 선택
       final shuffledTransactionTypes =
-          List<TransactionType>.from(TransactionType.values)..shuffle();
+          List<ItemTradeOption>.from(ItemTradeOption.values)..shuffle();
       final selectedTransactionTypes =
           shuffledTransactionTypes.take(transactionTypeCount).toList();
 

@@ -14,7 +14,7 @@ class ItemDetail {
   final int? likeCount;
   final int? price;
   final String? createdDate;
-  final List<String>? imageUrls;
+  final List<String>? itemImagePaths;
   final List<String>? itemCustomTags;
 
   ItemDetail({
@@ -28,12 +28,12 @@ class ItemDetail {
     this.likeCount,
     this.price,
     this.createdDate,
-    this.imageUrls,
+    this.itemImagePaths,
     this.itemCustomTags,
   });
 
-  factory ItemDetail.fromJson(Map<String, dynamic> json) => 
+  factory ItemDetail.fromJson(Map<String, dynamic> json) =>
       _$ItemDetailFromJson(json);
-  
+
   Map<String, dynamic> toJson() => _$ItemDetailToJson(this);
-} 
+}

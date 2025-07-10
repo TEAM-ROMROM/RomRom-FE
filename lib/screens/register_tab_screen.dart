@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/widgets/common/item_options_menu.dart';
 import 'dart:async';
 import '../utils/common_utils.dart';
@@ -278,8 +279,19 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(100.r),
-                    onTap: () {
-                      // TODO : 등록하기 화면으로 이동
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ItemRegisterScreen(
+                            onClose: () {
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                      );
+                      // 등록 화면에서 돌아온 뒤 필요한 상태 갱신
+                      setState(() {});
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(

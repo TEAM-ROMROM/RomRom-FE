@@ -1,10 +1,11 @@
 // lib/models/apis/objects/member.dart
 import 'package:json_annotation/json_annotation.dart';
+import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 
 part 'member.g.dart';
 
 @JsonSerializable()
-class Member {
+class Member extends BaseEntity {
   final String? memberId;
   final String? email;
   final String? nickname;
@@ -20,6 +21,8 @@ class Member {
   final bool? isMarketingInfoAgreed;
 
   Member({
+    super.createdDate,
+    super.updatedDate,
     this.memberId,
     this.email,
     this.nickname,
@@ -36,5 +39,6 @@ class Member {
   });
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);
+  @override
   Map<String, dynamic> toJson() => _$MemberToJson(this);
 }

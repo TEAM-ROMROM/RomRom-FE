@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/price_tag.dart';
-import 'package:romrom_fe/enums/transaction_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -43,7 +43,7 @@ class HomeFeedConditionTag extends StatelessWidget {
 /// transactionType 태그
 /// : 직거래, 택배, 추가금
 class HomeFeedTransactionTypeTag extends StatelessWidget {
-  final TransactionType type;
+  final ItemTradeOption type;
   const HomeFeedTransactionTypeTag({
     super.key,
     required this.type,
@@ -82,16 +82,9 @@ class HomeFeedAiTag extends StatelessWidget {
     // border
     final gradientBorder = GradientBoxBorder(
       gradient: LinearGradient(
-        colors: [
-          AppColors.aiTagGradientBorder1
-              .withValues(alpha: isActive ? 1.0 : 0.4),
-          AppColors.aiTagGradientBorder2
-              .withValues(alpha: isActive ? 1.0 : 0.4),
-          AppColors.aiTagGradientBorder3
-              .withValues(alpha: isActive ? 1.0 : 0.4),
-          AppColors.aiTagGradientBorder4
-              .withValues(alpha: isActive ? 1.0 : 0.4),
-        ],
+        colors: AppColors.aiGradient
+            .map((color) => color.withValues(alpha: isActive ? 1.0 : 0.4))
+            .toList(),
         stops: const [0.0, 0.35, 0.70, 1.0],
       ),
       width: 1.w,
@@ -142,14 +135,9 @@ class HomeFeedAiAnalysisTag extends StatelessWidget {
   Widget build(BuildContext context) {
     // border
     final gradientBorder = GradientBoxBorder(
-      gradient: LinearGradient(
-        colors: [
-          AppColors.aiTagGradientBorder1.withValues(alpha: 1.0),
-          AppColors.aiTagGradientBorder2.withValues(alpha: 1.0),
-          AppColors.aiTagGradientBorder3.withValues(alpha: 1.0),
-          AppColors.aiTagGradientBorder4.withValues(alpha: 1.0),
-        ],
-        stops: const [0.0, 0.35, 0.70, 1.0],
+      gradient: const LinearGradient(
+        colors: AppColors.aiGradient,
+        stops: [0.0, 0.35, 0.70, 1.0],
       ),
       width: 1.w,
     );

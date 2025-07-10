@@ -10,6 +10,7 @@ class AppColors {
   static const Color opacity10White = Color(0x1AFFFFFF); // 10% 불투명도 흰색
   static const Color opacity20White = Color(0x33FFFFFF); // 20% 불투명도 흰색
   static const Color opacity30White = Color(0x4DFFFFFF); // 30% 불투명도 흰색
+  static const Color opacity40White = Color(0x66FFFFFF); // 40% 불투명도 흰색
   static const Color opacity50White = Color(0x80FFFFFF); // 50% 불투명도 흰색
   static const Color opacity60White = Color(0x99FFFFFF); // 60% 불투명도 흰색
   static const Color opacity80White = Color(0xCCFFFFFF); // 80% 불투명도 흰색
@@ -18,6 +19,7 @@ class AppColors {
   static const Color opacity15Black = Color(0x26000000); // 15% 불투명도 검정
   static const Color opacity20Black = Color(0x33000000); // 20% 불투명도 검정
   static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정
+  static const Color opacity80Black = Color(0xCC000000); // 80% 불투명도 검정
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
@@ -56,14 +58,6 @@ class AppColors {
 
   // AI 태그 및 버튼
   static const Color aiTagBackground = Color(0xFF121A1A); // 어두운 배경
-  static const Color aiTagGradientBorder1 =
-      Color(0xFF5889F2); // 파란 테두리(Gradient 1)
-  static const Color aiTagGradientBorder2 =
-      Color(0xFF9858F2); // 보라 테두리(Gradient 2)
-  static const Color aiTagGradientBorder3 =
-      Color(0xFFF258F2); // 핑크 테두리(Gradient 3)
-  static const Color aiTagGradientBorder4 =
-      Color(0xFFF25893); // 다홍 테두리(Gradient 4)
   static const Color aiButtonGlow = Color(0xFF7B00FF); // 보라색 광택 효과
 
   // 온보딩 프로그레스 헤더
@@ -89,4 +83,22 @@ class AppColors {
   // 다이얼로그 배리어 (배경 오버레이)
   static const Color dialogBarrier =
       Color(0x80000000); // 50% 불투명도 검정 (다이얼로그 배경)
+
+  // 물품 등록 화면
+  // 물품 교환 AI 추천 가격 토글 Switch
+  static const Color toggleSwitchIndicatorShadow =
+      Color(0x40000000); // 검은색, opacity 25%
+  static const Color aiSuggestionContainerBackground =
+      Color(0x4DCF7DFF); // ai 추천 가격 태그 배경색
+  // 물품 사진
+  static const Color itemPictureRemoveButtonBackground =
+      Color(0xFFD2D2D2); // 물품 사진 삭제 버튼 배경색
+
+  // ai 그라데이션
+  static const List<Color> aiGradient = [
+    Color(0xFF5889F2), // 파란 테두리(Gradient 1)
+    Color(0xFF9858F2), // 보라 테두리(Gradient 2)
+    Color(0xFFF258F2), // 핑크 테두리(Gradient 3)
+    Color(0xFFF25893), // 다홍 테두리(Gradient 4)
+  ];
 }

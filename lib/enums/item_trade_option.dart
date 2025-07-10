@@ -1,9 +1,10 @@
 enum ItemTradeOption {
-  extraCharge('추가금'),
-  directOnly('직거래만'),
-  deliveryOnly('택배거래만');
+  extraCharge(name: '추가금', serverName: 'EXTRA_CHARGE'),
+  directOnly(name: '직거래만', serverName: 'DIRECT_ONLY'),
+  deliveryOnly(name: '택배거래만', serverName: 'DELIVERY_ONLY');
 
-  final String description;
-  
-  const ItemTradeOption(this.description);
-} 
+  final String name;
+  final String serverName;
+
+  const ItemTradeOption({required this.name, required this.serverName});
+}
