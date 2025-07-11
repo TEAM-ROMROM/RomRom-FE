@@ -64,9 +64,9 @@ BoxDecoration buildBoxDecoration(Color color, BorderRadius radius) {
   return BoxDecoration(color: color, borderRadius: radius);
 }
 
-/// 가격을 "1,000원" 형식으로 반환
+/// 가격을 "1,000" 형식으로 반환
 String formatPrice(int price) {
-  final formatter = NumberFormat('#,###원');
+  final formatter = NumberFormat('#,###');
   return formatter.format(price);
 }
 
