@@ -10,10 +10,15 @@ import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
+
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/widgets/fan_card_dial.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:romrom_fe/screens/report_screen.dart';
+import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -446,18 +451,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           Positioned(
             right: 24.w,
             top: MediaQuery.of(context).padding.top, // SafeArea 기준으로 margin 줌
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    // TODO: 더보기 기능 구현
-                    debugPrint('더보기 버튼 클릭 - 기능 구현 예정');
-                  },
-                  child: Icon(AppIcons.dotsVertical,
-                      size: 30.sp, color: AppColors.textColorWhite),
-                ),
-              ],
+            child: ReportMenuButton(
+              onReportPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReportScreen(),
+                  ),
+                );
+              },
             ),
           ),
       ],
