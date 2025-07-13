@@ -7,6 +7,8 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/enums/item_report_reason.dart';
 import 'package:romrom_fe/services/apis/report_api.dart';
+import 'package:romrom_fe/widgets/common/common_success_modal.dart';
+import 'package:romrom_fe/widgets/common/common_fail_modal.dart';
 
 /// 신고하기 페이지
 class ReportScreen extends StatefulWidget {
@@ -141,23 +143,34 @@ class _ReportScreenState extends State<ReportScreen> {
               buttonText: '신고 하기',
               buttonType: 2,
               enabledOnPressed: () async {
-                final api = ReportApi();
-                final success = await api.reportItem(
-                  itemId: widget.itemId,
-                  itemReportReasons:
-                      _selectedReasons.map((e) => e.id).toSet(),
-                  extraComment: _extraCommentController.text.trim(),
-                );
+                bool success = true;
+                try {
+                  final api = ReportApi();
+                  await api.reportItem(
+                    itemId: widget.itemId,
+                    itemReportReasons:
+                        _selectedReasons.map((e) => e.id).toSet(),
+                    extraComment: _extraCommentController.text.trim(),
+                  );
+                } catch (e) {
+                  debugPrint('신고 요청 중 오류: $e');
+                  success = false;
+                }
 
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(success ? '신고가 접수되었습니다.' : '신고에 실패했습니다.'),
-                      backgroundColor:
-                          success ? Colors.green : Colors.redAccent,
+                if (!mounted) return;
+
+                if (success) {
+                  Navigator.of(context).pop(true); // 성공 결과 반환
+                } else {
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => CommonFailModal(
+                      titleLine1: '오류가 발생했습니다.',
+                      titleLine2: '잠시 후 다시 시도해 주세요.',
+                      onConfirm: () => Navigator.of(context).pop(),
                     ),
                   );
-                  if (success) Navigator.of(context).pop();
                 }
               },
             ),

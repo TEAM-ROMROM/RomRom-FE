@@ -19,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
+import 'package:romrom_fe/widgets/common/common_success_modal.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -461,8 +462,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             right: 24.w,
             top: MediaQuery.of(context).padding.top, // SafeArea 기준으로 margin 줌
             child: ReportMenuButton(
-              onReportPressed: () {
-                Navigator.push(
+              onReportPressed: () async {
+                final bool? reported = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ReportScreen(
@@ -470,6 +471,17 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     ),
                   ),
                 );
+
+                if (reported == true && mounted) {
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => CommonSuccessModal(
+                      message: '신고가 접수되었습니다.',
+                      onConfirm: () => Navigator.of(context).pop(),
+                    ),
+                  );
+                }
               },
             ),
           ),
