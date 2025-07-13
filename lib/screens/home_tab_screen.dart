@@ -10,6 +10,11 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/models/apis/responses/item_detail.dart';
+import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/widgets/fan_card_dial.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +33,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 코치마크 전용 페이지 컨트롤러
   final PageController _coachMarkPageController = PageController();
   // 피드 아이템 목록
-  List<HomeFeedItem> _feedItems = [];
+  final List<HomeFeedItem> _feedItems = [];
+  int _currentPage = 0;
+  final int _pageSize = 10;
   // 초기 로딩 상태
   bool _isLoading = true;
   // 추가 아이템 로딩 상태
@@ -255,11 +262,19 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     });
 
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      final itemApi = ItemApi();
+      final response = await itemApi.getItems(ItemRequest(
+        pageNumber: _currentPage,
+        pageSize: _pageSize,
+      ));
 
       if (!mounted) return;
+
       setState(() {
-        _feedItems = _getMockItems();
+        _feedItems
+          ..clear()
+          ..addAll(_convertToFeedItems(response.itemDetailPage?.content ?? []));
+        _hasMoreItems = !(response.itemDetailPage?.last ?? true);
         _isLoading = false;
       });
     } catch (e) {
@@ -284,19 +299,19 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     });
 
     try {
-      // 실제 앱에서는 페이지네이션을 사용한 API 호출
-      await Future.delayed(const Duration(seconds: 1));
+      _currentPage += 1;
+      final itemApi = ItemApi();
+      final response = await itemApi.getItems(ItemRequest(
+        pageNumber: _currentPage,
+        pageSize: _pageSize,
+      ));
 
-      final newItems = _getMockItems(startId: _feedItems.length + 1);
+      final newItems = _convertToFeedItems(response.itemDetailPage?.content ?? []);
 
       setState(() {
         _feedItems.addAll(newItems);
+        _hasMoreItems = !(response.itemDetailPage?.last ?? true);
         _isLoadingMore = false;
-
-        // 데이터가 일정량 이상이면 더 이상 로드하지 않음 (시뮬레이션)
-        if (_feedItems.length > 30) {
-          _hasMoreItems = false;
-        }
       });
     } catch (e) {
       setState(() {
@@ -310,66 +325,43 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
   }
 
-  /// 테스트용 아이템 생성
-  /// FIXME: 실제 앱에서는 API를 통해 데이터를 받아와야 함.
-  List<HomeFeedItem> _getMockItems({int startId = 1}) {
-    // 테스트용 이미지 URL
-    final List<String> placeholderImages = [
-      'https://picsum.photos/400/600?random=1',
-      'https://picsum.photos/400/600?random=2',
-      'https://picsum.photos/400/600?random=3',
-      'https://picsum.photos/400/600?random=4',
-      'https://picsum.photos/400/600?random=5',
-    ];
+  /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
+  List<HomeFeedItem> _convertToFeedItems(List<ItemDetail> details) {
+    return List<HomeFeedItem>.generate(details.length, (index) {
+      final d = details[index];
 
-    List<HomeFeedItem> items = [];
+      // 카테고리/상태/옵션 매핑
+      ItemCondition cond = ItemCondition.newItem;
+      try {
+        cond = item_cond.ItemCondition.values
+            .firstWhere((e) => e.serverName == d.itemCondition);
+      } catch (_) {}
 
-    // 랜덤값 생성을 위한 객체
-    final random = Random();
+      final opts = <ItemTradeOption>[];
+      if (d.itemTradeOptions != null) {
+        for (final s in d.itemTradeOptions!) {
+          try {
+            opts.add(ItemTradeOption.values
+                .firstWhere((e) => e.serverName == s));
+          } catch (_) {}
+        }
+      }
 
-    // 사용상태 enum 목록
-    const itemConditions = ItemCondition.values;
-
-    // 가격 태그 enum 목록
-    const priceTags = PriceTag.values;
-
-    for (int i = 0; i < 5; i++) {
-      int id = startId + i;
-      bool isEven = id % 2 == 0;
-
-      // 랜덤으로 거래 유형 선택 (1~3개)
-      final transactionTypeCount = random.nextInt(2) + 1; // 1~3개 선택
-      final shuffledTransactionTypes =
-          List<ItemTradeOption>.from(ItemTradeOption.values)..shuffle();
-      final selectedTransactionTypes =
-          shuffledTransactionTypes.take(transactionTypeCount).toList();
-
-      items.add(
-        HomeFeedItem(
-          id: id,
-          price: isEven ? 120000 : 55000 + (id * 1000),
-          location: isEven ? '광진구 화양동' : '송파구 잠실동',
-          date: '2025년 1월 ${id + 1}일',
-          itemCondition: itemConditions[random.nextInt(itemConditions.length)],
-          transactionTypes: selectedTransactionTypes,
-          priceTag: isEven ? priceTags[0] : priceTags[1],
-          // 짝수 ID는 AI 분석 적정가 표시
-          profileImageUrl: 'https://picsum.photos/100/100?random=$id',
-          likeCount: isEven ? 4 : 12 + id,
-          imageUrls: [
-            placeholderImages[id % placeholderImages.length],
-            placeholderImages[(id + 1) % placeholderImages.length],
-            placeholderImages[(id + 2) % placeholderImages.length],
-          ],
-          description: isEven
-              ? '테니스 라켓과 공 판매합니다. 상태 좋아요.'
-              : '신발 판매합니다. 한번도 신지 않은 새상품이에요.',
-          hasAiAnalysis: isEven,
-        ),
+      return HomeFeedItem(
+        id: index + _feedItems.length + 1,
+        price: d.price ?? 0,
+        location: '미지정',
+        date: d.createdDate ?? '',
+        itemCondition: cond,
+        transactionTypes: opts,
+        priceTag: null,
+        profileImageUrl: 'https://picsum.photos/100/100?random=${index + 1}', //FIXME: 프로필 이미지 추가 필요
+        likeCount: d.likeCount ?? 0,
+        imageUrls: d.itemImagePaths ?? [''],
+        description: d.itemDescription ?? '',
+        hasAiAnalysis: false,
       );
-    }
-
-    return items;
+    });
   }
 
   @override

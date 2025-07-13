@@ -114,25 +114,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               topRight: Radius.circular(4.r),
                               bottomRight: Radius.circular(20.r),
                               bottomLeft: Radius.circular(20.r)),
-                          child: Image.network(
+                          child: _buildImage(
                             widget.item.imageUrls[index],
-                            fit: BoxFit.cover,
-                            height: availableHeight - navigationBarHeight,
-                            width: screenWidth,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primaryYellow,
-                                  value: loadingProgress.expectedTotalBytes !=
-                                          null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          (loadingProgress.expectedTotalBytes ??
-                                              1)
-                                      : null,
-                                ),
-                              );
-                            },
+                            Size(screenWidth,
+                                availableHeight - navigationBarHeight),
                           ),
                         ),
                       ),
@@ -343,6 +328,45 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
             ),
         ],
       ),
+    );
+  }
+
+  /// 이미지 로더: 네트워크 실패 또는 잘못된 경로 시 플레이스홀더 표시
+  Widget _buildImage(String rawUrl, Size size) {
+    final String url = rawUrl.trim();
+
+    final placeholder = Container(
+      color: AppColors.imagePlaceholderBackground,
+      width: size.width,
+      height: size.height,
+      alignment: Alignment.center,
+      child: const Icon(
+        AppIcons.warning,
+        color: AppColors.textColorWhite,
+        size: 64,
+      ),
+    );
+
+    if (url.isEmpty || !url.startsWith('http')) return placeholder;
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      width: size.width,
+      height: size.height,
+      errorBuilder: (context, error, stackTrace) => placeholder,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primaryYellow,
+            value: loadingProgress.expectedTotalBytes != null
+                ? loadingProgress.cumulativeBytesLoaded /
+                    (loadingProgress.expectedTotalBytes ?? 1)
+                : null,
+          ),
+        );
+      },
     );
   }
 }

@@ -1,19 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/models/apis/responses/item_detail.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart' as trade_opt;
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/screens/login_screen.dart';
-import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MyPageTabScreen extends StatelessWidget {
+class MyPageTabScreen extends StatefulWidget {
   const MyPageTabScreen({super.key});
+
+  @override
+  State<MyPageTabScreen> createState() => _MyPageTabScreenState();
+}
+
+class _MyPageTabScreenState extends State<MyPageTabScreen> {
+  final List<ItemDetail> _myItems = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyItems();
+  }
+
+  /// 내 물품 리스트 로드
+  Future<void> _loadMyItems() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final itemApi = ItemApi();
+      final request = ItemRequest(pageNumber: 0, pageSize: 30);
+      final response = await itemApi.getMyItems(request);
+
+      setState(() {
+        _myItems
+          ..clear()
+          ..addAll(response.itemDetailPage?.content ?? []);
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('내 물품 목록 로드 실패: $e')));
+      }
+    }
+  }
+
+  /// 서버에서 받은 카테고리(serverName) → 한글 이름 매핑
+  String _mapItemCategory(String? categoryServerName) {
+    if (categoryServerName == null) return '-';
+    for (final category in ItemCategories.values) {
+      if (category.serverName == categoryServerName) {
+        return category.name;
+      }
+    }
+    return categoryServerName; // 매칭 실패 시 그대로 반환
+  }
+
+  /// 서버에서 받은 거래 옵션(serverName) 리스트 → 한글 이름 리스트 매핑
+  List<String> _mapTradeOptions(List<String>? options) {
+    if (options == null) return [];
+    return options.map((opt) {
+      try {
+        final match = trade_opt.ItemTradeOption.values
+            .firstWhere((e) => e.serverName == opt);
+        return match.name;
+      } catch (_) {
+        return opt; // 매칭 실패 시 그대로
+      }
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,13 +93,40 @@ class MyPageTabScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // 물품 카드 리스트 영역
           SizedBox(
-            width: 85.w,
-            child: const ItemCard(
-              itemCategoryLabel: '스포츠/레저',
-              itemName: '윌슨 블레이드 V9',
-              itemId: 'demoCard1',
-            ),
+            height: 500.h,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _myItems.isEmpty
+                    ? Center(
+                        child:
+                            Text('등록한 물품이 없습니다.', style: CustomTextStyles.h3),
+                      )
+                    : ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        itemBuilder: (context, index) {
+                          final item = _myItems[index];
+                          return SizedBox(
+                            width: 85.w,
+                            child: ItemCard(
+                              itemId: item.itemId ?? 'unknown',
+                              itemCategoryLabel:
+                                  _mapItemCategory(item.itemCategory),
+                              itemName: item.itemName ?? '',
+                              itemCardImageUrl: (item.itemImagePaths != null &&
+                                      item.itemImagePaths!.isNotEmpty)
+                                  ? item.itemImagePaths!.first
+                                  : 'https://picsum.photos/400/300',
+                              itemOptions:
+                                  _mapTradeOptions(item.itemTradeOptions),
+                            ),
+                          );
+                        },
+                        separatorBuilder: (_, __) => SizedBox(width: 12.w),
+                        itemCount: _myItems.length,
+                      ),
           ),
           _buildActionButton(
             onPressed: () => AuthService().logout(context),
