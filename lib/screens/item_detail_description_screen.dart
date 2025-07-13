@@ -3,6 +3,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -78,28 +79,10 @@ class _ItemDetailDescriptionScreenState
                         itemBuilder: (context, index) {
                           return Hero(
                             tag: widget.heroTag,
-                            child: Image.network(
+                            child: _buildImage(
                               widget.imageUrls[index],
-                              fit: BoxFit.cover,
-                              width: widget.imageSize.width,
-                              height: widget.imageSize.height,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.primaryYellow,
-                                    value: loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                .cumulativeBytesLoaded /
-                                            (loadingProgress
-                                                    .expectedTotalBytes ??
-                                                1)
-                                        : null,
-                                  ),
-                                );
-                              },
+                              Size(widget.imageSize.width,
+                                  widget.imageSize.height),
                             ),
                           );
                         },
@@ -250,8 +233,9 @@ class _ItemDetailDescriptionScreenState
                                       .copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 SizedBox(width: 8.w),
-                                HomeFeedAiAnalysisTag(
-                                    tag: widget.item.priceTag!),
+                                if (widget.item.priceTag != null)
+                                  HomeFeedAiAnalysisTag(
+                                      tag: widget.item.priceTag!),
                               ],
                             ),
                             SizedBox(height: 24.h),
@@ -334,6 +318,37 @@ class _ItemDetailDescriptionScreenState
           ),
         ],
       ),
+    );
+  }
+
+  /// 이미지 로더: 오류 시 플레이스홀더
+  Widget _buildImage(String url, Size size) {
+    final placeholder = ErrorImagePlaceholder(size: size);
+
+    final trimmed = url.trim();
+    if (trimmed.isEmpty || !trimmed.startsWith('http')) return placeholder;
+
+    return Image.network(
+      trimmed,
+      fit: BoxFit.cover,
+      width: size.width,
+      height: size.height,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('Detail 이미지 로드 실패: $trimmed, error: $error');
+        return placeholder;
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primaryYellow,
+            value: loadingProgress.expectedTotalBytes != null
+                ? loadingProgress.cumulativeBytesLoaded /
+                    (loadingProgress.expectedTotalBytes ?? 1)
+                : null,
+          ),
+        );
+      },
     );
   }
 }

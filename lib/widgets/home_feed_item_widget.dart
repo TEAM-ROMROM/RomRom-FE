@@ -12,6 +12,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -335,17 +336,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   Widget _buildImage(String rawUrl, Size size) {
     final String url = rawUrl.trim();
 
-    final placeholder = Container(
-      color: AppColors.imagePlaceholderBackground,
-      width: size.width,
-      height: size.height,
-      alignment: Alignment.center,
-      child: const Icon(
-        AppIcons.warning,
-        color: AppColors.textColorWhite,
-        size: 64,
-      ),
-    );
+    final placeholder = ErrorImagePlaceholder(size: size);
 
     if (url.isEmpty || !url.startsWith('http')) return placeholder;
 
@@ -354,7 +345,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       fit: BoxFit.cover,
       width: size.width,
       height: size.height,
-      errorBuilder: (context, error, stackTrace) => placeholder,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('HomeFeed 이미지 로드 실패: $url, error: $error');
+        return placeholder;
+      },
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return Center(

@@ -5,6 +5,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/utils/item_card_scale_utils.dart';
 import 'package:romrom_fe/widgets/item_card_option_chip.dart';
 
@@ -181,15 +182,7 @@ class ItemCard extends ConsumerWidget {
 
   /// 이미지 로더: 네트워크 이미지 실패 시 경고 아이콘 포함 그레이 배경 플레이스홀더 표시
   Widget _buildImage(String url, ItemCardScale cs) {
-    final placeholder = Container(
-      color: AppColors.imagePlaceholderBackground,
-      alignment: Alignment.center,
-      child: Icon(
-        AppIcons.warning,
-        color: AppColors.textColorWhite,
-        size: cs.s(32),
-      ),
-    );
+    final placeholder = const ErrorImagePlaceholder();
 
     if (url.trim().isEmpty) {
       return placeholder;
@@ -201,7 +194,10 @@ class ItemCard extends ConsumerWidget {
       finalUrl,
       fit: BoxFit.cover,
       width: double.infinity,
-      errorBuilder: (context, error, stackTrace) => placeholder,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('ItemCard 이미지 로드 실패: $finalUrl, error: $error');
+        return placeholder;
+      },
     );
   }
 }
