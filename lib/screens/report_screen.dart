@@ -6,10 +6,13 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/enums/item_report_reason.dart';
+import 'package:romrom_fe/services/apis/report_api.dart';
 
 /// 신고하기 페이지
 class ReportScreen extends StatefulWidget {
-  const ReportScreen({super.key});
+  final String itemId; // 신고 대상 아이템 ID
+
+  const ReportScreen({super.key, required this.itemId});
 
   @override
   State<ReportScreen> createState() => _ReportScreenState();
@@ -137,8 +140,25 @@ class _ReportScreenState extends State<ReportScreen> {
               isEnabled: _selectedReasons.isNotEmpty,
               buttonText: '신고 하기',
               buttonType: 2,
-              enabledOnPressed: () {
-                // TODO: 신고하기 API 연동
+              enabledOnPressed: () async {
+                final api = ReportApi();
+                final success = await api.reportItem(
+                  itemId: widget.itemId,
+                  itemReportReasons:
+                      _selectedReasons.map((e) => e.id).toSet(),
+                  extraComment: _extraCommentController.text.trim(),
+                );
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success ? '신고가 접수되었습니다.' : '신고에 실패했습니다.'),
+                      backgroundColor:
+                          success ? Colors.green : Colors.redAccent,
+                    ),
+                  );
+                  if (success) Navigator.of(context).pop();
+                }
               },
             ),
           ),

@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/price_tag.dart';
 
 class HomeFeedItem {
   final int id;
+  final String? itemUuid; // 서버 UUID
   final int price;
   final String location;
   final String date;
@@ -18,6 +19,7 @@ class HomeFeedItem {
 
   HomeFeedItem({
     required this.id,
+    this.itemUuid,
     required this.price,
     required this.location,
     required this.date,

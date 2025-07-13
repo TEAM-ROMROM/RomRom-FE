@@ -35,7 +35,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   final PageController _coachMarkPageController = PageController();
   // 피드 아이템 목록
   final List<HomeFeedItem> _feedItems = [];
-  int _currentPage = 0;
+  int _currentPage = 0; // 페이징 용(데이터)
+  int _currentFeedIndex = 0; // 화면 상 현재 보고 있는 피드 인덱스
   final int _pageSize = 10;
   // 초기 로딩 상태
   bool _isLoading = true;
@@ -350,6 +351,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
       return HomeFeedItem(
         id: index + _feedItems.length + 1,
+        itemUuid: d.itemId,
         price: d.price ?? 0,
         location: '미지정',
         date: d.createdDate ?? '',
@@ -411,6 +413,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               scrollDirection: Axis.vertical,
               controller: _pageController,
               itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
+              onPageChanged: (index) {
+                if (index < _feedItems.length) {
+                  setState(() {
+                    _currentFeedIndex = index;
+                  });
+                }
+              },
               itemBuilder: (context, index) {
                 if (index >= _feedItems.length) {
                   // 리스트 끝에 로딩 인디케이터 표시
@@ -456,7 +465,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const ReportScreen(),
+                    builder: (context) => ReportScreen(
+                      itemId: _feedItems[_currentFeedIndex].itemUuid ?? '',
+                    ),
                   ),
                 );
               },
