@@ -7,9 +7,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/enums/item_report_reason.dart';
 import 'package:romrom_fe/services/apis/report_api.dart';
-import 'package:romrom_fe/enums/error_code.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/common_success_modal.dart';
 import 'package:romrom_fe/widgets/common/common_fail_modal.dart';
 
 /// 신고하기 페이지
@@ -145,7 +143,6 @@ class _ReportScreenState extends State<ReportScreen> {
               buttonText: '신고 하기',
               buttonType: 2,
               enabledOnPressed: () async {
-                bool success = true;
                 try {
                   final api = ReportApi();
                   await api.reportItem(
@@ -172,18 +169,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
                 if (!mounted) return;
 
-                if (success) {
-                  Navigator.of(context).pop(true); // 성공 결과 반환
-                } else {
-                  await showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => CommonFailModal(
-                      message: ErrorCode.unknown.koMessage,
-                      onConfirm: () => Navigator.of(context).pop(),
-                    ),
-                  );
-                }
+                Navigator.of(context).pop(true); // 성공 결과 반환
               },
             ),
           ),
