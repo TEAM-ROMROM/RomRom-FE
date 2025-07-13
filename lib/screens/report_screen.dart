@@ -7,6 +7,8 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/enums/item_report_reason.dart';
 import 'package:romrom_fe/services/apis/report_api.dart';
+import 'package:romrom_fe/enums/error_code.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_success_modal.dart';
 import 'package:romrom_fe/widgets/common/common_fail_modal.dart';
 
@@ -154,7 +156,18 @@ class _ReportScreenState extends State<ReportScreen> {
                   );
                 } catch (e) {
                   debugPrint('신고 요청 중 오류: $e');
-                  success = false;
+                  // 에러 코드 파싱
+                  final messageForUser = ErrorUtils.getErrorMessage(e);
+
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => CommonFailModal(
+                      message: messageForUser,
+                      onConfirm: () => Navigator.of(context).pop(),
+                    ),
+                  );
+                  return;
                 }
 
                 if (!mounted) return;
@@ -166,8 +179,7 @@ class _ReportScreenState extends State<ReportScreen> {
                     context: context,
                     barrierDismissible: false,
                     builder: (_) => CommonFailModal(
-                      titleLine1: '오류가 발생했습니다.',
-                      titleLine2: '잠시 후 다시 시도해 주세요.',
+                      message: ErrorCode.unknown.koMessage,
                       onConfirm: () => Navigator.of(context).pop(),
                     ),
                   );

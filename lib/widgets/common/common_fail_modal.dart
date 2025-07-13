@@ -6,14 +6,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 /// 공통 실패 모달
 class CommonFailModal extends StatelessWidget {
-  final String titleLine1;
-  final String titleLine2;
+  final String message;
   final VoidCallback onConfirm;
 
   const CommonFailModal({
     super.key,
-    required this.titleLine1,
-    required this.titleLine2,
+    required this.message,
     required this.onConfirm,
   });
 
@@ -46,23 +44,17 @@ class CommonFailModal extends StatelessWidget {
                 height: 40.w,
               ),
               SizedBox(height: 16.h),
-              Text(
-                titleLine1,
-                style: CustomTextStyles.p2.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textColorWhite.withValues(alpha: 0.8),
-                  height: 1.3,
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: Text(
+                  message,
+                  style: CustomTextStyles.p2.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textColorWhite.withValues(alpha: 0.8),
+                    height: 1.3,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                titleLine2,
-                style: CustomTextStyles.p2.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textColorWhite.withValues(alpha: 0.8),
-                  height: 1.3,
-                ),
-                textAlign: TextAlign.center,
               ),
               SizedBox(height: 32.h),
               SizedBox(
