@@ -141,7 +141,7 @@ class ItemApi {
       onSuccess: (responseData) {
         // 응답이 int형이거나 Map형일 수 있으므로 안전하게 처리
         if (responseData is int) {
-          predictedPrice = responseData as int;
+          predictedPrice = responseData;
         } else if (responseData is Map<String, dynamic>) {
           predictedPrice = responseData['data'] ?? 0;
         } else {

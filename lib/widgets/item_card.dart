@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/utils/item_card_scale_utils.dart';
@@ -182,7 +181,7 @@ class ItemCard extends ConsumerWidget {
 
   /// 이미지 로더: 네트워크 이미지 실패 시 경고 아이콘 포함 그레이 배경 플레이스홀더 표시
   Widget _buildImage(String url, ItemCardScale cs) {
-    final placeholder = const ErrorImagePlaceholder();
+    const placeholder = ErrorImagePlaceholder();
 
     if (url.trim().isEmpty) {
       return placeholder;
