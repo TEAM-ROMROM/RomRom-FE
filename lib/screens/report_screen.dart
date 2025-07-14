@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter/services.dart';
 
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -9,6 +8,7 @@ import 'package:romrom_fe/enums/item_report_reason.dart';
 import 'package:romrom_fe/services/apis/report_api.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_fail_modal.dart';
+import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 신고하기 페이지
 class ReportScreen extends StatefulWidget {
@@ -42,29 +42,14 @@ class _ReportScreenState extends State<ReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 상태바 색상을 primaryBlack 로 설정 (iOS 기준 44px 영역)
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(statusBarColor: AppColors.primaryBlack),
-    );
-
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(56.h),
-        child: AppBar(
-          backgroundColor: AppColors.primaryBlack,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                color: AppColors.textColorWhite, size: 24),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          centerTitle: true,
-          title: Text(
-            '신고하기',
-            style: CustomTextStyles.h1, // 24px, 600, 흰색
-          ),
-        ),
+      appBar: CommonAppBar(
+        title: '신고하기',
+        onBackPressed: () {
+          Navigator.of(context).pop();
+        },
+        showBottomBorder: true,
       ),
       body: Stack(
         children: [
@@ -74,15 +59,14 @@ class _ReportScreenState extends State<ReportScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 40.h),
-                Text(
-                  '신고 사유',
-                  style: CustomTextStyles.h3, // 18px, 500, 흰색
-                ),
+                Text('신고 사유',
+                    style: CustomTextStyles.h2
+                        .copyWith(fontWeight: FontWeight.w600)),
                 SizedBox(height: 24.h),
                 // 신고 사유 리스트
-                ...ItemReportReason.values.map((reason) => _buildReasonRow(reason)),
+                ...ItemReportReason.values
+                    .map((reason) => _buildReasonRow(reason)),
                 if (_selectedReasons.contains(ItemReportReason.etc)) ...[
-                  SizedBox(height: 24.h),
                   Container(
                     width: 345.w,
                     height: 140.h,
@@ -99,10 +83,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       controller: _extraCommentController,
                       maxLines: null,
                       maxLength: 300,
-                      style: CustomTextStyles.p2.copyWith(
-                        fontWeight: FontWeight.w500,
-                        height: 1,
-                      ),
+                      style: CustomTextStyles.p2,
                       cursorColor: AppColors.textColorWhite,
                       decoration: InputDecoration(
                         isCollapsed: true,
@@ -110,9 +91,8 @@ class _ReportScreenState extends State<ReportScreen> {
                         counterText: '', // 기본 counter 숨김
                         hintText: '신고 사유를 상세하게 적어주세요',
                         hintStyle: CustomTextStyles.p2.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textColorWhite.withValues(alpha: 0.4),
-                          height: 1,
+                          color:
+                              AppColors.textColorWhite.withValues(alpha: 0.4),
                         ),
                       ),
                     ),
@@ -137,7 +117,7 @@ class _ReportScreenState extends State<ReportScreen> {
           Positioned(
             left: 24.w,
             right: 24.w,
-            bottom: 76.h,
+            bottom: 97.h,
             child: CompletionButton(
               isEnabled: _selectedReasons.isNotEmpty,
               buttonText: '신고 하기',
@@ -186,8 +166,8 @@ class _ReportScreenState extends State<ReportScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 24.w,
-            height: 24.w,
+            width: 20.w,
+            height: 20.w,
             child: Checkbox(
               value: _selectedReasons.contains(reason),
               onChanged: (value) {
@@ -214,13 +194,11 @@ class _ReportScreenState extends State<ReportScreen> {
           Expanded(
             child: Text(
               reason.name,
-              style: CustomTextStyles.p1.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: CustomTextStyles.h3,
             ),
           ),
         ],
       ),
     );
   }
-} 
+}

@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import '../widgets/common/warning_dialog.dart';
+import '../widgets/common/warning_modal.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
