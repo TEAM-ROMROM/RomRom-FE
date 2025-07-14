@@ -132,7 +132,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
       (index) => {
         'title': '물건 제목 ${index + 1}',
         'uploadTime': '${index + 1}시간 전',
-        'price': '${(index + 1) * 10000}원',
+        'price': (index + 1) * 10000,
         'likes': index + 5,
       },
     );
@@ -190,7 +190,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                     ),
                     SizedBox(height: 12.h),
                     Text(
-                      item['price'] as String,
+                      '${formatPrice(item['price'])}원',
                       style: CustomTextStyles.p1.copyWith(),
                     ),
                     SizedBox(height: 12.h),

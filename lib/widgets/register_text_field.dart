@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 라벨
 class RegisterCustomTextFieldLabel extends StatelessWidget {
@@ -42,13 +42,6 @@ class RegisterCustomTextField extends StatelessWidget {
     this.onTap,
   });
 
-  String _formatNumber(String value) {
-    if (value.isEmpty) return '';
-    final number = int.tryParse(value.replaceAll(',', ''));
-    if (number == null) return value;
-    return NumberFormat('#,###').format(number);
-  }
-
   @override
   Widget build(BuildContext context) {
     OutlineInputBorder inputBorder = OutlineInputBorder(
@@ -69,7 +62,9 @@ class RegisterCustomTextField extends StatelessWidget {
                 valueListenable: controller!,
                 builder: (context, value, child) {
                   // 커서 위치 보정
-                  final formatted = _formatNumber(value.text);
+                  final formatted = formatPrice(int.tryParse(
+                          value.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
+                      0);
                   if (value.text != formatted) {
                     controller!.value = TextEditingValue(
                       text: formatted,
