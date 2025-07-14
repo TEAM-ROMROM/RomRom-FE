@@ -49,7 +49,6 @@ flutter:
   assets:
     - .env
     - assets/images/
-    - assets/images/temp/
     - assets/terms/
 
   fonts:
