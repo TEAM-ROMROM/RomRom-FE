@@ -24,9 +24,9 @@ class LoginScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(AppIcons.tempLogo,
-                size: 74.h, color: AppColors.textColorWhite),
-            SizedBox(height: 55.h), // 간격 추가
+            Icon(AppIcons.romromRLogoText,
+                size: 150.h, color: AppColors.textColorWhite),
+            SizedBox(height: 10.h), // 간격 추가
             // 서비스 간단 소개 텍스트
             Text(
               '손쉬운 물건 교환',
