@@ -56,6 +56,9 @@ class AppColors {
       Color(0xFFCACDFF); // 거래 방식 태그 (보라색)
   static const Color priceTagBackground = Color(0xFFE8E8E8); // 가격 태그 (회색)
 
+  // 이미지 플레이스홀더 배경
+  static const Color imagePlaceholderBackground = Color(0xFFD9D9D9); // 연한 회색
+
   // AI 태그 및 버튼
   static const Color aiTagBackground = Color(0xFF121A1A); // 어두운 배경
   static const Color aiButtonGlow = Color(0xFF7B00FF); // 보라색 광택 효과

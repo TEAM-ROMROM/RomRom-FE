@@ -73,10 +73,10 @@ class ItemApi {
     return itemResponse;
   }
 
-  /// 물품 목록 조회 API
-  /// `POST /api/item/get`
+  /// 물품 리스트 조회 API (최신순)
+  /// `POST /api/item/list/get`
   Future<ItemResponse> getItems(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/get';
+    const String url = '${AppUrls.baseUrl}/api/item/list/get';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
@@ -90,8 +90,32 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint(
-            '물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
+        debugPrint('물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
+      },
+    );
+
+    return itemResponse;
+  }
+
+  /// 내 물품 목록 조회 API
+  /// `POST /api/item/get/my`
+  Future<ItemResponse> getMyItems(ItemRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/item/get/my';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {
+      'pageNumber': request.pageNumber.toString(),
+      'pageSize': request.pageSize.toString(),
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('내 물품 목록 조회 성공: '
+            '${itemResponse.itemDetailPage?.content?.length ?? 0}개');
       },
     );
 

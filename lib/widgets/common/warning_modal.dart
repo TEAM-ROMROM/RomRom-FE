@@ -60,7 +60,7 @@ class WarningDialog extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Icon(
                     AppIcons.warning,
-                    size: 28.h,
+                    size: 28.sp,
                     color: AppColors.warningRed,
                   ),
                 ),

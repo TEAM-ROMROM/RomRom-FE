@@ -12,6 +12,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -114,25 +115,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               topRight: Radius.circular(4.r),
                               bottomRight: Radius.circular(20.r),
                               bottomLeft: Radius.circular(20.r)),
-                          child: Image.network(
+                          child: _buildImage(
                             widget.item.imageUrls[index],
-                            fit: BoxFit.cover,
-                            height: availableHeight - navigationBarHeight,
-                            width: screenWidth,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primaryYellow,
-                                  value: loadingProgress.expectedTotalBytes !=
-                                          null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          (loadingProgress.expectedTotalBytes ??
-                                              1)
-                                      : null,
-                                ),
-                              );
-                            },
+                            Size(screenWidth,
+                                availableHeight - navigationBarHeight),
                           ),
                         ),
                       ),
@@ -343,6 +329,38 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
             ),
         ],
       ),
+    );
+  }
+
+  /// 이미지 로더: 네트워크 실패 또는 잘못된 경로 시 플레이스홀더 표시
+  Widget _buildImage(String rawUrl, Size size) {
+    final String url = rawUrl.trim();
+
+    final placeholder = ErrorImagePlaceholder(size: size);
+
+    if (url.isEmpty || !url.startsWith('http')) return placeholder;
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      width: size.width,
+      height: size.height,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('HomeFeed 이미지 로드 실패: $url, error: $error');
+        return placeholder;
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primaryYellow,
+            value: loadingProgress.expectedTotalBytes != null
+                ? loadingProgress.cumulativeBytesLoaded /
+                    (loadingProgress.expectedTotalBytes ?? 1)
+                : null,
+          ),
+        );
+      },
     );
   }
 }

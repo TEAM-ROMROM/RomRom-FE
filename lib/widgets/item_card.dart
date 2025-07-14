@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/utils/item_card_scale_utils.dart';
 import 'package:romrom_fe/widgets/item_card_option_chip.dart';
 
@@ -105,11 +106,7 @@ class ItemCard extends ConsumerWidget {
                           borderRadius: BorderRadius.only(
                               topLeft: cardRadius.topLeft,
                               topRight: cardRadius.topRight),
-                          child: Image.network(
-                            itemCardImageUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
+                          child: _buildImage(itemCardImageUrl, cs),
                         ),
                       ),
                       // 정보 및 옵션 영역
@@ -179,6 +176,27 @@ class ItemCard extends ConsumerWidget {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('에러 발생: $err')),
+    );
+  }
+
+  /// 이미지 로더: 네트워크 이미지 실패 시 경고 아이콘 포함 그레이 배경 플레이스홀더 표시
+  Widget _buildImage(String url, ItemCardScale cs) {
+    const placeholder = ErrorImagePlaceholder();
+
+    if (url.trim().isEmpty) {
+      return placeholder;
+    }
+
+    final String finalUrl = url.trim();
+
+    return Image.network(
+      finalUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('ItemCard 이미지 로드 실패: $finalUrl, error: $error');
+        return placeholder;
+      },
     );
   }
 }
