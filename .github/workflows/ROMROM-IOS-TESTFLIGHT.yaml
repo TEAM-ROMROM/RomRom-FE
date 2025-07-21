@@ -139,54 +139,25 @@ jobs:
           uuid=$(grep -A1 -a "UUID" profile.mobileprovision | grep string | sed -e "s/<string>//" -e "s/<\/string>//" -e "s/[[:space:]]//g")
           cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$uuid.mobileprovision
 
-      # 코드 서명된 iOS 빌드
-      - name: Build iOS app with code signing
+      # 간단한 Flutter 빌드 (자동 서명)
+      - name: Build iOS app
         run: |
-          flutter build ios --release \
+          flutter build ipa --release \
             --build-name="${{ needs.version-bump.outputs.new_version }}" \
             --build-number="${{ needs.version-bump.outputs.build_number }}" \
-            --no-codesign
+            --export-options-plist=ios/ExportOptions.plist
 
-      # Archive 생성
-      - name: Create Archive
+      # ExportOptions.plist 파일 생성
+      - name: Create ExportOptions.plist
         run: |
           cd ios
-          xcodebuild -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -archivePath build/Runner.xcarchive \
-            -destination 'generic/platform=iOS' \
-            archive \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="RomRom Distribution" \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            -sdk iphoneos
-
-      # IPA 생성
-      - name: Export IPA
-        run: |
-          cd ios
-          # ExportOptions.plist 생성
           cat > ExportOptions.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
-              <key>destination</key>
-              <string>export</string>
               <key>method</key>
               <string>app-store</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.alom.romrom</key>
-                  <string>RomRom Distribution</string>
-              </dict>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>stripSwiftSymbols</key>
-              <true/>
               <key>teamID</key>
               <string>${{ secrets.APPLE_TEAM_ID }}</string>
               <key>uploadBitcode</key>
@@ -196,11 +167,6 @@ jobs:
           </dict>
           </plist>
           EOF
-          
-          xcodebuild -exportArchive \
-            -archivePath build/Runner.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist ExportOptions.plist
 
       # App Store Connect API Key 설정
       - name: Setup App Store Connect API Key
@@ -213,7 +179,7 @@ jobs:
         run: |
           xcrun altool --upload-app \
             --type ios \
-            --file "ios/build/ipa/Runner.ipa" \
+            --file "build/ios/ipa/RomRom-FE.ipa" \
             --apiKey ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }} \
             --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
