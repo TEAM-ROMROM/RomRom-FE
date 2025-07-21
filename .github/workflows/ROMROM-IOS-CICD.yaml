@@ -1,202 +1,202 @@
-#name: ROMROM-iOS-CICD
-#
-#on:
-#  push:
-#    branches: ["main"]
-#  workflow_dispatch:  # 수동 실행 옵션 추가
-#
-#jobs:
-#  build-ios:
-#    name: Build iOS IPA
-#    runs-on: macos-latest  # macOS 러너 사용 (iOS 빌드에 필요)
-#
-#    steps:
-#      # Repository 체크아웃
-#      - name: Check out repository
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#
-#      - name: List repository contents
-#        run: |
-#          echo "Repository checked out"
-#          ls -la
-#
-#      # .env 파일 생성
-#      - name: Create .env file from GitHub Secret
-#        run: |
-#          echo "${{ secrets.ENV_FILE }}" > .env
-#          echo ".env file created"
-#          ls -la
-#
-#      # Secrets.xcconfig 파일 생성
-#      - name: Create Secrets.xcconfig file
-#        run: |
-#          mkdir -p ios/Flutter
-#          if [ -n "${{ secrets.SECRETS_XCCONFIG }}" ]; then
-#            echo "${{ secrets.SECRETS_XCCONFIG }}" > ios/Flutter/Secrets.xcconfig
-#            echo "Secrets.xcconfig created with provided content"
-#          else
-#            echo "// No secrets provided in GitHub Secrets" >> ios/Flutter/Secrets.xcconfig
-#          fi
-#          echo "Secrets.xcconfig file created"
-#          ls -la ios/Flutter/
-#
-#      # Flutter 설정 및 버전 확인
-#      - name: Set up Flutter
-#        uses: subosito/flutter-action@v2
-#        with:
-#          flutter-version: "3.27.3"
-#          cache: true
-#          cache-key: flutter-${{ runner.os }}-3.27.3
-#
-#      - name: Verify Flutter version
-#        run: |
-#          echo "Flutter setup completed"
-#          flutter --version
-#
-#      # Flutter 캐시
-#      - name: Cache Flutter dependencies
-#        uses: actions/cache@v4
-#        with:
-#          path: ~/.pub-cache
-#          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
-#          restore-keys: ${{ runner.os }}-flutter-pub-
-#
-#      # 프로젝트 의존성 설치
-#      - name: Install dependencies
-#        run: |
-#          flutter pub get
-#          echo "Dependencies installed"
-#          ls -la
-#
-#      # iOS 디렉토리 셋업 확인
-#      - name: Check iOS directory setup
-#        run: |
-#          ls -la ios/ || echo "iOS directory not found"
-#
-#      # 짧은 커밋 해시 계산
-#      - name: Calculate Short Commit Hash
-#        id: short_hash
-#        run: |
-#          echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
-#          echo "Short commit hash: ${{ env.SHORT_COMMIT_HASH }}"
-#
-#      # Ruby와 CocoaPods 설정
-#      - name: Set up Ruby
-#        uses: ruby/setup-ruby@v1
-#        with:
-#          ruby-version: '3.4.1'
-#          bundler-cache: true
-#
-#      - name: Install CocoaPods
-#        run: |
-#          gem install cocoapods
-#          pod --version
-#
-#      # iOS 빌드 준비 (Podfile 설치)
-#      - name: Install Pod dependencies
-#        run: |
-#          cd ios
-#          pod install || pod install --repo-update
-#          cd ..
-#
-#      # iOS 앱 빌드 (코드 서명 없이)
-#      - name: Build iOS app (no codesign)
-#        run: |
-#          flutter build ios --release --no-codesign
-#          echo "iOS app built without codesigning"
-#
-#      # IPA 파일 생성
-#      - name: Create IPA file
-#        run: |
-#          mkdir -p Payload
-#          cp -r build/ios/iphoneos/Runner.app Payload
-#          zip -r romrom-${{ env.SHORT_COMMIT_HASH }}.ipa Payload
-#          ls -la romrom-${{ env.SHORT_COMMIT_HASH }}.ipa
-#          echo "IPA file created as romrom-${{ env.SHORT_COMMIT_HASH }}.ipa"
-#
-#      # IPA를 아티팩트로 업로드
-#      - name: Upload IPA as Artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: romrom-ipa
-#          path: romrom-${{ env.SHORT_COMMIT_HASH }}.ipa
-#          retention-days: 1
-#
-#  deploy-ios:
-#    name: Deploy iOS IPA
-#    runs-on: ubuntu-latest
-#    needs: build-ios
-#
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v3
-#
-#      - name: Install dependencies
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y smbclient jq
-#          echo "SMB and jq dependencies installed"
-#
-#      - name: Download build artifacts
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: romrom-ipa
-#          path: ios-build/
-#
-#      - name: List downloaded structure (Debug)
-#        run: |
-#          ls -alR ios-build/
-#          echo "Downloaded structure listed"
-#
-#      - name: Find IPA file
-#        run: |
-#          IPA_FILE=$(find ios-build/ -name "*.ipa" | head -n 1)
-#          echo "IPA_FILE=$IPA_FILE" >> $GITHUB_ENV
-#          IPA_NAME=$(basename "$IPA_FILE")
-#          echo "IPA_NAME=$IPA_NAME" >> $GITHUB_ENV
-#          echo "IPA file found: $IPA_FILE"
-#
-#      - name: Upload files to Synology NAS via SMB
-#        env:
-#          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-#          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
-#        run: |
-#          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
-#          SMB_PORT=44445
-#          SMB_SHARE="web"
-#          SMB_PATH="/romrom/ios/download"
-#          echo "Uploading IPA file ${{ env.IPA_NAME }} to SMB..."
-#          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.IPA_FILE }} ${{ env.IPA_NAME }}"
-#          echo "IPA uploaded to SMB"
-#
-#      - name: Update romrom-ios-cicd-history.json
-#        env:
-#          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-#          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
-#        run: |
-#          export TZ='Asia/Seoul'
-#          BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
-#          FILE_SIZE=$(stat -c%s "${{ env.IPA_FILE }}")
-#          COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
-#          FULL_COMMIT_HASH="${{ github.sha }}"
-#          NEW_BUILD_INFO=$(jq -n \
-#            --arg ipa_name "${{ env.IPA_NAME }}" \
-#            --arg file_size "$FILE_SIZE" \
-#            --arg build_date "$BUILD_DATE" \
-#            --arg commit_link "$COMMIT_LINK" \
-#            --arg full_commit_hash "$FULL_COMMIT_HASH" \
-#            '{ipa_name: $ipa_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
-#          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
-#          SMB_PORT=44445
-#          SMB_SHARE="web"
-#          SMB_PATH="/romrom/ios/download"
-#          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; get romrom-ios-cicd-history.json" || echo '{"files": []}' > romrom-ios-cicd-history.json
-#          echo "Downloaded or initialized romrom-ios-cicd-history.json"
-#          cat romrom-ios-cicd-history.json
-#          jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-ios-cicd-history.json > updated.json
-#          echo "Updated romrom-ios-cicd-history.json with new build info"
-#          cat updated.json
-#          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; put updated.json romrom-ios-cicd-history.json"
-#          echo "Updated romrom-ios-cicd-history.json uploaded to SMB"
+name: ROMROM-iOS-CICD
+
+on:
+  push:
+    branches: ["test"] #FIXME: 임시 테스트
+  workflow_dispatch:  # 수동 실행 옵션 추가
+
+jobs:
+  build-ios:
+    name: Build iOS IPA
+    runs-on: macos-latest  # macOS 러너 사용
+
+    steps:
+      # Repository 체크아웃
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: List repository contents
+        run: |
+          echo "Repository checked out"
+          ls -la
+
+      # .env 파일 생성
+      - name: Create .env file from GitHub Secret
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo ".env file created"
+          ls -la
+
+      # Secrets.xcconfig 파일 생성
+      - name: Create Secrets.xcconfig file
+        run: |
+          mkdir -p ios/Flutter
+          if [ -n "${{ secrets.SECRETS_XCCONFIG }}" ]; then
+            echo "${{ secrets.SECRETS_XCCONFIG }}" > ios/Flutter/Secrets.xcconfig
+            echo "Secrets.xcconfig created with provided content"
+          else
+            echo "// No secrets provided in GitHub Secrets" >> ios/Flutter/Secrets.xcconfig
+          fi
+          echo "Secrets.xcconfig file created"
+          ls -la ios/Flutter/
+
+      # Flutter 설정 및 버전 확인
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.3"
+          cache: true
+          cache-key: flutter-${{ runner.os }}-3.27.3
+
+      - name: Verify Flutter version
+        run: |
+          echo "Flutter setup completed"
+          flutter --version
+
+      # Flutter 캐시
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-flutter-pub-
+
+      # 프로젝트 의존성 설치
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          echo "Dependencies installed"
+          ls -la
+
+      # iOS 디렉토리 셋업 확인
+      - name: Check iOS directory setup
+        run: |
+          ls -la ios/ || echo "iOS directory not found"
+
+      # 짧은 커밋 해시 계산
+      - name: Calculate Short Commit Hash
+        id: short_hash
+        run: |
+          echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+          echo "Short commit hash: ${{ env.SHORT_COMMIT_HASH }}"
+
+      # Ruby와 CocoaPods 설정
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+
+      - name: Install CocoaPods
+        run: |
+          gem install cocoapods
+          pod --version
+
+      # iOS 빌드 준비 (Podfile 설치)
+      - name: Install Pod dependencies
+        run: |
+          cd ios
+          pod install || pod install --repo-update
+          cd ..
+
+      # iOS 앱 빌드 (코드 서명 없이)
+      - name: Build iOS app (no codesign)
+        run: |
+          flutter build ios --release --no-codesign
+          echo "iOS app built without codesigning"
+
+      # IPA 파일 생성
+      - name: Create IPA file
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload
+          zip -r romrom-${{ env.SHORT_COMMIT_HASH }}.ipa Payload
+          ls -la romrom-${{ env.SHORT_COMMIT_HASH }}.ipa
+          echo "IPA file created as romrom-${{ env.SHORT_COMMIT_HASH }}.ipa"
+
+      # IPA를 아티팩트로 업로드
+      - name: Upload IPA as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: romrom-ipa
+          path: romrom-${{ env.SHORT_COMMIT_HASH }}.ipa
+          retention-days: 1
+
+  deploy-ios:
+    name: Deploy iOS IPA
+    runs-on: ubuntu-latest
+    needs: build-ios
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y smbclient jq
+          echo "SMB and jq dependencies installed"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: romrom-ipa
+          path: ios-build/
+
+      - name: List downloaded structure (Debug)
+        run: |
+          ls -alR ios-build/
+          echo "Downloaded structure listed"
+
+      - name: Find IPA file
+        run: |
+          IPA_FILE=$(find ios-build/ -name "*.ipa" | head -n 1)
+          echo "IPA_FILE=$IPA_FILE" >> $GITHUB_ENV
+          IPA_NAME=$(basename "$IPA_FILE")
+          echo "IPA_NAME=$IPA_NAME" >> $GITHUB_ENV
+          echo "IPA file found: $IPA_FILE"
+
+      - name: Upload files to Synology NAS via SMB
+        env:
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+        run: |
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=44445
+          SMB_SHARE="web"
+          SMB_PATH="/romrom/ios/download"
+          echo "Uploading IPA file ${{ env.IPA_NAME }} to SMB..."
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.IPA_FILE }} ${{ env.IPA_NAME }}"
+          echo "IPA uploaded to SMB"
+
+      - name: Update romrom-ios-cicd-history.json
+        env:
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+        run: |
+          export TZ='Asia/Seoul'
+          BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
+          FILE_SIZE=$(stat -c%s "${{ env.IPA_FILE }}")
+          COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
+          FULL_COMMIT_HASH="${{ github.sha }}"
+          NEW_BUILD_INFO=$(jq -n \
+            --arg ipa_name "${{ env.IPA_NAME }}" \
+            --arg file_size "$FILE_SIZE" \
+            --arg build_date "$BUILD_DATE" \
+            --arg commit_link "$COMMIT_LINK" \
+            --arg full_commit_hash "$FULL_COMMIT_HASH" \
+            '{ipa_name: $ipa_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=44445
+          SMB_SHARE="web"
+          SMB_PATH="/romrom/ios/download"
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; get romrom-ios-cicd-history.json" || echo '{"files": []}' > romrom-ios-cicd-history.json
+          echo "Downloaded or initialized romrom-ios-cicd-history.json"
+          cat romrom-ios-cicd-history.json
+          jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-ios-cicd-history.json > updated.json
+          echo "Updated romrom-ios-cicd-history.json with new build info"
+          cat updated.json
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; put updated.json romrom-ios-cicd-history.json"
+          echo "Updated romrom-ios-cicd-history.json uploaded to SMB"
