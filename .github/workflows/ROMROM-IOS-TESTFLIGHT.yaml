@@ -156,7 +156,6 @@ jobs:
             -archivePath build/Runner.xcarchive \
             -destination 'generic/platform=iOS' \
             archive \
-            -target Runner \
             CODE_SIGN_STYLE=Manual \
             PROVISIONING_PROFILE_SPECIFIER="RomRom Distribution" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
@@ -222,12 +221,12 @@ jobs:
       - name: Notify TestFlight Upload Success
         if: success()
         run: |
-          echo "TestFlight 업로드 성공!"
+          echo "✅ TestFlight 업로드 성공!"
           echo "버전: ${{ needs.version-bump.outputs.new_version }}"
           echo "커밋: ${{ github.sha }}"
 
       - name: Notify on Failure
         if: failure()
         run: |
-          echo "TestFlight 업로드 실패!"
+          echo "❌ TestFlight 업로드 실패!"
           echo "로그를 확인해주세요."
