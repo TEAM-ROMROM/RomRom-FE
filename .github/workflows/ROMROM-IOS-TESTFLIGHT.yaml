@@ -139,21 +139,6 @@ jobs:
           uuid=$(grep -A1 -a "UUID" profile.mobileprovision | grep string | sed -e "s/<string>//" -e "s/<\/string>//" -e "s/[[:space:]]//g")
           cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$uuid.mobileprovision
 
-      # 자동 서명 강제 활성화
-      - name: Enable Automatic Signing
-        run: |
-          cd ios
-          # project.pbxproj에서 자동 서명 활성화
-          sed -i '' 's/CODE_SIGN_STYLE = Manual/CODE_SIGN_STYLE = Automatic/g' Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*//' Runner.xcodeproj/project.pbxproj
-
-      - name: Build iOS app
-        run: |
-          flutter build ipa --release \
-            --build-name="${{ needs.version-bump.outputs.new_version }}" \
-            --build-number="${{ needs.version-bump.outputs.build_number }}" \
-            --export-options-plist=ios/ExportOptions.plist -- -allowProvisioningUpdates DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }}
-
       # ExportOptions.plist 파일 생성
       - name: Create ExportOptions.plist
         run: |
@@ -166,7 +151,7 @@ jobs:
               <key>method</key>
               <string>app-store</string>
               <key>teamID</key>
-              <string>${{ secrets.APPLE_TEAM_ID }}</string>
+              <string>CUK22HY6YC</string>
               <key>uploadBitcode</key>
               <false/>
               <key>uploadSymbols</key>
@@ -174,6 +159,35 @@ jobs:
           </dict>
           </plist>
           EOF
+
+      # Flutter build (no codesign) to generate Xcode project artifacts
+      - name: Flutter build (no codesign)
+        run: |
+          flutter build ios --release --no-codesign \
+            --build-name="${{ needs.version-bump.outputs.new_version }}" \
+            --build-number="${{ needs.version-bump.outputs.build_number }}"
+
+      # Archive 생성 (manual signing)
+      - name: Create Archive
+        run: |
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -archivePath build/Runner.xcarchive \
+            -destination 'generic/platform=iOS' \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="RomRom Distribution" \
+            CODE_SIGN_IDENTITY="Apple Distribution"
+
+      # IPA 생성
+      - name: Export IPA
+        run: |
+          cd ios
+          xcodebuild -exportArchive \
+            -archivePath build/Runner.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ExportOptions.plist
 
       # App Store Connect API Key 설정
       - name: Setup App Store Connect API Key
@@ -186,7 +200,7 @@ jobs:
         run: |
           xcrun altool --upload-app \
             --type ios \
-            --file "build/ios/ipa/Runner.ipa" \
+            --file "ios/build/ipa/Runner.ipa" \
             --apiKey ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }} \
             --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
