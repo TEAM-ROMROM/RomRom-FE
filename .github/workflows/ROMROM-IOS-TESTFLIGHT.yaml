@@ -156,10 +156,12 @@ jobs:
             -archivePath build/Runner.xcarchive \
             -destination 'generic/platform=iOS' \
             archive \
+            -target Runner \
             CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="ROMROM-SUH-Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="RomRom Distribution" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            -sdk iphoneos
 
       # IPA 생성
       - name: Export IPA
@@ -178,7 +180,7 @@ jobs:
               <key>provisioningProfiles</key>
               <dict>
                   <key>com.alom.romrom</key>
-                  <string>ROMROM-SUH-Distribution</string>
+                  <string>RomRom Distribution</string>
               </dict>
               <key>signingCertificate</key>
               <string>Apple Distribution</string>
