@@ -144,7 +144,8 @@ jobs:
         run: |
           flutter build ios --release \
             --build-name="${{ needs.version-bump.outputs.new_version }}" \
-            --build-number="${{ needs.version-bump.outputs.build_number }}"
+            --build-number="${{ needs.version-bump.outputs.build_number }}" \
+            --no-codesign
 
       # Archive 생성
       - name: Create Archive
@@ -156,8 +157,9 @@ jobs:
             -destination 'generic/platform=iOS' \
             archive \
             CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="RomRom Distribution" \
-            CODE_SIGN_IDENTITY="iPhone Distribution"
+            PROVISIONING_PROFILE_SPECIFIER="ROMROM-SUH-Distribution" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
 
       # IPA 생성
       - name: Export IPA
@@ -176,16 +178,16 @@ jobs:
               <key>provisioningProfiles</key>
               <dict>
                   <key>com.alom.romrom</key>
-                  <string>RomRom Distribution</string>
+                  <string>ROMROM-SUH-Distribution</string>
               </dict>
               <key>signingCertificate</key>
-              <string>iPhone Distribution</string>
+              <string>Apple Distribution</string>
               <key>signingStyle</key>
               <string>manual</string>
               <key>stripSwiftSymbols</key>
               <true/>
               <key>teamID</key>
-              <string>CUK22HY6YC</string>
+              <string>${{ secrets.APPLE_TEAM_ID }}</string>
               <key>uploadBitcode</key>
               <false/>
               <key>uploadSymbols</key>
@@ -214,72 +216,16 @@ jobs:
             --apiKey ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }} \
             --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
-      # 커밋 해시 계산
-      - name: Calculate Short Commit Hash
-        id: short_hash
-        run: echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
-
-      # NAS 업로드 (기존 로직 유지)
-      - name: Upload to NAS
-        env:
-          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
-        run: |
-          # Ubuntu용 smbclient 설치
-          sudo apt-get update
-          sudo apt-get install -y smbclient jq
-          
-          # IPA 파일 복사
-          cp ios/build/ipa/Runner.ipa romrom-${{ env.SHORT_COMMIT_HASH }}.ipa
-          
-          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
-          SMB_PORT=44445 
-          SMB_SHARE="web"
-          SMB_PATH="/romrom/ios/download"
-          
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "mkdir $SMB_PATH; cd $SMB_PATH; put romrom-${{ env.SHORT_COMMIT_HASH }}.ipa romrom-${{ env.SHORT_COMMIT_HASH }}.ipa"
-
-      # 빌드 히스토리 업데이트
-      - name: Update build history
-        env:
-          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
-          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
-        run: |
-          export TZ='Asia/Seoul'
-          BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
-          FILE_SIZE=$(stat -c%s "romrom-${{ env.SHORT_COMMIT_HASH }}.ipa")
-          COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
-          
-          NEW_BUILD_INFO=$(jq -n \
-            --arg ipa_name "romrom-${{ env.SHORT_COMMIT_HASH }}.ipa" \
-            --arg file_size "$FILE_SIZE" \
-            --arg build_date "$BUILD_DATE" \
-            --arg commit_link "$COMMIT_LINK" \
-            --arg full_commit_hash "${{ github.sha }}" \
-            --arg version "${{ needs.version-bump.outputs.new_version }}" \
-            --arg testflight "true" \
-            '{ipa_name: $ipa_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash, version: $version, testflight: $testflight}')
-          
-          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
-          SMB_SHARE="web"
-          SMB_PATH="/romrom/ios/download"
-          
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; get romrom-ios-cicd-history.json" || echo '{"files": []}' > romrom-ios-cicd-history.json
-          
-          jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-ios-cicd-history.json > updated.json
-          
-          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put updated.json romrom-ios-cicd-history.json"
-
-      # Slack 알림 (선택사항)
+      # 성공 알림
       - name: Notify TestFlight Upload Success
         if: success()
         run: |
-          echo "✅ TestFlight 업로드 성공!"
+          echo "TestFlight 업로드 성공!"
           echo "버전: ${{ needs.version-bump.outputs.new_version }}"
           echo "커밋: ${{ github.sha }}"
 
       - name: Notify on Failure
         if: failure()
         run: |
-          echo "❌ TestFlight 업로드 실패!"
+          echo "TestFlight 업로드 실패!"
           echo "로그를 확인해주세요."
