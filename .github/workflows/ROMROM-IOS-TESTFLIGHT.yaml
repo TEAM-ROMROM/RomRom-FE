@@ -1,0 +1,285 @@
+name:Project-iOS-TestFlight-Deploy
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: "3.27.3"
+  XCODE_VERSION: "15.2"
+
+jobs:
+  version-bump:
+    name: Version Bump
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate new version
+        id: version
+        run: |
+          VERSION_LINE="${{ steps.current_version.outputs.current_version }}"
+          VERSION=$(echo $VERSION_LINE | cut -d'+' -f1)
+          BUILD_NUMBER=$(echo $VERSION_LINE | cut -d'+' -f2)
+          
+          # Build number 증가
+          NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
+          NEW_VERSION="${VERSION}+${NEW_BUILD_NUMBER}"
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$NEW_BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Update pubspec.yaml
+        run: |
+          sed -i "s/version: .*/version: ${{ steps.version.outputs.new_version }}/" pubspec.yaml
+          echo "Updated pubspec.yaml with version ${{ steps.version.outputs.new_version }}"
+
+      - name: Commit version bump
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pubspec.yaml
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}" || exit 0
+          git push
+
+      - name: Create Git Tag
+        run: |
+          git tag "v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}"
+
+  build-and-deploy:
+    name: Build and Deploy to TestFlight
+    runs-on: macos-13
+    needs: version-bump
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin main
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo ".env file created"
+
+      - name: Create Secrets.xcconfig file
+        run: |
+          mkdir -p ios/Flutter
+          if [ -n "${{ secrets.SECRETS_XCCONFIG }}" ]; then
+            echo "${{ secrets.SECRETS_XCCONFIG }}" > ios/Flutter/Secrets.xcconfig
+            echo "Secrets.xcconfig created"
+          else
+            echo "// No secrets provided" > ios/Flutter/Secrets.xcconfig
+          fi
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-flutter-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: Install CocoaPods
+        run: |
+          gem install cocoapods
+          cd ios && pod install
+
+      # Apple 인증서 설정
+      - name: Import Code-Signing Certificates
+        uses: Apple-Actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: Install Provisioning Profile
+        run: |
+          echo "${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          uuid=$(grep -A1 -a "UUID" profile.mobileprovision | grep string | sed -e "s/<string>//" -e "s/<\/string>//" -e "s/[[:space:]]//g")
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$uuid.mobileprovision
+
+      # 코드 서명된 iOS 빌드
+      - name: Build iOS app with code signing
+        run: |
+          flutter build ios --release \
+            --build-name="${{ needs.version-bump.outputs.new_version }}" \
+            --build-number="${{ needs.version-bump.outputs.build_number }}"
+
+      # Archive 생성
+      - name: Create Archive
+        run: |
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -archivePath build/Runner.xcarchive \
+            -destination 'generic/platform=iOS' \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="RomRom Distribution" \
+            CODE_SIGN_IDENTITY="iPhone Distribution"
+
+      # IPA 생성
+      - name: Export IPA
+        run: |
+          cd ios
+          # ExportOptions.plist 생성
+          cat > ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>destination</key>
+              <string>export</string>
+              <key>method</key>
+              <string>app-store</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.alom.romrom</key>
+                  <string>RomRom Distribution</string>
+              </dict>
+              <key>signingCertificate</key>
+              <string>iPhone Distribution</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>teamID</key>
+              <string>CUK22HY6YC</string>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          
+          xcodebuild -exportArchive \
+            -archivePath build/Runner.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ExportOptions.plist
+
+      # App Store Connect API Key 설정
+      - name: Setup App Store Connect API Key
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
+
+      # TestFlight 업로드
+      - name: Upload to TestFlight
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            --file "ios/build/ipa/Runner.ipa" \
+            --apiKey ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }} \
+            --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+
+      # 커밋 해시 계산
+      - name: Calculate Short Commit Hash
+        id: short_hash
+        run: echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+
+      # NAS 업로드 (기존 로직 유지)
+      - name: Upload to NAS
+        env:
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+        run: |
+          # Ubuntu용 smbclient 설치
+          sudo apt-get update
+          sudo apt-get install -y smbclient jq
+          
+          # IPA 파일 복사
+          cp ios/build/ipa/Runner.ipa romrom-${{ env.SHORT_COMMIT_HASH }}.ipa
+          
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_PORT=44445 
+          SMB_SHARE="web"
+          SMB_PATH="/romrom/ios/download"
+          
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "mkdir $SMB_PATH; cd $SMB_PATH; put romrom-${{ env.SHORT_COMMIT_HASH }}.ipa romrom-${{ env.SHORT_COMMIT_HASH }}.ipa"
+
+      # 빌드 히스토리 업데이트
+      - name: Update build history
+        env:
+          SMB_USERNAME: ${{ secrets.WEB_SMB_USERNAME }}
+          SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
+        run: |
+          export TZ='Asia/Seoul'
+          BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
+          FILE_SIZE=$(stat -c%s "romrom-${{ env.SHORT_COMMIT_HASH }}.ipa")
+          COMMIT_LINK="https://github.com/TEAM-ROMROM/RomRom-FE/commit/${{ github.sha }}"
+          
+          NEW_BUILD_INFO=$(jq -n \
+            --arg ipa_name "romrom-${{ env.SHORT_COMMIT_HASH }}.ipa" \
+            --arg file_size "$FILE_SIZE" \
+            --arg build_date "$BUILD_DATE" \
+            --arg commit_link "$COMMIT_LINK" \
+            --arg full_commit_hash "${{ github.sha }}" \
+            --arg version "${{ needs.version-bump.outputs.new_version }}" \
+            --arg testflight "true" \
+            '{ipa_name: $ipa_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash, version: $version, testflight: $testflight}')
+          
+          SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
+          SMB_SHARE="web"
+          SMB_PATH="/romrom/ios/download"
+          
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; get romrom-ios-cicd-history.json" || echo '{"files": []}' > romrom-ios-cicd-history.json
+          
+          jq --argjson new_build "$NEW_BUILD_INFO" '.files += [$new_build]' romrom-ios-cicd-history.json > updated.json
+          
+          smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -c "cd $SMB_PATH; put updated.json romrom-ios-cicd-history.json"
+
+      # Slack 알림 (선택사항)
+      - name: Notify TestFlight Upload Success
+        if: success()
+        run: |
+          echo "✅ TestFlight 업로드 성공!"
+          echo "버전: ${{ needs.version-bump.outputs.new_version }}"
+          echo "커밋: ${{ github.sha }}"
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ TestFlight 업로드 실패!"
+          echo "로그를 확인해주세요."
