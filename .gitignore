@@ -93,3 +93,8 @@ Flutter/flutter_assets/
 !default.pbxuser
 !default.perspectivev3
 /ios/GoogleService-Info.plist
+
+# iOS signing files
+*.p12
+*.p8
+*.mobileprovision

@@ -1,0 +1,82 @@
+#name: ROMROM-iOS-TestFlight-CICD
+#
+#on:
+#  workflow_dispatch:        # 필요할 때 수동 실행
+#  push:
+#    branches: ["main"]     # main 푸시 시 자동 실행
+#
+#jobs:
+#  build:
+#    name: Build IPA
+#    runs-on: macos-latest
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      # .env 및 Secrets.xcconfig 생성 ---------------------------------------
+#      - run: echo "${{ secrets.ENV_FILE }}" > .env
+#      - run: |
+#          mkdir -p ios/Flutter
+#          echo "${{ secrets.SECRETS_XCCONFIG }}" > ios/Flutter/Secrets.xcconfig
+#
+#      # Flutter -------------------------------------------------------------
+#      - uses: subosito/flutter-action@v2
+#        with:
+#          flutter-version: "3.27.3"
+#          cache: true
+#
+#      - run: flutter pub get
+#
+#      # CocoaPods -----------------------------------------------------------
+#      - uses: ruby/setup-ruby@v1
+#        with:
+#          ruby-version: "3.4.1"
+#          bundler-cache: true
+#
+#      - run: |
+#          gem install cocoapods
+#          cd ios && pod install --repo-update && cd ..
+#
+#      # Short commit hash (빌드명에 사용) -----------------------------------
+#      - id: vars
+#        run: echo "SH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+#
+#      # IPA 빌드 (코드서명 포함) --------------------------------------------
+#      - name: Build IPA
+#        run: |
+#          flutter build ipa --release --export-options-plist=ios/exportOptions.plist
+#
+#      # 아티팩트 업로드 -------------------------------------------------------
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: romrom-ipa
+#          path: build/ios/ipa/*.ipa
+#          retention-days: 1
+#
+#  deploy:
+#    name: Upload to TestFlight
+#    needs: build
+#    runs-on: macos-latest
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - run: gem install fastlane
+#
+#      - uses: actions/download-artifact@v4
+#        with:
+#          name: romrom-ipa
+#          path: ios-build
+#
+#      - name: Upload via Fastlane Pilot
+#        env:
+#          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+#          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+#          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+#        run: |
+#          IPA=$(find ios-build -name "*.ipa" | head -n 1)
+#          fastlane pilot upload \
+#            --ipa "$IPA" \
+#            --skip_waiting_for_build_processing true \
+#            --distribute_external false \
+#            --changelog "Automated build ${{ env.SH }}"

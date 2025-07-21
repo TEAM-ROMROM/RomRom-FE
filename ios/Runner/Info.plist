@@ -31,11 +31,9 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- kakao login -->
 				<string>$(KAKAO_URL_SCHEMES)</string>
-				<!-- google login -->
-        		<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
-			</array>		
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
 		</dict>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
@@ -49,6 +47,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>카메라 사용에 필요합니다.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Always and when in use!</string>
 	<key>NSLocationAlwaysUsageDescription</key>
@@ -57,8 +57,6 @@
 	<string>Older devices need location.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Need location when in use</string>
-	<key>NSCameraUsageDescription</key>
-	<string>카메라 사용에 필요합니다.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>마이크 사용에 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
