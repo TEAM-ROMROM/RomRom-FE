@@ -153,9 +153,6 @@ jobs:
             --build-name="${{ needs.version-bump.outputs.new_version }}" \
             --build-number="${{ needs.version-bump.outputs.build_number }}" \
             --export-options-plist=ios/ExportOptions.plist \
-            -- \
-            -allowProvisioningUpdates \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
 
       # ExportOptions.plist 파일 생성
       - name: Create ExportOptions.plist
