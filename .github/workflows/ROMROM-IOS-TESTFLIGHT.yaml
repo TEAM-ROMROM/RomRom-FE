@@ -2,7 +2,7 @@ name: Project-iOS-TestFlight-Deploy
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "deploy"]
   workflow_dispatch:
 
 env:
@@ -208,6 +208,7 @@ jobs:
 
       # Upload to TestFlight
       - name: Upload to TestFlight
+        if: github.ref == 'refs/heads/deploy'
         run: |
           IPA_PATH=$(echo ios/build/ipa/*.ipa)   # 첫 번째 ipa 파일 경로
           echo "Uploading $IPA_PATH"

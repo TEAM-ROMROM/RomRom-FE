@@ -2,7 +2,7 @@ name: ROMROM-Android-CICD
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "deploy"]
 
 jobs:
   build-android:
@@ -175,6 +175,7 @@ jobs:
     name: Deploy Android APK
     runs-on: ubuntu-latest
     needs: build-android
+    if: github.ref == 'refs/heads/deploy'
 
     steps:
       - name: Checkout code
