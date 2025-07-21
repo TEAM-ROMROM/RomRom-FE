@@ -7,7 +7,7 @@ on:
 
 env:
   FLUTTER_VERSION: "3.27.3"
-  XCODE_VERSION: "15.2"
+  XCODE_VERSION: "16.0"
 
 jobs:
   version-bump:
@@ -37,11 +37,11 @@ jobs:
           VERSION_LINE="${{ steps.current_version.outputs.current_version }}"
           VERSION=$(echo $VERSION_LINE | cut -d'+' -f1)
           BUILD_NUMBER=$(echo $VERSION_LINE | cut -d'+' -f2)
-          
+
           # Build number 증가
           NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
           NEW_VERSION="${VERSION}+${NEW_BUILD_NUMBER}"
-          
+
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "build_number=$NEW_BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
@@ -66,9 +66,9 @@ jobs:
 
   build-and-deploy:
     name: Build and Deploy to TestFlight
-    runs-on: macos-13
+    runs-on: macos-14
     needs: version-bump
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
 
       - name: Install CocoaPods
