@@ -56,7 +56,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add pubspec.yaml
-          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}" || exit 0
+          git commit -m "TestFlight 자동 배포를 위한 GitHub Actions 워크플로우 구현 : chore : Version 생성 및 업데이트 : ${{ steps.version.outputs.new_version }} https://github.com/TEAM-ROMROM/RomRom-FE/issues/155" || exit 0
           git push
 
       - name: Create Git Tag
