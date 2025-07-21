@@ -1,4 +1,4 @@
-name:Project-iOS-TestFlight-Deploy
+name: Project-iOS-TestFlight-Deploy
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
     outputs:
       new_version: ${{ steps.version.outputs.new_version }}
       build_number: ${{ steps.version.outputs.build_number }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
