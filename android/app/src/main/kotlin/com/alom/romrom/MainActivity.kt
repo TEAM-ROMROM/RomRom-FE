@@ -1,4 +1,4 @@
-package com.example.romrom
+package com.alom.romrom
 
 import android.os.Bundle
 import android.provider.Settings
