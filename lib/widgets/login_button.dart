@@ -15,66 +15,65 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 로그인 버튼
-class LoginButton extends StatelessWidget {
-  LoginButton({
+class LoginButton extends StatefulWidget {
+  const LoginButton({
     super.key,
     required this.platform,
   });
 
   final LoginPlatforms platform;
+
+  @override
+  State<LoginButton> createState() => _LoginButtonState();
+}
+
+class _LoginButtonState extends State<LoginButton> {
   final KakaoAuthService kakaoAuthService = KakaoAuthService();
   final GoogleAuthService googleAuthService = GoogleAuthService();
+  bool _isLoading = false;
 
-  /// 버튼 눌렀을 때 로그인 처리 함수
   Future<void> handleLogin(BuildContext context) async {
+    if (_isLoading) return; // 이미 로그인 중이면 무시
+    setState(() => _isLoading = true);
+
     try {
       bool isSuccess = false;
 
-      switch (platform) {
-        // 카카오 로그인
+      switch (widget.platform) {
         case LoginPlatforms.kakao:
           isSuccess = await kakaoAuthService.loginWithKakao();
           break;
-        // 구글 로그인
         case LoginPlatforms.google:
           isSuccess = await googleAuthService.logInWithGoogle();
           break;
       }
 
+      if (!mounted) return; // 로그인 완료 후 context가 유효한지 체크
+
       if (isSuccess) {
         var userInfo = UserInfo();
-        await userInfo.getUserInfo(); // 사용자 정보 불러오기
+        await userInfo.getUserInfo();
 
         final prefs = await SharedPreferences.getInstance();
 
-        // 첫 로그인인 경우에만 코치마크 설정 초기화
         if (userInfo.isFirstLogin == true) {
-          // 첫 로그인 시 코치마크 표시를 위한 설정
           await prefs.setBool('isFirstMainScreen', true);
-          // 다음부터 보지 않기 설정 초기화 (첫 사용자는 무조건 봐야 함)
           await prefs.setBool('dontShowCoachMark', false);
-          debugPrint('첫 로그인: 코치마크 설정 초기화');
         } else {
-          // 기존 사용자의 경우 설정 유지 (필요시에만 설정)
           if (!prefs.containsKey('isFirstMainScreen')) {
             await prefs.setBool('isFirstMainScreen', false);
           }
-          debugPrint('기존 사용자: 코치마크 설정 유지');
         }
 
-        // 다음 화면 결정
         Widget nextScreen;
         if (userInfo.needsOnboarding) {
-          // 온보딩이 필요한 경우
           nextScreen = OnboardingFlowScreen(
             initialStep: userInfo.nextOnboardingStep,
           );
         } else {
-          // 온보딩이 완료된 경우
           nextScreen = const MainScreen();
         }
 
-        // 모든 비동기 작업 완료 후 context 확인
         if (context.mounted) {
           context.navigateTo(
             screen: nextScreen,
@@ -84,22 +83,26 @@ class LoginButton extends StatelessWidget {
       }
     } catch (e) {
       debugPrint("로그인 처리 중 오류: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () async {
-        await handleLogin(context);
-      },
+      onTap: _isLoading
+          ? null
+          : () async {
+              await handleLogin(context);
+            },
       child: Container(
         width: 316.w,
         height: 56.h,
-        margin: EdgeInsets.only(bottom: 12.h), // 버튼 세로 간격
+        margin: EdgeInsets.only(bottom: 12.h),
         decoration: BoxDecoration(
-          color: platform.backgroundColor, // 배경색
-          borderRadius: BorderRadius.circular(100.r), // 둥근 모서리
+          color: widget.platform.backgroundColor,
+          borderRadius: BorderRadius.circular(100.r),
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -107,7 +110,7 @@ class LoginButton extends StatelessWidget {
             Positioned(
               left: 70.w,
               child: SvgPicture.asset(
-                platform.iconPath,
+                widget.platform.iconPath,
                 width: 22.h,
                 height: 22.h,
                 placeholderBuilder: (context) => Icon(
@@ -119,7 +122,7 @@ class LoginButton extends StatelessWidget {
             ),
             Center(
               child: Text(
-                platform.displayText,
+                widget.platform.displayText,
                 style: CustomTextStyles.p2.copyWith(
                     color: AppColors.textColorBlack,
                     fontWeight: FontWeight.w700),

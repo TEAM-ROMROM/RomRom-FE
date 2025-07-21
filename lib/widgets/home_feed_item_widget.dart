@@ -49,6 +49,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   @override
   Widget build(BuildContext context) {
     String formattedPrice = formatPrice(widget.item.price);
+    String formattedDate = formatDate(widget.item.date);
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     // 네비게이션바 && 상태바 높이 : 실제 사용 가능 높이 계산
@@ -218,7 +219,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             Row(
                               children: [
                                 Text(
-                                  formattedPrice,
+                                  "$formattedPrice원",
                                   style: CustomTextStyles.h3
                                       .copyWith(fontWeight: FontWeight.w600),
                                 ),
@@ -233,13 +234,12 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             // 위치 및 날짜 정보
                             Row(
                               children: [
-                                // FIXME 위치 아이콘 교체 필요
                                 Icon(AppIcons.location,
                                     color: AppColors.opacity80White,
                                     size: 13.sp),
                                 SizedBox(width: 4.w),
                                 Text(
-                                  '${widget.item.location} • ${widget.item.date}',
+                                  '${widget.item.location} • $formattedDate',
                                   style: CustomTextStyles.p3
                                       .copyWith(fontWeight: FontWeight.w500),
                                 ),
