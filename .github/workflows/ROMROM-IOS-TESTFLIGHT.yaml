@@ -2,7 +2,7 @@ name: Project-iOS-TestFlight-Deploy
 
 on:
   push:
-    branches: ["main", "deploy"]
+    branches: ["deploy"]
   workflow_dispatch:
 
 env:
@@ -73,11 +73,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: deploy
           fetch-depth: 0
 
       - name: Pull latest changes
-        run: git pull origin main
+        run: git pull origin deploy
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
@@ -208,7 +208,6 @@ jobs:
 
       # Upload to TestFlight
       - name: Upload to TestFlight
-        if: github.ref == 'refs/heads/deploy'
         run: |
           IPA_PATH=$(echo ios/build/ipa/*.ipa)   # 첫 번째 ipa 파일 경로
           echo "Uploading $IPA_PATH"
