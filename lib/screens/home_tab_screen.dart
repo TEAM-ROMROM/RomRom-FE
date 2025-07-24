@@ -197,7 +197,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             _coachMarkImages.length,
-            (index) {
+                (index) {
               final isCurrentPage = index == currentPage;
               return GestureDetector(
                 onTap: () {
@@ -412,9 +412,14 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             child: PageView.builder(
               scrollDirection: Axis.vertical,
               controller: _pageController,
+              // 블러가 활성화된 경우 스와이프(스크롤) 동작을 비활성화해 첫 화면 고정
+              physics: _isBlurShown
+                  ? const NeverScrollableScrollPhysics()
+                  : const PageScrollPhysics(),
               itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
-                if (index < _feedItems.length) {
+                // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
+                if (!_isBlurShown && index < _feedItems.length) {
                   setState(() {
                     _currentFeedIndex = index;
                   });
