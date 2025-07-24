@@ -115,9 +115,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                               itemCategoryLabel:
                                   _mapItemCategory(item.itemCategory),
                               itemName: item.itemName ?? '',
-                              itemCardImageUrl: (item.itemImagePaths != null &&
-                                      item.itemImagePaths!.isNotEmpty)
-                                  ? item.itemImagePaths!.first
+                              itemCardImageUrl: (item.itemImageUrls != null &&
+                                      item.itemImageUrls!.isNotEmpty)
+                                  ? item.itemImageUrls!.first
                                   : 'https://picsum.photos/400/300',
                               itemOptions:
                                   _mapTradeOptions(item.itemTradeOptions),

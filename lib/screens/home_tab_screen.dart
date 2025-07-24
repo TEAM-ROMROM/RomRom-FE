@@ -360,7 +360,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         priceTag: null,
         profileImageUrl: 'https://picsum.photos/100/100?random=${index + 1}', //FIXME: 프로필 이미지 추가 필요
         likeCount: d.likeCount ?? 0,
-        imageUrls: d.itemImagePaths ?? [''],
+        imageUrls: d.itemImageUrls ?? [''],
         description: d.itemDescription ?? '',
         hasAiAnalysis: false,
       );
