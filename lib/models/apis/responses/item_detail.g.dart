@@ -19,7 +19,7 @@ ItemDetail _$ItemDetailFromJson(Map<String, dynamic> json) => ItemDetail(
       likeCount: (json['likeCount'] as num?)?.toInt(),
       price: (json['price'] as num?)?.toInt(),
       createdDate: json['createdDate'] as String?,
-      itemImageUrls: (json['itemImagePaths'] as List<dynamic>?)
+      itemImageUrls: (json['itemImageUrls'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
       itemCustomTags: (json['itemCustomTags'] as List<dynamic>?)
@@ -39,6 +39,6 @@ Map<String, dynamic> _$ItemDetailToJson(ItemDetail instance) =>
       'likeCount': instance.likeCount,
       'price': instance.price,
       'createdDate': instance.createdDate,
-      'itemImagePaths': instance.itemImageUrls,
+      'itemImageUrls': instance.itemImageUrls,
       'itemCustomTags': instance.itemCustomTags,
     };
