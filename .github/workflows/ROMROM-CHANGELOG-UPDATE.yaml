@@ -2,14 +2,13 @@ name: CHANGELOG 자동 업데이트
 
 on:
   pull_request:
-    types: [closed]
+    types: [opened, synchronize]
     branches: ["deploy"]
 
 jobs:
   update-changelog:
     name: CHANGELOG.md 업데이트
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
 
     steps:
       - name: 저장소 체크아웃
@@ -17,6 +16,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          ref: main
 
       - name: 현재 버전 확인
         id: get_version
@@ -30,7 +30,9 @@ jobs:
       - name: CodeRabbit Summary 추출 대기 (5분)
         run: |
           echo "CodeRabbit이 Summary를 작성할 때까지 5분 대기 중..."
+          echo "현재 시간: $(date)"
           sleep 300
+          echo "대기 완료 시간: $(date)"
 
       - name: PR에서 CodeRabbit Summary 추출
         id: extract_summary
@@ -38,13 +40,21 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number }}"
           PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
           
+          echo "PR Number: $PR_NUMBER"
           echo "PR URL: $PR_URL"
+          echo "Repository: ${{ github.repository }}"
+          echo "Event Action: ${{ github.event.action }}"
+          echo "Source Branch: ${{ github.event.pull_request.head.ref }}"
+          echo "Target Branch: ${{ github.event.pull_request.base.ref }}"
           
           # GitHub API로 PR의 HTML 가져오기
+          echo "GitHub API 호출 중..."
           curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                -H "Accept: application/vnd.github.v3.html" \
                "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
                > pr_content.html
+          
+          echo "API 응답 크기: $(wc -c < pr_content.html) bytes"
           
           # CodeRabbit Summary 부분 추출
           if grep -q "Summary by CodeRabbit" pr_content.html; then
@@ -120,7 +130,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add CHANGELOG.md
           git commit -m "docs: CHANGELOG.md 업데이트 - v${{ steps.get_version.outputs.version }}" || exit 0
-          git push
+          git push origin main
 
       - name: CHANGELOG 업데이트 완료 알림
         run: |
