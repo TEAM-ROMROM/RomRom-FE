@@ -11,10 +11,8 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
-  path_filters:
-    - "**/*"
-  branch_filters:
-    - "main"
-    - "deploy"
+    base_branches:
+      - "main"
+      - "deploy"
 chat:
   auto_reply: true
