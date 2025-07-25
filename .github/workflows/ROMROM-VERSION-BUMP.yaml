@@ -53,7 +53,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add pubspec.yaml
-          git commit -m "ROMROM-FE 버전 정보 관리 : chore: 버전 ${{ steps.version.outputs.new_version }} : https://github.com/TEAM-ROMROM/RomRom-FE/discussions/166 " || exit 0
+          git commit -m "ROMROM-FE 버전 정보 관리 : chore: 버전 ${{ steps.version.outputs.new_version }} : https://github.com/TEAM-ROMROM/RomRom-FE/issues/167" || exit 0
           git push
 
       - name: Git 태그 생성
