@@ -53,7 +53,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add pubspec.yaml
-          git commit -m "chore: 버전 자동 증가 ${{ steps.version.outputs.new_version }}" || exit 0
+          git commit -m "ROMROM-FE 버전 정보 관리 : chore: 버전 ${{ steps.version.outputs.new_version }} : https://github.com/TEAM-ROMROM/RomRom-FE/discussions/166 " || exit 0
           git push
 
       - name: Git 태그 생성
@@ -63,7 +63,7 @@ jobs:
 
       - name: 버전 업 완료 알림
         run: |
-          echo "✅ 버전 업데이트 완료!"
+          echo "버전 업데이트 완료!"
           echo "이전 버전: ${{ steps.current_version.outputs.current_version }}"
           echo "새 버전: ${{ steps.version.outputs.new_version }}"
           echo "커밋: ${{ github.sha }}" 
