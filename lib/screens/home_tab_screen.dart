@@ -79,18 +79,48 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     super.dispose();
   }
 
-  /// 메인화면 첫 진입 여부 확인 및 코치마크 표시 트리거
+  /// 메인화면 첫 진입 여부와 "내 물품 보유 여부"를 함께 고려해
+  /// 블러·코치마크 노출 여부를 결정한다.
+  ///
+  /// 조건
+  /// 1) 사용자가 **등록한 물품이 하나도 없고**
+  /// 2) 앱 최초 진입일 때(isFirstMainScreen == true)
+  /// → 블러 & 코치마크 ON
+  ///
+  /// 그 외에는 블러·코치마크 OFF
   Future<void> _checkFirstMainScreen() async {
     final prefs = await SharedPreferences.getInstance();
-    final isFirst = prefs.getBool('isFirstMainScreen') ?? true;
+    final bool isFirst = prefs.getBool('isFirstMainScreen') ?? true;
+
+    bool userHasItem = false;
+    try {
+      // 내 물품이 하나라도 있는지 확인 (pageSize=1로 최소 데이터 호출)
+      final itemApi = ItemApi();
+      final response = await itemApi.getMyItems(
+        ItemRequest(pageNumber: 0, pageSize: 1),
+      );
+
+      userHasItem =
+          (response.itemDetailPage?.content?.isNotEmpty ?? false);
+    } catch (e) {
+      debugPrint('블러 상태 결정용 내 물품 조회 실패: $e');
+      // 실패 시에는 "없다"고 간주해 기존 로직 유지
+    }
+
+    final bool shouldShowBlur = !userHasItem && isFirst;
 
     setState(() {
-      _isBlurShown = isFirst; // 첫 진입 시 블러 효과 표시
-      _isCoachMarkShown = isFirst; // 첫 진입 시 코치마크 표시
+      _isBlurShown = shouldShowBlur;
+      _isCoachMarkShown = shouldShowBlur;
     });
 
+    // 블러를 보여줄 필요가 없다면 최초 진입 플래그도 바로 해제 (다음 진입 시 재호출 방지)
+    if (!shouldShowBlur) {
+      await prefs.setBool('isFirstMainScreen', false);
+    }
+
     // 코치마크가 필요한 경우 오버레이 표시
-    if (_isCoachMarkShown) {
+    if (shouldShowBlur) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showCoachMarkOverlay();
       });

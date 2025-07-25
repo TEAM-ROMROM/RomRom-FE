@@ -140,12 +140,22 @@ jobs:
           echo "Fastlane installed"
           fastlane --version
 
-      # 짧은 커밋 해시 계산
-      - name: Calculate Short Commit Hash
-        id: short_hash
+      # 현재 버전 정보 및 짧은 커밋 해시 계산
+      - name: Get version info and calculate short commit hash
+        id: version_info
         run: |
-          echo "SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
-          echo "Short commit hash: ${{ env.SHORT_COMMIT_HASH }}"
+          CURRENT_VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)
+          SHORT_COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "SHORT_COMMIT_HASH=$SHORT_COMMIT_HASH" >> $GITHUB_ENV
+          
+          echo "현재 버전: $CURRENT_VERSION"
+          echo "짧은 커밋 해시: $SHORT_COMMIT_HASH"
 
       # Fastlane을 이용하여 APK 빌드 (릴리스 빌드 유지)
       - name: Build APK with Fastlane
@@ -159,8 +169,8 @@ jobs:
       - name: Rename and Prepare APK
         run: |
           mkdir -p ./android/app/build/outputs/apk/release/
-          mv ./build/app/outputs/flutter-apk/app-release.apk ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
-          echo "APK renamed to romrom-${{ env.SHORT_COMMIT_HASH }}.apk"
+          mv ./build/app/outputs/flutter-apk/app-release.apk ./android/app/build/outputs/apk/release/romrom-v${{ env.VERSION }}-${{ env.SHORT_COMMIT_HASH }}.apk
+          echo "APK renamed to romrom-v${{ env.VERSION }}-${{ env.SHORT_COMMIT_HASH }}.apk"
           ls -la ./android/app/build/outputs/apk/release/
 
       # APK를 아티팩트로 업로드
@@ -168,7 +178,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: romrom-apk
-          path: ./android/app/build/outputs/apk/release/romrom-${{ env.SHORT_COMMIT_HASH }}.apk
+          path: ./android/app/build/outputs/apk/release/romrom-v${{ env.VERSION }}-${{ env.SHORT_COMMIT_HASH }}.apk
           retention-days: 1
 
   deploy-android:

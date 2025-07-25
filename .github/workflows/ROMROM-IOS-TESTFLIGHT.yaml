@@ -10,64 +10,9 @@ env:
   XCODE_VERSION: "16.3"
 
 jobs:
-  version-bump:
-    name: Version Bump
-    runs-on: ubuntu-latest
-    outputs:
-      new_version: ${{ steps.version.outputs.new_version }}
-      build_number: ${{ steps.version.outputs.build_number }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-
-      - name: Get current version
-        id: current_version
-        run: |
-          CURRENT_VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $CURRENT_VERSION"
-
-      - name: Calculate new version
-        id: version
-        run: |
-          VERSION_LINE="${{ steps.current_version.outputs.current_version }}"
-          VERSION=$(echo $VERSION_LINE | cut -d'+' -f1)
-          BUILD_NUMBER=$(echo $VERSION_LINE | cut -d'+' -f2)
-
-          # Build number 증가
-          NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
-          NEW_VERSION="${VERSION}+${NEW_BUILD_NUMBER}"
-
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "build_number=$NEW_BUILD_NUMBER" >> $GITHUB_OUTPUT
-          echo "New version: $NEW_VERSION"
-
-      - name: Update pubspec.yaml
-        run: |
-          sed -i "s/version: .*/version: ${{ steps.version.outputs.new_version }}/" pubspec.yaml
-          echo "Updated pubspec.yaml with version ${{ steps.version.outputs.new_version }}"
-
-      - name: Commit version bump
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add pubspec.yaml
-          git commit -m "TestFlight 자동 배포를 위한 GitHub Actions 워크플로우 구현 : chore : Version 생성 및 업데이트 : ${{ steps.version.outputs.new_version }} https://github.com/TEAM-ROMROM/RomRom-FE/issues/155" || exit 0
-          git push
-
-      - name: Create Git Tag
-        run: |
-          git tag "v${{ steps.version.outputs.new_version }}"
-          git push origin "v${{ steps.version.outputs.new_version }}"
-
   build-and-deploy:
     name: Build and Deploy to TestFlight
     runs-on: macos-15
-    needs: version-bump
 
     steps:
       - name: Checkout repository
@@ -171,12 +116,24 @@ jobs:
           </plist>
           EOF
 
+      # 현재 버전 정보 읽기
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "현재 버전: $CURRENT_VERSION"
+
       # Flutter build (no codesign) to generate Xcode project artifacts
       - name: Flutter build (no codesign)
         run: |
           flutter build ios --release --no-codesign \
-            --build-name="${{ needs.version-bump.outputs.new_version }}" \
-            --build-number="${{ needs.version-bump.outputs.build_number }}"
+            --build-name="${{ steps.current_version.outputs.version }}" \
+            --build-number="${{ steps.current_version.outputs.build_number }}"
 
       # Archive 생성 (manual signing)
       - name: Create Archive
@@ -222,7 +179,7 @@ jobs:
         if: success()
         run: |
           echo "✅ TestFlight 업로드 성공!"
-          echo "버전: ${{ needs.version-bump.outputs.new_version }}"
+          echo "버전: ${{ steps.current_version.outputs.current_version }}"
           echo "커밋: ${{ github.sha }}"
 
       - name: Notify on Failure
