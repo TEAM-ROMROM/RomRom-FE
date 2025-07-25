@@ -1,0 +1,137 @@
+name: CHANGELOG 자동 업데이트
+
+on:
+  pull_request:
+    types: [closed]
+    branches: ["deploy"]
+
+jobs:
+  update-changelog:
+    name: CHANGELOG.md 업데이트
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 현재 버전 확인
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "현재 버전: $CURRENT_VERSION"
+
+      - name: CodeRabbit Summary 추출 대기 (5분)
+        run: |
+          echo "CodeRabbit이 Summary를 작성할 때까지 5분 대기 중..."
+          sleep 300
+
+      - name: PR에서 CodeRabbit Summary 추출
+        id: extract_summary
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
+          
+          echo "PR URL: $PR_URL"
+          
+          # GitHub API로 PR의 HTML 가져오기
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3.html" \
+               "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
+               > pr_content.html
+          
+          # CodeRabbit Summary 부분 추출
+          if grep -q "Summary by CodeRabbit" pr_content.html; then
+            echo "CodeRabbit Summary 발견됨"
+            
+            # Summary 부분만 추출 (HTML 태그 포함)
+            sed -n '/<h2[^>]*>Summary by CodeRabbit<\/h2>/,/<\/ul>/p' pr_content.html > summary_raw.html
+            
+            # HTML을 Markdown으로 변환 (간단 버전)
+            sed -i 's/<h2[^>]*>/## /g' summary_raw.html
+            sed -i 's/<\/h2>//g' summary_raw.html
+            sed -i 's/<ul[^>]*>/\n/g' summary_raw.html
+            sed -i 's/<\/ul>//g' summary_raw.html
+            sed -i 's/<li[^>]*>/- /g' summary_raw.html
+            sed -i 's/<\/li>//g' summary_raw.html
+            sed -i 's/<p[^>]*>//g' summary_raw.html
+            sed -i 's/<\/p>//g' summary_raw.html
+            sed -i 's/<strong>/\*\*/g' summary_raw.html
+            sed -i 's/<\/strong>/\*\*/g' summary_raw.html
+            sed -i '/^$/d' summary_raw.html
+            
+            echo "SUMMARY_FOUND=true" >> $GITHUB_ENV
+            echo "변환된 Summary:"
+            cat summary_raw.html
+          else
+            echo "CodeRabbit Summary를 찾을 수 없습니다."
+            echo "SUMMARY_FOUND=false" >> $GITHUB_ENV
+            echo "## Summary by CodeRabbit" > summary_raw.html
+            echo "- 자동 Summary 추출 실패" >> summary_raw.html
+          fi
+
+      - name: CHANGELOG.md 업데이트
+        if: env.SUMMARY_FOUND == 'true'
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TODAY=$(date '+%Y-%m-%d')
+          
+          # CHANGELOG.md가 없으면 생성
+          if [ ! -f "CHANGELOG.md" ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "이 프로젝트의 모든 주목할 만한 변경사항이 이 파일에 문서화됩니다." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+          
+          # 임시 파일에 새 버전 정보 작성
+          echo "## [$VERSION] - $TODAY" > new_entry.md
+          echo "" >> new_entry.md
+          cat summary_raw.html >> new_entry.md
+          echo "" >> new_entry.md
+          echo "---" >> new_entry.md
+          echo "" >> new_entry.md
+          
+          # 기존 CHANGELOG.md와 새 엔트리 합치기
+          if grep -q "## \[" CHANGELOG.md; then
+            # 첫 번째 버전 엔트리 앞에 새 엔트리 삽입
+            sed '/## \[/i\
+            ' CHANGELOG.md > temp_changelog.md
+            sed '/## \[/r new_entry.md' temp_changelog.md > CHANGELOG.md
+          else
+            # 첫 번째 버전 엔트리인 경우
+            cat new_entry.md >> CHANGELOG.md
+          fi
+          
+          echo "CHANGELOG.md 업데이트 완료"
+          echo "추가된 내용:"
+          head -20 CHANGELOG.md
+
+      - name: 변경사항 커밋 및 푸시
+        if: env.SUMMARY_FOUND == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add CHANGELOG.md
+          git commit -m "docs: CHANGELOG.md 업데이트 - v${{ steps.get_version.outputs.version }}" || exit 0
+          git push
+
+      - name: CHANGELOG 업데이트 완료 알림
+        run: |
+          if [ "${{ env.SUMMARY_FOUND }}" == "true" ]; then
+            echo "✅ CHANGELOG.md 업데이트 완료!"
+            echo "버전: ${{ steps.get_version.outputs.version }}"
+            echo "PR: #${{ github.event.pull_request.number }}"
+          else
+            echo "⚠️ CodeRabbit Summary를 찾을 수 없어 CHANGELOG 업데이트를 건너뛰었습니다."
+          fi
+
+      - name: 정리
+        run: |
+          rm -f pr_content.html summary_raw.html new_entry.md temp_changelog.md 
