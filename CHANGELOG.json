@@ -1,10 +1,22 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-26T16:30:57Z",
+    "lastUpdated": "2025-07-26T16:35:24Z",
     "currentVersion": "1.1.18",
-    "totalReleases": 11
+    "totalReleases": 12
   },
   "releases": [
+    {
+      "version": "1.1.18",
+      "date": "2025-07-26",
+      "pr_number": 185,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 10,\n  \"additions\": 137,\n  \"deletions\": 35,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
     {
       "version": "1.1.18",
       "date": "2025-07-26",
