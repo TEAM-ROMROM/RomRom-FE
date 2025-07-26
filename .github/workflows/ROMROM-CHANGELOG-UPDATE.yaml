@@ -5,6 +5,11 @@ on:
     types: [opened, synchronize]
     branches: ["deploy"]
 
+# PR 자동 merge를 위한 권한 추가
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   update-changelog:
     name: CHANGELOG.json 업데이트
@@ -360,3 +365,49 @@ jobs:
       - name: 정리
         run: |
           rm -f pr_content.html summary_section.html raw_summary.txt parse_changelog.py 
+
+      - name: 자동 PR Merge (CHANGELOG 업데이트 완료 후)
+        if: env.SUMMARY_FOUND == 'true'
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          echo "🔄 PR #$PR_NUMBER 자동 merge 시작..."
+          
+          # PR이 mergeable한지 확인
+          PR_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                         -H "Accept: application/vnd.github.v3+json" \
+                         "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
+          
+          MERGEABLE=$(echo "$PR_INFO" | jq -r '.mergeable')
+          STATE=$(echo "$PR_INFO" | jq -r '.state')
+          
+          echo "📊 PR 상태: state=$STATE, mergeable=$MERGEABLE"
+          
+          if [ "$STATE" = "open" ] && [ "$MERGEABLE" = "true" ]; then
+            echo "✅ PR merge 조건 만족! 자동 merge 실행..."
+            
+            # Merge PR with squash
+            MERGE_RESULT=$(curl -s -X PUT \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}/merge" \
+              -d '{
+                "commit_title": "Merge pull request #'$PR_NUMBER' from TEAM-ROMROM/deploy",
+                "commit_message": "ROMROM-FE 버전 관리 : feat : v${{ steps.get_version.outputs.version }} 릴리즈 완료 (자동 merge) : https://github.com/TEAM-ROMROM/RomRom-FE/issues/167",
+                "merge_method": "merge"
+              }')
+            
+            # Merge 결과 확인
+            MERGE_SUCCESS=$(echo "$MERGE_RESULT" | jq -r '.merged')
+            if [ "$MERGE_SUCCESS" = "true" ]; then
+              echo "🎉 PR #$PR_NUMBER 자동 merge 성공!"
+              echo "📦 버전: ${{ steps.get_version.outputs.version }}"
+              echo "✨ CHANGELOG 업데이트 및 자동 배포 완료!"
+            else
+              echo "❌ PR merge 실패:"
+              echo "$MERGE_RESULT" | jq -r '.message'
+              exit 1
+            fi
+          else
+            echo "⚠️ PR merge 불가능: state=$STATE, mergeable=$MERGEABLE"
+            echo "수동으로 merge해주세요."
+          fi 
