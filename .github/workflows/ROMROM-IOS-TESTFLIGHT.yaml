@@ -251,15 +251,36 @@ jobs:
           fi
 
       # Install and setup Fastlane
-      - name: Install Fastlane
+      - name: Install Fastlane and create Fastfile
         run: |
           gem install fastlane
-          fastlane --version
+          cd ios
+          mkdir -p fastlane
+          cat > fastlane/Fastfile << 'EOF'
+          default_platform(:ios)
 
-      # Upload to TestFlight with release notes using Fastlane
+          platform :ios do
+            lane :upload_testflight do
+              api_key = app_store_connect_api_key(
+                key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+                issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+                key_filepath: ENV["API_KEY_PATH"]
+              )
+              
+              pilot(
+                api_key: api_key,
+                ipa: ENV["IPA_PATH"],
+                changelog: ENV["RELEASE_NOTES"],
+                skip_waiting_for_build_processing: true
+              )
+            end
+          end
+          EOF
+
+      # Upload to TestFlight with Fastlane
       - name: Upload to TestFlight with Fastlane
         run: |
-          IPA_PATH=$(echo ios/build/ipa/*.ipa)   # 첫 번째 ipa 파일 경로
+          IPA_PATH=$(echo ios/build/ipa/*.ipa)
           echo "Uploading $IPA_PATH"
           
           # Release notes 준비
@@ -272,14 +293,16 @@ jobs:
             echo "기본 Release Notes로 업로드: $RELEASE_NOTES"
           fi
           
-          # Fastlane을 사용한 TestFlight 업로드
-          fastlane pilot upload \
-            --ipa "$IPA_PATH" \
-            --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 \
-            --api_key_id "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
-            --api_issuer_id "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
-            --changelog "$RELEASE_NOTES" \
-            --skip_waiting_for_build_processing
+          # 환경변수 설정
+          export APP_STORE_CONNECT_API_KEY_ID="${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}"
+          export APP_STORE_CONNECT_ISSUER_ID="${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}"
+          export API_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8"
+          export IPA_PATH="$IPA_PATH"
+          export RELEASE_NOTES="$RELEASE_NOTES"
+          
+          # Fastlane 실행
+          cd ios
+          fastlane upload_testflight
 
       # 성공 알림
       - name: Notify TestFlight Upload Success
