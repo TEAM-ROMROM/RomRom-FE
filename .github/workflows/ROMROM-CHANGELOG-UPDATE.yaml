@@ -295,8 +295,7 @@ jobs:
               
               with open('CHANGELOG.md', 'w', encoding='utf-8') as f:
                   f.write("# Changelog\n\n")
-                  f.write("이 프로젝트의 모든 주목할 만한 변경사항이 이 파일에 문서화됩니다.\n\n")
-                  
+          
                   for release in data['releases']:
                       f.write(f"## [{release['version']}] - {release['date']}\n\n")
                       
