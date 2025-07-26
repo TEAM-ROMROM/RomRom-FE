@@ -14,7 +14,7 @@ class ItemDetail {
   final int? likeCount;
   final int? price;
   final String? createdDate;
-  final List<String>? itemImagePaths;
+  final List<String>? itemImageUrls;
   final List<String>? itemCustomTags;
 
   ItemDetail({
@@ -28,7 +28,7 @@ class ItemDetail {
     this.likeCount,
     this.price,
     this.createdDate,
-    this.itemImagePaths,
+    this.itemImageUrls,
     this.itemCustomTags,
   });
 

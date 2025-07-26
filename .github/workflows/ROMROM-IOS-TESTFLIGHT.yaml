@@ -10,64 +10,9 @@ env:
   XCODE_VERSION: "16.3"
 
 jobs:
-  version-bump:
-    name: Version Bump
-    runs-on: ubuntu-latest
-    outputs:
-      new_version: ${{ steps.version.outputs.new_version }}
-      build_number: ${{ steps.version.outputs.build_number }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-
-      - name: Get current version
-        id: current_version
-        run: |
-          CURRENT_VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $CURRENT_VERSION"
-
-      - name: Calculate new version
-        id: version
-        run: |
-          VERSION_LINE="${{ steps.current_version.outputs.current_version }}"
-          VERSION=$(echo $VERSION_LINE | cut -d'+' -f1)
-          BUILD_NUMBER=$(echo $VERSION_LINE | cut -d'+' -f2)
-
-          # Build number 증가
-          NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
-          NEW_VERSION="${VERSION}+${NEW_BUILD_NUMBER}"
-
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "build_number=$NEW_BUILD_NUMBER" >> $GITHUB_OUTPUT
-          echo "New version: $NEW_VERSION"
-
-      - name: Update pubspec.yaml
-        run: |
-          sed -i "s/version: .*/version: ${{ steps.version.outputs.new_version }}/" pubspec.yaml
-          echo "Updated pubspec.yaml with version ${{ steps.version.outputs.new_version }}"
-
-      - name: Commit version bump
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add pubspec.yaml
-          git commit -m "TestFlight 자동 배포를 위한 GitHub Actions 워크플로우 구현 : chore : Version 생성 및 업데이트 : ${{ steps.version.outputs.new_version }} https://github.com/TEAM-ROMROM/RomRom-FE/issues/155" || exit 0
-          git push
-
-      - name: Create Git Tag
-        run: |
-          git tag "v${{ steps.version.outputs.new_version }}"
-          git push origin "v${{ steps.version.outputs.new_version }}"
-
   build-and-deploy:
     name: Build and Deploy to TestFlight
     runs-on: macos-15
-    needs: version-bump
 
     steps:
       - name: Checkout repository
@@ -171,12 +116,24 @@ jobs:
           </plist>
           EOF
 
+      # 현재 버전 정보 읽기
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "현재 버전: $CURRENT_VERSION"
+
       # Flutter build (no codesign) to generate Xcode project artifacts
       - name: Flutter build (no codesign)
         run: |
           flutter build ios --release --no-codesign \
-            --build-name="${{ needs.version-bump.outputs.new_version }}" \
-            --build-number="${{ needs.version-bump.outputs.build_number }}"
+            --build-name="${{ steps.current_version.outputs.version }}" \
+            --build-number="${{ steps.current_version.outputs.build_number }}"
 
       # Archive 생성 (manual signing)
       - name: Create Archive
@@ -206,23 +163,130 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
 
-      # Upload to TestFlight
-      - name: Upload to TestFlight
+      # CHANGELOG.json에서 현재 버전의 릴리즈 노트 추출
+      - name: Extract release notes from CHANGELOG.json
+        id: release_notes
+        run: |
+          VERSION="${{ steps.current_version.outputs.version }}"
+          
+          if [ -f "CHANGELOG.json" ]; then
+            echo "📄 CHANGELOG.json에서 v$VERSION 릴리즈 노트 추출 중..."
+            
+            # Python으로 JSON에서 해당 버전의 정보 추출
+            python3 << PYTHON_SCRIPT > final_release_notes.txt
+          import json
+          import sys
+          
+          try:
+              with open('CHANGELOG.json', 'r', encoding='utf-8') as f:
+                  data = json.load(f)
+              
+              version = "$VERSION"
+              found = False
+              
+              for release in data['releases']:
+                  if release['version'] == version:
+                      found = True
+                      
+                      # 동적 카테고리 처리
+                      category_titles = {
+                          'features': '새 기능',
+                          'bugfixes': '버그 수정', 
+                          'improvements': '개선사항',
+                          'deployment': '빌드/배포',
+                          'documentation': '문서/설정',
+                          'ui_changes': 'UI/UX',
+                          'performance': '성능',
+                          'security': '보안'
+                      }
+                      
+                      for category_key, items in release['parsed_changes'].items():
+                          if items:
+                              title = category_titles.get(category_key, category_key.title())
+                              print(f"**{title}**")
+                              for item in items:
+                                  if item.strip():
+                                      print(f"• {item}")
+                              print()
+                      
+                      break
+              
+              if not found:
+                  print(f"v{version} 업데이트")
+                  
+          except Exception as e:
+              print(f"v{version} 업데이트")
+          PYTHON_SCRIPT
+            
+            if [ -s final_release_notes.txt ]; then
+              echo "✅ 릴리즈 노트 추출 성공!"
+              echo "📋 추출된 릴리즈 노트:"
+              echo "----------------------------------------"
+              cat final_release_notes.txt
+              echo "----------------------------------------"
+              echo "RELEASE_NOTES_FOUND=true" >> $GITHUB_ENV
+            else
+              echo "❌ 릴리즈 노트 추출 실패"
+              echo "RELEASE_NOTES_FOUND=false" >> $GITHUB_ENV
+              echo "v$VERSION 업데이트" > final_release_notes.txt
+            fi
+          elif [ -f "CHANGELOG.md" ]; then
+            echo "📄 CHANGELOG.md에서 v$VERSION 변경사항 추출 중..."
+            sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' > current_release_notes.txt
+            tail -n +2 current_release_notes.txt > release_notes_clean.txt
+            sed '/^$/d; /^---$/d' release_notes_clean.txt > final_release_notes.txt
+            if [ -s final_release_notes.txt ]; then
+              echo "추출된 변경사항:"
+              cat final_release_notes.txt
+              echo "RELEASE_NOTES_FOUND=true" >> $GITHUB_ENV
+            else
+              echo "현재 버전의 변경사항을 찾을 수 없습니다."
+              echo "RELEASE_NOTES_FOUND=false" >> $GITHUB_ENV
+              echo "v$VERSION 업데이트" > final_release_notes.txt
+            fi
+          else
+            echo "⚠️ CHANGELOG.json과 CHANGELOG.md 파일이 모두 없습니다."
+            echo "RELEASE_NOTES_FOUND=false" >> $GITHUB_ENV
+            echo "v$VERSION 업데이트" > final_release_notes.txt
+          fi
+
+      # Install and setup Fastlane
+      - name: Install Fastlane
+        run: |
+          gem install fastlane
+          fastlane --version
+
+      # Upload to TestFlight with release notes using Fastlane
+      - name: Upload to TestFlight with Fastlane
         run: |
           IPA_PATH=$(echo ios/build/ipa/*.ipa)   # 첫 번째 ipa 파일 경로
           echo "Uploading $IPA_PATH"
-          xcrun altool --upload-app \
-          --type ios \
-          --file "$IPA_PATH" \
-          --apiKey ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }} \
-          --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          
+          # Release notes 준비
+          if [ "${{ env.RELEASE_NOTES_FOUND }}" == "true" ]; then
+            RELEASE_NOTES=$(cat final_release_notes.txt)
+            echo "Release Notes 포함하여 업로드:"
+            echo "$RELEASE_NOTES"
+          else
+            RELEASE_NOTES="v${{ steps.current_version.outputs.version }} 업데이트"
+            echo "기본 Release Notes로 업로드: $RELEASE_NOTES"
+          fi
+          
+          # Fastlane을 사용한 TestFlight 업로드
+          fastlane pilot upload \
+            --ipa "$IPA_PATH" \
+            --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 \
+            --api_key_id "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
+            --api_issuer_id "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
+            --changelog "$RELEASE_NOTES" \
+            --skip_waiting_for_build_processing
 
       # 성공 알림
       - name: Notify TestFlight Upload Success
         if: success()
         run: |
           echo "✅ TestFlight 업로드 성공!"
-          echo "버전: ${{ needs.version-bump.outputs.new_version }}"
+          echo "버전: ${{ steps.current_version.outputs.current_version }}"
           echo "커밋: ${{ github.sha }}"
 
       - name: Notify on Failure

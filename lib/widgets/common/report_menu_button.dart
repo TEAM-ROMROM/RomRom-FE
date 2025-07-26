@@ -27,10 +27,15 @@ class ReportMenuButton extends StatelessWidget {
       ),
       padding: EdgeInsets.zero,
       menuPadding: EdgeInsets.zero,
-      icon: Icon(
-        AppIcons.dotsVertical,
-        size: 30.sp,
-        color: AppColors.textColorWhite,
+      // 30 * 20 사이즈 조정
+      icon: SizedBox(
+        width: 20.w, 
+        height: 30.h, 
+        child: Icon(
+          AppIcons.dotsVertical,
+          size: 20.sp,
+          color: AppColors.textColorWhite,
+        ),
       ),
       itemBuilder: (context) => [
         PopupMenuItem<_ReportMenuOption>(

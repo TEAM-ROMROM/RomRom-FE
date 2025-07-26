@@ -1,0 +1,335 @@
+name: CHANGELOG 자동 업데이트
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: ["deploy"]
+
+jobs:
+  update-changelog:
+    name: CHANGELOG.json 업데이트
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: main
+
+      - name: Git 설정 및 최신 상태 동기화
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git pull origin main
+
+      - name: 현재 버전 확인
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "현재 버전: $CURRENT_VERSION"
+
+      - name: CodeRabbit Summary 업데이트 감지 (스마트 폴링)
+        id: detect_summary
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TODAY=$(date '+%Y-%m-%d')
+          MAX_ATTEMPTS=120  # 5분 = 120 * 5초
+          ATTEMPT=0
+          
+          echo "🔍 PR #$PR_NUMBER에서 CodeRabbit Summary 업데이트 감지 시작..."
+          echo "최대 대기 시간: 5분 (5초마다 체크)"
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "[$ATTEMPT/$MAX_ATTEMPTS] CodeRabbit Summary 확인 중... ($(date '+%H:%M:%S'))"
+            
+            # GitHub API로 PR HTML 가져오기
+            curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                 -H "Accept: application/vnd.github.v3.html" \
+                 "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
+                 > pr_content.html
+            
+            # "No description provided" 체크
+            if grep -q "No description provided" pr_content.html; then
+              echo "❌ 아직 'No description provided' 상태입니다"
+            elif grep -q "Summary by CodeRabbit" pr_content.html; then
+              echo "✅ CodeRabbit Summary 발견! 파싱을 시작합니다"
+              echo "SUMMARY_FOUND=true" >> $GITHUB_ENV
+              break
+            else
+              echo "⏳ CodeRabbit Summary 아직 없음"
+            fi
+            
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              sleep 5
+            fi
+          done
+          
+          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+            echo "⚠️ 5분 대기 후에도 CodeRabbit Summary를 찾을 수 없습니다"
+            echo "SUMMARY_FOUND=false" >> $GITHUB_ENV
+          fi
+
+      - name: 동적 Summary 파싱 및 CHANGELOG.json 업데이트
+        if: env.SUMMARY_FOUND == 'true'
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TODAY=$(date '+%Y-%m-%d')
+          TIMESTAMP=$(date '+%Y-%m-%dT%H:%M:%SZ')
+          
+          echo "📝 CodeRabbit Summary 동적 파싱 시작..."
+          
+          # Summary 섹션 추출
+          sed -n '/<h2[^>]*>Summary by CodeRabbit<\/h2>/,/<\/div>/p' pr_content.html > summary_section.html
+          
+          # Raw summary 저장 (백업용)
+          cat summary_section.html | sed 's/<[^>]*>//g' | sed 's/&nbsp;/ /g; s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g' > raw_summary.txt
+          
+          echo "🔍 동적 카테고리 추출 중..."
+          
+          # Python으로 동적 파싱
+          cat > parse_changelog.py << 'EOF'
+          import re
+          import json
+          import html
+          import sys
+          import os
+          from datetime import datetime
+          
+          def extract_items_from_section(html_content, section_title):
+              """특정 섹션의 아이템들을 추출"""
+              # 섹션 제목 패턴 (유연하게)
+              section_pattern = f'<p[^>]*><strong[^>]*>{re.escape(section_title)}[^<]*</strong></p>'
+              
+              # 해당 섹션 찾기
+              section_match = re.search(section_pattern, html_content, re.IGNORECASE)
+              if not section_match:
+                  return []
+              
+              # 섹션 이후의 ul 태그 찾기
+              after_section = html_content[section_match.end():]
+              ul_match = re.search(r'<ul[^>]*>(.*?)</ul>', after_section, re.DOTALL)
+              
+              if not ul_match:
+                  return []
+              
+              # li 태그들에서 텍스트 추출
+              ul_content = ul_match.group(1)
+              li_items = re.findall(r'<li[^>]*>(.*?)</li>', ul_content, re.DOTALL)
+              
+              items = []
+              for item in li_items:
+                  # HTML 태그 제거하고 텍스트만 추출
+                  clean_text = re.sub(r'<[^>]*>', '', item)
+                  clean_text = html.unescape(clean_text).strip()
+                  if clean_text:
+                      items.append(clean_text)
+              
+              return items
+          
+          def detect_categories(html_content):
+              """HTML에서 동적으로 카테고리 감지"""
+              # 일반적인 카테고리 패턴들
+              category_patterns = [
+                  (r'새.*?기능|신규.*?기능|new.*?feature', 'features'),
+                  (r'버그.*?수정|bug.*?fix|수정|fix', 'bugfixes'),
+                  (r'개선.*?사항|개선|improvement|enhance', 'improvements'),
+                  (r'빌드|배포|deploy|build', 'deployment'),
+                  (r'문서|설정|document|config|docs', 'documentation'),
+                  (r'스타일|style|ui|ux', 'ui_changes'),
+                  (r'성능|performance|perf', 'performance'),
+                  (r'보안|security|sec', 'security')
+              ]
+              
+              detected_categories = {}
+              
+              # strong 태그 안의 카테고리 제목들 찾기
+              strong_texts = re.findall(r'<strong[^>]*>([^<]+)</strong>', html_content, re.IGNORECASE)
+              
+              for strong_text in strong_texts:
+                  clean_text = strong_text.strip()
+                  
+                  # 각 패턴과 매칭
+                  for pattern, category_key in category_patterns:
+                      if re.search(pattern, clean_text, re.IGNORECASE):
+                          items = extract_items_from_section(html_content, clean_text)
+                          if items:
+                              detected_categories[category_key] = {
+                                  'title': clean_text,
+                                  'items': items
+                              }
+                          break
+              
+              return detected_categories
+          
+          def main():
+              # 환경 변수에서 값 가져오기
+              version = os.environ.get('VERSION')
+              today = os.environ.get('TODAY')
+              pr_number = int(os.environ.get('PR_NUMBER'))
+              timestamp = os.environ.get('TIMESTAMP')
+              
+              try:
+                  # HTML 파일 읽기
+                  with open('summary_section.html', 'r', encoding='utf-8') as f:
+                      html_content = f.read()
+                  
+                  # 동적 카테고리 감지
+                  categories = detect_categories(html_content)
+                  
+                  print("🎯 감지된 카테고리들:")
+                  for key, value in categories.items():
+                      print(f"  - {key}: {value['title']} ({len(value['items'])}개 항목)")
+                  
+                  # Raw summary 읽기
+                  with open('raw_summary.txt', 'r', encoding='utf-8') as f:
+                      raw_summary = f.read().strip()
+                  
+                  # 새로운 릴리즈 엔트리 생성
+                  new_release = {
+                      "version": version,
+                      "date": today,
+                      "pr_number": pr_number,
+                      "raw_summary": raw_summary,
+                      "parsed_changes": {}
+                  }
+                  
+                  # 동적 카테고리를 parsed_changes에 추가
+                  for key, value in categories.items():
+                      new_release["parsed_changes"][key] = value["items"]
+                  
+                  # CHANGELOG.json 업데이트
+                  try:
+                      with open('CHANGELOG.json', 'r', encoding='utf-8') as f:
+                          changelog_data = json.load(f)
+                  except (FileNotFoundError, json.JSONDecodeError):
+                      changelog_data = {
+                          "metadata": {
+                              "lastUpdated": timestamp,
+                              "currentVersion": version,
+                              "totalReleases": 0
+                          },
+                          "releases": []
+                      }
+                  
+                  # 메타데이터 업데이트
+                  changelog_data["metadata"]["lastUpdated"] = timestamp
+                  changelog_data["metadata"]["currentVersion"] = version
+                  changelog_data["metadata"]["totalReleases"] = len(changelog_data["releases"]) + 1
+                  
+                  # 새 릴리즈를 맨 앞에 추가
+                  changelog_data["releases"].insert(0, new_release)
+                  
+                  # 파일 저장
+                  with open('CHANGELOG.json', 'w', encoding='utf-8') as f:
+                      json.dump(changelog_data, f, indent=2, ensure_ascii=False)
+                  
+                  print("✅ CHANGELOG.json 업데이트 완료!")
+                  print(f"📊 총 {len(categories)}개 카테고리, {sum(len(v['items']) for v in categories.values())}개 변경사항")
+                  
+              except Exception as e:
+                  print(f"❌ 파싱 오류: {e}")
+                  sys.exit(1)
+          
+          if __name__ == "__main__":
+              main()
+          EOF
+          
+          # 환경 변수 설정하고 Python 스크립트 실행
+          export VERSION="$VERSION"
+          export TODAY="$TODAY"
+          export PR_NUMBER="$PR_NUMBER"
+          export TIMESTAMP="$TIMESTAMP"
+          
+          python3 parse_changelog.py
+
+      - name: CHANGELOG.md 재생성
+        if: env.SUMMARY_FOUND == 'true'
+        run: |
+          echo "📄 CHANGELOG.json에서 CHANGELOG.md 재생성 중..."
+          
+          python3 << 'PYTHON_SCRIPT'
+          import json
+          
+          try:
+              with open('CHANGELOG.json', 'r', encoding='utf-8') as f:
+                  data = json.load(f)
+              
+              with open('CHANGELOG.md', 'w', encoding='utf-8') as f:
+                  f.write("# Changelog\n\n")
+                  f.write("이 프로젝트의 모든 주목할 만한 변경사항이 이 파일에 문서화됩니다.\n\n")
+                  
+                  for release in data['releases']:
+                      f.write(f"## [{release['version']}] - {release['date']}\n\n")
+                      
+                      # 동적 카테고리 출력
+                      for category_key, items in release['parsed_changes'].items():
+                          if items:
+                              # 카테고리 제목 매핑
+                              category_titles = {
+                                  'features': '새 기능',
+                                  'bugfixes': '버그 수정',
+                                  'improvements': '개선사항',
+                                  'deployment': '빌드/배포',
+                                  'documentation': '문서/설정',
+                                  'ui_changes': 'UI/UX',
+                                  'performance': '성능',
+                                  'security': '보안'
+                              }
+                              
+                              title = category_titles.get(category_key, category_key.title())
+                              f.write(f"**{title}**\n")
+                              
+                              for item in items:
+                                  f.write(f"- {item}\n")
+                              f.write("\n")
+                      
+                      f.write("---\n\n")
+              
+              print("✅ CHANGELOG.md 재생성 완료!")
+              
+          except Exception as e:
+              print(f"❌ CHANGELOG.md 생성 실패: {e}")
+              exit(1)
+          PYTHON_SCRIPT
+
+      - name: 변경사항 커밋 및 푸시
+        if: env.SUMMARY_FOUND == 'true'
+        run: |
+          # 최신 상태로 다시 pull
+          git pull origin main
+          
+          # 변경사항 추가
+          git add CHANGELOG.json CHANGELOG.md
+          
+          # 변경사항이 있는지 확인
+          if git diff --staged --quiet; then
+            echo "📝 변경사항이 없습니다"
+          else
+            git commit -m "docs: v${{ steps.get_version.outputs.version }} 릴리즈 문서 업데이트 (PR #${{ github.event.pull_request.number }})"
+            git push origin main
+            echo "✅ 변경사항이 성공적으로 커밋되었습니다"
+          fi
+
+      - name: 업데이트 완료 알림
+        run: |
+          if [ "${{ env.SUMMARY_FOUND }}" == "true" ]; then
+            echo "✅ CHANGELOG 업데이트 완료!"
+            echo "📦 버전: ${{ steps.get_version.outputs.version }}"
+            echo "🔗 PR: #${{ github.event.pull_request.number }}"
+            echo "📄 CHANGELOG.json 및 CHANGELOG.md가 업데이트되었습니다"
+            echo "🎯 동적 카테고리 파싱으로 AI 생성 콘텐츠 유연하게 처리됨"
+          else
+            echo "⚠️ CodeRabbit Summary를 찾을 수 없어 업데이트를 건너뛰었습니다"
+          fi
+
+      - name: 정리
+        run: |
+          rm -f pr_content.html summary_section.html raw_summary.txt parse_changelog.py 
