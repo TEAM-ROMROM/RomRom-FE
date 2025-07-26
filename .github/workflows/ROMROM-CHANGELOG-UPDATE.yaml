@@ -135,19 +135,7 @@ jobs:
               return items
           
           def detect_categories(html_content):
-              """HTML에서 동적으로 카테고리 감지"""
-              # 일반적인 카테고리 패턴들
-              category_patterns = [
-                  (r'새.*?기능|신규.*?기능|new.*?feature', 'features'),
-                  (r'버그.*?수정|bug.*?fix|수정|fix', 'bugfixes'),
-                  (r'개선.*?사항|개선|improvement|enhance', 'improvements'),
-                  (r'빌드|배포|deploy|build', 'deployment'),
-                  (r'문서|설정|document|config|docs', 'documentation'),
-                  (r'스타일|style|ui|ux', 'ui_changes'),
-                  (r'성능|performance|perf', 'performance'),
-                  (r'보안|security|sec', 'security')
-              ]
-              
+              """HTML에서 동적으로 카테고리 감지 - AI가 생성하는 모든 카테고리 수용"""
               detected_categories = {}
               
               # strong 태그 안의 카테고리 제목들 찾기
@@ -156,16 +144,18 @@ jobs:
               for strong_text in strong_texts:
                   clean_text = strong_text.strip()
                   
-                  # 각 패턴과 매칭
-                  for pattern, category_key in category_patterns:
-                      if re.search(pattern, clean_text, re.IGNORECASE):
-                          items = extract_items_from_section(html_content, clean_text)
-                          if items:
-                              detected_categories[category_key] = {
-                                  'title': clean_text,
-                                  'items': items
-                              }
-                          break
+                  # AI가 생성한 카테고리 제목을 그대로 사용
+                  items = extract_items_from_section(html_content, clean_text)
+                  if items:
+                      # 카테고리 키를 안전한 형태로 변환 (소문자, 공백을 언더스코어로)
+                      safe_key = re.sub(r'[^a-zA-Z0-9가-힣]', '_', clean_text.lower()).strip('_')
+                      if not safe_key:  # 안전한 키가 생성되지 않으면 fallback
+                          safe_key = f"category_{len(detected_categories)}"
+                      
+                      detected_categories[safe_key] = {
+                          'title': clean_text,
+                          'items': items
+                      }
               
               return detected_categories
           
@@ -269,25 +259,22 @@ jobs:
                   for release in data['releases']:
                       f.write(f"## [{release['version']}] - {release['date']}\n\n")
                       
-                      # 동적 카테고리 출력
+                      # AI가 생성한 모든 카테고리를 그대로 출력
                       for category_key, items in release['parsed_changes'].items():
                           if items:
-                              # 카테고리 제목 매핑
-                              category_titles = {
-                                  'features': '새 기능',
-                                  'bugfixes': '버그 수정',
-                                  'improvements': '개선사항',
-                                  'deployment': '빌드/배포',
-                                  'documentation': '문서/설정',
-                                  'ui_changes': 'UI/UX',
-                                  'performance': '성능',
-                                  'security': '보안'
-                              }
+                              # JSON에서 원본 제목 가져오기 (없으면 키를 제목으로 사용)
+                              title = items.get('title', category_key.replace('_', ' ').title()) if isinstance(items, dict) else category_key.replace('_', ' ').title()
                               
-                              title = category_titles.get(category_key, category_key.title())
+                              # items가 dict 형태인지 확인 (새 형식)
+                              if isinstance(items, dict) and 'items' in items:
+                                  actual_items = items['items']
+                                  title = items['title']
+                              else:
+                                  actual_items = items  # 기존 형식 호환
+                              
                               f.write(f"**{title}**\n")
                               
-                              for item in items:
+                              for item in actual_items:
                                   f.write(f"- {item}\n")
                               f.write("\n")
                       
