@@ -1,10 +1,25 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-26T14:01:31Z",
-    "currentVersion": "1.1.12",
-    "totalReleases": 5
+    "lastUpdated": "2025-07-26T14:10:42Z",
+    "currentVersion": "1.1.13",
+    "totalReleases": 6
   },
   "releases": [
+    {
+      "version": "1.1.13",
+      "date": "2025-07-26",
+      "pr_number": 178,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\nAI가 생성한 카테고리 제목을 변경 없이 그대로 릴리즈 노트에 반영하도록 개선되었습니다.\\nTestFlight 업로드 과정에서 IPA 파일 탐색 및 오류 처리 로직이 강화되었습니다.\\n디버깅을 위한 추가 출력이 도입되었습니다.\\n앱 버전이 1.1.12+1.1.0으로 업데이트되었습니다.\\n기존 릴리즈 노트의 섹션 제목이 한국어에서 영어로 표준화되어 가독성이 향상되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": null,\n  \"rebaseable\": null,\n  \"mergeable_state\": \"unknown\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 6,\n  \"maintainer_can_modify\": false,\n  \"commits\": 4,\n  \"additions\": 125,\n  \"deletions\": 77,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "AI가 생성한 카테고리 제목을 변경 없이 그대로 릴리즈 노트에 반영하도록 개선되었습니다.",
+          "TestFlight 업로드 과정에서 IPA 파일 탐색 및 오류 처리 로직이 강화되었습니다.",
+          "디버깅을 위한 추가 출력이 도입되었습니다.",
+          "앱 버전이 1.1.12+1.1.0으로 업데이트되었습니다.",
+          "기존 릴리즈 노트의 섹션 제목이 한국어에서 영어로 표준화되어 가독성이 향상되었습니다."
+        ]
+      }
+    },
     {
       "version": "1.1.12",
       "date": "2025-07-26",
