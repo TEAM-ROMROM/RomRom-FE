@@ -370,4 +370,18 @@ jobs:
         if: env.SUMMARY_FOUND == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr merge ${{ github.event.pull_request.number }} --merge
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          echo "🔄 PR #$PR_NUMBER 자동 merge 시작..."
+
+          # GitHub CLI로 merge
+          if gh pr merge $PR_NUMBER --merge; then
+            echo "🎉 PR #$PR_NUMBER 자동 merge 성공!"
+            echo "📦 버전: ${{ steps.get_version.outputs.version }}"
+            echo "✨ CHANGELOG 업데이트 및 자동 배포 완료!"
+          else
+            echo "❌ PR merge 실패. 수동으로 merge해주세요."
+            echo "🔍 PR 상태 확인:"
+            gh pr view $PR_NUMBER --json state,mergeable,mergeStateStatus
+            exit 1
+          fi
