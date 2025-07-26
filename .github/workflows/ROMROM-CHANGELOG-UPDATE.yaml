@@ -39,7 +39,7 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number }}"
           VERSION="${{ steps.get_version.outputs.version }}"
           TODAY=$(date '+%Y-%m-%d')
-          MAX_ATTEMPTS=60  # 5분 = 60 * 5초
+          MAX_ATTEMPTS=120  # 5분 = 120 * 5초
           ATTEMPT=0
           
           echo "🔍 PR #$PR_NUMBER에서 CodeRabbit Summary 업데이트 감지 시작..."
@@ -95,10 +95,12 @@ jobs:
           echo "🔍 동적 카테고리 추출 중..."
           
           # Python으로 동적 파싱
-          python3 << 'PYTHON_SCRIPT'
+          cat > parse_changelog.py << 'EOF'
           import re
           import json
           import html
+          import sys
+          import os
           from datetime import datetime
           
           def extract_items_from_section(html_content, section_title):
@@ -167,68 +169,86 @@ jobs:
               
               return detected_categories
           
-          try:
-              # HTML 파일 읽기
-              with open('summary_section.html', 'r', encoding='utf-8') as f:
-                  html_content = f.read()
+          def main():
+              # 환경 변수에서 값 가져오기
+              version = os.environ.get('VERSION')
+              today = os.environ.get('TODAY')
+              pr_number = int(os.environ.get('PR_NUMBER'))
+              timestamp = os.environ.get('TIMESTAMP')
               
-              # 동적 카테고리 감지
-              categories = detect_categories(html_content)
-              
-              print("🎯 감지된 카테고리들:")
-              for key, value in categories.items():
-                  print(f"  - {key}: {value['title']} ({len(value['items'])}개 항목)")
-              
-              # Raw summary 읽기
-              with open('raw_summary.txt', 'r', encoding='utf-8') as f:
-                  raw_summary = f.read().strip()
-              
-              # 새로운 릴리즈 엔트리 생성
-              new_release = {
-                  "version": "$VERSION",
-                  "date": "$TODAY",
-                  "pr_number": $PR_NUMBER,
-                  "raw_summary": raw_summary,
-                  "parsed_changes": {}
-              }
-              
-              # 동적 카테고리를 parsed_changes에 추가
-              for key, value in categories.items():
-                  new_release["parsed_changes"][key] = value["items"]
-              
-              # CHANGELOG.json 업데이트
               try:
-                  with open('CHANGELOG.json', 'r', encoding='utf-8') as f:
-                      changelog_data = json.load(f)
-              except (FileNotFoundError, json.JSONDecodeError):
-                  changelog_data = {
-                      "metadata": {
-                          "lastUpdated": "$TIMESTAMP",
-                          "currentVersion": "$VERSION",
-                          "totalReleases": 0
-                      },
-                      "releases": []
+                  # HTML 파일 읽기
+                  with open('summary_section.html', 'r', encoding='utf-8') as f:
+                      html_content = f.read()
+                  
+                  # 동적 카테고리 감지
+                  categories = detect_categories(html_content)
+                  
+                  print("🎯 감지된 카테고리들:")
+                  for key, value in categories.items():
+                      print(f"  - {key}: {value['title']} ({len(value['items'])}개 항목)")
+                  
+                  # Raw summary 읽기
+                  with open('raw_summary.txt', 'r', encoding='utf-8') as f:
+                      raw_summary = f.read().strip()
+                  
+                  # 새로운 릴리즈 엔트리 생성
+                  new_release = {
+                      "version": version,
+                      "date": today,
+                      "pr_number": pr_number,
+                      "raw_summary": raw_summary,
+                      "parsed_changes": {}
                   }
-              
-              # 메타데이터 업데이트
-              changelog_data["metadata"]["lastUpdated"] = "$TIMESTAMP"
-              changelog_data["metadata"]["currentVersion"] = "$VERSION"
-              changelog_data["metadata"]["totalReleases"] = len(changelog_data["releases"]) + 1
-              
-              # 새 릴리즈를 맨 앞에 추가
-              changelog_data["releases"].insert(0, new_release)
-              
-              # 파일 저장
-              with open('CHANGELOG.json', 'w', encoding='utf-8') as f:
-                  json.dump(changelog_data, f, indent=2, ensure_ascii=False)
-              
-              print("✅ CHANGELOG.json 업데이트 완료!")
-              print(f"📊 총 {len(categories)}개 카테고리, {sum(len(v['items']) for v in categories.values())}개 변경사항")
-              
-          except Exception as e:
-              print(f"❌ 파싱 오류: {e}")
-              exit(1)
-          PYTHON_SCRIPT
+                  
+                  # 동적 카테고리를 parsed_changes에 추가
+                  for key, value in categories.items():
+                      new_release["parsed_changes"][key] = value["items"]
+                  
+                  # CHANGELOG.json 업데이트
+                  try:
+                      with open('CHANGELOG.json', 'r', encoding='utf-8') as f:
+                          changelog_data = json.load(f)
+                  except (FileNotFoundError, json.JSONDecodeError):
+                      changelog_data = {
+                          "metadata": {
+                              "lastUpdated": timestamp,
+                              "currentVersion": version,
+                              "totalReleases": 0
+                          },
+                          "releases": []
+                      }
+                  
+                  # 메타데이터 업데이트
+                  changelog_data["metadata"]["lastUpdated"] = timestamp
+                  changelog_data["metadata"]["currentVersion"] = version
+                  changelog_data["metadata"]["totalReleases"] = len(changelog_data["releases"]) + 1
+                  
+                  # 새 릴리즈를 맨 앞에 추가
+                  changelog_data["releases"].insert(0, new_release)
+                  
+                  # 파일 저장
+                  with open('CHANGELOG.json', 'w', encoding='utf-8') as f:
+                      json.dump(changelog_data, f, indent=2, ensure_ascii=False)
+                  
+                  print("✅ CHANGELOG.json 업데이트 완료!")
+                  print(f"📊 총 {len(categories)}개 카테고리, {sum(len(v['items']) for v in categories.values())}개 변경사항")
+                  
+              except Exception as e:
+                  print(f"❌ 파싱 오류: {e}")
+                  sys.exit(1)
+          
+          if __name__ == "__main__":
+              main()
+          EOF
+          
+          # 환경 변수 설정하고 Python 스크립트 실행
+          export VERSION="$VERSION"
+          export TODAY="$TODAY"
+          export PR_NUMBER="$PR_NUMBER"
+          export TIMESTAMP="$TIMESTAMP"
+          
+          python3 parse_changelog.py
 
       - name: CHANGELOG.md 재생성
         if: env.SUMMARY_FOUND == 'true'
@@ -312,4 +332,4 @@ jobs:
 
       - name: 정리
         run: |
-          rm -f pr_content.html summary_section.html raw_summary.txt 
+          rm -f pr_content.html summary_section.html raw_summary.txt parse_changelog.py 
