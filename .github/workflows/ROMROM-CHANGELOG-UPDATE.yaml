@@ -60,30 +60,71 @@ jobs:
           if grep -q "Summary by CodeRabbit" pr_content.html; then
             echo "CodeRabbit Summary 발견됨"
             
-            # Summary 부분만 추출 (HTML 태그 포함)
-            sed -n '/<h2[^>]*>Summary by CodeRabbit<\/h2>/,/<\/ul>/p' pr_content.html > summary_raw.html
+            # CodeRabbit Summary 전체 섹션 추출 (Summary by CodeRabbit부터 다음 h2 태그까지)
+            sed -n '/<h2[^>]*>Summary by CodeRabbit<\/h2>/,/<h2[^>]*>/p' pr_content.html | sed '$d' > summary_section.html
             
-            # HTML을 Markdown으로 변환 (간단 버전)
-            sed -i 's/<h2[^>]*>/## /g' summary_raw.html
-            sed -i 's/<\/h2>//g' summary_raw.html
-            sed -i 's/<ul[^>]*>/\n/g' summary_raw.html
-            sed -i 's/<\/ul>//g' summary_raw.html
-            sed -i 's/<li[^>]*>/- /g' summary_raw.html
-            sed -i 's/<\/li>//g' summary_raw.html
-            sed -i 's/<p[^>]*>//g' summary_raw.html
-            sed -i 's/<\/p>//g' summary_raw.html
-            sed -i 's/<strong>/\*\*/g' summary_raw.html
-            sed -i 's/<\/strong>/\*\*/g' summary_raw.html
-            sed -i '/^$/d' summary_raw.html
+            # Summary만 있고 다음 h2가 없는 경우를 위한 대안
+            if [ ! -s summary_section.html ]; then
+              sed -n '/<h2[^>]*>Summary by CodeRabbit<\/h2>/,$p' pr_content.html > summary_section.html
+            fi
             
-            echo "SUMMARY_FOUND=true" >> $GITHUB_ENV
-            echo "변환된 Summary:"
-            cat summary_raw.html
+            # HTML을 깔끔한 Markdown으로 변환
+            cat summary_section.html | \
+            # h2 태그를 ## 로 변환
+            sed 's/<h2[^>]*>Summary by CodeRabbit<\/h2>/## Summary by CodeRabbit/g' | \
+            # ul/li 태그를 마크다운 리스트로 변환
+            sed 's/<ul[^>]*>/\n/g' | \
+            sed 's/<\/ul>/\n/g' | \
+            sed 's/<li[^>]*>/\n- /g' | \
+            sed 's/<\/li>//g' | \
+            # strong 태그를 ** 로 변환
+            sed 's/<strong>/\*\*/g' | \
+            sed 's/<\/strong>/\*\*/g' | \
+            # p 태그 제거
+            sed 's/<p[^>]*>//g' | \
+            sed 's/<\/p>//g' | \
+            # br 태그를 줄바꿈으로
+            sed 's/<br[^>]*>/\n/g' | \
+            # code 태그를 백틱으로
+            sed 's/<code[^>]*>/`/g' | \
+            sed 's/<\/code>/`/g' | \
+            # 기타 HTML 태그 제거
+            sed 's/<[^>]*>//g' | \
+            # HTML 엔티티 변환
+            sed 's/&amp;/\&/g' | \
+            sed 's/&lt;/</g' | \
+            sed 's/&gt;/>/g' | \
+            sed 's/&quot;/"/g' | \
+            sed 's/&#39;/'"'"'/g' | \
+            # 연속된 빈 줄 제거
+            sed '/^$/N;/^\n$/d' | \
+            # 앞뒤 공백 제거
+            sed 's/^[ \t]*//;s/[ \t]*$//' | \
+            # 빈 줄 제거
+            sed '/^$/d' > summary_clean.md
+            
+            # 결과 확인 및 정리
+            if [ -s summary_clean.md ]; then
+              echo "SUMMARY_FOUND=true" >> $GITHUB_ENV
+              echo "✅ CodeRabbit Summary 추출 성공!"
+              echo "📄 변환된 Summary:"
+              echo "----------------------------------------"
+              cat summary_clean.md
+              echo "----------------------------------------"
+              mv summary_clean.md summary_final.md
+            else
+              echo "SUMMARY_FOUND=false" >> $GITHUB_ENV
+              echo "❌ CodeRabbit Summary 파싱 실패"
+              echo "## Summary by CodeRabbit" > summary_final.md
+              echo "" >> summary_final.md
+              echo "- 자동 Summary 추출 실패" >> summary_final.md
+            fi
           else
             echo "CodeRabbit Summary를 찾을 수 없습니다."
             echo "SUMMARY_FOUND=false" >> $GITHUB_ENV
-            echo "## Summary by CodeRabbit" > summary_raw.html
-            echo "- 자동 Summary 추출 실패" >> summary_raw.html
+            echo "## Summary by CodeRabbit" > summary_final.md
+            echo "" >> summary_final.md
+            echo "- CodeRabbit Summary가 PR에 없습니다" >> summary_final.md
           fi
 
       - name: CHANGELOG.md 업데이트
@@ -103,7 +144,7 @@ jobs:
           # 임시 파일에 새 버전 정보 작성
           echo "## [$VERSION] - $TODAY" > new_entry.md
           echo "" >> new_entry.md
-          cat summary_raw.html >> new_entry.md
+          cat summary_final.md >> new_entry.md
           echo "" >> new_entry.md
           echo "---" >> new_entry.md
           echo "" >> new_entry.md
@@ -144,4 +185,4 @@ jobs:
 
       - name: 정리
         run: |
-          rm -f pr_content.html summary_raw.html new_entry.md temp_changelog.md 
+          rm -f pr_content.html summary_section.html summary_clean.md summary_final.md new_entry.md temp_changelog.md 
