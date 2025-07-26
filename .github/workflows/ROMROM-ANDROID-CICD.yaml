@@ -3,8 +3,10 @@ name: ROMROM-Android-CICD
 on:
   push:
     branches: ["deploy"]
-  repository_dispatch:
-    types: [deploy-all]
+  workflow_run:
+    workflows: ["CHANGELOG 자동 업데이트"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   build-android:
