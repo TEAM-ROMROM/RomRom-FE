@@ -340,7 +340,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "📝 변경사항이 없습니다"
           else
-            git commit -m "docs: v${{ steps.get_version.outputs.version }} 릴리즈 문서 업데이트 (PR #${{ github.event.pull_request.number }})"
+            git commit -m "ROMROM-FE 버전 관리 : docs : v${{ steps.get_version.outputs.version }} 릴리즈 문서 업데이트 (PR #${{ github.event.pull_request.number }}) : https://github.com/TEAM-ROMROM/RomRom-FE/issues/167"
             git push origin main
             echo "✅ 변경사항이 성공적으로 커밋되었습니다"
           fi

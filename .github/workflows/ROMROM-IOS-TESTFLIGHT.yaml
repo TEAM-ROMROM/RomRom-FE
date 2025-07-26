@@ -263,17 +263,47 @@ jobs:
                 key_filepath: ENV["API_KEY_PATH"]
               )
               
-              # 업로드 + 자동 그룹 배포 + 암호화 규정 자동 설정
+              # 업로드 + 암호화 규정 자동 설정
               pilot(
                 api_key: api_key,
                 ipa: ENV["IPA_PATH"],
                 changelog: ENV["RELEASE_NOTES"],
-                skip_waiting_for_build_processing: false,  # 완료까지 기다림
-                groups: ["alom"],  # 자동 배포
+                skip_waiting_for_build_processing: true,  # 빠르게 업로드만
                 distribute_external: false,
                 notify_external_testers: false,
                 uses_non_exempt_encryption: false  # 암호화 규정 자동 설정
               )
+              
+              # alom 그룹에 배포 시도
+              puts "🔄 alom 그룹에 배포 시도 중..."
+              begin
+                pilot(
+                  api_key: api_key,
+                  app_identifier: "com.alom.romrom",
+                  distribute_only: true,
+                  groups: ["alom"],
+                  notify_external_testers: false
+                )
+                puts "✅ alom 그룹 배포 성공!"
+              rescue => e
+                puts "⚠️ alom 그룹 배포 실패: #{e.message}"
+                
+                # test 그룹으로 대안 시도 (test가 작동하는 것 같으니)
+                puts "🔄 test 그룹으로 대안 시도 중..."
+                begin
+                  pilot(
+                    api_key: api_key,
+                    app_identifier: "com.alom.romrom", 
+                    distribute_only: true,
+                    groups: ["test"],
+                    notify_external_testers: false
+                  )
+                  puts "✅ test 그룹 배포 성공! (alom 그룹은 수동으로 추가해주세요)"
+                rescue => e2
+                  puts "⚠️ test 그룹도 실패: #{e2.message}"
+                  puts "App Store Connect에서 수동으로 배포해주세요."
+                end
+              end
             end
           end
           EOF

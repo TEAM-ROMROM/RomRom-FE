@@ -1,10 +1,23 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-26T15:13:45Z",
-    "currentVersion": "1.1.15",
-    "totalReleases": 6
+    "lastUpdated": "2025-07-26T15:50:39Z",
+    "currentVersion": "1.1.16",
+    "totalReleases": 7
   },
   "releases": [
+    {
+      "version": "1.1.16",
+      "date": "2025-07-26",
+      "pr_number": 181,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n커밋 메시지에 버전 관리 정보와 관련 이슈 URL이 추가되었습니다.\\niOS TestFlight 배포 시, 빌드 그룹 배포 실패 시 자동으로 다른 그룹에 재시도하고, 모두 실패할 경우 수동 배포 안내 메시지가 출력됩니다.\\n앱 버전이 1.1.16+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 3,\n  \"maintainer_can_modify\": false,\n  \"commits\": 4,\n  \"additions\": 35,\n  \"deletions\": 5,\n  \"changed_files\": 3\n}",
+      "parsed_changes": {
+        "chores": [
+          "커밋 메시지에 버전 관리 정보와 관련 이슈 URL이 추가되었습니다.",
+          "iOS TestFlight 배포 시, 빌드 그룹 배포 실패 시 자동으로 다른 그룹에 재시도하고, 모두 실패할 경우 수동 배포 안내 메시지가 출력됩니다.",
+          "앱 버전이 1.1.16+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
     {
       "version": "1.1.15",
       "date": "2025-07-26",
