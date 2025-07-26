@@ -3,6 +3,8 @@ name: 프로젝트 설정 파일 관리
 on:
   push:
     branches: ["deploy"]
+  repository_dispatch:
+    types: [ deploy-all ]
   workflow_dispatch:
 
 jobs:

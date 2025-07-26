@@ -366,7 +366,7 @@ jobs:
         run: |
           rm -f pr_content.html summary_section.html raw_summary.txt parse_changelog.py 
 
-      - name: 자동 PR Merge
+      - name: 자동 PR Merge 및 후속 워크플로우 트리거
         if: env.SUMMARY_FOUND == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -374,7 +374,17 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number }}"
           echo "🔄 PR #$PR_NUMBER 자동 merge 시작..."
 
-          # Auto-merge 활성화 (브랜치가 업데이트되면 자동으로 merge)
-          gh pr merge $PR_NUMBER --merge --auto
-          echo "✅ Auto-merge 활성화 완료!"
-          echo "🎯 deploy 브랜치가 업데이트되면 자동으로 merge"
+          gh api --method PUT /repos/${{ github.repository }}/pulls/${PR_NUMBER}/update-branch
+          sleep 10
+
+          if gh pr merge $PR_NUMBER --merge; then
+            echo "🎉 PR merge 성공!"
+
+            # 모든 워크플로우 한 번에 트리거
+            gh api --method POST /repos/${{ github.repository }}/dispatches --field event_type=deploy-all
+
+            echo "✅ 모든 워크플로우 트리거 완료!"
+          else
+            echo "❌ PR merge 실패"
+            exit 1
+          fi🎯 deploy 브랜치가 업데이트되면 자동으로 merge"

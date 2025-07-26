@@ -3,6 +3,8 @@ name: Project-iOS-TestFlight-Deploy
 on:
   push:
     branches: ["deploy"]
+  repository_dispatch:
+    types: [ deploy-all ]
   workflow_dispatch:
 
 env:
