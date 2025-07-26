@@ -374,7 +374,10 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number }}"
           echo "🔄 PR #$PR_NUMBER 자동 merge 시작..."
 
-          # Auto-merge 활성화
-          gh pr merge $PR_NUMBER --merge --auto
-          echo "✅ Auto-merge 활성화 완료!"
-          echo "🎯 deploy 브랜치가 업데이트 > 자동 merge"
+          # 브랜치 업데이트
+          gh api --method PUT /repos/${{ github.repository }}/pulls/${PR_NUMBER}/update-branch
+          sleep 5
+
+          # 즉시 merge
+          gh pr merge $PR_NUMBER --merge
+          echo "✅ PR merge 완료!"
