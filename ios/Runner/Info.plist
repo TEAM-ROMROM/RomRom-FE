@@ -61,6 +61,8 @@
 	<string>마이크 사용에 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>사진 라이브러리 사용에 필요합니다.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

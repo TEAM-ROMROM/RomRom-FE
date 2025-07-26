@@ -263,17 +263,22 @@ jobs:
                 key_filepath: ENV["API_KEY_PATH"]
               )
               
+              # 업로드 + 자동 그룹 배포 + 암호화 규정 자동 설정
               pilot(
                 api_key: api_key,
                 ipa: ENV["IPA_PATH"],
                 changelog: ENV["RELEASE_NOTES"],
-                skip_waiting_for_build_processing: true
+                skip_waiting_for_build_processing: false,  # 완료까지 기다림
+                groups: ["alom"],  # 자동 배포
+                distribute_external: false,
+                notify_external_testers: false,
+                uses_non_exempt_encryption: false  # 암호화 규정 자동 설정
               )
             end
           end
           EOF
 
-      # Upload to TestFlight with Fastlane
+      # Upload to TestFlight with Fastlane (자동화 개선)
       - name: Upload to TestFlight with Fastlane
         run: |
           # 절대 경로로 IPA 파일 찾기
