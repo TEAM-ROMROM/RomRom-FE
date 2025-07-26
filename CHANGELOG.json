@@ -1,10 +1,17 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-26T13:16:03Z",
-    "currentVersion": "1.1.10",
-    "totalReleases": 3
+    "lastUpdated": "2025-07-26T13:39:04Z",
+    "currentVersion": "1.1.11",
+    "totalReleases": 4
   },
   "releases": [
+    {
+      "version": "1.1.11",
+      "date": "2025-07-26",
+      "pr_number": 177,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 배포 워크플로우가 개선되어 Fastlane 구성을 분리하고 관리가 용이해졌습니다.\\n앱 버전이 1.1.11+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 2,\n  \"maintainer_can_modify\": false,\n  \"commits\": 3,\n  \"additions\": 36,\n  \"deletions\": 13,\n  \"changed_files\": 2\n}",
+      "parsed_changes": {}
+    },
     {
       "version": "1.1.10",
       "date": "2025-07-26",
