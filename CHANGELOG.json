@@ -1,10 +1,27 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-26T14:27:13Z",
-    "currentVersion": "1.1.14",
-    "totalReleases": 5
+    "lastUpdated": "2025-07-26T15:13:45Z",
+    "currentVersion": "1.1.15",
+    "totalReleases": 6
   },
   "releases": [
+    {
+      "version": "1.1.15",
+      "date": "2025-07-26",
+      "pr_number": 180,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\n\\n새로운 기능\\n\\n앱 버전이 1.1.15+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n버그 수정\\n\\n앱이 암호화 관련 수출 규정에 해당하지 않음을 명시하여 관련 설정이 추가되었습니다.\\n\\n\\n\\n기타\\n\\nTestFlight 업로드 및 그룹 배포 자동화 설정이 개선되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 1,\n  \"maintainer_can_modify\": false,\n  \"commits\": 3,\n  \"additions\": 10,\n  \"deletions\": 3,\n  \"changed_files\": 3\n}",
+      "parsed_changes": {
+        "새로운_기능": [
+          "앱 버전이 1.1.15+1.1.0으로 업데이트되었습니다."
+        ],
+        "버그_수정": [
+          "앱이 암호화 관련 수출 규정에 해당하지 않음을 명시하여 관련 설정이 추가되었습니다."
+        ],
+        "기타": [
+          "TestFlight 업로드 및 그룹 배포 자동화 설정이 개선되었습니다."
+        ]
+      }
+    },
     {
       "version": "1.1.14",
       "date": "2025-07-26",
