@@ -163,24 +163,78 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
 
-      # CHANGELOG에서 현재 버전의 변경사항 추출
-      - name: Extract release notes from CHANGELOG
+      # CHANGELOG.json에서 현재 버전의 릴리즈 노트 추출
+      - name: Extract release notes from CHANGELOG.json
         id: release_notes
         run: |
           VERSION="${{ steps.current_version.outputs.version }}"
           
-          if [ -f "CHANGELOG.md" ]; then
-            echo "CHANGELOG.md에서 v$VERSION 변경사항 추출 중..."
+          if [ -f "CHANGELOG.json" ]; then
+            echo "📄 CHANGELOG.json에서 v$VERSION 릴리즈 노트 추출 중..."
             
-            # 현재 버전의 변경사항 추출
+            # Python으로 JSON에서 해당 버전의 정보 추출
+            python3 << PYTHON_SCRIPT > final_release_notes.txt
+          import json
+          import sys
+          
+          try:
+              with open('CHANGELOG.json', 'r', encoding='utf-8') as f:
+                  data = json.load(f)
+              
+              version = "$VERSION"
+              found = False
+              
+              for release in data['releases']:
+                  if release['version'] == version:
+                      found = True
+                      
+                      # 동적 카테고리 처리
+                      category_titles = {
+                          'features': '새 기능',
+                          'bugfixes': '버그 수정', 
+                          'improvements': '개선사항',
+                          'deployment': '빌드/배포',
+                          'documentation': '문서/설정',
+                          'ui_changes': 'UI/UX',
+                          'performance': '성능',
+                          'security': '보안'
+                      }
+                      
+                      for category_key, items in release['parsed_changes'].items():
+                          if items:
+                              title = category_titles.get(category_key, category_key.title())
+                              print(f"**{title}**")
+                              for item in items:
+                                  if item.strip():
+                                      print(f"• {item}")
+                              print()
+                      
+                      break
+              
+              if not found:
+                  print(f"v{version} 업데이트")
+                  
+          except Exception as e:
+              print(f"v{version} 업데이트")
+          PYTHON_SCRIPT
+            
+            if [ -s final_release_notes.txt ]; then
+              echo "✅ 릴리즈 노트 추출 성공!"
+              echo "📋 추출된 릴리즈 노트:"
+              echo "----------------------------------------"
+              cat final_release_notes.txt
+              echo "----------------------------------------"
+              echo "RELEASE_NOTES_FOUND=true" >> $GITHUB_ENV
+            else
+              echo "❌ 릴리즈 노트 추출 실패"
+              echo "RELEASE_NOTES_FOUND=false" >> $GITHUB_ENV
+              echo "v$VERSION 업데이트" > final_release_notes.txt
+            fi
+          elif [ -f "CHANGELOG.md" ]; then
+            echo "📄 CHANGELOG.md에서 v$VERSION 변경사항 추출 중..."
             sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' > current_release_notes.txt
-            
-            # 첫 번째 줄(버전 헤더) 제거
             tail -n +2 current_release_notes.txt > release_notes_clean.txt
-            
-            # 빈 줄과 구분선 제거
             sed '/^$/d; /^---$/d' release_notes_clean.txt > final_release_notes.txt
-            
             if [ -s final_release_notes.txt ]; then
               echo "추출된 변경사항:"
               cat final_release_notes.txt
@@ -191,7 +245,7 @@ jobs:
               echo "v$VERSION 업데이트" > final_release_notes.txt
             fi
           else
-            echo "CHANGELOG.md 파일이 없습니다."
+            echo "⚠️ CHANGELOG.json과 CHANGELOG.md 파일이 모두 없습니다."
             echo "RELEASE_NOTES_FOUND=false" >> $GITHUB_ENV
             echo "v$VERSION 업데이트" > final_release_notes.txt
           fi
