@@ -1,10 +1,23 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-26T17:32:21Z",
-    "currentVersion": "1.1.21",
-    "totalReleases": 18
+    "lastUpdated": "2025-07-26T18:26:10Z",
+    "currentVersion": "1.1.22",
+    "totalReleases": 19
   },
   "releases": [
+    {
+      "version": "1.1.22",
+      "date": "2025-07-26",
+      "pr_number": 190,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.\\npubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.\\n워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": null,\n  \"rebaseable\": null,\n  \"mergeable_state\": \"unknown\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 2,\n  \"maintainer_can_modify\": false,\n  \"commits\": 13,\n  \"additions\": 89,\n  \"deletions\": 8,\n  \"changed_files\": 7\n}",
+      "parsed_changes": {
+        "chores": [
+          "워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.",
+          "pubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.",
+          "워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다."
+        ]
+      }
+    },
     {
       "version": "1.1.21",
       "date": "2025-07-26",
