@@ -36,6 +36,7 @@ dependencies:
   flutter_svg: ^2.0.17
   json_annotation: ^4.8.1
   playing_cards_layouts: ^1.0.1
+  skeletonizer: ^1.4.3
 
 dev_dependencies:
   flutter_test:
