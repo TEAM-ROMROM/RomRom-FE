@@ -43,10 +43,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
       _isLoading = true;
     });
     await Future.delayed(const Duration(seconds: 3)); // 3초 딜레이
-
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _scrollListener() {
@@ -259,18 +260,22 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                   width: 30.w,
                   height: 30.h,
                   child: ItemOptionsMenuButton(
-                    onEditPressed: () {
-                      debugPrint('${item['title']} 수정 버튼 클릭');
-                    },
-                    onDeletePressed: () async {
-                      final result = await context.showWarningDialog(
-                        title: '물건을 삭제하시겠습니까?',
-                        description: '삭제된 물건은 복구할 수 없습니다.',
-                      );
-                      if (result == true) {
-                        debugPrint('${item['title']} 삭제 확인');
-                      }
-                    },
+                    onEditPressed: isLoading
+                        ? null
+                        : () {
+                            debugPrint('${item['title']} 수정 버튼 클릭');
+                          },
+                    onDeletePressed: isLoading
+                        ? null
+                        : () async {
+                            final result = await context.showWarningDialog(
+                              title: '물건을 삭제하시겠습니까?',
+                              description: '삭제된 물건은 복구할 수 없습니다.',
+                            );
+                            if (result == true) {
+                              debugPrint('${item['title']} 삭제 확인');
+                            }
+                          },
                   ),
                 ),
               ),
