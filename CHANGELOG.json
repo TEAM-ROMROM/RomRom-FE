@@ -1,0 +1,313 @@
+{
+  "metadata": {
+    "lastUpdated": "2025-07-26T18:26:10Z",
+    "currentVersion": "1.1.22",
+    "totalReleases": 19
+  },
+  "releases": [
+    {
+      "version": "1.1.22",
+      "date": "2025-07-26",
+      "pr_number": 190,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.\\npubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.\\n워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": null,\n  \"rebaseable\": null,\n  \"mergeable_state\": \"unknown\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 2,\n  \"maintainer_can_modify\": false,\n  \"commits\": 13,\n  \"additions\": 89,\n  \"deletions\": 8,\n  \"changed_files\": 7\n}",
+      "parsed_changes": {
+        "chores": [
+          "워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.",
+          "pubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.",
+          "워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.21",
+      "date": "2025-07-26",
+      "pr_number": 190,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.\\npubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.\\n워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 0,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 8,\n  \"additions\": 62,\n  \"deletions\": 6,\n  \"changed_files\": 7\n}",
+      "parsed_changes": {
+        "chores": [
+          "워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.",
+          "pubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.",
+          "워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.21",
+      "date": "2025-07-26",
+      "pr_number": 189,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.\\npubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.\\n워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 7,\n  \"additions\": 40,\n  \"deletions\": 6,\n  \"changed_files\": 7\n}",
+      "parsed_changes": {
+        "chores": [
+          "워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.",
+          "pubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.",
+          "워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.21",
+      "date": "2025-07-26",
+      "pr_number": 188,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.\\npubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.\\n워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 3,\n  \"maintainer_can_modify\": false,\n  \"commits\": 6,\n  \"additions\": 15,\n  \"deletions\": 3,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동으로 실행되도록 여러 배포 및 파일 업로드 작업의 트리거가 추가되었습니다.",
+          "pubspec.yaml의 버전이 1.1.21+1.1.0으로 업데이트되었습니다.",
+          "워크플로우 내 일부 안내 문구가 더 간결하게 수정되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.19",
+      "date": "2025-07-26",
+      "pr_number": 187,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 20,\n  \"additions\": 203,\n  \"deletions\": 74,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.19",
+      "date": "2025-07-26",
+      "pr_number": 186,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 19,\n  \"additions\": 183,\n  \"deletions\": 74,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.18",
+      "date": "2025-07-26",
+      "pr_number": 185,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 3,\n  \"maintainer_can_modify\": false,\n  \"commits\": 17,\n  \"additions\": 163,\n  \"deletions\": 74,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.18",
+      "date": "2025-07-26",
+      "pr_number": 185,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 10,\n  \"additions\": 137,\n  \"deletions\": 35,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.18",
+      "date": "2025-07-26",
+      "pr_number": 184,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 9,\n  \"additions\": 117,\n  \"deletions\": 35,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.18",
+      "date": "2025-07-26",
+      "pr_number": 183,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 8,\n  \"additions\": 97,\n  \"deletions\": 35,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.17",
+      "date": "2025-07-26",
+      "pr_number": 182,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 1,\n  \"maintainer_can_modify\": false,\n  \"commits\": 6,\n  \"additions\": 77,\n  \"deletions\": 35,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.17",
+      "date": "2025-07-26",
+      "pr_number": 182,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.\\n앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 1,\n  \"maintainer_can_modify\": false,\n  \"commits\": 3,\n  \"additions\": 2,\n  \"deletions\": 31,\n  \"changed_files\": 2\n}",
+      "parsed_changes": {
+        "chores": [
+          "iOS TestFlight 자동 업로드 프로세스가 단순화되었습니다.",
+          "앱 버전이 1.1.17+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.16",
+      "date": "2025-07-26",
+      "pr_number": 181,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n커밋 메시지에 버전 관리 정보와 관련 이슈 URL이 추가되었습니다.\\niOS TestFlight 배포 시, 빌드 그룹 배포 실패 시 자동으로 다른 그룹에 재시도하고, 모두 실패할 경우 수동 배포 안내 메시지가 출력됩니다.\\n앱 버전이 1.1.16+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 3,\n  \"maintainer_can_modify\": false,\n  \"commits\": 4,\n  \"additions\": 35,\n  \"deletions\": 5,\n  \"changed_files\": 3\n}",
+      "parsed_changes": {
+        "chores": [
+          "커밋 메시지에 버전 관리 정보와 관련 이슈 URL이 추가되었습니다.",
+          "iOS TestFlight 배포 시, 빌드 그룹 배포 실패 시 자동으로 다른 그룹에 재시도하고, 모두 실패할 경우 수동 배포 안내 메시지가 출력됩니다.",
+          "앱 버전이 1.1.16+1.1.0으로 업데이트되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.15",
+      "date": "2025-07-26",
+      "pr_number": 180,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\n\\n새로운 기능\\n\\n앱 버전이 1.1.15+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n버그 수정\\n\\n앱이 암호화 관련 수출 규정에 해당하지 않음을 명시하여 관련 설정이 추가되었습니다.\\n\\n\\n\\n기타\\n\\nTestFlight 업로드 및 그룹 배포 자동화 설정이 개선되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 1,\n  \"maintainer_can_modify\": false,\n  \"commits\": 3,\n  \"additions\": 10,\n  \"deletions\": 3,\n  \"changed_files\": 3\n}",
+      "parsed_changes": {
+        "새로운_기능": [
+          "앱 버전이 1.1.15+1.1.0으로 업데이트되었습니다."
+        ],
+        "버그_수정": [
+          "앱이 암호화 관련 수출 규정에 해당하지 않음을 명시하여 관련 설정이 추가되었습니다."
+        ],
+        "기타": [
+          "TestFlight 업로드 및 그룹 배포 자동화 설정이 개선되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.14",
+      "date": "2025-07-26",
+      "pr_number": 179,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n릴리즈 노트에서 AI가 생성한 카테고리 제목을 동적으로 처리하도록 개선되었습니다.\\nTestFlight 업로드 시 IPA 파일 탐지 및 오류 처리 로직이 향상되었습니다.\\n디버그 출력이 추가되어 워크플로우 실행 시 진단이 용이해졌습니다.\\n앱 버전이 1.1.14+1.1.0으로 업데이트되었습니다.\\n이전 릴리즈 노트의 카테고리 구조와 제목이 일관성 있게 정리되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": false,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 3,\n  \"review_comments\": 2,\n  \"maintainer_can_modify\": false,\n  \"commits\": 9,\n  \"additions\": 211,\n  \"deletions\": 161,\n  \"changed_files\": 5\n}",
+      "parsed_changes": {
+        "chores": [
+          "릴리즈 노트에서 AI가 생성한 카테고리 제목을 동적으로 처리하도록 개선되었습니다.",
+          "TestFlight 업로드 시 IPA 파일 탐지 및 오류 처리 로직이 향상되었습니다.",
+          "디버그 출력이 추가되어 워크플로우 실행 시 진단이 용이해졌습니다.",
+          "앱 버전이 1.1.14+1.1.0으로 업데이트되었습니다.",
+          "이전 릴리즈 노트의 카테고리 구조와 제목이 일관성 있게 정리되었습니다."
+        ]
+      }
+    },
+    {
+      "version": "1.1.12",
+      "date": "2025-07-26",
+      "pr_number": 178,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\nAI가 생성한 카테고리 제목을 변경 없이 그대로 릴리즈 노트에 반영하도록 개선되었습니다.\\nTestFlight 업로드 과정에서 IPA 파일 탐색 및 오류 처리 로직이 강화되었습니다.\\n디버깅을 위한 추가 출력이 도입되었습니다.\\n앱 버전이 1.1.12+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 3,\n  \"maintainer_can_modify\": false,\n  \"commits\": 2,\n  \"additions\": 50,\n  \"deletions\": 54,\n  \"changed_files\": 3\n}",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "AI가 생성한 카테고리 제목을 변경 없이 그대로 릴리즈 노트에 반영하도록 개선되었습니다.",
+            "TestFlight 업로드 과정에서 IPA 파일 탐색 및 오류 처리 로직이 강화되었습니다.",
+            "디버깅을 위한 추가 출력이 도입되었습니다.",
+            "앱 버전이 1.1.12+1.1.0으로 업데이트되었습니다."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.1.11",
+      "date": "2025-07-26",
+      "pr_number": 177,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\niOS TestFlight 배포 워크플로우가 개선되어 Fastlane 구성을 분리하고 관리가 용이해졌습니다.\\n앱 버전이 1.1.11+1.1.0으로 업데이트되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 2,\n  \"maintainer_can_modify\": false,\n  \"commits\": 3,\n  \"additions\": 36,\n  \"deletions\": 13,\n  \"changed_files\": 2\n}",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "iOS TestFlight 배포 워크플로우가 개선되어 Fastlane 구성을 분리하고 관리가 용이해졌습니다.",
+            "앱 버전이 1.1.11+1.1.0으로 업데이트되었습니다."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.1.10",
+      "date": "2025-07-26",
+      "pr_number": 176,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n새로운 기능\\n\\n자동 버전 업데이트 및 CHANGELOG 자동 갱신 워크플로우가 추가되었습니다.\\nTestFlight 업로드 시 CHANGELOG의 릴리즈 노트가 자동 포함됩니다.\\n\\n버그 수정\\n\\n홈 탭 블러 상태에서 세로 스와이프 차단 문제 및 \\\"내 물건 등록\\\" 오버레이 지속 노출 현상이 해결되었습니다.\\n\\n개선 사항\\n\\n블러 및 코치마크 노출 조건이 아이템 보유 여부까지 반영되도록 개선되었습니다.\\n이미지 URL 관련 데이터 필드 및 매핑이 일관성 있게 정정되었습니다.\\niOS 코드 서명 팀 정보가 갱신되었습니다.\\n자동 리뷰 브랜치 대상이 확장되었습니다.\\n\\n문서화\\n\\nCHANGELOG.md 파일이 새로 추가되어 주요 변경 사항을 문서화합니다.\\n\\n스타일\\n\\n일부 아이콘 레이아웃 및 크기 조정이 적용되었습니다.\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": false,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 3,\n  \"maintainer_can_modify\": false,\n  \"commits\": 37,\n  \"additions\": 738,\n  \"deletions\": 106,\n  \"changed_files\": 16\n}",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "자동 버전 업데이트 및 CHANGELOG 자동 갱신 워크플로우가 추가되었습니다.",
+            "TestFlight 업로드 시 CHANGELOG의 릴리즈 노트가 자동 포함됩니다."
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "홈 탭 블러 상태에서 세로 스와이프 차단 문제 및 \"내 물건 등록\" 오버레이 지속 노출 현상이 해결되었습니다."
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "블러 및 코치마크 노출 조건이 아이템 보유 여부까지 반영되도록 개선되었습니다.",
+            "이미지 URL 관련 데이터 필드 및 매핑이 일관성 있게 정정되었습니다.",
+            "iOS 코드 서명 팀 정보가 갱신되었습니다.",
+            "자동 리뷰 브랜치 대상이 확장되었습니다."
+          ]
+        },
+        "문서화": {
+          "title": "문서화",
+          "items": [
+            "CHANGELOG.md 파일이 새로 추가되어 주요 변경 사항을 문서화합니다."
+          ]
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": [
+            "일부 아이콘 레이아웃 및 크기 조정이 적용되었습니다."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.1.7",
+      "date": "2025-01-27",
+      "pr_number": null,
+      "raw_summary": "",
+      "parsed_changes": {
+        "features": {
+          "title": "Features",
+          "items": [
+            "자동 패치 버전 업데이트를 위한 GitHub Actions 워크플로우가 추가되었습니다",
+            "CHANGELOG.md 자동 업데이트 시스템이 추가되었습니다"
+          ]
+        },
+        "bugfixes": {
+          "title": "Bugfixes",
+          "items": [
+            "홈 탭 첫 진입 시 블러 상태에서 세로 스와이프가 차단되지 않던 문제를 수정했습니다",
+            "내 물품 등록 CTA 오버레이가 고정되지 않던 문제를 해결했습니다"
+          ]
+        },
+        "improvements": {
+          "title": "Improvements",
+          "items": [
+            "내 물품 보유 여부에 따른 블러 및 코치마크 표시 로직이 개선되었습니다",
+            "CodeRabbit 자동 리뷰 설정이 deploy 브랜치에서도 작동하도록 개선되었습니다"
+          ]
+        },
+        "deployment": {
+          "title": "Deployment",
+          "items": [
+            "main 브랜치 push 시 자동 버전 증가 시스템을 도입했습니다",
+            "deploy 브랜치에서는 버전 업 없이 현재 버전으로 배포하도록 변경했습니다",
+            "TestFlight 업로드 시 CHANGELOG 내용이 release notes로 자동 포함됩니다"
+          ]
+        }
+      }
+    }
+  ]
+}
