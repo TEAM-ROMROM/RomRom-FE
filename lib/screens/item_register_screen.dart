@@ -99,9 +99,14 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
         imageFiles.isNotEmpty;
   }
 
+  bool get canUseAiPrice {
+    return titleController.text.isNotEmpty &&
+        descriptionController.text.isNotEmpty &&
+        selectedItemConditionTypes.isNotEmpty;
+  }
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
   }
 
@@ -485,24 +490,23 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                                   offset: Offset(-1, 0),
                                   blurRadius: 2)
                             ],
+                            // 비활성화 시 opacity 조정
                           ),
                           indicatorSize: Size(18.w, 18.h),
                           borderWidth: 0,
                           padding: EdgeInsets.all(1.w),
-                          onChanged: (b) {
-                            setState(() => useAiPrice = b);
-                            if (b &&
-                                titleController.text.isNotEmpty &&
-                                descriptionController.text.isNotEmpty &&
-                                selectedItemConditionTypes.isNotEmpty) {
-                              _measureAiPrice();
-                            }
-                          },
+                          onChanged: canUseAiPrice
+                              ? (b) {
+                                  setState(() => useAiPrice = b as bool);
+                                  if ((b as bool) && canUseAiPrice) {
+                                    _measureAiPrice();
+                                  }
+                                }
+                              : null, // 비활성화
                           styleBuilder: (b) => ToggleStyle(
                             backgroundGradient: b
                                 ? const LinearGradient(
-                                    colors: AppColors.aiGradient,
-                                  )
+                                    colors: AppColors.aiGradient)
                                 : const LinearGradient(colors: [
                                     AppColors.opacity40White,
                                     AppColors.opacity40White
@@ -515,6 +519,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     RegisterCustomTextField(
                       hintText: '가격을 입력해주세요',
                       prefixText: '₩',
+                      readOnly: useAiPrice,
                       keyboardType: TextInputType.number,
                       controller: priceController,
                     ),
