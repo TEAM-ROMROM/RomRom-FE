@@ -79,10 +79,11 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
         priceController.text = predictedPrice.toString();
       });
     } catch (e) {
-      // 에러 처리 (스낵바 표시 등)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
+        );
+      }
     }
   }
 
@@ -495,6 +496,19 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                           indicatorSize: Size(18.w, 18.h),
                           borderWidth: 0,
                           padding: EdgeInsets.all(1.w),
+                          onTap: canUseAiPrice
+                              ? null
+                              : (b) {
+                                  // 조건이 안 맞으면 스낵바로 안내
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              '제목, 설명, 물건 상태를 모두 입력해주세요.')),
+                                    );
+                                  }
+                                  return;
+                                }, // 비활성화
                           onChanged: canUseAiPrice
                               ? (b) {
                                   setState(() => useAiPrice = b as bool);
