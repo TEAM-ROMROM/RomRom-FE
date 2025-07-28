@@ -1,10 +1,24 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-26T18:26:10Z",
-    "currentVersion": "1.1.22",
-    "totalReleases": 19
+    "lastUpdated": "2025-07-28T04:34:53Z",
+    "currentVersion": "1.1.23",
+    "totalReleases": 20
   },
   "releases": [
+    {
+      "version": "1.1.23",
+      "date": "2025-07-28",
+      "pr_number": 190,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nChores\\n\\n여러 워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동 실행되도록 트리거 추가\\n워크플로우 메시지 안내 문구 간소화\\npubspec.yaml 버전 1.1.22+1.1.0으로 업데이트\\nCHANGELOG 및 메타데이터 최신 릴리즈 정보 반영\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": null,\n  \"rebaseable\": null,\n  \"mergeable_state\": \"unknown\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 10,\n  \"maintainer_can_modify\": false,\n  \"commits\": 16,\n  \"additions\": 158,\n  \"deletions\": 50,\n  \"changed_files\": 8\n}",
+      "parsed_changes": {
+        "chores": [
+          "여러 워크플로우가 \\\"CHANGELOG 자동 업데이트\\\" 완료 시 자동 실행되도록 트리거 추가",
+          "워크플로우 메시지 안내 문구 간소화",
+          "pubspec.yaml 버전 1.1.22+1.1.0으로 업데이트",
+          "CHANGELOG 및 메타데이터 최신 릴리즈 정보 반영"
+        ]
+      }
+    },
     {
       "version": "1.1.22",
       "date": "2025-07-26",
