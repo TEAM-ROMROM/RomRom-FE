@@ -53,13 +53,13 @@ jobs:
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             ATTEMPT=$((ATTEMPT + 1))
             echo "[$ATTEMPT/$MAX_ATTEMPTS] CodeRabbit Summary 확인 중... ($(date '+%H:%M:%S'))"
-          
+            
             # GitHub API로 PR HTML 가져오기
             curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                  -H "Accept: application/vnd.github.v3.html" \
                  "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
                  > pr_content.html
-          
+            
             # "No description provided" 체크
             if grep -q "No description provided" pr_content.html; then
               echo "❌ 아직 'No description provided' 상태입니다"
@@ -70,7 +70,7 @@ jobs:
             else
               echo "⏳ CodeRabbit Summary 아직 없음"
             fi
-          
+            
             if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
               sleep 5
             fi
@@ -120,37 +120,37 @@ jobs:
           def extract_items_from_section(html_content, section_title):
               """특정 섹션의 아이템들을 추출"""
               print(f"📋 '{section_title}' 섹션에서 아이템 추출 중...")
-          
+              
               # 다양한 패턴으로 섹션 찾기
               patterns = [
                   f'<strong[^>]*>{re.escape(section_title)}[^<]*</strong>',  # 직접 strong 태그
                   f'<li[^>]*><strong[^>]*>{re.escape(section_title)}[^<]*</strong>',  # li > strong
                   f'<p[^>]*><strong[^>]*>{re.escape(section_title)}[^<]*</strong></p>'  # p > strong
               ]
-          
+              
               section_match = None
               for pattern in patterns:
                   section_match = re.search(pattern, html_content, re.IGNORECASE)
                   if section_match:
                       print(f"✅ 패턴 매치: {pattern[:50]}...")
                       break
-          
+              
               if not section_match:
                   print(f"❌ '{section_title}' 섹션을 찾을 수 없습니다")
                   return []
-          
+              
               # 섹션 이후의 ul 태그 찾기
               after_section = html_content[section_match.end():]
               ul_match = re.search(r'<ul[^>]*>(.*?)</ul>', after_section, re.DOTALL)
-          
+              
               if not ul_match:
                   print(f"❌ '{section_title}' 섹션 이후 ul 태그를 찾을 수 없습니다")
                   return []
-          
+              
               # li 태그들에서 텍스트 추출
               ul_content = ul_match.group(1)
               li_items = re.findall(r'<li[^>]*>(.*?)</li>', ul_content, re.DOTALL)
-          
+              
               items = []
               for item in li_items:
                   # HTML 태그 제거하고 텍스트만 추출
@@ -159,7 +159,7 @@ jobs:
                   if clean_text:
                       items.append(clean_text)
                       print(f"  📝 아이템: {clean_text[:50]}...")
-          
+              
               print(f"✅ '{section_title}' 섹션에서 {len(items)}개 아이템 추출 완료")
               return items
           
@@ -167,17 +167,17 @@ jobs:
               """HTML에서 동적으로 카테고리 감지 - AI가 생성하는 모든 카테고리 수용"""
               print("🔍 HTML에서 카테고리 감지 시작...")
               print(f"📄 HTML 내용 길이: {len(html_content)} characters")
-          
+              
               detected_categories = {}
-          
+              
               # strong 태그 안의 카테고리 제목들 찾기
               strong_texts = re.findall(r'<strong[^>]*>([^<]+)</strong>', html_content, re.IGNORECASE)
               print(f"🎯 발견된 strong 태그들: {strong_texts}")
-          
+              
               for strong_text in strong_texts:
                   clean_text = strong_text.strip()
                   print(f"🏷️ 처리 중인 카테고리: '{clean_text}'")
-          
+                  
                   # AI가 생성한 카테고리 제목을 그대로 사용
                   items = extract_items_from_section(html_content, clean_text)
                   if items:
@@ -185,7 +185,7 @@ jobs:
                       safe_key = re.sub(r'[^a-zA-Z0-9가-힣]', '_', clean_text.lower()).strip('_')
                       if not safe_key:  # 안전한 키가 생성되지 않으면 fallback
                           safe_key = f"category_{len(detected_categories)}"
-          
+                      
                       print(f"✅ 카테고리 추가: '{clean_text}' -> '{safe_key}' ({len(items)}개 아이템)")
                       detected_categories[safe_key] = {
                           'title': clean_text,
@@ -193,7 +193,7 @@ jobs:
                       }
                   else:
                       print(f"❌ '{clean_text}' 카테고리에서 아이템을 찾을 수 없음")
-          
+              
               print(f"🎯 최종 감지된 카테고리 수: {len(detected_categories)}")
               return detected_categories
           
@@ -203,30 +203,30 @@ jobs:
               today = os.environ.get('TODAY')
               pr_number = int(os.environ.get('PR_NUMBER'))
               timestamp = os.environ.get('TIMESTAMP')
-          
+              
               try:
                   # HTML 파일 읽기
                   with open('summary_section.html', 'r', encoding='utf-8') as f:
                       html_content = f.read()
-          
+                  
                   print(f"📄 읽어온 HTML 내용 미리보기:")
                   print("=" * 50)
                   print(html_content[:500] + "..." if len(html_content) > 500 else html_content)
                   print("=" * 50)
-          
+                  
                   # 동적 카테고리 감지
                   categories = detect_categories(html_content)
-          
+                  
                   print("🎯 감지된 카테고리들:")
                   for key, value in categories.items():
                       print(f"  - {key}: {value['title']} ({len(value['items'])}개 항목)")
                       for item in value['items'][:3]:  # 첫 3개 아이템만 미리보기
                           print(f"    • {item[:80]}...")
-          
+                  
                   # Raw summary 읽기
                   with open('raw_summary.txt', 'r', encoding='utf-8') as f:
                       raw_summary = f.read().strip()
-          
+                  
                   # 새로운 릴리즈 엔트리 생성
                   new_release = {
                       "version": version,
@@ -235,12 +235,12 @@ jobs:
                       "raw_summary": raw_summary,
                       "parsed_changes": {}
                   }
-          
+                  
                   # 동적 카테고리를 parsed_changes에 추가
                   for key, value in categories.items():
                       new_release["parsed_changes"][key] = value["items"]
                       print(f"📝 parsed_changes에 추가: {key} -> {len(value['items'])}개 아이템")
-          
+                  
                   # CHANGELOG.json 업데이트
                   try:
                       with open('CHANGELOG.json', 'r', encoding='utf-8') as f:
@@ -254,22 +254,22 @@ jobs:
                           },
                           "releases": []
                       }
-          
+                  
                   # 메타데이터 업데이트
                   changelog_data["metadata"]["lastUpdated"] = timestamp
                   changelog_data["metadata"]["currentVersion"] = version
                   changelog_data["metadata"]["totalReleases"] = len(changelog_data["releases"]) + 1
-          
+                  
                   # 새 릴리즈를 맨 앞에 추가
                   changelog_data["releases"].insert(0, new_release)
-          
+                  
                   # 파일 저장
                   with open('CHANGELOG.json', 'w', encoding='utf-8') as f:
                       json.dump(changelog_data, f, indent=2, ensure_ascii=False)
-          
+                  
                   print("✅ CHANGELOG.json 업데이트 완료!")
                   print(f"📊 총 {len(categories)}개 카테고리, {sum(len(v['items']) for v in categories.values())}개 변경사항")
-          
+                  
               except Exception as e:
                   print(f"❌ 파싱 오류: {e}")
                   sys.exit(1)
@@ -297,36 +297,36 @@ jobs:
           try:
               with open('CHANGELOG.json', 'r', encoding='utf-8') as f:
                   data = json.load(f)
-          
+              
               with open('CHANGELOG.md', 'w', encoding='utf-8') as f:
                   f.write("# Changelog\n\n")
           
                   for release in data['releases']:
                       f.write(f"## [{release['version']}] - {release['date']}\n\n")
-          
+                      
                       # AI가 생성한 모든 카테고리를 그대로 출력
                       for category_key, items in release['parsed_changes'].items():
                           if items:
                               # JSON에서 원본 제목 가져오기 (없으면 키를 제목으로 사용)
                               title = items.get('title', category_key.replace('_', ' ').title()) if isinstance(items, dict) else category_key.replace('_', ' ').title()
-          
+                              
                               # items가 dict 형태인지 확인 (새 형식)
                               if isinstance(items, dict) and 'items' in items:
                                   actual_items = items['items']
                                   title = items['title']
                               else:
                                   actual_items = items  # 기존 형식 호환
-          
+                              
                               f.write(f"**{title}**\n")
-          
+                              
                               for item in actual_items:
                                   f.write(f"- {item}\n")
                               f.write("\n")
-          
+                      
                       f.write("---\n\n")
-          
+              
               print("✅ CHANGELOG.md 재생성 완료!")
-          
+              
           except Exception as e:
               print(f"❌ CHANGELOG.md 생성 실패: {e}")
               exit(1)
@@ -362,7 +362,7 @@ jobs:
             echo "⚠️ CodeRabbit Summary를 찾을 수 없어 업데이트를 건너뛰었습니다"
           fi
 
-      - name: 리소스 정리
+      - name: 정리
         run: |
           rm -f pr_content.html summary_section.html raw_summary.txt parse_changelog.py 
 
@@ -371,10 +371,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          echo "🔄 PR #$PR_NUMBER 자동 merge 시작..."
-
-          # Auto-merge 활성화 (브랜치가 업데이트되면 자동으로 merge)
-          gh pr merge $PR_NUMBER --merge --auto
-          echo "✅ Auto-merge 활성화 완료!"
-          echo "🎯 deploy 브랜치가 업데이트되면 자동으로 merge"
+          echo "🔄 PR #${{ github.event.pull_request.number }} 자동 머지 시도 중..."
+          
+          # PR 상태 확인
+          PR_STATE=$(gh pr view ${{ github.event.pull_request.number }} --json state,mergeable --jq '.state + "," + (.mergeable | tostring)')
+          echo "PR 상태: $PR_STATE"
+          
+          # 머지 시도
+          if gh pr merge ${{ github.event.pull_request.number }} --merge; then
+            echo "✅ PR이 성공적으로 머지되었습니다!"
+          else
+            echo "❌ PR 머지에 실패했습니다. 수동으로 처리해주세요."
+            exit 1
+          fi
