@@ -231,6 +231,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => ItemModificationScreen(
+                        itemId:
+                            "024a639b-c9be-4e49-b492-77259736177f", // FIXME : 실제 아이템 ID로 변경 필요
                         onClose: () {
                           Navigator.pop(context);
                         },

@@ -9,7 +9,13 @@ import 'package:romrom_fe/widgets/register_input_form.dart';
 /// 물품 수정 화면
 class ItemModificationScreen extends StatefulWidget {
   final VoidCallback? onClose;
-  const ItemModificationScreen({super.key, this.onClose});
+  final String? itemId;
+
+  const ItemModificationScreen({
+    super.key,
+    required this.itemId,
+    this.onClose,
+  });
 
   @override
   State<ItemModificationScreen> createState() => _ItemModificationScreenState();
@@ -27,9 +33,7 @@ class _ItemModificationScreenState extends State<ItemModificationScreen> {
 
     try {
       final itemApi = ItemApi();
-      final request = ItemRequest(
-          itemId:
-              "024a639b-c9be-4e49-b492-77259736177f"); // FIXME : 실제 아이템 ID로 변경 필요
+      final request = ItemRequest(itemId: widget.itemId);
       final response = await itemApi.getItemDetail(request);
 
       setState(() {
