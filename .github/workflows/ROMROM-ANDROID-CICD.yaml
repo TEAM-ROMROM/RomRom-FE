@@ -7,6 +7,7 @@ on:
     workflows: ["CHANGELOG 자동 업데이트"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:  # 수동 실행 옵션 추가
 
 jobs:
   build-android:

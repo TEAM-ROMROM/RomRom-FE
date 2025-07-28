@@ -46,8 +46,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   bool _hasMoreItems = true;
   // 블러 효과 표시 여부
   bool _isBlurShown = false;
-  // 코치마크 표시 여부
-  bool _isCoachMarkShown = false;
   // 코치마크 현재 페이지 상태 관리 (성능 최적화)
   final ValueNotifier<int> _coachMarkPageNotifier = ValueNotifier<int>(0);
   // 오버레이 엔트리
@@ -100,8 +98,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         ItemRequest(pageNumber: 0, pageSize: 1),
       );
 
-      userHasItem =
-          (response.itemDetailPage?.content?.isNotEmpty ?? false);
+      userHasItem = (response.itemDetailPage?.content?.isNotEmpty ?? false);
     } catch (e) {
       debugPrint('블러 상태 결정용 내 물품 조회 실패: $e');
       // 실패 시에는 "없다"고 간주해 기존 로직 유지
@@ -111,7 +108,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     setState(() {
       _isBlurShown = shouldShowBlur;
-      _isCoachMarkShown = shouldShowBlur;
     });
 
     // 블러를 보여줄 필요가 없다면 최초 진입 플래그도 바로 해제 (다음 진입 시 재호출 방지)
@@ -227,7 +223,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             _coachMarkImages.length,
-                (index) {
+            (index) {
               final isCurrentPage = index == currentPage;
               return GestureDetector(
                 onTap: () {
@@ -338,7 +334,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         pageSize: _pageSize,
       ));
 
-      final newItems = _convertToFeedItems(response.itemDetailPage?.content ?? []);
+      final newItems =
+          _convertToFeedItems(response.itemDetailPage?.content ?? []);
 
       setState(() {
         _feedItems.addAll(newItems);
@@ -373,8 +370,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       if (d.itemTradeOptions != null) {
         for (final s in d.itemTradeOptions!) {
           try {
-            opts.add(ItemTradeOption.values
-                .firstWhere((e) => e.serverName == s));
+            opts.add(
+                ItemTradeOption.values.firstWhere((e) => e.serverName == s));
           } catch (_) {}
         }
       }
@@ -388,7 +385,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         itemCondition: cond,
         transactionTypes: opts,
         priceTag: null,
-        profileImageUrl: 'https://picsum.photos/100/100?random=${index + 1}', //FIXME: 프로필 이미지 추가 필요
+        profileImageUrl:
+            'https://picsum.photos/100/100?random=${index + 1}', //FIXME: 프로필 이미지 추가 필요
         likeCount: d.likeCount ?? 0,
         imageUrls: d.itemImageUrls ?? [''],
         description: d.itemDescription ?? '',
