@@ -17,6 +17,8 @@ jobs:
   build-and-deploy:
     name: Build and Deploy to TestFlight
     runs-on: macos-15
+    # CHANGELOG 워크플로우가 성공한 경우에만 실행
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
 
     steps:
       - name: Checkout repository

@@ -5,6 +5,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/widgets/common/item_options_menu.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'dart:async';
 import '../utils/common_utils.dart';
 
@@ -19,11 +20,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   bool _isScrolling = false;
+  bool _isLoading = false;
   Timer? _scrollTimer;
 
   @override
   void initState() {
     super.initState();
+    _fetchItems();
     _scrollController.addListener(_scrollListener);
   }
 
@@ -33,6 +36,18 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
     _scrollController.dispose();
     _scrollTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _fetchItems() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await Future.delayed(const Duration(seconds: 3)); // 3초 딜레이
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _scrollListener() {
@@ -141,7 +156,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
       physics: const BouncingScrollPhysics(),
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       itemCount: items.length,
-      itemBuilder: (context, index) => _buildItemTile(items[index], index),
+      itemBuilder: (context, index) =>
+          _buildItemTile(items[index], index, isLoading: _isLoading),
       separatorBuilder: (context, index) => Divider(
         thickness: 1.5,
         color: AppColors.opacity10White,
@@ -150,99 +166,122 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
     );
   }
 
-  Widget _buildItemTile(Map<String, dynamic> item, int index) {
-    return SizedBox(
-      height: 90.h,
-      child: Stack(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 이미지 썸네일
-              Container(
-                width: 90.w,
-                height: 90.h,
-                decoration: BoxDecoration(
-                  color: AppColors.opacity20White,
-                  borderRadius: BorderRadius.circular(4.r),
+  Widget _buildItemTile(Map<String, dynamic> item, int index,
+      {bool isLoading = false}) {
+    return Skeletonizer(
+      enabled: isLoading, // true일 때 skeleton UI 활성화
+      effect: const ShimmerEffect(
+        baseColor: AppColors.opacity10White,
+        highlightColor: AppColors.opacity30White,
+      ),
+      textBoneBorderRadius: const TextBoneBorderRadius.fromHeightFactor(.3),
+      ignoreContainers: true,
+      child: SizedBox(
+        height: 90.h,
+        child: Stack(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 이미지 썸네일
+                Skeleton.leaf(
+                  child: Container(
+                    width: 90.w,
+                    height: 90.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.opacity20White,
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    // 실제 로딩 완료 시: Image.network(item['thumbnail'])
+                  ),
                 ),
-                // 실제 이미지 구현 시 Image.network() 사용
-              ),
-              SizedBox(width: 16.w),
-              // 텍스트 영역
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      item['title'] as String,
-                      style: CustomTextStyles.p1
-                          .copyWith(fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 6.h),
-                    Text(
-                      item['uploadTime'] as String,
-                      style: CustomTextStyles.p2.copyWith(
-                        color: AppColors.opacity60White,
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                    Text(
-                      '${formatPrice(item['price'])}원',
-                      style: CustomTextStyles.p1.copyWith(),
-                    ),
-                    SizedBox(height: 12.h),
-                    Row(
-                      children: [
-                        Icon(AppIcons.itemRegisterHeart,
-                            size: 14.sp, color: AppColors.opacity60White),
-                        SizedBox(width: 4.w),
-                        Text(
-                          '${item['likes']}',
-                          style: CustomTextStyles.p2.copyWith(
-                            color: AppColors.opacity60White,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // 30px 패딩 공간 확보
-              SizedBox(width: 30.w),
-            ],
-          ),
-          // 우측 상단에 더보기 버튼 배치
-          Positioned(
-            top: 0,
-            right: 0,
-            child: SizedBox(
-              width: 30.w,
-              height: 30.h,
-              child: ItemOptionsMenuButton(
-                onEditPressed: () {
-                  // 수정 기능 구현
-                  debugPrint('${item['title']} 수정 버튼 클릭');
-                },
-                onDeletePressed: () async {
-                  // 삭제 기능 구현
-                  final result = await context.showWarningDialog(
-                    title: '물건을 삭제하시겠습니까?',
-                    description: '삭제된 물건은 복구할 수 없습니다.',
-                  );
+                SizedBox(width: 16.h),
 
-                  if (result == true) {
-                    // 확인 버튼이 눌렸을 때 삭제 로직
-                    debugPrint('${item['title']} 삭제 확인');
-                    // 여기에 실제 삭제 API 호출 로직 추가
-                  }
-                },
+                // 텍스트 영역
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Skeleton.leaf(
+                        child: Text(
+                          item['title'] as String? ?? '',
+                          style: CustomTextStyles.p1
+                              .copyWith(fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Skeleton.leaf(
+                        child: Text(
+                          item['uploadTime'] as String? ?? '',
+                          style: CustomTextStyles.p2
+                              .copyWith(color: AppColors.opacity60White),
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                      Skeleton.leaf(
+                        child: Text(
+                          '${formatPrice(item['price'])}원',
+                          style: CustomTextStyles.p1,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Skeleton.leaf(
+                        child: Row(
+                          children: [
+                            Icon(
+                              AppIcons.itemRegisterHeart,
+                              size: 14.sp,
+                              color: AppColors.opacity60White,
+                            ),
+                            SizedBox(width: 4.w),
+                            Text(
+                              '${item['likes']}',
+                              style: CustomTextStyles.p2
+                                  .copyWith(color: AppColors.opacity60White),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 30.w),
+              ],
+            ),
+
+            // 더보기 버튼
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Skeleton.keep(
+                child: SizedBox(
+                  width: 30.w,
+                  height: 30.h,
+                  child: ItemOptionsMenuButton(
+                    onEditPressed: isLoading
+                        ? null
+                        : () {
+                            debugPrint('${item['title']} 수정 버튼 클릭');
+                          },
+                    onDeletePressed: isLoading
+                        ? null
+                        : () async {
+                            final result = await context.showWarningDialog(
+                              title: '물건을 삭제하시겠습니까?',
+                              description: '삭제된 물건은 복구할 수 없습니다.',
+                            );
+                            if (result == true) {
+                              debugPrint('${item['title']} 삭제 확인');
+                            }
+                          },
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
