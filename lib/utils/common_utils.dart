@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import '../widgets/common/warning_modal.dart';
+import 'package:romrom_fe/widgets/common/warning_modal.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
@@ -93,8 +93,4 @@ extension ContextExtension on BuildContext {
   }
 }
 
-/// 날짜 변환 함수
-/// 2025-07-14T17:53:08.807506 -> 2025년 7월 14일
-String formatDate(String date) {
-  return DateFormat('yyyy년 M월 d일').format(DateTime.parse(date));
-}
+
