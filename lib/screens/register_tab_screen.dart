@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/widgets/common/item_options_menu.dart';
 import 'dart:async';
@@ -222,9 +223,22 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> {
               width: 30.w,
               height: 30.h,
               child: ItemOptionsMenuButton(
-                onEditPressed: () {
+                onEditPressed: () async {
                   // 수정 기능 구현
                   debugPrint('${item['title']} 수정 버튼 클릭');
+
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ItemModificationScreen(
+                        onClose: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                  );
+                  // 등록 화면에서 돌아온 뒤 필요한 상태 갱신
+                  setState(() {});
                 },
                 onDeletePressed: () async {
                   // 삭제 기능 구현
