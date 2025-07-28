@@ -3,6 +3,7 @@ name: 프로젝트 빌드 테스트
 on:
   pull_request:
     branches: ["main"]
+  workflow_dispatch:  # 수동 실행 옵션 추가
 
 # PR 댓글을 위한 권한 추가
 permissions:
