@@ -1,10 +1,29 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-28T04:34:53Z",
-    "currentVersion": "1.1.23",
-    "totalReleases": 20
+    "lastUpdated": "2025-07-28T13:22:18Z",
+    "currentVersion": "1.1.25",
+    "totalReleases": 21
   },
   "releases": [
+    {
+      "version": "1.1.25",
+      "date": "2025-07-28",
+      "pr_number": 197,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\n\\n신규 기능\\n\\n등록 탭 화면에 아이템 목록 로딩 시 스켈레톤 UI와 로딩 상태(Shimmer 효과)가 추가되었습니다.\\n\\n\\n\\n버그 수정\\n\\n홈 탭 화면에서 코치마크 표시 관련 불필요한 내부 상태 관리가 제거되었습니다.\\n\\n\\n\\n기타\\n\\n프로젝트 버전이 1.1.25+1.1.0으로 업데이트되었습니다.\\n스켈레톤 UI 적용을 위한 외부 라이브러리(skeletonizer)가 추가되었습니다.\\n빌드 및 배포 자동화 워크플로우의 실행 조건이 개선되어, 실패한 워크플로우 이후에는 자동 실행되지 않도록 변경되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": false,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 1,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 8,\n  \"additions\": 160,\n  \"deletions\": 108,\n  \"changed_files\": 8\n}",
+      "parsed_changes": {
+        "신규_기능": [
+          "등록 탭 화면에 아이템 목록 로딩 시 스켈레톤 UI와 로딩 상태(Shimmer 효과)가 추가되었습니다."
+        ],
+        "버그_수정": [
+          "홈 탭 화면에서 코치마크 표시 관련 불필요한 내부 상태 관리가 제거되었습니다."
+        ],
+        "기타": [
+          "프로젝트 버전이 1.1.25+1.1.0으로 업데이트되었습니다.",
+          "스켈레톤 UI 적용을 위한 외부 라이브러리(skeletonizer)가 추가되었습니다.",
+          "빌드 및 배포 자동화 워크플로우의 실행 조건이 개선되어, 실패한 워크플로우 이후에는 자동 실행되지 않도록 변경되었습니다."
+        ]
+      }
+    },
     {
       "version": "1.1.23",
       "date": "2025-07-28",
