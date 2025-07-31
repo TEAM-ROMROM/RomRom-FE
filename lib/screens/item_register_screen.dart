@@ -79,10 +79,11 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
         priceController.text = predictedPrice.toString();
       });
     } catch (e) {
-      // 에러 처리 (스낵바 표시 등)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
+        );
+      }
     }
   }
 
@@ -99,9 +100,14 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
         imageFiles.isNotEmpty;
   }
 
+  bool get canUseAiPrice {
+    return titleController.text.isNotEmpty &&
+        descriptionController.text.isNotEmpty &&
+        selectedItemConditionTypes.isNotEmpty;
+  }
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
   }
 
@@ -485,24 +491,36 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                                   offset: Offset(-1, 0),
                                   blurRadius: 2)
                             ],
+                            // 비활성화 시 opacity 조정
                           ),
                           indicatorSize: Size(18.w, 18.h),
                           borderWidth: 0,
                           padding: EdgeInsets.all(1.w),
-                          onChanged: (b) {
-                            setState(() => useAiPrice = b);
-                            if (b &&
-                                titleController.text.isNotEmpty &&
-                                descriptionController.text.isNotEmpty &&
-                                selectedItemConditionTypes.isNotEmpty) {
-                              _measureAiPrice();
-                            }
-                          },
+                          onTap: canUseAiPrice
+                              ? null
+                              : (b) {
+                                  // 조건이 안 맞으면 스낵바로 안내
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              '제목, 설명, 물건 상태를 모두 입력해주세요.')),
+                                    );
+                                  }
+                                  return;
+                                }, // 비활성화
+                          onChanged: canUseAiPrice
+                              ? (b) {
+                                  setState(() => useAiPrice = b as bool);
+                                  if ((b as bool) && canUseAiPrice) {
+                                    _measureAiPrice();
+                                  }
+                                }
+                              : null, // 비활성화
                           styleBuilder: (b) => ToggleStyle(
                             backgroundGradient: b
                                 ? const LinearGradient(
-                                    colors: AppColors.aiGradient,
-                                  )
+                                    colors: AppColors.aiGradient)
                                 : const LinearGradient(colors: [
                                     AppColors.opacity40White,
                                     AppColors.opacity40White
@@ -515,6 +533,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                     RegisterCustomTextField(
                       hintText: '가격을 입력해주세요',
                       prefixText: '₩',
+                      readOnly: useAiPrice,
                       keyboardType: TextInputType.number,
                       controller: priceController,
                     ),
