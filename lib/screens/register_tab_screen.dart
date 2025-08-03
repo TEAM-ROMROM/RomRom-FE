@@ -6,7 +6,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/widgets/common/item_options_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
-import 'package:skeletonizer/skeletonizer.dart';
+import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'dart:async';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
@@ -261,13 +261,15 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ),
                 ),
               ),
-              ],
-              body: Column(
-                children: [
-                  _buildToggleWidget(),
-                  Expanded(child: _buildItemsList()),
-                ],
+              // 토글 위젯을 고정 헤더로 추가
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _ToggleHeaderDelegate(
+                  child: _buildToggleWidget(),
+                ),
               ),
+              ],
+              body: _buildItemsList(), // 토글 위젯 제거
             ),
           ),
           _buildRegisterFabStacked(context),
@@ -279,7 +281,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   Widget _buildItemsList() {
     if (_isLoading && _myItems.isEmpty) {
       // 초기 로딩 시 스켈레톤 보여주기
-      return _buildSkeletonList();
+      return const RegisterTabSkeleton();
     }
     
     if (_myItems.isEmpty) {
@@ -311,21 +313,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           color: AppColors.opacity10White,
           height: 32.h,
         ),
-      ),
-    );
-  }
-  
-  /// 스켈레톤 리스트 위젯
-  Widget _buildSkeletonList() {
-    return ListView.separated(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
-      itemCount: 5,
-      itemBuilder: (context, index) => _buildSkeletonTile(index),
-      separatorBuilder: (context, index) => Divider(
-        thickness: 1.5,
-        color: AppColors.opacity10White,
-        height: 32.h,
       ),
     );
   }
@@ -441,89 +428,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-  
-  /// 스켈레톤 타일
-  Widget _buildSkeletonTile(int index) {
-    return Skeletonizer(
-      enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: AppColors.opacity10White,
-        highlightColor: AppColors.opacity30White,
-      ),
-      textBoneBorderRadius: const TextBoneBorderRadius.fromHeightFactor(.3),
-      ignoreContainers: true,
-      child: SizedBox(
-        height: 90.h,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 이미지 썸네일
-            Skeleton.leaf(
-              child: Container(
-                width: 90.w,
-                height: 90.h,
-                decoration: BoxDecoration(
-                  color: AppColors.opacity20White,
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-              ),
-            ),
-            SizedBox(width: 16.h),
-
-            // 텍스트 영역
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Skeleton.leaf(
-                    child: Text(
-                      '물건 제목 $index',
-                      style: CustomTextStyles.p1
-                          .copyWith(fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                  SizedBox(height: 6.h),
-                  Skeleton.leaf(
-                    child: Text(
-                      '$index시간 전',
-                      style: CustomTextStyles.p2
-                          .copyWith(color: AppColors.opacity60White),
-                    ),
-                  ),
-                  SizedBox(height: 12.h),
-                  Skeleton.leaf(
-                    child: Text(
-                      '${formatPrice(10000)}원',
-                      style: CustomTextStyles.p1,
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  Skeleton.leaf(
-                    child: Row(
-                      children: [
-                        Icon(
-                          AppIcons.itemRegisterHeart,
-                          size: 14.sp,
-                          color: AppColors.opacity60White,
-                        ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          '5',
-                          style: CustomTextStyles.p2
-                              .copyWith(color: AppColors.opacity60White),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -828,5 +732,31 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         );
       }
     }
+  }
+}
+
+/// 토글 위젯을 고정하기 위한 SliverPersistentHeaderDelegate
+class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _ToggleHeaderDelegate({required this.child});
+
+  @override
+  double get minExtent => 70.h; // 토글 위젯 높이 + 패딩 (46h + 24h)
+
+  @override
+  double get maxExtent => 70.h;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: AppColors.primaryBlack,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
   }
 }
