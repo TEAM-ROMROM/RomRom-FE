@@ -60,7 +60,7 @@ class LocationService {
 
       if (response.statusCode == 200) {
         final NaverAddressResponse addressData =
-        NaverAddressResponse.fromJson(json.decode(response.body));
+            NaverAddressResponse.fromJson(json.decode(response.body));
 
         if (addressData.results.isNotEmpty) {
           final region = addressData.results[0].region;
@@ -75,6 +75,8 @@ class LocationService {
             siGunGu: siGunGu,
             eupMyoenDong: eupMyoenDong,
             ri: ri,
+            longitude: position.longitude,
+            latitude: position.latitude,
           );
         }
       }

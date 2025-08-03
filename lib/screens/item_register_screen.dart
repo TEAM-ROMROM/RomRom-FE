@@ -40,6 +40,10 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
   List<ItemTradeOption> selectedTradeOptions = [];
   bool useAiPrice = false;
 
+  // 위치 정보 변수
+  double? selectedLongitude;
+  double? selectedLatitude;
+
   // 각 TextField의 controller 추가
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
@@ -559,7 +563,10 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                                 onLocationSelected: (address) {
                                   locationController.text =
                                       '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-                                  // 필요하다면 address 전체를 상태로 저장
+                                  selectedLongitude = address.longitude;
+                                  selectedLatitude = address.latitude;
+                                  print(
+                                      'Selected address: $selectedLongitude, $selectedLatitude');
                                 },
                               ),
                             ),
@@ -568,6 +575,8 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                           if (result != null) {
                             locationController.text =
                                 '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
+                            selectedLongitude = result.longitude;
+                            selectedLatitude = result.latitude;
                           }
                         },
                       ),
@@ -596,6 +605,8 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                             itemCustomTags: [],
                             itemImages:
                                 imageFiles.map((e) => File(e.path)).toList(),
+                            longitude: selectedLongitude,
+                            latitude: selectedLatitude,
                           ));
                           if (context.mounted) {
                             Navigator.of(context).pop();

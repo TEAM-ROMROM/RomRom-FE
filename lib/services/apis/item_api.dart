@@ -28,6 +28,8 @@ class ItemApi {
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
+      'longitude': request.longitude.toString(),
+      'latitude': request.latitude.toString(),
     };
 
     // 타입 안전하게 파일 처리
@@ -90,7 +92,8 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
+        debugPrint(
+            '물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
       },
     );
 
