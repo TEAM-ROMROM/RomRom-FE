@@ -97,6 +97,29 @@ class ItemApi {
     return itemResponse;
   }
 
+  /// 물품 상세 조회 API
+  /// `POST /api/item/get`
+  Future<ItemResponse> getItemDetail(ItemRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/item/get';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {
+      'itemId': request.itemId,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('물품 상세 조회 성공: ${itemResponse.item?.itemName}');
+      },
+    );
+
+    return itemResponse;
+  }
+
   /// 내 물품 목록 조회 API
   /// `POST /api/item/get/my`
   Future<ItemResponse> getMyItems(ItemRequest request) async {
@@ -152,5 +175,61 @@ class ItemApi {
     );
 
     return predictedPrice;
+  }
+
+  /// 물품 삭제 API
+  /// `POST /api/item/delete`
+  Future<void> deleteItem(String itemId) async {
+    const String url = '${AppUrls.baseUrl}/api/item/delete';
+
+    final Map<String, dynamic> fields = {
+      'itemId': itemId,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('물품 삭제 성공: $itemId');
+      },
+    );
+  }
+
+  /// 물품 수정 API
+  /// `POST /api/item/edit`
+  Future<ItemResponse> updateItem(ItemRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/item/edit';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {
+      'itemId': request.itemId,
+      'itemName': request.itemName,
+      'itemDescription': request.itemDescription,
+      'itemCategory': request.itemCategory,
+      'itemCondition': request.itemCondition,
+      'itemTradeOptions': request.itemTradeOptions?.join(','),
+      'itemPrice': request.itemPrice?.toString(),
+      'itemCustomTags': request.itemCustomTags?.join(','),
+    };
+
+    // 타입 안전하게 파일 처리
+    Map<String, List<File>>? fileMap;
+    if (request.itemImages != null && request.itemImages!.isNotEmpty) {
+      fileMap = {'itemImages': request.itemImages!};
+    }
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      files: fileMap,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('물품 수정 성공: ${itemResponse.item?.itemName}');
+      },
+    );
+
+    return itemResponse;
   }
 }
