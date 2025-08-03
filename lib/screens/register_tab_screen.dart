@@ -25,18 +25,18 @@ class RegisterTabScreen extends StatefulWidget {
 class _RegisterTabScreenState extends State<RegisterTabScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  bool _isScrolled = false;
+  bool _isScrolled = false; //
   bool _isScrolling = false;
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasMoreItems = true;
   Timer? _scrollTimer;
-  
+
   // 내 물품 데이터
   final List<ItemDetail> _myItems = [];
   int _currentPage = 0;
   final int _pageSize = 20;
-  
+
   // 토글 상태 (false: 판매 중, true: 거래 완료)
   bool _isCompletedSelected = false;
   late AnimationController _toggleAnimationController;
@@ -45,7 +45,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // 토글 애니메이션 초기화
     _toggleAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -58,7 +58,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       parent: _toggleAnimationController,
       curve: Curves.easeInOut,
     ));
-    
+
     _loadMyItems();
     _scrollController.addListener(_scrollListener);
   }
@@ -74,14 +74,15 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   /// 내 물품 목록 로드 (초기 로딩)
   Future<void> _loadMyItems({bool isRefresh = false}) async {
-    debugPrint('_loadMyItems 호출됨: isRefresh=$isRefresh, _isLoading=$_isLoading');
-    
+    debugPrint(
+        '_loadMyItems 호출됨: isRefresh=$isRefresh, _isLoading=$_isLoading');
+
     // 초기 로딩이 아닌 경우에만 중복 호출 방지
     if (!isRefresh && _isLoading && _myItems.isNotEmpty) {
       debugPrint('중복 로딩 방지로 return');
       return;
     }
-    
+
     setState(() {
       if (isRefresh) {
         _currentPage = 0;
@@ -99,17 +100,17 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         // TODO: 백엔드에서 거래상태 필터링 지원 시 추가
         // tradeStatus: _isCompletedSelected ? 'COMPLETED' : 'SELLING',
       );
-      
+
       final response = await itemApi.getMyItems(request);
       final newItems = response.itemDetailPage?.content ?? [];
-      
+
       if (mounted) {
         setState(() {
           if (isRefresh) {
             _myItems.clear();
             _currentPage = 0;
           }
-          
+
           _myItems.addAll(newItems);
           _hasMoreItems = newItems.length == _pageSize;
           _isLoading = false;
@@ -120,7 +121,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         setState(() {
           _isLoading = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('내 물품 목록 로드 실패: ${ErrorUtils.getErrorMessage(e)}'),
@@ -130,15 +131,15 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       }
     }
   }
-  
+
   /// 더 많은 물품 로드 (페이징)
   Future<void> _loadMoreItems() async {
     if (_isLoadingMore || !_hasMoreItems || _isLoading) return;
-    
+
     setState(() {
       _isLoadingMore = true;
     });
-    
+
     try {
       final itemApi = ItemApi();
       final request = ItemRequest(
@@ -147,10 +148,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         // TODO: 백엔드에서 거래상태 필터링 지원 시 추가
         // tradeStatus: _isCompletedSelected ? 'COMPLETED' : 'SELLING',
       );
-      
+
       final response = await itemApi.getMyItems(request);
       final newItems = response.itemDetailPage?.content ?? [];
-      
+
       if (mounted) {
         setState(() {
           _myItems.addAll(newItems);
@@ -164,7 +165,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         setState(() {
           _isLoadingMore = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('추가 물품 로드 실패: ${ErrorUtils.getErrorMessage(e)}'),
@@ -181,7 +182,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         _scrollController.position.maxScrollExtent - 200) {
       _loadMoreItems();
     }
-    
+
     // 스크롤 중임을 표시
     setState(() {
       _isScrolling = true;
@@ -219,55 +220,58 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
             child: NestedScrollView(
               controller: _scrollController,
               headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                              SliverAppBar(
-                pinned: true,
-                backgroundColor: AppColors.primaryBlack,
-                expandedHeight: 88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
-                toolbarHeight: 58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
-                titleSpacing: 0,
-                elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
-                automaticallyImplyLeading: false,
-                title: Padding(
-                  padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
-                    child: Text(
-                      '나의 등록된 물건',
-                      style: CustomTextStyles.h3
-                          .copyWith(fontWeight: FontWeight.w600),
+                SliverAppBar(
+                  pinned: true,
+                  backgroundColor: AppColors.primaryBlack,
+                  expandedHeight:
+                      88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
+                  toolbarHeight:
+                      58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
+                  titleSpacing: 0,
+                  elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
+                  automaticallyImplyLeading: false,
+                  title: Padding(
+                    padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
+                      child: Text(
+                        '나의 등록된 물건',
+                        style: CustomTextStyles.h3
+                            .copyWith(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
-                ),
-                centerTitle: true,
-                flexibleSpace: Container(
-                  color: AppColors.primaryBlack,
-                  child: FlexibleSpaceBar(
-                    background: Padding(
-                      padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
-                      child: Align(
-                        alignment: Alignment.topLeft,
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 200),
-                          opacity:
-                              innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
-                          child: Text(
-                            '나의 등록된 물건',
-                            style: CustomTextStyles.h1,
+                  centerTitle: true,
+                  flexibleSpace: Container(
+                    color: AppColors.primaryBlack,
+                    child: FlexibleSpaceBar(
+                      background: Padding(
+                        padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w,
+                            24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 200),
+                            opacity:
+                                innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
+                            child: Text(
+                              '나의 등록된 물건',
+                              style: CustomTextStyles.h1,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              // 토글 위젯을 고정 헤더로 추가
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _ToggleHeaderDelegate(
-                  child: _buildToggleWidget(),
+                // 토글 위젯을 고정 헤더로 추가
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _ToggleHeaderDelegate(
+                    child: _buildToggleWidget(),
+                  ),
                 ),
-              ),
               ],
               body: _buildItemsList(), // 토글 위젯 제거
             ),
@@ -283,7 +287,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       // 초기 로딩 시 스켈레톤 보여주기
       return const RegisterTabSkeleton();
     }
-    
+
     if (_myItems.isEmpty) {
       // 데이터가 없을 때 빈 상태 보여주기
       return _buildEmptyState();
@@ -296,7 +300,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       backgroundColor: AppColors.primaryBlack,
       onRefresh: () => _loadMyItems(isRefresh: true),
       child: ListView.separated(
-        controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         itemCount: totalItemCount,
@@ -316,7 +319,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       ),
     );
   }
-  
+
   /// 빈 상태 위젯
   Widget _buildEmptyState() {
     return Center(
@@ -330,7 +333,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       ),
     );
   }
-  
+
   /// 로딩 인디케이터
   Widget _buildLoadingIndicator() {
     return Padding(
@@ -345,11 +348,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   /// 실제 데이터 아이템 타일
   Widget _buildItemTile(ItemDetail item, int index) {
-    final imageUrl = item.itemImageUrls?.isNotEmpty == true 
-        ? item.itemImageUrls!.first 
+    final imageUrl = item.itemImageUrls?.isNotEmpty == true
+        ? item.itemImageUrls!.first
         : null;
     final uploadTime = _formatUploadTime(item.createdDate);
-    
+
     return SizedBox(
       height: 90.h,
       child: Stack(
@@ -509,7 +512,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       ),
     );
   }
-  
+
   /// 토글 위젯 (판매 중 / 거래 완료)
   Widget _buildToggleWidget() {
     return Padding(
@@ -528,7 +531,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
               animation: _toggleAnimation,
               builder: (context, child) {
                 return Positioned(
-                  left: 2.w + (_toggleAnimation.value * 171.w), // 2px + 170px + 1px gap
+                  left: 2.w +
+                      (_toggleAnimation.value * 171.w), // 2px + 170px + 1px gap
                   top: 2.h,
                   child: Container(
                     width: 170.w,
@@ -549,12 +553,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     onTap: () => _onToggleChanged(false),
                     child: Container(
                       height: 46.h,
+                      color: Colors.transparent,
                       alignment: Alignment.center,
                       child: Text(
                         '판매 중',
                         style: CustomTextStyles.p1.copyWith(
-                          color: !_isCompletedSelected 
-                              ? AppColors.textColorWhite 
+                          color: !_isCompletedSelected
+                              ? AppColors.textColorWhite
                               : AppColors.opacity60White,
                           fontWeight: FontWeight.w500,
                         ),
@@ -567,12 +572,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     onTap: () => _onToggleChanged(true),
                     child: Container(
                       height: 46.h,
+                      color: Colors.transparent,
                       alignment: Alignment.center,
                       child: Text(
                         '거래 완료',
                         style: CustomTextStyles.p1.copyWith(
-                          color: _isCompletedSelected 
-                              ? AppColors.textColorWhite 
+                          color: _isCompletedSelected
+                              ? AppColors.textColorWhite
                               : AppColors.opacity60White,
                           fontWeight: FontWeight.w500,
                         ),
@@ -587,31 +593,31 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       ),
     );
   }
-  
+
   /// 토글 상태 변경
   void _onToggleChanged(bool isCompleted) {
     if (_isCompletedSelected != isCompleted) {
       setState(() {
         _isCompletedSelected = isCompleted;
       });
-      
+
       if (isCompleted) {
         _toggleAnimationController.forward();
       } else {
         _toggleAnimationController.reverse();
       }
-      
+
       // API 재요청 (필터링)
       _loadMyItems(isRefresh: true);
     }
   }
-  
+
   /// 이미지 로드 위젯
   Widget _buildImage(String? imageUrl) {
     if (imageUrl == null || imageUrl.trim().isEmpty) {
       return const ErrorImagePlaceholder();
     }
-    
+
     return Image.network(
       imageUrl.trim(),
       fit: BoxFit.cover,
@@ -635,18 +641,18 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       },
     );
   }
-  
+
   /// 업로드 시간 포맷팅
   String _formatUploadTime(String? createdDate) {
     if (createdDate == null || createdDate.isEmpty) {
       return '시간 없음';
     }
-    
+
     try {
       final uploadDate = DateTime.parse(createdDate);
       final now = DateTime.now();
       final difference = now.difference(uploadDate);
-      
+
       if (difference.inDays > 0) {
         return '${difference.inDays}일 전';
       } else if (difference.inHours > 0) {
@@ -661,7 +667,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       return '시간 없음';
     }
   }
-  
+
   /// 물품 수정 화면으로 이동
   Future<void> _navigateToEditItem(ItemDetail item) async {
     final result = await Navigator.push(
@@ -674,7 +680,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         ),
       ),
     );
-    
+
     // 수정 완료 후 목록 새로고침
     if (result == true) {
       _loadMyItems(isRefresh: true);
@@ -687,33 +693,33 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       title: '물품을 삭제하시겠습니까?',
       description: '삭제된 물품은 복구할 수 없습니다.',
     );
-    
+
     if (result == true) {
       await _deleteItem(item);
     }
   }
-  
+
   /// 물품 삭제
   Future<void> _deleteItem(ItemDetail item) async {
     if (item.itemId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('물품 ID가 없습니다'),
-            backgroundColor: AppColors.warningRed,
-          ),
-        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('물품 ID가 없습니다'),
+          backgroundColor: AppColors.warningRed,
+        ),
+      );
       return;
     }
 
     try {
       final itemApi = ItemApi();
       await itemApi.deleteItem(item.itemId!);
-      
+
       // 성공 시 로컬 목록에서 제거
       setState(() {
         _myItems.removeWhere((element) => element.itemId == item.itemId);
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -748,7 +754,8 @@ class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => 70.h;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: AppColors.primaryBlack,
       child: child,
