@@ -30,6 +30,22 @@ class ItemApi {
       'itemCustomTags': request.itemCustomTags?.join(','),
     };
 
+    // 위치 정보 추가 (필수값)
+    if (request.longitude != null) {
+      fields['longitude'] = request.longitude!.toString();
+      debugPrint('longitude 추가됨: ${request.longitude}');
+    } else {
+      debugPrint('longitude이 null입니다!');
+    }
+    if (request.latitude != null) {
+      fields['latitude'] = request.latitude!.toString();
+      debugPrint('latitude 추가됨: ${request.latitude}');
+    } else {
+      debugPrint('latitude가 null입니다!');
+    }
+
+    debugPrint('최종 전송 필드: $fields');
+
     // 타입 안전하게 파일 처리
     Map<String, List<File>>? fileMap;
     if (request.itemImages != null && request.itemImages!.isNotEmpty) {

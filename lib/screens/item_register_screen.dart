@@ -101,6 +101,8 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
         selectedTradeOptions.isNotEmpty &&
         priceController.text != '0' &&
         locationController.text.isNotEmpty &&
+        _latitude != null &&
+        _longitude != null &&
         imageFiles.isNotEmpty;
   }
 
@@ -570,6 +572,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                                       )
                                     : null,
                                 onLocationSelected: (address) {
+                                  debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
                                   setState(() {
                                     locationController.text =
                                         '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
@@ -577,6 +580,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                                     _latitude = address.latitude;
                                     _longitude = address.longitude;
                                   });
+                                  debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
                                 },
                               ),
                             ),
@@ -597,7 +601,18 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                       buttonText: '등록 완료',
                       buttonType: 2,
                       enabledOnPressed: () async {
+                        if (_longitude == null || _latitude == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('거래 희망 위치를 선택해주세요.'),
+                              backgroundColor: AppColors.warningRed,
+                            ),
+                          );
+                          return;
+                        }
+                        
                         try {
+                          debugPrint('물품 등록 시작 - longitude: $_longitude, latitude: $_latitude');
                           await ItemApi().postItem(ItemRequest(
                             itemName: titleController.text,
                             itemDescription: descriptionController.text,
