@@ -19,7 +19,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
     return Container(
       width: MediaQuery.of(context).size.width,
       // 기본 높이 + 시스템 네비게이션 영역 패딩
-      height: 100.h,
+      height: 86.h,
       decoration: BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(
@@ -51,9 +51,10 @@ class CustomBottomNavigationBar extends StatelessWidget {
       onTap: () => onTap(index),
       child: SizedBox(
         width: MediaQuery.of(context).size.width / 5,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+        child: Padding(
+          padding: EdgeInsets.only(top: 12.h),
+          child: Column(
+            children: [
             // 아이콘 (선택됨: 흰색, 선택 안됨: 회색)
             Icon(
               icon,
@@ -74,6 +75,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+          ),
         ),
       ),
     );
