@@ -697,7 +697,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   Future<void> _deleteItem(ItemDetail item) async {
     if (item.itemId == null) {
               ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('물품 ID가 없습니다'),
             backgroundColor: AppColors.warningRed,
           ),
