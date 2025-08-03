@@ -53,6 +53,10 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
 
   final ImagePicker _picker = ImagePicker();
   List<XFile> imageFiles = []; // 선택된 이미지 저장
+  
+  // 위치 정보
+  double? _longitude;
+  double? _latitude;
 
   // 상품사진 갤러리에서 가져오는 함수
   Future<void> _pickImage() async {
@@ -556,10 +560,23 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                               await Navigator.of(context).push<LocationAddress>(
                             MaterialPageRoute(
                               builder: (_) => ItemRegisterLocationScreen(
+                                initialLocation: _latitude != null && _longitude != null
+                                    ? LocationAddress(
+                                        siDo: '',
+                                        siGunGu: '',
+                                        eupMyoenDong: '',
+                                        latitude: _latitude,
+                                        longitude: _longitude,
+                                      )
+                                    : null,
                                 onLocationSelected: (address) {
-                                  locationController.text =
-                                      '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-                                  // 필요하다면 address 전체를 상태로 저장
+                                  setState(() {
+                                    locationController.text =
+                                        '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                                    // 위치 좌표 저장
+                                    _latitude = address.latitude;
+                                    _longitude = address.longitude;
+                                  });
                                 },
                               ),
                             ),
@@ -596,6 +613,8 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
                             itemCustomTags: [],
                             itemImages:
                                 imageFiles.map((e) => File(e.path)).toList(),
+                            longitude: _longitude,
+                            latitude: _latitude,
                           ));
                           if (context.mounted) {
                             Navigator.of(context).pop();
