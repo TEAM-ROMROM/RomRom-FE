@@ -7,4 +7,12 @@ enum ItemTradeOption {
   final String serverName;
 
   const ItemTradeOption({required this.name, required this.serverName});
+
+  static ItemTradeOption fromServerName(String name) {
+    return ItemTradeOption.values.firstWhere(
+      (e) => e.serverName == name,
+      orElse: () =>
+          throw ArgumentError('No ItemTradeOption with serverName $name'),
+    );
+  }
 }

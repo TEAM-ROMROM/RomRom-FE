@@ -26,6 +26,8 @@ Item _$ItemFromJson(Map<String, dynamic> json) => Item(
           .toList(),
       likeCount: (json['likeCount'] as num?)?.toInt(),
       price: (json['price'] as num?)?.toInt(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$ItemToJson(Item instance) => <String, dynamic>{
@@ -40,4 +42,6 @@ Map<String, dynamic> _$ItemToJson(Item instance) => <String, dynamic>{
       'itemTradeOptions': instance.itemTradeOptions,
       'likeCount': instance.likeCount,
       'price': instance.price,
+      'longitude': instance.longitude,
+      'latitude': instance.latitude,
     };
