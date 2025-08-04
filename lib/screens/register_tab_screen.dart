@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -216,48 +218,40 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       appBar: null,
       body: Stack(
         children: [
-          SafeArea(
-            child: NestedScrollView(
-              controller: _scrollController,
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverAppBar(
-                  pinned: true,
-                  backgroundColor: AppColors.primaryBlack,
-                  expandedHeight:
-                      88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
-                  toolbarHeight:
-                      58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
-                  titleSpacing: 0,
-                  elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
-                  automaticallyImplyLeading: false,
-                  title: Padding(
-                    padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
-                      child: Text(
-                        '나의 등록된 물건',
-                        style: CustomTextStyles.h3
-                            .copyWith(fontWeight: FontWeight.w600),
-                      ),
+          NestedScrollView(
+            controller: _scrollController,
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              SliverAppBar(
+                pinned: true,
+                backgroundColor:
+                    AppColors.primaryBlack.withValues(alpha: 0.0), // 약간 투명하게
+                expandedHeight: 88.h,
+                toolbarHeight: 58.h,
+                titleSpacing: 0,
+                elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
+                automaticallyImplyLeading: false,
+                flexibleSpace: ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: 30.0,
+                      sigmaY: 30.0,
                     ),
-                  ),
-                  centerTitle: true,
-                  flexibleSpace: Container(
-                    color: AppColors.primaryBlack,
-                    child: FlexibleSpaceBar(
-                      background: Padding(
-                        padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w,
-                            24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 200),
-                            opacity:
-                                innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
-                            child: Text(
-                              '나의 등록된 물건',
-                              style: CustomTextStyles.h1,
+                    child: Container(
+                      color: AppColors.primaryBlack
+                          .withValues(alpha: 0.9), // 블러 위에 반투명 배경
+                      child: FlexibleSpaceBar(
+                        background: Padding(
+                          padding: EdgeInsets.fromLTRB(24.w, 91.h, 24.w, 24.h),
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 200),
+                              opacity:
+                                  innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
+                              child: Text(
+                                '나의 등록된 물건',
+                                style: CustomTextStyles.h1,
+                              ),
                             ),
                           ),
                         ),
@@ -265,16 +259,40 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     ),
                   ),
                 ),
-                // 토글 위젯을 고정 헤더로 추가
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _ToggleHeaderDelegate(
+                title: Padding(
+                  padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
+                    child: Text(
+                      '나의 등록된 물건',
+                      style: CustomTextStyles.h3
+                          .copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                centerTitle: true,
+                bottom: PreferredSize(
+                  preferredSize: Size.fromHeight(
+                      innerBoxIsScrolled || _isScrolled ? 70.h : 92.h),
+                  child: TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 250),
+                    tween: Tween<double>(
+                      begin: 92.h,
+                      end: 70.h,
+                    ),
+                    builder: (context, value, child) {
+                      return SizedBox(
+                        height: value,
+                        child: child,
+                      );
+                    },
                     child: _buildToggleWidget(),
                   ),
                 ),
-              ],
-              body: _buildItemsList(), // 토글 위젯 제거
-            ),
+              ),
+            ],
+            body: _buildItemsList(), // 토글 위젯 제거
           ),
           _buildRegisterFabStacked(context),
         ],
@@ -756,9 +774,23 @@ class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppColors.primaryBlack,
-      child: child,
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 0.0, sigmaY: 00.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.opacity90PrimaryBlack,
+            backgroundBlendMode: BlendMode.srcOver,
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.opacity20Black,
+                width: 1.w,
+              ),
+            ),
+          ),
+          child: child,
+        ),
+      ),
     );
   }
 
