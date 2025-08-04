@@ -30,6 +30,22 @@ class ItemApi {
       'itemCustomTags': request.itemCustomTags?.join(','),
     };
 
+    // 위치 정보 추가 (필수값)
+    if (request.longitude != null) {
+      fields['longitude'] = request.longitude!.toString();
+      debugPrint('longitude 추가됨: ${request.longitude}');
+    } else {
+      debugPrint('longitude이 null입니다!');
+    }
+    if (request.latitude != null) {
+      fields['latitude'] = request.latitude!.toString();
+      debugPrint('latitude 추가됨: ${request.latitude}');
+    } else {
+      debugPrint('latitude가 null입니다!');
+    }
+
+    debugPrint('최종 전송 필드: $fields');
+
     // 타입 안전하게 파일 처리
     Map<String, List<File>>? fileMap;
     if (request.itemImages != null && request.itemImages!.isNotEmpty) {
@@ -98,6 +114,30 @@ class ItemApi {
     return itemResponse;
   }
 
+  /// 물품 상세 조회 API
+  /// `POST /api/item/get`
+  Future<ItemResponse> getItemDetail(ItemRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/item/get';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {
+      'itemId': request.itemId,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint(
+            '물품 상세 조회 성공: ${itemResponse.item?.latitude}, ${itemResponse.item?.longitude}');
+      },
+    );
+
+    return itemResponse;
+  }
+
   /// 내 물품 목록 조회 API
   /// `POST /api/item/get/my`
   Future<ItemResponse> getMyItems(ItemRequest request) async {
@@ -155,33 +195,28 @@ class ItemApi {
     return predictedPrice;
   }
 
-  /// 물품 상세 조회 API
-  /// `POST /api/item/get`
-  Future<ItemResponse> getItemDetail(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/get';
-    late ItemResponse itemResponse;
+  /// 물품 삭제 API
+  /// `POST /api/item/delete`
+  Future<void> deleteItem(String itemId) async {
+    const String url = '${AppUrls.baseUrl}/api/item/delete';
 
     final Map<String, dynamic> fields = {
-      'itemId': request.itemId,
+      'itemId': itemId,
     };
 
     await ApiClient.sendMultipartRequest(
       url: url,
       fields: fields,
       isAuthRequired: true,
-      onSuccess: (responseData) {
-        itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('물품 상세 조회 성공: '
-            '${itemResponse.item?.itemName}');
+      onSuccess: (_) {
+        debugPrint('물품 삭제 성공: $itemId');
       },
     );
-
-    return itemResponse;
   }
 
   /// 물품 수정 API
   /// `POST /api/item/edit`
-  Future<ItemResponse> editItem(ItemRequest request) async {
+  Future<ItemResponse> updateItem(ItemRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/item/edit';
     late ItemResponse itemResponse;
 
@@ -195,6 +230,22 @@ class ItemApi {
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
     };
+
+    // 위치 정보 추가 (필수값)
+    if (request.longitude != null) {
+      fields['longitude'] = request.longitude!.toString();
+      debugPrint('longitude 추가됨: ${request.longitude}');
+    } else {
+      debugPrint('longitude이 null입니다!');
+    }
+    if (request.latitude != null) {
+      fields['latitude'] = request.latitude!.toString();
+      debugPrint('latitude 추가됨: ${request.latitude}');
+    } else {
+      debugPrint('latitude가 null입니다!');
+    }
+
+    debugPrint('최종 전송 필드: $fields');
 
     // 타입 안전하게 파일 처리
     Map<String, List<File>>? fileMap;

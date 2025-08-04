@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,11 +17,13 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
+import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
 
 /// 물품 등록 입력 폼 위젯
 /// 물품 등록 화면에서 사용되는 입력 폼 위젯
@@ -46,6 +49,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   List<ItemCondition> selectedItemConditionTypes = [];
   List<ItemTradeOption> selectedTradeOptions = [];
   bool useAiPrice = false;
+  double? _latitude;
+  double? _longitude;
+  LocationAddress? _selectedAddress;
 
   // itemMethodOptions ItemTradeOption name 리스트로 변경
   List<ItemTradeOption> itemTradeOptions = ItemTradeOption.values;
@@ -89,19 +95,34 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       });
     } catch (e) {
       // 에러 처리 (스낵바 표시 등)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
+        );
+      }
     }
   }
 
-  void _initControllers() {
+  Future<void> _initControllers() async {
     if (widget.isEditMode && widget.itemResponse != null) {
       final item = widget.itemResponse!.item;
+
+      // 좌표가 있으면 주소 변환, 없으면 빈 문자열로 초기화
+      if (item?.latitude != null && item?.longitude != null) {
+        _selectedAddress = await LocationService().getAddressFromCoordinates(
+          NLatLng(item!.latitude!, item.longitude!),
+        );
+        locationController.text =
+            '${_selectedAddress?.siDo ?? ''} ${_selectedAddress?.siGunGu ?? ''} ${_selectedAddress?.eupMyoenDong ?? ''}'
+                .trim();
+      } else {
+        _selectedAddress = null;
+        locationController.text = '';
+      }
+
       titleController.text = item?.itemName ?? '';
       descriptionController.text = item?.itemDescription ?? '';
       priceController.text = item?.price?.toString() ?? '0';
-      // TODO : 거래 희망 위치 설정
 
       selectedCategory = item?.itemCategory != null
           ? ItemCategories.fromServerName(item!.itemCategory!)
@@ -120,7 +141,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     filePath.startsWith('https://')) {
                   return XFile(filePath);
                 } else if (filePath.isNotEmpty) {
-                  // 서버의 base url을 붙여줌
                   return XFile('http://suh-project.synology.me/$filePath');
                 } else {
                   return null;
@@ -130,13 +150,23 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
               .toList()
           : [];
       imageCount = imageFiles.length.clamp(0, 10);
+      _latitude = item?.latitude;
+      _longitude = item?.longitude;
     }
   }
+
+  bool _isInitLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _initControllers();
+    _initControllers().then((_) {
+      if (mounted) {
+        setState(() {
+          _isInitLoading = false;
+        });
+      }
+    });
   }
 
   @override
@@ -158,11 +188,23 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         selectedTradeOptions.isNotEmpty &&
         priceController.text != '0' &&
         locationController.text.isNotEmpty &&
+        _latitude != null &&
+        _longitude != null &&
         imageFiles.isNotEmpty;
+  }
+
+  bool get canUseAiPrice {
+    return titleController.text.isNotEmpty &&
+        descriptionController.text.isNotEmpty &&
+        selectedItemConditionTypes.isNotEmpty;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitLoading) {
+      return const RegisterInputFormSkeleton();
+    }
+
     return Column(
       children: [
         // 이미지 업로드
@@ -265,6 +307,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 24.h),
+
+              // 제목 필드
               RegisterCustomLabeledField(
                 label: '제목',
                 field: RegisterCustomTextField(
@@ -273,6 +317,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   controller: titleController,
                 ),
               ),
+
+              // 카테고리 필드
               RegisterCustomLabeledField(
                 label: '카테고리',
                 field: RegisterCustomTextField(
@@ -360,6 +406,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   },
                 ),
               ),
+
+              // 물건 설명 필드
               RegisterCustomLabeledField(
                 label: '물건 설명',
                 field: RegisterCustomTextField(
@@ -369,6 +417,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   maxLines: 8,
                 ),
               ),
+
+              // 물건 상태 필드
               RegisterCustomLabeledField(
                 label: '물건 상태',
                 field: Wrap(
@@ -396,6 +446,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       .toList(),
                 ),
               ),
+
+              // 거래 방식 필드
               RegisterCustomLabeledField(
                 label: '거래방식',
                 field: Wrap(
@@ -420,6 +472,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       .toList(),
                 ),
               ),
+
+              // AI 추천 가격 안내
               Container(
                 height: 58.h,
                 margin: EdgeInsets.only(bottom: 24.w),
@@ -466,6 +520,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   ],
                 ),
               ),
+
+              // AI 가격 추천 스위치
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -508,15 +564,26 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     indicatorSize: Size(18.w, 18.h),
                     borderWidth: 0,
                     padding: EdgeInsets.all(1.w),
-                    onChanged: (b) {
-                      setState(() => useAiPrice = b);
-                      if (b &&
-                          titleController.text.isNotEmpty &&
-                          descriptionController.text.isNotEmpty &&
-                          selectedItemConditionTypes.isNotEmpty) {
-                        _measureAiPrice();
-                      }
-                    },
+                    onTap: canUseAiPrice
+                        ? null
+                        : (b) {
+                            // 조건이 안 맞으면 스낵바로 안내
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('제목, 설명, 물건 상태를 모두 입력해주세요.')),
+                              );
+                            }
+                            return;
+                          }, // 비활성화
+                    onChanged: canUseAiPrice
+                        ? (b) {
+                            setState(() => useAiPrice = b as bool);
+                            if ((b as bool) && canUseAiPrice) {
+                              _measureAiPrice();
+                            }
+                          }
+                        : null, // 비활성화
                     styleBuilder: (b) => ToggleStyle(
                       backgroundGradient: b
                           ? const LinearGradient(
@@ -530,13 +597,18 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   ),
                 ],
               ),
+
               SizedBox(height: 8.w),
+              // 가격 필드
               RegisterCustomTextField(
                 hintText: '가격을 입력해주세요',
                 prefixText: '₩',
+                readOnly: useAiPrice,
                 keyboardType: TextInputType.number,
                 controller: priceController,
               ),
+
+              // 거래 희망 위치 필드
               SizedBox(height: 24.w),
               RegisterCustomLabeledField(
                 label: '거래 희망 위치',
@@ -554,13 +626,27 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         await Navigator.of(context).push<LocationAddress>(
                       MaterialPageRoute(
                         builder: (_) => ItemRegisterLocationScreen(
+                          initialLocation:
+                              _latitude != null && _longitude != null
+                                  ? _selectedAddress
+                                  : null,
                           onLocationSelected: (address) {
-                            locationController.text =
-                                '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                            debugPrint(
+                                '위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
+                            setState(() {
+                              locationController.text =
+                                  '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                              // 위치 좌표 저장
+                              _latitude = address.latitude;
+                              _longitude = address.longitude;
+                            });
+                            debugPrint(
+                                '저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
                           },
                         ),
                       ),
                     );
+                    // Navigator.pop으로만 돌아온 경우도 처리
                     if (result != null) {
                       locationController.text =
                           '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
@@ -576,7 +662,19 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 buttonText: '등록 완료',
                 buttonType: 2,
                 enabledOnPressed: () async {
+                  if (_longitude == null || _latitude == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('거래 희망 위치를 선택해주세요.'),
+                        backgroundColor: AppColors.warningRed,
+                      ),
+                    );
+                    return;
+                  }
+
                   try {
+                    debugPrint(
+                        '물품 등록 시작 - longitude: $_longitude, latitude: $_latitude');
                     final itemRequest = ItemRequest(
                       itemId: widget.isEditMode
                           ? widget.itemResponse!.item?.itemId
@@ -598,9 +696,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               e.path.startsWith('https://')))
                           .map((e) => File(e.path))
                           .toList(),
+                      longitude: _longitude,
+                      latitude: _latitude,
                     );
                     if (widget.isEditMode) {
-                      await ItemApi().editItem(itemRequest);
+                      await ItemApi().updateItem(itemRequest);
                     } else {
                       await ItemApi().postItem(itemRequest);
                     }

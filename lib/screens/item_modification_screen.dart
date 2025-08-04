@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/responses/item_response.dart';
+import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/register_input_form.dart';
@@ -72,7 +73,10 @@ class _ItemModificationScreenState extends State<ItemModificationScreen> {
           showBottomBorder: true,
         ),
         body: _isLoading
-            ? const CircularProgressIndicator()
+            ? const Center(
+                child: CircularProgressIndicator(
+                color: AppColors.primaryYellow,
+              ))
             : SingleChildScrollView(
                 padding: EdgeInsets.only(top: 24.h, bottom: 24.h, left: 24.w),
                 child: RegisterInputForm(
