@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/widgets/common/item_options_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
@@ -673,7 +674,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ItemRegisterScreen(
+        builder: (_) => ItemModificationScreen(
+          itemId: item.itemId,
           onClose: () {
             Navigator.pop(context);
           },
