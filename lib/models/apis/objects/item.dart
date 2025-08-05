@@ -16,8 +16,6 @@ class Item extends BaseEntity {
   final List<String>? itemTradeOptions;
   final int? likeCount;
   final int? price;
-  final double? longitude; // 경도
-  final double? latitude; // 위도
 
   Item({
     super.createdDate,
@@ -31,8 +29,6 @@ class Item extends BaseEntity {
     this.itemTradeOptions,
     this.likeCount,
     this.price,
-    this.longitude,
-    this.latitude,
   });
 
   factory Item.fromJson(Map<String, dynamic> json) => _$ItemFromJson(json);

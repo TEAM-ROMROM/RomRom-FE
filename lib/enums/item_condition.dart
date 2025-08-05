@@ -9,12 +9,4 @@ enum ItemCondition {
   final String serverName;
 
   const ItemCondition({required this.name, required this.serverName});
-
-  /// 서버 이름으로부터 enum 값으로 변환
-  static ItemCondition fromServerName(String serverName) {
-    return ItemCondition.values.firstWhere(
-      (e) => e.serverName == serverName,
-      orElse: () => throw ArgumentError('Invalid serverName: $serverName'),
-    );
-  }
 }

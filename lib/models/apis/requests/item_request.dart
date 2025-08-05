@@ -19,8 +19,6 @@ class ItemRequest {
   String? itemId;
   int pageNumber;
   int pageSize;
-  double? longitude;
-  double? latitude;
 
   ItemRequest({
     this.memberId,
@@ -35,10 +33,8 @@ class ItemRequest {
     this.itemId,
     this.pageNumber = 0,
     this.pageSize = 10,
-    this.longitude,
-    this.latitude,
   });
 
   factory ItemRequest.fromJson(Map<String, dynamic> json) => _$ItemRequestFromJson(json);
   Map<String, dynamic> toJson() => _$ItemRequestToJson(this);
-}
+} 

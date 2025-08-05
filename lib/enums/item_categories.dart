@@ -35,11 +35,4 @@ enum ItemCategories {
 
   const ItemCategories(
       {required this.id, required this.name, required this.serverName});
-
-  static ItemCategories fromServerName(String serverName) {
-    return ItemCategories.values.firstWhere(
-      (e) => e.serverName == serverName,
-      orElse: () => throw ArgumentError('Invalid serverName: $serverName'),
-    );
-  }
 }

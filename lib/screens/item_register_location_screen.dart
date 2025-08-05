@@ -14,13 +14,8 @@ import 'package:romrom_fe/widgets/onboarding_title_header.dart';
 class ItemRegisterLocationScreen extends StatefulWidget {
   final void Function(LocationAddress)? onLocationSelected;
   final VoidCallback? onClose;
-  final LocationAddress? initialLocation; // 이전에 선택한 위치
-  const ItemRegisterLocationScreen({
-    super.key, 
-    this.onLocationSelected, 
-    this.onClose,
-    this.initialLocation,
-  });
+  const ItemRegisterLocationScreen(
+      {super.key, this.onLocationSelected, this.onClose});
 
   @override
   State<ItemRegisterLocationScreen> createState() =>
@@ -31,7 +26,6 @@ class _ItemRegisterLocationScreenState
     extends State<ItemRegisterLocationScreen> {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
-  NLatLng? _selectedPosition; // 핀이 가리키는 선택된 위치
   LocationAddress? _selectedAddress;
   final Completer<NaverMapController> _mapControllerCompleter = Completer();
 
@@ -42,22 +36,6 @@ class _ItemRegisterLocationScreenState
   }
 
   Future<void> _initializeLocation() async {
-    // 이전에 선택한 위치가 있다면 그 위치로 초기화
-    if (widget.initialLocation != null && 
-        widget.initialLocation!.latitude != null && 
-        widget.initialLocation!.longitude != null) {
-      final initialPosition = NLatLng(
-        widget.initialLocation!.latitude!,
-        widget.initialLocation!.longitude!,
-      );
-      setState(() {
-        _currentPosition = initialPosition;
-        _selectedPosition = initialPosition;
-        _selectedAddress = widget.initialLocation;
-      });
-      return;
-    }
-    
     final hasPermission = await _locationService.requestPermission();
     if (!hasPermission) {
       // FIXME : 디버깅용: 위치 권한 없을 때 서울 시청 좌표로 세팅
@@ -88,7 +66,6 @@ class _ItemRegisterLocationScreenState
     final address = await _locationService.getAddressFromCoordinates(position);
     if (address != null) {
       setState(() {
-        _selectedPosition = position; // 핀이 가리키는 위치 저장
         _selectedAddress = address;
       });
     }
@@ -126,16 +103,11 @@ class _ItemRegisterLocationScreenState
                               EdgeInsets.only(left: 24.w, bottom: 137.h),
                             ),
                             indoorEnable: true,
-                            locationButtonEnable: false, // 기본 위치 버튼 비활성화하고 커스텀 버튼 사용
+                            locationButtonEnable: false,
                           ),
                           onMapReady: (controller) async {
                             if (!_mapControllerCompleter.isCompleted) {
                               _mapControllerCompleter.complete(controller);
-                              
-                              // 현재 위치 추적 활성화 (파란색 점 표시)
-                              await controller.setLocationTrackingMode(
-                                NLocationTrackingMode.noFollow
-                              );
                             }
                           },
                           onCameraIdle: () async {
@@ -146,17 +118,6 @@ class _ItemRegisterLocationScreenState
                             await _updateAddress(position.target);
                           },
                         ),
-                ),
-                // 중앙 핀 표시
-                Center(
-                  child: Container(
-                    margin: EdgeInsets.only(bottom: 40.h), // 핀의 끝부분이 정확한 위치를 가리키도록 조정
-                    child: Icon(
-                      Icons.location_pin,
-                      size: 40.sp,
-                      color: AppColors.primaryYellow,
-                    ),
-                  ),
                 ),
                 // 주소 정보 표시 (상단)
                 if (_selectedAddress != null)
@@ -191,64 +152,24 @@ class _ItemRegisterLocationScreenState
                       buttonText: '선택 완료',
                       buttonType: 2,
                       enabledOnPressed: () {
-                        // 선택된 위치의 정확한 좌표로 LocationAddress 업데이트
-                        if (_selectedAddress != null && _selectedPosition != null) {
-                          final updatedAddress = LocationAddress(
-                            siDo: _selectedAddress!.siDo,
-                            siGunGu: _selectedAddress!.siGunGu,
-                            eupMyoenDong: _selectedAddress!.eupMyoenDong,
-                            ri: _selectedAddress!.ri,
-                            latitude: _selectedPosition!.latitude,
-                            longitude: _selectedPosition!.longitude,
-                          );
-                          widget.onLocationSelected?.call(updatedAddress);
-                          Navigator.pop(context);
-                        }
+                        widget.onLocationSelected?.call(_selectedAddress!);
+                        Navigator.pop(context);
                       },
                     ),
                   ),
                 ),
-                // 커스텀 위치 버튼 
                 Positioned(
-                  bottom: 160.h,
+                  bottom: 165.h,
                   left: 24.w,
                   child: CurrentLocationButton(
                     onTap: () async {
                       final controller = await _mapControllerCompleter.future;
-                      
-                      // 현재 위치 다시 가져오기
-                      final position = await _locationService.getCurrentPosition();
-                      if (position != null) {
-                        final newPosition = _locationService.positionToLatLng(position);
-                        
-                        // 지도를 현재 위치로 이동
-                        await controller.updateCamera(
-                          NCameraUpdate.fromCameraPosition(
-                            NCameraPosition(
-                              target: newPosition,
-                              zoom: 15,
-                            ),
-                          ),
-                        );
-                        
-                        // 현재 위치 추적 활성화 (파란색 점 표시)
-                        await controller.setLocationTrackingMode(
-                          NLocationTrackingMode.noFollow
-                        );
-                        
-                        // 현재 위치 업데이트
-                        setState(() {
-                          _currentPosition = newPosition;
-                        });
-                        
-                        // 주소 정보 업데이트
-                        await _updateAddress(newPosition);
-                      }
+                      await controller.setLocationTrackingMode(
+                          NLocationTrackingMode.follow);
                     },
                     iconSize: 24.h,
                   ),
                 ),
-
               ],
             ),
           ),

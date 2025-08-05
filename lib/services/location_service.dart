@@ -75,8 +75,6 @@ class LocationService {
             siGunGu: siGunGu,
             eupMyoenDong: eupMyoenDong,
             ri: ri,
-            latitude: position.latitude,
-            longitude: position.longitude,
           );
         }
       }
