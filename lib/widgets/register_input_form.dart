@@ -274,7 +274,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               onTap: () {
                                 final newImages = List<XFile>.from(imageFiles);
                                 newImages.removeAt(index);
-                                // onImagesChanged?.call(newImages);
+                                setState(() {
+                                  imageFiles = newImages;
+                                  imageCount = imageFiles.length.clamp(0, 10);
+                                });
                               },
                               child: Container(
                                 width: 24.w,
