@@ -287,10 +287,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                       .itemPictureRemoveButtonBackground,
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(
-                                  AppIcons.cancel,
-                                  color: AppColors.primaryBlack,
-                                  size: 16.w,
+                                child: Padding(
+                                  padding: EdgeInsets.zero,
+                                  child: Icon(
+                                    AppIcons.cancel,
+                                    color: AppColors.primaryBlack,
+                                    size: 16.sp,
+                                  ),
                                 ),
                               ),
                             ),
