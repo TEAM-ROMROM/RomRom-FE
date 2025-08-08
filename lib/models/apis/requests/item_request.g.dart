@@ -24,6 +24,7 @@ ItemRequest _$ItemRequestFromJson(Map<String, dynamic> json) => ItemRequest(
       pageSize: (json['pageSize'] as num?)?.toInt() ?? 10,
       longitude: (json['longitude'] as num?)?.toDouble(),
       latitude: (json['latitude'] as num?)?.toDouble(),
+      aiPrice: json['aiPrice'] as bool?,
     );
 
 Map<String, dynamic> _$ItemRequestToJson(ItemRequest instance) =>
@@ -41,4 +42,5 @@ Map<String, dynamic> _$ItemRequestToJson(ItemRequest instance) =>
       'pageSize': instance.pageSize,
       'longitude': instance.longitude,
       'latitude': instance.latitude,
+      'aiPrice': instance.aiPrice,
     };

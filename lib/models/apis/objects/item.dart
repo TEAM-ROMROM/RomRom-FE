@@ -18,6 +18,7 @@ class Item extends BaseEntity {
   final int? price;
   final double? longitude; // 경도
   final double? latitude; // 위도
+  final bool? aiPrice;
 
   Item({
     super.createdDate,
@@ -33,6 +34,7 @@ class Item extends BaseEntity {
     this.price,
     this.longitude,
     this.latitude,
+    this.aiPrice,
   });
 
   factory Item.fromJson(Map<String, dynamic> json) => _$ItemFromJson(json);

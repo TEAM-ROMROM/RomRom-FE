@@ -51,7 +51,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         padding: EdgeInsets.zero, // 패딩 제거
       ),
       title: Padding(
-        padding: EdgeInsets.only(top: 16.h, bottom: 32.h),
+        padding: EdgeInsets.zero,
         child: Text(
           title,
           style: CustomTextStyles.h1,

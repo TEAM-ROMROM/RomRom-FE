@@ -1016,6 +1016,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.6.1"
+  shadex:
+    dependency: "direct main"
+    description:
+      name: shadex
+      sha256: b0b674747b643aa96c6b301babe36eaedb17afb7422fdc47d55cd8bd34adb612
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   shared_preferences:
     dependency: "direct main"
     description:

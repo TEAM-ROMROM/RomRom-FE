@@ -65,6 +65,7 @@ class RegisterCustomTextField extends StatelessWidget {
                   final formatted = formatPrice(int.tryParse(
                           value.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
                       0);
+
                   if (value.text != formatted) {
                     controller!.value = TextEditingValue(
                       text: formatted,
@@ -73,6 +74,7 @@ class RegisterCustomTextField extends StatelessWidget {
                       ),
                     );
                   }
+                  // number field일 때
                   return TextField(
                     controller: controller,
                     maxLength: maxLength,
@@ -118,7 +120,7 @@ class RegisterCustomTextField extends StatelessWidget {
                 readOnly: readOnly,
                 onTap: onTap,
                 style: CustomTextStyles.p2
-                    .copyWith(color: AppColors.textColorWhite),
+                    .copyWith(color: AppColors.textColorWhite, height: 1.4),
                 cursorColor: AppColors.textColorWhite,
                 decoration: InputDecoration(
                   hintText: hintText,

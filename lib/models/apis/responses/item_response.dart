@@ -24,7 +24,8 @@ class ItemResponse {
     this.itemDetailPage,
   });
 
-  factory ItemResponse.fromJson(Map<String, dynamic> json) => _$ItemResponseFromJson(json);
+  factory ItemResponse.fromJson(Map<String, dynamic> json) =>
+      _$ItemResponseFromJson(json);
   Map<String, dynamic> toJson() => _$ItemResponseToJson(this);
 }
 
@@ -52,8 +53,8 @@ class PageItemDetail {
     this.empty,
   });
 
-  factory PageItemDetail.fromJson(Map<String, dynamic> json) => 
+  factory PageItemDetail.fromJson(Map<String, dynamic> json) =>
       _$PageItemDetailFromJson(json);
-  
+
   Map<String, dynamic> toJson() => _$PageItemDetailToJson(this);
 }
