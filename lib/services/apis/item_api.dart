@@ -28,6 +28,7 @@ class ItemApi {
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
+      'aiPrice': request.aiPrice?.toString() ?? 'false',
     };
 
     // 위치 정보 추가 (필수값)
@@ -229,6 +230,7 @@ class ItemApi {
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
+      'aiPrice': request.aiPrice?.toString() ?? 'false',
     };
 
     // 위치 정보 추가 (필수값)

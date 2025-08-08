@@ -21,6 +21,7 @@ class ItemRequest {
   int pageSize;
   double? longitude;
   double? latitude;
+  bool? aiPrice;
 
   ItemRequest({
     this.memberId,
@@ -37,8 +38,10 @@ class ItemRequest {
     this.pageSize = 10,
     this.longitude,
     this.latitude,
+    this.aiPrice,
   });
 
-  factory ItemRequest.fromJson(Map<String, dynamic> json) => _$ItemRequestFromJson(json);
+  factory ItemRequest.fromJson(Map<String, dynamic> json) =>
+      _$ItemRequestFromJson(json);
   Map<String, dynamic> toJson() => _$ItemRequestToJson(this);
 }

@@ -152,6 +152,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       imageCount = imageFiles.length.clamp(0, 10);
       _latitude = item?.latitude;
       _longitude = item?.longitude;
+      useAiPrice = item?.aiPrice ?? false;
     }
   }
 
@@ -421,7 +422,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   hintText: '물건의 자세한 설명을 적어주세요',
                   controller: descriptionController,
                   maxLength: 1000,
-                  maxLines: 8,
+                  maxLines: 6,
                 ),
               ),
 
@@ -710,6 +711,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             .toList(),
                         longitude: _longitude,
                         latitude: _latitude,
+                        aiPrice: useAiPrice,
                       );
                       if (widget.isEditMode) {
                         await ItemApi().updateItem(itemRequest);
