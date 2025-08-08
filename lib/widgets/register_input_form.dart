@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -16,6 +14,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
+import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
@@ -68,16 +67,44 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
   List<XFile> imageFiles = []; // 선택된 이미지 저장
+  List<String> imageUrls = []; // 서버에 업로드된 이미지 URL 저장
 
   // 상품사진 갤러리에서 가져오는 함수
   Future<void> onPickImage() async {
     final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+
     if (picked != null) {
+      String url = await ImageApi().uploadImages([picked]).then(
+          (urls) => urls.isNotEmpty ? urls.first : '');
       setState(() {
         imageFiles.add(picked);
         imageCount = imageFiles.length.clamp(0, 10);
+        imageUrls.add(url); // 서버에서 받은 URL 추가
       });
     }
+  }
+
+  Future<void> onDeleteImage(int index) async {
+    if (index < 0 || index >= imageUrls.length) return;
+
+    final imageUrl = imageUrls[index];
+
+    // 서버에 업로드된 이미지인지 확인 (예: http로 시작)
+    final isNetwork =
+        imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+
+    if (isNetwork && imageUrl.isNotEmpty) {
+      try {
+        await ImageApi().deleteImages([imageUrl]);
+      } catch (e) {
+        // 삭제 실패 시 무시하거나 에러 처리
+      }
+    }
+
+    setState(() {
+      imageUrls.removeAt(index);
+      imageCount = imageUrls.length.clamp(0, 10);
+    });
   }
 
   // ai 가격 측정 함수
@@ -104,6 +131,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   }
 
   Future<void> _initControllers() async {
+    // 수정 모드에서 초기화
     if (widget.isEditMode && widget.itemResponse != null) {
       final item = widget.itemResponse!.item;
 
@@ -133,15 +161,21 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       selectedTradeOptions = (item?.itemTradeOptions ?? [])
           .map((e) => ItemTradeOption.fromServerName(e))
           .toList();
+      imageUrls = widget.itemResponse!.itemImages != null
+          ? widget.itemResponse!.itemImages!
+              .map((img) => img.imageUrl ?? '')
+              .where((url) => url.isNotEmpty)
+              .toList()
+          : [];
       imageFiles = widget.itemResponse!.itemImages != null
           ? widget.itemResponse!.itemImages!
               .map((img) {
-                final filePath = img.filePath ?? '';
-                if (filePath.startsWith('http://') ||
-                    filePath.startsWith('https://')) {
-                  return XFile(filePath);
-                } else if (filePath.isNotEmpty) {
-                  return XFile('http://suh-project.synology.me/$filePath');
+                final imageUrl = img.imageUrl ?? '';
+                if (imageUrl.startsWith('http://') ||
+                    imageUrl.startsWith('https://')) {
+                  return XFile(imageUrl);
+                } else if (imageUrl.isNotEmpty) {
+                  return XFile('http://suh-project.synology.me/$imageUrl');
                 } else {
                   return null;
                 }
@@ -149,7 +183,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
               .whereType<XFile>()
               .toList()
           : [];
-      imageCount = imageFiles.length.clamp(0, 10);
+      imageCount = imageUrls.length.clamp(0, 10);
       _latitude = item?.latitude;
       _longitude = item?.longitude;
       useAiPrice = item?.aiPrice ?? false;
@@ -241,13 +275,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 height: 88.h,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: imageFiles.length,
+                  itemCount: imageUrls.length,
                   separatorBuilder: (_, __) => SizedBox(width: 8.w),
                   padding: EdgeInsets.only(top: 8.h),
                   itemBuilder: (context, index) {
-                    final path = imageFiles[index].path;
-                    final isNetwork = path.startsWith('http://') ||
-                        path.startsWith('https://');
+                    final url = imageUrls[index];
                     return SizedBox(
                       height: 88.h,
                       child: Stack(
@@ -255,31 +287,25 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8.r),
-                            child: isNetwork
-                                ? Image.network(
-                                    path,
-                                    width: 80.w,
-                                    height: 80.h,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.file(
-                                    File(path),
-                                    width: 80.w,
-                                    height: 80.h,
-                                    fit: BoxFit.cover,
-                                  ),
+                            child: Image.network(
+                              url,
+                              width: 80.w,
+                              height: 80.h,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                color: Colors.grey,
+                                child: const Icon(Icons.broken_image,
+                                    color: Colors.white),
+                              ),
+                            ),
                           ),
                           Positioned(
                             top: -8.h,
                             right: -8.w,
                             child: GestureDetector(
-                              onTap: () {
-                                final newImages = List<XFile>.from(imageFiles);
-                                newImages.removeAt(index);
-                                setState(() {
-                                  imageFiles = newImages;
-                                  imageCount = imageFiles.length.clamp(0, 10);
-                                });
+                              onTap: () async {
+                                await onDeleteImage(index);
                               },
                               child: Container(
                                 width: 24.w,
@@ -704,11 +730,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         itemPrice:
                             int.parse(priceController.text.replaceAll(',', '')),
                         itemCustomTags: [],
-                        itemImages: imageFiles
-                            .where((e) => !(e.path.startsWith('http://') ||
-                                e.path.startsWith('https://')))
-                            .map((e) => File(e.path))
-                            .toList(),
+                        itemImageUrls: imageUrls,
                         longitude: _longitude,
                         latitude: _latitude,
                         aiPrice: useAiPrice,

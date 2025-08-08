@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:json_annotation/json_annotation.dart';
 
 part 'item_request.g.dart';
@@ -8,7 +6,7 @@ part 'item_request.g.dart';
 class ItemRequest {
   String? memberId;
   @JsonKey(includeFromJson: false, includeToJson: false)
-  List<File>? itemImages;
+  List<String>? itemImageUrls;
   String? itemName;
   String? itemDescription;
   String? itemCategory;
@@ -25,7 +23,7 @@ class ItemRequest {
 
   ItemRequest({
     this.memberId,
-    this.itemImages,
+    this.itemImageUrls,
     this.itemName,
     this.itemDescription,
     this.itemCategory,

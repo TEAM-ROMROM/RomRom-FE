@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/responses/item_response.dart';
@@ -29,6 +27,7 @@ class ItemApi {
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
       'aiPrice': request.aiPrice?.toString() ?? 'false',
+      'itemImageUrls': request.itemImageUrls?.join(','),
     };
 
     // 위치 정보 추가 (필수값)
@@ -47,16 +46,9 @@ class ItemApi {
 
     debugPrint('최종 전송 필드: $fields');
 
-    // 타입 안전하게 파일 처리
-    Map<String, List<File>>? fileMap;
-    if (request.itemImages != null && request.itemImages!.isNotEmpty) {
-      fileMap = {'itemImages': request.itemImages!};
-    }
-
     await ApiClient.sendMultipartRequest(
       url: url,
       fields: fields,
-      files: fileMap,
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
@@ -231,6 +223,7 @@ class ItemApi {
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
       'aiPrice': request.aiPrice?.toString() ?? 'false',
+      'itemImageUrls': request.itemImageUrls?.join(','),
     };
 
     // 위치 정보 추가 (필수값)
@@ -249,16 +242,9 @@ class ItemApi {
 
     debugPrint('최종 전송 필드: $fields');
 
-    // 타입 안전하게 파일 처리
-    Map<String, List<File>>? fileMap;
-    if (request.itemImages != null && request.itemImages!.isNotEmpty) {
-      fileMap = {'itemImages': request.itemImages!};
-    }
-
     await ApiClient.sendMultipartRequest(
       url: url,
       fields: fields,
-      files: fileMap,
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
