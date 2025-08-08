@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:icon_decoration/icon_decoration.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
@@ -37,6 +35,8 @@ class _ItemRegisterLocationScreenState
   NLatLng? _selectedPosition; // 핀이 가리키는 선택된 위치
   LocationAddress? _selectedAddress;
   final Completer<NaverMapController> _mapControllerCompleter = Completer();
+
+  bool _isLoading = false; // 로딩 상태 관리
 
   @override
   void initState() {
@@ -171,26 +171,48 @@ class _ItemRegisterLocationScreenState
                   bottom: 57.h,
                   child: SizedBox(
                     width: double.infinity,
-                    child: CompletionButton(
-                      isEnabled: _selectedAddress != null,
-                      buttonText: '선택 완료',
-                      buttonType: 2,
-                      enabledOnPressed: () {
-                        // 선택된 위치의 정확한 좌표로 LocationAddress 업데이트
-                        if (_selectedAddress != null &&
-                            _selectedPosition != null) {
-                          final updatedAddress = LocationAddress(
-                            siDo: _selectedAddress!.siDo,
-                            siGunGu: _selectedAddress!.siGunGu,
-                            eupMyoenDong: _selectedAddress!.eupMyoenDong,
-                            ri: _selectedAddress!.ri,
-                            latitude: _selectedPosition!.latitude,
-                            longitude: _selectedPosition!.longitude,
-                          );
-                          widget.onLocationSelected?.call(updatedAddress);
-                          Navigator.pop(context);
-                        }
-                      },
+                    child: IgnorePointer(
+                      ignoring: _isLoading, // 로딩 중에는 버튼 비활성화
+                      child: CompletionButton(
+                        isEnabled: _selectedAddress != null,
+                        buttonText: '선택 완료',
+                        buttonType: 2,
+                        enabledOnPressed: () {
+                          try {
+                            setState(() {
+                              _isLoading = true; // 로딩 시작
+                            });
+                            // 선택된 위치의 정확한 좌표로 LocationAddress 업데이트
+                            if (_selectedAddress != null &&
+                                _selectedPosition != null) {
+                              final updatedAddress = LocationAddress(
+                                siDo: _selectedAddress!.siDo,
+                                siGunGu: _selectedAddress!.siGunGu,
+                                eupMyoenDong: _selectedAddress!.eupMyoenDong,
+                                ri: _selectedAddress!.ri,
+                                latitude: _selectedPosition!.latitude,
+                                longitude: _selectedPosition!.longitude,
+                              );
+                              widget.onLocationSelected?.call(updatedAddress);
+                              setState(() {
+                                _isLoading = false; // 로딩 종료
+                              });
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('위치 등록에 실패했습니다: $e')),
+                              );
+                            }
+                            if (mounted) {
+                              setState(() {
+                                _isLoading = false; // 로딩 종료
+                              });
+                            }
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),

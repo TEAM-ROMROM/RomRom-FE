@@ -156,6 +156,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   }
 
   bool _isInitLoading = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -663,67 +664,76 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
               ),
 
               // 등록 완료 버튼
-              CompletionButton(
-                isEnabled: isFormValid,
-                buttonText: '등록 완료',
-                buttonType: 2,
-                enabledOnPressed: () async {
-                  if (_longitude == null || _latitude == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('거래 희망 위치를 선택해주세요.'),
-                        backgroundColor: AppColors.warningRed,
-                      ),
-                    );
-                    return;
-                  }
+              IgnorePointer(
+                ignoring: _isLoading,
+                child: CompletionButton(
+                  isEnabled: isFormValid,
+                  buttonText: '등록 완료',
+                  buttonType: 2,
+                  enabledOnPressed: () async {
+                    if (_longitude == null || _latitude == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('거래 희망 위치를 선택해주세요.'),
+                          backgroundColor: AppColors.warningRed,
+                        ),
+                      );
+                      return;
+                    }
 
-                  try {
-                    debugPrint(
-                        '물품 등록 시작 - longitude: $_longitude, latitude: $_latitude');
-                    final itemRequest = ItemRequest(
-                      itemId: widget.isEditMode
-                          ? widget.itemResponse!.item?.itemId
-                          : null,
-                      itemName: titleController.text,
-                      itemDescription: descriptionController.text,
-                      itemCategory: selectedCategory!.serverName,
-                      itemCondition: selectedItemConditionTypes.isNotEmpty
-                          ? selectedItemConditionTypes.first.serverName
-                          : null,
-                      itemTradeOptions: selectedTradeOptions
-                          .map((e) => e.serverName)
-                          .toList(),
-                      itemPrice:
-                          int.parse(priceController.text.replaceAll(',', '')),
-                      itemCustomTags: [],
-                      itemImages: imageFiles
-                          .where((e) => !(e.path.startsWith('http://') ||
-                              e.path.startsWith('https://')))
-                          .map((e) => File(e.path))
-                          .toList(),
-                      longitude: _longitude,
-                      latitude: _latitude,
-                    );
-                    if (widget.isEditMode) {
-                      await ItemApi().updateItem(itemRequest);
-                    } else {
-                      await ItemApi().postItem(itemRequest);
-                    }
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('물품이 성공적으로 등록되었습니다.')),
+                    try {
+                      debugPrint(
+                          '물품 등록 시작 - longitude: $_longitude, latitude: $_latitude');
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      final itemRequest = ItemRequest(
+                        itemId: widget.isEditMode
+                            ? widget.itemResponse!.item?.itemId
+                            : null,
+                        itemName: titleController.text,
+                        itemDescription: descriptionController.text,
+                        itemCategory: selectedCategory!.serverName,
+                        itemCondition: selectedItemConditionTypes.isNotEmpty
+                            ? selectedItemConditionTypes.first.serverName
+                            : null,
+                        itemTradeOptions: selectedTradeOptions
+                            .map((e) => e.serverName)
+                            .toList(),
+                        itemPrice:
+                            int.parse(priceController.text.replaceAll(',', '')),
+                        itemCustomTags: [],
+                        itemImages: imageFiles
+                            .where((e) => !(e.path.startsWith('http://') ||
+                                e.path.startsWith('https://')))
+                            .map((e) => File(e.path))
+                            .toList(),
+                        longitude: _longitude,
+                        latitude: _latitude,
                       );
+                      if (widget.isEditMode) {
+                        await ItemApi().updateItem(itemRequest);
+                      } else {
+                        await ItemApi().postItem(itemRequest);
+                      }
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('물품이 성공적으로 등록되었습니다.')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('물품 등록에 실패했습니다: $e')),
+                        );
+                      }
                     }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('물품 등록에 실패했습니다: $e')),
-                      );
-                    }
-                  }
-                },
+                    setState(() {
+                      _isLoading = false;
+                    });
+                  },
+                ),
               ),
               SizedBox(height: 24.w),
             ],
