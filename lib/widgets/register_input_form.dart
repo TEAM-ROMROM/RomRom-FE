@@ -43,6 +43,7 @@ class RegisterInputForm extends StatefulWidget {
 class _RegisterInputFormState extends State<RegisterInputForm> {
   // 임시 상태 변수들
   int imageCount = 0;
+  final Set<int> _loadingImageIndices = {}; // 로딩 중인 이미지 인덱스 집합
   ItemCategories? selectedCategory;
   ItemCondition? selectedCondition;
   List<ItemCondition> selectedItemConditionTypes = [];
@@ -71,40 +72,85 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   // 상품사진 갤러리에서 가져오는 함수
   Future<void> onPickImage() async {
-    final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+    try {
+      final XFile? picked =
+          await _picker.pickImage(source: ImageSource.gallery);
 
-    if (picked != null) {
-      String url = await ImageApi().uploadImages([picked]).then(
-          (urls) => urls.isNotEmpty ? urls.first : '');
-      setState(() {
-        imageFiles.add(picked);
-        imageCount = imageFiles.length.clamp(0, 10);
-        imageUrls.add(url); // 서버에서 받은 URL 추가
-      });
+      if (picked != null) {
+        final newIndex = imageFiles.length;
+        setState(() {
+          _loadingImageIndices.add(newIndex);
+          imageFiles.add(picked);
+          imageCount = imageFiles.length.clamp(0, 10);
+        });
+
+        try {
+          String url = await ImageApi().uploadImages([picked]).then(
+              (urls) => urls.isNotEmpty ? urls.first : '');
+          if (mounted) {
+            setState(() {
+              imageUrls.add(url); // 서버에서 받은 URL 추가
+            });
+          }
+        } finally {
+          if (mounted) {
+            setState(() {
+              _loadingImageIndices.remove(newIndex);
+            });
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미지 업로드에 실패했습니다: $e')),
+        );
+      }
     }
   }
 
   Future<void> onDeleteImage(int index) async {
     if (index < 0 || index >= imageUrls.length) return;
 
-    final imageUrl = imageUrls[index];
+    setState(() {
+      _loadingImageIndices.add(index);
+    });
 
-    // 서버에 업로드된 이미지인지 확인 (예: http로 시작)
-    final isNetwork =
-        imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+    try {
+      final imageUrl = imageUrls[index];
 
-    if (isNetwork && imageUrl.isNotEmpty) {
-      try {
-        await ImageApi().deleteImages([imageUrl]);
-      } catch (e) {
-        // 삭제 실패 시 무시하거나 에러 처리
+      // 서버에 업로드된 이미지인지 확인 (예: http로 시작)
+      final isNetwork =
+          imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+
+      if (isNetwork && imageUrl.isNotEmpty) {
+        try {
+          await ImageApi().deleteImages([imageUrl]);
+        } catch (e) {
+          // 삭제 실패 시 무시하거나 에러 처리
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          imageUrls.removeAt(index);
+          imageFiles.removeAt(index);
+          imageCount = imageUrls.length.clamp(0, 10);
+        });
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미지 삭제에 실패했습니다: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingImageIndices.remove(index);
+        });
       }
     }
-
-    setState(() {
-      imageUrls.removeAt(index);
-      imageCount = imageUrls.length.clamp(0, 10);
-    });
   }
 
   // ai 가격 측정 함수
@@ -260,11 +306,27 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SvgPicture.asset('assets/images/item-register-photo.svg'),
-                    SizedBox(height: 4.h),
-                    Text('$imageCount/10',
-                        style: CustomTextStyles.p3
-                            .copyWith(color: AppColors.opacity40White)),
+                    if (_loadingImageIndices.contains(imageFiles.length - 1))
+                      SizedBox(
+                        width: 24.w,
+                        height: 24.h,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.w,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.textColorWhite),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: [
+                          SvgPicture.asset(
+                              'assets/images/item-register-photo.svg'),
+                          SizedBox(height: 4.h),
+                          Text('$imageCount/10',
+                              style: CustomTextStyles.p3
+                                  .copyWith(color: AppColors.opacity40White)),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -287,18 +349,30 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8.r),
-                            child: Image.network(
-                              url,
-                              width: 80.w,
-                              height: 80.h,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                color: Colors.grey,
-                                child: const Icon(Icons.broken_image,
-                                    color: Colors.white),
-                              ),
-                            ),
+                            child: _loadingImageIndices.contains(index)
+                                ? SizedBox(
+                                    width: 24.w,
+                                    height: 24.h,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.w,
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                              AppColors.textColorWhite),
+                                    ),
+                                  )
+                                : Image.network(
+                                    url,
+                                    width: 80.w,
+                                    height: 80.h,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                      color: Colors.grey,
+                                      child: const Icon(Icons.broken_image,
+                                          color: Colors.white),
+                                    ),
+                                  ),
                           ),
                           Positioned(
                             top: -8.h,
