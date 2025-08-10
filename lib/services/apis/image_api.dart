@@ -30,9 +30,11 @@ class ImageApi {
       files: fileMap,
       isAuthRequired: true,
       onSuccess: (responseData) {
-        imageUrls = (responseData['imageUrls'] as List<dynamic>)
-            .cast<String>()
-            .toList();
+        final urls = responseData['imageUrls'];
+        if (urls is! List) {
+          throw const FormatException('imageUrls 필드 누락 또는 형식 오류');
+        }
+        imageUrls = urls.map((e) => e.toString()).toList(growable: false);
         debugPrint('사진 등록 성공: $imageUrls');
       },
     );
@@ -46,7 +48,7 @@ class ImageApi {
     const String url = '${AppUrls.baseUrl}/api/image/delete';
 
     final Map<String, dynamic> fields = {
-      'imageUrls': imageUrls,
+      'imageUrls': imageUrls.join(','),
     };
 
     await ApiClient.sendMultipartRequest(

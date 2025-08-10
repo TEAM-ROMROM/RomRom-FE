@@ -71,39 +71,87 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   List<String> imageUrls = []; // 서버에 업로드된 이미지 URL 저장
 
   // 상품사진 갤러리에서 가져오는 함수
+  static const int kMaxImages = 10;
+
+// 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원)
   Future<void> onPickImage() async {
     try {
-      final XFile? picked =
-          await _picker.pickImage(source: ImageSource.gallery);
+      if (imageFiles.length == 10) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('이미지는 최대 10장까지 등록할 수 있습니다.')),
+          );
+        }
+        return;
+      }
+      final List<XFile> picked = await _picker.pickMultiImage();
 
-      if (picked != null) {
-        final newIndex = imageFiles.length;
-        setState(() {
-          _loadingImageIndices.add(newIndex);
-          imageFiles.add(picked);
-          imageCount = imageFiles.length.clamp(0, 10);
-        });
+      // 사용자가 취소했거나 선택 없음
+      if (picked.isEmpty) return;
 
-        try {
-          String url = await ImageApi().uploadImages([picked]).then(
-              (urls) => urls.isNotEmpty ? urls.first : '');
-          if (mounted) {
-            setState(() {
-              imageUrls.add(url); // 서버에서 받은 URL 추가
-            });
-          }
-        } finally {
-          if (mounted) {
-            setState(() {
-              _loadingImageIndices.remove(newIndex);
-            });
-          }
+      // 남은 슬록 계산 (최대 10장)
+      final int remain = (kMaxImages - imageFiles.length).clamp(0, kMaxImages);
+      if (remain == 0) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('이미지는 최대 10장까지 등록할 수 있습니다.')),
+          );
+        }
+        return;
+      }
+
+      // 초과 선택 분리
+      final List<XFile> toAdd =
+          picked.length > remain ? picked.sublist(0, remain) : picked;
+
+      // 로딩 인덱스 계산 (추가될 위치 범위)
+      final int startIndex = imageFiles.length;
+      final int endIndexExclusive = startIndex + toAdd.length;
+
+      setState(() {
+        // 로딩 인덱스 등록
+        for (int i = startIndex; i < endIndexExclusive; i++) {
+          _loadingImageIndices.add(i);
+        }
+        // 파일 목록에 다중 추가
+        imageFiles.addAll(toAdd);
+        // 카운트 업데이트
+        imageCount = imageFiles.length.clamp(0, kMaxImages);
+      });
+
+      try {
+        // 여러 장 업로드 (API가 List<XFile> -> List<String> 반환한다고 가정)
+        final List<String> urls = await ImageApi().uploadImages(toAdd);
+
+        if (mounted) {
+          setState(() {
+            // 서버 URL 추가 (개수 불일치 대비하여 안전하게 처리)
+            if (urls.isNotEmpty) {
+              imageUrls.addAll(urls.take(toAdd.length));
+            } else {
+              // 필요 시: 업로드 실패한 항목 처리 로직 추가 가능
+            }
+          });
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('이미지 업로드에 실패했습니다: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            for (int i = startIndex; i < endIndexExclusive; i++) {
+              _loadingImageIndices.remove(i);
+            }
+          });
         }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('이미지 업로드에 실패했습니다: $e')),
+          SnackBar(content: Text('이미지 선택에 실패했습니다: $e')),
         );
       }
     }

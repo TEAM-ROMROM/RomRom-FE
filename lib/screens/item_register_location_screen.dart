@@ -177,7 +177,7 @@ class _ItemRegisterLocationScreenState
                         isEnabled: _selectedAddress != null,
                         buttonText: '선택 완료',
                         buttonType: 2,
-                        enabledOnPressed: () {
+                        enabledOnPressed: () async {
                           try {
                             setState(() {
                               _isLoading = true; // 로딩 시작
@@ -194,10 +194,12 @@ class _ItemRegisterLocationScreenState
                                 longitude: _selectedPosition!.longitude,
                               );
                               widget.onLocationSelected?.call(updatedAddress);
-                              setState(() {
-                                _isLoading = false; // 로딩 종료
-                              });
-                              Navigator.pop(context);
+                              if (mounted) {
+                                setState(() {
+                                  _isLoading = false; // 로딩 종료
+                                });
+                                Navigator.pop(context);
+                              }
                             }
                           } catch (e) {
                             if (context.mounted) {
