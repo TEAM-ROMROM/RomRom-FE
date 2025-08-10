@@ -12,52 +12,51 @@ class ReportMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<_ReportMenuOption>(
-      offset: Offset(0, 12.h),
-      position: PopupMenuPosition.under,
-      color: AppColors.secondaryBlack,
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4.r),
-      ),
-      constraints: BoxConstraints(
-        minWidth: 146.w,
-        maxWidth: 146.w,
-        maxHeight: 46.h,
-      ),
-      padding: EdgeInsets.zero,
-      menuPadding: EdgeInsets.zero,
-      // 30 * 20 사이즈 조정
-      icon: SizedBox(
-        width: 20.w, 
-        height: 30.h, 
-        child: Icon(
+    return SizedBox(
+      height: 30.h,
+      width: 30.w,
+      child: PopupMenuButton<_ReportMenuOption>(
+        offset: Offset(0, 12.h),
+        position: PopupMenuPosition.under,
+        color: AppColors.secondaryBlack,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4.r),
+        ),
+        constraints: BoxConstraints(
+          minWidth: 146.w,
+          maxWidth: 146.w,
+          maxHeight: 46.h,
+        ),
+        padding: EdgeInsets.zero,
+        menuPadding: EdgeInsets.zero,
+        icon: Icon(
           AppIcons.dotsVertical,
-          size: 20.sp,
+          size: 30.sp,
           color: AppColors.textColorWhite,
         ),
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem<_ReportMenuOption>(
-          value: _ReportMenuOption.report,
-          padding: EdgeInsets.only(left: 16.w),
-          height: 46.h,
-          child: Text(
-            '신고하기',
-            style: CustomTextStyles.p2.copyWith(
-              fontWeight: FontWeight.w600,
+        itemBuilder: (context) => [
+          PopupMenuItem<_ReportMenuOption>(
+            value: _ReportMenuOption.report,
+            padding: EdgeInsets.only(left: 16.w),
+            height: 46.h,
+            child: Text(
+              '신고하기',
+              style: CustomTextStyles.p2.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
-      ],
-      onSelected: (_ReportMenuOption option) {
-        if (option == _ReportMenuOption.report) {
-          if (onReportPressed != null) onReportPressed!();
-        }
-      },
+        ],
+        onSelected: (_ReportMenuOption option) {
+          if (option == _ReportMenuOption.report) {
+            if (onReportPressed != null) onReportPressed!();
+          }
+        },
+      ),
     );
   }
 }
 
 // 내부용 enum (외부 노출 불필요)
-enum _ReportMenuOption { report } 
+enum _ReportMenuOption { report }
