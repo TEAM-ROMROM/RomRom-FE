@@ -171,9 +171,10 @@ get_version_from_project_file() {
             fi
             ;;
         "flutter")
-            # pubspec.yaml에서 버전 추출  
+            # pubspec.yaml에서 버전 추출
             if grep -q "version:" "$VERSION_FILE"; then
                 PROJECT_VERSION=$(grep "^version:" "$VERSION_FILE" | sed 's/version: *\([0-9.]*\).*/\1/' | head -1)
+                echo "Flutter 버전: $PROJECT_VERSION"
             else
                 PROJECT_VERSION="$CURRENT_VERSION"
             fi
@@ -351,17 +352,14 @@ update_project_file() {
             rm -f "${VERSION_FILE}.bak"
             ;;
         "flutter")
-            # pubspec.yaml 업데이트 (빌드 번호는 유지)
+            # pubspec.yaml 업데이트 (x.x.x 형식 버전 업데이트)
             if grep -q "version:" "$VERSION_FILE"; then
-                current_line=$(grep "^version:" "$VERSION_FILE")
-                if [[ $current_line =~ \+[0-9]+ ]]; then
-                    build_number=$(echo "$current_line" | sed 's/.*+\([0-9]*\).*/\1/')
-                    sed -i.bak "s/^version:.*/version: $new_version+$build_number/" "$VERSION_FILE"
-                else
-                    sed -i.bak "s/^version:.*/version: $new_version+1/" "$VERSION_FILE"
-                fi
+                # 빌드 번호 없이 순수 버전만 업데이트
+                sed -i.bak "s/^version:.*/version: $new_version/" "$VERSION_FILE"
+                echo "Flutter 버전 업데이트: $new_version (단순 형식)"
             else
-                echo "version: $new_version+1" >> "$VERSION_FILE"
+                echo "version: $new_version" >> "$VERSION_FILE"
+                echo "Flutter 버전 생성: $new_version (단순 형식)"
             fi
             rm -f "${VERSION_FILE}.bak"
             ;;

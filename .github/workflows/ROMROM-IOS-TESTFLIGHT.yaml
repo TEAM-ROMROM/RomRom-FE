@@ -96,7 +96,18 @@ jobs:
           VERSION=$(./.github/scripts/version-manager.sh get | tail -n 1)
           echo "📋 버전 정보: $VERSION"
           
-          # iOS 빌드를 위한 빌드 번호 생성 (CI 환경에서는 GITHUB_RUN_NUMBER 활용)
+          # Flutter 버전이 x.x.x+y 형식인지 확인하고, 없다면 빌드 번호를 별도로 관리
+          if [[ "$VERSION" == *"+"* ]]; then
+            # 기존 x.x.x+y 형식에서 빌드 번호 추출
+            BUILD_VERSION=$(echo "$VERSION" | cut -d'+' -f1)
+            BUILD_NUMBER=$(echo "$VERSION" | cut -d'+' -f2)
+            echo "📋 기존 형식 감지: 버전=$BUILD_VERSION, 빌드번호=$BUILD_NUMBER"
+          else
+            # x.x.x 형식에서는 별도 빌드 번호 사용
+            BUILD_VERSION=$VERSION
+            
+            # iOS 빌드를 위한 빌드 번호 생성 (CI 환경에서는 GITHUB_RUN_NUMBER 활용)
+          fi
           if [ -n "$GITHUB_RUN_NUMBER" ]; then
             BUILD_NUMBER=$GITHUB_RUN_NUMBER
           else
@@ -105,15 +116,15 @@ jobs:
           fi
           
           # 결과 출력
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$BUILD_VERSION" >> $GITHUB_OUTPUT
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "project_type=${{ env.PROJECT_TYPE }}" >> $GITHUB_OUTPUT
           
-          echo "📋 현재 버전: $VERSION (빌드번호: $BUILD_NUMBER)"
+          echo "📋 현재 버전: $BUILD_VERSION (빌드번호: $BUILD_NUMBER)"
           echo "🔧 프로젝트 타입: ${{ env.PROJECT_TYPE }}"
           
           # 환경변수로도 설정 (스크립트에서 사용)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$BUILD_VERSION" >> $GITHUB_ENV
           echo "TODAY=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
           echo "TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
           echo "PROJECT_TYPE=${{ env.PROJECT_TYPE }}" >> $GITHUB_ENV
