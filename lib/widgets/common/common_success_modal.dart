@@ -50,7 +50,7 @@ class CommonSuccessModal extends StatelessWidget {
                     ),
                     child: Icon(
                       AppIcons.onboardingProgressCheck,
-                      size: 17.sp,
+                      size: 40.sp,
                       color: AppColors.primaryYellow,
                     ),
                   ),
