@@ -58,7 +58,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   void _loadSampleData() {
     _itemCards.addAll([
       RequestManagementItemCard(
-        imageUrl: '',  // 실제 이미지 URL 필요
+        imageUrl: 'https://picsum.photos/id/26/500/500',  // 테니스 라켓
         category: '스포츠/레저',
         title: '윌슨 블레이드 V9',
         price: 150000,
@@ -66,7 +66,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         isAiAnalyzed: true,
       ),
       RequestManagementItemCard(
-        imageUrl: '',  // 실제 이미지 URL 필요
+        imageUrl: 'https://picsum.photos/id/96/500/500',  // 테니스 라켓 2
         category: '스포츠/레저',
         title: '윌슨 블레이드 V8',
         price: 120000,
@@ -74,7 +74,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         isAiAnalyzed: false,
       ),
       RequestManagementItemCard(
-        imageUrl: '',  // 실제 이미지 URL 필요
+        imageUrl: 'https://picsum.photos/id/160/500/500',  // 스마트폰
         category: '디지털/가전',
         title: '아이폰 14 프로 블랙',
         price: 980000,
@@ -82,7 +82,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         isAiAnalyzed: true,
       ),
       RequestManagementItemCard(
-        imageUrl: '',  // 실제 이미지 URL 필요
+        imageUrl: 'https://picsum.photos/id/21/500/500',  // 신발
         category: '패션/의류',
         title: '나이키 에어포스 1 로우',
         price: 89000,
@@ -90,7 +90,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         isAiAnalyzed: false,
       ),
       RequestManagementItemCard(
-        imageUrl: '',  // 실제 이미지 URL 필요
+        imageUrl: 'https://picsum.photos/id/24/500/500',  // 책
         category: '도서/티켓/음반',
         title: '해리포터 시리즈 전권',
         price: 75000,
@@ -98,7 +98,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         isAiAnalyzed: false,
       ),
       RequestManagementItemCard(
-        imageUrl: '',  // 실제 이미지 URL 필요
+        imageUrl: 'https://picsum.photos/id/183/500/500',  // 가구
         category: '가구/인테리어',
         title: '이케아 책상 세트',
         price: 220000,
