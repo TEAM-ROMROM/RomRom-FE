@@ -106,4 +106,7 @@ class AppColors {
     Color(0xFFF258F2), // 핑크 테두리(Gradient 3)
     Color(0xFFF25893), // 다홍 테두리(Gradient 4)
   ];
+
+  static const Color errorBorder = Color(0xFFFF5656); // 에러 상태 테두리 색상
+  static const Color errorContainer = Color(0x1AFF5656); // 에러 상태 컨테이너 색상
 }
