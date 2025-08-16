@@ -1,11 +1,19 @@
 {
   "metadata": {
-    "lastUpdated": "2025-08-16T16:35:36Z",
+    "lastUpdated": "2025-08-16T17:20:36Z",
     "currentVersion": "1.1.31",
-    "totalReleases": 5,
+    "totalReleases": 6,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.1.31",
+      "project_type": "flutter",
+      "date": "2025-08-16",
+      "pr_number": 216,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\n신기능\\n\\n이슈가 열리거나 다시 열릴 때 브랜치/커밋 가이드를 자동으로 댓글로 안내합니다.\\n\\n\\n개선 사항\\n\\n등록 폼의 레이블·힌트·오류 문구를 일원화하여 가독성과 일관성을 향상했습니다.\\n빈 입력 시 오류 색상과 테두리로 명확한 시각 피드백을 제공합니다.\\n거래 방식 선택 UX를 개선하고 카테고리 입력은 1자로 제한했습니다.\\n위치·가격 안내 문구와 오류 메시지를 더 명확하게 다듬었습니다.\\n\\n\\n버그 수정\\n\\n거래 방식 선택 토글이 올바르게 동작하도록 조정했습니다.\\n\\n\\n작업\\n\\nTestFlight 워크플로에 .env 사용 가드 추가 및 아티팩트 정리.\\n변경 로그 업데이트.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 3,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 9,\n  \"additions\": 441,\n  \"deletions\": 106,\n  \"changed_files\": 9\n}",
+      "parsed_changes": {}
+    },
     {
       "version": "1.1.31",
       "project_type": "flutter",
