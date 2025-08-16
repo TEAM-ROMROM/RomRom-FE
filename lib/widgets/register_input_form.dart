@@ -545,6 +545,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                               setInnerState(() {
                                                 tempSelected = category;
                                               });
+                                              Navigator.pop(context);
                                             },
                                           );
                                         }).toList(),
