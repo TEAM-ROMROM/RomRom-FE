@@ -6,6 +6,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_text_field_phrase.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -466,9 +467,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
               // 제목 필드
               RegisterCustomLabeledField(
-                label: '제목',
+                label: ItemTextFieldPhrase.title.label,
                 field: RegisterCustomTextField(
-                  hintText: '제목을 입력하세요',
+                  phrase: ItemTextFieldPhrase.title,
                   maxLength: 20,
                   controller: titleController,
                 ),
@@ -476,10 +477,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
               // 카테고리 필드
               RegisterCustomLabeledField(
-                label: '카테고리',
+                label: ItemTextFieldPhrase.category.label,
                 field: RegisterCustomTextField(
-                  hintText: '카테고리를 선택하세요',
+                  phrase: ItemTextFieldPhrase.category,
                   readOnly: true,
+                  maxLength: 1,
                   controller:
                       TextEditingController(text: selectedCategory?.name ?? ''),
                   onTap: () async {
@@ -520,7 +522,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                   Padding(
                                     padding: EdgeInsets.only(left: 26.w),
                                     child: Text(
-                                      '카테고리',
+                                      ItemTextFieldPhrase.category.label,
                                       style: CustomTextStyles.h2.copyWith(
                                           fontWeight: FontWeight.w700),
                                     ),
@@ -543,6 +545,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                               setInnerState(() {
                                                 tempSelected = category;
                                               });
+                                              Navigator.pop(context);
                                             },
                                           );
                                         }).toList(),
@@ -565,9 +568,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
               // 물건 설명 필드
               RegisterCustomLabeledField(
-                label: '물건 설명',
+                label: ItemTextFieldPhrase.description.label,
                 field: RegisterCustomTextField(
-                  hintText: '물건의 자세한 설명을 적어주세요',
+                  phrase: ItemTextFieldPhrase.description,
                   controller: descriptionController,
                   maxLength: 1000,
                   maxLines: 6,
@@ -576,56 +579,88 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
               // 물건 상태 필드
               RegisterCustomLabeledField(
-                label: '물건 상태',
-                field: Wrap(
-                  spacing: 8.w,
-                  runSpacing: 8.w,
-                  children: ItemCondition.values
-                      .map((option) => RegisterOptionChip(
-                            itemOption: option.name,
-                            isSelected:
-                                selectedItemConditionTypes.contains(option),
-                            onTap: () {
-                              final newList = <ItemCondition>[];
-                              if (selectedItemConditionTypes.contains(option)) {
-                                // 선택 해제
-                              } else {
-                                newList
-                                  ..clear()
-                                  ..add(option);
-                              }
-                              setState(() {
-                                selectedItemConditionTypes = newList;
-                              });
-                            },
-                          ))
-                      .toList(),
+                label: ItemTextFieldPhrase.condition.label,
+                field: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                      child: Wrap(
+                        spacing: 8.w,
+                        runSpacing: 8.w,
+                        children: ItemCondition.values
+                            .map((option) => RegisterOptionChip(
+                                  itemOption: option.name,
+                                  isSelected: selectedItemConditionTypes
+                                      .contains(option),
+                                  onTap: () {
+                                    final newList = <ItemCondition>[];
+                                    if (selectedItemConditionTypes
+                                        .contains(option)) {
+                                      // 선택 해제
+                                    } else {
+                                      newList
+                                        ..clear()
+                                        ..add(option);
+                                    }
+                                    setState(() {
+                                      selectedItemConditionTypes = newList;
+                                    });
+                                  },
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                    selectedItemConditionTypes.isEmpty
+                        ? Text(
+                            ItemTextFieldPhrase.condition.errorText,
+                            style: CustomTextStyles.p3
+                                .copyWith(color: AppColors.errorBorder),
+                          )
+                        : Text('', style: CustomTextStyles.p3),
+                  ],
                 ),
               ),
 
               // 거래 방식 필드
               RegisterCustomLabeledField(
-                label: '거래방식',
-                field: Wrap(
-                  spacing: 8.w,
-                  children: ItemTradeOption.values
-                      .map((option) => RegisterOptionChip(
-                            itemOption: option.name,
-                            isSelected: selectedTradeOptions.contains(option),
-                            onTap: () {
-                              final newList = List<ItemTradeOption>.from(
-                                  selectedTradeOptions);
-                              if (newList.contains(option)) {
-                                newList.remove(option);
-                              } else {
-                                newList.add(option);
-                              }
-                              setState(() {
-                                selectedTradeOptions = newList;
-                              });
-                            },
-                          ))
-                      .toList(),
+                label: ItemTextFieldPhrase.tradeOption.label,
+                field: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                      child: Wrap(
+                        spacing: 8.w,
+                        children: ItemTradeOption.values
+                            .map((option) => RegisterOptionChip(
+                                  itemOption: option.name,
+                                  isSelected:
+                                      selectedTradeOptions.contains(option),
+                                  onTap: () {
+                                    final newList = List<ItemTradeOption>.from(
+                                        selectedTradeOptions);
+                                    if (newList.contains(option)) {
+                                      newList.remove(option);
+                                    } else {
+                                      newList.add(option);
+                                    }
+                                    setState(() {
+                                      selectedTradeOptions = newList;
+                                    });
+                                  },
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                    selectedTradeOptions.isEmpty
+                        ? Text(
+                            ItemTextFieldPhrase.tradeOption.errorText,
+                            style: CustomTextStyles.p3
+                                .copyWith(color: AppColors.errorBorder),
+                          )
+                        : Text('', style: CustomTextStyles.p3),
+                  ],
                 ),
               ),
 
@@ -665,7 +700,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     SizedBox(width: 12.w),
                     Expanded(
                       child: Text(
-                        'AI가 측정한 추천 가격이에요. 상황에 맞춰 조정해 최종 거래가는 직접 결정해 주세요 ',
+                        ItemTextFieldPhrase.price.hintText,
                         style: CustomTextStyles.p3.copyWith(
                           fontWeight: FontWeight.w500,
                           height: 1.4,
@@ -681,7 +716,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text('적정 가격', style: CustomTextStyles.p1),
+                  Text(ItemTextFieldPhrase.price.label,
+                      style: CustomTextStyles.p1),
                   const Spacer(),
                   Container(
                     padding:
@@ -727,7 +763,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text('제목, 설명, 물건 상태를 모두 입력해주세요.')),
+                                  content: Text('제목, 설명, 물건 상태를 모두 입력해주세요.'),
+                                ),
                               );
                             }
                             return;
@@ -757,7 +794,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
               SizedBox(height: 8.w),
               // 가격 필드
               RegisterCustomTextField(
-                hintText: '가격을 입력해주세요',
+                phrase: ItemTextFieldPhrase.price,
                 prefixText: '₩',
                 readOnly: useAiPrice,
                 keyboardType: TextInputType.number,
@@ -767,10 +804,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
               // 거래 희망 위치 필드
               SizedBox(height: 24.w),
               RegisterCustomLabeledField(
-                label: '거래 희망 위치',
+                label: ItemTextFieldPhrase.location.label,
                 field: RegisterCustomTextField(
                   readOnly: true,
-                  hintText: '거래 희망 위치를 선택하세요',
+                  phrase: ItemTextFieldPhrase.location,
                   suffixIcon: Icon(
                     AppIcons.detailView,
                     color: AppColors.textColorWhite,
@@ -822,8 +859,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   enabledOnPressed: () async {
                     if (_longitude == null || _latitude == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('거래 희망 위치를 선택해주세요.'),
+                        SnackBar(
+                          content: Text(ItemTextFieldPhrase.location.errorText),
                           backgroundColor: AppColors.warningRed,
                         ),
                       );
