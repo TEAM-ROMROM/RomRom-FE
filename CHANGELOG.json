@@ -1,11 +1,19 @@
 {
   "metadata": {
-    "lastUpdated": "2025-08-10T15:11:30Z",
+    "lastUpdated": "2025-08-16T16:35:36Z",
     "currentVersion": "1.1.31",
-    "totalReleases": 4,
+    "totalReleases": 5,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.1.31",
+      "project_type": "flutter",
+      "date": "2025-08-16",
+      "pr_number": 215,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nNew Features\\n\\n이슈가 열리거나 재오픈될 때 자동으로 가이드 댓글을 남기는 워크플로우 추가\\n등록 폼 문구(라벨/힌트/에러)를 통합 관리하는 문구 세트 도입\\n\\n\\nRefactor\\n\\n등록 폼 전반을 문구 기반으로 개편하여 제목/카테고리/설명/상태/거래방식/가격/위치 문구 일관화\\nAI 가격·위치 관련 안내 및 토글 문구 개선\\n\\n\\nStyle\\n\\n빈 입력 시 에러 보더/배경 표시, 인라인 검증 메시지 및 글자수 표시 개선\\n오류 상태 색상 팔레트 추가로 가시성 향상\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 3,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 6,\n  \"additions\": 389,\n  \"deletions\": 102,\n  \"changed_files\": 6\n}",
+      "parsed_changes": {}
+    },
     {
       "version": "1.1.31",
       "project_type": "flutter",
