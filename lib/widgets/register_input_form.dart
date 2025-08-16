@@ -568,9 +568,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
               // 물건 설명 필드
               RegisterCustomLabeledField(
-                label: ItemTextFieldPhrase.discription.label,
+                label: ItemTextFieldPhrase.description.label,
                 field: RegisterCustomTextField(
-                  phrase: ItemTextFieldPhrase.discription,
+                  phrase: ItemTextFieldPhrase.description,
                   controller: descriptionController,
                   maxLength: 1000,
                   maxLines: 6,

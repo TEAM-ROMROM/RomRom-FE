@@ -2,7 +2,7 @@
 enum ItemTextFieldPhrase {
   title(label: '제목', hintText: '제목을 입력하세요', errorText: '제목을 입력해주세요'),
   category(label: '카테고리', hintText: '카테고리를 선택하세요', errorText: '카테고리를 선택해주세요'),
-  discription(
+  description(
       label: '물건 설명', hintText: '물건의 자세한 설명을 적어주세요', errorText: '설명을 적어주세요'),
   condition(label: '물건 상태', hintText: '', errorText: '물건 상태를 선택해주세요'),
   tradeOption(label: '거래 방식', hintText: '중복선택 가능', errorText: '거래방식을 선택해주세요'),
@@ -24,12 +24,4 @@ enum ItemTextFieldPhrase {
     required this.hintText,
     required this.errorText,
   });
-
-  /// headingTitle 으로부터 enum 값으로 변환
-  static ItemTextFieldPhrase returnEnumByHeadingtitle(String label) {
-    return ItemTextFieldPhrase.values.firstWhere(
-      (e) => e.label == label,
-      orElse: () => throw ArgumentError('Invalid title: $label'),
-    );
-  }
 }
