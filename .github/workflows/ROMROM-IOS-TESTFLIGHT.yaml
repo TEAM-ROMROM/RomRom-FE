@@ -180,7 +180,6 @@ jobs:
             .env
             ios/Flutter/Secrets.xcconfig
             pubspec.yaml
-            ios/
             lib/
             assets/
           retention-days: 1
@@ -290,6 +289,40 @@ jobs:
           if [ -d ios/Pods ]; then
             find ios/Pods -name "*.sh" -print0 | xargs -0 chmod +x
           fi
+
+      # Guard: Xcode가 .env를 참조하지 않는지
+      - name: Guard: .env must not be referenced by Xcode
+        run: |
+          set -e
+          echo ">>> Search .env in PBX project"
+          if grep -R --line-number "\.env" ios/Runner.xcodeproj/project.pbxproj; then
+            echo "❌ .env is referenced in PBX project (Copy Bundle Resources 등). Remove it."
+            exit 1
+          fi
+          if [ -d ios/Runner/Assets.xcassets ]; then
+            echo ">>> Search .env in Assets.xcassets JSON"
+            if grep -R --line-number -E '"name"\s*:\s*"\.env"|"\.env"' ios/Runner/Assets.xcassets; then
+              echo "❌ .env is inside Assets.xcassets (e.g., .env.imageset). Remove that entry/folder."
+              exit 1
+            fi
+            echo ">>> List a few imagesets (debug)"
+            find ios/Runner/Assets.xcassets -maxdepth 2 -type d -name "*.imageset" | sort | head
+          fi
+          echo "✅ No .env reference in Xcode."
+
+      # Guard: Flutter assets용 .env 파일 존재 확인
+      - name: Guard: .env file exists for Flutter assets
+        run: |
+          set -e
+          if [ -f .env ]; then
+            echo "✅ Found .env at repo root (size $(wc -c < .env) bytes)"
+          elif [ -f assets/env/.env ]; then
+            echo "✅ Found assets/env/.env (size $(wc -c < assets/env/.env) bytes)"
+          else
+            echo "❌ .env file missing for Flutter assets"
+            exit 1
+          fi
+
 
       # Flutter build (no codesign) to generate Xcode project artifacts
       - name: Flutter build (no codesign)
