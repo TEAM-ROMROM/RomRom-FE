@@ -2,6 +2,7 @@
 name: ❗ 버그 이슈
 about: 버그 이슈 보고 작성
 labels: 작업전
+assignees: [Cassiiopeia, SeoHyun1024]
 ---
 
 <!--📚 GitHub 이슈 작성 템플릿 -->

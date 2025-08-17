@@ -84,16 +84,16 @@ jobs:
       # 버전 관리 스크립트 권한 설정
       - name: 버전 관리 스크립트 권한 설정
         run: |
-          chmod +x ./.github/scripts/version-manager.sh
+          chmod +x ./.github/scripts/version_manager.sh
           chmod +x ./.github/scripts/changelog_parser.py
           chmod +x ./.github/scripts/changelog_generator.py
 
-      # version-manager.sh를 사용하여 현재 버전 정보 가져오기
+      # version_manager.sh를 사용하여 현재 버전 정보 가져오기
       - name: 현재 버전 정보 가져오기
         id: current_version
         run: |
           # 버전 관리 스크립트로 버전 정보 가져오기
-          VERSION=$(./.github/scripts/version-manager.sh get | tail -n 1)
+          VERSION=$(./.github/scripts/version_manager.sh get | tail -n 1)
           echo "📋 버전 정보: $VERSION"
 
           # Flutter 버전이 x.x.x+y 형식인지 확인하고, 없다면 빌드 번호를 별도로 관리
