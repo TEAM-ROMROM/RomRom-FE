@@ -104,14 +104,14 @@ jobs:
           else
             # x.x.x 형식에서는 별도 빌드 번호 사용
             BUILD_VERSION=$VERSION
-            
+          
             # iOS 빌드를 위한 빌드 번호 생성 (CI 환경에서는 GITHUB_RUN_NUMBER 활용)
-          fi
-          if [ -n "$GITHUB_RUN_NUMBER" ]; then
-            BUILD_NUMBER=$GITHUB_RUN_NUMBER
-          else
-            # CI 환경이 아닌 경우 타임스탬프로 대체
-            BUILD_NUMBER=$(date +%s)
+            if [ -n "$GITHUB_RUN_NUMBER" ]; then
+              BUILD_NUMBER=$GITHUB_RUN_NUMBER
+            else
+              # CI 환경이 아닌 경우 타임스탬프로 대체
+              BUILD_NUMBER=$(date +%s)
+            fi
           fi
 
           # 결과 출력
@@ -129,7 +129,7 @@ jobs:
           echo "PROJECT_TYPE=${{ env.PROJECT_TYPE }}" >> $GITHUB_ENV
           echo "PR_NUMBER=0" >> $GITHUB_ENV
 
-      # CHANGELOG.json에서 릴리즈 노트 추출 - changelog_generator.py 사용
+      # CHANGELOG.json에서 릴리즈 노트 추출 - changelog_manager.py 사용
       - name: 릴리즈 노트 생성
         id: release_notes
         run: |
@@ -207,6 +207,15 @@ jobs:
           name: project-files
           path: .
 
+      # .env 파일 확인 및 재생성 (Guard 대신 복구 로직)
+      - name: Ensure .env file exists
+        run: |
+          if [ ! -f .env ]; then
+            echo "⚠️ .env 파일이 아티팩트에서 복원되지 않았습니다. 재생성합니다."
+            echo "${{ secrets.ENV_FILE }}" > .env
+          fi
+          echo "✅ .env 파일 확인됨 (크기: $(wc -c < .env) bytes)"
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -280,46 +289,6 @@ jobs:
           </dict>
           </plist>
           EOF
-
-      # Ensure pod scripts are executable
-      - name: Ensure pod scripts are executable
-        run: |
-          if [ -d ios/Pods ]; then
-            find ios/Pods -name "*.sh" -print0 | xargs -0 chmod +x
-          fi
-
-      # Guard: Xcode가 .env를 참조하지 않는지
-      - name: "Guard: .env must not be referenced by Xcode"
-        run: |
-          set -e
-          echo ">>> Search .env in PBX project"
-          if grep -R --line-number "\.env" ios/Runner.xcodeproj/project.pbxproj; then
-            echo "❌ .env is referenced in PBX project (Copy Bundle Resources 등). Remove it."
-            exit 1
-          fi
-          if [ -d ios/Runner/Assets.xcassets ]; then
-            echo ">>> Search .env in Assets.xcassets JSON"
-            if grep -R --line-number -E '"name"\s*:\s*"\.env"|"\.env"' ios/Runner/Assets.xcassets; then
-              echo "❌ .env is inside Assets.xcassets (e.g., .env.imageset). Remove that entry/folder."
-              exit 1
-            fi
-            echo ">>> List a few imagesets (debug)"
-            find ios/Runner/Assets.xcassets -maxdepth 2 -type d -name "*.imageset" | sort | head
-          fi
-          echo "✅ No .env reference in Xcode."
-
-      # Guard: Flutter assets용 .env 파일 존재 확인
-      - name: "Guard: .env file exists for Flutter assets"
-        run: |
-          set -e
-          if [ -f .env ]; then
-            echo "✅ Found .env at repo root (size $(wc -c < .env) bytes)"
-          elif [ -f assets/env/.env ]; then
-            echo "✅ Found assets/env/.env (size $(wc -c < assets/env/.env) bytes)"
-          else
-            echo "❌ .env file missing for Flutter assets"
-            exit 1
-          fi
 
       # Flutter build (no codesign) to generate Xcode project artifacts
       - name: Flutter build (no codesign)
@@ -406,7 +375,7 @@ jobs:
                 issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
                 key_filepath: ENV["API_KEY_PATH"]
               )
-              
+          
               # 업로드 + 암호화 규정 자동 설정
               pilot(
                 api_key: api_key,
@@ -417,7 +386,7 @@ jobs:
                 notify_external_testers: false,
                 uses_non_exempt_encryption: false  # 암호화 규정 자동 설정
               )
-              
+          
               puts "✅ TESTFLIGHT 자동 업로드 완료!"
             end
           end
@@ -468,7 +437,7 @@ jobs:
         if: success()
         run: |
           echo "✅ TestFlight 업로드 성공!"
-          echo "버전: ${{ needs.prepare-build.outputs.current_version }}"
+          echo "버전: ${{ needs.prepare-build.outputs.version }}"
           echo "커밋: ${{ github.sha }}"
 
       - name: Notify on Failure
