@@ -20,7 +20,7 @@ jobs:
     runs-on: macos-15
     # CHANGELOG 워크플로우가 성공한 경우에만 실행
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
-    
+
     outputs:
       version: ${{ steps.current_version.outputs.version }}
       build_number: ${{ steps.current_version.outputs.build_number }}
@@ -84,18 +84,17 @@ jobs:
       # 버전 관리 스크립트 권한 설정
       - name: 버전 관리 스크립트 권한 설정
         run: |
-          chmod +x ./.github/scripts/version-manager.sh
-          chmod +x ./.github/scripts/changelog_parser.py
-          chmod +x ./.github/scripts/changelog_generator.py
+          chmod +x ./.github/scripts/version_manager.sh
+          chmod +x ./.github/scripts/changelog_manager.py
 
-      # version-manager.sh를 사용하여 현재 버전 정보 가져오기
+      # version_manager.sh를 사용하여 현재 버전 정보 가져오기
       - name: 현재 버전 정보 가져오기
         id: current_version
         run: |
           # 버전 관리 스크립트로 버전 정보 가져오기
-          VERSION=$(./.github/scripts/version-manager.sh get | tail -n 1)
+          VERSION=$(./.github/scripts/version_manager.sh get | tail -n 1)
           echo "📋 버전 정보: $VERSION"
-          
+
           # Flutter 버전이 x.x.x+y 형식인지 확인하고, 없다면 빌드 번호를 별도로 관리
           if [[ "$VERSION" == *"+"* ]]; then
             # 기존 x.x.x+y 형식에서 빌드 번호 추출
@@ -105,24 +104,24 @@ jobs:
           else
             # x.x.x 형식에서는 별도 빌드 번호 사용
             BUILD_VERSION=$VERSION
-            
-            # iOS 빌드를 위한 빌드 번호 생성 (CI 환경에서는 GITHUB_RUN_NUMBER 활용)
-          fi
-          if [ -n "$GITHUB_RUN_NUMBER" ]; then
-            BUILD_NUMBER=$GITHUB_RUN_NUMBER
-          else
-            # CI 환경이 아닌 경우 타임스탬프로 대체
-            BUILD_NUMBER=$(date +%s)
-          fi
           
+            # iOS 빌드를 위한 빌드 번호 생성 (CI 환경에서는 GITHUB_RUN_NUMBER 활용)
+            if [ -n "$GITHUB_RUN_NUMBER" ]; then
+              BUILD_NUMBER=$GITHUB_RUN_NUMBER
+            else
+              # CI 환경이 아닌 경우 타임스탬프로 대체
+              BUILD_NUMBER=$(date +%s)
+            fi
+          fi
+
           # 결과 출력
           echo "version=$BUILD_VERSION" >> $GITHUB_OUTPUT
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "project_type=${{ env.PROJECT_TYPE }}" >> $GITHUB_OUTPUT
-          
+
           echo "📋 현재 버전: $BUILD_VERSION (빌드번호: $BUILD_NUMBER)"
           echo "🔧 프로젝트 타입: ${{ env.PROJECT_TYPE }}"
-          
+
           # 환경변수로도 설정 (스크립트에서 사용)
           echo "VERSION=$BUILD_VERSION" >> $GITHUB_ENV
           echo "TODAY=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
@@ -130,21 +129,20 @@ jobs:
           echo "PROJECT_TYPE=${{ env.PROJECT_TYPE }}" >> $GITHUB_ENV
           echo "PR_NUMBER=0" >> $GITHUB_ENV
 
-      # CHANGELOG.json에서 릴리즈 노트 추출 - changelog_generator.py 사용
+      # CHANGELOG.json에서 릴리즈 노트 추출 - changelog_manager.py 사용
       - name: 릴리즈 노트 생성
         id: release_notes
         run: |
           VERSION="${{ steps.current_version.outputs.version }}"
-          
+
           if [ -f "CHANGELOG.json" ]; then
             echo "📄 CHANGELOG.json에서 v$VERSION 릴리즈 노트 추출 중..."
-            
-            # 체인지로그 생성기 실행
-            python3 ./.github/scripts/changelog_generator.py
-            
-            # 현재 버전에 해당하는 부분만 추출하여 릴리즈 노트 생성
-            sed -n "/## \[$VERSION\]/,/---/p" CHANGELOG.md | sed '$d' > final_release_notes.txt
-            
+            # CHANGELOG.md 생성
+            python3 ./.github/scripts/changelog_manager.py generate-md
+
+            # changelog_manager.py export로 릴리즈 노트 추출
+            python3 ./.github/scripts/changelog_manager.py export --version $VERSION --output final_release_notes.txt
+
             if [ -s final_release_notes.txt ]; then
               echo "✅ 릴리즈 노트 추출 성공!"
               echo "📋 추출된 릴리즈 노트:"
@@ -180,7 +178,6 @@ jobs:
             .env
             ios/Flutter/Secrets.xcconfig
             pubspec.yaml
-            ios/
             lib/
             assets/
           retention-days: 1
@@ -189,7 +186,7 @@ jobs:
     name: iOS 앱 빌드
     runs-on: macos-15
     needs: prepare-build
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -209,6 +206,15 @@ jobs:
         with:
           name: project-files
           path: .
+
+      # .env 파일 확인 및 재생성 (Guard 대신 복구 로직)
+      - name: Ensure .env file exists
+        run: |
+          if [ ! -f .env ]; then
+            echo "⚠️ .env 파일이 아티팩트에서 복원되지 않았습니다. 재생성합니다."
+            echo "${{ secrets.ENV_FILE }}" > .env
+          fi
+          echo "✅ .env 파일 확인됨 (크기: $(wc -c < .env) bytes)"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -325,7 +331,7 @@ jobs:
     name: TestFlight 배포
     runs-on: macos-15
     needs: [prepare-build, build-ios]
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -369,7 +375,7 @@ jobs:
                 issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
                 key_filepath: ENV["API_KEY_PATH"]
               )
-              
+          
               # 업로드 + 암호화 규정 자동 설정
               pilot(
                 api_key: api_key,
@@ -380,7 +386,7 @@ jobs:
                 notify_external_testers: false,
                 uses_non_exempt_encryption: false  # 암호화 규정 자동 설정
               )
-              
+          
               puts "✅ TESTFLIGHT 자동 업로드 완료!"
             end
           end
@@ -392,14 +398,14 @@ jobs:
           # 절대 경로로 IPA 파일 찾기
           IPA_PATH=$(find $GITHUB_WORKSPACE/ios/build/ipa -name "*.ipa" | head -1)
           echo "Found IPA at: $IPA_PATH"
-          
+
           if [ ! -f "$IPA_PATH" ]; then
             echo "❌ IPA 파일을 찾을 수 없습니다!"
             echo "빌드 디렉토리 내용:"
             ls -la ios/build/ipa/
             exit 1
           fi
-          
+
           # Release notes 준비
           if [ -f "final_release_notes.txt" ]; then
             RELEASE_NOTES=$(cat final_release_notes.txt)
@@ -409,19 +415,19 @@ jobs:
             RELEASE_NOTES="v${{ needs.prepare-build.outputs.version }} 업데이트"
             echo "기본 Release Notes로 업로드: $RELEASE_NOTES"
           fi
-          
+
           # 환경변수 설정
           export APP_STORE_CONNECT_API_KEY_ID="${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}"
           export APP_STORE_CONNECT_ISSUER_ID="${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}"
           export API_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8"
           export IPA_PATH="$IPA_PATH"
           export RELEASE_NOTES="$RELEASE_NOTES"
-          
+
           # 디버깅 정보
           echo "Working directory: $(pwd)"
           echo "IPA_PATH: $IPA_PATH"
           echo "API_KEY_PATH: $API_KEY_PATH"
-          
+
           # Fastlane 실행 (권한 에러는 무시하고 성공 처리)
           cd ios
           fastlane upload_testflight || echo "⚠️ 권한 에러 발생했지만 업로드는 성공적으로 완료됨"
@@ -431,7 +437,7 @@ jobs:
         if: success()
         run: |
           echo "✅ TestFlight 업로드 성공!"
-          echo "버전: ${{ needs.prepare-build.outputs.current_version }}"
+          echo "버전: ${{ needs.prepare-build.outputs.version }}"
           echo "커밋: ${{ github.sha }}"
 
       - name: Notify on Failure

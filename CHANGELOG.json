@@ -1,10 +1,54 @@
 {
   "metadata": {
-    "lastUpdated": "2025-07-28T13:22:18Z",
-    "currentVersion": "1.1.25",
-    "totalReleases": 21
+    "lastUpdated": "2025-08-16T17:20:36Z",
+    "currentVersion": "1.1.31",
+    "totalReleases": 6,
+    "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.1.31",
+      "project_type": "flutter",
+      "date": "2025-08-16",
+      "pr_number": 216,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\n신기능\\n\\n이슈가 열리거나 다시 열릴 때 브랜치/커밋 가이드를 자동으로 댓글로 안내합니다.\\n\\n\\n개선 사항\\n\\n등록 폼의 레이블·힌트·오류 문구를 일원화하여 가독성과 일관성을 향상했습니다.\\n빈 입력 시 오류 색상과 테두리로 명확한 시각 피드백을 제공합니다.\\n거래 방식 선택 UX를 개선하고 카테고리 입력은 1자로 제한했습니다.\\n위치·가격 안내 문구와 오류 메시지를 더 명확하게 다듬었습니다.\\n\\n\\n버그 수정\\n\\n거래 방식 선택 토글이 올바르게 동작하도록 조정했습니다.\\n\\n\\n작업\\n\\nTestFlight 워크플로에 .env 사용 가드 추가 및 아티팩트 정리.\\n변경 로그 업데이트.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 3,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 9,\n  \"additions\": 441,\n  \"deletions\": 106,\n  \"changed_files\": 9\n}",
+      "parsed_changes": {}
+    },
+    {
+      "version": "1.1.31",
+      "project_type": "flutter",
+      "date": "2025-08-16",
+      "pr_number": 215,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\nNew Features\\n\\n이슈가 열리거나 재오픈될 때 자동으로 가이드 댓글을 남기는 워크플로우 추가\\n등록 폼 문구(라벨/힌트/에러)를 통합 관리하는 문구 세트 도입\\n\\n\\nRefactor\\n\\n등록 폼 전반을 문구 기반으로 개편하여 제목/카테고리/설명/상태/거래방식/가격/위치 문구 일관화\\nAI 가격·위치 관련 안내 및 토글 문구 개선\\n\\n\\nStyle\\n\\n빈 입력 시 에러 보더/배경 표시, 인라인 검증 메시지 및 글자수 표시 개선\\n오류 상태 색상 팔레트 추가로 가시성 향상\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 3,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 6,\n  \"additions\": 389,\n  \"deletions\": 102,\n  \"changed_files\": 6\n}",
+      "parsed_changes": {}
+    },
+    {
+      "version": "1.1.31",
+      "project_type": "flutter",
+      "date": "2025-08-10",
+      "pr_number": 211,
+      "raw_summary": "\"body_html\": \"\\nSummary by CodeRabbit\\n\\n\\n신규 기능\\n\\n아이템 등록 및 수정 시 여러 장의 이미지 선택 및 업로드(최대 10장)가 가능합니다.\\n이미지 업로드 및 삭제가 비동기로 처리되며, 업로드 중/삭제 중 상태가 UI에 표시됩니다.\\n이미지 등록 시 서버에 업로드된 이미지 URL을 사용하도록 변경되었습니다.\\n\\n\\n\\n버그 수정\\n\\n위치 선택 완료 시 로딩 상태가 추가되어 중복 클릭 방지 및 에러 발생 시 안내 메시지가 표시됩니다.\\n\\n\\n\\nUI/UX 개선\\n\\n앱 아이콘 일부가 새로운 디자인 및 코드로 교체되었습니다.\\n등록 폼에서 이미지 미리보기, 삭제, 로딩 스피너 등 이미지 관련 UI가 개선되었습니다.\\n성공 모달의 아이콘 크기가 커졌으며, 신고 메뉴 버튼과 앱바 타이틀 패딩이 조정되었습니다.\\n입력 폼의 설명란 최대 줄 수가 8줄에서 6줄로 변경되었습니다.\\n\\n\\n\\n기타\\n\\nAI 가격 추천 여부 필드가 아이템 등록/수정에 추가되었습니다.\\n신규 패키지(fluttersvg, shadex 등)가 의존성에 추가되었습니다.\\n\\n\\n\\n\",\n  \"active_lock_reason\": null,\n  \"merged\": false,\n  \"mergeable\": true,\n  \"rebaseable\": true,\n  \"mergeable_state\": \"unstable\",\n  \"merged_by\": null,\n  \"comments\": 3,\n  \"review_comments\": 0,\n  \"maintainer_can_modify\": false,\n  \"commits\": 11,\n  \"additions\": 596,\n  \"deletions\": 346,\n  \"changed_files\": 19\n}",
+      "parsed_changes": {
+        "신규_기능": [
+          "아이템 등록 및 수정 시 여러 장의 이미지 선택 및 업로드(최대 10장)가 가능합니다.",
+          "이미지 업로드 및 삭제가 비동기로 처리되며, 업로드 중/삭제 중 상태가 UI에 표시됩니다.",
+          "이미지 등록 시 서버에 업로드된 이미지 URL을 사용하도록 변경되었습니다."
+        ],
+        "버그_수정": [
+          "위치 선택 완료 시 로딩 상태가 추가되어 중복 클릭 방지 및 에러 발생 시 안내 메시지가 표시됩니다."
+        ],
+        "ui_ux_개선": [
+          "앱 아이콘 일부가 새로운 디자인 및 코드로 교체되었습니다.",
+          "등록 폼에서 이미지 미리보기, 삭제, 로딩 스피너 등 이미지 관련 UI가 개선되었습니다.",
+          "성공 모달의 아이콘 크기가 커졌으며, 신고 메뉴 버튼과 앱바 타이틀 패딩이 조정되었습니다.",
+          "입력 폼의 설명란 최대 줄 수가 8줄에서 6줄로 변경되었습니다."
+        ],
+        "기타": [
+          "AI 가격 추천 여부 필드가 아이템 등록/수정에 추가되었습니다.",
+          "신규 패키지(fluttersvg, shadex 등)가 의존성에 추가되었습니다."
+        ]
+      }
+    },
     {
       "version": "1.1.25",
       "date": "2025-07-28",

@@ -24,6 +24,7 @@ jobs:
 
       - name: 필요 패키지 설치
         run: |
+          sudo apt-get update
           sudo apt-get install -y smbclient jq
           echo "SMB와 jq 설치 완료"
 

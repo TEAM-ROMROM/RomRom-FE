@@ -63,19 +63,19 @@ jobs:
 
       - name: 버전 관리 스크립트 권한 설정
         run: |
-          if [ -f ".github/scripts/version-manager.sh" ]; then
-            chmod +x .github/scripts/version-manager.sh
+          if [ -f ".github/scripts/version_manager.sh" ]; then
+            chmod +x .github/scripts/version_manager.sh
             echo "✅ 버전 관리 스크립트 권한 설정 완료"
           else
-            echo "⚠️ .github/scripts/version-manager.sh 파일을 찾을 수 없습니다."
+            echo "⚠️ .github/scripts/version_manager.sh 파일을 찾을 수 없습니다."
           fi
 
       - name: 현재 버전 및 프로젝트 정보 확인
         id: get_version
         run: |
           # 범용 버전 스크립트 사용
-          if [ -f ".github/scripts/version-manager.sh" ]; then
-            CURRENT_VERSION=$(./.github/scripts/version-manager.sh get | tail -n 1)
+          if [ -f ".github/scripts/version_manager.sh" ]; then
+            CURRENT_VERSION=$(./.github/scripts/version_manager.sh get | tail -n 1)
             echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
             # 프로젝트 타입 확인
@@ -184,12 +184,14 @@ jobs:
         with:
           name: pr-content
 
-      - name: Python 스크립트 실행 권한 설정
+      - name: Python 스크립트 실행 권한 설정 (manager)
         run: |
-          # 파이썬 스크립트 실행 권한 설정
-          chmod +x .github/scripts/changelog_parser.py
-          chmod +x .github/scripts/changelog_generator.py
-          echo "✅ Python 스크립트 실행 권한 설정 완료"
+          if [ -f ".github/scripts/changelog_manager.py" ]; then
+            chmod +x .github/scripts/changelog_manager.py
+            echo "✅ changelog_manager.py 실행 권한 설정 완료"
+          else
+            echo "⚠️ .github/scripts/changelog_manager.py 파일을 찾을 수 없습니다."
+          fi
 
       - name: 동적 Summary 파싱 및 CHANGELOG.json 업데이트
         run: |
@@ -202,8 +204,30 @@ jobs:
           echo "📝 CodeRabbit Summary 동적 파싱 시작..."
           echo "📋 프로젝트 정보: $PROJECT_TYPE v$VERSION"
 
-          # Summary 섹션 추출
-          sed -n '/<h2[^>]*>Summary by CodeRabbit<\/h2>/,/<\/div>/p' pr_content.html > summary_section.html
+          # Summary 섹션 추출 (PR 본문 body_html을 직접 사용)
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          API_URL="https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}"
+
+          echo "PR 본문(body_html) 가져오기 시작..."
+          echo "GET $API_URL"
+          curl -sSf \
+               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3.html+json" \
+               "$API_URL" > pr_body.json
+
+          echo "PR 본문 JSON 저장: pr_body.json ($(stat -c%s pr_body.json) bytes)"
+          echo "body_html 추출 (jq)"
+          jq -r '.body_html' pr_body.json > summary_section.html
+          echo "summary_section.html 생성: $(wc -c < summary_section.html) bytes"
+          echo "미리보기 (상위 30줄):"
+          head -n 30 summary_section.html || true
+          if [ ! -s summary_section.html ]; then
+            echo "body_html 추출 실패: summary_section.html 이 비어있습니다"
+            exit 1
+          fi
+          if ! grep -qi 'Summary by CodeRabbit' summary_section.html; then
+            echo "'Summary by CodeRabbit' 문구를 summary_section.html에서 찾지 못했습니다 (계속 진행)"
+          fi
 
           # 환경 변수 설정하고 Python 스크립트 실행
           export VERSION="$VERSION"
@@ -212,14 +236,13 @@ jobs:
           export PR_NUMBER="$PR_NUMBER"
           export TIMESTAMP="$TIMESTAMP"
 
-          # .github/scripts/changelog_parser.py 실행
-          python3 .github/scripts/changelog_parser.py
+          # 통합 체인지로그 매니저 실행
+          python3 .github/scripts/changelog_manager.py update-from-summary
 
       - name: CHANGELOG.md 재생성
         run: |
           echo "📄 CHANGELOG.json에서 CHANGELOG.md 재생성 중..."
-          # .github/scripts/changelog_generator.py 실행
-          python3 .github/scripts/changelog_generator.py
+          python3 .github/scripts/changelog_manager.py generate-md
 
       - name: 변경사항 커밋 및 푸시
         run: |
@@ -264,17 +287,55 @@ jobs:
           GH_TOKEN: ${{ secrets._GITHUB_PAT_TOKEN }}
         run: |
           PR_HEAD=$(gh pr view ${{ github.event.pull_request.number }} --json headRefName -q .headRefName)
+          PR_BASE=$(gh pr view ${{ github.event.pull_request.number }} --json baseRefName -q .baseRefName)
+          
+          echo "PR head branch: $PR_HEAD"
+          echo "PR base branch: $PR_BASE"
+          
+          # Checkout the PR head branch
           git fetch origin $PR_HEAD
           git checkout $PR_HEAD
-          git fetch origin deploy:deploy
-          git merge --no-edit deploy || true
+          
+          # Make sure we have the latest from the base branch
+          git fetch origin $PR_BASE
+          
+          # Update PR head branch with latest from base branch
+          git merge --no-edit origin/$PR_BASE || true
           git push origin HEAD
 
       - name: 자동 PR Merge
         env:
           GH_TOKEN: ${{ secrets._GITHUB_PAT_TOKEN }}
         run: |
-          gh pr merge ${{ github.event.pull_request.number }} --merge --admin --body "auto-merge after rebasing"
+          # PR 상태 확인
+          PR_STATE=$(gh pr view ${{ github.event.pull_request.number }} --json state,mergeable -q '.state + "," + (.mergeable | tostring)')
+          PR_STATE_VALUE=$(echo "$PR_STATE" | cut -d',' -f1)
+          PR_MERGEABLE=$(echo "$PR_STATE" | cut -d',' -f2)
+          
+          echo "PR 상태: $PR_STATE_VALUE (병합 가능: $PR_MERGEABLE)"
+          
+          # PR이 이미 닫혔거나 병합되었는지 확인
+          if [ "$PR_STATE_VALUE" = "CLOSED" ] || [ "$PR_STATE_VALUE" = "MERGED" ]; then
+            echo "PR이 이미 닫혔거나 병합되었습니다. 건너뜁니다."
+          else
+            # PR 머지 시도
+            if [ "$PR_MERGEABLE" = "true" ]; then
+              echo "PR을 병합합니다..."
+              gh pr merge ${{ github.event.pull_request.number }} --merge --admin --delete-branch=false
+              echo "PR이 성공적으로 병합되었습니다."
+            else
+              echo "PR을 병합할 수 없습니다. 직접 변경사항을 적용합니다."
+              # deploy 브랜치로 직접 변경사항 푸시
+              git checkout deploy
+              git pull origin deploy
+              git merge --no-edit $PR_HEAD
+              git push origin deploy
+          
+              # PR 병합 처리 시도
+              gh pr merge ${{ github.event.pull_request.number }} --merge --admin --delete-branch=false || \
+              gh pr comment ${{ github.event.pull_request.number }} --body "GITHUB-ACTIONS-AUTO-CHANGELOG: 변경사항이 자동으로 deploy 브랜치에 적용되었습니다."
+            fi
+          fi
 
       - name: 배포 완료 알림
         run: |
