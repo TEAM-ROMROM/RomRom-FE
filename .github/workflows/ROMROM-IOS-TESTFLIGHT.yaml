@@ -291,7 +291,7 @@ jobs:
           fi
 
       # Guard: Xcode가 .env를 참조하지 않는지
-      - name: Guard: .env must not be referenced by Xcode
+      - name: "Guard: .env must not be referenced by Xcode"
         run: |
           set -e
           echo ">>> Search .env in PBX project"
@@ -311,7 +311,7 @@ jobs:
           echo "✅ No .env reference in Xcode."
 
       # Guard: Flutter assets용 .env 파일 존재 확인
-      - name: Guard: .env file exists for Flutter assets
+      - name: "Guard: .env file exists for Flutter assets"
         run: |
           set -e
           if [ -f .env ]; then
@@ -322,7 +322,6 @@ jobs:
             echo "❌ .env file missing for Flutter assets"
             exit 1
           fi
-
 
       # Flutter build (no codesign) to generate Xcode project artifacts
       - name: Flutter build (no codesign)
