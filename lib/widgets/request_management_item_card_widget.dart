@@ -36,7 +36,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withAlpha(26),
                   blurRadius: 4.r,
                   offset: Offset(0, 2.h),
                 ),
@@ -65,7 +65,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                         card.category,
                         style: TextStyle(
                           fontSize: 12.sp,
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withAlpha(153),
                         ),
                       ),
                       SizedBox(height: 4.h),
@@ -103,7 +103,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                             _buildAiPriceTag(),
                           ],
                           
-                          Spacer(),
+                          const Spacer(),
                           
                           // 좋아요 아이콘 및 수
                           _buildLikeCount(card.likeCount),
@@ -126,10 +126,10 @@ class RequestManagementItemCardWidget extends StatelessWidget {
       width: 48.w,
       height: 12.h,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white.withAlpha(153),
         borderRadius: BorderRadius.circular(4.r),
         border: Border.all(
-          color: Color(0xFF5889F2), // 파란 테두리
+          color: const Color(0xFF5889F2), // 파란 테두리
           width: 0.5.w,
         ),
       ),
@@ -157,7 +157,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
             'assets/images/like-heart-icon.svg',
             fit: BoxFit.contain,
             colorFilter: ColorFilter.mode(
-              Color(0xFF1D1E27).withOpacity(0.6),
+              const Color(0xFF1D1E27).withAlpha(153),
               BlendMode.srcIn,
             ),
           ),
@@ -167,7 +167,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
           '$count',
           style: TextStyle(
             fontSize: 12.sp,
-            color: Color(0xFF1D1E27).withOpacity(0.6),
+            color: const Color(0xFF1D1E27).withAlpha(153),
           ),
         ),
       ],
