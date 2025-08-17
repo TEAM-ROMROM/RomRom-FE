@@ -139,7 +139,7 @@ class _ItemDetailDescriptionScreenState
                                 Text(
                                   '화양동',
                                   style: CustomTextStyles.p3.copyWith(
-                                    color: const Color(0xFFEEEEEE)
+                                    color: AppColors.lightGray
                                         .withValues(alpha: 0.7),
                                     fontWeight: FontWeight.w500,
                                   ),

@@ -129,7 +129,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
         color: Colors.white.withAlpha(153),
         borderRadius: BorderRadius.circular(4.r),
         border: Border.all(
-          color: const Color(0xFF5889F2), // 파란 테두리
+          color: AppColors.aiGradient[0], // 파란 테두리
           width: 0.5.w,
         ),
       ),
@@ -157,7 +157,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
             'assets/images/like-heart-icon.svg',
             fit: BoxFit.contain,
             colorFilter: ColorFilter.mode(
-              const Color(0xFF1D1E27).withAlpha(153),
+              AppColors.primaryBlack.withAlpha(153),
               BlendMode.srcIn,
             ),
           ),
@@ -167,7 +167,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
           '$count',
           style: TextStyle(
             fontSize: 12.sp,
-            color: const Color(0xFF1D1E27).withAlpha(153),
+            color: AppColors.primaryBlack.withAlpha(153),
           ),
         ),
       ],
