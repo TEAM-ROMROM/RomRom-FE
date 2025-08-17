@@ -266,7 +266,7 @@ get_version_from_project_file() {
             # pubspec.yaml에서 버전 추출
             if grep -q "version:" "$VERSION_FILE"; then
                 PROJECT_VERSION=$(grep "^version:" "$VERSION_FILE" | sed 's/version: *\([0-9.]*\).*/\1/' | head -1)
-                echo "Flutter 버전: $PROJECT_VERSION"
+                echo "Flutter 버전: $PROJECT_VERSION" >&2
             else
                 PROJECT_VERSION="$CURRENT_VERSION"
             fi
