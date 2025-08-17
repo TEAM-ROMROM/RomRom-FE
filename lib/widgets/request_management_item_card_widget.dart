@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/widgets/common/ai_badge_widget.dart';
+import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 
 /// 요청 관리 아이템 카드 위젯
@@ -20,7 +22,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    // 카드 스케일 조정 (활성화 시 1.0, 비활성화 시 0.85)
+    // 카드 스케일 조정
     final scale = isActive ? 1.0 : 0.85;
     
     return AnimatedScale(
@@ -47,6 +49,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                   offset: Offset(4.w, 4.h),
                 ),
               ],
+              backgroundBlendMode: BlendMode.srcOver,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +67,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                 // 정보 영역
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w).copyWith(top: 8.h),
+                    padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 15.h),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -72,7 +75,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                         Text(
                           card.category,
                           style: TextStyle(
-                            color: const Color(0x80131419), // rgba(19, 20, 25, 0.50)
+                            color: const Color(0x80131419), // 카테고리 텍스트 색상
                             fontFamily: 'Pretendard',
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w400,
@@ -84,23 +87,21 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                         // 제목
                         Text(
                           card.title,
-                          style: TextStyle(
+                          style: CustomTextStyles.p3.copyWith(
                             color: AppColors.primaryBlack,
                             fontFamily: 'NEXON Lv2 Gothic',
-                            fontSize: 12.sp,
                             fontWeight: FontWeight.w700,
-                            height: 1.0,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(height: 3.h),
+                        SizedBox(height: 12.h),
                         
                         // 가격과 좋아요 영역
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // AI 배지 (있는 경우)
+                            // AI 배지
                             if (card.isAiAnalyzed) ...[
                               const AiBadgeWidget(),
                               SizedBox(width: 4.w),
@@ -108,12 +109,9 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                             // 가격
                             Text(
                               '${formatPrice(card.price)}원',
-                              style: TextStyle(
+                              style: CustomTextStyles.p3.copyWith(
                                 color: AppColors.primaryBlack,
-                                fontFamily: 'Pretendard',
-                                fontSize: 12.sp,
                                 fontWeight: FontWeight.w500,
-                                height: 1.0,
                               ),
                             ),
                             
@@ -145,8 +143,8 @@ class RequestManagementItemCardWidget extends StatelessWidget {
           child: SvgPicture.asset(
             'assets/images/like-heart-icon.svg',
             fit: BoxFit.contain,
-            colorFilter: const ColorFilter.mode(
-              Color(0x991D1E27), // rgba(29, 30, 39, 0.60)
+            colorFilter: ColorFilter.mode(
+              AppColors.primaryBlack.withValues(alpha: 0.6),
               BlendMode.srcIn,
             ),
           ),
@@ -154,12 +152,9 @@ class RequestManagementItemCardWidget extends StatelessWidget {
         SizedBox(width: 4.w),
         Text(
           '$count',
-          style: TextStyle(
-            color: const Color(0x991D1E27), // rgba(29, 30, 39, 0.60)
-            fontFamily: 'Pretendard',
-            fontSize: 12.sp,
+          style: CustomTextStyles.p3.copyWith(
+            color: AppColors.primaryBlack.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
-            height: 1.0,
           ),
           textAlign: TextAlign.center,
         ),
