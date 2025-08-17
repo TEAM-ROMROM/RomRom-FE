@@ -107,12 +107,12 @@ jobs:
             BUILD_VERSION=$VERSION
             
             # iOS 빌드를 위한 빌드 번호 생성 (CI 환경에서는 GITHUB_RUN_NUMBER 활용)
-          fi
-          if [ -n "$GITHUB_RUN_NUMBER" ]; then
-            BUILD_NUMBER=$GITHUB_RUN_NUMBER
-          else
-            # CI 환경이 아닌 경우 타임스탬프로 대체
-            BUILD_NUMBER=$(date +%s)
+            if [ -n "$GITHUB_RUN_NUMBER" ]; then
+              BUILD_NUMBER=$GITHUB_RUN_NUMBER
+            else
+              # CI 환경이 아닌 경우 타임스탬프로 대체
+              BUILD_NUMBER=$(date +%s)
+            fi
           fi
 
           # 결과 출력
