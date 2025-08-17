@@ -1,11 +1,34 @@
 {
   "metadata": {
-    "lastUpdated": "2025-08-16T17:20:36Z",
+    "lastUpdated": "2025-08-17T07:23:19Z",
     "currentVersion": "1.1.31",
-    "totalReleases": 6,
+    "totalReleases": 7,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.1.31",
+      "project_type": "flutter",
+      "date": "2025-08-17",
+      "pr_number": 219,
+      "raw_summary": "Summary by CodeRabbit\n\nNew Features\n\n요청 관리 탭 강화: 스크롤 반응형 헤더, 받은/보낸 요청 토글, 카드 캐러셀·페이지 인디케이터, 완료 글 표시 스위치, 요청 목록과 상태별 액션 버튼 제공.\n요청 카드 UI 추가: 이미지, 카테고리, 제목, 가격, 좋아요 수, AI 분석 배지 표시로 정보 가독성 향상.\n고정 토글 헤더와 애니메이션 토글 컴포넌트로 자연스러운 전환 경험 제공.\n\n\nRefactor\n\n상단 앱 바 표시 범위 조정: 홈·요청관리·회원가입 탭에서 숨김, 나머지 탭에서만 표시.",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "요청 관리 탭 강화: 스크롤 반응형 헤더, 받은/보낸 요청 토글, 카드 캐러셀·페이지 인디케이터, 완료 글 표시 스위치, 요청 목록과 상태별 액션 버튼 제공.",
+            "요청 카드 UI 추가: 이미지, 카테고리, 제목, 가격, 좋아요 수, AI 분석 배지 표시로 정보 가독성 향상.",
+            "고정 토글 헤더와 애니메이션 토글 컴포넌트로 자연스러운 전환 경험 제공."
+          ]
+        },
+        "refactor": {
+          "title": "Refactor",
+          "items": [
+            "상단 앱 바 표시 범위 조정: 홈·요청관리·회원가입 탭에서 숨김, 나머지 탭에서만 표시."
+          ]
+        }
+      }
+    },
     {
       "version": "1.1.31",
       "project_type": "flutter",
