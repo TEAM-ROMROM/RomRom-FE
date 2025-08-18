@@ -219,8 +219,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 24.h),
-                
+                SizedBox(height: 10.h),
+
                 // 1. 물품 카드 캐러셀 섹션
                 _buildItemCardsCarousel(),
                 
@@ -362,17 +362,17 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     if (_itemCards.isEmpty) return const SizedBox.shrink();
     
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
+      padding: EdgeInsets.fromLTRB(0, 37.h, 0, 32.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
           _itemCards.length,
           (index) => Container(
             margin: EdgeInsets.symmetric(horizontal: 4.w),
-            width: _currentCardIndex == index ? 24.w : 8.w,
+            width: 8.w,
             height: 8.h,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4.r),
+              shape: BoxShape.circle,
               color: _currentCardIndex == index
                   ? AppColors.primaryYellow
                   : AppColors.opacity30White,
