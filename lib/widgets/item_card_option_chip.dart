@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/item_card_scale_utils.dart';
 import '../models/app_colors.dart';
@@ -9,7 +10,7 @@ import '../models/app_theme.dart';
 /// : 추가금, 직거래, 택배 여부 선택하는 칩
 class ItemCardOptionChip extends ConsumerWidget {
   final String itemId; // 각 물품의 고유 ID
-  final String itemOption; // 옵션 이름 (추가금, 직거래, 택배)
+  final ItemTradeOption itemOption; // 옵션 enum
 
   const ItemCardOptionChip({
     super.key,
@@ -25,7 +26,7 @@ class ItemCardOptionChip extends ConsumerWidget {
     return asyncState.when(
       data: (state) {
         final cs = state.scale;
-        final isSelected = state.selectedOptions.contains(itemOption);
+        final isSelected = state.selectedOptions.contains(itemOption.name);
 
         final chipColor =
             isSelected ? AppColors.primaryYellow : AppColors.itemCardOptionChip;
@@ -43,13 +44,13 @@ class ItemCardOptionChip extends ConsumerWidget {
             child: InkWell(
               borderRadius: chipRadius,
               onTap: () {
-                ref.read(provider.notifier).toggleOption(itemOption);
+                ref.read(provider.notifier).toggleOption(itemOption.name);
               },
               child: Container(
                 width: cs.s(72),
                 height: cs.s(29),
                 alignment: Alignment.center,
-                child: Text(itemOption, style: textStyle),
+                child: Text(itemOption.name, style: textStyle),
               ),
             ),
           ),

@@ -9,6 +9,7 @@ class AppColors {
       Color(0xE61D1E27); // 90% 불투명도 primaryBlack
   static const Color primaryYellow = Color(0xFFFFC300);
   static const Color secondaryBlack = Color(0xFF34353D);
+  static const Color lightGray = Color(0xFFEEEEEE);
   static const Color opacity10White = Color(0x1AFFFFFF); // 10% 불투명도 흰색
   static const Color opacity20White = Color(0x33FFFFFF); // 20% 불투명도 흰색
   static const Color opacity30White = Color(0x4DFFFFFF); // 30% 불투명도 흰색
@@ -68,8 +69,7 @@ class AppColors {
   // 온보딩 프로그레스 헤더
   static final Color onboardingProgressInactiveLine =
       primaryYellow.withValues(alpha: 0.1); // 비활성화 프로그레스 선
-  static const Color onboardingProgressStepPendingBg =
-      Color(0xFF1D1E27); // 대기 단계 배경색 (primaryBlack과 동일)
+  static const Color onboardingProgressStepPendingBg = primaryBlack; // 대기 단계 배경색 (primaryBlack과 동일)
   static final Color onboardingProgressStepPendingBorder =
       primaryYellow.withValues(alpha: 0.1); // 대기 단계 테두리
   static final Color onboardingProgressStepPendingText =

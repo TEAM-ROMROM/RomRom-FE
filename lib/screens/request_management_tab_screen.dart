@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
+
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
-import 'package:romrom_fe/widgets/common/scrollable_header.dart';
-import 'package:romrom_fe/widgets/common/toggle_header_delegate.dart';
-import 'package:romrom_fe/widgets/common/toggle_selector.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
+import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
+import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
 
 class RequestManagementTabScreen extends StatefulWidget {
@@ -21,14 +22,20 @@ class RequestManagementTabScreen extends StatefulWidget {
 class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  bool _isScrolled = false;
   Timer? _scrollTimer;
+  
+  // 스크롤 상태 관리
+  bool _isScrolled = false;
 
   // 현재 선택된 카드 인덱스
   int _currentCardIndex = 0;
   
   // 카드 컨트롤러
   late PageController _cardController;
+  
+  // 토글 애니메이션 컨트롤러
+  late AnimationController _toggleAnimationController;
+  late Animation<double> _toggleAnimation;
 
   // 토글 상태 (false: 받은 요청, true: 보낸 요청)
   bool _isRightSelected = false;
@@ -47,80 +54,75 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     // 카드 컨트롤러 초기화
     _cardController = PageController(
       initialPage: 0,
-              viewportFraction: 0.65, // 화면에 보이는 카드의 비율
+      viewportFraction: 0.6, // 화면에 보이는 카드의 비율
     );
     
-    // 샘플 데이터 추가
+    // 토글 애니메이션 컨트롤러 초기화
+    _toggleAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _toggleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _toggleAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // 테스트용 샘플 데이터 생성
     _loadSampleData();
   }
-  
-  /// 샘플 데이터 로드
+
   void _loadSampleData() {
-    _itemCards.addAll([
-      RequestManagementItemCard(
-        imageUrl: 'https://picsum.photos/id/26/500/500',  // 테니스 라켓
-        category: '스포츠/레저',
-        title: '윌슨 블레이드 V9',
-        price: 150000,
-        likeCount: 10,
-        isAiAnalyzed: true,
-      ),
-      RequestManagementItemCard(
-        imageUrl: 'https://picsum.photos/id/96/500/500',  // 테니스 라켓 2
-        category: '스포츠/레저',
-        title: '윌슨 블레이드 V8',
-        price: 120000,
-        likeCount: 5,
-        isAiAnalyzed: false,
-      ),
-      RequestManagementItemCard(
-        imageUrl: 'https://picsum.photos/id/160/500/500',  // 스마트폰
-        category: '디지털/가전',
-        title: '아이폰 14 프로 블랙',
-        price: 980000,
-        likeCount: 23,
-        isAiAnalyzed: true,
-      ),
-      RequestManagementItemCard(
-        imageUrl: 'https://picsum.photos/id/21/500/500',  // 신발
-        category: '패션/의류',
-        title: '나이키 에어포스 1 로우',
-        price: 89000,
-        likeCount: 8,
-        isAiAnalyzed: false,
-      ),
-      RequestManagementItemCard(
-        imageUrl: 'https://picsum.photos/id/24/500/500',  // 책
-        category: '도서/티켓/음반',
-        title: '해리포터 시리즈 전권',
-        price: 75000,
-        likeCount: 15,
-        isAiAnalyzed: false,
-      ),
-      RequestManagementItemCard(
-        imageUrl: 'https://picsum.photos/id/183/500/500',  // 가구
-        category: '가구/인테리어',
-        title: '이케아 책상 세트',
-        price: 220000,
-        likeCount: 7,
-        isAiAnalyzed: true,
-      ),
-    ]);
+    setState(() {
+      _itemCards.addAll([
+        RequestManagementItemCard(
+          imageUrl: 'https://picsum.photos/200/300?random=1',
+          category: '스포츠/레저',
+          title: '나이키 에어맥스 270',
+          price: 85000,
+          likeCount: 12,
+          isAiAnalyzed: true,
+        ),
+        RequestManagementItemCard(
+          imageUrl: 'https://picsum.photos/200/300?random=2',
+          category: '전자기기',
+          title: '애플워치 7세대 44mm',
+          price: 320000,
+          likeCount: 25,
+          isAiAnalyzed: false,
+        ),
+        RequestManagementItemCard(
+          imageUrl: 'https://picsum.photos/200/300?random=3',
+          category: '패션/의류',
+          title: '노스페이스 패딩 자켓',
+          price: 150000,
+          likeCount: 8,
+          isAiAnalyzed: true,
+        ),
+      ]);
+    });
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
-    _cardController.dispose();
     _scrollTimer?.cancel();
+    _cardController.dispose();
+    _toggleAnimationController.dispose();
     super.dispose();
   }
 
   void _scrollListener() {
-    // 기존 타이머 취소
+    // 스크롤 타이머 리셋
     _scrollTimer?.cancel();
+    _scrollTimer = Timer(const Duration(milliseconds: 100), () {
+      // 스크롤이 멈췄을 때의 처리
+    });
     
+    // 스크롤 상태 감지
     if (_scrollController.offset > 50 && !_isScrolled) {
       setState(() {
         _isScrolled = true;
@@ -132,97 +134,365 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
   }
 
-  /// 토글 상태 변경 (받은 요청/보낸 요청)
-  void _onToggleChanged(bool isRight) {
+  void _onToggleChanged(bool isRightSelected) {
     setState(() {
-      _isRightSelected = isRight;
-      _currentCardIndex = 0;
+      _isRightSelected = isRightSelected;
+      if (isRightSelected) {
+        _toggleAnimationController.forward();
+      } else {
+        _toggleAnimationController.reverse();
+      }
     });
-    
-    _cardController.animateToPage(
-      0,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-    
-    // TODO: 필터링된 데이터 로드 로직 추가
   }
-  
-  /// 카드 페이지 변경 이벤트 처리
-  void _onCardPageChanged(int index) {
-    setState(() {
-      _currentCardIndex = index;
-    });
-    
-    // TODO: 선택된 카드에 따른 요청 목록 필터링
-  }
-  
-  /// 거래 완료된 요청 표시 토글
+
   void _toggleCompletedRequests(bool value) {
     setState(() {
       _showCompletedRequests = value;
     });
-    
-    // TODO: 거래 완료된 요청 필터링
+  }
+
+  void _onCardPageChanged(int index) {
+    setState(() {
+      _currentCardIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: null,
       body: SafeArea(
         child: NestedScrollView(
           controller: _scrollController,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            // 스크롤 가능한 헤더
-            ScrollableHeader(
-              title: '요청 관리',
-              isScrolled: innerBoxIsScrolled || _isScrolled,
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: AppColors.primaryBlack,
+              expandedHeight: 88.h,
+              toolbarHeight: 58.h,
+              titleSpacing: 0,
+              elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
+              automaticallyImplyLeading: false,
+              title: Padding(
+                padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
+                  child: Text(
+                    '요청 관리',
+                    style: CustomTextStyles.h3.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              centerTitle: true,
+              flexibleSpace: Container(
+                color: AppColors.primaryBlack,
+                child: FlexibleSpaceBar(
+                  background: Padding(
+                    padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 24.h),
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
+                        child: Text(
+                          '요청 관리',
+                          style: CustomTextStyles.h1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
             // 토글 위젯을 고정 헤더로 추가
             SliverPersistentHeader(
               pinned: true,
-              delegate: ToggleHeaderDelegate(
-                child: ToggleSelector(
-                  leftText: '받은 요청',
-                  rightText: '보낸 요청',
-                  isRightSelected: _isRightSelected,
-                  onToggleChanged: _onToggleChanged,
-                ),
+              delegate: _ToggleHeaderDelegate(
+                child: _buildToggleSelector(),
               ),
             ),
           ],
-          body: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              // 1. 물품 카드 캐러셀 섹션
-              _buildItemCardsCarousel(),
-              
-              // 2. 페이지 인디케이터
-              _buildPageIndicator(),
-              
-              // 3. 요청 목록 헤더 섹션 (제목 + 필터 토글)
-              _buildRequestListHeader(),
-              
-              // 4. 요청 목록 리스트
-              _buildFullRequestItemsList(),
-            ],
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 10.h),
+
+                // 1. 물품 카드 캐러셀 섹션
+                _buildItemCardsCarousel(),
+                
+                // 2. 페이지 인디케이터
+                _buildPageIndicator(),
+                
+                // 3. 요청 목록 헤더 섹션 (제목 + 필터 토글)
+                _buildRequestListHeader(),
+                
+                // 4. 요청 목록 리스트
+                _buildFullRequestItemsList(),
+                
+                SizedBox(height: 100.h), // 하단 여백
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// 물품 카드 캐러셀 구현
+  /// 토글 셀렉터 구현
+  Widget _buildToggleSelector() {
+    return Container(
+      color: AppColors.primaryBlack,
+      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
+      child: Container(
+        width: 345.w,
+        height: 46.h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10.r),
+          color: AppColors.secondaryBlack,
+        ),
+        child: Stack(
+          children: [
+            // 애니메이션 선택된 배경
+            AnimatedBuilder(
+              animation: _toggleAnimation,
+              builder: (context, child) {
+                return Positioned(
+                  left: 2.w + (_toggleAnimation.value * 171.w),
+                  top: 2.h,
+                  child: Container(
+                    width: 170.w,
+                    height: 42.h,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8.r),
+                      color: AppColors.primaryBlack,
+                    ),
+                  ),
+                );
+              },
+            ),
+            // 텍스트 버튼들
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _onToggleChanged(false),
+                    child: Container(
+                      height: 46.h,
+                      color: Colors.transparent,
+                      alignment: Alignment.center,
+                      child: Text(
+                        '받은 요청',
+                        style: CustomTextStyles.p1.copyWith(
+                          color: !_isRightSelected
+                              ? AppColors.textColorWhite
+                              : AppColors.opacity60White,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _onToggleChanged(true),
+                    child: Container(
+                      height: 46.h,
+                      color: Colors.transparent,
+                      alignment: Alignment.center,
+                      child: Text(
+                        '보낸 요청',
+                        style: CustomTextStyles.p1.copyWith(
+                          color: _isRightSelected
+                              ? AppColors.textColorWhite
+                              : AppColors.opacity60White,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 물품 카드 캐러셀 섹션
   Widget _buildItemCardsCarousel() {
     if (_itemCards.isEmpty) {
-      return SizedBox(
-        height: 200.h,
+      // 데이터가 없을 때 빈 상태 표시
+      return Container(
+        height: 326.h,
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Center(
           child: Text(
-            '등록된 물품이 없습니다.',
-            style: CustomTextStyles.p1.copyWith(
+            '등록된 물품이 없습니다',
+            style: CustomTextStyles.p2.copyWith(
+              color: AppColors.opacity60White,
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return SizedBox(
+      height: 326.h,
+      child: PageView.builder(
+        controller: _cardController,
+        onPageChanged: _onCardPageChanged,
+        itemCount: _itemCards.length,
+        itemBuilder: (context, index) {
+          return RequestManagementItemCardWidget(
+            card: _itemCards[index],
+            isActive: index == _currentCardIndex,
+          );
+        },
+      ),
+    );
+  }
+
+  /// 페이지 인디케이터
+  Widget _buildPageIndicator() {
+    if (_itemCards.isEmpty) return const SizedBox.shrink();
+    
+    return Padding(
+      padding: EdgeInsets.fromLTRB(0, 37.h, 0, 32.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          _itemCards.length,
+          (index) => Container(
+            margin: EdgeInsets.symmetric(horizontal: 4.w),
+            width: 8.w,
+            height: 8.h,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _currentCardIndex == index
+                  ? AppColors.primaryYellow
+                  : AppColors.opacity30White,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 요청 목록 헤더 섹션
+  Widget _buildRequestListHeader() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 제목과 토글을 한 줄에 배치
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // 제목
+              Text(
+                _isRightSelected ? '보낸 요청 목록' : '받은 요청 목록',
+                style: TextStyle(
+                  color: AppColors.textColorWhite,
+                  fontFamily: 'Pretendard',
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w500,
+                  height: 1.0,
+                ),
+              ),
+              // 완료된 요청 필터 토글
+              Row(
+                children: [
+                  Text(
+                    '거래완료된 글표시',
+                    style: CustomTextStyles.p3.copyWith(
+                      color: const Color(0x80FFFFFF),
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -0.5.sp,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  CompletedToggleSwitch(
+                    value: _showCompletedRequests,
+                    onChanged: _toggleCompletedRequests,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          // 설명 텍스트
+          Text(
+            _isRightSelected ? '내가 보낸 교환 요청이예요' : '내가 받은 교환 요청이예요',
+            style: TextStyle(
+              color: const Color(0xFFFFFFCC),
+              fontFamily: 'Pretendard',
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              height: 1.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 요청 목록 리스트
+  Widget _buildFullRequestItemsList() {
+    // 테스트용 샘플 데이터
+    final List<Map<String, dynamic>> sampleRequests = [
+      {
+        'imageUrl': 'https://picsum.photos/100/100?random=4',
+        'title': '나이키 에어맥스 270 구매 요청',
+        'address': '강남구',
+        'createdDate': DateTime.now().subtract(const Duration(hours: 2)),
+        'isNew': true,
+        'tradeOptions': [ItemTradeOption.directOnly],
+        'tradeStatus': TradeStatus.chatting,
+      },
+      {
+        'imageUrl': 'https://picsum.photos/100/100?random=5',
+        'title': '애플워치 7세대 교환 요청',
+        'address': '서초구',
+        'createdDate': DateTime.now().subtract(const Duration(days: 1)),
+        'isNew': false,
+        'tradeOptions': [ItemTradeOption.deliveryOnly],
+        'tradeStatus': TradeStatus.completed,
+      },
+      {
+        'imageUrl': 'https://picsum.photos/100/100?random=6',
+        'title': '노스페이스 패딩 판매 요청',
+        'address': '송파구',
+        'createdDate': DateTime.now().subtract(const Duration(days: 2)),
+        'isNew': false,
+        'tradeOptions': [ItemTradeOption.directOnly, ItemTradeOption.extraCharge],
+        'tradeStatus': TradeStatus.chatting,
+      },
+    ];
+
+    // 완료 여부에 따른 필터링
+    final filteredRequests = sampleRequests.where((request) {
+      final status = request['tradeStatus'] as TradeStatus;
+      if (_showCompletedRequests) {
+        return status == TradeStatus.completed;
+      } else {
+        return status != TradeStatus.completed;
+      }
+    }).toList();
+
+    if (filteredRequests.isEmpty) {
+      return Container(
+        height: 200.h,
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Center(
+          child: Text(
+            _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
+            style: CustomTextStyles.p2.copyWith(
               color: AppColors.opacity60White,
             ),
           ),
@@ -230,311 +500,47 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       );
     }
 
-    return SizedBox(
-      height: 358.h,
-      child: PageView.builder(
-        controller: _cardController,
-        itemCount: _itemCards.length,
-        onPageChanged: _onCardPageChanged,
-        itemBuilder: (context, index) {
-          // 현재 선택된 카드인지 여부 확인
-          final isActive = index == _currentCardIndex;
-          
-          return RequestManagementItemCardWidget(
-            card: _itemCards[index],
-            isActive: isActive,
-          );
-        },
-      ),
-    );
-  }
-
-  /// 페이지 인디케이터 구현
-  Widget _buildPageIndicator() {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          _itemCards.length,
-          (index) => Container(
-            width: 8.w,
-            height: 8.h,
-            margin: EdgeInsets.symmetric(horizontal: 4.w),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: index == _currentCardIndex
-                  ? AppColors.primaryYellow
-                  : AppColors.opacity20White,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 요청 목록 헤더 (제목 + 필터 토글) 구현
-  Widget _buildRequestListHeader() {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 16.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '요청 목록',
-            style: CustomTextStyles.h3,
-          ),
-          Row(
-            children: [
-              Text(
-                '거래 완료된 글 표시',
-                style: CustomTextStyles.p2.copyWith(
-                  color: AppColors.opacity60White,
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Switch(
-                value: _showCompletedRequests,
-                onChanged: _toggleCompletedRequests,
-                activeColor: AppColors.primaryYellow,
-                activeTrackColor: AppColors.primaryYellow.withValues(alpha: 0.5),
-                inactiveThumbColor: AppColors.opacity60White,
-                inactiveTrackColor: AppColors.opacity20White,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 요청 아이템 리스트 구현 (ListView 내부에서 사용)
-  Widget _buildFullRequestItemsList() {
-    // TODO: 실제 데이터로 구현
-    return Column(
-      children: List.generate(
-        4, // 테스트용 항목 수
-        (index) {
-          // 샘플 데이터로 다양한 상태 표시
-          final hasNewBadge = index == 0 || index == 1;
-          final status = index == 3 ? RequestStatus.chatting : 
-                         index == 2 ? RequestStatus.completed :
-                         RequestStatus.pending;
-                         
-          return Column(
-            children: [
-              _buildRequestItem(
-                title: '제목 위치·시간',
-                hasNewBadge: hasNewBadge,
-                status: status,
-              ),
-              if (index < 3) // 마지막 아이템 다음에는 구분선 없음
-                Divider(
-                  color: AppColors.opacity10White,
-                  height: 1.h,
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-  
-  // 사용되지 않는 메서드 제거
-
-  /// 개별 요청 아이템 위젯 구현
-  Widget _buildRequestItem({
-    required String title,
-    bool hasNewBadge = false,
-    RequestStatus status = RequestStatus.pending,
-  }) {
-    return Container(
-      height: 156.h,
-      padding: EdgeInsets.symmetric(vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 상단 영역: 제목, 뱃지, 옵션 버튼
-          Row(
-            children: [
-              // 프로필 이미지
-              Container(
-                width: 48.w,
-                height: 48.h,
-                decoration: BoxDecoration(
-                  color: AppColors.opacity20White,
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              // 제목 영역
-              Expanded(
-                child: Row(
-                  children: [
-                    Text(
-                      title,
-                      style: CustomTextStyles.p1.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    if (hasNewBadge) ...[                      
-                      SizedBox(width: 8.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 2.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        child: Text(
-                          'N',
-                          style: CustomTextStyles.p2.copyWith(
-                            color: AppColors.textColorWhite,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              // 옵션 버튼
-              IconButton(
-                icon: Icon(
-                  AppIcons.dotsVertical,
-                  size: 20.sp,
-                  color: AppColors.textColorWhite,
-                ),
-                onPressed: () {
-                  // TODO: 옵션 메뉴 표시
-                },
-              ),
-            ],
-          ),
-          SizedBox(height: 16.h),
-          // 하단 영역: 액션 버튼들
-          Row(
-            children: [
-              _buildActionButton('추가금', onPressed: () {}),
-              SizedBox(width: 8.w),
-              _buildActionButton('직거래', onPressed: () {}),
-              SizedBox(width: 8.w),
-              _buildActionButton('택배', onPressed: () {}),
-              const Spacer(),
-              // 상태별 버튼
-              _buildStatusButton(status),
-            ],
-          ),
-        ],
+        children: filteredRequests.map((request) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: 16.h),
+            child: RequestListItemCardWidget(
+              imageUrl: request['imageUrl'],
+              title: request['title'],
+              address: request['address'],
+              createdDate: request['createdDate'],
+              isNew: request['isNew'],
+              tradeOptions: request['tradeOptions'],
+              tradeStatus: request['tradeStatus'],
+            ),
+          );
+        }).toList(),
       ),
     );
-  }
-  
-  /// 액션 버튼 위젯
-  Widget _buildActionButton(String label, {required VoidCallback onPressed}) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.secondaryBlack,
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-      ),
-      onPressed: onPressed,
-      child: Text(
-        label,
-        style: CustomTextStyles.p2,
-      ),
-    );
-  }
-  
-  /// 상태 버튼 위젯
-  Widget _buildStatusButton(RequestStatus status) {
-    switch (status) {
-      case RequestStatus.chatting:
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryYellow,
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-          ),
-          onPressed: () {},
-          child: Text(
-            '채팅 중',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.textColorBlack,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
-      case RequestStatus.completed:
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.opacity20White,
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-          ),
-          onPressed: null,
-          child: Text(
-            '거래 완료',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        );
-      case RequestStatus.cancelled:
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.opacity20White,
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-          ),
-          onPressed: null,
-          child: Text(
-            '거래 취소',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        );
-      case RequestStatus.pending:
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.warningRed,
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-          ),
-          onPressed: () {},
-          child: Text(
-            '거래 완료',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.textColorWhite,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
-    }
   }
 }
 
+/// 토글 헤더 delegate
+class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
 
+  _ToggleHeaderDelegate({required this.child});
 
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
 
+  @override
+  double get maxExtent => 70.h;
 
-/// 요청 상태 열거형
-enum RequestStatus {
-  pending,    // 대기 중
-  chatting,   // 채팅 중
-  completed,  // 완료됨
-  cancelled,  // 취소됨
+  @override
+  double get minExtent => 70.h;
+
+  @override
+  bool shouldRebuild(covariant _ToggleHeaderDelegate oldDelegate) {
+    return false;
+  }
 }

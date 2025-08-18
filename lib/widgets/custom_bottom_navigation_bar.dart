@@ -20,11 +20,11 @@ class CustomBottomNavigationBar extends StatelessWidget {
       width: MediaQuery.of(context).size.width,
       // 기본 높이 + 시스템 네비게이션 영역 패딩
       height: 86.h,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(
           top: BorderSide(
-            color: const Color(0xFF000000).withValues(alpha: 0.1),
+            color: AppColors.opacity10Black,
             width: 1,
           ),
         ),
