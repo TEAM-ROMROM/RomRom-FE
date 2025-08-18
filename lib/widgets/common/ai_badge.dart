@@ -21,7 +21,7 @@ class AiBadgeWidget extends StatelessWidget {
       child: ShaderMask(
         shaderCallback: (Rect bounds) {
           return const LinearGradient(
-            colors: AppColors.aiButtonStroke,
+            colors: AppColors.aiGradient,
             stops: [0.0, 0.35, 0.70, 1.0],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,

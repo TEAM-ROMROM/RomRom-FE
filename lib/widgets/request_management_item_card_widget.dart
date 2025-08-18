@@ -67,7 +67,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                 // 정보 영역
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 15.h),
+                    padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 0.h),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -95,7 +95,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(height: 12.h),
+                        SizedBox(height: 6.h),
                         
                         // 가격과 좋아요 영역
                         Row(

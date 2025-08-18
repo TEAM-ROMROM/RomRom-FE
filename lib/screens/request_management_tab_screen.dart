@@ -410,38 +410,39 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       {
         'imageUrl': 'https://picsum.photos/100/100?random=4',
         'title': '나이키 에어맥스 270 구매 요청',
-        'category': '스포츠/레저',
-        'date': '2024.01.15',
-        'price': 85000,
-        'tradeOption': ItemTradeOption.both,
-        'isCompleted': false,
+        'address': '강남구',
+        'createdDate': DateTime.now().subtract(const Duration(hours: 2)),
+        'isNew': true,
+        'tradeOptions': [ItemTradeOption.directOnly],
+        'tradeStatus': TradeStatus.chatting,
       },
       {
         'imageUrl': 'https://picsum.photos/100/100?random=5',
         'title': '애플워치 7세대 교환 요청',
-        'category': '전자기기',
-        'date': '2024.01.14',
-        'price': 320000,
-        'tradeOption': ItemTradeOption.exchange,
-        'isCompleted': true,
+        'address': '서초구',
+        'createdDate': DateTime.now().subtract(const Duration(days: 1)),
+        'isNew': false,
+        'tradeOptions': [ItemTradeOption.deliveryOnly],
+        'tradeStatus': TradeStatus.completed,
       },
       {
         'imageUrl': 'https://picsum.photos/100/100?random=6',
         'title': '노스페이스 패딩 판매 요청',
-        'category': '패션/의류',
-        'date': '2024.01.13',
-        'price': 150000,
-        'tradeOption': ItemTradeOption.sell,
-        'isCompleted': false,
+        'address': '송파구',
+        'createdDate': DateTime.now().subtract(const Duration(days: 2)),
+        'isNew': false,
+        'tradeOptions': [ItemTradeOption.directOnly, ItemTradeOption.extraCharge],
+        'tradeStatus': TradeStatus.chatting,
       },
     ];
 
     // 완료 여부에 따른 필터링
     final filteredRequests = sampleRequests.where((request) {
+      final status = request['tradeStatus'] as TradeStatus;
       if (_showCompletedRequests) {
-        return request['isCompleted'] == true;
+        return status == TradeStatus.completed;
       } else {
-        return request['isCompleted'] == false;
+        return status != TradeStatus.completed;
       }
     }).toList();
 
@@ -469,11 +470,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             child: RequestListItemCardWidget(
               imageUrl: request['imageUrl'],
               title: request['title'],
-              category: request['category'],
-              date: request['date'],
-              price: request['price'],
-              tradeOption: request['tradeOption'],
-              isCompleted: request['isCompleted'],
+              address: request['address'],
+              createdDate: request['createdDate'],
+              isNew: request['isNew'],
+              tradeOptions: request['tradeOptions'],
+              tradeStatus: request['tradeStatus'],
             ),
           );
         }).toList(),

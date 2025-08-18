@@ -46,10 +46,15 @@ color: AppColors.opacity60White
 ## 개발 시 확인 사항
 
 ### 린트 및 타입 체크
-프로젝트에 flutter analyze 설정이 있는 경우 코드 작성 후 반드시 실행:
+코드 작성 후 반드시 Flutter 분석 실행:
 ```bash
 flutter analyze
 ```
+
+**주의사항**: 
+- Flutter CLI가 설치되어 있고 PATH에 추가되어 있는지 먼저 확인
+- `flutter analyze` 실행 전 항상 `which flutter` 명령으로 Flutter 설치 상태 확인
+- Flutter가 설치되지 않은 경우 분석 실행 불가능함을 사용자에게 알림
 
 ## 프로젝트 구조
 - `/lib/models/` - 데이터 모델 및 상수 정의

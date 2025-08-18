@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/common/trade_option_tag_widget.dart';
-import 'package:romrom_fe/widgets/common/trade_status_tag_widget.dart';
+import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 
 /// 요청 목록 아이템 카드 위젯
@@ -56,7 +56,7 @@ class RequestListItemCardWidget extends StatelessWidget {
           // 정보 영역
           Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+              padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 0.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
