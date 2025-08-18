@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 
 /// 거래 옵션 태그 위젯
 class TradeOptionTagWidget extends StatelessWidget {
@@ -17,19 +20,15 @@ class TradeOptionTagWidget extends StatelessWidget {
       width: 62.w,
       height: 23.h,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4.r),
+        borderRadius: BorderRadius.circular(100.r),
         color: const Color(0x661D1E27), // rgba(29, 30, 39, 0.40)
       ),
-      padding: EdgeInsets.symmetric(horizontal: 18.w),
-      alignment: Alignment.center,
+      padding: EdgeInsets.fromLTRB(18.w, 6.h, 18.w, 7.h),
       child: Text(
         option.name,
-        style: TextStyle(
-          color: Colors.white,
-          fontFamily: 'Pretendard',
+        style: CustomTextStyles.p3.copyWith(
+          color: AppColors.textColorWhite,
           fontSize: 10.sp,
-          fontWeight: FontWeight.w600,
-          height: 1.0,
         ),
         textAlign: TextAlign.center,
       ),

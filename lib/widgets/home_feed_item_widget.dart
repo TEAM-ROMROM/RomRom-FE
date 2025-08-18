@@ -90,14 +90,14 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                                   const Duration(milliseconds: 1000),
                               pageBuilder: (_, __, ___) =>
                                   ItemDetailDescriptionScreen(
-                                item: widget.item,
-                                imageUrls: widget.item.imageUrls,
+                                itemId: widget.item.id.toString(),
                                 imageSize: Size(
                                   screenWidth,
                                   screenWidth,
                                 ),
                                 currentImageIndex: index,
                                 heroTag: 'itemImage_${widget.item.id}',
+                                homeFeedItem: widget.item,
                               ),
                             ));
 

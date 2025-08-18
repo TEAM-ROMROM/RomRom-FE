@@ -42,38 +42,43 @@ class RequestListItemCardWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // 이미지
-          Container(
-            width: 84.w,
-            height: 84.h,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.horizontal(left: Radius.circular(10.r)),
+          // 이미지 (왼쪽, 위, 아래 12px 마진)
+          Padding(
+            padding: EdgeInsets.only(
+              left: 12.w,
+              top: 12.h,
+              bottom: 12.h,
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.horizontal(left: Radius.circular(10.r)),
-              child: _buildImage(imageUrl),
+            child: Container(
+              width: 60.w,
+              height: 60.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.r),
+                child: _buildImage(imageUrl),
+              ),
             ),
           ),
           // 정보 영역
           Expanded(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 0.h),
+              padding: EdgeInsets.fromLTRB(12.w, 12.h, 8.w, 12.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 상단 영역
+                  // 상단 영역 (제목 + 주소 + 시간 + 메뉴)
                   Row(
                     children: [
-                      // 제목
-                      Flexible(
-                        child: Text(
-                          title,
-                          style: CustomTextStyles.p2,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      // 제목 (7자 제한)
+                      Text(
+                        title.length > 8 ? '${title.substring(0, 8)}...' : title,
+                        style: CustomTextStyles.p2.copyWith(
+                          color: AppColors.textColorWhite,
                         ),
                       ),
-                      SizedBox(width: 4.w),
+                      SizedBox(width: 8.w),
                       // 주소
                       Text(
                         address,
@@ -82,17 +87,17 @@ class RequestListItemCardWidget extends StatelessWidget {
                           color: AppColors.opacity60White,
                         ),
                       ),
-                      SizedBox(width: 2.w),
+                      SizedBox(width: 4.w),
                       // 중간점
                       Container(
                         width: 2.w,
                         height: 2.h,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.opacity60White,
                         ),
                       ),
-                      SizedBox(width: 2.w),
+                      SizedBox(width: 4.w),
                       // 시간
                       Text(
                         _getTimeAgo(createdDate),
@@ -110,42 +115,45 @@ class RequestListItemCardWidget extends StatelessWidget {
                           height: 16.h,
                         ),
                       ],
+                      const Spacer(),
+                      // 메뉴 아이콘
+                      GestureDetector(
+                        onTap: onMenuTap,
+                        child: Padding(
+                          padding: EdgeInsets.all(4.w),
+                          child: Icon(
+                            Icons.more_vert,
+                            color: AppColors.opacity60White,
+                            size: 20.w,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const Spacer(),
                   // 하단 태그 영역
                   Row(
                     children: [
-                      // 거래 옵션 태그들
-                      ...tradeOptions.map(
-                        (option) => Padding(
-                          padding: EdgeInsets.only(right: 4.w),
-                          child: TradeOptionTagWidget(option: option),
+                      // 거래 옵션 태그들 (줄바꿈 방지)
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: tradeOptions.map(
+                              (option) => Padding(
+                                padding: EdgeInsets.only(right: 4.w),
+                                child: TradeOptionTagWidget(option: option),
+                              ),
+                            ).toList(),
+                          ),
                         ),
                       ),
-                      const Spacer(),
+                      SizedBox(width: 8.w),
                       // 거래 상태 태그
                       TradeStatusTagWidget(status: tradeStatus),
                     ],
                   ),
                 ],
-              ),
-            ),
-          ),
-          // 메뉴 아이콘
-          Padding(
-            padding: EdgeInsets.only(right: 12.w, top: 12.h),
-            child: GestureDetector(
-              onTap: onMenuTap,
-              child: Container(
-                width: 24.w,
-                height: 24.h,
-                alignment: Alignment.topCenter,
-                child: Icon(
-                  Icons.more_vert,
-                  color: AppColors.opacity60White,
-                  size: 24.w,
-                ),
               ),
             ),
           ),
