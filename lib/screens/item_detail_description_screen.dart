@@ -60,6 +60,7 @@ class _ItemDetailDescriptionScreenState
   String? likeStatus;
   int? likeCount;
   String locationName = '위치 정보 로딩 중...';
+  String memberLocationName = '위치 정보 로딩 중...';
   
   List<String> imageUrls = [];
 
@@ -93,9 +94,14 @@ class _ItemDetailDescriptionScreenState
         
         imageUrls = itemImages?.map((img) => img.imageUrl ?? '').where((url) => url.isNotEmpty).toList() ?? [];
         
-        // 좌표를 주소로 변환
+        // 물품 좌표를 주소로 변환
         if (item?.latitude != null && item?.longitude != null) {
           _getAddressFromCoordinates(item!.latitude!, item!.longitude!);
+        }
+        
+        // 회원 좌표를 주소로 변환
+        if (item?.member?.latitude != null && item?.member?.longitude != null) {
+          _getMemberAddressFromCoordinates(item!.member!.latitude!, item!.member!.longitude!);
         }
         
         isLoading = false;
@@ -132,6 +138,30 @@ class _ItemDetailDescriptionScreenState
       debugPrint('주소 변환 실패: $e');
       setState(() {
         locationName = '위치 정보 없음';
+      });
+    }
+  }
+  
+  Future<void> _getMemberAddressFromCoordinates(double lat, double lng) async {
+    try {
+      final locationService = LocationService();
+      final address = await locationService.getAddressFromCoordinates(
+        NLatLng(lat, lng),
+      );
+      
+      if (address != null) {
+        setState(() {
+          memberLocationName = LocationUtils.formatMediumAddress(address);
+        });
+      } else {
+        setState(() {
+          memberLocationName = '위치 정보 없음';
+        });
+      }
+    } catch (e) {
+      debugPrint('회원 주소 변환 실패: $e');
+      setState(() {
+        memberLocationName = '위치 정보 없음';
       });
     }
   }
@@ -305,14 +335,15 @@ class _ItemDetailDescriptionScreenState
                             ),
                             SizedBox(width: 10.w),
                             Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   item?.member?.nickname ?? '알 수 없음',
                                   style: CustomTextStyles.p2,
                                 ),
+                                SizedBox(height: 8.h),
                                 Text(
-                                  '위치 정보', //FIXME: 회원 위치 정보 표시 필요
+                                  memberLocationName,
                                   style: CustomTextStyles.p3.copyWith(
                                     color: AppColors.lightGray.withValues(alpha: 0.7),
                                     fontWeight: FontWeight.w500,
