@@ -3,6 +3,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/objects/item_image.dart';
@@ -244,8 +245,9 @@ class _ItemDetailDescriptionScreenState
                         margin: EdgeInsets.symmetric(vertical: 16.h),
                         child: Row(
                           children: [
-                            const UserProfileCircularAvatar(
-                              avatarSize: Size(40, 40),
+                            UserProfileCircularAvatar(
+                              avatarSize: const Size(40, 40),
+                              profileUrl: item?.member?.profileUrl,
                             ),
                             SizedBox(width: 10.w),
                             Column(
@@ -347,7 +349,9 @@ class _ItemDetailDescriptionScreenState
                                       borderRadius: BorderRadius.circular(4.r),
                                     ),
                                     child: Text(
-                                      item!.itemCondition!,
+                                      ItemCondition.fromServerName(
+                                              item!.itemCondition!)
+                                          .name,
                                       style: CustomTextStyles.p3.copyWith(
                                         color: AppColors.textColorWhite,
                                       ),
