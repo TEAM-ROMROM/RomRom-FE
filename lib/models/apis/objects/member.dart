@@ -19,6 +19,8 @@ class Member extends BaseEntity {
   final bool? isMemberLocationSaved;
   final bool? isRequiredTermsAgreed;
   final bool? isMarketingInfoAgreed;
+  final double? latitude;
+  final double? longitude;
 
   Member({
     super.createdDate,
@@ -36,6 +38,8 @@ class Member extends BaseEntity {
     this.isMemberLocationSaved,
     this.isRequiredTermsAgreed,
     this.isMarketingInfoAgreed,
+    this.latitude,
+    this.longitude,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);

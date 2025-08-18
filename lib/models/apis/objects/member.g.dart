@@ -26,6 +26,8 @@ Member _$MemberFromJson(Map<String, dynamic> json) => Member(
       isMemberLocationSaved: json['isMemberLocationSaved'] as bool?,
       isRequiredTermsAgreed: json['isRequiredTermsAgreed'] as bool?,
       isMarketingInfoAgreed: json['isMarketingInfoAgreed'] as bool?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
@@ -44,4 +46,6 @@ Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
       'isMemberLocationSaved': instance.isMemberLocationSaved,
       'isRequiredTermsAgreed': instance.isRequiredTermsAgreed,
       'isMarketingInfoAgreed': instance.isMarketingInfoAgreed,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
     };

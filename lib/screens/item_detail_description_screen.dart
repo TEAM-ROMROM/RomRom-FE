@@ -2,29 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:romrom_fe/services/location_service.dart';
+
+import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
-import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/objects/item_image.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
+import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/utils/location_utils.dart';
+import 'package:romrom_fe/widgets/common/ai_badge.dart';
+import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
+import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
-  final HomeFeedItem item;
-  final List<String> imageUrls;
-  final Size imageSize; // 이미지 크기
-  final int currentImageIndex; // 현재 이미지 인덱스
+  final String itemId;
+  final Size imageSize;
+  final int currentImageIndex;
   final String heroTag;
+  final HomeFeedItem? homeFeedItem;
 
   const ItemDetailDescriptionScreen({
     super.key,
-    required this.item,
-    required this.imageUrls,
+    required this.itemId,
     required this.imageSize,
     required this.currentImageIndex,
     required this.heroTag,
+    this.homeFeedItem,
   });
 
   @override
@@ -36,13 +49,138 @@ class _ItemDetailDescriptionScreenState
     extends State<ItemDetailDescriptionScreen> {
   late PageController pageController;
   late int currentImageIndex;
-  bool like = true;
+  
+  bool isLoading = true;
+  bool hasError = false;
+  String errorMessage = '';
+  
+  Item? item;
+  List<ItemImage>? itemImages;
+  List<String>? itemCustomTags;
+  String? likeStatus;
+  int? likeCount;
+  String locationName = '위치 정보 로딩 중...';
+  String memberLocationName = '위치 정보 로딩 중...';
+  
+  List<String> imageUrls = [];
 
   @override
   void initState() {
     super.initState();
     currentImageIndex = widget.currentImageIndex;
     pageController = PageController(initialPage: currentImageIndex);
+    _loadItemDetail();
+  }
+  
+  Future<void> _loadItemDetail() async {
+    try {
+      setState(() {
+        isLoading = true;
+        hasError = false;
+      });
+      
+      final ItemApi itemApi = ItemApi();
+      final ItemRequest request = ItemRequest(itemId: widget.itemId);
+      final ItemResponse response = await itemApi.getItemDetail(request);
+      
+      if (!mounted) return;
+      
+      setState(() {
+        item = response.item;
+        itemImages = response.itemImages;
+        itemCustomTags = response.itemCustomTags;
+        likeStatus = response.likeStatus;
+        likeCount = response.likeCount;
+        
+        imageUrls = itemImages?.map((img) => img.imageUrl ?? '').where((url) => url.isNotEmpty).toList() ?? [];
+        
+        // 물품 좌표를 주소로 변환
+        if (item?.latitude != null && item?.longitude != null) {
+          _getAddressFromCoordinates(item!.latitude!, item!.longitude!);
+        }
+        
+        // 회원 좌표를 주소로 변환
+        if (item?.member?.latitude != null && item?.member?.longitude != null) {
+          _getMemberAddressFromCoordinates(item!.member!.latitude!, item!.member!.longitude!);
+        }
+        
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('물품 상세 정보 로드 실패: $e');
+      if (!mounted) return;
+      
+      setState(() {
+        hasError = true;
+        errorMessage = '물품 정보를 불러오는데 실패했습니다.';
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _getAddressFromCoordinates(double lat, double lng) async {
+    try {
+      final locationService = LocationService();
+      final address = await locationService.getAddressFromCoordinates(
+        NLatLng(lat, lng),
+      );
+      
+      if (address != null) {
+        setState(() {
+          locationName = LocationUtils.formatAddress(address);
+        });
+      } else {
+        setState(() {
+          locationName = '위치 정보 없음';
+        });
+      }
+    } catch (e) {
+      debugPrint('주소 변환 실패: $e');
+      setState(() {
+        locationName = '위치 정보 없음';
+      });
+    }
+  }
+  
+  Future<void> _getMemberAddressFromCoordinates(double lat, double lng) async {
+    try {
+      final locationService = LocationService();
+      final address = await locationService.getAddressFromCoordinates(
+        NLatLng(lat, lng),
+      );
+      
+      if (address != null) {
+        setState(() {
+          memberLocationName = LocationUtils.formatMediumAddress(address);
+        });
+      } else {
+        setState(() {
+          memberLocationName = '위치 정보 없음';
+        });
+      }
+    } catch (e) {
+      debugPrint('회원 주소 변환 실패: $e');
+      setState(() {
+        memberLocationName = '위치 정보 없음';
+      });
+    }
+  }
+
+  String _getCategoryName(String? serverName) {
+    if (serverName == null) return '카테고리 없음';
+    try {
+      return ItemCategories.fromServerName(serverName).name;
+    } catch (e) {
+      return '카테고리 없음';
+    }
+  }
+
+  String _getTradeOptionName(String serverName) {
+    try {
+      return ItemTradeOption.fromServerName(serverName).name;
+    } catch (e) {
+      return serverName;
+    }
   }
 
   @override
@@ -53,7 +191,67 @@ class _ItemDetailDescriptionScreenState
 
   @override
   Widget build(BuildContext context) {
-    String formattedPrice = formatPrice(widget.item.price);
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primaryYellow,
+          ),
+        ),
+      );
+    }
+    
+    if (hasError) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                errorMessage,
+                style: CustomTextStyles.p1.copyWith(color: AppColors.textColorWhite),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16.h),
+              ElevatedButton(
+                onPressed: _loadItemDetail,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                ),
+                child: Text(
+                  '다시 시도',
+                  style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    if (item == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        body: Center(
+          child: Text(
+            '물품 정보가 없습니다.',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+    
+    String formattedPrice = formatPrice(item!.price ?? 0);
+    bool isLiked = likeStatus == 'LIKE';
 
     return Scaffold(
       body: Stack(
@@ -68,25 +266,29 @@ class _ItemDetailDescriptionScreenState
                     SizedBox(
                       height: widget.imageSize.height,
                       width: widget.imageSize.width,
-                      child: PageView.builder(
-                        itemCount: widget.imageUrls.length,
-                        controller: pageController,
-                        onPageChanged: (index) {
-                          setState(() {
-                            currentImageIndex = index;
-                          });
-                        },
-                        itemBuilder: (context, index) {
-                          return Hero(
-                            tag: widget.heroTag,
-                            child: _buildImage(
-                              widget.imageUrls[index],
-                              Size(widget.imageSize.width,
-                                  widget.imageSize.height),
+                      child: imageUrls.isNotEmpty
+                          ? PageView.builder(
+                              itemCount: imageUrls.length,
+                              controller: pageController,
+                              onPageChanged: (index) {
+                                setState(() {
+                                  currentImageIndex = index;
+                                });
+                              },
+                              itemBuilder: (context, index) {
+                                return Hero(
+                                  tag: widget.heroTag,
+                                  child: _buildImage(
+                                    imageUrls[index],
+                                    Size(widget.imageSize.width,
+                                        widget.imageSize.height),
+                                  ),
+                                );
+                              },
+                            )
+                          : ErrorImagePlaceholder(
+                              size: Size(widget.imageSize.width, widget.imageSize.height),
                             ),
-                          );
-                        },
-                      ),
                     ),
 
                     /// 이미지 인디케이터
@@ -97,7 +299,7 @@ class _ItemDetailDescriptionScreenState
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
-                          widget.imageUrls.length,
+                          imageUrls.length,
                           (index) => Container(
                             width: 6.w,
                             height: 6.w,
@@ -127,20 +329,23 @@ class _ItemDetailDescriptionScreenState
                         margin: EdgeInsets.symmetric(vertical: 16.h),
                         child: Row(
                           children: [
-                            const UserProfileCircularAvatar(
-                              avatarSize: Size(40, 40),
+                            UserProfileCircularAvatar(
+                              avatarSize: const Size(40, 40),
+                              profileUrl: item?.member?.profileUrl,
                             ),
                             SizedBox(width: 10.w),
                             Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                /// FIXME : 닉네임, 위치 사용자 정보에서 불러오기
-                                Text('닉네임', style: CustomTextStyles.p2),
                                 Text(
-                                  '화양동',
+                                  item?.member?.nickname ?? '알 수 없음',
+                                  style: CustomTextStyles.p2,
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  memberLocationName,
                                   style: CustomTextStyles.p3.copyWith(
-                                    color: const Color(0xFFEEEEEE)
-                                        .withValues(alpha: 0.7),
+                                    color: AppColors.lightGray.withValues(alpha: 0.7),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -148,11 +353,7 @@ class _ItemDetailDescriptionScreenState
                             ),
                             const Spacer(),
                             GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  like = !like;
-                                });
-                              },
+                              onTap: _toggleLike,
                               child: Container(
                                 padding: EdgeInsets.symmetric(
                                     horizontal: 11.w, vertical: 4.h),
@@ -167,14 +368,17 @@ class _ItemDetailDescriptionScreenState
                                 child: Row(
                                   children: [
                                     SvgPicture.asset(
-                                      like == true
+                                      isLiked
                                           ? 'assets/images/like-heart-icon.svg'
                                           : 'assets/images/dislike-heart-icon.svg',
                                       width: 16.w,
                                       height: 16.h,
                                     ),
                                     SizedBox(width: 4.w),
-                                    Text('4', style: CustomTextStyles.p2),
+                                    Text(
+                                      (likeCount ?? 0).toString(),
+                                      style: CustomTextStyles.p2,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -194,14 +398,14 @@ class _ItemDetailDescriptionScreenState
                           children: [
                             RichText(
                               text: TextSpan(
-                                text: '스포츠/레저 · ',
+                                text: '${_getCategoryName(item?.itemCategory)} · ',
                                 style: CustomTextStyles.p3.copyWith(
                                   color: AppColors.opacity50White,
                                   fontWeight: FontWeight.w400,
                                 ),
                                 children: [
                                   TextSpan(
-                                    text: widget.item.date,
+                                    text: _formatDateTime(item?.createdDate),
                                     style: CustomTextStyles.p3.copyWith(
                                       color: AppColors.opacity50White,
                                       fontWeight: FontWeight.w500,
@@ -212,37 +416,73 @@ class _ItemDetailDescriptionScreenState
                             ),
                             SizedBox(height: 10.h),
 
-                            /// FIXME : 물품 설명 사용자 정보에서 불러오기
-                            Text('요넥스 이존 260g', style: CustomTextStyles.h3),
+                            Text(
+                              item?.itemName ?? '제목 없음',
+                              style: CustomTextStyles.h3,
+                            ),
                             SizedBox(height: 16.h),
                             Row(
                               children: [
-                                HomeFeedConditionTag(
-                                    condition: widget.item.itemCondition),
-                                SizedBox(width: 4.w),
-                                HomeFeedTransactionTypeTag(
-                                    type: widget.item.transactionTypes[0]),
+                                if (item?.itemCondition != null)
+                                  ItemDetailConditionTag(
+                                    condition: ItemCondition.fromServerName(
+                                            item!.itemCondition!)
+                                        .name,
+                                  ),
+                                SizedBox(width: 8.w),
+                                if (item?.itemTradeOptions?.isNotEmpty == true)
+                                  ...item!.itemTradeOptions!.map(
+                                    (option) => ItemDetailTradeOptionTag(
+                                      option: _getTradeOptionName(option),
+                                    ),
+                                  ),
                               ],
                             ),
                             SizedBox(height: 16.h),
                             Row(
                               children: [
                                 Text(
-                                  formattedPrice,
-                                  style: CustomTextStyles.h3
-                                      .copyWith(fontWeight: FontWeight.w600),
+                                  '$formattedPrice원',
+                                  style: CustomTextStyles.h3.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 SizedBox(width: 8.w),
-                                if (widget.item.priceTag != null)
-                                  HomeFeedAiAnalysisTag(
-                                      tag: widget.item.priceTag!),
+                                if (item?.aiPrice == true)
+                                  const AiBadgeWidget(),
                               ],
                             ),
                             SizedBox(height: 24.h),
                             Text(
-                              widget.item.description,
+                              item?.itemDescription ?? '설명이 없습니다.',
                               style: CustomTextStyles.p2.copyWith(height: 1.4),
                             ),
+                            
+                            if (itemCustomTags?.isNotEmpty == true) ...[
+                              SizedBox(height: 16.h),
+                              Wrap(
+                                spacing: 8.w,
+                                runSpacing: 8.h,
+                                children: itemCustomTags!.map(
+                                  (tag) => Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12.w,
+                                      vertical: 6.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.opacity20White,
+                                      borderRadius: BorderRadius.circular(16.r),
+                                    ),
+                                    child: Text(
+                                      '#$tag',
+                                      style: CustomTextStyles.p3.copyWith(
+                                        color: AppColors.textColorWhite,
+                                      ),
+                                    ),
+                                  ),
+                                ).toList(),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -271,9 +511,10 @@ class _ItemDetailDescriptionScreenState
                                     color: AppColors.opacity80White),
                                 SizedBox(width: 4.w),
                                 Text(
-                                  widget.item.location,
-                                  style: CustomTextStyles.p2
-                                      .copyWith(fontWeight: FontWeight.w600),
+                                  locationName,
+                                  style: CustomTextStyles.p2.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),
@@ -283,7 +524,31 @@ class _ItemDetailDescriptionScreenState
                               height: 200.h,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(4.r),
-                                child: const NaverMap(),
+                                child: NaverMap(
+                                  key: ValueKey('detail_map_${widget.itemId}'),
+                                  options: NaverMapViewOptions(
+                                    initialCameraPosition: NCameraPosition(
+                                      target: NLatLng(
+                                        item?.latitude ?? 37.5666,
+                                        item?.longitude ?? 126.9784,
+                                      ),
+                                      zoom: 15,
+                                    ),
+                                  ),
+                                  onMapReady: (controller) {
+                                    if (item?.latitude != null && item?.longitude != null) {
+                                      controller.addOverlay(
+                                        NMarker(
+                                          id: 'item_location',
+                                          position: NLatLng(
+                                            item!.latitude!,
+                                            item!.longitude!,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
                               ),
                             ),
                           ],
@@ -350,5 +615,41 @@ class _ItemDetailDescriptionScreenState
         );
       },
     );
+  }
+  
+  String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return '날짜 정보 없음';
+    
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}일 전';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}시간 전';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}분 전';
+    } else {
+      return '방금 전';
+    }
+  }
+  
+  Future<void> _toggleLike() async {
+    if (item?.itemId == null) return;
+    
+    try {
+      final ItemApi itemApi = ItemApi();
+      final ItemRequest request = ItemRequest(itemId: item!.itemId);
+      final ItemResponse response = await itemApi.postLike(request);
+      
+      if (!mounted) return;
+      
+      setState(() {
+        likeStatus = response.likeStatus;
+        likeCount = response.likeCount;
+      });
+    } catch (e) {
+      debugPrint('좋아요 상태 변경 실패: $e');
+    }
   }
 }

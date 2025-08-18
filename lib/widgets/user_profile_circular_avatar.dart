@@ -4,10 +4,12 @@ import 'package:romrom_fe/models/user_info.dart';
 
 class UserProfileCircularAvatar extends StatefulWidget {
   final Size avatarSize;
+  final String? profileUrl;
 
   const UserProfileCircularAvatar({
     super.key,
     required this.avatarSize,
+    this.profileUrl,
   });
 
   @override
@@ -22,7 +24,12 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    if (widget.profileUrl != null) {
+      _avatarUrl = widget.profileUrl;
+      _isLoading = false;
+    } else {
+      _loadUserProfile();
+    }
   }
 
   Future<void> _loadUserProfile() async {

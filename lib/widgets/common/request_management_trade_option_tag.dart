@@ -1,0 +1,37 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
+
+/// 요청 관리 페이지용 거래 옵션 태그 위젯
+class RequestManagementTradeOptionTag extends StatelessWidget {
+  final ItemTradeOption option;
+
+  const RequestManagementTradeOptionTag({
+    super.key,
+    required this.option,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 62.w,
+      height: 23.h,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(100.r),
+        color: const Color(0x661D1E27), // rgba(29, 30, 39, 0.40)
+      ),
+      padding: EdgeInsets.fromLTRB(18.w, 6.h, 18.w, 7.h),
+      child: Text(
+        option.name,
+        style: CustomTextStyles.p3.copyWith(
+          color: AppColors.textColorWhite,
+          fontSize: 10.sp,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}

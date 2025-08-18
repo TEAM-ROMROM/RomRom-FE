@@ -73,18 +73,20 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
     return categoryServerName; // 매칭 실패 시 그대로 반환
   }
 
-  /// 서버에서 받은 거래 옵션(serverName) 리스트 → 한글 이름 리스트 매핑
-  List<String> _mapTradeOptions(List<String>? options) {
+  /// 서버에서 받은 거래 옵션(serverName) 리스트 → ItemTradeOption enum 리스트 매핑
+  List<trade_opt.ItemTradeOption> _mapTradeOptions(List<String>? options) {
     if (options == null) return [];
-    return options.map((opt) {
+    final result = <trade_opt.ItemTradeOption>[];
+    for (final opt in options) {
       try {
         final match = trade_opt.ItemTradeOption.values
             .firstWhere((e) => e.serverName == opt);
-        return match.name;
+        result.add(match);
       } catch (_) {
-        return opt; // 매칭 실패 시 그대로
+        // 매칭 실패 시 건너뛰기
       }
-    }).toList();
+    }
+    return result;
   }
 
   @override

@@ -19,6 +19,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/common/common_success_modal.dart';
+import 'package:romrom_fe/services/location_service.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -298,10 +300,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
       if (!mounted) return;
 
+      final feedItems = await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+      
       setState(() {
         _feedItems
           ..clear()
-          ..addAll(_convertToFeedItems(response.itemDetailPage?.content ?? []));
+          ..addAll(feedItems);
         _hasMoreItems = !(response.itemDetailPage?.last ?? true);
         _isLoading = false;
       });
@@ -334,8 +338,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         pageSize: _pageSize,
       ));
 
-      final newItems =
-          _convertToFeedItems(response.itemDetailPage?.content ?? []);
+      final newItems = await _convertToFeedItems(response.itemDetailPage?.content ?? []);
 
       setState(() {
         _feedItems.addAll(newItems);
@@ -355,8 +358,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
-  List<HomeFeedItem> _convertToFeedItems(List<ItemDetail> details) {
-    return List<HomeFeedItem>.generate(details.length, (index) {
+  Future<List<HomeFeedItem>> _convertToFeedItems(List<ItemDetail> details) async {
+    final feedItems = <HomeFeedItem>[];
+    
+    for (int index = 0; index < details.length; index++) {
       final d = details[index];
 
       // 카테고리/상태/옵션 매핑
@@ -376,11 +381,22 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         }
       }
 
-      return HomeFeedItem(
+      // 위치 정보 변환
+      String locationText = '미지정';
+      if (d.latitude != null && d.longitude != null) {
+        final address = await LocationService().getAddressFromCoordinates(
+          NLatLng(d.latitude!, d.longitude!),
+        );
+        if (address != null) {
+          locationText = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+        }
+      }
+
+      final feedItem = HomeFeedItem(
         id: index + _feedItems.length + 1,
         itemUuid: d.itemId,
         price: d.price ?? 0,
-        location: '미지정',
+        location: locationText,
         date: d.createdDate ?? '',
         itemCondition: cond,
         transactionTypes: opts,
@@ -391,8 +407,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         imageUrls: d.itemImageUrls ?? [''],
         description: d.itemDescription ?? '',
         hasAiAnalysis: false,
+        aiPrice: false, // TODO: API에서 aiPrice 정보 받아와야 함
+        latitude: d.latitude,
+        longitude: d.longitude,
+        isLiked: false, // TODO: API에서 좋아요 상태 받아와야 함
       );
-    });
+      
+      feedItems.add(feedItem);
+    }
+    
+    return feedItems;
   }
 
   @override

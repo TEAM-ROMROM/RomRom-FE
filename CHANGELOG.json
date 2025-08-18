@@ -1,11 +1,47 @@
 {
   "metadata": {
-    "lastUpdated": "2025-08-17T07:23:19Z",
-    "currentVersion": "1.1.31",
-    "totalReleases": 7,
+    "lastUpdated": "2025-08-18T13:16:35Z",
+    "currentVersion": "1.2.0",
+    "totalReleases": 8,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.2.0",
+      "project_type": "flutter",
+      "date": "2025-08-18",
+      "pr_number": 221,
+      "raw_summary": "Summary by CodeRabbit\n\nNew Features\n\n상품 상세: itemId 기반 실시간 로딩, 좋아요 토글, AI 배지, 지도/주소 표시.\n홈 피드: 좋아요 상태·개수 동기화, AI 가격 표기, 위치 텍스트 표시.\n요청 관리: 받은/보낸 토글, 신규 카드/목록, 상태·거래 옵션 태그.\n공통: 완료 토글 스위치, 거래 상태 태그, 위치 유틸, 아바타 URL 지원.\n\n\nImprovements\n\n거래 옵션/라벨 정제, 카드·색상 스타일 업데이트.\n\n\nDocumentation\n\n프로젝트 가이드(CLAUDE.md)와 코드 스타일 가이드 추가.\n\n\nChores\n\ngeocoding 의존성 추가, 버전 1.2.0으로 업데이트.",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "상품 상세: itemId 기반 실시간 로딩, 좋아요 토글, AI 배지, 지도/주소 표시.",
+            "홈 피드: 좋아요 상태·개수 동기화, AI 가격 표기, 위치 텍스트 표시.",
+            "요청 관리: 받은/보낸 토글, 신규 카드/목록, 상태·거래 옵션 태그.",
+            "공통: 완료 토글 스위치, 거래 상태 태그, 위치 유틸, 아바타 URL 지원."
+          ]
+        },
+        "improvements": {
+          "title": "Improvements",
+          "items": [
+            "거래 옵션/라벨 정제, 카드·색상 스타일 업데이트."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "프로젝트 가이드(CLAUDE.md)와 코드 스타일 가이드 추가."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "geocoding 의존성 추가, 버전 1.2.0으로 업데이트."
+          ]
+        }
+      }
+    },
     {
       "version": "1.1.31",
       "project_type": "flutter",
