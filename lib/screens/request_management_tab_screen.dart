@@ -386,17 +386,56 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   /// 요청 목록 헤더 섹션
   Widget _buildRequestListHeader() {
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 16.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _isRightSelected ? '보낸 요청 목록' : '받은 요청 목록',
-            style: CustomTextStyles.h2,
+          // 제목과 토글을 한 줄에 배치
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // 제목
+              Text(
+                _isRightSelected ? '보낸 요청 목록' : '받은 요청 목록',
+                style: TextStyle(
+                  color: AppColors.textColorWhite,
+                  fontFamily: 'Pretendard',
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w500,
+                  height: 1.0,
+                ),
+              ),
+              // 완료된 요청 필터 토글
+              Row(
+                children: [
+                  Text(
+                    '거래완료된 글표시',
+                    style: CustomTextStyles.p3.copyWith(
+                      color: const Color(0x80FFFFFF),
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -0.5.sp,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  CompletedToggleSwitch(
+                    value: _showCompletedRequests,
+                    onChanged: _toggleCompletedRequests,
+                  ),
+                ],
+              ),
+            ],
           ),
-          CompletedToggleSwitch(
-            value: _showCompletedRequests,
-            onChanged: _toggleCompletedRequests,
+          SizedBox(height: 8.h),
+          // 설명 텍스트
+          Text(
+            _isRightSelected ? '내가 보낸 교환 요청이예요' : '내가 받은 교환 요청이예요',
+            style: TextStyle(
+              color: const Color(0xFFFFFFCC),
+              fontFamily: 'Pretendard',
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              height: 1.0,
+            ),
           ),
         ],
       ),

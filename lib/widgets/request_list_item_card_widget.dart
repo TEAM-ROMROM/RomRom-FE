@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/trade_option_tag_widget.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
@@ -67,13 +68,7 @@ class RequestListItemCardWidget extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Pretendard',
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w500,
-                            height: 1.0,
-                          ),
+                          style: CustomTextStyles.p2,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -82,12 +77,9 @@ class RequestListItemCardWidget extends StatelessWidget {
                       // 주소
                       Text(
                         address,
-                        style: TextStyle(
-                          color: const Color(0x99FFFFFF), // rgba(255, 255, 255, 0.60)
-                          fontFamily: 'Pretendard',
-                          fontSize: 12.sp,
+                        style: CustomTextStyles.p3.copyWith(
                           fontWeight: FontWeight.w500,
-                          height: 1.0,
+                          color: AppColors.opacity60White,
                         ),
                       ),
                       SizedBox(width: 2.w),
@@ -95,21 +87,18 @@ class RequestListItemCardWidget extends StatelessWidget {
                       Container(
                         width: 2.w,
                         height: 2.h,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0x99FFFFFF),
+                          color: AppColors.opacity60White,
                         ),
                       ),
                       SizedBox(width: 2.w),
                       // 시간
                       Text(
                         _getTimeAgo(createdDate),
-                        style: TextStyle(
-                          color: const Color(0x99FFFFFF),
-                          fontFamily: 'Pretendard',
-                          fontSize: 12.sp,
+                        style: CustomTextStyles.p3.copyWith(
                           fontWeight: FontWeight.w500,
-                          height: 1.0,
+                          color: AppColors.opacity60White,
                         ),
                       ),
                       // FIXME: 백엔드에서 isNew 구현 후 연결
@@ -154,7 +143,7 @@ class RequestListItemCardWidget extends StatelessWidget {
                 alignment: Alignment.topCenter,
                 child: Icon(
                   Icons.more_vert,
-                  color: const Color(0x99FFFFFF),
+                  color: AppColors.opacity60White,
                   size: 24.w,
                 ),
               ),
