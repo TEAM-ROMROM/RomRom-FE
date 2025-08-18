@@ -20,8 +20,6 @@ class TradeStatusTagWidget extends StatelessWidget {
     final bool isChatting = status == TradeStatus.chatting;
     
     return Container(
-      width: 60.w,
-      height: 23.h,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4.r),
         color: isChatting 
@@ -32,11 +30,10 @@ class TradeStatusTagWidget extends StatelessWidget {
         horizontal: isChatting ? 15.5.w : 11.5.w,
         vertical: 6.5.h,
       ),
-      alignment: Alignment.center,
       child: Text(
-        isChatting ? '채팅중' : '거래 완료',
+        isChatting ? '채팅중' : '거래완료',
         style: TextStyle(
-          color: Colors.white,
+          color: const Color(0xFFFFFFFF),
           fontFamily: 'Pretendard',
           fontSize: 10.sp,
           fontWeight: FontWeight.w600,
