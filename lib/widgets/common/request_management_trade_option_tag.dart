@@ -5,11 +5,11 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
-/// 거래 옵션 태그 위젯
-class TradeOptionTagWidget extends StatelessWidget {
+/// 요청 관리 페이지용 거래 옵션 태그 위젯
+class RequestManagementTradeOptionTag extends StatelessWidget {
   final ItemTradeOption option;
 
-  const TradeOptionTagWidget({
+  const RequestManagementTradeOptionTag({
     super.key,
     required this.option,
   });

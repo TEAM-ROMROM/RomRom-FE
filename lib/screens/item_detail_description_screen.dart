@@ -19,6 +19,9 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/widgets/common/ai_badge.dart';
+import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
+import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -389,43 +392,16 @@ class _ItemDetailDescriptionScreenState
                             Row(
                               children: [
                                 if (item?.itemCondition != null)
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                      vertical: 4.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.opacity20White,
-                                      borderRadius: BorderRadius.circular(4.r),
-                                    ),
-                                    child: Text(
-                                      ItemCondition.fromServerName(
-                                              item!.itemCondition!)
-                                          .name,
-                                      style: CustomTextStyles.p3.copyWith(
-                                        color: AppColors.textColorWhite,
-                                      ),
-                                    ),
+                                  ItemDetailConditionTag(
+                                    condition: ItemCondition.fromServerName(
+                                            item!.itemCondition!)
+                                        .name,
                                   ),
                                 SizedBox(width: 8.w),
                                 if (item?.itemTradeOptions?.isNotEmpty == true)
                                   ...item!.itemTradeOptions!.map(
-                                    (option) => Container(
-                                      margin: EdgeInsets.only(right: 4.w),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 8.w,
-                                        vertical: 4.h,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primaryYellow.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(4.r),
-                                      ),
-                                      child: Text(
-                                        _getTradeOptionName(option),
-                                        style: CustomTextStyles.p3.copyWith(
-                                          color: AppColors.primaryYellow,
-                                        ),
-                                      ),
+                                    (option) => ItemDetailTradeOptionTag(
+                                      option: _getTradeOptionName(option),
                                     ),
                                   ),
                               ],
@@ -434,29 +410,14 @@ class _ItemDetailDescriptionScreenState
                             Row(
                               children: [
                                 Text(
-                                  formattedPrice,
+                                  '$formattedPrice원',
                                   style: CustomTextStyles.h3.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 SizedBox(width: 8.w),
                                 if (item?.aiPrice == true)
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                      vertical: 4.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryYellow.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(4.r),
-                                    ),
-                                    child: Text(
-                                      'AI 예측가',
-                                      style: CustomTextStyles.p3.copyWith(
-                                        color: AppColors.primaryYellow,
-                                      ),
-                                    ),
-                                  ),
+                                  const AiBadgeWidget(),
                               ],
                             ),
                             SizedBox(height: 24.h),

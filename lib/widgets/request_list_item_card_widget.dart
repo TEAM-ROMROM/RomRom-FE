@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/widgets/common/trade_option_tag_widget.dart';
+import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 
@@ -142,7 +142,7 @@ class RequestListItemCardWidget extends StatelessWidget {
                             children: tradeOptions.map(
                               (option) => Padding(
                                 padding: EdgeInsets.only(right: 4.w),
-                                child: TradeOptionTagWidget(option: option),
+                                child: RequestManagementTradeOptionTag(option: option),
                               ),
                             ).toList(),
                           ),
