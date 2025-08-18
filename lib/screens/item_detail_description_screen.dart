@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:romrom_fe/services/location_service.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/objects/item_image.dart';
@@ -52,6 +55,7 @@ class _ItemDetailDescriptionScreenState
   List<String>? itemCustomTags;
   String? likeStatus;
   int? likeCount;
+  String locationName = '위치 정보 로딩 중...';
   
   List<String> imageUrls = [];
 
@@ -85,6 +89,11 @@ class _ItemDetailDescriptionScreenState
         
         imageUrls = itemImages?.map((img) => img.imageUrl ?? '').where((url) => url.isNotEmpty).toList() ?? [];
         
+        // 좌표를 주소로 변환
+        if (item?.latitude != null && item?.longitude != null) {
+          _getAddressFromCoordinates(item!.latitude!, item!.longitude!);
+        }
+        
         isLoading = false;
       });
     } catch (e) {
@@ -96,6 +105,47 @@ class _ItemDetailDescriptionScreenState
         errorMessage = '물품 정보를 불러오는데 실패했습니다.';
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> _getAddressFromCoordinates(double lat, double lng) async {
+    try {
+      final locationService = LocationService();
+      final address = await locationService.getAddressFromCoordinates(
+        NLatLng(lat, lng),
+      );
+      
+      if (address != null) {
+        setState(() {
+          locationName = address.currentAddress;
+        });
+      } else {
+        setState(() {
+          locationName = '위치 정보 없음';
+        });
+      }
+    } catch (e) {
+      debugPrint('주소 변환 실패: $e');
+      setState(() {
+        locationName = '위치 정보 없음';
+      });
+    }
+  }
+
+  String _getCategoryName(String? serverName) {
+    if (serverName == null) return '카테고리 없음';
+    try {
+      return ItemCategories.fromServerName(serverName).name;
+    } catch (e) {
+      return '카테고리 없음';
+    }
+  }
+
+  String _getTradeOptionName(String serverName) {
+    try {
+      return ItemTradeOption.fromServerName(serverName).name;
+    } catch (e) {
+      return serverName;
     }
   }
 
@@ -258,7 +308,7 @@ class _ItemDetailDescriptionScreenState
                                   style: CustomTextStyles.p2,
                                 ),
                                 Text(
-                                  '위치 정보',
+                                  '위치 정보', //FIXME: 회원 위치 정보 표시 필요
                                   style: CustomTextStyles.p3.copyWith(
                                     color: AppColors.lightGray.withValues(alpha: 0.7),
                                     fontWeight: FontWeight.w500,
@@ -313,7 +363,7 @@ class _ItemDetailDescriptionScreenState
                           children: [
                             RichText(
                               text: TextSpan(
-                                text: '${item?.itemCategory ?? '카테고리 없음'} · ',
+                                text: '${_getCategoryName(item?.itemCategory)} · ',
                                 style: CustomTextStyles.p3.copyWith(
                                   color: AppColors.opacity50White,
                                   fontWeight: FontWeight.w400,
@@ -371,7 +421,7 @@ class _ItemDetailDescriptionScreenState
                                         borderRadius: BorderRadius.circular(4.r),
                                       ),
                                       child: Text(
-                                        option,
+                                        _getTradeOptionName(option),
                                         style: CustomTextStyles.p3.copyWith(
                                           color: AppColors.primaryYellow,
                                         ),
@@ -468,7 +518,7 @@ class _ItemDetailDescriptionScreenState
                                     color: AppColors.opacity80White),
                                 SizedBox(width: 4.w),
                                 Text(
-                                  '거래 위치',
+                                  locationName,
                                   style: CustomTextStyles.p2.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -481,7 +531,31 @@ class _ItemDetailDescriptionScreenState
                               height: 200.h,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(4.r),
-                                child: const NaverMap(),
+                                child: NaverMap(
+                                  key: ValueKey('detail_map_${widget.itemId}'),
+                                  options: NaverMapViewOptions(
+                                    initialCameraPosition: NCameraPosition(
+                                      target: NLatLng(
+                                        item?.latitude ?? 37.5666,
+                                        item?.longitude ?? 126.9784,
+                                      ),
+                                      zoom: 15,
+                                    ),
+                                  ),
+                                  onMapReady: (controller) {
+                                    if (item?.latitude != null && item?.longitude != null) {
+                                      controller.addOverlay(
+                                        NMarker(
+                                          id: 'item_location',
+                                          position: NLatLng(
+                                            item!.latitude!,
+                                            item!.longitude!,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
                               ),
                             ),
                           ],

@@ -48,7 +48,13 @@ color: AppColors.opacity60White
 ### 린트 및 타입 체크
 코드 작성 후 반드시 Flutter 분석 실행:
 
-**분석 실행**:
+** 매우 중요한 CLI 명령어 사용법**:
+```bash 
+source ~/.zshrc &&
+```
+를 붙여서 모든 명령어를 실행해야지 작동함
+
+**코드 변경 후 마지막에 꼭 실행**:
 ```bash
 source ~/.zshrc && flutter analyze
 ```

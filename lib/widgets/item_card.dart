@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -14,7 +15,7 @@ class ItemCard extends ConsumerWidget {
   final String itemCategoryLabel; // 카테고리 라벨
   final String itemName; // 물품 이름
   final String itemCardImageUrl; // 이미지 URL
-  final List<String> itemOptions;
+  final List<ItemTradeOption> itemOptions;
 
   const ItemCard({
     super.key,
@@ -22,7 +23,7 @@ class ItemCard extends ConsumerWidget {
     this.itemCategoryLabel = '물품 카테고리',
     this.itemName = '물품 이름',
     this.itemCardImageUrl = 'https://picsum.photos/400/300',
-    this.itemOptions = const ['추가금', '직거래', '택배'],
+    this.itemOptions = const [ItemTradeOption.extraCharge, ItemTradeOption.directOnly, ItemTradeOption.deliveryOnly],
   });
 
   @override
