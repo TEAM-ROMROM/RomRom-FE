@@ -11,6 +11,10 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
+import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
+import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 
@@ -179,13 +183,22 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      // FIXME: 좋아요 기능 API 연동 필요
+                    onTap: () async {
+                      // 좋아요 API 호출
+                      try {
+                        final itemApi = ItemApi();
+                        await itemApi.postLike(
+                          ItemRequest(itemId: widget.item.itemUuid),
+                        );
+                        // TODO: 좋아요 상태 업데이트 처리
+                      } catch (e) {
+                        debugPrint('좋아요 실패: $e');
+                      }
                     },
                     child: SvgPicture.asset(
-                      widget.item.hasAiAnalysis
-                          ? 'assets/images/dislike-heart-icon.svg'
-                          : 'assets/images/like-heart-icon.svg',
+                      widget.item.isLiked
+                          ? 'assets/images/like-heart-icon.svg'
+                          : 'assets/images/dislike-heart-icon.svg',
                     ),
                   ),
                   SizedBox(height: 2.h),
@@ -223,7 +236,24 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                                   style: CustomTextStyles.h3
                                       .copyWith(fontWeight: FontWeight.w600),
                                 ),
-                                SizedBox(width: 12.w),
+                                SizedBox(width: 8.w),
+                                // AI 가격 태그 표시
+                                if (widget.item.aiPrice)
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 8.w, vertical: 2.h),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryYellow,
+                                      borderRadius: BorderRadius.circular(4.r),
+                                    ),
+                                    child: Text(
+                                      'AI',
+                                      style: CustomTextStyles.p3.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primaryBlack,
+                                      ),
+                                    ),
+                                  ),
                                 if (widget.item.priceTag != null)
                                   HomeFeedAiAnalysisTag(
                                       tag: widget.item.priceTag!)
@@ -269,16 +299,18 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                     enabled: widget.showBlur,
                     child: Row(
                       children: [
-                        // 사용감 태그
-                        /// itemCondition 태그 생성
-                        HomeFeedConditionTag(
-                            condition: widget.item.itemCondition),
+                        // 사용감 태그 - ItemDetail과 동일한 위젯 사용
+                        ItemDetailConditionTag(
+                          condition: widget.item.itemCondition.name,
+                        ),
                         SizedBox(width: 4.w),
-                        // 거래 방식 태그들
+                        // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
                         ...widget.item.transactionTypes.map(
                           (type) => Padding(
                             padding: EdgeInsets.only(right: 4.w),
-                            child: HomeFeedTransactionTypeTag(type: type),
+                            child: ItemDetailTradeOptionTag(
+                              option: type.name,
+                            ),
                           ),
                         ),
                         const Spacer(),

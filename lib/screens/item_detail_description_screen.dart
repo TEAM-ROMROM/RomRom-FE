@@ -19,6 +19,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
@@ -120,7 +121,7 @@ class _ItemDetailDescriptionScreenState
       
       if (address != null) {
         setState(() {
-          locationName = address.currentAddress;
+          locationName = LocationUtils.formatAddress(address);
         });
       } else {
         setState(() {

@@ -380,7 +380,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         id: index + _feedItems.length + 1,
         itemUuid: d.itemId,
         price: d.price ?? 0,
-        location: '미지정',
+        location: '미지정', // TODO: 위치 정보 추가 필요
         date: d.createdDate ?? '',
         itemCondition: cond,
         transactionTypes: opts,
@@ -391,6 +391,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         imageUrls: d.itemImageUrls ?? [''],
         description: d.itemDescription ?? '',
         hasAiAnalysis: false,
+        aiPrice: false, // TODO: API에서 aiPrice 정보 받아와야 함
+        latitude: null, // TODO: API에서 위도 정보 받아와야 함
+        longitude: null, // TODO: API에서 경도 정보 받아와야 함
+        isLiked: false, // TODO: API에서 좋아요 상태 받아와야 함
       );
     });
   }
