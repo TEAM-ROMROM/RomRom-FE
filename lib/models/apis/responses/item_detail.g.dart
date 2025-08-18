@@ -25,6 +25,8 @@ ItemDetail _$ItemDetailFromJson(Map<String, dynamic> json) => ItemDetail(
       itemCustomTags: (json['itemCustomTags'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$ItemDetailToJson(ItemDetail instance) =>
@@ -41,4 +43,6 @@ Map<String, dynamic> _$ItemDetailToJson(ItemDetail instance) =>
       'createdDate': instance.createdDate,
       'itemImageUrls': instance.itemImageUrls,
       'itemCustomTags': instance.itemCustomTags,
+      'longitude': instance.longitude,
+      'latitude': instance.latitude,
     };

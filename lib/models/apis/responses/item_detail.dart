@@ -16,6 +16,8 @@ class ItemDetail {
   final String? createdDate;
   final List<String>? itemImageUrls;
   final List<String>? itemCustomTags;
+  final double? longitude;
+  final double? latitude;
 
   ItemDetail({
     this.itemId,
@@ -30,6 +32,8 @@ class ItemDetail {
     this.createdDate,
     this.itemImageUrls,
     this.itemCustomTags,
+    this.longitude,
+    this.latitude,
   });
 
   factory ItemDetail.fromJson(Map<String, dynamic> json) =>

@@ -37,11 +37,38 @@ class HomeFeedItemWidget extends StatefulWidget {
 class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   int _currentImageIndex = 0;
   late PageController pageController;
+  late bool _isLiked;
+  late int _likeCount;
 
   @override
   void initState() {
     super.initState();
     pageController = PageController(initialPage: _currentImageIndex);
+    _isLiked = widget.item.isLiked;
+    _likeCount = widget.item.likeCount;
+    _fetchItemLikeStatus();
+  }
+
+  Future<void> _fetchItemLikeStatus() async {
+    try {
+      if (widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {
+        return;
+      }
+      
+      final itemApi = ItemApi();
+      final response = await itemApi.getItemDetail(
+        ItemRequest(itemId: widget.item.itemUuid),
+      );
+      
+      if (mounted) {
+        setState(() {
+          _isLiked = response.likeStatus == 'LIKE';
+          _likeCount = response.likeCount ?? widget.item.likeCount;
+        });
+      }
+    } catch (e) {
+      debugPrint('좋아요 상태 조회 실패: $e');
+    }
   }
 
   @override
@@ -187,23 +214,32 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       // 좋아요 API 호출
                       try {
                         final itemApi = ItemApi();
-                        await itemApi.postLike(
+                        final response = await itemApi.postLike(
                           ItemRequest(itemId: widget.item.itemUuid),
                         );
-                        // TODO: 좋아요 상태 업데이트 처리
+                        
+                        setState(() {
+                          if (response.likeStatus == 'LIKE') {
+                            _isLiked = true;
+                            _likeCount = response.likeCount ?? (_likeCount + 1);
+                          } else {
+                            _isLiked = false;
+                            _likeCount = response.likeCount ?? (_likeCount > 0 ? _likeCount - 1 : 0);
+                          }
+                        });
                       } catch (e) {
                         debugPrint('좋아요 실패: $e');
                       }
                     },
                     child: SvgPicture.asset(
-                      widget.item.isLiked
+                      _isLiked
                           ? 'assets/images/like-heart-icon.svg'
                           : 'assets/images/dislike-heart-icon.svg',
                     ),
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    widget.item.likeCount.toString(),
+                    _likeCount.toString(),
                     style: CustomTextStyles.p2,
                   ),
                 ],
