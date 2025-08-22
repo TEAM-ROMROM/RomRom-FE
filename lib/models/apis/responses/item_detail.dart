@@ -6,6 +6,7 @@ part 'item_detail.g.dart';
 class ItemDetail {
   final String? itemId;
   final String? memberId;
+  final String? profileUrl;
   final String? itemName;
   final String? itemDescription;
   final String? itemCategory;
@@ -22,6 +23,7 @@ class ItemDetail {
   ItemDetail({
     this.itemId,
     this.memberId,
+    this.profileUrl,
     this.itemName,
     this.itemDescription,
     this.itemCategory,
