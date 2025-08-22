@@ -559,7 +559,7 @@ class _ItemDetailDescriptionScreenState
                                           ),
                                           icon: const NOverlayImage
                                               .fromAssetImage(
-                                              "assets/images/location-pin-icon.jpg"),
+                                              "assets/images/location-pin-icon.png"),
                                           size: NSize(33.w, 47.h),
                                         ),
                                       );
