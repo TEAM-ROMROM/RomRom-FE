@@ -41,6 +41,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   late bool _useAiPrice; // AI 가격 여부
   late bool _isLiked;
   late int _likeCount;
+  bool _isLiking = false; // 좋아요 API 중복 호출 방지
 
   @override
   void initState() {
@@ -215,25 +216,36 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      // 좋아요 API 호출
+                      // 연타 방지 및 유효성 검사
+                      if (_isLiking ||
+                          widget.item.itemUuid == null ||
+                          widget.item.itemUuid!.isEmpty) {
+                        return;
+                      }
+
+                      setState(() => _isLiking = true);
                       try {
                         final itemApi = ItemApi();
                         final response = await itemApi.postLike(
                           ItemRequest(itemId: widget.item.itemUuid),
                         );
-
+                        if (!mounted) return;
                         setState(() {
-                          if (response.likeStatus == 'LIKE') {
-                            _isLiked = true;
-                            _likeCount = response.likeCount ?? (_likeCount + 1);
+                          _isLiked = response.likeStatus == 'LIKE';
+                          if (response.likeCount != null) {
+                            _likeCount = response.likeCount!;
                           } else {
-                            _isLiked = false;
-                            _likeCount = response.likeCount ??
-                                (_likeCount > 0 ? _likeCount - 1 : 0);
+                            _likeCount = _isLiked
+                                ? _likeCount + 1
+                                : (_likeCount > 0 ? _likeCount - 1 : 0);
                           }
                         });
                       } catch (e) {
                         debugPrint('좋아요 실패: $e');
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isLiking = false);
+                        }
                       }
                     },
                     child: SvgPicture.asset(
