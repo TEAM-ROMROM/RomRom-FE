@@ -9,6 +9,7 @@ part of 'item_detail.dart';
 ItemDetail _$ItemDetailFromJson(Map<String, dynamic> json) => ItemDetail(
       itemId: json['itemId'] as String?,
       memberId: json['memberId'] as String?,
+      profileUrl: json['profileUrl'] as String?,
       itemName: json['itemName'] as String?,
       itemDescription: json['itemDescription'] as String?,
       itemCategory: json['itemCategory'] as String?,
@@ -33,6 +34,7 @@ Map<String, dynamic> _$ItemDetailToJson(ItemDetail instance) =>
     <String, dynamic>{
       'itemId': instance.itemId,
       'memberId': instance.memberId,
+      'profileUrl': instance.profileUrl,
       'itemName': instance.itemName,
       'itemDescription': instance.itemDescription,
       'itemCategory': instance.itemCategory,
