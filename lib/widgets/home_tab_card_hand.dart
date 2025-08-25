@@ -74,7 +74,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     );
     _hoverAnimation = CurvedAnimation(
       parent: _hoverController,
-      curve: Curves.easeOutBack,
+      curve: Curves.easeOut,
     );
 
     // 드래그 애니메이션
@@ -84,7 +84,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     );
     _dragAnimation = CurvedAnimation(
       parent: _dragController,
-      curve: Curves.easeOutQuart,
+      curve: Curves.easeOut,
     );
 
     // 초기 팬 애니메이션 실행
@@ -97,8 +97,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     if (widget.cards != null && widget.cards!.isNotEmpty) {
       _cards = widget.cards!.take(10).toList(); // 최대 10개까지만
     } else {
-      // 카드가 없을 때는 빈 리스트
-      _cards = [];
+      _cards = []; // 빈 리스트
     }
   }
 
@@ -115,12 +114,12 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final centerIndex = (totalCards - 1) / 2;
     final relativeIndex = index - centerIndex;
 
-    // 카드 간격을 계산 (카드가 많을수록 간격 좁아짐)
+    // 카드 간격을 계산 (카드 크기가 커진 만큼 간격도 조정)
     final cardSpacing = totalCards <= 5 
-        ? 55.w  // 5장 이하일 때 넓은 간격
+        ? 70.w  // 5장 이하일 때 넓은 간격
         : totalCards <= 7 
-            ? 45.w  // 6-7장일 때 중간 간격
-            : 35.w; // 8장 이상일 때 좁은 간격
+            ? 65.w  // 6-7장일 때 중간 간격
+            : 50.w; // 8장 이상일 때 좁은 간격
 
     // 각도 계산 (라디안)
     double angle = 0.0;
@@ -177,8 +176,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         // 호버 효과
         if (isHovered && !isDragged) {
           final hoverValue = _hoverAnimation.value;
-          y -= _hoverLift * hoverValue; // 호버 시 카드가 위로 올라감 (top에서는 y값이 작아져야 올라감)
-          scale = 1.0 + (0.18 * hoverValue); // 호버 시 18% 크기 증가
+          y -= _hoverLift * hoverValue;
+          scale = 1.0 + (0.15 * hoverValue); // 15% 크기 증가
+          angle *= (1 - hoverValue * 0.3); // 살짝 똑바로 세워짐
           
           // 인접 카드 밀어내기 효과
           final centerIndex = (totalCards - 1) / 2;
@@ -201,9 +201,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         // 드래그 효과
         if (isDragged) {
           x = _dragOffset.dx;
-          y = -_dragOffset.dy - _dragLift; // 드래그 오프셋 반전하여 적용 (위로 드래그하면 카드가 위로)
-          angle = _dragOffset.dx * 0.001; // 드래그 방향에 따른 미세한 회전
-          scale = 1.25;
+          y = -_dragOffset.dy - _dragLift;
+          angle = _dragOffset.dx * 0.001;
+          scale = 1.2;
           opacity = 0.9;
         }
 
