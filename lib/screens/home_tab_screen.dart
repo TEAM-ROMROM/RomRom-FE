@@ -11,7 +11,7 @@ import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
-import 'package:romrom_fe/widgets/fan_card_dial.dart';
+import 'package:romrom_fe/widgets/hearthstone_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,11 +62,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     'assets/images/coachMark5.png',
     'assets/images/coachMark6.png',
   ];
+  
+  // 내 카드 목록 (나중에 API에서 가져올 예정)
+  List<Map<String, dynamic>> _myCards = [];
 
   @override
   void initState() {
     super.initState();
     _loadInitialItems();
+    _loadMyCards();
     _checkFirstMainScreen();
   }
 
@@ -418,6 +422,56 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     
     return feedItems;
   }
+  
+  /// 내 카드(물품) 목록 로드
+  Future<void> _loadMyCards() async {
+    try {
+      final itemApi = ItemApi();
+      final response = await itemApi.getMyItems(
+        ItemRequest(pageNumber: 0, pageSize: 10),
+      );
+      
+      if (!mounted) return;
+      
+      final myItems = response.itemDetailPage?.content ?? [];
+      setState(() {
+        _myCards = myItems.map((item) => {
+          'id': item.itemId ?? '',
+          'name': item.itemName ?? '물품',
+          'category': item.itemCategory ?? '카테고리',
+          'imageUrl': (item.itemImageUrls?.isNotEmpty ?? false) 
+              ? item.itemImageUrls![0] 
+              : 'https://picsum.photos/400/300',
+        }).toList();
+      });
+    } catch (e) {
+      debugPrint('내 카드 로딩 실패: $e');
+      // 테스트용 더미 데이터
+      setState(() {
+        _myCards = List.generate(6, (index) => {
+          'id': 'my_card_$index',
+          'name': '내 물품 ${index + 1}',
+          'category': '카테고리 ${(index % 3) + 1}',
+          'imageUrl': 'https://picsum.photos/400/300?random=${100 + index}',
+        });
+      });
+    }
+  }
+  
+  /// 카드 드롭 핸들러 (거래 요청)
+  void _handleCardDrop(String cardId) {
+    final currentFeedItem = _feedItems[_currentFeedIndex];
+    debugPrint('거래 요청: 내 카드 $cardId -> 피드 아이템 ${currentFeedItem.itemUuid}');
+    
+    // TODO: 실제 거래 요청 API 호출
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('거래 요청이 전송되었습니다'),
+        backgroundColor: AppColors.primaryYellow,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -498,8 +552,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: -75.h,
-            child: const FanCardDial(),
+            bottom: -80.h, // 네비게이션 바 위에 표시
+            child: HearthstoneCardHand(
+              cards: _myCards,
+              onCardDrop: _handleCardDrop,
+            ),
           )
         else
           Positioned(
