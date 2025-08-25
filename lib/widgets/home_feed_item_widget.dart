@@ -325,7 +325,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           enabled: widget.showBlur,
                           child: UserProfileCircularAvatar(
                             avatarSize: const Size(50, 50),
-                            profileUrl: widget.item.profileUrl,
+                            profileUrl: widget.item.profileUrl.isNotEmpty 
+                                ? widget.item.profileUrl 
+                                : null,
                           ),
                         ),
                       ),
