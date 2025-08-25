@@ -11,7 +11,7 @@ import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
-import 'package:romrom_fe/widgets/hearthstone_card_hand.dart';
+import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -553,7 +553,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             left: 0,
             right: 0,
             bottom: -80.h, // 네비게이션 바 위에 표시
-            child: HearthstoneCardHand(
+            child: HomeTabCardHand(
               cards: _myCards,
               onCardDrop: _handleCardDrop,
             ),

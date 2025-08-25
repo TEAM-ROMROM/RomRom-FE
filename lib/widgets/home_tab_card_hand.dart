@@ -5,22 +5,22 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
 
-/// 하스스톤 스타일 카드 핸드 위젯
-class HearthstoneCardHand extends StatefulWidget {
+/// 홈탭 카드 핸드 위젯
+class HomeTabCardHand extends StatefulWidget {
   final Function(String itemId)? onCardDrop;
   final List<Map<String, dynamic>>? cards;
 
-  const HearthstoneCardHand({
+  const HomeTabCardHand({
     super.key,
     this.onCardDrop,
     this.cards,
   });
 
   @override
-  State<HearthstoneCardHand> createState() => _HearthstoneCardHandState();
+  State<HomeTabCardHand> createState() => _HomeTabCardHandState();
 }
 
-class _HearthstoneCardHandState extends State<HearthstoneCardHand>
+class _HomeTabCardHandState extends State<HomeTabCardHand>
     with TickerProviderStateMixin {
   // 애니메이션 컨트롤러들
   late AnimationController _fanController;
@@ -97,15 +97,8 @@ class _HearthstoneCardHandState extends State<HearthstoneCardHand>
     if (widget.cards != null && widget.cards!.isNotEmpty) {
       _cards = widget.cards!.take(10).toList(); // 최대 10개까지만
     } else {
-      // 테스트용 카드 생성
-      _cards = List.generate(6, (index) {
-        return {
-          'id': 'card_$index',
-          'name': '아이템 ${index + 1}',
-          'category': '카테고리 ${(index % 3) + 1}',
-          'imageUrl': 'https://picsum.photos/400/300?random=$index',
-        };
-      });
+      // 카드가 없을 때는 빈 리스트
+      _cards = [];
     }
   }
 
@@ -365,30 +358,29 @@ class _HearthstoneCardHandState extends State<HearthstoneCardHand>
           // 드롭 영역 표시 (드래그 중일 때만)
           if (_isDragging)
             Positioned(
-              top: -250.h,  // 더 위쪽에 표시
-              left: 0,
-              right: 0,
-              height: 120.h,
+              top: -200.h,  // 상단에 위치
+              left: MediaQuery.of(context).size.width / 2 - 70.w,  // 중앙에 위치
+              width: 140.w,  // 작은 박스 크기
+              height: 50.h,
               child: AnimatedOpacity(
                 opacity: _isDragging ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),
                 child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20.w),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: AppColors.primaryYellow.withValues(alpha: 0.5),
+                      color: AppColors.opacity70Black,
                       width: 2,
                     ),
-                    borderRadius: BorderRadius.circular(20.r),
-                    color: AppColors.primaryYellow.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(25.r),
+                    color: AppColors.opacity80Black,
                   ),
                   child: Center(
                     child: Text(
-                      '여기에 놓아 거래 요청',
+                      '거래 요청',
                       style: TextStyle(
-                        color: AppColors.primaryYellow,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.bold,
+                        color: AppColors.textColorWhite,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
