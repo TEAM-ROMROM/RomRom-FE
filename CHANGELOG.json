@@ -1,11 +1,38 @@
 {
   "metadata": {
-    "lastUpdated": "2025-08-25T10:32:40Z",
-    "currentVersion": "1.2.3",
-    "totalReleases": 9,
+    "lastUpdated": "2025-08-25T13:23:42Z",
+    "currentVersion": "1.2.4",
+    "totalReleases": 10,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.2.4",
+      "project_type": "flutter",
+      "date": "2025-08-25",
+      "pr_number": 231,
+      "raw_summary": "Summary by CodeRabbit\n\n버그 수정\n\n프로필 이미지 표시 로직 개선: 빈 프로필 URL이 전달될 경우 원격 조회/기본 아바타로 처리하여 빈 이미지가 보이던 문제를 해결했습니다. 홈 피드에서도 동일 조건을 적용해 아바타 표시 안정성을 높였습니다.\n\n\n문서\n\nREADME 최신 버전 표기를 갱신했습니다.\n\n\n업무 정리\n\n앱 버전을 1.2.4로 업데이트하고 관련 메타데이터를 동기화했습니다.",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "프로필 이미지 표시 로직 개선: 빈 프로필 URL이 전달될 경우 원격 조회/기본 아바타로 처리하여 빈 이미지가 보이던 문제를 해결했습니다. 홈 피드에서도 동일 조건을 적용해 아바타 표시 안정성을 높였습니다."
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README 최신 버전 표기를 갱신했습니다."
+          ]
+        },
+        "업무_정리": {
+          "title": "업무 정리",
+          "items": [
+            "앱 버전을 1.2.4로 업데이트하고 관련 메타데이터를 동기화했습니다."
+          ]
+        }
+      }
+    },
     {
       "version": "1.2.3",
       "project_type": "flutter",

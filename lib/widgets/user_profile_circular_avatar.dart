@@ -24,7 +24,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
   @override
   void initState() {
     super.initState();
-    if (widget.profileUrl != null) {
+    if (widget.profileUrl != null && widget.profileUrl!.isNotEmpty) {
       _avatarUrl = widget.profileUrl;
       _isLoading = false;
     } else {
