@@ -48,7 +48,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   final double _cardHeight = 130.h;
   final double _fanRadius = 500.w; // 부채꼴 반경
   final double _maxFanAngle = 18.0; // 최대 펼침 각도 (도)
-  final double _hoverLift = 40.h; // 호버 시 카드 상승 높이
+  final double _hoverLift = 70.h; // 호버 시 카드 상승 높이
   final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
   final double _baseBottom = 40.h; // 기본 bottom 위치 (네비게이션 바 위)
 
