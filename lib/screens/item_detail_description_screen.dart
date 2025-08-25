@@ -49,11 +49,11 @@ class _ItemDetailDescriptionScreenState
     extends State<ItemDetailDescriptionScreen> {
   late PageController pageController;
   late int currentImageIndex;
-  
+
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
-  
+
   Item? item;
   List<ItemImage>? itemImages;
   List<String>? itemCustomTags;
@@ -61,7 +61,7 @@ class _ItemDetailDescriptionScreenState
   int? likeCount;
   String locationName = '위치 정보 로딩 중...';
   String memberLocationName = '위치 정보 로딩 중...';
-  
+
   List<String> imageUrls = [];
 
   @override
@@ -71,45 +71,50 @@ class _ItemDetailDescriptionScreenState
     pageController = PageController(initialPage: currentImageIndex);
     _loadItemDetail();
   }
-  
+
   Future<void> _loadItemDetail() async {
     try {
       setState(() {
         isLoading = true;
         hasError = false;
       });
-      
+
       final ItemApi itemApi = ItemApi();
       final ItemRequest request = ItemRequest(itemId: widget.itemId);
       final ItemResponse response = await itemApi.getItemDetail(request);
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         item = response.item;
         itemImages = response.itemImages;
         itemCustomTags = response.itemCustomTags;
         likeStatus = response.likeStatus;
         likeCount = response.likeCount;
-        
-        imageUrls = itemImages?.map((img) => img.imageUrl ?? '').where((url) => url.isNotEmpty).toList() ?? [];
-        
+
+        imageUrls = itemImages
+                ?.map((img) => img.imageUrl ?? '')
+                .where((url) => url.isNotEmpty)
+                .toList() ??
+            [];
+
         // 물품 좌표를 주소로 변환
         if (item?.latitude != null && item?.longitude != null) {
           _getAddressFromCoordinates(item!.latitude!, item!.longitude!);
         }
-        
+
         // 회원 좌표를 주소로 변환
         if (item?.member?.latitude != null && item?.member?.longitude != null) {
-          _getMemberAddressFromCoordinates(item!.member!.latitude!, item!.member!.longitude!);
+          _getMemberAddressFromCoordinates(
+              item!.member!.latitude!, item!.member!.longitude!);
         }
-        
+
         isLoading = false;
       });
     } catch (e) {
       debugPrint('물품 상세 정보 로드 실패: $e');
       if (!mounted) return;
-      
+
       setState(() {
         hasError = true;
         errorMessage = '물품 정보를 불러오는데 실패했습니다.';
@@ -124,7 +129,7 @@ class _ItemDetailDescriptionScreenState
       final address = await locationService.getAddressFromCoordinates(
         NLatLng(lat, lng),
       );
-      
+
       if (address != null) {
         setState(() {
           locationName = LocationUtils.formatAddress(address);
@@ -141,14 +146,14 @@ class _ItemDetailDescriptionScreenState
       });
     }
   }
-  
+
   Future<void> _getMemberAddressFromCoordinates(double lat, double lng) async {
     try {
       final locationService = LocationService();
       final address = await locationService.getAddressFromCoordinates(
         NLatLng(lat, lng),
       );
-      
+
       if (address != null) {
         setState(() {
           memberLocationName = LocationUtils.formatMediumAddress(address);
@@ -201,14 +206,15 @@ class _ItemDetailDescriptionScreenState
         ),
       );
     }
-    
+
     if (hasError) {
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+            icon: const Icon(AppIcons.navigateBefore,
+                color: AppColors.textColorWhite),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -218,7 +224,8 @@ class _ItemDetailDescriptionScreenState
             children: [
               Text(
                 errorMessage,
-                style: CustomTextStyles.p1.copyWith(color: AppColors.textColorWhite),
+                style: CustomTextStyles.p1
+                    .copyWith(color: AppColors.textColorWhite),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.h),
@@ -229,7 +236,8 @@ class _ItemDetailDescriptionScreenState
                 ),
                 child: Text(
                   '다시 시도',
-                  style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack),
+                  style: CustomTextStyles.p2
+                      .copyWith(color: AppColors.primaryBlack),
                 ),
               ),
             ],
@@ -237,7 +245,7 @@ class _ItemDetailDescriptionScreenState
         ),
       );
     }
-    
+
     if (item == null) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
@@ -249,7 +257,7 @@ class _ItemDetailDescriptionScreenState
         ),
       );
     }
-    
+
     String formattedPrice = formatPrice(item!.price ?? 0);
     bool isLiked = likeStatus == 'LIKE';
 
@@ -287,7 +295,8 @@ class _ItemDetailDescriptionScreenState
                               },
                             )
                           : ErrorImagePlaceholder(
-                              size: Size(widget.imageSize.width, widget.imageSize.height),
+                              size: Size(widget.imageSize.width,
+                                  widget.imageSize.height),
                             ),
                     ),
 
@@ -345,7 +354,8 @@ class _ItemDetailDescriptionScreenState
                                 Text(
                                   memberLocationName,
                                   style: CustomTextStyles.p3.copyWith(
-                                    color: AppColors.lightGray.withValues(alpha: 0.7),
+                                    color: AppColors.lightGray
+                                        .withValues(alpha: 0.7),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -398,7 +408,8 @@ class _ItemDetailDescriptionScreenState
                           children: [
                             RichText(
                               text: TextSpan(
-                                text: '${_getCategoryName(item?.itemCategory)} · ',
+                                text:
+                                    '${_getCategoryName(item?.itemCategory)} · ',
                                 style: CustomTextStyles.p3.copyWith(
                                   color: AppColors.opacity50White,
                                   fontWeight: FontWeight.w400,
@@ -415,7 +426,6 @@ class _ItemDetailDescriptionScreenState
                               ),
                             ),
                             SizedBox(height: 10.h),
-
                             Text(
                               item?.itemName ?? '제목 없음',
                               style: CustomTextStyles.h3,
@@ -457,30 +467,32 @@ class _ItemDetailDescriptionScreenState
                               item?.itemDescription ?? '설명이 없습니다.',
                               style: CustomTextStyles.p2.copyWith(height: 1.4),
                             ),
-                            
                             if (itemCustomTags?.isNotEmpty == true) ...[
                               SizedBox(height: 16.h),
                               Wrap(
                                 spacing: 8.w,
                                 runSpacing: 8.h,
-                                children: itemCustomTags!.map(
-                                  (tag) => Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 12.w,
-                                      vertical: 6.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.opacity20White,
-                                      borderRadius: BorderRadius.circular(16.r),
-                                    ),
-                                    child: Text(
-                                      '#$tag',
-                                      style: CustomTextStyles.p3.copyWith(
-                                        color: AppColors.textColorWhite,
+                                children: itemCustomTags!
+                                    .map(
+                                      (tag) => Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12.w,
+                                          vertical: 6.h,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.opacity20White,
+                                          borderRadius:
+                                              BorderRadius.circular(16.r),
+                                        ),
+                                        child: Text(
+                                          '#$tag',
+                                          style: CustomTextStyles.p3.copyWith(
+                                            color: AppColors.textColorWhite,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ).toList(),
+                                    )
+                                    .toList(),
                               ),
                             ],
                           ],
@@ -536,7 +548,8 @@ class _ItemDetailDescriptionScreenState
                                     ),
                                   ),
                                   onMapReady: (controller) {
-                                    if (item?.latitude != null && item?.longitude != null) {
+                                    if (item?.latitude != null &&
+                                        item?.longitude != null) {
                                       controller.addOverlay(
                                         NMarker(
                                           id: 'item_location',
@@ -544,6 +557,10 @@ class _ItemDetailDescriptionScreenState
                                             item!.latitude!,
                                             item!.longitude!,
                                           ),
+                                          icon: const NOverlayImage
+                                              .fromAssetImage(
+                                              "assets/images/location-pin-icon.png"),
+                                          size: NSize(33.w, 47.h),
                                         ),
                                       );
                                     }
@@ -616,13 +633,13 @@ class _ItemDetailDescriptionScreenState
       },
     );
   }
-  
+
   String _formatDateTime(DateTime? dateTime) {
     if (dateTime == null) return '날짜 정보 없음';
-    
+
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}일 전';
     } else if (difference.inHours > 0) {
@@ -633,17 +650,17 @@ class _ItemDetailDescriptionScreenState
       return '방금 전';
     }
   }
-  
+
   Future<void> _toggleLike() async {
     if (item?.itemId == null) return;
-    
+
     try {
       final ItemApi itemApi = ItemApi();
       final ItemRequest request = ItemRequest(itemId: item!.itemId);
       final ItemResponse response = await itemApi.postLike(request);
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         likeStatus = response.likeStatus;
         likeCount = response.likeCount;

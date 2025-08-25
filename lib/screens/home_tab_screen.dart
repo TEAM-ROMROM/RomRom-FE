@@ -11,7 +11,7 @@ import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
-import 'package:romrom_fe/widgets/fan_card_dial.dart';
+import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,11 +62,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     'assets/images/coachMark5.png',
     'assets/images/coachMark6.png',
   ];
+  
+  // 내 카드 목록 (나중에 API에서 가져올 예정)
+  List<Map<String, dynamic>> _myCards = [];
 
   @override
   void initState() {
     super.initState();
     _loadInitialItems();
+    _loadMyCards();
     _checkFirstMainScreen();
   }
 
@@ -300,8 +304,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
       if (!mounted) return;
 
-      final feedItems = await _convertToFeedItems(response.itemDetailPage?.content ?? []);
-      
+      final feedItems =
+          await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+
       setState(() {
         _feedItems
           ..clear()
@@ -338,7 +343,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         pageSize: _pageSize,
       ));
 
-      final newItems = await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+      final newItems =
+          await _convertToFeedItems(response.itemDetailPage?.content ?? []);
 
       setState(() {
         _feedItems.addAll(newItems);
@@ -358,9 +364,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
-  Future<List<HomeFeedItem>> _convertToFeedItems(List<ItemDetail> details) async {
+  Future<List<HomeFeedItem>> _convertToFeedItems(
+      List<ItemDetail> details) async {
     final feedItems = <HomeFeedItem>[];
-    
+
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
 
@@ -388,7 +395,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           NLatLng(d.latitude!, d.longitude!),
         );
         if (address != null) {
-          locationText = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+          locationText =
+              '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
         }
       }
 
@@ -400,23 +408,69 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         date: d.createdDate ?? '',
         itemCondition: cond,
         transactionTypes: opts,
-        priceTag: null,
-        profileImageUrl:
-            'https://picsum.photos/100/100?random=${index + 1}', //FIXME: 프로필 이미지 추가 필요
+        profileUrl: d.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
         likeCount: d.likeCount ?? 0,
         imageUrls: d.itemImageUrls ?? [''],
         description: d.itemDescription ?? '',
         hasAiAnalysis: false,
-        aiPrice: false, // TODO: API에서 aiPrice 정보 받아와야 함
         latitude: d.latitude,
         longitude: d.longitude,
-        isLiked: false, // TODO: API에서 좋아요 상태 받아와야 함
       );
-      
+
       feedItems.add(feedItem);
     }
-    
+
     return feedItems;
+  }
+  
+  /// 내 카드(물품) 목록 로드
+  Future<void> _loadMyCards() async {
+    try {
+      final itemApi = ItemApi();
+      final response = await itemApi.getMyItems(
+        ItemRequest(pageNumber: 0, pageSize: 10),
+      );
+      
+      if (!mounted) return;
+      
+      final myItems = response.itemDetailPage?.content ?? [];
+      setState(() {
+        _myCards = myItems.map((item) => {
+          'id': item.itemId ?? '',
+          'name': item.itemName ?? '물품',
+          'category': item.itemCategory ?? '카테고리',
+          'imageUrl': (item.itemImageUrls?.isNotEmpty ?? false) 
+              ? item.itemImageUrls![0] 
+              : 'https://picsum.photos/400/300',
+        }).toList();
+      });
+    } catch (e) {
+      debugPrint('내 카드 로딩 실패: $e');
+      // 테스트용 더미 데이터
+      setState(() {
+        _myCards = List.generate(6, (index) => {
+          'id': 'my_card_$index',
+          'name': '내 물품 ${index + 1}',
+          'category': '카테고리 ${(index % 3) + 1}',
+          'imageUrl': 'https://picsum.photos/400/300?random=${100 + index}',
+        });
+      });
+    }
+  }
+  
+  /// 카드 드롭 핸들러 (거래 요청)
+  void _handleCardDrop(String cardId) {
+    final currentFeedItem = _feedItems[_currentFeedIndex];
+    debugPrint('거래 요청: 내 카드 $cardId -> 피드 아이템 ${currentFeedItem.itemUuid}');
+    
+    // TODO: 실제 거래 요청 API 호출
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('거래 요청이 전송되었습니다'),
+        backgroundColor: AppColors.primaryYellow,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -498,8 +552,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: -75.h,
-            child: const FanCardDial(),
+            bottom: -120.h, // 네비게이션 바 위에 표시
+            child: HomeTabCardHand(
+              cards: _myCards,
+              onCardDrop: _handleCardDrop,
+            ),
           )
         else
           Positioned(

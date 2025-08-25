@@ -1,0 +1,436 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/widgets/item_card.dart';
+
+/// 홈탭 카드 핸드 위젯
+class HomeTabCardHand extends StatefulWidget {
+  final Function(String itemId)? onCardDrop;
+  final List<Map<String, dynamic>>? cards;
+
+  const HomeTabCardHand({
+    super.key,
+    this.onCardDrop,
+    this.cards,
+  });
+
+  @override
+  State<HomeTabCardHand> createState() => _HomeTabCardHandState();
+}
+
+class _HomeTabCardHandState extends State<HomeTabCardHand>
+    with TickerProviderStateMixin {
+  // 애니메이션 컨트롤러들
+  late AnimationController _fanController;
+  late AnimationController _hoverController;
+  late AnimationController _pullController;
+
+  // 애니메이션들
+  late Animation<double> _fanAnimation;
+  late Animation<double> _hoverAnimation;
+  late Animation<double> _pullAnimation;
+
+  // 카드 상태
+  String? _hoveredCardId;
+  String? _pulledCardId;
+  bool _isCardPulled = false;
+  Offset _panStartPosition = Offset.zero;
+  Offset _currentPanPosition = Offset.zero;
+  Offset _pullOffset = Offset.zero;
+  
+  // 카드 리스트
+  List<Map<String, dynamic>> _cards = [];
+
+  // 카드 레이아웃 파라미터
+  final double _cardWidth = 80.w;
+  final double _cardHeight = 130.h;
+  final double _fanRadius = 500.w; // 부채꼴 반경
+  final double _maxFanAngle = 18.0; // 최대 펼침 각도 (도)
+  final double _hoverLift = 70.h; // 호버 시 카드 상승 높이
+  final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
+  final double _baseBottom = 40.h; // 기본 bottom 위치 (네비게이션 바 위)
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+    _generateCards();
+  }
+
+  void _initializeAnimations() {
+    // 팬 애니메이션 (카드 펼치기)
+    _fanController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fanAnimation = CurvedAnimation(
+      parent: _fanController,
+      curve: Curves.easeOutExpo,
+    );
+
+    // 호버 애니메이션
+    _hoverController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _hoverAnimation = CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeOut,
+    );
+
+    // 카드 뽑기 애니메이션
+    _pullController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _pullAnimation = CurvedAnimation(
+      parent: _pullController,
+      curve: Curves.easeOut,
+    );
+
+    // 초기 팬 애니메이션 실행
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _fanController.forward();
+    });
+  }
+
+  void _generateCards() {
+    if (widget.cards != null && widget.cards!.isNotEmpty) {
+      _cards = widget.cards!.take(10).toList(); // 최대 10개까지만
+    } else {
+      _cards = [];
+    }
+  }
+
+  @override
+  void dispose() {
+    _fanController.dispose();
+    _hoverController.dispose();
+    _pullController.dispose();
+    super.dispose();
+  }
+
+  // 좌표에서 카드 찾기
+  String? _findCardAtPosition(Offset localPosition) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final centerX = screenWidth / 2;
+    
+    for (int i = 0; i < _cards.length; i++) {
+      final transform = _calculateCardTransform(i, _cards.length);
+      final cardCenterX = centerX + transform['x'];
+      
+      // 카드 영역 체크 (카드 너비의 절반 범위 내)
+      if ((localPosition.dx - cardCenterX).abs() < _cardWidth / 2) {
+        return _cards[i]['id'];
+      }
+    }
+    return null;
+  }
+
+  // 카드 위치 및 회전 계산
+  Map<String, dynamic> _calculateCardTransform(int index, int totalCards) {
+    final centerIndex = (totalCards - 1) / 2;
+    final relativeIndex = index - centerIndex;
+
+    // 카드 간격을 계산
+    final cardSpacing = totalCards <= 5 
+        ? 70.w  
+        : totalCards <= 7 
+            ? 65.w  
+            : 50.w;
+
+    // 각도 계산 (라디안)
+    double angle = 0.0;
+    if (totalCards > 1) {
+      final maxAngleRad = _maxFanAngle * math.pi / 180;
+      final angleStep = (2 * maxAngleRad) / (totalCards - 1);
+      angle = -maxAngleRad + (index * angleStep);
+      
+      // 중앙 카드는 정확히 0도로 설정
+      if ((relativeIndex.abs() < 0.1)) {
+        angle = 0.0;
+      }
+    }
+
+    // 위치 계산 (부채꼴 배치)
+    final arcY = _fanRadius * (1 - math.cos(angle));
+
+    // 최종 위치
+    final x = relativeIndex * cardSpacing;
+    final y = arcY * 0.15; // Y축 곡률
+
+    return {
+      'x': x,
+      'y': y,
+      'angle': angle * 0.7,
+      'zIndex': totalCards - math.max((relativeIndex.abs() * 2).toInt(), 0),
+    };
+  }
+
+  Widget _buildCard(Map<String, dynamic> cardData, int index, int totalCards) {
+    final cardId = cardData['id'];
+    final isHovered = _hoveredCardId == cardId;
+    final isPulled = _pulledCardId == cardId;
+
+    final transform = _calculateCardTransform(index, totalCards);
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        _fanAnimation,
+        _hoverAnimation,
+        _pullAnimation,
+      ]),
+      builder: (context, child) {
+        // 스태거드 애니메이션 효과
+        final staggerDelay = index * 0.03;
+        final staggeredFanValue = (_fanAnimation.value - staggerDelay).clamp(0.0, 1.0);
+        
+        double x = transform['x'] * staggeredFanValue;
+        double y = transform['y'] * staggeredFanValue;
+        double angle = transform['angle'] * staggeredFanValue;
+        double scale = 1.0;
+        double opacity = staggeredFanValue;
+
+        // 호버 효과
+        if (isHovered && !isPulled) {
+          final hoverValue = _hoverAnimation.value;
+          y += _hoverLift * hoverValue; // 위로 올라감
+          scale = 1.0 + (0.12 * hoverValue); // 12% 크기 증가
+          angle *= (1 - hoverValue * 0.5); // 똑바로 세워짐
+        }
+
+        // 카드 뽑기 효과
+        if (isPulled) {
+          final pullValue = _pullAnimation.value;
+          x += _pullOffset.dx * pullValue;
+          y -= (_pullOffset.dy - _pullLift) * pullValue; // 위로 드래그 시 카드가 위로 이동
+          scale = 1.0 + (0.15 * pullValue);
+          angle *= (1 - pullValue * 0.8);
+          
+          if (_isCardPulled) {
+            opacity = 1.0 - (pullValue * 0.2);
+          }
+        }
+
+        // Z-Index를 위한 순서 조정
+        final zIndex = isPulled 
+            ? 1000 
+            : isHovered 
+                ? 999 
+                : transform['zIndex'] as int;
+
+        return Positioned(
+          left: MediaQuery.of(context).size.width / 2 - _cardWidth / 2 + x,
+          bottom: _baseBottom + y, // 기본 위치 -130.h
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..translate(0.0, 0.0, zIndex.toDouble())
+              ..rotateZ(angle)
+              ..scale(scale),
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: isPulled ? 100 : 200),
+              curve: Curves.easeOutCubic,
+              width: _cardWidth,
+              height: _cardHeight,
+              decoration: BoxDecoration(
+                // 선택된 카드에 노란색 테두리 추가
+                border: (isHovered || isPulled) 
+                    ? Border.all(
+                        color: AppColors.primaryYellow,
+                        width: 2,
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(10.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: isHovered || isPulled
+                        ? AppColors.primaryBlack.withValues(alpha: 0.3)
+                        : AppColors.opacity20Black,
+                    blurRadius: isHovered || isPulled ? 20 : 10,
+                    spreadRadius: 0,
+                    offset: Offset(0, isHovered || isPulled ? 10 : 5),
+                  ),
+                ],
+              ),
+              child: Opacity(
+                opacity: opacity,
+                child: ItemCard(
+                  itemId: cardId,
+                  itemName: cardData['name'] ?? '아이템',
+                  itemCategoryLabel: cardData['category'] ?? '카테고리',
+                  itemCardImageUrl: cardData['imageUrl'] ?? '',
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 전체 카드 영역에 대한 제스처 처리
+  void _handlePanStart(DragStartDetails details) {
+    setState(() {
+      _panStartPosition = details.localPosition;
+      _currentPanPosition = details.localPosition;
+      
+      // 시작 위치에서 카드 찾기
+      final cardId = _findCardAtPosition(details.localPosition);
+      if (cardId != null && cardId != _hoveredCardId) {
+        _hoveredCardId = cardId;
+        _hoverController.forward();
+        HapticFeedback.selectionClick();
+      }
+    });
+  }
+
+  void _handlePanUpdate(DragUpdateDetails details) {
+    setState(() {
+      _currentPanPosition = details.localPosition;
+      
+      // 위로 스와이프 감지 (빠른 위로 움직임)
+      final dy = _panStartPosition.dy - _currentPanPosition.dy;
+      
+      if (_hoveredCardId != null && dy > 30) { // 30픽셀 이상 위로 움직임
+        // 카드 뽑기 시작
+        if (_pulledCardId == null) {
+          _pulledCardId = _hoveredCardId;
+          _pullOffset = Offset(
+            _currentPanPosition.dx - _panStartPosition.dx,
+            -dy, // 위로 움직인 거리
+          );
+          _pullController.forward();
+          HapticFeedback.mediumImpact();
+        } else {
+          // 카드 뽑기 중 위치 업데이트
+          _pullOffset = Offset(
+            _currentPanPosition.dx - _panStartPosition.dx,
+            -dy,
+          );
+        }
+      } else if (_pulledCardId == null) {
+        // 좌우 드래그로 카드 선택
+        final cardId = _findCardAtPosition(details.localPosition);
+        if (cardId != null && cardId != _hoveredCardId) {
+          // 이전 카드 호버 해제
+          if (_hoveredCardId != null) {
+            _hoverController.reverse();
+          }
+          // 새 카드 호버
+          _hoveredCardId = cardId;
+          _hoverController.forward();
+          HapticFeedback.selectionClick();
+        }
+      }
+    });
+  }
+
+  void _handlePanEnd(DragEndDetails details) {
+    final dy = _panStartPosition.dy - _currentPanPosition.dy;
+    
+    // 카드 사용 체크
+    if (_pulledCardId != null && dy > 100) { // 100픽셀 이상 위로 스와이프
+      // 카드 사용
+      if (widget.onCardDrop != null) {
+        widget.onCardDrop!(_pulledCardId!);
+        HapticFeedback.heavyImpact();
+      }
+      
+      // 카드 사용 애니메이션
+      setState(() {
+        _isCardPulled = true;
+      });
+      
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _pulledCardId = null;
+            _isCardPulled = false;
+            _pullOffset = Offset.zero;
+          });
+          _pullController.reverse();
+        }
+      });
+    } else {
+      // 카드 원위치로
+      _pullController.reverse().then((_) {
+        if (mounted) {
+          setState(() {
+            _pulledCardId = null;
+            _pullOffset = Offset.zero;
+          });
+        }
+      });
+    }
+    
+    // 호버 해제
+    _hoverController.reverse().then((_) {
+      if (mounted) {
+        setState(() {
+          _hoveredCardId = null;
+          _panStartPosition = Offset.zero;
+          _currentPanPosition = Offset.zero;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onPanStart: _handlePanStart,
+      onPanUpdate: _handlePanUpdate,
+      onPanEnd: _handlePanEnd,
+      child: SizedBox(
+        height: 280.h,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // 드롭 영역 표시 (카드 뽑기 중일 때만)
+            if (_pulledCardId != null)
+              Positioned(
+                top: -250.h,
+                left: 0,
+                right: 0,
+                height: 100.h,
+                child: AnimatedOpacity(
+                  opacity: _pulledCardId != null ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: 40.w),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.primaryYellow.withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(20.r),
+                      color: AppColors.primaryYellow.withValues(alpha: 0.1),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '거래 요청',
+                        style: TextStyle(
+                          color: AppColors.primaryYellow,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            // 카드들
+            ..._cards.asMap().entries.map((entry) {
+              final index = entry.key;
+              final card = entry.value;
+              return _buildCard(card, index, _cards.length);
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
