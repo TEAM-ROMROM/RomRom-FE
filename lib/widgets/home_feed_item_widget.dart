@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -37,13 +38,16 @@ class HomeFeedItemWidget extends StatefulWidget {
 class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   int _currentImageIndex = 0;
   late PageController pageController;
+  late bool _useAiPrice; // AI 가격 여부
   late bool _isLiked;
   late int _likeCount;
+  bool _isLiking = false; // 좋아요 API 중복 호출 방지
 
   @override
   void initState() {
     super.initState();
     pageController = PageController(initialPage: _currentImageIndex);
+    _useAiPrice = widget.item.aiPrice; // AI 가격 여부
     _isLiked = widget.item.isLiked;
     _likeCount = widget.item.likeCount;
     _fetchItemLikeStatus();
@@ -54,14 +58,15 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       if (widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {
         return;
       }
-      
+
       final itemApi = ItemApi();
       final response = await itemApi.getItemDetail(
         ItemRequest(itemId: widget.item.itemUuid),
       );
-      
+
       if (mounted) {
         setState(() {
+          _useAiPrice = response.item?.aiPrice ?? false;
           _isLiked = response.likeStatus == 'LIKE';
           _likeCount = response.likeCount ?? widget.item.likeCount;
         });
@@ -211,24 +216,36 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      // 좋아요 API 호출
+                      // 연타 방지 및 유효성 검사
+                      if (_isLiking ||
+                          widget.item.itemUuid == null ||
+                          widget.item.itemUuid!.isEmpty) {
+                        return;
+                      }
+
+                      setState(() => _isLiking = true);
                       try {
                         final itemApi = ItemApi();
                         final response = await itemApi.postLike(
                           ItemRequest(itemId: widget.item.itemUuid),
                         );
-                        
+                        if (!mounted) return;
                         setState(() {
-                          if (response.likeStatus == 'LIKE') {
-                            _isLiked = true;
-                            _likeCount = response.likeCount ?? (_likeCount + 1);
+                          _isLiked = response.likeStatus == 'LIKE';
+                          if (response.likeCount != null) {
+                            _likeCount = response.likeCount!;
                           } else {
-                            _isLiked = false;
-                            _likeCount = response.likeCount ?? (_likeCount > 0 ? _likeCount - 1 : 0);
+                            _likeCount = _isLiked
+                                ? _likeCount + 1
+                                : (_likeCount > 0 ? _likeCount - 1 : 0);
                           }
                         });
                       } catch (e) {
                         debugPrint('좋아요 실패: $e');
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isLiking = false);
+                        }
                       }
                     },
                     child: SvgPicture.asset(
@@ -274,25 +291,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                                 ),
                                 SizedBox(width: 8.w),
                                 // AI 가격 태그 표시
-                                if (widget.item.aiPrice)
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 8.w, vertical: 2.h),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryYellow,
-                                      borderRadius: BorderRadius.circular(4.r),
-                                    ),
-                                    child: Text(
-                                      'AI',
-                                      style: CustomTextStyles.p3.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.primaryBlack,
-                                      ),
-                                    ),
-                                  ),
-                                if (widget.item.priceTag != null)
-                                  HomeFeedAiAnalysisTag(
-                                      tag: widget.item.priceTag!)
+                                HomeFeedAiAnalysisTag(
+                                  tag: _useAiPrice
+                                      ? PriceTag.aiAnalyzed
+                                      : PriceTag.userInput,
+                                )
                               ],
                             ),
                             SizedBox(height: 12.h),
@@ -320,8 +323,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       ClipOval(
                         child: BlurWrapper(
                           enabled: widget.showBlur,
-                          child: const UserProfileCircularAvatar(
-                            avatarSize: Size(50, 50),
+                          child: UserProfileCircularAvatar(
+                            avatarSize: const Size(50, 50),
+                            profileUrl: widget.item.profileUrl,
                           ),
                         ),
                       ),
@@ -350,9 +354,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           ),
                         ),
                         const Spacer(),
-                        HomeFeedAiTag(
-                          isActive: widget.item.hasAiAnalysis,
-                        ),
+                        HomeFeedAiTag(isActive: _useAiPrice),
                       ],
                     ),
                   ),

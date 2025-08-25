@@ -304,8 +304,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
       if (!mounted) return;
 
-      final feedItems = await _convertToFeedItems(response.itemDetailPage?.content ?? []);
-      
+      final feedItems =
+          await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+
       setState(() {
         _feedItems
           ..clear()
@@ -342,7 +343,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         pageSize: _pageSize,
       ));
 
-      final newItems = await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+      final newItems =
+          await _convertToFeedItems(response.itemDetailPage?.content ?? []);
 
       setState(() {
         _feedItems.addAll(newItems);
@@ -362,9 +364,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
-  Future<List<HomeFeedItem>> _convertToFeedItems(List<ItemDetail> details) async {
+  Future<List<HomeFeedItem>> _convertToFeedItems(
+      List<ItemDetail> details) async {
     final feedItems = <HomeFeedItem>[];
-    
+
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
 
@@ -392,7 +395,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           NLatLng(d.latitude!, d.longitude!),
         );
         if (address != null) {
-          locationText = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+          locationText =
+              '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
         }
       }
 
@@ -404,22 +408,18 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         date: d.createdDate ?? '',
         itemCondition: cond,
         transactionTypes: opts,
-        priceTag: null,
-        profileImageUrl:
-            'https://picsum.photos/100/100?random=${index + 1}', //FIXME: 프로필 이미지 추가 필요
+        profileUrl: d.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
         likeCount: d.likeCount ?? 0,
         imageUrls: d.itemImageUrls ?? [''],
         description: d.itemDescription ?? '',
         hasAiAnalysis: false,
-        aiPrice: false, // TODO: API에서 aiPrice 정보 받아와야 함
         latitude: d.latitude,
         longitude: d.longitude,
-        isLiked: false, // TODO: API에서 좋아요 상태 받아와야 함
       );
-      
+
       feedItems.add(feedItem);
     }
-    
+
     return feedItems;
   }
   
