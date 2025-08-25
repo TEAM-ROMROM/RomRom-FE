@@ -40,7 +40,6 @@ class ItemCard extends ConsumerWidget {
         final borderWidth = cs.s(4);
         final itemNameLabelPadding = cs.padding(18, 12);
         final optionPadding = cs.padding(14, 10);
-        final optionHeight = cs.s(75);
         final optionRadius = cs.radius(6);
         final boxMargin = cs.margin(t: 3, b: 4, r: 4, l: 4);
 
@@ -99,6 +98,7 @@ class ItemCard extends ConsumerWidget {
                     ],
                   ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // 이미지 영역
                       SizedBox(
@@ -111,61 +111,61 @@ class ItemCard extends ConsumerWidget {
                         ),
                       ),
                       // 정보 및 옵션 영역
-                      SizedBox(
-                        height: cs.s(146),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 카테고리, 이름
-                            Padding(
-                              padding: itemNameLabelPadding,
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 카테고리, 이름
+                          Padding(
+                            padding: itemNameLabelPadding,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(itemCategoryLabel,
+                                    style: categoryTextStyle),
+                                cs.sizedBoxH(8),
+                                Text(itemName, style: nameTextStyle),
+                              ],
+                            ),
+                          ),
+                          // 옵션 선택 영역
+                          Container(
+                            width: double.infinity,
+                            margin: boxMargin,
+                            constraints: BoxConstraints(
+                              minHeight: cs.s(60),
+                              maxHeight: cs.s(75),
+                            ),
+                            decoration: buildBoxDecoration(
+                                Colors.white.withValues(alpha: 0.3),
+                                optionRadius),
+                            child: Padding(
+                              padding: optionPadding,
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
-                                  Text(itemCategoryLabel,
-                                      style: categoryTextStyle),
+                                  Text('요청 옵션', style: optionTextStyle),
                                   cs.sizedBoxH(8),
-                                  Text(itemName, style: nameTextStyle),
+                                  Flexible(
+                                    child: Wrap(
+                                      spacing: cs.s(8),
+                                      runSpacing: cs.s(4),
+                                      children: itemOptions
+                                          .map((option) =>
+                                              ItemCardOptionChip(
+                                                itemId: itemId,
+                                                itemOption: option,
+                                              ))
+                                          .toList(),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            // 옵션 선택 영역
-                            Expanded(
-                              child: Container(
-                                width: double.infinity,
-                                margin: boxMargin,
-                                height: optionHeight,
-                                decoration: buildBoxDecoration(
-                                    Colors.white.withValues(alpha: 0.3),
-                                    optionRadius),
-                                child: Padding(
-                                  padding: optionPadding,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('요청 옵션', style: optionTextStyle),
-                                      cs.sizedBoxH(10),
-                                      Expanded(
-                                        child: Wrap(
-                                          spacing: cs.s(10),
-                                          children: itemOptions
-                                              .map((option) =>
-                                                  ItemCardOptionChip(
-                                                    itemId: itemId,
-                                                    itemOption: option,
-                                                  ))
-                                              .toList(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
