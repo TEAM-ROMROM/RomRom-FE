@@ -50,7 +50,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   final double _maxFanAngle = 18.0; // 최대 펼침 각도 (도)
   final double _hoverLift = 40.h; // 호버 시 카드 상승 높이
   final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
-  final double _baseBottom = 40.h; // 기본 bottom 위치
+  final double _baseBottom = 40.h; // 기본 bottom 위치 (네비게이션 바 위)
 
   @override
   void initState() {
@@ -236,6 +236,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
               width: _cardWidth,
               height: _cardHeight,
               decoration: BoxDecoration(
+                // 선택된 카드에 노란색 테두리 추가
+                border: (isHovered || isPulled) 
+                    ? Border.all(
+                        color: AppColors.primaryYellow,
+                        width: 2,
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(10.r),
                 boxShadow: [
                   BoxShadow(
                     color: isHovered || isPulled
