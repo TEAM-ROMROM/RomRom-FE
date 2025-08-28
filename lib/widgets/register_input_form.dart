@@ -53,6 +53,12 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   double? _latitude;
   double? _longitude;
   LocationAddress? _selectedAddress;
+  
+  // 처음 포커스 받았는지 추적을 위한 변수
+  bool _hasConditionBeenTouched = false;
+  bool _hasTradeOptionBeenTouched = false;
+  bool _hasCategoryBeenTouched = false;
+  bool _forceValidateAll = false; // 제출 버튼 클릭 시 모든 필드 검증
 
   // itemMethodOptions ItemTradeOption name 리스트로 변경
   List<ItemTradeOption> itemTradeOptions = ItemTradeOption.values;
@@ -206,8 +212,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   Future<void> _measureAiPrice() async {
     try {
       final predictedPrice = await ItemApi().pricePredict(ItemRequest(
-        itemName: titleController.text,
-        itemDescription: descriptionController.text,
+        itemName: titleController.text.trim(),
+        itemDescription: descriptionController.text.trim(),
         itemCondition: selectedItemConditionTypes.isNotEmpty
             ? selectedItemConditionTypes.first.serverName
             : null,
@@ -256,6 +262,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       selectedTradeOptions = (item?.itemTradeOptions ?? [])
           .map((e) => ItemTradeOption.fromServerName(e))
           .toList();
+      // 수정 모드에서는 이미 선택된 값이 있으므로 touched 상태로 설정
+      if (selectedItemConditionTypes.isNotEmpty) {
+        _hasConditionBeenTouched = true;
+      }
+      if (selectedTradeOptions.isNotEmpty) {
+        _hasTradeOptionBeenTouched = true;
+      }
       imageUrls = widget.itemResponse!.itemImages != null
           ? widget.itemResponse!.itemImages!
               .map((img) => img.imageUrl ?? '')
@@ -312,12 +325,16 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   /// 폼 유효성 검사
   /// 모든 필드가 채워져 있는지 확인
   bool get isFormValid {
-    return titleController.text.isNotEmpty &&
+    // 가격 변환 (콤마 제거 후 숫자로 변환)
+    final priceText = priceController.text.replaceAll(',', '').trim();
+    final price = int.tryParse(priceText) ?? 0;
+    
+    return titleController.text.trim().isNotEmpty && // 공백만 있는 경우 제외
         selectedCategory != null &&
-        descriptionController.text.isNotEmpty &&
+        descriptionController.text.trim().length >= 30 && // 최소 30자 이상, 공백만 있는 경우 제외
         selectedItemConditionTypes.isNotEmpty &&
         selectedTradeOptions.isNotEmpty &&
-        priceController.text != '0' &&
+        price > 0 && // 0원 초과
         locationController.text.isNotEmpty &&
         _latitude != null &&
         _longitude != null &&
@@ -472,22 +489,24 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   phrase: ItemTextFieldPhrase.title,
                   maxLength: 20,
                   controller: titleController,
+                  forceValidate: _forceValidateAll,
                 ),
               ),
 
               // 카테고리 필드
               RegisterCustomLabeledField(
                 label: ItemTextFieldPhrase.category.label,
-                field: RegisterCustomTextField(
-                  phrase: ItemTextFieldPhrase.category,
-                  readOnly: true,
-                  maxLength: 1,
-                  controller:
-                      TextEditingController(text: selectedCategory?.name ?? ''),
-                  onTap: () async {
-                    const categories = ItemCategories.values;
-                    ItemCategories? tempSelected = selectedCategory;
-                    await showModalBottomSheet<void>(
+                field: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () async {
+                        setState(() {
+                          _hasCategoryBeenTouched = true;
+                        });
+                        const categories = ItemCategories.values;
+                        ItemCategories? tempSelected = selectedCategory;
+                        await showModalBottomSheet<void>(
                       context: context,
                       backgroundColor: AppColors.primaryBlack,
                       barrierColor: AppColors.opacity80Black,
@@ -558,11 +577,56 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           },
                         );
                       },
-                    );
-                    setState(() {
-                      selectedCategory = tempSelected;
-                    });
-                  },
+                        );
+                        setState(() {
+                          selectedCategory = tempSelected;
+                        });
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                        decoration: BoxDecoration(
+                          color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
+                              ? AppColors.errorContainer
+                              : AppColors.opacity10White,
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
+                                ? AppColors.errorBorder
+                                : AppColors.opacity30White,
+                            width: 1.5.w,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                selectedCategory?.name ?? ItemTextFieldPhrase.category.hintText,
+                                style: CustomTextStyles.p2.copyWith(
+                                  color: selectedCategory != null
+                                      ? AppColors.textColorWhite
+                                      : AppColors.opacity40White,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              AppIcons.detailView,
+                              color: AppColors.textColorWhite,
+                              size: 18.w,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if ((_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null)
+                      Padding(
+                        padding: EdgeInsets.only(top: 8.0.h),
+                        child: Text(
+                          ItemTextFieldPhrase.category.errorText,
+                          style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
+                        ),
+                      ),
+                  ],
                 ),
               ),
 
@@ -574,6 +638,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   controller: descriptionController,
                   maxLength: 1000,
                   maxLines: 6,
+                  forceValidate: _forceValidateAll,
                 ),
               ),
 
@@ -604,6 +669,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                         ..add(option);
                                     }
                                     setState(() {
+                                      _hasConditionBeenTouched = true;
                                       selectedItemConditionTypes = newList;
                                     });
                                   },
@@ -611,7 +677,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             .toList(),
                       ),
                     ),
-                    selectedItemConditionTypes.isEmpty
+                    ((_hasConditionBeenTouched || _forceValidateAll) && selectedItemConditionTypes.isEmpty)
                         ? Text(
                             ItemTextFieldPhrase.condition.errorText,
                             style: CustomTextStyles.p3
@@ -646,6 +712,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                       newList.add(option);
                                     }
                                     setState(() {
+                                      _hasTradeOptionBeenTouched = true;
                                       selectedTradeOptions = newList;
                                     });
                                   },
@@ -653,7 +720,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             .toList(),
                       ),
                     ),
-                    selectedTradeOptions.isEmpty
+                    ((_hasTradeOptionBeenTouched || _forceValidateAll) && selectedTradeOptions.isEmpty)
                         ? Text(
                             ItemTextFieldPhrase.tradeOption.errorText,
                             style: CustomTextStyles.p3
@@ -799,6 +866,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 readOnly: useAiPrice,
                 keyboardType: TextInputType.number,
                 controller: priceController,
+                forceValidate: _forceValidateAll,
               ),
 
               // 거래 희망 위치 필드
@@ -814,6 +882,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     size: 18.w,
                   ),
                   controller: locationController,
+                  forceValidate: _forceValidateAll,
                   onTap: () async {
                     final result =
                         await Navigator.of(context).push<LocationAddress>(
@@ -857,6 +926,17 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   buttonText: '등록 완료',
                   buttonType: 2,
                   enabledOnPressed: () async {
+                    // 모든 필드 강제 검증
+                    if (!isFormValid) {
+                      setState(() {
+                        _forceValidateAll = true;
+                        _hasCategoryBeenTouched = true;
+                        _hasConditionBeenTouched = true;
+                        _hasTradeOptionBeenTouched = true;
+                      });
+                      return;
+                    }
+                    
                     if (_longitude == null || _latitude == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -877,8 +957,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         itemId: widget.isEditMode
                             ? widget.itemResponse!.item?.itemId
                             : null,
-                        itemName: titleController.text,
-                        itemDescription: descriptionController.text,
+                        itemName: titleController.text.trim(),
+                        itemDescription: descriptionController.text.trim(),
                         itemCategory: selectedCategory!.serverName,
                         itemCondition: selectedItemConditionTypes.isNotEmpty
                             ? selectedItemConditionTypes.first.serverName
