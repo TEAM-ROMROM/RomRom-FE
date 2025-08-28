@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -127,7 +126,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               itemId: widget.item.itemUuid ?? '',
                               imageSize: Size(screenWidth, screenWidth),
                               currentImageIndex: index,
-                              heroTag: 'itemImage_${widget.item.id}_$index',
+                              heroTag:
+                                  'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                               homeFeedItem: widget.item,
                             ),
                           ),
@@ -140,7 +140,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         }
                       },
                       child: Hero(
-                        tag: 'itemImage_${widget.item.id}_$index',
+                        tag:
+                            'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                         child: ClipRRect(
                           borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(4.r),
