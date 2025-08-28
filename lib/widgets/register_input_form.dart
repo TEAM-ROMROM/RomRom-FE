@@ -18,6 +18,7 @@ import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
@@ -53,7 +54,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   double? _latitude;
   double? _longitude;
   LocationAddress? _selectedAddress;
-  
+
   // 처음 포커스 받았는지 추적을 위한 변수
   bool _hasConditionBeenTouched = false;
   bool _hasTradeOptionBeenTouched = false;
@@ -87,7 +88,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       setState(() {
         _hasImageBeenTouched = true;
       });
-      
+
       if (imageFiles.length == 10) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -224,8 +225,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
             ? selectedItemConditionTypes.first.serverName
             : null,
       ));
+      // 숫자를 콤마 포함 문자열로 변환
+      final formatted = const PriceCommaFormatter().formatEditUpdate(
+        const TextEditingValue(),
+        TextEditingValue(text: predictedPrice.toString()),
+      );
+
       setState(() {
-        priceController.text = predictedPrice.toString();
+        priceController.value = formatted;
       });
     } catch (e) {
       // 에러 처리 (스낵바 표시 등)
@@ -257,7 +264,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
       titleController.text = item?.itemName ?? '';
       descriptionController.text = item?.itemDescription ?? '';
-      priceController.text = item?.price?.toString() ?? '0';
+      // 숫자를 콤마 포함 문자열로 변환
+      final formatted = const PriceCommaFormatter().formatEditUpdate(
+        const TextEditingValue(),
+        TextEditingValue(text: item?.price?.toString() ?? '0'),
+      );
+
+      priceController.value = formatted;
 
       selectedCategory = item?.itemCategory != null
           ? ItemCategories.fromServerName(item!.itemCategory!)
@@ -334,10 +347,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
     // 가격 변환 (콤마 제거 후 숫자로 변환)
     final priceText = priceController.text.replaceAll(',', '').trim();
     final price = int.tryParse(priceText) ?? 0;
-    
+
     return titleController.text.trim().isNotEmpty && // 공백만 있는 경우 제외
         selectedCategory != null &&
-        descriptionController.text.trim().length >= 10 && // 최소 10자 이상, 공백만 있는 경우 제외
+        descriptionController.text.trim().length >=
+            10 && // 최소 10자 이상, 공백만 있는 경우 제외
         selectedItemConditionTypes.isNotEmpty &&
         selectedTradeOptions.isNotEmpty &&
         price > 0 && // 0원 초과
@@ -527,90 +541,99 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         const categories = ItemCategories.values;
                         ItemCategories? tempSelected = selectedCategory;
                         await showModalBottomSheet<void>(
-                      context: context,
-                      backgroundColor: AppColors.primaryBlack,
-                      barrierColor: AppColors.opacity80Black,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(16)),
-                      ),
-                      isScrollControlled: true,
-                      builder: (context) {
-                        return StatefulBuilder(
-                          builder: (context, setInnerState) {
-                            return SizedBox(
-                              height: 502.h,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(
-                                          vertical: 14.0.h),
-                                      child: Container(
-                                        width: 50.w,
-                                        height: 4.h,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.opacity50White,
-                                          borderRadius:
-                                              BorderRadius.circular(5.r),
+                          context: context,
+                          backgroundColor: AppColors.primaryBlack,
+                          barrierColor: AppColors.opacity80Black,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(16)),
+                          ),
+                          isScrollControlled: true,
+                          builder: (context) {
+                            return StatefulBuilder(
+                              builder: (context, setInnerState) {
+                                return SizedBox(
+                                  height: 502.h,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 14.0.h),
+                                          child: Container(
+                                            width: 50.w,
+                                            height: 4.h,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.opacity50White,
+                                              borderRadius:
+                                                  BorderRadius.circular(5.r),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: EdgeInsets.only(left: 26.w),
-                                    child: Text(
-                                      ItemTextFieldPhrase.category.label,
-                                      style: CustomTextStyles.h2.copyWith(
-                                          fontWeight: FontWeight.w700),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: Padding(
-                                      padding: EdgeInsets.only(
-                                          right: 26.w, left: 26.w, top: 24.h),
-                                      child: Wrap(
-                                        spacing: 8.0.w,
-                                        runSpacing: 12.0.h,
-                                        children: categories.map((category) {
-                                          final isSelected =
-                                              tempSelected == category;
-                                          return CategoryChip(
-                                            label: category.name,
-                                            isSelected: isSelected,
-                                            onTap: () {
-                                              setInnerState(() {
-                                                tempSelected = category;
-                                              });
-                                              Navigator.pop(context);
-                                            },
-                                          );
-                                        }).toList(),
+                                      Padding(
+                                        padding: EdgeInsets.only(left: 26.w),
+                                        child: Text(
+                                          ItemTextFieldPhrase.category.label,
+                                          style: CustomTextStyles.h2.copyWith(
+                                              fontWeight: FontWeight.w700),
+                                        ),
                                       ),
-                                    ),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                              right: 26.w,
+                                              left: 26.w,
+                                              top: 24.h),
+                                          child: Wrap(
+                                            spacing: 8.0.w,
+                                            runSpacing: 12.0.h,
+                                            children:
+                                                categories.map((category) {
+                                              final isSelected =
+                                                  tempSelected == category;
+                                              return CategoryChip(
+                                                label: category.name,
+                                                isSelected: isSelected,
+                                                onTap: () {
+                                                  setInnerState(() {
+                                                    tempSelected = category;
+                                                  });
+                                                  Navigator.pop(context);
+                                                },
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
                         );
                         setState(() {
                           selectedCategory = tempSelected;
                         });
                       },
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 16.w, vertical: 16.h),
                         decoration: BoxDecoration(
-                          color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
-                              ? AppColors.errorContainer
-                              : AppColors.opacity10White,
+                          color:
+                              (_hasCategoryBeenTouched || _forceValidateAll) &&
+                                      selectedCategory == null
+                                  ? AppColors.errorContainer
+                                  : AppColors.opacity10White,
                           borderRadius: BorderRadius.circular(8.r),
                           border: Border.all(
-                            color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
+                            color: (_hasCategoryBeenTouched ||
+                                        _forceValidateAll) &&
+                                    selectedCategory == null
                                 ? AppColors.errorBorder
                                 : AppColors.opacity30White,
                             width: 1.5.w,
@@ -620,7 +643,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           children: [
                             Expanded(
                               child: Text(
-                                selectedCategory?.name ?? ItemTextFieldPhrase.category.hintText,
+                                selectedCategory?.name ??
+                                    ItemTextFieldPhrase.category.hintText,
                                 style: CustomTextStyles.p2.copyWith(
                                   color: selectedCategory != null
                                       ? AppColors.textColorWhite
@@ -638,12 +662,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         ),
                       ),
                     ),
-                    if ((_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null)
+                    if ((_hasCategoryBeenTouched || _forceValidateAll) &&
+                        selectedCategory == null)
                       Padding(
                         padding: EdgeInsets.only(top: 8.0.h),
                         child: Text(
                           ItemTextFieldPhrase.category.errorText,
-                          style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
+                          style: CustomTextStyles.p3
+                              .copyWith(color: AppColors.errorBorder),
                         ),
                       ),
                   ],
@@ -697,7 +723,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             .toList(),
                       ),
                     ),
-                    ((_hasConditionBeenTouched || _forceValidateAll) && selectedItemConditionTypes.isEmpty)
+                    ((_hasConditionBeenTouched || _forceValidateAll) &&
+                            selectedItemConditionTypes.isEmpty)
                         ? Text(
                             ItemTextFieldPhrase.condition.errorText,
                             style: CustomTextStyles.p3
@@ -740,7 +767,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             .toList(),
                       ),
                     ),
-                    ((_hasTradeOptionBeenTouched || _forceValidateAll) && selectedTradeOptions.isEmpty)
+                    ((_hasTradeOptionBeenTouched || _forceValidateAll) &&
+                            selectedTradeOptions.isEmpty)
                         ? Text(
                             ItemTextFieldPhrase.tradeOption.errorText,
                             style: CustomTextStyles.p3
@@ -850,7 +878,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
+                                  content: Text(
+                                      'AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
                                 ),
                               );
                             }
@@ -884,6 +913,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 phrase: ItemTextFieldPhrase.price,
                 prefixText: '₩',
                 readOnly: useAiPrice,
+                maxLength: 11,
                 keyboardType: TextInputType.number,
                 controller: priceController,
                 forceValidate: _forceValidateAll,
@@ -957,7 +987,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       });
                       return;
                     }
-                    
+
                     if (_longitude == null || _latitude == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

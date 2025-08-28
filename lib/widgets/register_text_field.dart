@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_text_field_phrase.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 
 /// 라벨
 class RegisterCustomTextFieldLabel extends StatelessWidget {
@@ -57,7 +58,8 @@ class RegisterCustomTextField extends StatefulWidget {
   });
 
   @override
-  State<RegisterCustomTextField> createState() => _RegisterCustomTextFieldState();
+  State<RegisterCustomTextField> createState() =>
+      _RegisterCustomTextFieldState();
 }
 
 class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
@@ -111,24 +113,13 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
             ? ValueListenableBuilder<TextEditingValue>(
                 valueListenable: widget.controller!,
                 builder: (context, value, child) {
-                  // 커서 위치 보정
-                  final formatted = formatPrice(int.tryParse(
-                          value.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
-                      0);
-
-                  if (value.text != formatted) {
-                    widget.controller!.value = TextEditingValue(
-                      text: formatted,
-                      selection: TextSelection.collapsed(
-                        offset: formatted.length,
-                      ),
-                    );
-                  }
-                  
                   // 가격 유효성 검사 (포커스를 잃었거나 강제 검증일 때)
-                  final price = int.tryParse(value.text.replaceAll(',', '')) ?? 0;
-                  bool shouldShowError = (_hasLostFocus || widget.forceValidate == true) && price == 0;
-                  
+                  final price =
+                      int.tryParse(value.text.replaceAll(',', '')) ?? 0;
+                  bool shouldShowError =
+                      (_hasLostFocus || widget.forceValidate == true) &&
+                          price == 0;
+
                   // number field일 때
                   return TextField(
                     controller: widget.controller,
@@ -137,6 +128,10 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                     maxLines: widget.maxLines,
                     keyboardType: widget.keyboardType,
                     readOnly: widget.readOnly,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly, // 숫자만 허용
+                      const PriceCommaFormatter(), // 콤마 포맷팅
+                    ],
                     onTap: widget.onTap,
                     style: CustomTextStyles.p2
                         .copyWith(color: AppColors.textColorWhite),
@@ -148,8 +143,10 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                           ? AppColors.errorContainer
                           : AppColors.opacity10White,
                       border: shouldShowError ? errorBorder : inputBorder,
-                      enabledBorder: shouldShowError ? errorBorder : inputBorder,
-                      focusedBorder: shouldShowError ? errorBorder : inputBorder,
+                      enabledBorder:
+                          shouldShowError ? errorBorder : inputBorder,
+                      focusedBorder:
+                          shouldShowError ? errorBorder : inputBorder,
                       hintStyle: CustomTextStyles.p2
                           .copyWith(color: AppColors.opacity40White),
                       counterText: '',
@@ -177,12 +174,13 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   bool shouldShowError = false;
                   if (_hasLostFocus || widget.forceValidate == true) {
                     if (widget.phrase == ItemTextFieldPhrase.description) {
-                      shouldShowError = value.text.trim().isEmpty || value.text.trim().length < 10;
+                      shouldShowError = value.text.trim().isEmpty ||
+                          value.text.trim().length < 10;
                     } else {
                       shouldShowError = value.text.trim().isEmpty;
                     }
                   }
-                  
+
                   return TextField(
                     controller: widget.controller,
                     focusNode: _focusNode,
@@ -200,15 +198,11 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                       fillColor: shouldShowError
                           ? AppColors.errorContainer
                           : AppColors.opacity10White,
-                      border: shouldShowError
-                          ? errorBorder
-                          : inputBorder,
-                      enabledBorder: shouldShowError
-                          ? errorBorder
-                          : inputBorder,
-                      focusedBorder: shouldShowError
-                          ? errorBorder
-                          : inputBorder,
+                      border: shouldShowError ? errorBorder : inputBorder,
+                      enabledBorder:
+                          shouldShowError ? errorBorder : inputBorder,
+                      focusedBorder:
+                          shouldShowError ? errorBorder : inputBorder,
                       hintStyle: CustomTextStyles.p2
                           .copyWith(color: AppColors.opacity40White),
                       counterText: '',
@@ -238,11 +232,12 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
               final currentLength = value.text.length;
               bool shouldShowError = false;
               String errorMessage = '';
-              
+
               if (_hasLostFocus || widget.forceValidate == true) {
                 if (widget.keyboardType == TextInputType.number) {
                   // 가격 필드
-                  final price = int.tryParse(value.text.replaceAll(',', '')) ?? 0;
+                  final price =
+                      int.tryParse(value.text.replaceAll(',', '')) ?? 0;
                   if (price == 0) {
                     shouldShowError = true;
                     errorMessage = '가격은 0원보다 커야 합니다';
@@ -260,7 +255,7 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   errorMessage = widget.phrase.errorText;
                 }
               }
-              
+
               return Padding(
                 padding: EdgeInsets.only(top: 8.0.h),
                 child: Row(
@@ -272,7 +267,10 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                           .copyWith(color: AppColors.errorBorder),
                     ),
                     // 카운터는 maxLength가 있고, 카테고리가 아닌 경우에만 표시
-                    if (widget.maxLength != null && widget.phrase.name != ItemTextFieldPhrase.category.name)
+                    if (widget.maxLength != null &&
+                        widget.phrase.name !=
+                            ItemTextFieldPhrase.category.name &&
+                        widget.phrase.name != ItemTextFieldPhrase.price.name)
                       Text(
                         '$currentLength/${widget.maxLength}',
                         style: CustomTextStyles.p3
