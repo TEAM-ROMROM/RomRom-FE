@@ -18,6 +18,7 @@ import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/item_detail_image_container.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
@@ -48,7 +49,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
 class _ItemDetailDescriptionScreenState
     extends State<ItemDetailDescriptionScreen> {
   late PageController pageController;
-  late int currentImageIndex;
+  late final ValueNotifier<int> currentIndexVN;
 
   bool isLoading = true;
   bool hasError = false;
@@ -67,8 +68,8 @@ class _ItemDetailDescriptionScreenState
   @override
   void initState() {
     super.initState();
-    currentImageIndex = widget.currentImageIndex;
-    pageController = PageController(initialPage: currentImageIndex);
+    currentIndexVN = ValueNotifier<int>(widget.currentImageIndex);
+    pageController = PageController(initialPage: widget.currentImageIndex);
     _loadItemDetail();
   }
 
@@ -190,6 +191,7 @@ class _ItemDetailDescriptionScreenState
 
   @override
   void dispose() {
+    currentIndexVN.dispose();
     pageController.dispose();
     super.dispose();
   }
@@ -278,19 +280,17 @@ class _ItemDetailDescriptionScreenState
                           ? PageView.builder(
                               itemCount: imageUrls.length,
                               controller: pageController,
-                              onPageChanged: (index) {
-                                setState(() {
-                                  currentImageIndex = index;
-                                });
-                              },
-                              itemBuilder: (context, index) {
-                                return Hero(
-                                  tag: widget.heroTag,
-                                  child: _buildImage(
-                                    imageUrls[index],
-                                    Size(widget.imageSize.width,
-                                        widget.imageSize.height),
-                                  ),
+                              onPageChanged: (i) => currentIndexVN.value = i,
+                              itemBuilder: (context, i) {
+                                // 각 페이지는 자체적으로 HeroMode를 토글
+                                return ItemDetailImageContainer(
+                                  index: i,
+                                  imageUrl: imageUrls[i],
+                                  size: Size(widget.imageSize.width,
+                                      widget.imageSize.height),
+                                  // 인덱스 포함된 고유 태그 권장
+                                  heroTag: 'itemImage_${item!.itemId}_$i',
+                                  currentIndexVN: currentIndexVN,
                                 );
                               },
                             )
@@ -305,23 +305,27 @@ class _ItemDetailDescriptionScreenState
                       bottom: 24.h,
                       left: 0,
                       right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          imageUrls.length,
-                          (index) => Container(
-                            width: 6.w,
-                            height: 6.w,
-                            margin: EdgeInsets.symmetric(horizontal: 4.w),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: currentImageIndex == index
-                                  ? Colors.white
-                                  : AppColors.opacity50White,
-                            ),
-                          ),
-                        ),
-                      ),
+                      child: ValueListenableBuilder<int>(
+                          valueListenable: currentIndexVN,
+                          builder: (_, current, __) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                imageUrls.length,
+                                (index) => Container(
+                                  width: 6.w,
+                                  height: 6.w,
+                                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: currentIndexVN.value == index
+                                        ? Colors.white
+                                        : AppColors.opacity50White,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
                     ),
                   ],
                 ),
@@ -583,7 +587,7 @@ class _ItemDetailDescriptionScreenState
             top: MediaQuery.of(context).padding.top + 8,
             left: 24.w,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context, currentImageIndex),
+              onTap: () => Navigator.pop(context, currentIndexVN.value),
               child: Icon(AppIcons.navigateBefore,
                   size: 24.sp, color: AppColors.textColorWhite),
             ),
@@ -600,37 +604,6 @@ class _ItemDetailDescriptionScreenState
           ),
         ],
       ),
-    );
-  }
-
-  /// 이미지 로더: 오류 시 플레이스홀더
-  Widget _buildImage(String url, Size size) {
-    final placeholder = ErrorImagePlaceholder(size: size);
-
-    final trimmed = url.trim();
-    if (trimmed.isEmpty || !trimmed.startsWith('http')) return placeholder;
-
-    return Image.network(
-      trimmed,
-      fit: BoxFit.cover,
-      width: size.width,
-      height: size.height,
-      errorBuilder: (context, error, stackTrace) {
-        debugPrint('Detail 이미지 로드 실패: $trimmed, error: $error');
-        return placeholder;
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(
-          child: CircularProgressIndicator(
-            color: AppColors.primaryYellow,
-            value: loadingProgress.expectedTotalBytes != null
-                ? loadingProgress.cumulativeBytesLoaded /
-                    (loadingProgress.expectedTotalBytes ?? 1)
-                : null,
-          ),
-        );
-      },
     );
   }
 

@@ -132,7 +132,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                                   screenWidth,
                                 ),
                                 currentImageIndex: index,
-                                heroTag: 'itemImage_${widget.item.id}',
+                                heroTag:
+                                    'itemImage_${widget.item.id}_$index', // ← 인덱스 포함
                                 homeFeedItem: widget.item,
                               ),
                             ));
@@ -325,8 +326,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           enabled: widget.showBlur,
                           child: UserProfileCircularAvatar(
                             avatarSize: const Size(50, 50),
-                            profileUrl: widget.item.profileUrl.isNotEmpty 
-                                ? widget.item.profileUrl 
+                            profileUrl: widget.item.profileUrl.isNotEmpty
+                                ? widget.item.profileUrl
                                 : null,
                           ),
                         ),

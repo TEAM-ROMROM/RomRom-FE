@@ -690,7 +690,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           itemId: item.itemId!,
           imageSize: Size(MediaQuery.of(context).size.width, 400.h),
           currentImageIndex: 0,
-          heroTag: 'register_item_${item.itemId}',
+          heroTag: 'itemImage_${item.itemId}_0', // ← 인덱스 포함
         ),
       ),
     );
