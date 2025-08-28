@@ -371,7 +371,12 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   child: SizedBox(
                     width: 90.w,
                     height: 90.h,
-                    child: _buildImage(imageUrl),
+                    child: item.itemId != null
+                        ? Hero(
+                            tag: 'register_item_${item.itemId}',
+                            child: _buildImage(imageUrl),
+                          )
+                        : _buildImage(imageUrl),
                   ),
                 ),
                 SizedBox(width: 16.h),
