@@ -1,11 +1,49 @@
 {
   "metadata": {
-    "lastUpdated": "2025-08-25T13:23:42Z",
-    "currentVersion": "1.2.4",
-    "totalReleases": 10,
+    "lastUpdated": "2025-08-28T11:55:25Z",
+    "currentVersion": "1.2.8",
+    "totalReleases": 11,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.2.8",
+      "project_type": "flutter",
+      "date": "2025-08-28",
+      "pr_number": 245,
+      "raw_summary": "Summary by CodeRabbit\n\n\nNew Features\n\n등록 탭에서 아이템 상세 화면으로 탭 이동 및 이미지 히어로 전환 지원\n가격 입력 실시간 천 단위 콤마 포맷팅\n화면 빈 곳 탭 시 키보드 자동 닫힘\niOS 제스처 친화적 네비게이션 동작 개선\n\n\n\nBug Fixes\n\n물품 등록 유효성 강화: 공백 제거, 본문 최소 10자, 가격 0원 불가, 첫 진입 시 불필요한 에러 숨김, 이미지/카테고리/옵션 선택 검증\n\n\n\nDocumentation\n\n모바일 전용/네비게이션 가이드 추가 및 예시 확장\nREADME 최신 버전 갱신, 버그 리포트 문서 추가\nFlutter 문법 요약 섹션 추가\n\n\n\nChores\n\n버전 업데이트: 1.2.8",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "등록 탭에서 아이템 상세 화면으로 탭 이동 및 이미지 히어로 전환 지원",
+            "가격 입력 실시간 천 단위 콤마 포맷팅",
+            "화면 빈 곳 탭 시 키보드 자동 닫힘",
+            "iOS 제스처 친화적 네비게이션 동작 개선"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "물품 등록 유효성 강화: 공백 제거, 본문 최소 10자, 가격 0원 불가, 첫 진입 시 불필요한 에러 숨김, 이미지/카테고리/옵션 선택 검증"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "모바일 전용/네비게이션 가이드 추가 및 예시 확장",
+            "README 최신 버전 갱신, 버그 리포트 문서 추가",
+            "Flutter 문법 요약 섹션 추가"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업데이트: 1.2.8"
+          ]
+        }
+      }
+    },
     {
       "version": "1.2.4",
       "project_type": "flutter",
