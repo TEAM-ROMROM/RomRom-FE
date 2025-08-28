@@ -10,6 +10,8 @@ Flutter 기반 중고거래 플랫폼 RomRom의 프론트엔드 프로젝트입�
 - **텍스트 스타일은 항상 CustomTextStyles 사용**: 직접 TextStyle 정의 금지
 - **색상은 항상 AppColors 사용**: 직접 Color 코드 사용 금지
 - **파일명 규칙**: 위젯 파일명에 불필요한 `_widget` 접미사 사용 금지
+- **모바일 전용 프로젝트**: iOS/Android 전용으로 웹 호환성 고려 불필요
+- **화면 이동 시 팀 공통 확장 메서드 사용**: iOS 스와이프 제스처 지원을 위해 `context.navigateTo()` 사용 필수
 
 ### 텍스트 스타일 사용 예시
 ```dart
@@ -41,6 +43,20 @@ color: Colors.black.withAlpha(153)
 // ✅ 올바른 예시
 color: AppColors.primaryBlack.withValues(alpha: 0.6)
 color: AppColors.opacity60White
+```
+
+### 플랫폼 및 네비게이션 사용 예시
+```dart
+// ✅ 올바른 화면 이동 (iOS 스와이프 제스처 지원)
+context.navigateTo(screen: NewScreen());
+
+// ❌ 잘못된 예시 - MaterialPageRoute 직접 사용 시 iOS 제스처 미작동
+Navigator.push(context, MaterialPageRoute(builder: (_) => NewScreen()));
+
+// ✅ 모바일 전용이므로 dart:io Platform 사용 가능
+if (Platform.isIOS) {
+  // iOS 전용 로직
+}
 ```
 
 ## 개발 시 확인 사항
