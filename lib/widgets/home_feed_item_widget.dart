@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -120,23 +121,17 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                     child: GestureDetector(
                       onTap: () async {
                         final resultIndex = await Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              transitionDuration:
-                                  const Duration(milliseconds: 1000),
-                              pageBuilder: (_, __, ___) =>
-                                  ItemDetailDescriptionScreen(
-                                itemId: widget.item.itemUuid ?? '',
-                                imageSize: Size(
-                                  screenWidth,
-                                  screenWidth,
-                                ),
-                                currentImageIndex: index,
-                                heroTag: 'itemImage_${widget.item.id}',
-                                homeFeedItem: widget.item,
-                              ),
-                            ));
-
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ItemDetailDescriptionScreen(
+                              itemId: widget.item.itemUuid ?? '',
+                              imageSize: Size(screenWidth, screenWidth),
+                              currentImageIndex: index,
+                              heroTag: 'itemImage_${widget.item.id}_$index',
+                              homeFeedItem: widget.item,
+                            ),
+                          ),
+                        );
                         if (resultIndex != null && resultIndex is int) {
                           setState(() {
                             _currentImageIndex = resultIndex;
@@ -145,7 +140,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         }
                       },
                       child: Hero(
-                        tag: 'itemImage_${widget.item.id}',
+                        tag: 'itemImage_${widget.item.id}_$index',
                         child: ClipRRect(
                           borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(4.r),
@@ -325,8 +320,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           enabled: widget.showBlur,
                           child: UserProfileCircularAvatar(
                             avatarSize: const Size(50, 50),
-                            profileUrl: widget.item.profileUrl.isNotEmpty 
-                                ? widget.item.profileUrl 
+                            profileUrl: widget.item.profileUrl.isNotEmpty
+                                ? widget.item.profileUrl
                                 : null,
                           ),
                         ),
