@@ -115,6 +115,16 @@ class MyApp extends StatelessWidget {
               title: 'RomRom',
               theme: AppTheme.defaultTheme,
               home: initialScreen,
+              // iOS에서 뒤로가기 스와이프 제스처 활성화
+              builder: (context, child) {
+                return GestureDetector(
+                  onTap: () {
+                    // 키보드가 열려있을 때 화면을 터치하면 키보드 닫기
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: child,
+                );
+              },
             ),
           ),
         );
