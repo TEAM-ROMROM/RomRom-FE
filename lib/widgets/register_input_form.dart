@@ -18,6 +18,7 @@ import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
@@ -54,6 +55,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   double? _longitude;
   LocationAddress? _selectedAddress;
 
+  // 처음 포커스 받았는지 추적을 위한 변수
+  bool _hasConditionBeenTouched = false;
+  bool _hasTradeOptionBeenTouched = false;
+  bool _hasImageBeenTouched = false; // 이미지 선택 시도 여부
+  bool _hasCategoryBeenTouched = false;
+  bool _forceValidateAll = false; // 제출 버튼 클릭 시 모든 필드 검증
+
   // itemMethodOptions ItemTradeOption name 리스트로 변경
   List<ItemTradeOption> itemTradeOptions = ItemTradeOption.values;
   // itemConditonOptions ItemCondition의 name 리스트로 변경
@@ -77,6 +85,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원)
   Future<void> onPickImage() async {
     try {
+      setState(() {
+        _hasImageBeenTouched = true;
+      });
+
       if (imageFiles.length == 10) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -163,6 +175,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
     setState(() {
       _loadingImageIndices.add(index);
+      _hasImageBeenTouched = true;
     });
 
     try {
@@ -206,14 +219,20 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   Future<void> _measureAiPrice() async {
     try {
       final predictedPrice = await ItemApi().pricePredict(ItemRequest(
-        itemName: titleController.text,
-        itemDescription: descriptionController.text,
+        itemName: titleController.text.trim(),
+        itemDescription: descriptionController.text.trim(),
         itemCondition: selectedItemConditionTypes.isNotEmpty
             ? selectedItemConditionTypes.first.serverName
             : null,
       ));
+      // 숫자를 콤마 포함 문자열로 변환
+      final formatted = const PriceCommaFormatter().formatEditUpdate(
+        const TextEditingValue(),
+        TextEditingValue(text: predictedPrice.toString()),
+      );
+
       setState(() {
-        priceController.text = predictedPrice.toString();
+        priceController.value = formatted;
       });
     } catch (e) {
       // 에러 처리 (스낵바 표시 등)
@@ -245,7 +264,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
       titleController.text = item?.itemName ?? '';
       descriptionController.text = item?.itemDescription ?? '';
-      priceController.text = item?.price?.toString() ?? '0';
+      // 숫자를 콤마 포함 문자열로 변환
+      final formatted = const PriceCommaFormatter().formatEditUpdate(
+        const TextEditingValue(),
+        TextEditingValue(text: item?.price?.toString() ?? '0'),
+      );
+
+      priceController.value = formatted;
 
       selectedCategory = item?.itemCategory != null
           ? ItemCategories.fromServerName(item!.itemCategory!)
@@ -256,6 +281,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       selectedTradeOptions = (item?.itemTradeOptions ?? [])
           .map((e) => ItemTradeOption.fromServerName(e))
           .toList();
+      // 수정 모드에서는 이미 선택된 값이 있으므로 touched 상태로 설정
+      if (selectedItemConditionTypes.isNotEmpty) {
+        _hasConditionBeenTouched = true;
+      }
+      if (selectedTradeOptions.isNotEmpty) {
+        _hasTradeOptionBeenTouched = true;
+      }
       imageUrls = widget.itemResponse!.itemImages != null
           ? widget.itemResponse!.itemImages!
               .map((img) => img.imageUrl ?? '')
@@ -312,12 +344,17 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   /// 폼 유효성 검사
   /// 모든 필드가 채워져 있는지 확인
   bool get isFormValid {
-    return titleController.text.isNotEmpty &&
+    // 가격 변환 (콤마 제거 후 숫자로 변환)
+    final priceText = priceController.text.replaceAll(',', '').trim();
+    final price = int.tryParse(priceText) ?? 0;
+
+    return titleController.text.trim().isNotEmpty && // 공백만 있는 경우 제외
         selectedCategory != null &&
-        descriptionController.text.isNotEmpty &&
+        descriptionController.text.trim().length >=
+            10 && // 최소 10자 이상, 공백만 있는 경우 제외
         selectedItemConditionTypes.isNotEmpty &&
         selectedTradeOptions.isNotEmpty &&
-        priceController.text != '0' &&
+        price > 0 && // 0원 초과
         locationController.text.isNotEmpty &&
         _latitude != null &&
         _longitude != null &&
@@ -458,6 +495,20 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
             ),
           ],
         ),
+        // 이미지 에러 메시지
+        if (_hasImageBeenTouched && imageFiles.isEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
+            child: Row(
+              children: [
+                Text(
+                  '상품 사진을 최소 1장 이상 등록해주세요',
+                  style: CustomTextStyles.p3
+                      .copyWith(color: AppColors.errorBorder),
+                ),
+              ],
+            ),
+          ),
         Padding(
           padding: EdgeInsets.only(right: 24.w),
           child: Column(
@@ -472,97 +523,156 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   phrase: ItemTextFieldPhrase.title,
                   maxLength: 20,
                   controller: titleController,
+                  forceValidate: _forceValidateAll,
                 ),
               ),
 
               // 카테고리 필드
               RegisterCustomLabeledField(
                 label: ItemTextFieldPhrase.category.label,
-                field: RegisterCustomTextField(
-                  phrase: ItemTextFieldPhrase.category,
-                  readOnly: true,
-                  maxLength: 1,
-                  controller:
-                      TextEditingController(text: selectedCategory?.name ?? ''),
-                  onTap: () async {
-                    const categories = ItemCategories.values;
-                    ItemCategories? tempSelected = selectedCategory;
-                    await showModalBottomSheet<void>(
-                      context: context,
-                      backgroundColor: AppColors.primaryBlack,
-                      barrierColor: AppColors.opacity80Black,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(16)),
-                      ),
-                      isScrollControlled: true,
-                      builder: (context) {
-                        return StatefulBuilder(
-                          builder: (context, setInnerState) {
-                            return SizedBox(
-                              height: 502.h,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(
-                                          vertical: 14.0.h),
-                                      child: Container(
-                                        width: 50.w,
-                                        height: 4.h,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.opacity50White,
-                                          borderRadius:
-                                              BorderRadius.circular(5.r),
+                field: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () async {
+                        setState(() {
+                          _hasCategoryBeenTouched = true;
+                        });
+                        const categories = ItemCategories.values;
+                        ItemCategories? tempSelected = selectedCategory;
+                        await showModalBottomSheet<void>(
+                          context: context,
+                          backgroundColor: AppColors.primaryBlack,
+                          barrierColor: AppColors.opacity80Black,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(16)),
+                          ),
+                          isScrollControlled: true,
+                          builder: (context) {
+                            return StatefulBuilder(
+                              builder: (context, setInnerState) {
+                                return SizedBox(
+                                  height: 502.h,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 14.0.h),
+                                          child: Container(
+                                            width: 50.w,
+                                            height: 4.h,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.opacity50White,
+                                              borderRadius:
+                                                  BorderRadius.circular(5.r),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: EdgeInsets.only(left: 26.w),
-                                    child: Text(
-                                      ItemTextFieldPhrase.category.label,
-                                      style: CustomTextStyles.h2.copyWith(
-                                          fontWeight: FontWeight.w700),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: Padding(
-                                      padding: EdgeInsets.only(
-                                          right: 26.w, left: 26.w, top: 24.h),
-                                      child: Wrap(
-                                        spacing: 8.0.w,
-                                        runSpacing: 12.0.h,
-                                        children: categories.map((category) {
-                                          final isSelected =
-                                              tempSelected == category;
-                                          return CategoryChip(
-                                            label: category.name,
-                                            isSelected: isSelected,
-                                            onTap: () {
-                                              setInnerState(() {
-                                                tempSelected = category;
-                                              });
-                                              Navigator.pop(context);
-                                            },
-                                          );
-                                        }).toList(),
+                                      Padding(
+                                        padding: EdgeInsets.only(left: 26.w),
+                                        child: Text(
+                                          ItemTextFieldPhrase.category.label,
+                                          style: CustomTextStyles.h2.copyWith(
+                                              fontWeight: FontWeight.w700),
+                                        ),
                                       ),
-                                    ),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                              right: 26.w,
+                                              left: 26.w,
+                                              top: 24.h),
+                                          child: Wrap(
+                                            spacing: 8.0.w,
+                                            runSpacing: 12.0.h,
+                                            children:
+                                                categories.map((category) {
+                                              final isSelected =
+                                                  tempSelected == category;
+                                              return CategoryChip(
+                                                label: category.name,
+                                                isSelected: isSelected,
+                                                onTap: () {
+                                                  setInnerState(() {
+                                                    tempSelected = category;
+                                                  });
+                                                  Navigator.pop(context);
+                                                },
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                );
+                              },
                             );
                           },
                         );
+                        setState(() {
+                          selectedCategory = tempSelected;
+                        });
                       },
-                    );
-                    setState(() {
-                      selectedCategory = tempSelected;
-                    });
-                  },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 16.w, vertical: 16.h),
+                        decoration: BoxDecoration(
+                          color:
+                              (_hasCategoryBeenTouched || _forceValidateAll) &&
+                                      selectedCategory == null
+                                  ? AppColors.errorContainer
+                                  : AppColors.opacity10White,
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color: (_hasCategoryBeenTouched ||
+                                        _forceValidateAll) &&
+                                    selectedCategory == null
+                                ? AppColors.errorBorder
+                                : AppColors.opacity30White,
+                            width: 1.5.w,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                selectedCategory?.name ??
+                                    ItemTextFieldPhrase.category.hintText,
+                                style: CustomTextStyles.p2.copyWith(
+                                  color: selectedCategory != null
+                                      ? AppColors.textColorWhite
+                                      : AppColors.opacity40White,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              AppIcons.detailView,
+                              color: AppColors.textColorWhite,
+                              size: 18.w,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if ((_hasCategoryBeenTouched || _forceValidateAll) &&
+                        selectedCategory == null)
+                      Padding(
+                        padding: EdgeInsets.only(top: 8.0.h),
+                        child: Text(
+                          ItemTextFieldPhrase.category.errorText,
+                          style: CustomTextStyles.p3
+                              .copyWith(color: AppColors.errorBorder),
+                        ),
+                      ),
+                  ],
                 ),
               ),
 
@@ -574,6 +684,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   controller: descriptionController,
                   maxLength: 1000,
                   maxLines: 6,
+                  forceValidate: _forceValidateAll,
                 ),
               ),
 
@@ -604,6 +715,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                         ..add(option);
                                     }
                                     setState(() {
+                                      _hasConditionBeenTouched = true;
                                       selectedItemConditionTypes = newList;
                                     });
                                   },
@@ -611,7 +723,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             .toList(),
                       ),
                     ),
-                    selectedItemConditionTypes.isEmpty
+                    ((_hasConditionBeenTouched || _forceValidateAll) &&
+                            selectedItemConditionTypes.isEmpty)
                         ? Text(
                             ItemTextFieldPhrase.condition.errorText,
                             style: CustomTextStyles.p3
@@ -646,6 +759,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                       newList.add(option);
                                     }
                                     setState(() {
+                                      _hasTradeOptionBeenTouched = true;
                                       selectedTradeOptions = newList;
                                     });
                                   },
@@ -653,7 +767,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             .toList(),
                       ),
                     ),
-                    selectedTradeOptions.isEmpty
+                    ((_hasTradeOptionBeenTouched || _forceValidateAll) &&
+                            selectedTradeOptions.isEmpty)
                         ? Text(
                             ItemTextFieldPhrase.tradeOption.errorText,
                             style: CustomTextStyles.p3
@@ -763,7 +878,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('제목, 설명, 물건 상태를 모두 입력해주세요.'),
+                                  content: Text(
+                                      'AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
                                 ),
                               );
                             }
@@ -797,8 +913,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 phrase: ItemTextFieldPhrase.price,
                 prefixText: '₩',
                 readOnly: useAiPrice,
+                maxLength: 11,
                 keyboardType: TextInputType.number,
                 controller: priceController,
+                forceValidate: _forceValidateAll,
               ),
 
               // 거래 희망 위치 필드
@@ -814,6 +932,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     size: 18.w,
                   ),
                   controller: locationController,
+                  forceValidate: _forceValidateAll,
                   onTap: () async {
                     final result =
                         await Navigator.of(context).push<LocationAddress>(
@@ -857,6 +976,18 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   buttonText: '등록 완료',
                   buttonType: 2,
                   enabledOnPressed: () async {
+                    // 모든 필드 강제 검증
+                    if (!isFormValid) {
+                      setState(() {
+                        _forceValidateAll = true;
+                        _hasCategoryBeenTouched = true;
+                        _hasConditionBeenTouched = true;
+                        _hasTradeOptionBeenTouched = true;
+                        _hasImageBeenTouched = true;
+                      });
+                      return;
+                    }
+
                     if (_longitude == null || _latitude == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -877,8 +1008,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         itemId: widget.isEditMode
                             ? widget.itemResponse!.item?.itemId
                             : null,
-                        itemName: titleController.text,
-                        itemDescription: descriptionController.text,
+                        itemName: titleController.text.trim(),
+                        itemDescription: descriptionController.text.trim(),
                         itemCategory: selectedCategory!.serverName,
                         itemCondition: selectedItemConditionTypes.isNotEmpty
                             ? selectedItemConditionTypes.first.serverName
