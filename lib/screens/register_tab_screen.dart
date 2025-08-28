@@ -361,6 +361,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         children: [
           GestureDetector(
             onTap: () => _navigateToItemDetail(item),
+            behavior: HitTestBehavior.opaque,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
