@@ -318,8 +318,8 @@ class _ItemDetailDescriptionScreenState
                                   margin: EdgeInsets.symmetric(horizontal: 4.w),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: currentIndexVN.value == index
-                                        ? Colors.white
+                                    color: current == index
+                                        ? AppColors.textColorWhite
                                         : AppColors.opacity50White,
                                   ),
                                 ),
