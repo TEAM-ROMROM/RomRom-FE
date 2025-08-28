@@ -57,6 +57,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   // 처음 포커스 받았는지 추적을 위한 변수
   bool _hasConditionBeenTouched = false;
   bool _hasTradeOptionBeenTouched = false;
+  bool _hasImageBeenTouched = false; // 이미지 선택 시도 여부
   bool _hasCategoryBeenTouched = false;
   bool _forceValidateAll = false; // 제출 버튼 클릭 시 모든 필드 검증
 
@@ -83,6 +84,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원)
   Future<void> onPickImage() async {
     try {
+      setState(() {
+        _hasImageBeenTouched = true;
+      });
+      
       if (imageFiles.length == 10) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -169,6 +174,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
     setState(() {
       _loadingImageIndices.add(index);
+      _hasImageBeenTouched = true;
     });
 
     try {
@@ -331,7 +337,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
     
     return titleController.text.trim().isNotEmpty && // 공백만 있는 경우 제외
         selectedCategory != null &&
-        descriptionController.text.trim().length >= 30 && // 최소 30자 이상, 공백만 있는 경우 제외
+        descriptionController.text.trim().length >= 10 && // 최소 10자 이상, 공백만 있는 경우 제외
         selectedItemConditionTypes.isNotEmpty &&
         selectedTradeOptions.isNotEmpty &&
         price > 0 && // 0원 초과
@@ -475,6 +481,20 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
             ),
           ],
         ),
+        // 이미지 에러 메시지
+        if (_hasImageBeenTouched && imageFiles.isEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
+            child: Row(
+              children: [
+                Text(
+                  '상품 사진을 최소 1장 이상 등록해주세요',
+                  style: CustomTextStyles.p3
+                      .copyWith(color: AppColors.errorBorder),
+                ),
+              ],
+            ),
+          ),
         Padding(
           padding: EdgeInsets.only(right: 24.w),
           child: Column(
@@ -830,7 +850,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('제목, 설명, 물건 상태를 모두 입력해주세요.'),
+                                  content: Text('AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
                                 ),
                               );
                             }
@@ -933,6 +953,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         _hasCategoryBeenTouched = true;
                         _hasConditionBeenTouched = true;
                         _hasTradeOptionBeenTouched = true;
+                        _hasImageBeenTouched = true;
                       });
                       return;
                     }

@@ -177,7 +177,7 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   bool shouldShowError = false;
                   if (_hasLostFocus || widget.forceValidate == true) {
                     if (widget.phrase == ItemTextFieldPhrase.description) {
-                      shouldShowError = value.text.trim().isEmpty || value.text.trim().length < 30;
+                      shouldShowError = value.text.trim().isEmpty || value.text.trim().length < 10;
                     } else {
                       shouldShowError = value.text.trim().isEmpty;
                     }
@@ -251,9 +251,9 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   if (value.text.trim().isEmpty) {
                     shouldShowError = true;
                     errorMessage = widget.phrase.errorText;
-                  } else if (value.text.trim().length < 30) {
+                  } else if (value.text.trim().length < 10) {
                     shouldShowError = true;
-                    errorMessage = '설명은 최소 30자 이상 입력해주세요';
+                    errorMessage = '설명은 최소 10자 이상 입력해주세요';
                   }
                 } else if (value.text.trim().isEmpty) {
                   shouldShowError = true;
