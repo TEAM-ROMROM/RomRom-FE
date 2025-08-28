@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
@@ -14,32 +16,38 @@ extension NavigationExtension on BuildContext {
     RouteSettings? routeSettings, // routing할 때 화면에 넘겨줄 값
     bool Function(Route<dynamic>)? predicate, // 라우트 제거 유무
   }) {
+    // iOS에서는 CupertinoPageRoute, 안드로이드에서는 MaterialPageRoute 사용
+    PageRoute<T> createRoute<T extends Object?>(Widget screen, RouteSettings? settings) {
+      if (Platform.isIOS) {
+        return CupertinoPageRoute<T>(
+          builder: (context) => screen,
+          settings: settings,
+        );
+      } else {
+        return MaterialPageRoute<T>(
+          builder: (context) => screen,
+          settings: settings,
+        );
+      }
+    }
+
     switch (type) {
       case NavigationTypes.push: // 기존 화면 위에 새 화면 추가
         Navigator.push(
           this,
-          MaterialPageRoute(
-            builder: (context) => screen,
-            settings: routeSettings,
-          ),
+          createRoute(screen, routeSettings),
         );
         break;
       case NavigationTypes.pushReplacement: // 기존 화면을 새 화면으로 대체
         Navigator.pushReplacement(
           this,
-          MaterialPageRoute(
-            builder: (context) => screen,
-            settings: routeSettings,
-          ),
+          createRoute(screen, routeSettings),
         );
         break;
       case NavigationTypes.pushAndRemoveUntil: // 기존 화면을 지우고 새 화면 push
         Navigator.pushAndRemoveUntil(
           this,
-          MaterialPageRoute(
-            builder: (context) => screen,
-            settings: routeSettings,
-          ),
+          createRoute(screen, routeSettings),
           predicate ?? (route) => false, // 기본값은 모든 이전 라우트 제거
         );
         break;
