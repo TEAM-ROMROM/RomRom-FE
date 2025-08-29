@@ -1,11 +1,41 @@
 {
   "metadata": {
-    "lastUpdated": "2025-08-28T11:55:25Z",
-    "currentVersion": "1.2.8",
-    "totalReleases": 11,
+    "lastUpdated": "2025-08-29T07:55:14Z",
+    "currentVersion": "1.2.10",
+    "totalReleases": 12,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.2.10",
+      "project_type": "flutter",
+      "date": "2025-08-29",
+      "pr_number": 248,
+      "raw_summary": "Summary by CodeRabbit\n\nRefactor\n\n상세 이미지 뷰를 각 이미지별 컨테이너로 전환하여 로딩 인디케이터·에러 자리표시자 추가\n인덱스 기반 Hero 애니메이션 적용으로 여러 이미지 전환 시 일관된 트랜지션 제공\n페이지 전환 시 현재 인덱스에 따라 점 표시가 즉시 반영\n이미지 탭 시 기본 머티리얼 전환 애니메이션 사용으로 내비게이션 일관성 향상\n\n\nDocumentation\n\nREADME 최신 버전 정보 갱신\n\n\nChores\n\n앱 버전 1.2.10으로 업데이트 및 메타데이터 갱신",
+      "parsed_changes": {
+        "refactor": {
+          "title": "Refactor",
+          "items": [
+            "상세 이미지 뷰를 각 이미지별 컨테이너로 전환하여 로딩 인디케이터·에러 자리표시자 추가",
+            "인덱스 기반 Hero 애니메이션 적용으로 여러 이미지 전환 시 일관된 트랜지션 제공",
+            "페이지 전환 시 현재 인덱스에 따라 점 표시가 즉시 반영",
+            "이미지 탭 시 기본 머티리얼 전환 애니메이션 사용으로 내비게이션 일관성 향상"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "README 최신 버전 정보 갱신"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전 1.2.10으로 업데이트 및 메타데이터 갱신"
+          ]
+        }
+      }
+    },
     {
       "version": "1.2.8",
       "project_type": "flutter",
