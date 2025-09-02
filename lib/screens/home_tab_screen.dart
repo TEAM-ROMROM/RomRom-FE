@@ -579,7 +579,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         if (!_isBlurShown)
           Positioned(
             right: 24.w,
-            top: MediaQuery.of(context).padding.top, // SafeArea 기준으로 margin 줌
+            top: MediaQuery.of(context).padding.top + 8.h,
             child: ReportMenuButton(
               onReportPressed: () async {
                 final bool? reported = await Navigator.push(

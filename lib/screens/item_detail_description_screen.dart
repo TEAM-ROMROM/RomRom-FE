@@ -584,7 +584,7 @@ class _ItemDetailDescriptionScreenState
 
           /// 상단 고정 버튼들
           Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
+            top: MediaQuery.of(context).padding.top + 8.h,
             left: 24.w,
             child: GestureDetector(
               onTap: () => Navigator.pop(context, currentIndexVN.value),
@@ -593,7 +593,7 @@ class _ItemDetailDescriptionScreenState
             ),
           ),
           Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
+            top: MediaQuery.of(context).padding.top + 8.h,
             right: 24.w,
             child: GestureDetector(
               /// TODO: 더보기 기능 구현
