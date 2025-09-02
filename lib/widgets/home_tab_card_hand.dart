@@ -156,7 +156,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
     // ===== 튜닝 파라미터 =====
     const double curveK = 0.25; // 기본 곡률 강도(↑면 전체가 더 내려감) 0.2~0.35 추천
-    const double edgeDrop = 10.0; // 가장자리를 추가로 더 내림(px)
+    const double edgeDrop = 5.0; // 가장자리를 추가로 더 내림(px)
     const double edgeGamma = 1.6; // 가장자리 가중치 곡선(↑면 중앙은 덜, 끝은 더 내려감)
     // ========================
 
