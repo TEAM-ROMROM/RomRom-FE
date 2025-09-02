@@ -16,9 +16,6 @@ import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:romrom_fe/screens/report_screen.dart';
-import 'package:romrom_fe/widgets/common/report_menu_button.dart';
-import 'package:romrom_fe/widgets/common/common_success_modal.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
@@ -572,36 +569,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             child: SvgPicture.asset(
               'assets/images/first-item-post-text.svg',
               width: 145.w,
-            ),
-          ),
-
-        /// 더보기 아이콘 버튼
-        if (!_isBlurShown)
-          Positioned(
-            right: 24.w,
-            top: MediaQuery.of(context).padding.top + 8.h,
-            child: ReportMenuButton(
-              onReportPressed: () async {
-                final bool? reported = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ReportScreen(
-                      itemId: _feedItems[_currentFeedIndex].itemUuid ?? '',
-                    ),
-                  ),
-                );
-
-                if (reported == true && mounted) {
-                  await showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => CommonSuccessModal(
-                      message: '신고가 접수되었습니다.',
-                      onConfirm: () => Navigator.of(context).pop(),
-                    ),
-                  );
-                }
-              },
             ),
           ),
       ],
