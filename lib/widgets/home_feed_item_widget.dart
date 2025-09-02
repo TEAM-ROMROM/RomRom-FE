@@ -181,7 +181,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   if (!widget.showBlur)
                     Positioned(
                       right: 24.w,
-                      top: 59.h,
+                      top: (MediaQuery.of(context).padding.top < 59
+                          ? 59.h
+                          : MediaQuery.of(context).padding.top),
                       child: ReportMenuButton(
                         onReportPressed: () async {
                           final bool? reported = await Navigator.push(
