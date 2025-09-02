@@ -278,7 +278,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       children: [
                         // 물품 이름
                         Text(
-                          widget.item.name,
+                          widget.item.name.trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: CustomTextStyles.h3
                               .copyWith(fontWeight: FontWeight.w600),
                         ),
@@ -454,15 +456,11 @@ class BlackGradientContainer extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          flex: 627, // 비율 6
+          flex: 627, // 비율 627
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Colors.black,
-                  Colors.black.withValues(alpha: 0.28),
-                  Colors.white.withValues(alpha: 0.0),
-                ],
+                colors: AppColors.blackGradient, // 검정색 그라데이션
                 stops: const [0.0, 0.24, 0.38],
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
@@ -471,7 +469,7 @@ class BlackGradientContainer extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 139, // 비율 1
+          flex: 139, // 비율 139
           child: Container(color: Colors.black),
         ),
       ],
