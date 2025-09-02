@@ -191,11 +191,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   (index) => Container(
                     width: 6.w,
                     height: 6.w,
-                    margin: EdgeInsets.symmetric(horizontal: 4.w),
+                    margin: EdgeInsets.symmetric(horizontal: 2.w),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _currentImageIndex == index
-                          ? Colors.white
+                          ? AppColors.primaryYellow
                           : AppColors.opacity50White,
                     ),
                   ),
