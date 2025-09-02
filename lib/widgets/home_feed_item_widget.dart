@@ -181,7 +181,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           // 이미지 인디케이터 (하단 점)
           if (!widget.showBlur)
             Positioned(
-              bottom: 180.h,
+              bottom: 220.h,
               left: 0,
               right: 0,
               child: Row(
@@ -207,7 +207,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           if (!widget.showBlur)
             Positioned(
               right: 33.w,
-              bottom: 180.h,
+              bottom: 216.h,
               child: Column(
                 children: [
                   GestureDetector(
@@ -263,7 +263,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 70.h,
+            bottom: 92.h,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Row(
@@ -454,7 +454,7 @@ class BlackGradientContainer extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          flex: 6, // 비율 6
+          flex: 627, // 비율 6
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -471,7 +471,7 @@ class BlackGradientContainer extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 1, // 비율 1
+          flex: 139, // 비율 1
           child: Container(color: Colors.black),
         ),
       ],
