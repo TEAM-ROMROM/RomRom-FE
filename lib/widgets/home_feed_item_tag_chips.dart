@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
-import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -123,58 +122,5 @@ class HomeFeedAiTag extends StatelessWidget {
         style: CustomTextStyles.p3.copyWith(fontSize: 10.sp),
       ),
     );
-  }
-}
-
-/// AI 분석 적정가 태그 생성
-class HomeFeedAiAnalysisTag extends StatelessWidget {
-  final PriceTag tag; // PriceTag enum을 사용하여 태그를 정의
-  const HomeFeedAiAnalysisTag({super.key, required this.tag});
-
-  @override
-  Widget build(BuildContext context) {
-    // border
-    final gradientBorder = GradientBoxBorder(
-      gradient: const LinearGradient(
-        colors: AppColors.aiGradient,
-        stops: [0.0, 0.35, 0.70, 1.0],
-      ),
-      width: 1.w,
-    );
-
-    return tag == PriceTag.aiAnalyzed
-        ? Container(
-            width: 64.w,
-            height: 17.h,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlack,
-              borderRadius: BorderRadius.circular(100.r),
-              border: gradientBorder,
-            ),
-            child: Text(
-              tag.name,
-              style: CustomTextStyles.p3.copyWith(fontSize: 9.sp),
-            ),
-          )
-        : Container(
-            width: 46.w,
-            height: 17.h,
-            decoration: BoxDecoration(
-              color: AppColors.opacity80White,
-              borderRadius: BorderRadius.circular(100.r),
-            ),
-            child: Row(
-              // mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  tag.name,
-                  style: CustomTextStyles.p3
-                      .copyWith(fontSize: 9.sp, color: AppColors.primaryBlack),
-                ),
-              ],
-            ),
-          );
   }
 }

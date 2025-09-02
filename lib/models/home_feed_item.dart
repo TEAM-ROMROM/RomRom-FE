@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 class HomeFeedItem {
   final int id;
   final String? itemUuid; // 서버 UUID
+  final String name; // 물품 이름
   final int price;
   final String location;
   final String date;
@@ -22,6 +23,7 @@ class HomeFeedItem {
   HomeFeedItem({
     required this.id,
     this.itemUuid,
+    required this.name,
     required this.price,
     required this.location,
     required this.date,
