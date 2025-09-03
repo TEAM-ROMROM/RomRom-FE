@@ -513,7 +513,7 @@ class _ItemDetailDescriptionScreenState
                       /// 거래 희망 장소
                       Container(
                         width: double.infinity,
-                        margin: EdgeInsets.symmetric(vertical: 16.h),
+                        margin: EdgeInsets.only(top: 16.h, bottom: 61.h),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -547,6 +547,7 @@ class _ItemDetailDescriptionScreenState
                                 borderRadius: BorderRadius.circular(4.r),
                                 child: NaverMap(
                                   key: ValueKey('detail_map_${widget.itemId}'),
+                                  forceGesture: true,
                                   options: NaverMapViewOptions(
                                     initialCameraPosition: NCameraPosition(
                                       target: NLatLng(
@@ -555,6 +556,8 @@ class _ItemDetailDescriptionScreenState
                                       ),
                                       zoom: 15,
                                     ),
+                                    scrollGesturesEnable: true, // 지도 이동
+                                    zoomGesturesEnable: true, // 확대/축소
                                   ),
                                   onMapReady: (controller) {
                                     if (item?.latitude != null &&
