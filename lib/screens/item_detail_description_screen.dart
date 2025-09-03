@@ -52,6 +52,7 @@ class _ItemDetailDescriptionScreenState
   late final ValueNotifier<int> currentIndexVN;
   late final ValueNotifier<bool> isLikedVN;
   late final ValueNotifier<int> likeCountVN;
+  bool _likeInFlight = false;
 
   bool isLoading = true;
   bool hasError = false;
@@ -193,6 +194,8 @@ class _ItemDetailDescriptionScreenState
   void dispose() {
     currentIndexVN.dispose();
     pageController.dispose();
+    isLikedVN.dispose();
+    likeCountVN.dispose();
     super.dispose();
   }
 
@@ -637,14 +640,16 @@ class _ItemDetailDescriptionScreenState
   }
 
   Future<void> _toggleLike() async {
-    if (item?.itemId == null) return;
+    if (_likeInFlight) return;
 
+    _likeInFlight = true;
     final prevLiked = isLikedVN.value;
     final prevCount = likeCountVN.value;
 
     // 1) 빠른 UI 업데이트
     isLikedVN.value = !prevLiked;
-    likeCountVN.value = prevLiked ? (prevCount - 1) : (prevCount + 1);
+    likeCountVN.value =
+        prevLiked ? (prevCount > 0 ? prevCount - 1 : 0) : (prevCount + 1);
 
     try {
       final itemApi = ItemApi();
@@ -652,6 +657,7 @@ class _ItemDetailDescriptionScreenState
       final res = await itemApi.postLike(req);
 
       // 2) 서버 결과로 보정(서버-클라 불일치 대비)
+      if (!mounted) return;
       isLikedVN.value = (res.likeStatus == 'LIKE');
       likeCountVN.value = res.likeCount ?? likeCountVN.value;
     } catch (e) {
@@ -659,6 +665,8 @@ class _ItemDetailDescriptionScreenState
       // 3) 실패 롤백
       isLikedVN.value = prevLiked;
       likeCountVN.value = prevCount;
+    } finally {
+      _likeInFlight = false;
     }
   }
 }
