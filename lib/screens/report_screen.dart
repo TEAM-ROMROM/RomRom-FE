@@ -121,7 +121,6 @@ class _ReportScreenState extends State<ReportScreen> {
             child: CompletionButton(
               isEnabled: _selectedReasons.isNotEmpty,
               buttonText: '신고 하기',
-              buttonType: 2,
               enabledOnPressed: () async {
                 try {
                   final api = ReportApi();

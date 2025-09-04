@@ -176,7 +176,6 @@ class _ItemRegisterLocationScreenState
                       child: CompletionButton(
                         isEnabled: _selectedAddress != null,
                         buttonText: '선택 완료',
-                        buttonType: 2,
                         enabledOnPressed: () async {
                           try {
                             setState(() {
