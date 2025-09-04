@@ -71,6 +71,8 @@ class _ItemDetailDescriptionScreenState
     super.initState();
     currentIndexVN = ValueNotifier<int>(widget.currentImageIndex);
     pageController = PageController(initialPage: widget.currentImageIndex);
+    isLikedVN = ValueNotifier<bool>(false);
+    likeCountVN = ValueNotifier<int>(0);
     _loadItemDetail();
   }
 
@@ -91,8 +93,8 @@ class _ItemDetailDescriptionScreenState
         item = response.item;
         itemImages = response.itemImages;
         itemCustomTags = response.itemCustomTags;
-        isLikedVN = ValueNotifier<bool>(response.likeStatus == 'LIKE');
-        likeCountVN = ValueNotifier<int>(response.likeCount ?? 0);
+        isLikedVN.value = (response.likeStatus == 'LIKE');
+        likeCountVN.value = response.likeCount ?? 0;
 
         imageUrls = itemImages
                 ?.map((img) => img.imageUrl ?? '')
