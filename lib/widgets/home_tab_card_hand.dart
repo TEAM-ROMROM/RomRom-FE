@@ -24,13 +24,21 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     with TickerProviderStateMixin {
   // 애니메이션 컨트롤러들
   late AnimationController _fanController;
-  late AnimationController _hoverController;
   late AnimationController _pullController;
+  late AnimationController _deckLiftController;
 
   // 애니메이션들
   late Animation<double> _fanAnimation;
-  late Animation<double> _hoverAnimation;
   late Animation<double> _pullAnimation;
+  late Animation<double> _deckLift;
+
+  // 덱/제스처 상태
+  bool _isDeckRaised = false;
+  double _orbitAngle = 0.0;
+
+  bool _panStartedOnCard = false; // 터치 시작이 카드 위?
+  String? _startCardId; // 터치 시작 카드
+  bool _hasStartedCardDrag = false; // 수직 드래그 임계치 넘겨 카드 드래그 모드 진입?
 
   // 카드 상태
   String? _hoveredCardId;
@@ -48,7 +56,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   final double _cardHeight = 130.h;
   final double _fanRadius = 500.w; // 부채꼴 반경
   final double _maxFanAngle = 18.0; // 최대 펼침 각도 (도)
-  final double _hoverLift = 70.h; // 호버 시 카드 상승 높이
   final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
   final double _baseBottom = 50.h; // 기본 bottom 위치 (네비게이션 바 위)
 
@@ -70,16 +77,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       curve: Curves.easeOutExpo,
     );
 
-    // 호버 애니메이션
-    _hoverController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _hoverAnimation = CurvedAnimation(
-      parent: _hoverController,
-      curve: Curves.easeOut,
-    );
-
     // 카드 뽑기 애니메이션
     _pullController = AnimationController(
       duration: const Duration(milliseconds: 150),
@@ -88,6 +85,15 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     _pullAnimation = CurvedAnimation(
       parent: _pullController,
       curve: Curves.easeOut,
+    );
+
+    _deckLiftController = AnimationController(
+      duration: const Duration(milliseconds: 220),
+      vsync: this,
+    );
+    _deckLift = CurvedAnimation(
+      parent: _deckLiftController,
+      curve: Curves.easeOutCubic,
     );
 
     // 초기 팬 애니메이션 실행
@@ -104,11 +110,27 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     }
   }
 
+  void _setDeckRaised(bool raised) {
+    if (_isDeckRaised == raised) return;
+    setState(() => _isDeckRaised = raised);
+    if (raised) {
+      _deckLiftController.forward();
+    } else {
+      _deckLiftController.reverse();
+      // 내려갈 때 카드 관련 상태 리셋
+      _pulledCardId = null;
+      _isCardPulled = false;
+      _pullOffset = Offset.zero;
+      _pullController.value = 0.0;
+    }
+  }
+
   @override
   void dispose() {
     _fanController.dispose();
-    _hoverController.dispose();
+    // _hoverController.dispose();
     _pullController.dispose();
+    _deckLiftController.dispose();
     super.dispose();
   }
 
@@ -130,7 +152,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   }
 
   // 카드 위치 및 회전 계산
-  Map<String, dynamic> _calculateCardTransform(int index, int totalCards) {
+  Map<String, dynamic> _calculateCardTransform(int index, int totalCards,
+      {double phase = 0.0}) {
     final centerIndex = (totalCards - 1) / 2;
     final relativeIndex = index - centerIndex;
 
@@ -154,6 +177,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       }
     }
 
+    // ⬇️ 덱 전체 위상 이동 적용: fan 각도에 phase를 '더한다'
+    final angleWithPhase = angle + phase;
+
     // ===== 튜닝 파라미터 =====
     const double curveK = 0.25; // 기본 곡률 강도(↑면 전체가 더 내려감) 0.2~0.35 추천
     const double edgeDrop = 5.0; // 가장자리를 추가로 더 내림(px)
@@ -166,7 +192,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final x = relativeIndex * cardSpacing;
 
     // 기본 곡률
-    final baseY = -r * (1 - math.cos(angle)) * curveK;
+    final baseY = -r * (1 - math.cos(angleWithPhase)) * curveK;
 
     // 가장자리 추가 드롭 (0~1 정규화)
     final absNorm =
@@ -178,24 +204,24 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     return {
       'x': x,
       'y': y,
-      'angle': angle * 0.7,
+      'angle': angleWithPhase * 0.7,
       'zIndex': totalCards - math.max((relativeIndex.abs() * 2).toInt(), 0),
     };
   }
 
   Widget _buildCard(Map<String, dynamic> cardData, int index, int totalCards) {
     final cardId = cardData['id'];
-    final isHovered = _hoveredCardId == cardId;
     final isPulled = _pulledCardId == cardId;
 
-    final transform = _calculateCardTransform(index, totalCards);
+    final isHovered =
+        _hasStartedCardDrag && _hoveredCardId == cardId && !isPulled;
+
+    final transform =
+        _calculateCardTransform(index, totalCards, phase: _orbitAngle);
+    _calculateCardTransform(index, totalCards, phase: _orbitAngle);
 
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        _fanAnimation,
-        _hoverAnimation,
-        _pullAnimation,
-      ]),
+      animation: Listenable.merge([_fanAnimation, _pullAnimation, _deckLift]),
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
@@ -207,14 +233,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         double angle = transform['angle'] * staggeredFanValue;
         double scale = 1.0;
         double opacity = staggeredFanValue;
-
-        // 호버 효과
-        if (isHovered && !isPulled) {
-          final hoverValue = _hoverAnimation.value;
-          y += _hoverLift * hoverValue; // 위로 올라감
-          scale = 1.0 + (0.12 * hoverValue); // 12% 크기 증가
-          angle *= (1 - hoverValue * 0.5); // 똑바로 세워짐
-        }
 
         // 카드 뽑기 효과
         if (isPulled) {
@@ -236,9 +254,12 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                 ? 999
                 : transform['zIndex'] as int;
 
+        final deckLiftPx = 40.h; // 덱이 떠오르는 높이(기호대로 튜닝)
+        final liftedBottom = _baseBottom + (deckLiftPx * _deckLift.value);
+
         return Positioned(
           left: MediaQuery.of(context).size.width / 2 - _cardWidth / 2 + x,
-          bottom: _baseBottom + y, // 기본 위치 -130.h
+          bottom: liftedBottom + y, // 기본 위치 -130.h
           child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
@@ -258,7 +279,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                         width: 2,
                       )
                     : null,
-                borderRadius: BorderRadius.circular(10.r),
+                borderRadius: BorderRadius.circular(4.r),
                 boxShadow: [
                   BoxShadow(
                     color: isHovered || isPulled
@@ -288,166 +309,183 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
   // 전체 카드 영역에 대한 제스처 처리
   void _handlePanStart(DragStartDetails details) {
-    setState(() {
-      _panStartPosition = details.localPosition;
-      _currentPanPosition = details.localPosition;
+    _panStartPosition = details.localPosition;
+    _currentPanPosition = details.localPosition;
 
-      // 시작 위치에서 카드 찾기
+    _panStartedOnCard = false;
+    _startCardId = null;
+    _hasStartedCardDrag = false;
+
+    if (_isDeckRaised) {
       final cardId = _findCardAtPosition(details.localPosition);
-      if (cardId != null && cardId != _hoveredCardId) {
-        _hoveredCardId = cardId;
-        _hoverController.forward();
-        HapticFeedback.selectionClick();
+      if (cardId != null) {
+        _panStartedOnCard = true;
+        _startCardId = cardId;
+        // 여기서는 선택 표시하지 않음 (수직 임계치 통과할 때 선택)
       }
-    });
+    }
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
+    final dx = details.localPosition.dx - _currentPanPosition.dx;
+    final dy = _panStartPosition.dy - details.localPosition.dy;
+    _currentPanPosition = details.localPosition;
+
+    // 1) 좌우 = 항상 원호 회전만
+    const double orbitSensitivity = 0.003; // 감도 튜닝
     setState(() {
-      _currentPanPosition = details.localPosition;
-
-      // 위로 스와이프 감지 (빠른 위로 움직임)
-      final dy = _panStartPosition.dy - _currentPanPosition.dy;
-
-      if (_hoveredCardId != null && dy > 30) {
-        // 30픽셀 이상 위로 움직임
-        // 카드 뽑기 시작
-        if (_pulledCardId == null) {
-          _pulledCardId = _hoveredCardId;
-          _pullOffset = Offset(
-            _currentPanPosition.dx - _panStartPosition.dx,
-            -dy, // 위로 움직인 거리
-          );
-          _pullController.forward();
-          HapticFeedback.mediumImpact();
-        } else {
-          // 카드 뽑기 중 위치 업데이트
-          _pullOffset = Offset(
-            _currentPanPosition.dx - _panStartPosition.dx,
-            -dy,
-          );
-        }
-      } else if (_pulledCardId == null) {
-        // 좌우 드래그로 카드 선택
-        final cardId = _findCardAtPosition(details.localPosition);
-        if (cardId != null && cardId != _hoveredCardId) {
-          // 이전 카드 호버 해제
-          if (_hoveredCardId != null) {
-            _hoverController.reverse();
-          }
-          // 새 카드 호버
-          _hoveredCardId = cardId;
-          _hoverController.forward();
-          HapticFeedback.selectionClick();
-        }
-      }
+      _orbitAngle += dx * orbitSensitivity;
     });
+
+    // 2) 카드 드래그는 조건부
+    if (_isDeckRaised && _panStartedOnCard && _startCardId != null) {
+      // 수직 임계치 통과 시점에 '카드 드래그 모드' 진입 + 선택 고정
+      const double selectThreshold = 10.0; // px
+      if (!_hasStartedCardDrag && dy.abs() > selectThreshold) {
+        setState(() {
+          _hasStartedCardDrag = true;
+          _hoveredCardId = _startCardId; // 이때 처음으로 선택 상태 표시
+          HapticFeedback.selectionClick();
+        });
+      }
+
+      // 카드 드래그 모드에서만 뽑기/위치 업데이트
+      if (_hasStartedCardDrag) {
+        setState(() {
+          if (_pulledCardId == null && dy > 30) {
+            _pulledCardId = _hoveredCardId;
+            _pullOffset =
+                Offset(details.localPosition.dx - _panStartPosition.dx, -dy);
+            _pullController.forward();
+            HapticFeedback.mediumImpact();
+          } else if (_pulledCardId != null) {
+            _pullOffset =
+                Offset(details.localPosition.dx - _panStartPosition.dx, -dy);
+          }
+        });
+      }
+    }
   }
 
   void _handlePanEnd(DragEndDetails details) {
     final dy = _panStartPosition.dy - _currentPanPosition.dy;
 
-    // 카드 사용 체크
-    if (_pulledCardId != null && dy > 100) {
-      // 100픽셀 이상 위로 스와이프
-      // 카드 사용
-      if (widget.onCardDrop != null) {
-        widget.onCardDrop!(_pulledCardId!);
-        HapticFeedback.heavyImpact();
-      }
-
-      // 카드 사용 애니메이션
-      setState(() {
-        _isCardPulled = true;
-      });
-
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
+    if (_isDeckRaised && _hasStartedCardDrag) {
+      if (_pulledCardId != null && dy > 100) {
+        // 드롭 발생
+        if (widget.onCardDrop != null) {
+          widget.onCardDrop!(_pulledCardId!);
+          HapticFeedback.heavyImpact();
+        }
+        setState(() => _isCardPulled = true);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (!mounted) return;
           setState(() {
             _pulledCardId = null;
             _isCardPulled = false;
             _pullOffset = Offset.zero;
           });
           _pullController.reverse();
-        }
-      });
-    } else {
-      // 카드 원위치로
-      _pullController.reverse().then((_) {
-        if (mounted) {
+        });
+      } else {
+        // 원위치
+        _pullController.reverse().then((_) {
+          if (!mounted) return;
           setState(() {
             _pulledCardId = null;
             _pullOffset = Offset.zero;
           });
-        }
-      });
-    }
-
-    // 호버 해제
-    _hoverController.reverse().then((_) {
-      if (mounted) {
-        setState(() {
-          _hoveredCardId = null;
-          _panStartPosition = Offset.zero;
-          _currentPanPosition = Offset.zero;
         });
       }
+    }
+
+    // 플래그/선택 해제
+    setState(() {
+      _panStartedOnCard = false;
+      _startCardId = null;
+      _hasStartedCardDrag = false;
+      _hoveredCardId = null;
+      _panStartPosition = Offset.zero;
+      _currentPanPosition = Offset.zero;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onPanStart: _handlePanStart,
-      onPanUpdate: _handlePanUpdate,
-      onPanEnd: _handlePanEnd,
-      child: SizedBox(
-        height: 280.h,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // 드롭 영역 표시 (카드 뽑기 중일 때만)
-            if (_pulledCardId != null)
-              Positioned(
-                top: -250.h,
-                left: 0,
-                right: 0,
-                height: 100.h,
-                child: AnimatedOpacity(
-                  opacity: _pulledCardId != null ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 40.w),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppColors.primaryYellow.withValues(alpha: 0.5),
-                        width: 2,
-                      ),
-                      borderRadius: BorderRadius.circular(20.r),
-                      color: AppColors.primaryYellow.withValues(alpha: 0.1),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '거래 요청',
-                        style: TextStyle(
-                          color: AppColors.primaryYellow,
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.bold,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // ⬇️ 바깥 오버레이: 덱이 떠 있을 때만 탭으로 닫기
+        if (_isDeckRaised)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => _setDeckRaised(false),
+            ),
+          ),
+
+        // 덱(카드 핸드) 영역
+        GestureDetector(
+          // 한 번 탭하면 덱이 올라옴
+          onTap: () {
+            if (!_isDeckRaised) {
+              _setDeckRaised(true);
+            }
+          },
+          // 드래그 제스처
+          onPanStart: _handlePanStart,
+          onPanUpdate: _handlePanUpdate,
+          onPanEnd: _handlePanEnd,
+          child: SizedBox(
+            height: 280.h,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 드롭 영역 표시 (카드 뽑기 중일 때만)
+                if (_pulledCardId != null)
+                  Positioned(
+                    top: -250.h,
+                    left: 0,
+                    right: 0,
+                    height: 100.h,
+                    child: AnimatedOpacity(
+                      opacity: _pulledCardId != null ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Container(
+                        margin: EdgeInsets.symmetric(horizontal: 40.w),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color:
+                                AppColors.primaryYellow.withValues(alpha: 0.5),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(20.r),
+                          color: AppColors.primaryYellow.withValues(alpha: 0.1),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '거래 요청',
+                            style: TextStyle(
+                              color: AppColors.primaryYellow,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            // 카드들
-            ..._cards.asMap().entries.map((entry) {
-              final index = entry.key;
-              final card = entry.value;
-              return _buildCard(card, index, _cards.length);
-            }),
-          ],
+                // 카드들
+                ..._cards.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final card = entry.value;
+                  return _buildCard(card, index, _cards.length);
+                }),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
