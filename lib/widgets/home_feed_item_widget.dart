@@ -305,74 +305,76 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BlurWrapper(
-                    enabled: widget.showBlur,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 물품 이름
-                        Text(
-                          widget.item.name.trim(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: CustomTextStyles.h3
-                              .copyWith(fontWeight: FontWeight.w600),
-                        ),
+                  Expanded(
+                    child: BlurWrapper(
+                      enabled: widget.showBlur,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 물품 이름
+                          Text(
+                            widget.item.name.trim(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: CustomTextStyles.h3
+                                .copyWith(fontWeight: FontWeight.w600),
+                          ),
 
-                        SizedBox(height: 8.h),
+                          SizedBox(height: 8.h),
 
-                        // 위치 및 날짜 정보
-                        Row(
-                          children: [
-                            Icon(AppIcons.location,
-                                color: AppColors.opacity80White, size: 13.sp),
-                            SizedBox(width: 4.w),
-                            Text(
-                              '${widget.item.location} • $formattedDate',
-                              style: CustomTextStyles.p3
-                                  .copyWith(fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 12.h),
-
-                        Row(
-                          children: [
-                            // 사용감 태그 - ItemDetail과 동일한 위젯 사용
-                            ItemDetailConditionTag(
-                              condition: widget.item.itemCondition.name,
-                            ),
-                            SizedBox(width: 4.w),
-                            // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
-                            ...widget.item.transactionTypes.map(
-                              (type) => ItemDetailTradeOptionTag(
-                                option: type.name,
+                          // 위치 및 날짜 정보
+                          Row(
+                            children: [
+                              Icon(AppIcons.location,
+                                  color: AppColors.opacity80White, size: 13.sp),
+                              SizedBox(width: 4.w),
+                              Text(
+                                '${widget.item.location} • $formattedDate',
+                                style: CustomTextStyles.p3
+                                    .copyWith(fontWeight: FontWeight.w500),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
 
-                        SizedBox(height: 10.h),
+                          SizedBox(height: 12.h),
 
-                        Row(
-                          children: [
-                            // 물품 가격
-                            Text(
-                              "$formattedPrice원",
-                              style: CustomTextStyles.p1
-                                  .copyWith(fontWeight: FontWeight.w600),
-                            ),
+                          Row(
+                            children: [
+                              // 사용감 태그 - ItemDetail과 동일한 위젯 사용
+                              ItemDetailConditionTag(
+                                condition: widget.item.itemCondition.name,
+                              ),
+                              SizedBox(width: 4.w),
+                              // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
+                              ...widget.item.transactionTypes.map(
+                                (type) => ItemDetailTradeOptionTag(
+                                  option: type.name,
+                                ),
+                              ),
+                            ],
+                          ),
 
-                            SizedBox(width: 8.w),
+                          SizedBox(height: 10.h),
 
-                            _useAiPrice
-                                ? const AiBadgeWidget()
-                                : const SizedBox(),
-                          ],
-                        ),
-                      ],
+                          Row(
+                            children: [
+                              // 물품 가격
+                              Text(
+                                "$formattedPrice원",
+                                style: CustomTextStyles.p1
+                                    .copyWith(fontWeight: FontWeight.w600),
+                              ),
+
+                              SizedBox(width: 8.w),
+
+                              _useAiPrice
+                                  ? const AiBadgeWidget()
+                                  : const SizedBox(),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
