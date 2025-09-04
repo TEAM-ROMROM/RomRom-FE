@@ -62,6 +62,22 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
   final double _baseBottom = 50.h; // 기본 bottom 위치 (네비게이션 바 위)
 
+  // keys: 전역 좌표 구하려고
+  final GlobalKey _deckKey = GlobalKey(); // 카드 스택 영역
+  final GlobalKey _dropZoneKey = GlobalKey(); // 노란 드롭존
+
+  double _dropShadowT = 0.0; // 0~1, 드롭존 그림자 강도
+  bool _wasOverDropZone = false; // 진입/이탈 감지용(햅틱 등)
+
+  Rect? _globalRectOf(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return null;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    final topLeft = box.localToGlobal(Offset.zero);
+    return topLeft & box.size;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -366,6 +382,29 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                 Offset(details.localPosition.dx - _panStartPosition.dx, -dy);
           }
         });
+
+        // ⬇️ 드롭존 overlap 체크 → 그림자 강도 갱신
+        final deckBox =
+            _deckKey.currentContext?.findRenderObject() as RenderBox?;
+        final dropRect = _globalRectOf(_dropZoneKey);
+        if (deckBox != null && dropRect != null && _pulledCardId != null) {
+          // 현재 포인터 위치(덱 로컬) → 글로벌
+          final globalPointer = deckBox.localToGlobal(_currentPanPosition);
+
+          // 카드 중심을 포인터로 대체(충분히 자연스러움).
+          final isOver = dropRect.contains(globalPointer);
+
+          // 스무딩(선형 보간)
+          final target = isOver ? 1.0 : 0.0;
+          final newT = (_dropShadowT * 0.7) + (target * 0.3); // 부드럽게
+
+          if (isOver && !_wasOverDropZone) {
+            HapticFeedback.selectionClick(); // 드롭존 진입시 손맛
+          }
+          _wasOverDropZone = isOver;
+
+          setState(() => _dropShadowT = newT.clamp(0.0, 1.0));
+        }
       }
     }
   }
@@ -387,6 +426,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
             _pulledCardId = null;
             _isCardPulled = false;
             _pullOffset = Offset.zero;
+            _dropShadowT = 0.0; // 그림자 원복
+            _wasOverDropZone = false;
           });
           _pullController.reverse();
         });
@@ -416,6 +457,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   @override
   Widget build(BuildContext context) {
     return Stack(
+      key: _deckKey, // ⬅️ 덱 스택에 키
       clipBehavior: Clip.none,
       children: [
         // ⬇️ 바깥 오버레이: 덱이 떠 있을 때만 탭으로 닫기
@@ -454,9 +496,21 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                       children: [
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 136.w),
-                          child: SizedBox(
+                          child: Container(
+                            key: _dropZoneKey, // ⬅️ 키 부여
                             width: 122.w,
                             height: 189.h,
+                            decoration: BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.cardDropZoneShadow
+                                      .withValues(alpha: 0.8 * _dropShadowT),
+                                  blurRadius: 30 * (0.5 + 0.5 * _dropShadowT),
+                                  spreadRadius: 2 * _dropShadowT,
+                                  offset: const Offset(0, 0),
+                                ),
+                              ],
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Stack(
@@ -472,14 +526,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                                         color: AppColors.cardDropZoneBorder,
                                         width: 2.w,
                                       ),
-                                      // boxShadow: [
-                                      //   BoxShadow(
-                                      //     color: AppColors.cardDropZoneShadow,
-                                      //     blurRadius: 30,
-                                      //     spreadRadius: 2,
-                                      //     offset: const Offset(0, 0),
-                                      //   )
-                                      // ],
                                       borderRadius: BorderRadius.circular(8.r),
                                       color: AppColors.cardDropZoneBackground,
                                     ),
