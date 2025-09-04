@@ -1,8 +1,11 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
 
 /// 홈탭 카드 핸드 위젯
@@ -444,37 +447,64 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                 // 드롭 영역 표시 (카드 뽑기 중일 때만)
                 if (_pulledCardId != null)
                   Positioned(
-                    top: -250.h,
+                    top: -408.h,
                     left: 0,
                     right: 0,
-                    height: 100.h,
-                    child: AnimatedOpacity(
-                      opacity: _pulledCardId != null ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Container(
-                        margin: EdgeInsets.symmetric(horizontal: 40.w),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color:
-                                AppColors.primaryYellow.withValues(alpha: 0.5),
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(20.r),
-                          color: AppColors.primaryYellow.withValues(alpha: 0.1),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '거래 요청',
-                            style: TextStyle(
-                              color: AppColors.primaryYellow,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.bold,
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 136.w),
+                          child: SizedBox(
+                            width: 122.w,
+                            height: 189.h,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                          sigmaX: 30, sigmaY: 30),
+                                      child: const SizedBox.expand()),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: AppColors.cardDropZoneBorder,
+                                        width: 2.w,
+                                      ),
+                                      // boxShadow: [
+                                      //   BoxShadow(
+                                      //     color: AppColors.cardDropZoneShadow,
+                                      //     blurRadius: 30,
+                                      //     spreadRadius: 2,
+                                      //     offset: const Offset(0, 0),
+                                      //   )
+                                      // ],
+                                      borderRadius: BorderRadius.circular(8.r),
+                                      color: AppColors.cardDropZoneBackground,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        Padding(
+                          padding: EdgeInsets.only(top: 32.0.h, bottom: 20.h),
+                          child: const Icon(
+                            AppIcons.cardDrag,
+                            color: AppColors.primaryYellow,
+                          ),
+                        ),
+                        Text(
+                          "위로 드래그하여\n거래방식 선택하기",
+                          textAlign: TextAlign.center,
+                          style: CustomTextStyles.p2.copyWith(height: 1.4),
+                        ),
+                      ],
                     ),
                   ),
+
                 // 카드들
                 ..._cards.asMap().entries.map((entry) {
                   final index = entry.key;

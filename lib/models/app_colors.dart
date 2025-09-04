@@ -115,6 +115,12 @@ class AppColors {
     Colors.white.withValues(alpha: 0.0),
   ];
 
+  // 홈 화면 카드 드롭 존
+  static const Color cardDropZoneBorder = primaryYellow; // 드롭 존 테두리 색상
+  static Color cardDropZoneBackground =
+      primaryYellow.withValues(alpha: 0.3); // 드롭 존 배경 색상
+  static Color cardDropZoneShadow = primaryYellow; // 드롭 존 배경 색상
+
   static const Color errorBorder = Color(0xFFFF5656); // 에러 상태 테두리 색상
   static const Color errorContainer = Color(0x1AFF5656); // 에러 상태 컨테이너 색상
 }

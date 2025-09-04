@@ -23,7 +23,11 @@ class ItemCard extends ConsumerWidget {
     this.itemCategoryLabel = '물품 카테고리',
     this.itemName = '물품 이름',
     this.itemCardImageUrl = 'https://picsum.photos/400/300',
-    this.itemOptions = const [ItemTradeOption.extraCharge, ItemTradeOption.directOnly, ItemTradeOption.deliveryOnly],
+    this.itemOptions = const [
+      ItemTradeOption.extraCharge,
+      ItemTradeOption.directOnly,
+      ItemTradeOption.deliveryOnly
+    ],
   });
 
   @override
@@ -36,7 +40,7 @@ class ItemCard extends ConsumerWidget {
         final cs = state.scale;
 
         final imageHeight = cs.s(350);
-        final cardRadius = cs.radius(10);
+        final cardRadius = cs.radius(4);
         final borderWidth = cs.s(4);
         final itemNameLabelPadding = cs.padding(18, 12);
         final optionPadding = cs.padding(14, 10);
@@ -143,8 +147,7 @@ class ItemCard extends ConsumerWidget {
                               padding: optionPadding,
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text('요청 옵션', style: optionTextStyle),
                                   cs.sizedBoxH(8),
@@ -153,8 +156,7 @@ class ItemCard extends ConsumerWidget {
                                       spacing: cs.s(8),
                                       runSpacing: cs.s(4),
                                       children: itemOptions
-                                          .map((option) =>
-                                              ItemCardOptionChip(
+                                          .map((option) => ItemCardOptionChip(
                                                 itemId: itemId,
                                                 itemOption: option,
                                               ))
