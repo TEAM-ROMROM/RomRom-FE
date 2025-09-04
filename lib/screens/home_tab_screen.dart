@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -11,8 +13,10 @@ import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
+import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
+import 'package:romrom_fe/widgets/item_card.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -466,14 +470,48 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     final currentFeedItem = _feedItems[_currentFeedIndex];
     debugPrint('거래 요청: 내 카드 $cardId -> 피드 아이템 ${currentFeedItem.itemUuid}');
 
-    // TODO: 실제 거래 요청 API 호출
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('거래 요청이 전송되었습니다'),
-        backgroundColor: AppColors.primaryYellow,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (context) {
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            child: Padding(
+              padding:
+                  EdgeInsets.symmetric(horizontal: 40.0.w, vertical: 65.0.h),
+              child: Column(
+                children: [
+                  SizedBox(height: 5.h),
+                  ItemCard(itemId: currentFeedItem.itemUuid ?? ''),
+                  SizedBox(height: 32.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CompletionButton(
+                        isEnabled: true,
+                        buttonText: '취소',
+                        buttonWidth: 130,
+                        buttonHeight: 44,
+                        enabledBackgroundColor:
+                            AppColors.transactionRequestDialogCancelButton,
+                        enabledOnPressed: () => Navigator.pop(context),
+                      ),
+                      CompletionButton(
+                        isEnabled: true,
+                        buttonText: '요청 보내기',
+                        buttonWidth: 171,
+                        buttonHeight: 44,
+                        enabledOnPressed: () {
+                          // TODO: 거래 요청 API 호출
+                        },
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          );
+        });
   }
 
   @override

@@ -15,6 +15,9 @@ class CompletionButton extends StatelessWidget {
   final Color? enabledTextColor; // 활성화 문구 색
   final Color? disabledTextColor; // 비활성화 문구 색
 
+  final double buttonWidth;
+  final double buttonHeight;
+
   const CompletionButton({
     super.key,
     required this.isEnabled,
@@ -25,6 +28,8 @@ class CompletionButton extends StatelessWidget {
     this.disabledBackgroundColor,
     this.enabledTextColor,
     this.disabledTextColor,
+    this.buttonWidth = double.infinity,
+    this.buttonHeight = 56,
   });
 
   @override
@@ -47,14 +52,14 @@ class CompletionButton extends StatelessWidget {
 
     return Center(
       child: SizedBox(
-        width: double.infinity, // 전체 너비 사용
+        width: buttonWidth.w,
+        height: buttonHeight.h,
         child: TextButton(
           onPressed: isEnabled
               ? enabledOnPressed
               : disabledOnPressed, // 활성화와 비활성화 일 때 onPressed 별로 처리
           style: TextButton.styleFrom(
             backgroundColor: backgroundColor,
-            padding: EdgeInsets.symmetric(vertical: 20.0.h),
             minimumSize: Size(316.w, 0),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.r)),
