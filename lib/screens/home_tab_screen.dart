@@ -467,9 +467,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// 카드 드롭 핸들러 (거래 요청)
-  void _handleCardDrop(String cardId) {
-    final currentFeedItem = _feedItems[_currentFeedIndex];
-    debugPrint('거래 요청: 내 카드 $cardId -> 피드 아이템 ${currentFeedItem.itemUuid}');
+  void _handleCardDrop(String cardId) async {
+    final cardData = _myCards.firstWhere((card) => card['id'] == cardId);
+// 다이얼로그 띄우기 전에 (선택) 이미지 프리캐시
+    await precacheImage(NetworkImage(cardData['imageUrl']), context);
 
     showDialog(
       barrierDismissible: false,
@@ -495,16 +496,26 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                         children: [
                           FlipCardSpin(
                             front: SizedBox(
-                              width: 310.w,
+                              // width: 310.w,
                               height: 496.h,
                               child: ItemCard(
-                                  itemId: currentFeedItem.itemUuid ?? ''),
+                                // 실제 카드 데이터 전달
+                                itemId: cardData['id'],
+                                itemName: cardData['name'],
+                                itemCategoryLabel: cardData['category'],
+                                itemCardImageUrl: cardData['imageUrl'],
+                              ),
                             ),
                             back: SizedBox(
                               width: 310.w,
                               height: 496.h,
-                              child: Container(
-                                  color: AppColors.itemCardBackground),
+                              child: ItemCard(
+                                // 실제 카드 데이터 전달
+                                itemId: cardData['id'],
+                                itemName: cardData['name'],
+                                itemCategoryLabel: cardData['category'],
+                                itemCardImageUrl: cardData['imageUrl'],
+                              ),
                             ),
                           ),
                         ],

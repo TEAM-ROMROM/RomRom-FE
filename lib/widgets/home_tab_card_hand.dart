@@ -314,6 +314,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                 opacity: opacity,
                 child: ItemCard(
                   itemId: cardId,
+                  isSmall: true,
                   itemName: cardData['name'] ?? '아이템',
                   itemCategoryLabel: cardData['category'] ?? '카테고리',
                   itemCardImageUrl: cardData['imageUrl'] ?? '',

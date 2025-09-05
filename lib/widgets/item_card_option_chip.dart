@@ -11,11 +11,21 @@ import '../models/app_theme.dart';
 class ItemCardOptionChip extends ConsumerWidget {
   final String itemId; // 각 물품의 고유 ID
   final ItemTradeOption itemOption; // 옵션 enum
+  final Color? chipColor;
+  final Color? chipSelectedColor;
+  final Color? chipTextColor;
+  final Color? chipSelectedTextColor;
+  final ItemCardScale? externalScale; // 부모 카드에서 전달된 스케일
 
   const ItemCardOptionChip({
     super.key,
     required this.itemId,
     required this.itemOption,
+    this.chipColor,
+    this.chipSelectedColor,
+    this.chipTextColor,
+    this.chipSelectedTextColor,
+    this.externalScale,
   });
 
   @override
@@ -25,22 +35,24 @@ class ItemCardOptionChip extends ConsumerWidget {
 
     return asyncState.when(
       data: (state) {
-        final cs = state.scale;
+        final cs = externalScale ?? state.scale;
         final isSelected = state.selectedOptions.contains(itemOption.name);
-
-        final chipColor =
-            isSelected ? AppColors.primaryYellow : AppColors.itemCardOptionChip;
+        final Color resolvedChipColor = isSelected
+            ? (chipSelectedColor ?? AppColors.primaryYellow)
+            : (chipColor ?? AppColors.itemCardOptionChip);
         final chipRadius = cs.radius(100);
 
         final textStyle = CustomTextStyles.p3.copyWith(
           fontSize: cs.fontSize(CustomTextStyles.p3.fontSize!),
-          color: isSelected ? AppColors.primaryBlack : AppColors.textColorWhite,
+          color: isSelected
+              ? (chipSelectedTextColor ?? AppColors.primaryBlack)
+              : (chipTextColor ?? AppColors.textColorWhite),
         );
 
         return Material(
           color: Colors.transparent,
           child: Ink(
-            decoration: buildBoxDecoration(chipColor, chipRadius),
+            decoration: buildBoxDecoration(resolvedChipColor, chipRadius),
             child: InkWell(
               borderRadius: chipRadius,
               onTap: () {
