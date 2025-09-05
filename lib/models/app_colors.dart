@@ -109,10 +109,16 @@ class AppColors {
   ];
 
   // 홈 피드 - blackGradient container 그라데이션
-  static List<Color> blackGradient = [
+  static List<Color> blackGradient1 = [
     Colors.black,
     Colors.black.withValues(alpha: 0.28),
     Colors.white.withValues(alpha: 0.0),
+  ];
+  static List<Color> blackGradient2 = [
+    Colors.black,
+    Colors.black.withValues(alpha: 0.0),
+    Colors.black.withValues(alpha: 0.0),
+    Colors.black.withValues(alpha: 0.3),
   ];
 
   // 홈 화면 카드 드롭 존
