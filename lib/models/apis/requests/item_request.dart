@@ -20,6 +20,7 @@ class ItemRequest {
   double? longitude;
   double? latitude;
   bool? aiPrice;
+  String? itemStatus;
 
   ItemRequest({
     this.memberId,
@@ -37,6 +38,7 @@ class ItemRequest {
     this.longitude,
     this.latitude,
     this.aiPrice,
+    this.itemStatus,
   });
 
   factory ItemRequest.fromJson(Map<String, dynamic> json) =>

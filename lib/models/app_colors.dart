@@ -80,6 +80,9 @@ class AppColors {
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);
 
+  // 투명 색상
+  static const Color transparent = Color(0x00000000);
+
   // 아이템 옵션 메뉴
   static const Color itemOptionsMenuDeleteText = Color(0xFFFF5656); // 삭제 텍스트 색상
 

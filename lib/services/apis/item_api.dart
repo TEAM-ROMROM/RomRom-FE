@@ -254,4 +254,28 @@ class ItemApi {
 
     return itemResponse;
   }
+
+  /// 물품 거래 상태 변경 API
+  /// `POST /api/item/status/update`
+  Future<ItemResponse> updateItemStatus(ItemRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/item/status/update';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {
+      'itemId': request.itemId,
+      'itemStatus': request.itemStatus,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('물품 상태 변경 성공: ${request.itemStatus}');
+      },
+    );
+
+    return itemResponse;
+  }
 }

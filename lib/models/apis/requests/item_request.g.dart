@@ -25,6 +25,7 @@ ItemRequest _$ItemRequestFromJson(Map<String, dynamic> json) => ItemRequest(
       longitude: (json['longitude'] as num?)?.toDouble(),
       latitude: (json['latitude'] as num?)?.toDouble(),
       aiPrice: json['aiPrice'] as bool?,
+      itemStatus: json['itemStatus'] as String?,
     );
 
 Map<String, dynamic> _$ItemRequestToJson(ItemRequest instance) =>
@@ -43,4 +44,5 @@ Map<String, dynamic> _$ItemRequestToJson(ItemRequest instance) =>
       'longitude': instance.longitude,
       'latitude': instance.latitude,
       'aiPrice': instance.aiPrice,
+      'itemStatus': instance.itemStatus,
     };
