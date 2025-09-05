@@ -487,6 +487,15 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
             child: Stack(
               clipBehavior: Clip.none,
               children: [
+                if (_hasStartedCardDrag)
+                  Positioned(
+                    top: -MediaQuery.of(context).size.height,
+                    child: Container(
+                      height: MediaQuery.of(context).size.height - 30.h,
+                      width: MediaQuery.of(context).size.width,
+                      color: AppColors.opacity30PrimaryBlack,
+                    ),
+                  ),
                 // 드롭 영역 표시 (카드 뽑기 중일 때만)
                 if (_pulledCardId != null)
                   Positioned(
