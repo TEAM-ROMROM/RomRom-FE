@@ -6,7 +6,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/widgets/common/item_options_menu.dart';
+import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'dart:async';
@@ -435,9 +435,21 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
             child: SizedBox(
               width: 30.w,
               height: 30.h,
-              child: ItemOptionsMenuButton(
-                onEditPressed: () => _navigateToEditItem(item),
-                onDeletePressed: () => _showDeleteConfirmDialog(item),
+              child: RomRomContextMenu(
+                items: [
+                  ContextMenuItem(
+                    id: 'edit',
+                    title: '수정',
+                    onTap: () => _navigateToEditItem(item),
+                    showDividerAfter: true,
+                  ),
+                  ContextMenuItem(
+                    id: 'delete',
+                    title: '삭제',
+                    textColor: AppColors.itemOptionsMenuDeleteText,
+                    onTap: () => _showDeleteConfirmDialog(item),
+                  ),
+                ],
               ),
             ),
           ),
