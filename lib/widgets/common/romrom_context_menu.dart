@@ -303,7 +303,7 @@ class _MenuOverlay extends StatelessWidget {
             behavior: HitTestBehavior.translucent,  // 다른 UI 요소 통과
             onTap: onDismiss,
             onPanStart: (_) => onDismiss(),  // 모든 드래그 제스처 감지
-            child: Container(color: Colors.transparent),
+            child: Container(color: AppColors.transparent),
           ),
         ),
         // 메뉴
@@ -317,17 +317,17 @@ class _MenuOverlay extends StatelessWidget {
               builder: (context, child) {
                 return _buildAnimatedMenu(
                   Material(
-                    color: Colors.transparent,
+                    color: AppColors.transparent,
                     child: Container(
                       width: menuWidth,
                       decoration: BoxDecoration(
                         color: menuBackgroundColor,
                         borderRadius: menuBorderRadius,
-                        boxShadow: [
+                        boxShadow: const [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: AppColors.opacity20Black,
                             blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),

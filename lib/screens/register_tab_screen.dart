@@ -219,9 +219,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       body: Stack(
         children: [
           SafeArea(
-            child: NestedScrollView(
+            child: CustomScrollView(
               controller: _scrollController,
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              physics: const BouncingScrollPhysics(),
+              slivers: [
                 SliverAppBar(
                   pinned: true,
                   backgroundColor: AppColors.primaryBlack,
@@ -230,13 +231,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   toolbarHeight:
                       58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
                   titleSpacing: 0,
-                  elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
+                  elevation: _isScrolled ? 0.5 : 0,
                   automaticallyImplyLeading: false,
                   title: Padding(
                     padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
                     child: AnimatedOpacity(
                       duration: const Duration(milliseconds: 200),
-                      opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
+                      opacity: _isScrolled ? 1.0 : 0.0,
                       child: Text(
                         '나의 등록된 물건',
                         style: CustomTextStyles.h3
@@ -255,8 +256,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                           alignment: Alignment.topLeft,
                           child: AnimatedOpacity(
                             duration: const Duration(milliseconds: 200),
-                            opacity:
-                                innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
+                            opacity: _isScrolled ? 0.0 : 1.0,
                             child: Text(
                               '나의 등록된 물건',
                               style: CustomTextStyles.h1,
@@ -274,8 +274,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     child: _buildToggleWidget(),
                   ),
                 ),
+                // 아이템 리스트를 SliverFillRemaining으로 래핑
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  fillOverscroll: false,
+                  child: _buildItemsList(),
+                ),
               ],
-              body: _buildItemsList(), // 토글 위젯 제거
             ),
           ),
           _buildRegisterFabStacked(context),
@@ -290,24 +295,37 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       return const RegisterTabSkeleton();
     }
 
-    if (_myItems.isEmpty) {
+    // 클라이언트 사이드 필터링
+    final filteredItems = _myItems.where((item) {
+      // TODO: 백엔드에서 거래상태 필드 추가 시 아래 로직 활성화
+      // if (_isCompletedSelected) {
+      //   return item.tradeStatus == 'COMPLETED';
+      // } else {
+      //   return item.tradeStatus == 'SELLING' || item.tradeStatus == null;
+      // }
+      // 임시로 모든 아이템 표시
+      return true;
+    }).toList();
+
+    if (filteredItems.isEmpty) {
       // 데이터가 없을 때 빈 상태 보여주기
       return _buildEmptyState();
     }
 
-    final totalItemCount = _myItems.length + (_hasMoreItems ? 1 : 0);
+    final totalItemCount = filteredItems.length + (_hasMoreItems ? 1 : 0);
 
     return RefreshIndicator(
       color: AppColors.primaryYellow,
       backgroundColor: AppColors.primaryBlack,
       onRefresh: () => _loadMyItems(isRefresh: true),
       child: ListView.separated(
-        physics: const BouncingScrollPhysics(),
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         itemCount: totalItemCount,
         itemBuilder: (context, index) {
-          if (index < _myItems.length) {
-            return _buildItemTile(_myItems[index], index);
+          if (index < filteredItems.length) {
+            return _buildItemTile(filteredItems[index], index);
           } else {
             // 로딩 인디케이터
             return _buildLoadingIndicator();
@@ -620,18 +638,19 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   /// 토글 상태 변경
   void _onToggleChanged(bool isCompleted) {
     if (_isCompletedSelected != isCompleted) {
-      setState(() {
-        _isCompletedSelected = isCompleted;
-      });
-
       if (isCompleted) {
         _toggleAnimationController.forward();
       } else {
         _toggleAnimationController.reverse();
       }
+      
+      setState(() {
+        _isCompletedSelected = isCompleted;
+      });
 
-      // API 재요청 (필터링)
-      _loadMyItems(isRefresh: true);
+      // 클라이언트 사이드 필터링 (백엔드 필터링 미지원)
+      // TODO: 백엔드에서 거래상태 필터링 지원 시 API 재요청으로 변경
+      // _loadMyItems(isRefresh: true);
     }
   }
 

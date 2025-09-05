@@ -1,5 +1,5 @@
 ### 기능 요약
-- **기능명**: 공통 컨텍스트 메뉴 컴포넌트 (`CustomContextMenu`)
+- **기능명**: 공통 컨텍스트 메뉴 컴포넌트 (`RomRomContextMenu`)
 - **목적/가치**: PopupMenuButton의 한계를 극복하고, 일관된 UX/UI로 프로젝트 전체의 컨텍스트 메뉴를 통합 관리
 - **타입**: 신규 기능 (공통 컴포넌트)
 - **버전/릴리즈**: v1.2.14+
@@ -19,12 +19,12 @@
 
 ### 변경사항
 - **생성/수정 파일**: 
-  - `lib/widgets/common/custom_context_menu.dart` (신규)
+  - `lib/widgets/common/romrom_context_menu.dart` (신규)
   - `lib/widgets/common/item_options_menu.dart` (리팩토링)
   - `lib/widgets/common/report_menu_button.dart` (리팩토링)
 - **핵심 코드 설명**:
 
-```1:52:lib/widgets/common/custom_context_menu.dart
+```1:52:lib/widgets/common/romrom_context_menu.dart
 class ContextMenuItem {
   final String id;
   final String title;
@@ -43,7 +43,7 @@ class ContextMenuItem {
   });
 }
 
-class CustomContextMenu extends StatefulWidget {
+class RomRomContextMenu extends StatefulWidget {
   final List<ContextMenuItem> items;
   final Widget? customTrigger;
   final ContextMenuAnimation animation;
@@ -56,7 +56,7 @@ class CustomContextMenu extends StatefulWidget {
   final double itemHeight;
   final bool enableHapticFeedback;
 
-  const CustomContextMenu({
+  const RomRomContextMenu({
     super.key,
     required this.items,
     this.customTrigger,
@@ -99,7 +99,7 @@ class CustomContextMenu extends StatefulWidget {
 
 #### **기본 사용법**
 ```dart
-CustomContextMenu(
+RomRomContextMenu(
   items: [
     ContextMenuItem(
       id: 'edit',
@@ -109,7 +109,7 @@ CustomContextMenu(
     ContextMenuItem(
       id: 'delete',
       title: '삭제',
-      textColor: AppColors.deleteRed,
+      textColor: AppColors.itemOptionsMenuDeleteText,
       onTap: () => _handleDelete(),
     ),
   ],
@@ -120,7 +120,7 @@ CustomContextMenu(
 
 **1. 구분선이 있는 복합 메뉴**
 ```dart
-CustomContextMenu(
+RomRomContextMenu(
   items: [
     ContextMenuItem(
       id: 'complete',
@@ -146,7 +146,7 @@ CustomContextMenu(
 
 **2. 아이콘이 있는 메뉴**
 ```dart
-CustomContextMenu(
+RomRomContextMenu(
   items: [
     ContextMenuItem(
       id: 'share',
@@ -166,7 +166,7 @@ CustomContextMenu(
 
 **3. 커스텀 트리거 버튼**
 ```dart
-CustomContextMenu(
+RomRomContextMenu(
   customTrigger: Container(
     padding: EdgeInsets.all(8),
     child: Text('더보기', style: TextStyle(color: Colors.blue)),
@@ -177,7 +177,7 @@ CustomContextMenu(
 
 **4. 애니메이션 타입 변경**
 ```dart
-CustomContextMenu(
+RomRomContextMenu(
   animation: ContextMenuAnimation.slideDown,  // 슬라이드 다운
   items: [...],
 )
@@ -185,7 +185,7 @@ CustomContextMenu(
 
 **5. 위치 고정**
 ```dart
-CustomContextMenu(
+RomRomContextMenu(
   position: ContextMenuPosition.above,  // 트리거 위쪽에 표시
   items: [...],
 )
@@ -193,7 +193,7 @@ CustomContextMenu(
 
 **6. 완전 커스터마이징**
 ```dart
-CustomContextMenu(
+RomRomContextMenu(
   menuWidth: 200.w,
   menuBackgroundColor: Colors.black87,
   menuBorderRadius: BorderRadius.circular(12.r),
@@ -216,9 +216,9 @@ ContextMenuItem({
 })
 ```
 
-#### **CustomContextMenu 주요 파라미터**
+#### **RomRomContextMenu 주요 파라미터**
 ```dart
-CustomContextMenu({
+RomRomContextMenu({
   required List<ContextMenuItem> items,  // 메뉴 항목 리스트
   Widget? customTrigger,                // 커스텀 트리거 버튼
   ContextMenuAnimation animation,       // 애니메이션 타입
