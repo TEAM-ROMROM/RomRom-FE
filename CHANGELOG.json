@@ -1,11 +1,45 @@
 {
   "metadata": {
-    "lastUpdated": "2025-09-08T09:14:22Z",
-    "currentVersion": "1.2.17",
-    "totalReleases": 13,
+    "lastUpdated": "2025-09-08T12:53:29Z",
+    "currentVersion": "1.2.18",
+    "totalReleases": 14,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.2.18",
+      "project_type": "flutter",
+      "date": "2025-09-08",
+      "pr_number": 267,
+      "raw_summary": "Summary by CodeRabbit\n\nNew Features\n\n요청 관리에 ‘보낸 요청’ 보기 추가 및 전용 카드 UI 제공. 요청이 없을 경우 안내 메시지 표시.\n\n\nStyle\n\n토글 헤더 애니메이션과 텍스트 색 전환을 부드럽게 개선.\n받은 요청에서만 아이템 캐러셀과 페이지 인디케이터 노출. 요청 목록 헤더 문구 정돈.\n\n\nDocumentation\n\nREADME 최신 버전 표기 업데이트.\n\n\nChores\n\n앱 버전 1.2.18로 갱신.",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "요청 관리에 ‘보낸 요청’ 보기 추가 및 전용 카드 UI 제공. 요청이 없을 경우 안내 메시지 표시."
+          ]
+        },
+        "style": {
+          "title": "Style",
+          "items": [
+            "토글 헤더 애니메이션과 텍스트 색 전환을 부드럽게 개선.",
+            "받은 요청에서만 아이템 캐러셀과 페이지 인디케이터 노출. 요청 목록 헤더 문구 정돈."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "README 최신 버전 표기 업데이트."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전 1.2.18로 갱신."
+          ]
+        }
+      }
+    },
     {
       "version": "1.2.17",
       "project_type": "flutter",
