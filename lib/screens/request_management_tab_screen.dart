@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
+import 'package:romrom_fe/widgets/sent_request_item_card.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
 
 class RequestManagementTabScreen extends StatefulWidget {
@@ -444,6 +445,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 요청 목록 리스트
   Widget _buildFullRequestItemsList() {
+    // 보낸 요청인 경우
+    if (_isRightSelected) {
+      return _buildSentRequestsList();
+    }
+    
+    // 받은 요청인 경우 (기존 코드)
     // 테스트용 샘플 데이터
     final List<Map<String, dynamic>> sampleRequests = [
       {
@@ -517,6 +524,92 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+  
+  /// 보낸 요청 목록
+  Widget _buildSentRequestsList() {
+    // 테스트용 샘플 데이터
+    final List<Map<String, dynamic>> sentRequests = [
+      {
+        'myItemImageUrl': 'https://picsum.photos/200/200?random=10',
+        'otherItemImageUrl': 'https://picsum.photos/200/200?random=11',
+        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=12',
+        'title': '나이키 에어맥스 교환 요청',
+        'location': '광진구 화양동',
+        'createdDate': DateTime.now().subtract(const Duration(hours: 2)),
+        'tradeOptions': [ItemTradeOption.extraCharge, ItemTradeOption.directOnly, ItemTradeOption.deliveryOnly],
+        'tradeStatus': TradeStatus.chatting,
+      },
+      {
+        'myItemImageUrl': 'https://picsum.photos/200/200?random=13',
+        'otherItemImageUrl': 'https://picsum.photos/200/200?random=14',
+        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=15',
+        'title': '애플워치 교환하실 분',
+        'location': '서초구 방배동',
+        'createdDate': DateTime.now().subtract(const Duration(days: 1)),
+        'tradeOptions': [ItemTradeOption.directOnly],
+        'tradeStatus': TradeStatus.completed,
+      },
+      {
+        'myItemImageUrl': 'https://picsum.photos/200/200?random=16',
+        'otherItemImageUrl': 'https://picsum.photos/200/200?random=17',
+        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=18',
+        'title': '노스페이스 패딩 교환',
+        'location': '송파구 잠실동',
+        'createdDate': DateTime.now().subtract(const Duration(hours: 5)),
+        'tradeOptions': [ItemTradeOption.deliveryOnly, ItemTradeOption.extraCharge],
+        'tradeStatus': null,
+      },
+    ];
+
+    // 완료 여부에 따른 필터링
+    final filteredRequests = sentRequests.where((request) {
+      final status = request['tradeStatus'] as TradeStatus?;
+      if (_showCompletedRequests) {
+        return status == TradeStatus.completed;
+      } else {
+        return status != TradeStatus.completed;
+      }
+    }).toList();
+
+    if (filteredRequests.isEmpty) {
+      return Container(
+        height: 200.h,
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Center(
+          child: Text(
+            _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
+            style: CustomTextStyles.p2.copyWith(
+              color: AppColors.opacity60White,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: Column(
+        children: [
+          SizedBox(height: 24.h), // 토글에서 첫 아이템까지 간격
+          ...filteredRequests.map((request) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16.h),
+              child: SentRequestItemCard(
+                myItemImageUrl: request['myItemImageUrl'],
+                otherItemImageUrl: request['otherItemImageUrl'],
+                otherUserProfileUrl: request['otherUserProfileUrl'],
+                title: request['title'],
+                location: request['location'],
+                createdDate: request['createdDate'],
+                tradeOptions: request['tradeOptions'],
+                tradeStatus: request['tradeStatus'],
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
