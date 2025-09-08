@@ -255,13 +255,13 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
           borderRadius: BorderRadius.circular(10.r),
           color: AppColors.secondaryBlack,
         ),
-        child: Stack(
-          children: [
-            // 애니메이션 선택된 배경
-            AnimatedBuilder(
-              animation: _toggleAnimation,
-              builder: (context, child) {
-                return Positioned(
+        child: AnimatedBuilder(
+          animation: _toggleAnimation,
+          builder: (context, child) {
+            return Stack(
+              children: [
+                // 애니메이션 선택된 배경
+                Positioned(
                   left: 2.w + (_toggleAnimation.value * 171.w),
                   top: 2.h,
                   child: Container(
@@ -272,53 +272,55 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                       color: AppColors.primaryBlack,
                     ),
                   ),
-                );
-              },
-            ),
-            // 텍스트 버튼들
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _onToggleChanged(false),
-                    child: Container(
-                      height: 46.h,
-                      color: Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '받은 요청',
-                        style: CustomTextStyles.p1.copyWith(
-                          color: !_isRightSelected
-                              ? AppColors.textColorWhite
-                              : AppColors.opacity60White,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _onToggleChanged(true),
-                    child: Container(
-                      height: 46.h,
-                      color: Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '보낸 요청',
-                        style: CustomTextStyles.p1.copyWith(
-                          color: _isRightSelected
-                              ? AppColors.textColorWhite
-                              : AppColors.opacity60White,
-                          fontWeight: FontWeight.w500,
+                // 텍스트 버튼들
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onToggleChanged(false),
+                        child: Container(
+                          height: 46.h,
+                          color: Colors.transparent,
+                          alignment: Alignment.center,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 300),
+                            style: CustomTextStyles.p1.copyWith(
+                              color: !_isRightSelected
+                                  ? AppColors.textColorWhite
+                                  : AppColors.opacity60White,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            child: const Text('받은 요청'),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onToggleChanged(true),
+                        child: Container(
+                          height: 46.h,
+                          color: Colors.transparent,
+                          alignment: Alignment.center,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 300),
+                            style: CustomTextStyles.p1.copyWith(
+                              color: _isRightSelected
+                                  ? AppColors.textColorWhite
+                                  : AppColors.opacity60White,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            child: const Text('보낸 요청'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
