@@ -36,7 +36,7 @@ class SentRequestItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 361.w,
+      width: double.infinity,
       height: 191.h,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10.r),
@@ -54,58 +54,60 @@ class SentRequestItemCard extends StatelessWidget {
                     Row(
                       children: [
                         // 내 물건 이미지 (왼쪽)
-                        Container(
-                          width: 181.w,
-                          height: 88.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(10.r),
+                        Expanded(
+                          child: Container(
+                            height: 88.h,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(10.r),
+                              ),
                             ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(10.r),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(10.r),
+                              ),
+                              child: _buildImage(myItemImageUrl),
                             ),
-                            child: _buildImage(myItemImageUrl),
                           ),
                         ),
                         // 상대방 물건 이미지 (오른쪽)
-                        Container(
-                          width: 180.w,
-                          height: 88.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.only(
-                              topRight: Radius.circular(10.r),
-                            ),
-                          ),
-                          child: Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.only(
-                                  topRight: Radius.circular(10.r),
-                                ),
-                                child: _buildImage(otherItemImageUrl),
+                        Expanded(
+                          child: Container(
+                            height: 88.h,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(10.r),
                               ),
-                              // 상대방 프로필 이미지
-                              Positioned(
-                                bottom: 8.h,
-                                right: 8.w,
-                                child: Container(
-                                  width: 24.w,
-                                  height: 24.h,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: AppColors.secondaryBlack,
-                                      width: 1.5.w,
+                            ),
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(10.r),
+                                  ),
+                                  child: _buildImage(otherItemImageUrl),
+                                ),
+                                // 상대방 프로필 이미지
+                                Positioned(
+                                  bottom: 8.h,
+                                  right: 8.w,
+                                  child: Container(
+                                    width: 24.w,
+                                    height: 24.h,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.secondaryBlack,
+                                        width: 1.5.w,
+                                      ),
+                                    ),
+                                    child: ClipOval(
+                                      child: _buildImage(otherUserProfileUrl),
                                     ),
                                   ),
-                                  child: ClipOval(
-                                    child: _buildImage(otherUserProfileUrl),
-                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ],

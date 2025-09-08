@@ -222,11 +222,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               children: [
                 SizedBox(height: 10.h),
 
-                // 1. 물품 카드 캐러셀 섹션
-                _buildItemCardsCarousel(),
+                // 1. 물품 카드 캐러셀 섹션 (받은 요청일 때만 표시)
+                if (!_isRightSelected) _buildItemCardsCarousel(),
                 
-                // 2. 페이지 인디케이터
-                _buildPageIndicator(),
+                // 2. 페이지 인디케이터 (받은 요청일 때만 표시)
+                if (!_isRightSelected) _buildPageIndicator(),
                 
                 // 3. 요청 목록 헤더 섹션 (제목 + 필터 토글)
                 _buildRequestListHeader(),
