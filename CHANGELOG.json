@@ -1,11 +1,48 @@
 {
   "metadata": {
-    "lastUpdated": "2025-08-29T07:55:14Z",
-    "currentVersion": "1.2.10",
-    "totalReleases": 12,
+    "lastUpdated": "2025-09-08T09:14:22Z",
+    "currentVersion": "1.2.17",
+    "totalReleases": 13,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.2.17",
+      "project_type": "flutter",
+      "date": "2025-09-08",
+      "pr_number": 266,
+      "raw_summary": "Summary by CodeRabbit\n\n\nNew Features\n\n공통 컨텍스트 메뉴 도입(애니메이션·햅틱·자동 위치 배치)으로 앱 전반 메뉴 경험 개선\n홈 피드 카드에서 바로 신고 가능(신고 완료 모달 안내)\n아이템 상세 지도 제스처 확대/스크롤 활성화 및 위치 마커 표시\n\n\n\nImprovements\n\n등록 탭 레이아웃 전면 개선: 풀투리프레시, 슬리버 스켈레톤/빈 상태, 부드러운 스크롤\n피드 카드 정보 영역 재구성(상품명/태그/가격/프로필), 좋아요 반응성 향상(낙관적 업데이트)\nAI 태그 단일화(isActive), 배지/그라데이션/카드 간격 시각 개선\n\n\n\nRemoved\n\n홈 탭 상단 신고 버튼 제거(카드 내 신고로 일원화)\n\n\n\nDocumentation\n\n버전 정보 및 README 갱신 (v1.2.17)",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "공통 컨텍스트 메뉴 도입(애니메이션·햅틱·자동 위치 배치)으로 앱 전반 메뉴 경험 개선",
+            "홈 피드 카드에서 바로 신고 가능(신고 완료 모달 안내)",
+            "아이템 상세 지도 제스처 확대/스크롤 활성화 및 위치 마커 표시"
+          ]
+        },
+        "improvements": {
+          "title": "Improvements",
+          "items": [
+            "등록 탭 레이아웃 전면 개선: 풀투리프레시, 슬리버 스켈레톤/빈 상태, 부드러운 스크롤",
+            "피드 카드 정보 영역 재구성(상품명/태그/가격/프로필), 좋아요 반응성 향상(낙관적 업데이트)",
+            "AI 태그 단일화(isActive), 배지/그라데이션/카드 간격 시각 개선"
+          ]
+        },
+        "removed": {
+          "title": "Removed",
+          "items": [
+            "홈 탭 상단 신고 버튼 제거(카드 내 신고로 일원화)"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "버전 정보 및 README 갱신 (v1.2.17)"
+          ]
+        }
+      }
+    },
     {
       "version": "1.2.10",
       "project_type": "flutter",

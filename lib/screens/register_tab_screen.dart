@@ -6,7 +6,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/widgets/common/item_options_menu.dart';
+import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'dart:async';
@@ -219,63 +219,69 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       body: Stack(
         children: [
           SafeArea(
-            child: NestedScrollView(
-              controller: _scrollController,
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverAppBar(
-                  pinned: true,
-                  backgroundColor: AppColors.primaryBlack,
-                  expandedHeight:
-                      88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
-                  toolbarHeight:
-                      58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
-                  titleSpacing: 0,
-                  elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
-                  automaticallyImplyLeading: false,
-                  title: Padding(
-                    padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
-                      child: Text(
-                        '나의 등록된 물건',
-                        style: CustomTextStyles.h3
-                            .copyWith(fontWeight: FontWeight.w600),
+            child: RefreshIndicator(
+              color: AppColors.primaryYellow,
+              backgroundColor: AppColors.primaryBlack,
+              onRefresh: () => _loadMyItems(isRefresh: true),
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    backgroundColor: AppColors.primaryBlack,
+                    expandedHeight:
+                        88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
+                    toolbarHeight:
+                        58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
+                    titleSpacing: 0,
+                    elevation: _isScrolled ? 0.5 : 0,
+                    automaticallyImplyLeading: false,
+                    title: Padding(
+                      padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: _isScrolled ? 1.0 : 0.0,
+                        child: Text(
+                          '나의 등록된 물건',
+                          style: CustomTextStyles.h3
+                              .copyWith(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
-                  ),
-                  centerTitle: true,
-                  flexibleSpace: Container(
-                    color: AppColors.primaryBlack,
-                    child: FlexibleSpaceBar(
-                      background: Padding(
-                        padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w,
-                            24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 200),
-                            opacity:
-                                innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
-                            child: Text(
-                              '나의 등록된 물건',
-                              style: CustomTextStyles.h1,
+                    centerTitle: true,
+                    flexibleSpace: Container(
+                      color: AppColors.primaryBlack,
+                      child: FlexibleSpaceBar(
+                        background: Padding(
+                          padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w,
+                              24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 200),
+                              opacity: _isScrolled ? 0.0 : 1.0,
+                              child: Text(
+                                '나의 등록된 물건',
+                                style: CustomTextStyles.h1,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                // 토글 위젯을 고정 헤더로 추가
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _ToggleHeaderDelegate(
-                    child: _buildToggleWidget(),
+                  // 토글 위젯을 고정 헤더로 추가
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _ToggleHeaderDelegate(
+                      child: _buildToggleWidget(),
+                    ),
                   ),
-                ),
-              ],
-              body: _buildItemsList(), // 토글 위젯 제거
+                  // 아이템 리스트를 SliverFillRemaining으로 래핑
+                  ..._buildItemSlivers(),
+                ],
+              ),
             ),
           ),
           _buildRegisterFabStacked(context),
@@ -284,42 +290,58 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     );
   }
 
-  Widget _buildItemsList() {
+  List<Widget> _buildItemSlivers() {
     if (_isLoading && _myItems.isEmpty) {
-      // 초기 로딩 시 스켈레톤 보여주기
-      return const RegisterTabSkeleton();
+      return const [RegisterTabSkeletonSliver()];
     }
 
-    if (_myItems.isEmpty) {
-      // 데이터가 없을 때 빈 상태 보여주기
-      return _buildEmptyState();
+    final filteredItems = _myItems.where((item) {
+      return true; // TODO: 필터 로직
+    }).toList();
+
+    if (filteredItems.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _buildEmptyState(), // 여기엔 ListView 같은 스크롤 위젯 넣지 않기
+        ),
+      ];
     }
 
-    final totalItemCount = _myItems.length + (_hasMoreItems ? 1 : 0);
+    // separator interleave: item, divider, item, divider...
+    final itemCountWithSeparators = filteredItems.length * 2 - 1;
 
-    return RefreshIndicator(
-      color: AppColors.primaryYellow,
-      backgroundColor: AppColors.primaryBlack,
-      onRefresh: () => _loadMyItems(isRefresh: true),
-      child: ListView.separated(
-        physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        itemCount: totalItemCount,
-        itemBuilder: (context, index) {
-          if (index < _myItems.length) {
-            return _buildItemTile(_myItems[index], index);
-          } else {
-            // 로딩 인디케이터
-            return _buildLoadingIndicator();
-          }
-        },
-        separatorBuilder: (context, index) => Divider(
-          thickness: 1.5,
-          color: AppColors.opacity10White,
-          height: 32.h,
+    return [
+      SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index.isOdd) {
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+                child: Divider(
+                  thickness: 1.5,
+                  color: AppColors.opacity10White,
+                  height: 32.h,
+                ),
+              );
+            }
+            final item = filteredItems[index ~/ 2];
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+              child: _buildItemTile(item, index ~/ 2),
+            );
+          },
+          childCount: itemCountWithSeparators,
         ),
       ),
-    );
+      if (_hasMoreItems)
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ),
+    ];
   }
 
   /// 빈 상태 위젯
@@ -332,18 +354,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           fontWeight: FontWeight.w500,
         ),
         textAlign: TextAlign.center,
-      ),
-    );
-  }
-
-  /// 로딩 인디케이터
-  Widget _buildLoadingIndicator() {
-    return Padding(
-      padding: EdgeInsets.all(16.h),
-      child: const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primaryYellow,
-        ),
       ),
     );
   }
@@ -435,9 +445,21 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
             child: SizedBox(
               width: 30.w,
               height: 30.h,
-              child: ItemOptionsMenuButton(
-                onEditPressed: () => _navigateToEditItem(item),
-                onDeletePressed: () => _showDeleteConfirmDialog(item),
+              child: RomRomContextMenu(
+                items: [
+                  ContextMenuItem(
+                    id: 'edit',
+                    title: '수정',
+                    onTap: () => _navigateToEditItem(item),
+                    showDividerAfter: true,
+                  ),
+                  ContextMenuItem(
+                    id: 'delete',
+                    title: '삭제',
+                    textColor: AppColors.itemOptionsMenuDeleteText,
+                    onTap: () => _showDeleteConfirmDialog(item),
+                  ),
+                ],
               ),
             ),
           ),
@@ -608,18 +630,19 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   /// 토글 상태 변경
   void _onToggleChanged(bool isCompleted) {
     if (_isCompletedSelected != isCompleted) {
-      setState(() {
-        _isCompletedSelected = isCompleted;
-      });
-
       if (isCompleted) {
         _toggleAnimationController.forward();
       } else {
         _toggleAnimationController.reverse();
       }
 
-      // API 재요청 (필터링)
-      _loadMyItems(isRefresh: true);
+      setState(() {
+        _isCompletedSelected = isCompleted;
+      });
+
+      // 클라이언트 사이드 필터링 (백엔드 필터링 미지원)
+      // TODO: 백엔드에서 거래상태 필터링 지원 시 API 재요청으로 변경
+      // _loadMyItems(isRefresh: true);
     }
   }
 

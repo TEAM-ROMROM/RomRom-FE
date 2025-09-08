@@ -16,9 +16,6 @@ import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:romrom_fe/screens/report_screen.dart';
-import 'package:romrom_fe/widgets/common/report_menu_button.dart';
-import 'package:romrom_fe/widgets/common/common_success_modal.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
@@ -62,7 +59,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     'assets/images/coachMark5.png',
     'assets/images/coachMark6.png',
   ];
-  
+
   // 내 카드 목록 (나중에 API에서 가져올 예정)
   List<Map<String, dynamic>> _myCards = [];
 
@@ -403,6 +400,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       final feedItem = HomeFeedItem(
         id: index + _feedItems.length + 1,
         itemUuid: d.itemId,
+        name: d.itemName ?? ' ',
         price: d.price ?? 0,
         location: locationText,
         date: d.createdDate ?? '',
@@ -422,7 +420,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     return feedItems;
   }
-  
+
   /// 내 카드(물품) 목록 로드
   Future<void> _loadMyCards() async {
     try {
@@ -430,39 +428,44 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       final response = await itemApi.getMyItems(
         ItemRequest(pageNumber: 0, pageSize: 10),
       );
-      
+
       if (!mounted) return;
-      
+
       final myItems = response.itemDetailPage?.content ?? [];
       setState(() {
-        _myCards = myItems.map((item) => {
-          'id': item.itemId ?? '',
-          'name': item.itemName ?? '물품',
-          'category': item.itemCategory ?? '카테고리',
-          'imageUrl': (item.itemImageUrls?.isNotEmpty ?? false) 
-              ? item.itemImageUrls![0] 
-              : 'https://picsum.photos/400/300',
-        }).toList();
+        _myCards = myItems
+            .map((item) => {
+                  'id': item.itemId ?? '',
+                  'name': item.itemName ?? '물품',
+                  'category': item.itemCategory ?? '카테고리',
+                  'imageUrl': (item.itemImageUrls?.isNotEmpty ?? false)
+                      ? item.itemImageUrls![0]
+                      : 'https://picsum.photos/400/300',
+                })
+            .toList();
       });
     } catch (e) {
       debugPrint('내 카드 로딩 실패: $e');
       // 테스트용 더미 데이터
       setState(() {
-        _myCards = List.generate(6, (index) => {
-          'id': 'my_card_$index',
-          'name': '내 물품 ${index + 1}',
-          'category': '카테고리 ${(index % 3) + 1}',
-          'imageUrl': 'https://picsum.photos/400/300?random=${100 + index}',
-        });
+        _myCards = List.generate(
+            6,
+            (index) => {
+                  'id': 'my_card_$index',
+                  'name': '내 물품 ${index + 1}',
+                  'category': '카테고리 ${(index % 3) + 1}',
+                  'imageUrl':
+                      'https://picsum.photos/400/300?random=${100 + index}',
+                });
       });
     }
   }
-  
+
   /// 카드 드롭 핸들러 (거래 요청)
   void _handleCardDrop(String cardId) {
     final currentFeedItem = _feedItems[_currentFeedIndex];
     debugPrint('거래 요청: 내 카드 $cardId -> 피드 아이템 ${currentFeedItem.itemUuid}');
-    
+
     // TODO: 실제 거래 요청 API 호출
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -566,36 +569,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             child: SvgPicture.asset(
               'assets/images/first-item-post-text.svg',
               width: 145.w,
-            ),
-          ),
-
-        /// 더보기 아이콘 버튼
-        if (!_isBlurShown)
-          Positioned(
-            right: 24.w,
-            top: MediaQuery.of(context).padding.top, // SafeArea 기준으로 margin 줌
-            child: ReportMenuButton(
-              onReportPressed: () async {
-                final bool? reported = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ReportScreen(
-                      itemId: _feedItems[_currentFeedIndex].itemUuid ?? '',
-                    ),
-                  ),
-                );
-
-                if (reported == true && mounted) {
-                  await showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => CommonSuccessModal(
-                      message: '신고가 접수되었습니다.',
-                      onConfirm: () => Navigator.of(context).pop(),
-                    ),
-                  );
-                }
-              },
             ),
           ),
       ],

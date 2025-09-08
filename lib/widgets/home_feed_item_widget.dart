@@ -3,14 +3,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:romrom_fe/enums/price_tag.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
+import 'package:romrom_fe/widgets/common/ai_badge.dart';
+import 'package:romrom_fe/widgets/common/common_success_modal.dart';
+import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
@@ -173,6 +176,38 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         ),
                       ),
                     ),
+
+                  /// 더보기 아이콘 버튼
+                  if (!widget.showBlur)
+                    Positioned(
+                      right: 24.w,
+                      top: (MediaQuery.of(context).padding.top < 59
+                          ? 59.h
+                          : MediaQuery.of(context).padding.top),
+                      child: ReportMenuButton(
+                        onReportPressed: () async {
+                          final bool? reported = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ReportScreen(
+                                itemId: widget.item.itemUuid ?? '',
+                              ),
+                            ),
+                          );
+
+                          if (reported == true && mounted) {
+                            await showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => CommonSuccessModal(
+                                message: '신고가 접수되었습니다.',
+                                onConfirm: () => Navigator.of(context).pop(),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
                 ],
               );
             },
@@ -181,7 +216,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           // 이미지 인디케이터 (하단 점)
           if (!widget.showBlur)
             Positioned(
-              bottom: 180.h,
+              bottom: 220.h,
               left: 0,
               right: 0,
               child: Row(
@@ -191,11 +226,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   (index) => Container(
                     width: 6.w,
                     height: 6.w,
-                    margin: EdgeInsets.symmetric(horizontal: 4.w),
+                    margin: EdgeInsets.symmetric(horizontal: 2.w),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _currentImageIndex == index
-                          ? Colors.white
+                          ? AppColors.primaryYellow
                           : AppColors.opacity50White,
                     ),
                   ),
@@ -207,7 +242,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           if (!widget.showBlur)
             Positioned(
               right: 33.w,
-              bottom: 180.h,
+              bottom: 216.h,
               child: Column(
                 children: [
                   GestureDetector(
@@ -263,95 +298,108 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 70.h,
+            bottom: 92.h,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: Column(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      BlurWrapper(
-                        enabled: widget.showBlur,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          // 가격 및 AI 분석 라벨
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  "$formattedPrice원",
-                                  style: CustomTextStyles.h3
-                                      .copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                SizedBox(width: 8.w),
-                                // AI 가격 태그 표시
-                                HomeFeedAiAnalysisTag(
-                                  tag: _useAiPrice
-                                      ? PriceTag.aiAnalyzed
-                                      : PriceTag.userInput,
-                                )
-                              ],
-                            ),
-                            SizedBox(height: 12.h),
-
-                            // 위치 및 날짜 정보
-                            Row(
-                              children: [
-                                Icon(AppIcons.location,
-                                    color: AppColors.opacity80White,
-                                    size: 13.sp),
-                                SizedBox(width: 4.w),
-                                Text(
-                                  '${widget.item.location} • $formattedDate',
-                                  style: CustomTextStyles.p3
-                                      .copyWith(fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-
-                      // 프로필 이미지
-                      ClipOval(
-                        child: BlurWrapper(
-                          enabled: widget.showBlur,
-                          child: UserProfileCircularAvatar(
-                            avatarSize: const Size(50, 50),
-                            profileUrl: widget.item.profileUrl.isNotEmpty
-                                ? widget.item.profileUrl
-                                : null,
+                  Expanded(
+                    child: BlurWrapper(
+                      enabled: widget.showBlur,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 물품 이름
+                          Text(
+                            widget.item.name.trim(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: CustomTextStyles.h3
+                                .copyWith(fontWeight: FontWeight.w600),
                           ),
-                        ),
+
+                          SizedBox(height: 8.h),
+
+                          // 위치 및 날짜 정보
+                          Row(
+                            children: [
+                              Icon(AppIcons.location,
+                                  color: AppColors.opacity80White, size: 13.sp),
+                              SizedBox(width: 4.w),
+                              Text(
+                                '${widget.item.location} • $formattedDate',
+                                style: CustomTextStyles.p3
+                                    .copyWith(fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 12.h),
+
+                          Row(
+                            children: [
+                              // 사용감 태그 - ItemDetail과 동일한 위젯 사용
+                              ItemDetailConditionTag(
+                                condition: widget.item.itemCondition.name,
+                              ),
+                              SizedBox(width: 4.w),
+                              // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
+                              ...widget.item.transactionTypes.map(
+                                (type) => ItemDetailTradeOptionTag(
+                                  option: type.name,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 10.h),
+
+                          Row(
+                            children: [
+                              // 물품 가격
+                              Text(
+                                "$formattedPrice원",
+                                style: CustomTextStyles.p1
+                                    .copyWith(fontWeight: FontWeight.w600),
+                              ),
+
+                              SizedBox(width: 8.w),
+
+                              _useAiPrice
+                                  ? const AiBadgeWidget()
+                                  : const SizedBox(),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
 
-                  SizedBox(height: 18.h),
-
-                  // 태그 행 (상품 상태, 거래 방식, AI 분석 버튼)
+                  // 프로필 이미지 및 AI 가격 태그
                   BlurWrapper(
                     enabled: widget.showBlur,
-                    child: Row(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // 사용감 태그 - ItemDetail과 동일한 위젯 사용
-                        ItemDetailConditionTag(
-                          condition: widget.item.itemCondition.name,
-                        ),
-                        SizedBox(width: 4.w),
-                        // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
-                        ...widget.item.transactionTypes.map(
-                          (type) => Padding(
-                            padding: EdgeInsets.only(right: 4.w),
-                            child: ItemDetailTradeOptionTag(
-                              option: type.name,
+                        // 프로필 이미지
+                        ClipOval(
+                          child: BlurWrapper(
+                            enabled: widget.showBlur,
+                            child: UserProfileCircularAvatar(
+                              avatarSize: const Size(50, 50),
+                              profileUrl: widget.item.profileUrl.isNotEmpty
+                                  ? widget.item.profileUrl
+                                  : null,
                             ),
                           ),
                         ),
-                        const Spacer(),
+
+                        SizedBox(height: 14.h),
+
                         HomeFeedAiTag(isActive: _useAiPrice),
                       ],
                     ),
@@ -442,19 +490,26 @@ class BlackGradientContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 화면 크기 : 그라디언트 높이 동적 조정
-    return Container(
-      height: double.infinity,
-      decoration: BoxDecoration(
-          gradient: LinearGradient(
-        colors: [
-          Colors.black,
-          Colors.black.withValues(alpha: 0.28),
-          Colors.white.withValues(alpha: 0.0),
-        ],
-        stops: const [0.0, 0.24, 0.38],
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-      )),
+    return Column(
+      children: [
+        Expanded(
+          flex: 627, // 비율 627
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: AppColors.blackGradient, // 검정색 그라데이션
+                stops: const [0.0, 0.24, 0.38],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 139, // 비율 139
+          child: Container(color: Colors.black),
+        ),
+      ],
     );
   }
 }

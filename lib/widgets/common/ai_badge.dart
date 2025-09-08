@@ -11,9 +11,9 @@ class AiBadgeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 21.w,
+      width: 20.w,
       height: 20.h,
-      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 4.5.w, vertical: 4.h),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4.r),
         color: const Color(0x4DCF7DFF), // AI 배지 배경색

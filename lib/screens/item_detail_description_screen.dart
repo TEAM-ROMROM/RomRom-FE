@@ -50,6 +50,9 @@ class _ItemDetailDescriptionScreenState
     extends State<ItemDetailDescriptionScreen> {
   late PageController pageController;
   late final ValueNotifier<int> currentIndexVN;
+  late final ValueNotifier<bool> isLikedVN;
+  late final ValueNotifier<int> likeCountVN;
+  bool _likeInFlight = false;
 
   bool isLoading = true;
   bool hasError = false;
@@ -58,8 +61,6 @@ class _ItemDetailDescriptionScreenState
   Item? item;
   List<ItemImage>? itemImages;
   List<String>? itemCustomTags;
-  String? likeStatus;
-  int? likeCount;
   String locationName = '위치 정보 로딩 중...';
   String memberLocationName = '위치 정보 로딩 중...';
 
@@ -70,6 +71,8 @@ class _ItemDetailDescriptionScreenState
     super.initState();
     currentIndexVN = ValueNotifier<int>(widget.currentImageIndex);
     pageController = PageController(initialPage: widget.currentImageIndex);
+    isLikedVN = ValueNotifier<bool>(false);
+    likeCountVN = ValueNotifier<int>(0);
     _loadItemDetail();
   }
 
@@ -90,8 +93,8 @@ class _ItemDetailDescriptionScreenState
         item = response.item;
         itemImages = response.itemImages;
         itemCustomTags = response.itemCustomTags;
-        likeStatus = response.likeStatus;
-        likeCount = response.likeCount;
+        isLikedVN.value = (response.likeStatus == 'LIKE');
+        likeCountVN.value = response.likeCount ?? 0;
 
         imageUrls = itemImages
                 ?.map((img) => img.imageUrl ?? '')
@@ -193,6 +196,8 @@ class _ItemDetailDescriptionScreenState
   void dispose() {
     currentIndexVN.dispose();
     pageController.dispose();
+    isLikedVN.dispose();
+    likeCountVN.dispose();
     super.dispose();
   }
 
@@ -261,7 +266,6 @@ class _ItemDetailDescriptionScreenState
     }
 
     String formattedPrice = formatPrice(item!.price ?? 0);
-    bool isLiked = likeStatus == 'LIKE';
 
     return Scaffold(
       body: Stack(
@@ -381,18 +385,24 @@ class _ItemDetailDescriptionScreenState
                                 ),
                                 child: Row(
                                   children: [
-                                    SvgPicture.asset(
-                                      isLiked
-                                          ? 'assets/images/like-heart-icon.svg'
-                                          : 'assets/images/dislike-heart-icon.svg',
-                                      width: 16.w,
-                                      height: 16.h,
-                                    ),
+                                    ValueListenableBuilder<bool>(
+                                        valueListenable: isLikedVN,
+                                        builder: (_, liked, __) {
+                                          return SvgPicture.asset(
+                                            liked
+                                                ? 'assets/images/like-heart-icon.svg'
+                                                : 'assets/images/dislike-heart-icon.svg',
+                                            width: 16.w,
+                                            height: 16.h,
+                                          );
+                                        }),
                                     SizedBox(width: 4.w),
-                                    Text(
-                                      (likeCount ?? 0).toString(),
-                                      style: CustomTextStyles.p2,
-                                    ),
+                                    ValueListenableBuilder<int>(
+                                        valueListenable: likeCountVN,
+                                        builder: (_, likeCount, __) {
+                                          return Text(likeCount.toString(),
+                                              style: CustomTextStyles.p2);
+                                        }),
                                   ],
                                 ),
                               ),
@@ -508,7 +518,7 @@ class _ItemDetailDescriptionScreenState
                       /// 거래 희망 장소
                       Container(
                         width: double.infinity,
-                        margin: EdgeInsets.symmetric(vertical: 16.h),
+                        margin: EdgeInsets.only(top: 16.h, bottom: 61.h),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -542,6 +552,7 @@ class _ItemDetailDescriptionScreenState
                                 borderRadius: BorderRadius.circular(4.r),
                                 child: NaverMap(
                                   key: ValueKey('detail_map_${widget.itemId}'),
+                                  forceGesture: true,
                                   options: NaverMapViewOptions(
                                     initialCameraPosition: NCameraPosition(
                                       target: NLatLng(
@@ -550,6 +561,8 @@ class _ItemDetailDescriptionScreenState
                                       ),
                                       zoom: 15,
                                     ),
+                                    scrollGesturesEnable: true, // 지도 이동
+                                    zoomGesturesEnable: true, // 확대/축소
                                   ),
                                   onMapReady: (controller) {
                                     if (item?.latitude != null &&
@@ -584,7 +597,9 @@ class _ItemDetailDescriptionScreenState
 
           /// 상단 고정 버튼들
           Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
+            top: (MediaQuery.of(context).padding.top < 59
+                ? 59.h
+                : MediaQuery.of(context).padding.top),
             left: 24.w,
             child: GestureDetector(
               onTap: () => Navigator.pop(context, currentIndexVN.value),
@@ -593,7 +608,9 @@ class _ItemDetailDescriptionScreenState
             ),
           ),
           Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
+            top: (MediaQuery.of(context).padding.top < 59
+                ? 59.h
+                : MediaQuery.of(context).padding.top),
             right: 24.w,
             child: GestureDetector(
               /// TODO: 더보기 기능 구현
@@ -625,21 +642,33 @@ class _ItemDetailDescriptionScreenState
   }
 
   Future<void> _toggleLike() async {
-    if (item?.itemId == null) return;
+    if (_likeInFlight) return;
+
+    _likeInFlight = true;
+    final prevLiked = isLikedVN.value;
+    final prevCount = likeCountVN.value;
+
+    // 1) 빠른 UI 업데이트
+    isLikedVN.value = !prevLiked;
+    likeCountVN.value =
+        prevLiked ? (prevCount > 0 ? prevCount - 1 : 0) : (prevCount + 1);
 
     try {
-      final ItemApi itemApi = ItemApi();
-      final ItemRequest request = ItemRequest(itemId: item!.itemId);
-      final ItemResponse response = await itemApi.postLike(request);
+      final itemApi = ItemApi();
+      final req = ItemRequest(itemId: item!.itemId);
+      final res = await itemApi.postLike(req);
 
+      // 2) 서버 결과로 보정(서버-클라 불일치 대비)
       if (!mounted) return;
-
-      setState(() {
-        likeStatus = response.likeStatus;
-        likeCount = response.likeCount;
-      });
+      isLikedVN.value = (res.likeStatus == 'LIKE');
+      likeCountVN.value = res.likeCount ?? likeCountVN.value;
     } catch (e) {
-      debugPrint('좋아요 상태 변경 실패: $e');
+      debugPrint('좋아요 실패: $e');
+      // 3) 실패 롤백
+      isLikedVN.value = prevLiked;
+      likeCountVN.value = prevCount;
+    } finally {
+      _likeInFlight = false;
     }
   }
 }

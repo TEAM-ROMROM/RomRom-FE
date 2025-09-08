@@ -39,7 +39,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   Offset _panStartPosition = Offset.zero;
   Offset _currentPanPosition = Offset.zero;
   Offset _pullOffset = Offset.zero;
-  
+
   // 카드 리스트
   List<Map<String, dynamic>> _cards = [];
 
@@ -50,7 +50,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   final double _maxFanAngle = 18.0; // 최대 펼침 각도 (도)
   final double _hoverLift = 70.h; // 호버 시 카드 상승 높이
   final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
-  final double _baseBottom = 40.h; // 기본 bottom 위치 (네비게이션 바 위)
+  final double _baseBottom = 50.h; // 기본 bottom 위치 (네비게이션 바 위)
 
   @override
   void initState() {
@@ -116,11 +116,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   String? _findCardAtPosition(Offset localPosition) {
     final screenWidth = MediaQuery.of(context).size.width;
     final centerX = screenWidth / 2;
-    
+
     for (int i = 0; i < _cards.length; i++) {
       final transform = _calculateCardTransform(i, _cards.length);
       final cardCenterX = centerX + transform['x'];
-      
+
       // 카드 영역 체크 (카드 너비의 절반 범위 내)
       if ((localPosition.dx - cardCenterX).abs() < _cardWidth / 2) {
         return _cards[i]['id'];
@@ -135,10 +135,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final relativeIndex = index - centerIndex;
 
     // 카드 간격을 계산
-    final cardSpacing = totalCards <= 5 
-        ? 70.w  
-        : totalCards <= 7 
-            ? 65.w  
+    final cardSpacing = totalCards <= 5
+        ? 60.w
+        : totalCards <= 7
+            ? 65.w
             : 50.w;
 
     // 각도 계산 (라디안)
@@ -147,19 +147,33 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       final maxAngleRad = _maxFanAngle * math.pi / 180;
       final angleStep = (2 * maxAngleRad) / (totalCards - 1);
       angle = -maxAngleRad + (index * angleStep);
-      
+
       // 중앙 카드는 정확히 0도로 설정
       if ((relativeIndex.abs() < 0.1)) {
         angle = 0.0;
       }
     }
 
-    // 위치 계산 (부채꼴 배치)
-    final arcY = _fanRadius * (1 - math.cos(angle));
+    // ===== 튜닝 파라미터 =====
+    const double curveK = 0.25; // 기본 곡률 강도(↑면 전체가 더 내려감) 0.2~0.35 추천
+    const double edgeDrop = 5.0; // 가장자리를 추가로 더 내림(px)
+    const double edgeGamma = 1.6; // 가장자리 가중치 곡선(↑면 중앙은 덜, 끝은 더 내려감)
+    // ========================
 
-    // 최종 위치
+    final r = _fanRadius;
+
+    // X
     final x = relativeIndex * cardSpacing;
-    final y = arcY * 0.15; // Y축 곡률
+
+    // 기본 곡률
+    final baseY = -r * (1 - math.cos(angle)) * curveK;
+
+    // 가장자리 추가 드롭 (0~1 정규화)
+    final absNorm =
+        (centerIndex == 0) ? 0.0 : (relativeIndex.abs() / centerIndex);
+    final extraEdgeDrop = -edgeDrop * math.pow(absNorm, edgeGamma).toDouble();
+
+    final y = baseY + extraEdgeDrop;
 
     return {
       'x': x,
@@ -185,8 +199,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
-        final staggeredFanValue = (_fanAnimation.value - staggerDelay).clamp(0.0, 1.0);
-        
+        final staggeredFanValue =
+            (_fanAnimation.value - staggerDelay).clamp(0.0, 1.0);
+
         double x = transform['x'] * staggeredFanValue;
         double y = transform['y'] * staggeredFanValue;
         double angle = transform['angle'] * staggeredFanValue;
@@ -208,17 +223,17 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           y -= (_pullOffset.dy - _pullLift) * pullValue; // 위로 드래그 시 카드가 위로 이동
           scale = 1.0 + (0.15 * pullValue);
           angle *= (1 - pullValue * 0.8);
-          
+
           if (_isCardPulled) {
             opacity = 1.0 - (pullValue * 0.2);
           }
         }
 
         // Z-Index를 위한 순서 조정
-        final zIndex = isPulled 
-            ? 1000 
-            : isHovered 
-                ? 999 
+        final zIndex = isPulled
+            ? 1000
+            : isHovered
+                ? 999
                 : transform['zIndex'] as int;
 
         return Positioned(
@@ -237,7 +252,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
               height: _cardHeight,
               decoration: BoxDecoration(
                 // 선택된 카드에 노란색 테두리 추가
-                border: (isHovered || isPulled) 
+                border: (isHovered || isPulled)
                     ? Border.all(
                         color: AppColors.primaryYellow,
                         width: 2,
@@ -276,7 +291,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     setState(() {
       _panStartPosition = details.localPosition;
       _currentPanPosition = details.localPosition;
-      
+
       // 시작 위치에서 카드 찾기
       final cardId = _findCardAtPosition(details.localPosition);
       if (cardId != null && cardId != _hoveredCardId) {
@@ -290,11 +305,12 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   void _handlePanUpdate(DragUpdateDetails details) {
     setState(() {
       _currentPanPosition = details.localPosition;
-      
+
       // 위로 스와이프 감지 (빠른 위로 움직임)
       final dy = _panStartPosition.dy - _currentPanPosition.dy;
-      
-      if (_hoveredCardId != null && dy > 30) { // 30픽셀 이상 위로 움직임
+
+      if (_hoveredCardId != null && dy > 30) {
+        // 30픽셀 이상 위로 움직임
         // 카드 뽑기 시작
         if (_pulledCardId == null) {
           _pulledCardId = _hoveredCardId;
@@ -330,20 +346,21 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
   void _handlePanEnd(DragEndDetails details) {
     final dy = _panStartPosition.dy - _currentPanPosition.dy;
-    
+
     // 카드 사용 체크
-    if (_pulledCardId != null && dy > 100) { // 100픽셀 이상 위로 스와이프
+    if (_pulledCardId != null && dy > 100) {
+      // 100픽셀 이상 위로 스와이프
       // 카드 사용
       if (widget.onCardDrop != null) {
         widget.onCardDrop!(_pulledCardId!);
         HapticFeedback.heavyImpact();
       }
-      
+
       // 카드 사용 애니메이션
       setState(() {
         _isCardPulled = true;
       });
-      
+
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           setState(() {
@@ -365,7 +382,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         }
       });
     }
-    
+
     // 호버 해제
     _hoverController.reverse().then((_) {
       if (mounted) {

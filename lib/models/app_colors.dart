@@ -69,7 +69,8 @@ class AppColors {
   // 온보딩 프로그레스 헤더
   static final Color onboardingProgressInactiveLine =
       primaryYellow.withValues(alpha: 0.1); // 비활성화 프로그레스 선
-  static const Color onboardingProgressStepPendingBg = primaryBlack; // 대기 단계 배경색 (primaryBlack과 동일)
+  static const Color onboardingProgressStepPendingBg =
+      primaryBlack; // 대기 단계 배경색 (primaryBlack과 동일)
   static final Color onboardingProgressStepPendingBorder =
       primaryYellow.withValues(alpha: 0.1); // 대기 단계 테두리
   static final Color onboardingProgressStepPendingText =
@@ -78,6 +79,9 @@ class AppColors {
   // 텍스트 색상
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);
+
+  // 투명 색상
+  static const Color transparent = Color(0x00000000);
 
   // 아이템 옵션 메뉴
   static const Color itemOptionsMenuDeleteText = Color(0xFFFF5656); // 삭제 텍스트 색상
@@ -105,6 +109,13 @@ class AppColors {
     Color(0xFF9858F2), // 보라 테두리(Gradient 2)
     Color(0xFFF258F2), // 핑크 테두리(Gradient 3)
     Color(0xFFF25893), // 다홍 테두리(Gradient 4)
+  ];
+
+  // 홈 피드 - blackGradient container 그라데이션
+  static List<Color> blackGradient = [
+    Colors.black,
+    Colors.black.withValues(alpha: 0.28),
+    Colors.white.withValues(alpha: 0.0),
   ];
 
   static const Color errorBorder = Color(0xFFFF5656); // 에러 상태 테두리 색상
