@@ -219,68 +219,69 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       body: Stack(
         children: [
           SafeArea(
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  backgroundColor: AppColors.primaryBlack,
-                  expandedHeight:
-                      88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
-                  toolbarHeight:
-                      58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
-                  titleSpacing: 0,
-                  elevation: _isScrolled ? 0.5 : 0,
-                  automaticallyImplyLeading: false,
-                  title: Padding(
-                    padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: _isScrolled ? 1.0 : 0.0,
-                      child: Text(
-                        '나의 등록된 물건',
-                        style: CustomTextStyles.h3
-                            .copyWith(fontWeight: FontWeight.w600),
+            child: RefreshIndicator(
+              color: AppColors.primaryYellow,
+              backgroundColor: AppColors.primaryBlack,
+              onRefresh: () => _loadMyItems(isRefresh: true),
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    backgroundColor: AppColors.primaryBlack,
+                    expandedHeight:
+                        88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
+                    toolbarHeight:
+                        58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
+                    titleSpacing: 0,
+                    elevation: _isScrolled ? 0.5 : 0,
+                    automaticallyImplyLeading: false,
+                    title: Padding(
+                      padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: _isScrolled ? 1.0 : 0.0,
+                        child: Text(
+                          '나의 등록된 물건',
+                          style: CustomTextStyles.h3
+                              .copyWith(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
-                  ),
-                  centerTitle: true,
-                  flexibleSpace: Container(
-                    color: AppColors.primaryBlack,
-                    child: FlexibleSpaceBar(
-                      background: Padding(
-                        padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w,
-                            24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 200),
-                            opacity: _isScrolled ? 0.0 : 1.0,
-                            child: Text(
-                              '나의 등록된 물건',
-                              style: CustomTextStyles.h1,
+                    centerTitle: true,
+                    flexibleSpace: Container(
+                      color: AppColors.primaryBlack,
+                      child: FlexibleSpaceBar(
+                        background: Padding(
+                          padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w,
+                              24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 200),
+                              opacity: _isScrolled ? 0.0 : 1.0,
+                              child: Text(
+                                '나의 등록된 물건',
+                                style: CustomTextStyles.h1,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                // 토글 위젯을 고정 헤더로 추가
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _ToggleHeaderDelegate(
-                    child: _buildToggleWidget(),
+                  // 토글 위젯을 고정 헤더로 추가
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _ToggleHeaderDelegate(
+                      child: _buildToggleWidget(),
+                    ),
                   ),
-                ),
-                // 아이템 리스트를 SliverFillRemaining으로 래핑
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  fillOverscroll: false,
-                  child: _buildItemsList(),
-                ),
-              ],
+                  // 아이템 리스트를 SliverFillRemaining으로 래핑
+                  ..._buildItemSlivers(),
+                ],
+              ),
             ),
           ),
           _buildRegisterFabStacked(context),
@@ -289,55 +290,58 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     );
   }
 
-  Widget _buildItemsList() {
+  List<Widget> _buildItemSlivers() {
     if (_isLoading && _myItems.isEmpty) {
-      // 초기 로딩 시 스켈레톤 보여주기
-      return const RegisterTabSkeleton();
+      return const [RegisterTabSkeletonSliver()];
     }
 
-    // 클라이언트 사이드 필터링
     final filteredItems = _myItems.where((item) {
-      // TODO: 백엔드에서 거래상태 필드 추가 시 아래 로직 활성화
-      // if (_isCompletedSelected) {
-      //   return item.tradeStatus == 'COMPLETED';
-      // } else {
-      //   return item.tradeStatus == 'SELLING' || item.tradeStatus == null;
-      // }
-      // 임시로 모든 아이템 표시
-      return true;
+      return true; // TODO: 필터 로직
     }).toList();
 
     if (filteredItems.isEmpty) {
-      // 데이터가 없을 때 빈 상태 보여주기
-      return _buildEmptyState();
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _buildEmptyState(), // 여기엔 ListView 같은 스크롤 위젯 넣지 않기
+        ),
+      ];
     }
 
-    final totalItemCount = filteredItems.length + (_hasMoreItems ? 1 : 0);
+    // separator interleave: item, divider, item, divider...
+    final itemCountWithSeparators = filteredItems.length * 2 - 1;
 
-    return RefreshIndicator(
-      color: AppColors.primaryYellow,
-      backgroundColor: AppColors.primaryBlack,
-      onRefresh: () => _loadMyItems(isRefresh: true),
-      child: ListView.separated(
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        itemCount: totalItemCount,
-        itemBuilder: (context, index) {
-          if (index < filteredItems.length) {
-            return _buildItemTile(filteredItems[index], index);
-          } else {
-            // 로딩 인디케이터
-            return _buildLoadingIndicator();
-          }
-        },
-        separatorBuilder: (context, index) => Divider(
-          thickness: 1.5,
-          color: AppColors.opacity10White,
-          height: 32.h,
+    return [
+      SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index.isOdd) {
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+                child: Divider(
+                  thickness: 1.5,
+                  color: AppColors.opacity10White,
+                  height: 32.h,
+                ),
+              );
+            }
+            final item = filteredItems[index ~/ 2];
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+              child: _buildItemTile(item, index ~/ 2),
+            );
+          },
+          childCount: itemCountWithSeparators,
         ),
       ),
-    );
+      if (_hasMoreItems)
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ),
+    ];
   }
 
   /// 빈 상태 위젯
@@ -350,18 +354,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           fontWeight: FontWeight.w500,
         ),
         textAlign: TextAlign.center,
-      ),
-    );
-  }
-
-  /// 로딩 인디케이터
-  Widget _buildLoadingIndicator() {
-    return Padding(
-      padding: EdgeInsets.all(16.h),
-      child: const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primaryYellow,
-        ),
       ),
     );
   }
@@ -643,7 +635,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       } else {
         _toggleAnimationController.reverse();
       }
-      
+
       setState(() {
         _isCompletedSelected = isCompleted;
       });

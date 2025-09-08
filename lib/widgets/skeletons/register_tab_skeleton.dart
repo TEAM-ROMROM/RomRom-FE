@@ -7,27 +7,48 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
-/// 내 물품 목록 스켈레톤 위젯
-class RegisterTabSkeleton extends StatelessWidget {
-  const RegisterTabSkeleton({super.key});
+/// 내 물품 목록 스켈레톤 - SliverList 버전 (ListView 없음)
+class RegisterTabSkeletonSliver extends StatelessWidget {
+  const RegisterTabSkeletonSliver({super.key, this.itemCount = 5});
+
+  final int itemCount;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      physics: const BouncingScrollPhysics(),
+    final int childCount =
+        (itemCount * 2) - 1; // item, divider, item, divider ...
+
+    return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: 24.w),
-      itemCount: 5,
-      itemBuilder: (context, index) => _buildSkeletonTile(index),
-      separatorBuilder: (context, index) => Divider(
-        thickness: 1.5,
-        color: AppColors.opacity10White,
-        height: 32.h,
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index.isOdd) {
+              // 구분선
+              return Divider(
+                thickness: 1.5,
+                color: AppColors.opacity10White,
+                height: 32.h,
+              );
+            }
+            final tileIndex = index ~/ 2;
+            return _SkeletonTile(index: tileIndex);
+          },
+          childCount: childCount,
+        ),
       ),
     );
   }
+}
 
-  /// 스켈레톤 타일
-  Widget _buildSkeletonTile(int index) {
+/// 스켈레톤 타일 한 줄
+class _SkeletonTile extends StatelessWidget {
+  const _SkeletonTile({required this.index});
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
     return Skeletonizer(
       enabled: true,
       effect: const ShimmerEffect(
