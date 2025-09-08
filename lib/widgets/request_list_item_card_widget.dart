@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 요청 목록 아이템 카드 위젯
 class RequestListItemCardWidget extends StatelessWidget {
@@ -100,7 +101,7 @@ class RequestListItemCardWidget extends StatelessWidget {
                       SizedBox(width: 4.w),
                       // 시간
                       Text(
-                        _getTimeAgo(createdDate),
+                        getTimeAgo(createdDate),
                         style: CustomTextStyles.p3.copyWith(
                           fontWeight: FontWeight.w500,
                           color: AppColors.opacity60White,
@@ -160,22 +161,6 @@ class RequestListItemCardWidget extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// 시간 계산 함수
-  String _getTimeAgo(DateTime createdDate) {
-    final now = DateTime.now();
-    final difference = now.difference(createdDate);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}일 전';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}시간 전';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}분 전';
-    } else {
-      return '방금 전';
-    }
   }
 
   /// 이미지 로드 위젯

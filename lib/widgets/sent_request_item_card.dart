@@ -8,6 +8,7 @@ import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dar
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 class SentRequestItemCard extends StatelessWidget {
   final String myItemImageUrl;
@@ -122,10 +123,8 @@ class SentRequestItemCard extends StatelessWidget {
                           color: AppColors.secondaryBlack,
                         ),
                         child: Center(
-                          child: SvgPicture.string(
-                            '''<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                              <path d="M2 11.5998C2 11.5998 2.09706 12.2792 4.90883 15.091C7.72061 17.9027 12.2794 17.9027 15.0912 15.091C16.0874 14.0948 16.7306 12.8792 17.0209 11.5998M2 11.5998V16.3998M2 11.5998H6.8M18 8.3998C18 8.3998 17.9029 7.72041 15.0912 4.90864C12.2794 2.09686 7.72061 2.09686 4.90883 4.90864C3.91261 5.90486 3.26936 7.12038 2.97906 8.3998M18 8.3998V3.5998M18 8.3998H13.2" stroke="#FFC300" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>''',
+                          child: SvgPicture.asset(
+                            'assets/images/exchangeYellowCircle.svg',
                             width: 20.w,
                             height: 20.h,
                           ),
@@ -173,7 +172,7 @@ class SentRequestItemCard extends StatelessWidget {
                           ),
                           SizedBox(width: 2.w),
                           Text(
-                            _getTimeAgo(createdDate),
+                            getTimeAgo(createdDate),
                             style: CustomTextStyles.p3.copyWith(
                               color: AppColors.opacity60White,
                               fontWeight: FontWeight.w500,
@@ -244,21 +243,6 @@ class SentRequestItemCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _getTimeAgo(DateTime createdDate) {
-    final now = DateTime.now();
-    final difference = now.difference(createdDate);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}일 전';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}시간 전';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}분 전';
-    } else {
-      return '방금 전';
-    }
   }
 
   Widget _buildImage(String imageUrl) {

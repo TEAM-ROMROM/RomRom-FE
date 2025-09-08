@@ -106,3 +106,31 @@ extension ContextExtension on BuildContext {
 String formatDate(String date) {
   return DateFormat('yyyy년 M월 d일').format(DateTime.parse(date));
 }
+
+/// 시간 경과 표시 함수
+/// DateTime을 받아서 "방금", "N초 전", "N분 전", "N시간 전", "N일 전", "N주 전", "N달 전", "N년 전" 형식으로 반환
+String getTimeAgo(DateTime createdDate) {
+  final now = DateTime.now();
+  final difference = now.difference(createdDate);
+
+  if (difference.inSeconds < 1) {
+    return '방금';
+  } else if (difference.inSeconds < 60) {
+    return '${difference.inSeconds}초 전';
+  } else if (difference.inMinutes < 60) {
+    return '${difference.inMinutes}분 전';
+  } else if (difference.inHours < 24) {
+    return '${difference.inHours}시간 전';
+  } else if (difference.inDays < 7) {
+    return '${difference.inDays}일 전';
+  } else if (difference.inDays < 30) {
+    final weeks = (difference.inDays / 7).floor();
+    return '$weeks주 전';
+  } else if (difference.inDays < 365) {
+    final months = (difference.inDays / 30).floor();
+    return '$months달 전';
+  } else {
+    final years = (difference.inDays / 365).floor();
+    return '$years년 전';
+  }
+}

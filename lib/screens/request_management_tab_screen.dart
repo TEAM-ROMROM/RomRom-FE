@@ -217,13 +217,15 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             ),
           ],
           body: SingleChildScrollView(
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // SizedBox(height: 10.h),
-
                 // 1. 물품 카드 캐러셀 섹션 (받은 요청일 때만 표시)
-                if (!_isRightSelected) _buildItemCardsCarousel(),
+                if (!_isRightSelected) ...[
+                  SizedBox(height: 10.h),
+                  _buildItemCardsCarousel(),
+                ],
                 
                 // 2. 페이지 인디케이터 (받은 요청일 때만 표시)
                 if (!_isRightSelected) _buildPageIndicator(),
