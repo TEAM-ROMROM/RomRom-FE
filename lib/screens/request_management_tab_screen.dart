@@ -220,7 +220,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 10.h),
+                // SizedBox(height: 10.h),
 
                 // 1. 물품 카드 캐러셀 섹션 (받은 요청일 때만 표시)
                 if (!_isRightSelected) _buildItemCardsCarousel(),
@@ -388,6 +388,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 요청 목록 헤더 섹션
   Widget _buildRequestListHeader() {
+    // 보낸 요청에서는 헤더 표시 안함
+    if (_isRightSelected) {
+      return const SizedBox.shrink();
+    }
+    
+    // 받은 요청에서만 헤더 표시
     return Padding(
       padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
       child: Column(
@@ -399,7 +405,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             children: [
               // 제목
               Text(
-                _isRightSelected ? '보낸 요청 목록' : '받은 요청 목록',
+                '요청 목록',
                 style: TextStyle(
                   color: AppColors.textColorWhite,
                   fontFamily: 'Pretendard',
@@ -431,7 +437,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
           SizedBox(height: 8.h),
           // 설명 텍스트
           Text(
-            _isRightSelected ? '내가 보낸 교환 요청이예요' : '내가 받은 교환 요청이예요',
+            '내 물건에 온 교환 요청이에요',
             style: TextStyle(
               color: const Color(0xFFFFFFCC),
               fontFamily: 'Pretendard',
@@ -566,23 +572,14 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       },
     ];
 
-    // 완료 여부에 따른 필터링
-    final filteredRequests = sentRequests.where((request) {
-      final status = request['tradeStatus'] as TradeStatus?;
-      if (_showCompletedRequests) {
-        return status == TradeStatus.completed;
-      } else {
-        return status != TradeStatus.completed;
-      }
-    }).toList();
-
-    if (filteredRequests.isEmpty) {
+    // 보낸 요청은 필터링 없이 모든 요청 표시
+    if (sentRequests.isEmpty) {
       return Container(
         height: 200.h,
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Center(
           child: Text(
-            _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
+            '보낸 요청이 없습니다',
             style: CustomTextStyles.p2.copyWith(
               color: AppColors.opacity60White,
             ),
@@ -596,7 +593,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       child: Column(
         children: [
           SizedBox(height: 24.h), // 토글에서 첫 아이템까지 간격
-          ...filteredRequests.map((request) {
+          ...sentRequests.map((request) {
             return Padding(
               padding: EdgeInsets.only(bottom: 16.h),
               child: SentRequestItemCard(

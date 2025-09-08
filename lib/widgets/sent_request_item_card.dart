@@ -226,13 +226,6 @@ class SentRequestItemCard extends StatelessWidget {
                   },
                 ),
                 ContextMenuItem(
-                  id: 'delete',
-                  title: '삭제',
-                  onTap: () {
-                    // 삭제 액션
-                  },
-                ),
-                ContextMenuItem(
                   id: 'cancel',
                   title: '요청 취소',
                   onTap: () {
