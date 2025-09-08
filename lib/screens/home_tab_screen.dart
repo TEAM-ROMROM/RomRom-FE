@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -40,6 +41,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 피드 아이템 목록
   final List<HomeFeedItem> _feedItems = [];
   int _currentPage = 0; // 페이징 용(데이터)
+  // ignore: unused_field
   int _currentFeedIndex = 0; // 화면 상 현재 보고 있는 피드 인덱스
   final int _pageSize = 10;
   // 초기 로딩 상태
@@ -502,7 +504,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                                 // 실제 카드 데이터 전달
                                 itemId: cardData['id'],
                                 itemName: cardData['name'],
-                                itemCategoryLabel: cardData['category'],
+                                itemCategoryLabel:
+                                    ItemCategories.fromServerName(
+                                            cardData['category'])
+                                        .name,
                                 itemCardImageUrl: cardData['imageUrl'],
                               ),
                             ),
@@ -513,7 +518,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                                 // 실제 카드 데이터 전달
                                 itemId: cardData['id'],
                                 itemName: cardData['name'],
-                                itemCategoryLabel: cardData['category'],
+                                itemCategoryLabel:
+                                    ItemCategories.fromServerName(
+                                            cardData['category'])
+                                        .name,
                                 itemCardImageUrl: cardData['imageUrl'],
                               ),
                             ),
