@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
+import 'package:romrom_fe/widgets/sent_request_item_card.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
 
 class RequestManagementTabScreen extends StatefulWidget {
@@ -216,16 +217,18 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             ),
           ],
           body: SingleChildScrollView(
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 10.h),
-
-                // 1. 물품 카드 캐러셀 섹션
-                _buildItemCardsCarousel(),
+                // 1. 물품 카드 캐러셀 섹션 (받은 요청일 때만 표시)
+                if (!_isRightSelected) ...[
+                  SizedBox(height: 10.h),
+                  _buildItemCardsCarousel(),
+                ],
                 
-                // 2. 페이지 인디케이터
-                _buildPageIndicator(),
+                // 2. 페이지 인디케이터 (받은 요청일 때만 표시)
+                if (!_isRightSelected) _buildPageIndicator(),
                 
                 // 3. 요청 목록 헤더 섹션 (제목 + 필터 토글)
                 _buildRequestListHeader(),
@@ -254,13 +257,13 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
           borderRadius: BorderRadius.circular(10.r),
           color: AppColors.secondaryBlack,
         ),
-        child: Stack(
-          children: [
-            // 애니메이션 선택된 배경
-            AnimatedBuilder(
-              animation: _toggleAnimation,
-              builder: (context, child) {
-                return Positioned(
+        child: AnimatedBuilder(
+          animation: _toggleAnimation,
+          builder: (context, child) {
+            return Stack(
+              children: [
+                // 애니메이션 선택된 배경
+                Positioned(
                   left: 2.w + (_toggleAnimation.value * 171.w),
                   top: 2.h,
                   child: Container(
@@ -271,53 +274,55 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                       color: AppColors.primaryBlack,
                     ),
                   ),
-                );
-              },
-            ),
-            // 텍스트 버튼들
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _onToggleChanged(false),
-                    child: Container(
-                      height: 46.h,
-                      color: Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '받은 요청',
-                        style: CustomTextStyles.p1.copyWith(
-                          color: !_isRightSelected
-                              ? AppColors.textColorWhite
-                              : AppColors.opacity60White,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _onToggleChanged(true),
-                    child: Container(
-                      height: 46.h,
-                      color: Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '보낸 요청',
-                        style: CustomTextStyles.p1.copyWith(
-                          color: _isRightSelected
-                              ? AppColors.textColorWhite
-                              : AppColors.opacity60White,
-                          fontWeight: FontWeight.w500,
+                // 텍스트 버튼들
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onToggleChanged(false),
+                        child: Container(
+                          height: 46.h,
+                          color: Colors.transparent,
+                          alignment: Alignment.center,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 300),
+                            style: CustomTextStyles.p1.copyWith(
+                              color: !_isRightSelected
+                                  ? AppColors.textColorWhite
+                                  : AppColors.opacity60White,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            child: const Text('받은 요청'),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onToggleChanged(true),
+                        child: Container(
+                          height: 46.h,
+                          color: Colors.transparent,
+                          alignment: Alignment.center,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 300),
+                            style: CustomTextStyles.p1.copyWith(
+                              color: _isRightSelected
+                                  ? AppColors.textColorWhite
+                                  : AppColors.opacity60White,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            child: const Text('보낸 요청'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -385,6 +390,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 요청 목록 헤더 섹션
   Widget _buildRequestListHeader() {
+    // 보낸 요청에서는 헤더 표시 안함
+    if (_isRightSelected) {
+      return const SizedBox.shrink();
+    }
+    
+    // 받은 요청에서만 헤더 표시
     return Padding(
       padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
       child: Column(
@@ -396,7 +407,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             children: [
               // 제목
               Text(
-                _isRightSelected ? '보낸 요청 목록' : '받은 요청 목록',
+                '요청 목록',
                 style: TextStyle(
                   color: AppColors.textColorWhite,
                   fontFamily: 'Pretendard',
@@ -428,7 +439,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
           SizedBox(height: 8.h),
           // 설명 텍스트
           Text(
-            _isRightSelected ? '내가 보낸 교환 요청이예요' : '내가 받은 교환 요청이예요',
+            '내 물건에 온 교환 요청이에요',
             style: TextStyle(
               color: const Color(0xFFFFFFCC),
               fontFamily: 'Pretendard',
@@ -444,6 +455,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 요청 목록 리스트
   Widget _buildFullRequestItemsList() {
+    // 보낸 요청인 경우
+    if (_isRightSelected) {
+      return _buildSentRequestsList();
+    }
+    
+    // 받은 요청인 경우 (기존 코드)
     // 테스트용 샘플 데이터
     final List<Map<String, dynamic>> sampleRequests = [
       {
@@ -517,6 +534,83 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+  
+  /// 보낸 요청 목록
+  Widget _buildSentRequestsList() {
+    // 테스트용 샘플 데이터
+    final List<Map<String, dynamic>> sentRequests = [
+      {
+        'myItemImageUrl': 'https://picsum.photos/200/200?random=10',
+        'otherItemImageUrl': 'https://picsum.photos/200/200?random=11',
+        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=12',
+        'title': '나이키 에어맥스 교환 요청',
+        'location': '광진구 화양동',
+        'createdDate': DateTime.now().subtract(const Duration(hours: 2)),
+        'tradeOptions': [ItemTradeOption.extraCharge, ItemTradeOption.directOnly, ItemTradeOption.deliveryOnly],
+        'tradeStatus': TradeStatus.chatting,
+      },
+      {
+        'myItemImageUrl': 'https://picsum.photos/200/200?random=13',
+        'otherItemImageUrl': 'https://picsum.photos/200/200?random=14',
+        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=15',
+        'title': '애플워치 교환하실 분',
+        'location': '서초구 방배동',
+        'createdDate': DateTime.now().subtract(const Duration(days: 1)),
+        'tradeOptions': [ItemTradeOption.directOnly],
+        'tradeStatus': TradeStatus.completed,
+      },
+      {
+        'myItemImageUrl': 'https://picsum.photos/200/200?random=16',
+        'otherItemImageUrl': 'https://picsum.photos/200/200?random=17',
+        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=18',
+        'title': '노스페이스 패딩 교환',
+        'location': '송파구 잠실동',
+        'createdDate': DateTime.now().subtract(const Duration(hours: 5)),
+        'tradeOptions': [ItemTradeOption.deliveryOnly, ItemTradeOption.extraCharge],
+        'tradeStatus': null,
+      },
+    ];
+
+    // 보낸 요청은 필터링 없이 모든 요청 표시
+    if (sentRequests.isEmpty) {
+      return Container(
+        height: 200.h,
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Center(
+          child: Text(
+            '보낸 요청이 없습니다',
+            style: CustomTextStyles.p2.copyWith(
+              color: AppColors.opacity60White,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: Column(
+        children: [
+          SizedBox(height: 24.h), // 토글에서 첫 아이템까지 간격
+          ...sentRequests.map((request) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16.h),
+              child: SentRequestItemCard(
+                myItemImageUrl: request['myItemImageUrl'],
+                otherItemImageUrl: request['otherItemImageUrl'],
+                otherUserProfileUrl: request['otherUserProfileUrl'],
+                title: request['title'],
+                location: request['location'],
+                createdDate: request['createdDate'],
+                tradeOptions: request['tradeOptions'],
+                tradeStatus: request['tradeStatus'],
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

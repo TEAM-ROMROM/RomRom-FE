@@ -557,13 +557,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           borderRadius: BorderRadius.circular(10.r),
           color: AppColors.secondaryBlack, // #34353D
         ),
-        child: Stack(
-          children: [
-            // 애니메이션 선택된 배경
-            AnimatedBuilder(
-              animation: _toggleAnimation,
-              builder: (context, child) {
-                return Positioned(
+        child: AnimatedBuilder(
+          animation: _toggleAnimation,
+          builder: (context, child) {
+            return Stack(
+              children: [
+                // 애니메이션 선택된 배경
+                Positioned(
                   left: 2.w +
                       (_toggleAnimation.value * 171.w), // 2px + 170px + 1px gap
                   top: 2.h,
@@ -575,53 +575,55 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                       color: AppColors.primaryBlack, // #1D1E27
                     ),
                   ),
-                );
-              },
-            ),
-            // 텍스트 버튼들
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _onToggleChanged(false),
-                    child: Container(
-                      height: 46.h,
-                      color: Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '판매 중',
-                        style: CustomTextStyles.p1.copyWith(
-                          color: !_isCompletedSelected
-                              ? AppColors.textColorWhite
-                              : AppColors.opacity60White,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _onToggleChanged(true),
-                    child: Container(
-                      height: 46.h,
-                      color: Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '거래 완료',
-                        style: CustomTextStyles.p1.copyWith(
-                          color: _isCompletedSelected
-                              ? AppColors.textColorWhite
-                              : AppColors.opacity60White,
-                          fontWeight: FontWeight.w500,
+                // 텍스트 버튼들
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onToggleChanged(false),
+                        child: Container(
+                          height: 46.h,
+                          color: Colors.transparent,
+                          alignment: Alignment.center,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 300),
+                            style: CustomTextStyles.p1.copyWith(
+                              color: !_isCompletedSelected
+                                  ? AppColors.textColorWhite
+                                  : AppColors.opacity60White,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            child: const Text('판매 중'),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onToggleChanged(true),
+                        child: Container(
+                          height: 46.h,
+                          color: Colors.transparent,
+                          alignment: Alignment.center,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 300),
+                            style: CustomTextStyles.p1.copyWith(
+                              color: _isCompletedSelected
+                                  ? AppColors.textColorWhite
+                                  : AppColors.opacity60White,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            child: const Text('거래 완료'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
