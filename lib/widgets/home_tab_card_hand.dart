@@ -78,11 +78,27 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     return topLeft & box.size;
   }
 
+  late AnimationController _iconAnimationController;
+  late Animation<double> _iconAnimation;
+
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _generateCards();
+
+    // 아이콘 애니메이션 초기화
+    _iconAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 700),
+      vsync: this,
+    )..repeat(reverse: true); // 반복 애니메이션 (위아래로 움직임)
+
+    _iconAnimation = Tween<double>(begin: 0.0, end: 10.0.h).animate(
+      CurvedAnimation(
+        parent: _iconAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   void _initializeAnimations() {
@@ -146,6 +162,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
   @override
   void dispose() {
+    _iconAnimationController.dispose();
     _fanController.dispose();
     // _hoverController.dispose();
     _pullController.dispose();
@@ -458,7 +475,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   @override
   Widget build(BuildContext context) {
     return Stack(
-      key: _deckKey, // ⬅️ 덱 스택에 키
+      key: _deckKey,
       clipBehavior: Clip.none,
       children: [
         // ⬇️ 바깥 오버레이: 덱이 떠 있을 때만 탭으로 닫기
@@ -507,7 +524,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 136.w),
                           child: Container(
-                            key: _dropZoneKey, // ⬅️ 키 부여
+                            key: _dropZoneKey,
                             width: 122.w,
                             height: 189.h,
                             decoration: BoxDecoration(
@@ -545,12 +562,20 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: EdgeInsets.only(top: 32.0.h, bottom: 20.h),
-                          child: const Icon(
-                            AppIcons.cardDrag,
-                            color: AppColors.primaryYellow,
-                          ),
+                        AnimatedBuilder(
+                          animation: _iconAnimation,
+                          builder: (context, child) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                top: 32.0.h - _iconAnimation.value,
+                                bottom: 20.h + _iconAnimation.value,
+                              ),
+                              child: const Icon(
+                                AppIcons.cardDrag,
+                                color: AppColors.primaryYellow,
+                              ),
+                            );
+                          },
                         ),
                         Text(
                           "위로 드래그하여\n거래방식 선택하기",
