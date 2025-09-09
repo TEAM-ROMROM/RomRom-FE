@@ -17,7 +17,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/common_fail_modal.dart';
+import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/flip_card_spin.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
@@ -602,22 +602,35 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                               await showDialog(
                                 context: context,
                                 barrierDismissible: false,
-                                builder: (_) => CommonFailModal(
-                                  message: messageForUser,
-                                  onConfirm: () => Navigator.of(context).pop(),
+                                builder: (_) => CommonDeleteModal(
+                                  description: messageForUser,
+                                  leftText: '확인',
+                                  onRight: () async {
+                                    final api = TradeApi();
+                                    // 거래 취소 API 호출
+                                    await api.cancelTradeRequest(TradeRequest(
+                                      giveItemId: cardData['id'],
+                                      takeItemId: _feedItems[_currentFeedIndex]
+                                          .itemUuid,
+                                      tradeOptions: _selectedTradeOptions
+                                          .map((option) => option.serverName)
+                                          .toList(),
+                                    ));
+                                    if (mounted) {
+                                      Navigator.of(context).pop(); // 모달 닫기
+                                    }
+                                  },
+                                  onLeft: () => Navigator.of(context).pop(),
                                 ),
                               );
-                              return;
+                            } finally {
+                              // 선택된 옵션 초기화
+                              setState(() {
+                                _selectedTradeOptions.clear();
+                              });
+
+                              Navigator.pop(context);
                             }
-
-                            if (!mounted) return;
-
-                            // 선택된 옵션 초기화
-                            setState(() {
-                              _selectedTradeOptions.clear();
-                            });
-
-                            Navigator.pop(context);
                           },
                         ),
                       ],

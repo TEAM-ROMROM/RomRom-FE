@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import '../widgets/common/warning_modal.dart';
+import '../widgets/common/common_delete_modal.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
@@ -17,7 +17,8 @@ extension NavigationExtension on BuildContext {
     bool Function(Route<dynamic>)? predicate, // 라우트 제거 유무
   }) {
     // iOS에서는 CupertinoPageRoute, 안드로이드에서는 MaterialPageRoute 사용
-    PageRoute<T> createRoute<T extends Object?>(Widget screen, RouteSettings? settings) {
+    PageRoute<T> createRoute<T extends Object?>(
+        Widget screen, RouteSettings? settings) {
       if (Platform.isIOS) {
         return CupertinoPageRoute<T>(
           builder: (context) => screen,
@@ -79,7 +80,7 @@ String formatPrice(int price) {
 }
 
 extension ContextExtension on BuildContext {
-  Future<bool?> showWarningDialog({
+  Future<bool?> showDeleteDialog({
     required String title,
     required String description,
     String cancelText = '취소',
@@ -89,13 +90,12 @@ extension ContextExtension on BuildContext {
       context: this,
       barrierDismissible: false,
       barrierColor: AppColors.dialogBarrier,
-      builder: (context) => WarningDialog(
-        title: title,
+      builder: (context) => CommonDeleteModal(
         description: description,
-        cancelText: cancelText,
-        confirmText: confirmText,
-        onCancel: () => Navigator.of(context).pop(false),
-        onConfirm: () => Navigator.of(context).pop(true),
+        leftText: cancelText,
+        rightText: confirmText,
+        onLeft: () => Navigator.of(context).pop(false),
+        onRight: () => Navigator.of(context).pop(true),
       ),
     );
   }
