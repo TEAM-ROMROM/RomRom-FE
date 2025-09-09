@@ -122,10 +122,10 @@ class AppColors {
   ];
 
   // 홈 화면 카드 드롭 존
-  static const Color cardDropZoneBorder = primaryYellow; // 드롭 존 테두리 색상
+  static const Color cardDropZoneBorder = Colors.white; // 드롭 존 테두리 색상
   static Color cardDropZoneBackground =
-      primaryYellow.withValues(alpha: 0.3); // 드롭 존 배경 색상
-  static Color cardDropZoneShadow = primaryYellow; // 드롭 존 배경 색상
+      Colors.white.withValues(alpha: 0.3); // 드롭 존 배경 색상
+  static Color cardDropZoneShadow = Colors.white; // 드롭 존 배경 색상
 
   // 홈 화면 거래 요청 Dialog
   static const Color transactionRequestDialogCancelButton =

@@ -164,7 +164,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   void dispose() {
     _iconAnimationController.dispose();
     _fanController.dispose();
-    // _hoverController.dispose();
     _pullController.dispose();
     _deckLiftController.dispose();
     super.dispose();
