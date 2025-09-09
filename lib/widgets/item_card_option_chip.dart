@@ -16,6 +16,7 @@ class ItemCardOptionChip extends ConsumerWidget {
   final Color? chipTextColor;
   final Color? chipSelectedTextColor;
   final ItemCardScale? externalScale; // 부모 카드에서 전달된 스케일
+  final VoidCallback onTap; // onTap 콜백 추가
 
   const ItemCardOptionChip({
     super.key,
@@ -26,6 +27,7 @@ class ItemCardOptionChip extends ConsumerWidget {
     this.chipTextColor,
     this.chipSelectedTextColor,
     this.externalScale,
+    required this.onTap, // onTap을 required로 설정
   });
 
   @override
@@ -56,6 +58,7 @@ class ItemCardOptionChip extends ConsumerWidget {
             child: InkWell(
               borderRadius: chipRadius,
               onTap: () {
+                onTap(); // 외부에서 전달된 onTap 콜백 호출
                 ref.read(provider.notifier).toggleOption(itemOption.name);
               },
               child: Container(

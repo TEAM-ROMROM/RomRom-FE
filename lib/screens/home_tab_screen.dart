@@ -6,6 +6,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -14,6 +15,9 @@ import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
+import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/common_fail_modal.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/flip_card_spin.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
@@ -69,6 +73,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   // 내 카드 목록 (나중에 API에서 가져올 예정)
   List<Map<String, dynamic>> _myCards = [];
+
+  // 선택된 거래 옵션 저장 리스트
+  final List<ItemTradeOption> _selectedTradeOptions = [];
 
   @override
   void initState() {
@@ -471,7 +478,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// 카드 드롭 핸들러 (거래 요청)
   void _handleCardDrop(String cardId) async {
     final cardData = _myCards.firstWhere((card) => card['id'] == cardId);
-// 다이얼로그 띄우기 전에 (선택) 이미지 프리캐시
+
+    // 다이얼로그 띄우기 전에 (선택) 이미지 프리캐시
     await precacheImage(NetworkImage(cardData['imageUrl']), context);
 
     showDialog(
@@ -498,7 +506,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                         children: [
                           FlipCardSpin(
                             front: SizedBox(
-                              // width: 310.w,
                               height: 496.h,
                               child: ItemCard(
                                 // 실제 카드 데이터 전달
@@ -509,6 +516,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                                             cardData['category'])
                                         .name,
                                 itemCardImageUrl: cardData['imageUrl'],
+                                onOptionSelected: (selectedOption) {
+                                  debugPrint('선택된 거래 옵션: $selectedOption');
+                                  // 선택된 거래 옵션을 리스트에 추가
+                                  setState(() {
+                                    if (!_selectedTradeOptions
+                                        .contains(selectedOption)) {
+                                      _selectedTradeOptions.add(selectedOption);
+                                    }
+                                  });
+                                },
                               ),
                             ),
                             back: SizedBox(
@@ -523,6 +540,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                                             cardData['category'])
                                         .name,
                                 itemCardImageUrl: cardData['imageUrl'],
+                                onOptionSelected: (selectedOption) {
+                                  debugPrint('선택된 거래 옵션: $selectedOption');
+                                  // 선택된 거래 옵션을 리스트에 추가
+                                  setState(() {
+                                    if (!_selectedTradeOptions
+                                        .contains(selectedOption)) {
+                                      _selectedTradeOptions.add(selectedOption);
+                                    }
+                                  });
+                                },
                               ),
                             ),
                           ),
@@ -540,16 +567,57 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                           buttonHeight: 44,
                           enabledBackgroundColor:
                               AppColors.transactionRequestDialogCancelButton,
-                          enabledOnPressed: () => Navigator.pop(context),
+                          enabledOnPressed: () {
+                            // 선택된 옵션 초기화
+                            setState(() {
+                              _selectedTradeOptions.clear();
+                            });
+                            Navigator.pop(context);
+                          },
                         ),
                         CompletionButton(
                           isEnabled: true,
                           buttonText: '요청 보내기',
                           buttonWidth: 171,
                           buttonHeight: 44,
-                          enabledOnPressed: () {
-                            // TODO: 거래 요청 API
-                            // 필요 시 context.findAncestorStateOfType<...>()로 resumeToBack() 호출 가능
+                          enabledOnPressed: () async {
+                            try {
+                              final api = TradeApi();
+
+                              // 거래 요청 API 호출
+                              await api.requestTrade(TradeRequest(
+                                giveItemId: cardData['id'],
+                                takeItemId:
+                                    _feedItems[_currentFeedIndex].itemUuid,
+                                tradeOptions: _selectedTradeOptions
+                                    .map((option) => option.serverName)
+                                    .toList(),
+                              ));
+                            } catch (e) {
+                              debugPrint('거래 요청 중 오류: $e');
+                              // 에러 코드 파싱
+                              final messageForUser =
+                                  ErrorUtils.getErrorMessage(e);
+
+                              await showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => CommonFailModal(
+                                  message: messageForUser,
+                                  onConfirm: () => Navigator.of(context).pop(),
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (!mounted) return;
+
+                            // 선택된 옵션 초기화
+                            setState(() {
+                              _selectedTradeOptions.clear();
+                            });
+
+                            Navigator.pop(context);
                           },
                         ),
                       ],

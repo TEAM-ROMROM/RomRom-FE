@@ -17,6 +17,7 @@ class ItemCard extends ConsumerWidget {
   final String itemCardImageUrl; // 이미지 URL
   final List<ItemTradeOption> itemOptions;
   final bool isSmall; // 작은 카드 여부
+  final Function(ItemTradeOption)? onOptionSelected; // 선택된 옵션 반환 콜백 추가
 
   const ItemCard({
     super.key,
@@ -30,6 +31,7 @@ class ItemCard extends ConsumerWidget {
       ItemTradeOption.deliveryOnly
     ],
     this.isSmall = false,
+    this.onOptionSelected, // 콜백 초기화
   });
 
   @override
@@ -174,18 +176,27 @@ class ItemCard extends ConsumerWidget {
                                         spacing: cs.s(8),
                                         runSpacing: cs.s(4),
                                         children: itemOptions
-                                            .map((option) => ItemCardOptionChip(
-                                                  itemId: itemId,
-                                                  itemOption: option,
-                                                  chipColor: optionChipColor,
-                                                  chipSelectedColor:
-                                                      optionChipSelectedColor,
-                                                  chipTextColor:
-                                                      optionChipTextColor,
-                                                  chipSelectedTextColor:
-                                                      optionChipSelectedTextColor,
-                                                  externalScale: cs,
-                                                ))
+                                            .map(
+                                              (option) => ItemCardOptionChip(
+                                                itemId: itemId,
+                                                itemOption: option,
+                                                chipColor: optionChipColor,
+                                                chipSelectedColor:
+                                                    optionChipSelectedColor,
+                                                chipTextColor:
+                                                    optionChipTextColor,
+                                                chipSelectedTextColor:
+                                                    optionChipSelectedTextColor,
+                                                externalScale: cs,
+                                                onTap: () {
+                                                  if (onOptionSelected !=
+                                                      null) {
+                                                    onOptionSelected!(
+                                                        option); // 선택된 옵션 반환
+                                                  }
+                                                },
+                                              ),
+                                            )
                                             .toList(),
                                       ),
                                     ),
