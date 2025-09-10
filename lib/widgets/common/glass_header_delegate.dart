@@ -86,7 +86,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
                   child: Padding(
                     padding: const EdgeInsets.only(top: 16, bottom: 24),
                     child: Text(
-                      '나의 등록된 물건',
+                      headerTitle,
                       style: CustomTextStyles.h3
                           .copyWith(fontWeight: FontWeight.w600),
                     ),
@@ -190,11 +190,10 @@ class GlassHeaderToggleBuilder {
                           alignment: Alignment.center,
                           child: AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p1.copyWith(
+                            style: CustomTextStyles.p2.copyWith(
                               color: !isRightSelected
                                   ? AppColors.textColorWhite
-                                  : AppColors.opacity60White,
-                              fontWeight: FontWeight.w500,
+                                  : AppColors.opacity50White,
                             ),
                             child: Text(leftText),
                           ),
@@ -210,11 +209,10 @@ class GlassHeaderToggleBuilder {
                           alignment: Alignment.center,
                           child: AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p1.copyWith(
+                            style: CustomTextStyles.p2.copyWith(
                               color: isRightSelected
                                   ? AppColors.textColorWhite
-                                  : AppColors.opacity60White,
-                              fontWeight: FontWeight.w500,
+                                  : AppColors.opacity50White,
                             ),
                             child: Text(rightText),
                           ),
