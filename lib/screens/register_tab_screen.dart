@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -213,79 +216,50 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
-      appBar: null,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: RefreshIndicator(
-              color: AppColors.primaryYellow,
-              backgroundColor: AppColors.primaryBlack,
-              onRefresh: () => _loadMyItems(isRefresh: true),
-              child: CustomScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverAppBar(
-                    pinned: true,
-                    backgroundColor: AppColors.primaryBlack,
-                    expandedHeight:
-                        88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
-                    toolbarHeight:
-                        58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
-                    titleSpacing: 0,
-                    elevation: _isScrolled ? 0.5 : 0,
-                    automaticallyImplyLeading: false,
-                    title: Padding(
-                      padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 200),
-                        opacity: _isScrolled ? 1.0 : 0.0,
-                        child: Text(
-                          '나의 등록된 물건',
-                          style: CustomTextStyles.h3
-                              .copyWith(fontWeight: FontWeight.w600),
-                        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light
+          .copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          children: [
+            // === 콘텐츠 ===
+            SafeArea(
+              top: false,
+              child: RefreshIndicator(
+                color: AppColors.primaryYellow,
+                backgroundColor: AppColors.transparent,
+                onRefresh: () => _loadMyItems(isRefresh: true),
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: GlassHeaderDelegate(
+                        toggle: _buildToggleWidget(),
+                        statusBarHeight:
+                            MediaQuery.of(context).padding.top, // ★ 꼭 전달
+                        toolbarHeight: 58.h,
+                        toggleHeight: 70.h,
+                        expandedExtra: 32.h, // 큰 제목/여백
+                        tintBase: AppColors.primaryBlack,
+                        enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
-                    centerTitle: true,
-                    flexibleSpace: Container(
-                      color: AppColors.primaryBlack,
-                      child: FlexibleSpaceBar(
-                        background: Padding(
-                          padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w,
-                              24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
-                          child: Align(
-                            alignment: Alignment.topLeft,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 200),
-                              opacity: _isScrolled ? 0.0 : 1.0,
-                              child: Text(
-                                '나의 등록된 물건',
-                                style: CustomTextStyles.h1,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 토글 위젯을 고정 헤더로 추가
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _ToggleHeaderDelegate(
-                      child: _buildToggleWidget(),
-                    ),
-                  ),
-                  // 아이템 리스트를 SliverFillRemaining으로 래핑
-                  ..._buildItemSlivers(),
-                ],
+
+                    // 아이템 리스트 슬리버들
+                    ..._buildItemSlivers(),
+                  ],
+                ),
               ),
             ),
-          ),
-          _buildRegisterFabStacked(context),
-        ],
+
+            // FAB 등
+            _buildRegisterFabStacked(context),
+          ],
+        ),
       ),
     );
   }
@@ -335,12 +309,16 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         ),
       ),
       if (_hasMoreItems)
-        const SliverToBoxAdapter(
+        SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            child: const Center(child: CircularProgressIndicator()),
           ),
         ),
+      // 하단 여백 24px
+      SliverToBoxAdapter(
+        child: SizedBox(height: 24.h),
+      ),
     ];
   }
 
@@ -555,7 +533,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         height: 46.h,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10.r),
-          color: AppColors.secondaryBlack, // #34353D
+          color: AppColors.secondaryBlack, // #2C2D36
         ),
         child: AnimatedBuilder(
           animation: _toggleAnimation,
@@ -795,29 +773,133 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   }
 }
 
-/// 토글 위젯을 고정하기 위한 SliverPersistentHeaderDelegate
-class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
+class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget toggle;
+  final double statusBarHeight;
+  final double toolbarHeight; // 58.h
+  final double toggleHeight; // 70.h
+  final double expandedExtra; // 큰 제목/여백 등 “펼침 전용” 추가 높이
+  final Color tintBase;
+  final bool enableBlur;
 
-  _ToggleHeaderDelegate({required this.child});
+  GlassHeaderDelegate({
+    required this.toggle,
+    required this.statusBarHeight,
+    required this.toolbarHeight,
+    required this.toggleHeight,
+    this.expandedExtra = 32.0, // 큰 제목 여백 등 (원하는 만큼)
+    this.tintBase = Colors.black,
+    this.enableBlur = true,
+  }) : assert(statusBarHeight >= 0 && toolbarHeight >= 0 && toggleHeight >= 0);
 
+  // ⬇️ 토글을 포함해서 최소 높이를 정의 → 토글이 항상 보임
   @override
-  double get minExtent => 70.h; // 토글 위젯 높이 + 패딩 (46h + 24h)
+  double get minExtent => statusBarHeight + toolbarHeight + toggleHeight;
 
+  // ⬇️ 펼쳐질 때만 추가로 커지는 영역(큰 제목 등)
   @override
-  double get maxExtent => 70.h;
+  double get maxExtent => minExtent + expandedExtra;
 
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppColors.primaryBlack,
-      child: child,
+    final extraRange = (maxExtent - minExtent).clamp(0.0, double.infinity);
+    final t =
+        extraRange == 0 ? 1.0 : (shrinkOffset / extraRange).clamp(0.0, 1.0);
+
+    final sigma = enableBlur ? lerpDouble(0, 30, t)! : 0.0;
+
+    return ClipRect(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1) 블러
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+            child: const SizedBox.expand(),
+          ),
+
+          // 2) 틴트(사파리 감성은 그라데이션 추천)
+          Container(
+            decoration: const BoxDecoration(
+              color: AppColors.opacity90PrimaryBlack,
+            ),
+          ),
+
+          // 3) 큰 제목(펼침에서만 보이고 스크롤되면 사라짐)
+          Positioned(
+            left: 24,
+            right: 24,
+            top: statusBarHeight + 32,
+            child: Opacity(
+              opacity: 1.0 - t,
+              child: Text('나의 등록된 물건', style: CustomTextStyles.h1),
+            ),
+          ),
+
+          // 4) 작은 제목(툴바 타이틀 역할) — 스크롤될수록 나타남
+          Positioned(
+            left: 0,
+            right: 0,
+            top: statusBarHeight,
+            height: toolbarHeight,
+            child: IgnorePointer(
+              ignoring: true,
+              child: Center(
+                child: Opacity(
+                  opacity: t,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 24),
+                    child: Text(
+                      '나의 등록된 물건',
+                      style: CustomTextStyles.h3
+                          .copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 5) 🔒 토글: 항상 보이는 영역(최소 높이에 포함시켰기 때문에 사라지지 않음)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: statusBarHeight + toolbarHeight + lerpDouble(24, 0, t)!,
+            height: toggleHeight,
+            child: Material(
+              color: Colors.transparent,
+              child: toggle,
+            ),
+          ),
+
+          // 6) 하단 라인(살짝)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Opacity(
+              opacity: 0.15 * t,
+              child: const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.opacity20Black,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
-  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
-    return false;
+  bool shouldRebuild(covariant GlassHeaderDelegate old) {
+    return toggle != old.toggle ||
+        statusBarHeight != old.statusBarHeight ||
+        toolbarHeight != old.toolbarHeight ||
+        toggleHeight != old.toggleHeight ||
+        expandedExtra != old.expandedExtra ||
+        enableBlur != old.enableBlur ||
+        tintBase != old.tintBase;
   }
 }
