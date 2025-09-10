@@ -1,8 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -11,8 +15,14 @@ import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
+import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
+import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:romrom_fe/widgets/flip_card_spin.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
+import 'package:romrom_fe/widgets/item_card.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,6 +45,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 피드 아이템 목록
   final List<HomeFeedItem> _feedItems = [];
   int _currentPage = 0; // 페이징 용(데이터)
+  // ignore: unused_field
   int _currentFeedIndex = 0; // 화면 상 현재 보고 있는 피드 인덱스
   final int _pageSize = 10;
   // 초기 로딩 상태
@@ -62,6 +73,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   // 내 카드 목록 (나중에 API에서 가져올 예정)
   List<Map<String, dynamic>> _myCards = [];
+
+  // 선택된 거래 옵션 저장 리스트
+  final List<ItemTradeOption> _selectedTradeOptions = [];
 
   @override
   void initState() {
@@ -462,17 +476,172 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// 카드 드롭 핸들러 (거래 요청)
-  void _handleCardDrop(String cardId) {
-    final currentFeedItem = _feedItems[_currentFeedIndex];
-    debugPrint('거래 요청: 내 카드 $cardId -> 피드 아이템 ${currentFeedItem.itemUuid}');
+  void _handleCardDrop(String cardId) async {
+    final cardData = _myCards.firstWhere((card) => card['id'] == cardId);
 
-    // TODO: 실제 거래 요청 API 호출
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('거래 요청이 전송되었습니다'),
-        backgroundColor: AppColors.primaryYellow,
-        duration: Duration(seconds: 2),
-      ),
+    // 다이얼로그 띄우기 전에 (선택) 이미지 프리캐시
+    await precacheImage(NetworkImage(cardData['imageUrl']), context);
+
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        return Material(
+          type: MaterialType.transparency,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            child: Center(
+              child: Padding(
+                padding:
+                    EdgeInsets.symmetric(horizontal: 40.0.w, vertical: 65.0.h),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(height: 5.h),
+                    SizedBox(
+                      width: 310.w,
+                      height: 496.h,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          FlipCardSpin(
+                            front: SizedBox(
+                              height: 496.h,
+                              child: ItemCard(
+                                // 실제 카드 데이터 전달
+                                itemId: cardData['id'],
+                                itemName: cardData['name'],
+                                itemCategoryLabel:
+                                    ItemCategories.fromServerName(
+                                            cardData['category'])
+                                        .name,
+                                itemCardImageUrl: cardData['imageUrl'],
+                                onOptionSelected: (selectedOption) {
+                                  debugPrint('선택된 거래 옵션: $selectedOption');
+                                  // 선택된 거래 옵션을 리스트에 추가
+                                  setState(() {
+                                    if (!_selectedTradeOptions
+                                        .contains(selectedOption)) {
+                                      _selectedTradeOptions.add(selectedOption);
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                            back: SizedBox(
+                              width: 310.w,
+                              height: 496.h,
+                              child: ItemCard(
+                                // 실제 카드 데이터 전달
+                                itemId: cardData['id'],
+                                itemName: cardData['name'],
+                                itemCategoryLabel:
+                                    ItemCategories.fromServerName(
+                                            cardData['category'])
+                                        .name,
+                                itemCardImageUrl: cardData['imageUrl'],
+                                onOptionSelected: (selectedOption) {
+                                  debugPrint('선택된 거래 옵션: $selectedOption');
+                                  // 선택된 거래 옵션을 리스트에 추가
+                                  setState(() {
+                                    if (!_selectedTradeOptions
+                                        .contains(selectedOption)) {
+                                      _selectedTradeOptions.add(selectedOption);
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 32.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        CompletionButton(
+                          isEnabled: true,
+                          buttonText: '취소',
+                          buttonWidth: 130,
+                          buttonHeight: 44,
+                          enabledBackgroundColor:
+                              AppColors.transactionRequestDialogCancelButton,
+                          enabledOnPressed: () {
+                            // 선택된 옵션 초기화
+                            setState(() {
+                              _selectedTradeOptions.clear();
+                            });
+                            Navigator.pop(context);
+                          },
+                        ),
+                        CompletionButton(
+                          isEnabled: true,
+                          buttonText: '요청 보내기',
+                          buttonWidth: 171,
+                          buttonHeight: 44,
+                          enabledOnPressed: () async {
+                            try {
+                              final api = TradeApi();
+
+                              // 거래 요청 API 호출
+                              await api.requestTrade(TradeRequest(
+                                giveItemId: cardData['id'],
+                                takeItemId:
+                                    _feedItems[_currentFeedIndex].itemUuid,
+                                tradeOptions: _selectedTradeOptions
+                                    .map((option) => option.serverName)
+                                    .toList(),
+                              ));
+                            } catch (e) {
+                              debugPrint('거래 요청 중 오류: $e');
+                              // 에러 코드 파싱
+                              final messageForUser =
+                                  ErrorUtils.getErrorMessage(e);
+
+                              await showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => CommonDeleteModal(
+                                  description: messageForUser,
+                                  leftText: '확인',
+                                  onRight: () async {
+                                    final api = TradeApi();
+                                    // 거래 취소 API 호출
+                                    await api.cancelTradeRequest(TradeRequest(
+                                      giveItemId: cardData['id'],
+                                      takeItemId: _feedItems[_currentFeedIndex]
+                                          .itemUuid,
+                                      tradeOptions: _selectedTradeOptions
+                                          .map((option) => option.serverName)
+                                          .toList(),
+                                    ));
+                                    if (mounted) {
+                                      Navigator.of(context).pop(); // 모달 닫기
+                                    }
+                                  },
+                                  onLeft: () => Navigator.of(context).pop(),
+                                ),
+                              );
+                            } finally {
+                              // 선택된 옵션 초기화
+                              setState(() {
+                                _selectedTradeOptions.clear();
+                              });
+
+                              Navigator.pop(context);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -974,7 +974,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 child: CompletionButton(
                   isEnabled: isFormValid,
                   buttonText: '등록 완료',
-                  buttonType: 2,
                   enabledOnPressed: () async {
                     // 모든 필드 강제 검증
                     if (!isFormValid) {

@@ -112,11 +112,27 @@ class AppColors {
   ];
 
   // 홈 피드 - blackGradient container 그라데이션
-  static List<Color> blackGradient = [
+  static List<Color> blackGradient1 = [
     Colors.black,
     Colors.black.withValues(alpha: 0.28),
     Colors.white.withValues(alpha: 0.0),
   ];
+  static List<Color> blackGradient2 = [
+    Colors.black,
+    Colors.black.withValues(alpha: 0.0),
+    Colors.black.withValues(alpha: 0.0),
+    Colors.black.withValues(alpha: 0.3),
+  ];
+
+  // 홈 화면 카드 드롭 존
+  static const Color cardDropZoneBorder = Colors.white; // 드롭 존 테두리 색상
+  static Color cardDropZoneBackground =
+      Colors.white.withValues(alpha: 0.3); // 드롭 존 배경 색상
+  static Color cardDropZoneShadow = Colors.white; // 드롭 존 배경 색상
+
+  // 홈 화면 거래 요청 Dialog
+  static const Color transactionRequestDialogCancelButton =
+      Color(0xFFDEDACE); // 거래 요청 다이얼로그 테두리 색상
 
   static const Color errorBorder = Color(0xFFFF5656); // 에러 상태 테두리 색상
   static const Color errorContainer = Color(0x1AFF5656); // 에러 상태 컨테이너 색상

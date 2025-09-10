@@ -16,6 +16,8 @@ class ItemCard extends ConsumerWidget {
   final String itemName; // 물품 이름
   final String itemCardImageUrl; // 이미지 URL
   final List<ItemTradeOption> itemOptions;
+  final bool isSmall; // 작은 카드 여부
+  final Function(ItemTradeOption)? onOptionSelected; // 선택된 옵션 반환 콜백 추가
 
   const ItemCard({
     super.key,
@@ -23,7 +25,13 @@ class ItemCard extends ConsumerWidget {
     this.itemCategoryLabel = '물품 카테고리',
     this.itemName = '물품 이름',
     this.itemCardImageUrl = 'https://picsum.photos/400/300',
-    this.itemOptions = const [ItemTradeOption.extraCharge, ItemTradeOption.directOnly, ItemTradeOption.deliveryOnly],
+    this.itemOptions = const [
+      ItemTradeOption.extraCharge,
+      ItemTradeOption.directOnly,
+      ItemTradeOption.deliveryOnly
+    ],
+    this.isSmall = false,
+    this.onOptionSelected, // 콜백 초기화
   });
 
   @override
@@ -33,141 +41,173 @@ class ItemCard extends ConsumerWidget {
 
     return asyncState.when(
       data: (state) {
-        final cs = state.scale;
-
-        final imageHeight = cs.s(350);
-        final cardRadius = cs.radius(10);
-        final borderWidth = cs.s(4);
-        final itemNameLabelPadding = cs.padding(18, 12);
-        final optionPadding = cs.padding(14, 10);
-        final optionRadius = cs.radius(6);
-        final boxMargin = cs.margin(t: 3, b: 4, r: 4, l: 4);
-
-        // 물품 카테고리 text 스타일
-        final categoryTextStyle = CustomTextStyles.p2.copyWith(
-          fontSize: cs.fontSize(CustomTextStyles.p2.fontSize!),
-          color: AppColors.itemCardText.withValues(alpha: 0.5),
-        );
-
-        // 물품 이름 text 스타일
-        final nameTextStyle = CustomTextStyles.p1.copyWith(
-          fontSize: cs.fontSize(CustomTextStyles.p1.fontSize!),
-          color: AppColors.itemCardText,
-        );
-
-        // 옵션 선택 text 스타일
-        final optionTextStyle = CustomTextStyles.p3.copyWith(
-          fontSize: cs.fontSize(CustomTextStyles.p3.fontSize!),
-          color: AppColors.itemCardText.withValues(alpha: 0.5),
-        );
-
         return LayoutBuilder(
           builder: (context, constraints) {
-            // LayoutBuilder로 카드의 width 측정 후 scale 설정
-            // 현재 값과 비교해서 바뀔 때만 호출
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final newScale = constraints.maxWidth / 310.0;
-              if (cs.scale != newScale) {
-                ref
-                    .read(provider.notifier)
-                    .setScale(310.0, constraints.maxWidth);
-              }
-            });
+            // constraints를 기반으로 로컬 스케일 계산
+            final cs = ItemCardScale(constraints.maxWidth / 310.0);
 
-            return ClipRRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: cs.s(30),
-                  sigmaY: cs.s(30),
-                ),
-                child: Container(
-                  width: constraints.maxWidth,
-                  decoration: buildBoxDecoration(
-                          AppColors.itemCardBackground, cardRadius)
-                      .copyWith(
-                    border: Border.all(
-                      color: AppColors.itemCardBorder,
-                      width: borderWidth,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.itemCardShadow,
-                        offset: Offset(4, 4),
-                        blurRadius: 10,
-                      ),
-                    ],
+            final imageHeight = cs.s(350);
+            final cardRadius = isSmall ? cs.radius(4) : cs.radius(10);
+            final borderWidth = cs.s(4);
+            final itemNameLabelPadding = cs.padding(14, 12);
+            final optionPadding = cs.padding(14, 10);
+            final optionRadius = cs.radius(6);
+            final boxMargin = cs.margin(t: 3, b: 4, r: 4, l: 4);
+
+            final Color optionChipColor = isSmall
+                ? AppColors.textColorBlack
+                : AppColors.itemCardOptionChip;
+            final Color optionChipSelectedColor =
+                isSmall ? AppColors.textColorBlack : AppColors.primaryYellow;
+            final Color optionChipTextColor =
+                isSmall ? AppColors.textColorWhite : AppColors.textColorWhite;
+            final Color optionChipSelectedTextColor =
+                isSmall ? AppColors.textColorWhite : AppColors.textColorBlack;
+
+            // 텍스트 스타일 (작은 카드에서는 축소)
+            final double smallTextScale = isSmall ? 0.9 : 1.0;
+            final categoryTextStyle = CustomTextStyles.p3.copyWith(
+              fontSize:
+                  cs.fontSize(CustomTextStyles.p3.fontSize! * smallTextScale),
+              color: AppColors.itemCardText.withValues(alpha: 0.5),
+            );
+
+            final nameTextStyle = CustomTextStyles.p1.copyWith(
+              fontSize: cs.fontSize(
+                  CustomTextStyles.p1.fontSize! * (isSmall ? 0.8 : 1.0)),
+              color: AppColors.itemCardText,
+            );
+
+            final optionTextStyle = CustomTextStyles.p3.copyWith(
+              fontSize:
+                  cs.fontSize(CustomTextStyles.p3.fontSize! * smallTextScale),
+              color: AppColors.itemCardText.withValues(alpha: 0.5),
+            );
+
+            return AspectRatio(
+              aspectRatio: 310 / 496,
+              child: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: cs.s(30),
+                    sigmaY: cs.s(30),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 이미지 영역
-                      SizedBox(
-                        height: imageHeight,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.only(
-                              topLeft: cardRadius.topLeft,
-                              topRight: cardRadius.topRight),
-                          child: _buildImage(itemCardImageUrl, cs),
-                        ),
+                  child: Container(
+                    width: constraints.maxWidth,
+                    decoration: buildBoxDecoration(
+                            AppColors.itemCardBackground, cardRadius)
+                        .copyWith(
+                      border: Border.all(
+                        color: AppColors.itemCardBorder,
+                        width: borderWidth,
                       ),
-                      // 정보 및 옵션 영역
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 카테고리, 이름
-                          Padding(
-                            padding: itemNameLabelPadding,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(itemCategoryLabel,
-                                    style: categoryTextStyle),
-                                cs.sizedBoxH(8),
-                                Text(itemName, style: nameTextStyle),
-                              ],
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.itemCardShadow,
+                          offset: Offset(4, 4),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 이미지 영역
+                        SizedBox(
+                          height: imageHeight,
+                          child: AspectRatio(
+                            aspectRatio: 31 / 35,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.only(
+                                  topLeft: cardRadius.topLeft,
+                                  topRight: cardRadius.topRight),
+                              child: _buildImage(itemCardImageUrl, cs),
                             ),
                           ),
-                          // 옵션 선택 영역
-                          Container(
-                            width: double.infinity,
-                            margin: boxMargin,
-                            constraints: BoxConstraints(
-                              minHeight: cs.s(60),
-                              maxHeight: cs.s(75),
-                            ),
-                            decoration: buildBoxDecoration(
-                                Colors.white.withValues(alpha: 0.3),
-                                optionRadius),
-                            child: Padding(
-                              padding: optionPadding,
+                        ),
+                        // 정보 및 옵션 영역
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 카테고리, 이름
+                            Padding(
+                              padding: itemNameLabelPadding,
                               child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('요청 옵션', style: optionTextStyle),
+                                  Text(
+                                    itemCategoryLabel,
+                                    style: categoryTextStyle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                   cs.sizedBoxH(8),
-                                  Flexible(
-                                    child: Wrap(
-                                      spacing: cs.s(8),
-                                      runSpacing: cs.s(4),
-                                      children: itemOptions
-                                          .map((option) =>
-                                              ItemCardOptionChip(
-                                                itemId: itemId,
-                                                itemOption: option,
-                                              ))
-                                          .toList(),
-                                    ),
+                                  Text(
+                                    itemName,
+                                    style: nameTextStyle,
+                                    maxLines: isSmall ? 1 : 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            // 옵션 선택 영역
+                            Container(
+                              width: double.infinity,
+                              margin: boxMargin,
+                              constraints: BoxConstraints(
+                                minHeight: cs.s(60),
+                                maxHeight: cs.s(75),
+                              ),
+                              decoration: buildBoxDecoration(
+                                  Colors.white.withValues(alpha: 0.3),
+                                  optionRadius),
+                              child: Padding(
+                                padding: optionPadding,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('요청 옵션', style: optionTextStyle),
+                                    cs.sizedBoxH(8),
+                                    Flexible(
+                                      child: Wrap(
+                                        spacing: cs.s(8),
+                                        runSpacing: cs.s(4),
+                                        children: itemOptions
+                                            .map(
+                                              (option) => ItemCardOptionChip(
+                                                itemId: itemId,
+                                                itemOption: option,
+                                                chipColor: optionChipColor,
+                                                chipSelectedColor:
+                                                    optionChipSelectedColor,
+                                                chipTextColor:
+                                                    optionChipTextColor,
+                                                chipSelectedTextColor:
+                                                    optionChipSelectedTextColor,
+                                                externalScale: cs,
+                                                onTap: () {
+                                                  if (onOptionSelected !=
+                                                      null) {
+                                                    onOptionSelected!(
+                                                        option); // 선택된 옵션 반환
+                                                  }
+                                                },
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -192,8 +232,8 @@ class ItemCard extends ConsumerWidget {
 
     return Image.network(
       finalUrl,
-      fit: BoxFit.cover,
-      width: double.infinity,
+      fit: BoxFit.fill,
+      height: double.infinity,
       errorBuilder: (context, error, stackTrace) {
         debugPrint('ItemCard 이미지 로드 실패: $finalUrl, error: $error');
         return placeholder;

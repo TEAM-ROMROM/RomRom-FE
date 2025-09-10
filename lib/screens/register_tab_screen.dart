@@ -743,7 +743,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   /// 삭제 확인 대화상자
   Future<void> _showDeleteConfirmDialog(ItemDetail item) async {
-    final result = await context.showWarningDialog(
+    final result = await context.showDeleteDialog(
       title: '물품을 삭제하시겠습니까?',
       description: '삭제된 물품은 복구할 수 없습니다.',
     );

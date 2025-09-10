@@ -4,22 +4,20 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
-class WarningDialog extends StatelessWidget {
-  final String title;
+class CommonDeleteModal extends StatelessWidget {
   final String description;
-  final String cancelText;
-  final String confirmText;
-  final VoidCallback onCancel;
-  final VoidCallback onConfirm;
+  final String leftText;
+  final String rightText;
+  final VoidCallback onLeft;
+  final VoidCallback onRight;
 
-  const WarningDialog({
+  const CommonDeleteModal({
     super.key,
-    required this.title,
     required this.description,
-    this.cancelText = '취소',
-    this.confirmText = '삭제',
-    required this.onCancel,
-    required this.onConfirm,
+    this.leftText = '취소',
+    this.rightText = '삭제',
+    required this.onLeft,
+    required this.onRight,
   });
 
   @override
@@ -33,7 +31,7 @@ class WarningDialog extends StatelessWidget {
       insetPadding: EdgeInsets.symmetric(horizontal: 40.w),
       child: Container(
         width: 312.w,
-        height: 216.h,
+        height: 206.h,
         decoration: BoxDecoration(
           color: AppColors.secondaryBlack,
           borderRadius: BorderRadius.circular(8.r),
@@ -67,7 +65,7 @@ class WarningDialog extends StatelessWidget {
               ),
               SizedBox(height: 16.h),
               Text(
-                "$title\n$description",
+                description,
                 style: CustomTextStyles.p2.copyWith(
                   fontWeight: FontWeight.w600,
                   height: 1.3,
@@ -80,15 +78,15 @@ class WarningDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildButton(
-                    text: cancelText,
+                    text: leftText,
                     backgroundColor: AppColors.opacity30PrimaryBlack,
-                    onPressed: onCancel,
+                    onPressed: onLeft,
                   ),
                   SizedBox(width: 8.w),
                   _buildButton(
-                    text: confirmText,
+                    text: rightText,
                     backgroundColor: AppColors.warningRed,
-                    onPressed: onConfirm,
+                    onPressed: onRight,
                   ),
                 ],
               ),
