@@ -253,7 +253,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
     final transform =
         _calculateCardTransform(index, totalCards, phase: _orbitAngle);
-    _calculateCardTransform(index, totalCards, phase: _orbitAngle);
 
     return AnimatedBuilder(
       animation: Listenable.merge([_fanAnimation, _pullAnimation, _deckLift]),
