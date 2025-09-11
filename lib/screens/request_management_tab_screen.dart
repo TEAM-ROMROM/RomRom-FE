@@ -79,7 +79,6 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   Future<void> _loadSampleData({bool isRefresh = false}) async {
     setState(() {
-      isRefresh = true;
       _itemCards.addAll([
         RequestManagementItemCard(
           imageUrl: 'https://picsum.photos/200/300?random=1',
@@ -177,7 +176,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               child: RefreshIndicator(
                 color: AppColors.primaryYellow,
                 backgroundColor: AppColors.transparent,
-                onRefresh: () => _loadSampleData(isRefresh: false),
+                onRefresh: () => _loadSampleData(isRefresh: true),
                 child: CustomScrollView(
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(),
@@ -199,7 +198,6 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         toolbarHeight: 58.h,
                         toggleHeight: 70.h,
                         expandedExtra: 32.h, // 큰 제목/여백
-                        tintBase: AppColors.primaryBlack,
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),

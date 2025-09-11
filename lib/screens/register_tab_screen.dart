@@ -251,7 +251,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                         toolbarHeight: 58.h,
                         toggleHeight: 70.h,
                         expandedExtra: 32.h, // 큰 제목/여백
-                        tintBase: AppColors.primaryBlack,
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),

@@ -13,7 +13,6 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double toolbarHeight; // 예: 58.h
   final double toggleHeight; // 예: 70.h
   final double expandedExtra; // 큰 제목/여백 등 “펼침 전용” 추가 높이
-  final Color tintBase;
   final bool enableBlur;
 
   GlassHeaderDelegate({
@@ -23,7 +22,6 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.toolbarHeight,
     required this.toggleHeight,
     this.expandedExtra = 32.0,
-    this.tintBase = Colors.black,
     this.enableBlur = true,
   }) : assert(statusBarHeight >= 0 && toolbarHeight >= 0 && toggleHeight >= 0);
 
@@ -130,12 +128,12 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant GlassHeaderDelegate old) {
     return toggle != old.toggle ||
+        headerTitle != old.headerTitle ||
         statusBarHeight != old.statusBarHeight ||
         toolbarHeight != old.toolbarHeight ||
         toggleHeight != old.toggleHeight ||
         expandedExtra != old.expandedExtra ||
-        enableBlur != old.enableBlur ||
-        tintBase != old.tintBase;
+        enableBlur != old.enableBlur;
   }
 }
 
