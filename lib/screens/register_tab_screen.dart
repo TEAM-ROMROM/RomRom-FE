@@ -217,7 +217,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light
-          .copyWith(statusBarColor: Colors.transparent),
+          .copyWith(statusBarColor: AppColors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.primaryBlack,
         extendBodyBehindAppBar: true,
