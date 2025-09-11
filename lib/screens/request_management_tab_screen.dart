@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 
@@ -7,6 +8,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
+import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
 import 'package:romrom_fe/widgets/sent_request_item_card.dart';
@@ -24,26 +26,26 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   Timer? _scrollTimer;
-  
+
   // 스크롤 상태 관리
   bool _isScrolled = false;
 
   // 현재 선택된 카드 인덱스
   int _currentCardIndex = 0;
-  
+
   // 카드 컨트롤러
   late PageController _cardController;
-  
+
   // 토글 애니메이션 컨트롤러
   late AnimationController _toggleAnimationController;
   late Animation<double> _toggleAnimation;
 
   // 토글 상태 (false: 받은 요청, true: 보낸 요청)
   bool _isRightSelected = false;
-  
+
   // 완료된 요청 표시 여부
   bool _showCompletedRequests = false;
-  
+
   // 테스트용 샘플 데이터
   final List<RequestManagementItemCard> _itemCards = [];
 
@@ -51,13 +53,13 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   void initState() {
     super.initState();
     _scrollController.addListener(_scrollListener);
-    
+
     // 카드 컨트롤러 초기화
     _cardController = PageController(
       initialPage: 0,
       viewportFraction: 0.6, // 화면에 보이는 카드의 비율
     );
-    
+
     // 토글 애니메이션 컨트롤러 초기화
     _toggleAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -70,12 +72,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       parent: _toggleAnimationController,
       curve: Curves.easeInOut,
     ));
-    
+
     // 테스트용 샘플 데이터 생성
     _loadSampleData();
   }
 
-  void _loadSampleData() {
+  Future<void> _loadSampleData({bool isRefresh = false}) async {
     setState(() {
       _itemCards.addAll([
         RequestManagementItemCard(
@@ -122,7 +124,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     _scrollTimer = Timer(const Duration(milliseconds: 100), () {
       // 스크롤이 멈췄을 때의 처리
     });
-    
+
     // 스크롤 상태 감지
     if (_scrollController.offset > 50 && !_isScrolled) {
       setState(() {
@@ -160,169 +162,73 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
-      body: SafeArea(
-        child: NestedScrollView(
-          controller: _scrollController,
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            SliverAppBar(
-              pinned: true,
-              backgroundColor: AppColors.primaryBlack,
-              expandedHeight: 88.h,
-              toolbarHeight: 58.h,
-              titleSpacing: 0,
-              elevation: innerBoxIsScrolled || _isScrolled ? 0.5 : 0,
-              automaticallyImplyLeading: false,
-              title: Padding(
-                padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: innerBoxIsScrolled || _isScrolled ? 1.0 : 0.0,
-                  child: Text(
-                    '요청 관리',
-                    style: CustomTextStyles.h3.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              centerTitle: true,
-              flexibleSpace: Container(
-                color: AppColors.primaryBlack,
-                child: FlexibleSpaceBar(
-                  background: Padding(
-                    padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 24.h),
-                    child: Align(
-                      alignment: Alignment.topLeft,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 200),
-                        opacity: innerBoxIsScrolled || _isScrolled ? 0.0 : 1.0,
-                        child: Text(
-                          '요청 관리',
-                          style: CustomTextStyles.h1,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light
+          .copyWith(statusBarColor: AppColors.transparent),
+      child: Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          children: [
+            // === 콘텐츠 ===
+            SafeArea(
+              top: false,
+              child: RefreshIndicator(
+                color: AppColors.primaryYellow,
+                backgroundColor: AppColors.transparent,
+                onRefresh: () => _loadSampleData(isRefresh: true),
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: GlassHeaderDelegate(
+                        headerTitle: '요청 관리',
+                        toggle: GlassHeaderToggleBuilder.buildDefaultToggle(
+                          animation: _toggleAnimation,
+                          isRightSelected: _isRightSelected,
+                          onLeftTap: () => _onToggleChanged(false),
+                          onRightTap: () => _onToggleChanged(true),
+                          leftText: '받은 요청',
+                          rightText: '보낸 요청',
                         ),
+                        statusBarHeight:
+                            MediaQuery.of(context).padding.top, // ★ 꼭 전달
+                        toolbarHeight: 58.h,
+                        toggleHeight: 70.h,
+                        expandedExtra: 32.h, // 큰 제목/여백
+                        enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-            // 토글 위젯을 고정 헤더로 추가
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _ToggleHeaderDelegate(
-                child: _buildToggleSelector(),
-              ),
-            ),
-          ],
-          body: SingleChildScrollView(
-            padding: EdgeInsets.zero,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. 물품 카드 캐러셀 섹션 (받은 요청일 때만 표시)
-                if (!_isRightSelected) ...[
-                  SizedBox(height: 10.h),
-                  _buildItemCardsCarousel(),
-                ],
-                
-                // 2. 페이지 인디케이터 (받은 요청일 때만 표시)
-                if (!_isRightSelected) _buildPageIndicator(),
-                
-                // 3. 요청 목록 헤더 섹션 (제목 + 필터 토글)
-                _buildRequestListHeader(),
-                
-                // 4. 요청 목록 리스트
-                _buildFullRequestItemsList(),
-                
-                SizedBox(height: 100.h), // 하단 여백
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 1. 물품 카드 캐러셀 섹션 (받은 요청일 때만 표시)
+                          if (!_isRightSelected) ...[
+                            SizedBox(height: 10.h),
+                            _buildItemCardsCarousel(),
+                          ],
 
-  /// 토글 셀렉터 구현
-  Widget _buildToggleSelector() {
-    return Container(
-      color: AppColors.primaryBlack,
-      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
-      child: Container(
-        width: 345.w,
-        height: 46.h,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.r),
-          color: AppColors.secondaryBlack,
-        ),
-        child: AnimatedBuilder(
-          animation: _toggleAnimation,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                // 애니메이션 선택된 배경
-                Positioned(
-                  left: 2.w + (_toggleAnimation.value * 171.w),
-                  top: 2.h,
-                  child: Container(
-                    width: 170.w,
-                    height: 42.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.r),
-                      color: AppColors.primaryBlack,
-                    ),
-                  ),
-                ),
-                // 텍스트 버튼들
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _onToggleChanged(false),
-                        child: Container(
-                          height: 46.h,
-                          color: Colors.transparent,
-                          alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p1.copyWith(
-                              color: !_isRightSelected
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity60White,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            child: const Text('받은 요청'),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _onToggleChanged(true),
-                        child: Container(
-                          height: 46.h,
-                          color: Colors.transparent,
-                          alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p1.copyWith(
-                              color: _isRightSelected
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity60White,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            child: const Text('보낸 요청'),
-                          ),
-                        ),
+                          // 2. 페이지 인디케이터 (받은 요청일 때만 표시)
+                          if (!_isRightSelected) _buildPageIndicator(),
+
+                          // 3. 요청 목록 헤더 섹션 (제목 + 필터 토글)
+                          _buildRequestListHeader(),
+
+                          // 4. 요청 목록 리스트
+                          _buildFullRequestItemsList(),
+
+                          SizedBox(height: 100.h), // 하단 여백
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -345,7 +251,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         ),
       );
     }
-    
+
     return SizedBox(
       height: 326.h,
       child: PageView.builder(
@@ -365,7 +271,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   /// 페이지 인디케이터
   Widget _buildPageIndicator() {
     if (_itemCards.isEmpty) return const SizedBox.shrink();
-    
+
     return Padding(
       padding: EdgeInsets.fromLTRB(0, 37.h, 0, 32.h),
       child: Row(
@@ -394,7 +300,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     if (_isRightSelected) {
       return const SizedBox.shrink();
     }
-    
+
     // 받은 요청에서만 헤더 표시
     return Padding(
       padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
@@ -459,7 +365,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     if (_isRightSelected) {
       return _buildSentRequestsList();
     }
-    
+
     // 받은 요청인 경우 (기존 코드)
     // 테스트용 샘플 데이터
     final List<Map<String, dynamic>> sampleRequests = [
@@ -487,7 +393,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         'address': '송파구',
         'createdDate': DateTime.now().subtract(const Duration(days: 2)),
         'isNew': false,
-        'tradeOptions': [ItemTradeOption.directOnly, ItemTradeOption.extraCharge],
+        'tradeOptions': [
+          ItemTradeOption.directOnly,
+          ItemTradeOption.extraCharge
+        ],
         'tradeStatus': TradeStatus.chatting,
       },
     ];
@@ -537,7 +446,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       ),
     );
   }
-  
+
   /// 보낸 요청 목록
   Widget _buildSentRequestsList() {
     // 테스트용 샘플 데이터
@@ -549,7 +458,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         'title': '나이키 에어맥스 교환 요청',
         'location': '광진구 화양동',
         'createdDate': DateTime.now().subtract(const Duration(hours: 2)),
-        'tradeOptions': [ItemTradeOption.extraCharge, ItemTradeOption.directOnly, ItemTradeOption.deliveryOnly],
+        'tradeOptions': [
+          ItemTradeOption.extraCharge,
+          ItemTradeOption.directOnly,
+          ItemTradeOption.deliveryOnly
+        ],
         'tradeStatus': TradeStatus.chatting,
       },
       {
@@ -569,7 +482,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         'title': '노스페이스 패딩 교환',
         'location': '송파구 잠실동',
         'createdDate': DateTime.now().subtract(const Duration(hours: 5)),
-        'tradeOptions': [ItemTradeOption.deliveryOnly, ItemTradeOption.extraCharge],
+        'tradeOptions': [
+          ItemTradeOption.deliveryOnly,
+          ItemTradeOption.extraCharge
+        ],
         'tradeStatus': null,
       },
     ];
@@ -616,25 +532,4 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   }
 }
 
-/// 토글 헤더 delegate
-class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-
-  _ToggleHeaderDelegate({required this.child});
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
-  }
-
-  @override
-  double get maxExtent => 70.h;
-
-  @override
-  double get minExtent => 70.h;
-
-  @override
-  bool shouldRebuild(covariant _ToggleHeaderDelegate oldDelegate) {
-    return false;
-  }
-}
+// (사용 안 함) 로컬 헤더 delegate 제거됨. 공통 GlassHeaderDelegate를 사용합니다.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -9,6 +10,7 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
+import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'dart:async';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
@@ -213,79 +215,57 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
-      appBar: null,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: RefreshIndicator(
-              color: AppColors.primaryYellow,
-              backgroundColor: AppColors.primaryBlack,
-              onRefresh: () => _loadMyItems(isRefresh: true),
-              child: CustomScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverAppBar(
-                    pinned: true,
-                    backgroundColor: AppColors.primaryBlack,
-                    expandedHeight:
-                        88.h, // 32px(상단) + 32px(제목높이) + 24px(하단) = 88px
-                    toolbarHeight:
-                        58.h, // 16px(상단) + 18px(제목높이) + 24px(하단) = 58px
-                    titleSpacing: 0,
-                    elevation: _isScrolled ? 0.5 : 0,
-                    automaticallyImplyLeading: false,
-                    title: Padding(
-                      padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 200),
-                        opacity: _isScrolled ? 1.0 : 0.0,
-                        child: Text(
-                          '나의 등록된 물건',
-                          style: CustomTextStyles.h3
-                              .copyWith(fontWeight: FontWeight.w600),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light
+          .copyWith(statusBarColor: AppColors.transparent),
+      child: Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          children: [
+            // === 콘텐츠 ===
+            SafeArea(
+              top: false,
+              child: RefreshIndicator(
+                color: AppColors.primaryYellow,
+                backgroundColor: AppColors.transparent,
+                onRefresh: () => _loadMyItems(isRefresh: true),
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: GlassHeaderDelegate(
+                        headerTitle: '나의 등록된 물건',
+                        toggle: GlassHeaderToggleBuilder.buildDefaultToggle(
+                          animation: _toggleAnimation,
+                          isRightSelected: _isCompletedSelected,
+                          onLeftTap: () => _onToggleChanged(false),
+                          onRightTap: () => _onToggleChanged(true),
+                          leftText: '판매 중',
+                          rightText: '거래 완료',
                         ),
+                        statusBarHeight:
+                            MediaQuery.of(context).padding.top, // ★ 꼭 전달
+                        toolbarHeight: 58.h,
+                        toggleHeight: 70.h,
+                        expandedExtra: 32.h, // 큰 제목/여백
+                        enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
-                    centerTitle: true,
-                    flexibleSpace: Container(
-                      color: AppColors.primaryBlack,
-                      child: FlexibleSpaceBar(
-                        background: Padding(
-                          padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w,
-                              24.h), // 좌측 24px, 상단 32px, 우측 24px, 하단 24px
-                          child: Align(
-                            alignment: Alignment.topLeft,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 200),
-                              opacity: _isScrolled ? 0.0 : 1.0,
-                              child: Text(
-                                '나의 등록된 물건',
-                                style: CustomTextStyles.h1,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 토글 위젯을 고정 헤더로 추가
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _ToggleHeaderDelegate(
-                      child: _buildToggleWidget(),
-                    ),
-                  ),
-                  // 아이템 리스트를 SliverFillRemaining으로 래핑
-                  ..._buildItemSlivers(),
-                ],
+
+                    // 아이템 리스트 슬리버들
+                    ..._buildItemSlivers(),
+                  ],
+                ),
               ),
             ),
-          ),
-          _buildRegisterFabStacked(context),
-        ],
+
+            // FAB 등
+            _buildRegisterFabStacked(context),
+          ],
+        ),
       ),
     );
   }
@@ -335,12 +315,16 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         ),
       ),
       if (_hasMoreItems)
-        const SliverToBoxAdapter(
+        SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            child: const Center(child: CircularProgressIndicator()),
           ),
         ),
+      // 하단 여백 24px
+      SliverToBoxAdapter(
+        child: SizedBox(height: 24.h),
+      ),
     ];
   }
 
@@ -546,89 +530,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     );
   }
 
-  /// 토글 위젯 (판매 중 / 거래 완료)
-  Widget _buildToggleWidget() {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h), // 상단 패딩 제거, 하단만 24px
-      child: Container(
-        width: 345.w,
-        height: 46.h,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.r),
-          color: AppColors.secondaryBlack, // #34353D
-        ),
-        child: AnimatedBuilder(
-          animation: _toggleAnimation,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                // 애니메이션 선택된 배경
-                Positioned(
-                  left: 2.w +
-                      (_toggleAnimation.value * 171.w), // 2px + 170px + 1px gap
-                  top: 2.h,
-                  child: Container(
-                    width: 170.w,
-                    height: 42.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.r),
-                      color: AppColors.primaryBlack, // #1D1E27
-                    ),
-                  ),
-                ),
-                // 텍스트 버튼들
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _onToggleChanged(false),
-                        child: Container(
-                          height: 46.h,
-                          color: Colors.transparent,
-                          alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p1.copyWith(
-                              color: !_isCompletedSelected
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity60White,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            child: const Text('판매 중'),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _onToggleChanged(true),
-                        child: Container(
-                          height: 46.h,
-                          color: Colors.transparent,
-                          alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p1.copyWith(
-                              color: _isCompletedSelected
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity60White,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            child: const Text('거래 완료'),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
   /// 토글 상태 변경
   void _onToggleChanged(bool isCompleted) {
     if (_isCompletedSelected != isCompleted) {
@@ -792,32 +693,5 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         );
       }
     }
-  }
-}
-
-/// 토글 위젯을 고정하기 위한 SliverPersistentHeaderDelegate
-class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-
-  _ToggleHeaderDelegate({required this.child});
-
-  @override
-  double get minExtent => 70.h; // 토글 위젯 높이 + 패딩 (46h + 24h)
-
-  @override
-  double get maxExtent => 70.h;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppColors.primaryBlack,
-      child: child,
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
-    return false;
   }
 }
