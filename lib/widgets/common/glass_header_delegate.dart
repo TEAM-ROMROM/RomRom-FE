@@ -126,14 +126,14 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant GlassHeaderDelegate old) {
-    return toggle != old.toggle ||
-        headerTitle != old.headerTitle ||
-        statusBarHeight != old.statusBarHeight ||
-        toolbarHeight != old.toolbarHeight ||
-        toggleHeight != old.toggleHeight ||
-        expandedExtra != old.expandedExtra ||
-        enableBlur != old.enableBlur;
+  bool shouldRebuild(covariant GlassHeaderDelegate oldDelegate) {
+    return toggle != oldDelegate.toggle ||
+        headerTitle != oldDelegate.headerTitle ||
+        statusBarHeight != oldDelegate.statusBarHeight ||
+        toolbarHeight != oldDelegate.toolbarHeight ||
+        toggleHeight != oldDelegate.toggleHeight ||
+        expandedExtra != oldDelegate.expandedExtra ||
+        enableBlur != oldDelegate.enableBlur;
   }
 }
 
