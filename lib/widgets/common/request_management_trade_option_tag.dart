@@ -22,7 +22,7 @@ class RequestManagementTradeOptionTag extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(100.r),
-        color: AppColors.secondaryBlack,
+        color: AppColors.secondaryBlack2,
       ),
       padding: EdgeInsets.fromLTRB(18.w, 6.h, 18.w, 7.h),
       child: Text(

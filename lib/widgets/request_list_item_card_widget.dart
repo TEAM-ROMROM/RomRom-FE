@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
+import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -19,7 +19,7 @@ class RequestListItemCardWidget extends StatelessWidget {
   final bool isNew; // 새로운 요청 여부
   final List<ItemTradeOption> tradeOptions;
   final TradeStatus tradeStatus;
-  final VoidCallback? onMenuTap;
+  final VoidCallback onMenuTap;
 
   const RequestListItemCardWidget({
     super.key,
@@ -30,7 +30,7 @@ class RequestListItemCardWidget extends StatelessWidget {
     this.isNew = false,
     required this.tradeOptions,
     required this.tradeStatus,
-    this.onMenuTap,
+    required this.onMenuTap,
   });
 
   @override
@@ -155,13 +155,16 @@ class RequestListItemCardWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       // 메뉴 아이콘
-                      GestureDetector(
-                        onTap: onMenuTap,
-                        child: const Icon(
-                          AppIcons.dotsVertical,
-                          color: AppColors.textColorWhite,
-                          size: 30,
-                        ),
+                      RomRomContextMenu(
+                        menuBackgroundColor: AppColors.secondaryBlack2,
+                        items: [
+                          ContextMenuItem(
+                            id: 'delete',
+                            title: '삭제',
+                            textColor: AppColors.itemOptionsMenuDeleteText,
+                            onTap: onMenuTap,
+                          ),
+                        ],
                       ),
 
                       // 거래 상태 태그

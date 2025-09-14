@@ -41,7 +41,7 @@ class SentRequestItemCard extends StatelessWidget {
       height: 191.h,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10.r),
-        color: AppColors.secondaryBlack,
+        color: AppColors.secondaryBlack1,
       ),
       child: Stack(
         children: [
@@ -98,7 +98,7 @@ class SentRequestItemCard extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: AppColors.secondaryBlack,
+                                        color: AppColors.secondaryBlack1,
                                         width: 1.5.w,
                                       ),
                                     ),
@@ -120,7 +120,7 @@ class SentRequestItemCard extends StatelessWidget {
                         height: 32.h,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.secondaryBlack,
+                          color: AppColors.secondaryBlack1,
                         ),
                         child: Center(
                           child: SvgPicture.asset(
@@ -189,12 +189,15 @@ class SentRequestItemCard extends StatelessWidget {
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Row(
-                                children: tradeOptions.map(
-                                  (option) => Padding(
-                                    padding: EdgeInsets.only(right: 4.w),
-                                    child: RequestManagementTradeOptionTag(option: option),
-                                  ),
-                                ).toList(),
+                                children: tradeOptions
+                                    .map(
+                                      (option) => Padding(
+                                        padding: EdgeInsets.only(right: 4.w),
+                                        child: RequestManagementTradeOptionTag(
+                                            option: option),
+                                      ),
+                                    )
+                                    .toList(),
                               ),
                             ),
                           ),
@@ -249,7 +252,7 @@ class SentRequestItemCard extends StatelessWidget {
     if (imageUrl.isEmpty) {
       return const ErrorImagePlaceholder();
     }
-    
+
     return Image.network(
       imageUrl,
       fit: BoxFit.cover,

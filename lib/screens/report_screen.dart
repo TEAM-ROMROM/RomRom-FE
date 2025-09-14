@@ -72,7 +72,7 @@ class _ReportScreenState extends State<ReportScreen> {
                     height: 140.h,
                     padding: EdgeInsets.all(16.w),
                     decoration: BoxDecoration(
-                      color: AppColors.secondaryBlack,
+                      color: AppColors.secondaryBlack1,
                       borderRadius: BorderRadius.circular(8.r),
                       border: Border.all(
                         color: AppColors.textColorWhite.withValues(alpha: 0.3),

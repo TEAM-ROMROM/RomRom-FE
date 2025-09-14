@@ -219,6 +219,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       }
 
       return {
+        'itemId': tradeItem.itemId,
         'otherItemImageUrl': tradeRequest.itemImages != null &&
                 tradeRequest.itemImages!.isNotEmpty
             ? tradeRequest.itemImages!.first.imageUrl ?? ''
@@ -547,6 +548,30 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   isNew: request['isNew'],
                   tradeOptions: request['tradeOptions'],
                   tradeStatus: request['tradeStatus'],
+                  onMenuTap: () async {
+                    try {
+                      final tradeOptions =
+                          (request['tradeOptions'] as List<ItemTradeOption>)
+                              .map((option) => option.serverName)
+                              .toList();
+
+                      await TradeApi().cancelTradeRequest(
+                        TradeRequest(
+                          giveItemId: _itemCards[_currentCardIndex]
+                              .itemId, // 내 카드(요청 받은 카드)
+                          takeItemId: request['itemId'],
+                          tradeOptions: tradeOptions,
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint('요청 취소 실패: $e');
+                    }
+                    if (mounted) {
+                      setState(() {
+                        _receivedRequests.removeAt(index);
+                      });
+                    }
+                  },
                 ),
                 if (index < filteredRequests.length - 1)
                   Divider(
