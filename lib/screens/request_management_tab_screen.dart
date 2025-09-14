@@ -39,6 +39,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   final int _currentPage = 0;
   final int _pageSize = 10;
 
+  // 로딩 상태
+  bool _isLoading = false;
+
   // 스크롤 상태 관리
   bool _isScrolled = false;
 
@@ -156,6 +159,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 현재 선택된 카드의 받은 요청 목록 로드
   Future<void> _loadRequestsForCurrentCard() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     if (_itemCards.isEmpty || _currentCardIndex >= _itemCards.length) return;
 
     try {
@@ -166,10 +173,14 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         setState(() {
           _receivedRequests.clear();
           _receivedRequests.addAll(requests);
+          _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -497,18 +508,28 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }).toList();
 
     if (filteredRequests.isEmpty) {
-      return Container(
-        height: 200.h,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Center(
-          child: Text(
-            _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        ),
-      );
+      return _isLoading
+          ? SizedBox(
+              height: 200.h,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          : Container(
+              height: 200.h,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Center(
+                child: Text(
+                  _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                  ),
+                ),
+              ),
+            );
     }
 
     return Padding(
