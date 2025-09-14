@@ -136,4 +136,8 @@ class AppColors {
 
   static const Color errorBorder = Color(0xFFFF5656); // 에러 상태 테두리 색상
   static const Color errorContainer = Color(0x1AFF5656); // 에러 상태 컨테이너 색상
+
+  // 요청 관리 화면
+  static const Color tradeStatusIsChatting = Color(0x80FFC300); // 채팅 중 색상
+  static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
 }

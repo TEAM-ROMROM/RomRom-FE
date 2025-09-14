@@ -216,7 +216,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         'location': locationText,
         'createdDate': tradeItem.createdDate,
         'tradeOptions': opts,
-        'tradeStatus': TradeStatus.listed,
+        'tradeStatus': TradeStatus.listed, // FIXME : 백엔드 거래 상태 로직 구현 후 수정
         'isNew': true, //  FIXME : 벡엔드 isNew 로직구현 후 수정
       };
     }).toList();
@@ -512,24 +512,31 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
-      child: Column(
-        children: filteredRequests.map((request) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: 16.h),
-            child: RequestListItemCardWidget(
-              imageUrl: request['otherItemImageUrl'],
-              title: request['title'],
-              address: request['location'],
-              createdDate: request['createdDate'],
-              isNew: request['isNew'],
-              tradeOptions: request['tradeOptions'],
-              tradeStatus: request['tradeStatus'],
-            ),
-          );
-        }).toList(),
-      ),
-    );
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Column(
+          children: List.generate(filteredRequests.length, (index) {
+            final request = filteredRequests[index];
+            return Column(
+              children: [
+                RequestListItemCardWidget(
+                  imageUrl: request['otherItemImageUrl'],
+                  title: request['title'],
+                  address: request['location'],
+                  createdDate: request['createdDate'],
+                  isNew: request['isNew'],
+                  tradeOptions: request['tradeOptions'],
+                  tradeStatus: request['tradeStatus'],
+                ),
+                if (index < filteredRequests.length - 1)
+                  Divider(
+                    thickness: 1.5,
+                    color: AppColors.opacity10White,
+                    height: 32.h,
+                  ),
+              ],
+            );
+          }),
+        ));
   }
 
   /// 보낸 요청 목록
