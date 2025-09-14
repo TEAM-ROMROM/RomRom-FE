@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 거래 상태 태그 위젯
 enum TradeStatus {
+  listed, // 기본(거래 안됨)
   chatting, // 채팅중
   completed, // 거래완료
 }
@@ -18,11 +19,11 @@ class TradeStatusTagWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isChatting = status == TradeStatus.chatting;
-    
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4.r),
-        color: isChatting 
+        color: isChatting
             ? const Color(0x80FFC300) // rgba(255, 195, 0, 0.50)
             : const Color(0xFF1D1E27), // 거래완료 배경색
       ),
