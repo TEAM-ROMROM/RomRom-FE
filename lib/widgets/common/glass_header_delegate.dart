@@ -156,7 +156,7 @@ class GlassHeaderToggleBuilder {
         height: 46.h,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10.r),
-          color: AppColors.secondaryBlack,
+          color: AppColors.secondaryBlack1,
         ),
         child: AnimatedBuilder(
           animation: animation,

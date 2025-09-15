@@ -119,7 +119,8 @@ class _RomRomContextMenuState extends State<RomRomContextMenu>
         menuWidth: widget.menuWidth ?? 146.w,
         menuPadding: widget.menuPadding,
         menuBorderRadius: widget.menuBorderRadius ?? BorderRadius.circular(4.r),
-        menuBackgroundColor: widget.menuBackgroundColor ?? AppColors.secondaryBlack,
+        menuBackgroundColor:
+            widget.menuBackgroundColor ?? AppColors.secondaryBlack1,
         itemHeight: widget.itemHeight.h,
         onItemSelected: (id) {
           _closeMenu();
@@ -205,7 +206,7 @@ class _MenuOverlay extends StatelessWidget {
     double menuHeight = _calculateMenuHeight();
     double left = triggerPosition.dx;
     double top = triggerPosition.dy + triggerSize.height + 12.h;
-    
+
     switch (position) {
       case ContextMenuPosition.above:
         top = triggerPosition.dy - menuHeight - 12.h;
@@ -300,9 +301,9 @@ class _MenuOverlay extends StatelessWidget {
         // 투명 오버레이 - 메뉴 외부 영역 탭/제스처 감지
         Positioned.fill(
           child: GestureDetector(
-            behavior: HitTestBehavior.translucent,  // 다른 UI 요소 통과
+            behavior: HitTestBehavior.translucent, // 다른 UI 요소 통과
             onTap: onDismiss,
-            onPanStart: (_) => onDismiss(),  // 모든 드래그 제스처 감지
+            onPanStart: (_) => onDismiss(), // 모든 드래그 제스처 감지
             child: Container(color: AppColors.transparent),
           ),
         ),
@@ -311,7 +312,7 @@ class _MenuOverlay extends StatelessWidget {
           left: menuPosition.dx,
           top: menuPosition.dy,
           child: IgnorePointer(
-            ignoring: false,  // 메뉴 자체는 터치 이벤트 받음
+            ignoring: false, // 메뉴 자체는 터치 이벤트 받음
             child: AnimatedBuilder(
               animation: animation,
               builder: (context, child) {
@@ -352,10 +353,10 @@ class _MenuOverlay extends StatelessWidget {
 
   List<Widget> _buildMenuItems() {
     final List<Widget> widgets = [];
-    
+
     for (int i = 0; i < items.length; i++) {
       final item = items[i];
-      
+
       widgets.add(
         InkWell(
           onTap: () {
@@ -391,7 +392,7 @@ class _MenuOverlay extends StatelessWidget {
           ),
         ),
       );
-      
+
       if (item.showDividerAfter && i < items.length - 1) {
         widgets.add(
           Divider(
@@ -404,7 +405,7 @@ class _MenuOverlay extends StatelessWidget {
         );
       }
     }
-    
+
     return widgets;
   }
 }

@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
+import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -18,7 +19,7 @@ class RequestListItemCardWidget extends StatelessWidget {
   final bool isNew; // 새로운 요청 여부
   final List<ItemTradeOption> tradeOptions;
   final TradeStatus tradeStatus;
-  final VoidCallback? onMenuTap;
+  final VoidCallback onMenuTap;
 
   const RequestListItemCardWidget({
     super.key,
@@ -29,35 +30,27 @@ class RequestListItemCardWidget extends StatelessWidget {
     this.isNew = false,
     required this.tradeOptions,
     required this.tradeStatus,
-    this.onMenuTap,
+    required this.onMenuTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 361.w,
-      height: 84.h,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.r),
-        color: AppColors.secondaryBlack,
-      ),
+    return SizedBox(
+      width: 345.w,
+      height: 70.h,
       child: Row(
         children: [
           // 이미지 (왼쪽, 위, 아래 12px 마진)
           Padding(
-            padding: EdgeInsets.only(
-              left: 12.w,
-              top: 12.h,
-              bottom: 12.h,
-            ),
+            padding: EdgeInsets.only(right: 8.w),
             child: Container(
-              width: 60.w,
-              height: 60.h,
+              width: 70.w,
+              height: 70.h,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(4.r),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(4.r),
                 child: _buildImage(imageUrl),
               ),
             ),
@@ -65,91 +58,115 @@ class RequestListItemCardWidget extends StatelessWidget {
           // 정보 영역
           Expanded(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(12.w, 12.h, 8.w, 12.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: EdgeInsets.zero,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // 상단 영역 (제목 + 주소 + 시간 + 메뉴)
-                  Row(
+                  // 왼쪽 영역 (제목 + 주소 + 시간 + 거래 옵션 태그)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 제목 (7자 제한)
-                      Text(
-                        title.length > 8 ? '${title.substring(0, 8)}...' : title,
-                        style: CustomTextStyles.p2.copyWith(
-                          color: AppColors.textColorWhite,
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-                      // 주소
-                      Text(
-                        address,
-                        style: CustomTextStyles.p3.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.opacity60White,
-                        ),
-                      ),
-                      SizedBox(width: 4.w),
-                      // 중간점
-                      Container(
-                        width: 2.w,
-                        height: 2.h,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.opacity60White,
-                        ),
-                      ),
-                      SizedBox(width: 4.w),
-                      // 시간
-                      Text(
-                        getTimeAgo(createdDate),
-                        style: CustomTextStyles.p3.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.opacity60White,
-                        ),
-                      ),
-                      // FIXME: 백엔드에서 isNew 구현 후 연결
-                      if (isNew) ...[
-                        SizedBox(width: 8.w),
-                        SvgPicture.asset(
-                          'assets/images/redNew.svg',
-                          width: 16.w,
-                          height: 16.h,
-                        ),
-                      ],
-                      const Spacer(),
-                      // 메뉴 아이콘
-                      GestureDetector(
-                        onTap: onMenuTap,
-                        child: Padding(
-                          padding: EdgeInsets.all(4.w),
-                          child: Icon(
-                            Icons.more_vert,
-                            color: AppColors.opacity60White,
-                            size: 20.w,
+                      Row(
+                        children: [
+                          // 제목 (7자 제한)
+                          Text(
+                            title.length > 8
+                                ? '${title.substring(0, 8)}...'
+                                : title,
+                            style: CustomTextStyles.p1.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
+                          // FIXME: 백엔드에서 isNew 구현 후 연결
+                          if (isNew) ...[
+                            SizedBox(width: 8.w),
+                            SvgPicture.asset(
+                              'assets/images/redNew.svg',
+                              width: 16.w,
+                              height: 16.h,
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // 하단 태그 영역
-                  Row(
-                    children: [
+
+                      SizedBox(
+                        height: 8.h,
+                      ),
+
+                      Row(
+                        children: [
+                          // 주소
+                          Text(
+                            address,
+                            style: CustomTextStyles.p3.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.opacity60White,
+                            ),
+                          ),
+                          SizedBox(width: 4.w),
+                          // 중간점
+                          Container(
+                            width: 2.w,
+                            height: 2.h,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.opacity60White,
+                            ),
+                          ),
+                          SizedBox(width: 4.w),
+                          // 시간
+                          Text(
+                            getTimeAgo(createdDate),
+                            style: CustomTextStyles.p3.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.opacity60White,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(
+                        height: 11.h,
+                      ),
+
                       // 거래 옵션 태그들 (줄바꿈 방지)
                       Expanded(
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
-                            children: tradeOptions.map(
-                              (option) => Padding(
-                                padding: EdgeInsets.only(right: 4.w),
-                                child: RequestManagementTradeOptionTag(option: option),
-                              ),
-                            ).toList(),
+                            children: tradeOptions
+                                .map(
+                                  (option) => Padding(
+                                    padding: EdgeInsets.only(right: 4.w),
+                                    child: RequestManagementTradeOptionTag(
+                                        option: option),
+                                  ),
+                                )
+                                .toList(),
                           ),
                         ),
                       ),
-                      SizedBox(width: 8.w),
+                    ],
+                  ),
+
+                  // 오른쪽 메뉴 버튼
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // 메뉴 아이콘
+                      RomRomContextMenu(
+                        menuBackgroundColor: AppColors.secondaryBlack2,
+                        items: [
+                          ContextMenuItem(
+                            id: 'delete',
+                            title: '삭제',
+                            textColor: AppColors.itemOptionsMenuDeleteText,
+                            onTap: onMenuTap,
+                          ),
+                        ],
+                      ),
+
                       // 거래 상태 태그
                       TradeStatusTagWidget(status: tradeStatus),
                     ],
@@ -168,7 +185,7 @@ class RequestListItemCardWidget extends StatelessWidget {
     if (imageUrl.isEmpty) {
       return const ErrorImagePlaceholder();
     }
-    
+
     return Image.network(
       imageUrl,
       fit: BoxFit.cover,

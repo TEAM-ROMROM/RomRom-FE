@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
 import 'dart:async';
 
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/models/apis/requests/trade_request.dart';
+import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
+import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
-import 'package:romrom_fe/widgets/sent_request_item_card.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
+import 'package:romrom_fe/widgets/sent_request_item_card.dart';
 
 class RequestManagementTabScreen extends StatefulWidget {
   const RequestManagementTabScreen({super.key});
@@ -26,6 +35,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   Timer? _scrollTimer;
+
+  final int _currentPage = 0;
+  final int _pageSize = 10;
+
+  // 로딩 상태
+  bool _isLoading = false;
 
   // 스크롤 상태 관리
   bool _isScrolled = false;
@@ -48,6 +63,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   // 테스트용 샘플 데이터
   final List<RequestManagementItemCard> _itemCards = [];
+
+  // 받은 요청 목록 데이터
+  final List<Map<String, dynamic>> _receivedRequests = [];
 
   @override
   void initState() {
@@ -73,39 +91,149 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       curve: Curves.easeInOut,
     ));
 
-    // 테스트용 샘플 데이터 생성
-    _loadSampleData();
+    _loadInitialItems();
   }
 
-  Future<void> _loadSampleData({bool isRefresh = false}) async {
+  /// 초기 아이템 로드
+  Future<void> _loadInitialItems({bool isRefresh = false}) async {
+    if (!mounted) return;
+
+    try {
+      final itemApi = ItemApi();
+      final response = await itemApi.getMyItems(ItemRequest(
+        pageNumber: _currentPage,
+        pageSize: _pageSize,
+      ));
+
+      if (!mounted) return;
+
+      final itemCard = await _convertToRequestManagementItemCard(
+          response.itemDetailPage?.content ?? []);
+
+      setState(() {
+        _itemCards
+          ..clear()
+          ..addAll(itemCard);
+      });
+
+      // 아이템 카드가 로드된 후 첫 번째 카드의 받은 요청 목록도 로드
+      await _loadRequestsForCurrentCard();
+    } catch (e) {
+      if (!mounted) return;
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('피드 로딩 실패: $e')),
+      );
+    }
+  }
+
+  /// ItemDetail을 RequestManagementItemCard로 변환
+  Future<List<RequestManagementItemCard>> _convertToRequestManagementItemCard(
+      List<ItemDetail> details) async {
+    final itemCards = <RequestManagementItemCard>[];
+
+    for (int index = 0; index < details.length; index++) {
+      final d = details[index];
+
+      String category =
+          ItemCategories.fromServerName(d.itemCategory ?? '기타').name;
+
+      final itemCard = RequestManagementItemCard(
+        itemId: d.itemId ?? '',
+        imageUrl: d.itemImageUrls != null && d.itemImageUrls!.isNotEmpty
+            ? d.itemImageUrls!.first
+            : 'https://example.com/default_image.png',
+        category: category,
+        title: d.itemName ?? ' ',
+        price: d.price ?? 0,
+        likeCount: d.likeCount ?? 0,
+        isAiAnalyzed: true, // FIXME: 내가 등록한 물품 조회 api 에서 ai 분석 여부 반환 필요
+      );
+
+      itemCards.add(itemCard);
+    }
+
+    return itemCards;
+  }
+
+  /// 현재 선택된 카드의 받은 요청 목록 로드
+  Future<void> _loadRequestsForCurrentCard() async {
     setState(() {
-      _itemCards.addAll([
-        RequestManagementItemCard(
-          imageUrl: 'https://picsum.photos/200/300?random=1',
-          category: '스포츠/레저',
-          title: '나이키 에어맥스 270',
-          price: 85000,
-          likeCount: 12,
-          isAiAnalyzed: true,
-        ),
-        RequestManagementItemCard(
-          imageUrl: 'https://picsum.photos/200/300?random=2',
-          category: '전자기기',
-          title: '애플워치 7세대 44mm',
-          price: 320000,
-          likeCount: 25,
-          isAiAnalyzed: false,
-        ),
-        RequestManagementItemCard(
-          imageUrl: 'https://picsum.photos/200/300?random=3',
-          category: '패션/의류',
-          title: '노스페이스 패딩 자켓',
-          price: 150000,
-          likeCount: 8,
-          isAiAnalyzed: true,
-        ),
-      ]);
+      _isLoading = true;
     });
+
+    if (_itemCards.isEmpty || _currentCardIndex >= _itemCards.length) return;
+
+    try {
+      final currentCard = _itemCards[_currentCardIndex];
+      final requests = await _buildReceivedRequestsList(currentCard);
+
+      if (mounted) {
+        setState(() {
+          _receivedRequests.clear();
+          _receivedRequests.addAll(requests);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// 받은 요청 목록
+  Future<List<Map<String, dynamic>>> _buildReceivedRequestsList(
+      RequestManagementItemCard itemCard) async {
+    final api = TradeApi();
+    final response = await api.getSentTradeRequests(TradeRequest(
+      giveItemId: itemCard.itemId,
+      pageNumber: 0,
+      pageSize: 10,
+    ));
+
+    final sentRequests = response.content?.map((tradeRequest) async {
+      final Item tradeItem = tradeRequest.item!;
+      // 위치 정보 변환
+      String locationText = '미지정';
+      if (tradeItem.latitude != null && tradeItem.longitude != null) {
+        final address = await LocationService().getAddressFromCoordinates(
+          NLatLng(tradeItem.latitude!, tradeItem.longitude!),
+        );
+        if (address != null) {
+          locationText =
+              '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+        }
+      }
+
+      final opts = <ItemTradeOption>[];
+      if (tradeItem.itemTradeOptions != null) {
+        for (final s in tradeItem.itemTradeOptions!) {
+          try {
+            opts.add(
+                ItemTradeOption.values.firstWhere((e) => e.serverName == s));
+          } catch (_) {}
+        }
+      }
+
+      return {
+        'itemId': tradeItem.itemId,
+        'otherItemImageUrl': tradeRequest.itemImages != null &&
+                tradeRequest.itemImages!.isNotEmpty
+            ? tradeRequest.itemImages!.first.imageUrl ?? ''
+            : 'https://example.com/default_image.png',
+        'title': tradeItem.itemName ?? ' ',
+        'location': locationText,
+        'createdDate': tradeItem.createdDate,
+        'tradeOptions': opts,
+        'tradeStatus': TradeStatus.listed, // FIXME : 백엔드 거래 상태 로직 구현 후 수정
+        'isNew': true, //  FIXME : 벡엔드 isNew 로직구현 후 수정
+      };
+    }).toList();
+
+    return Future.wait(sentRequests ?? []);
   }
 
   @override
@@ -158,6 +286,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     setState(() {
       _currentCardIndex = index;
     });
+
+    // 카드가 변경되면 해당 카드의 받은 요청 목록을 로드
+    _loadRequestsForCurrentCard();
   }
 
   @override
@@ -176,7 +307,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               child: RefreshIndicator(
                 color: AppColors.primaryYellow,
                 backgroundColor: AppColors.transparent,
-                onRefresh: () => _loadSampleData(isRefresh: true),
+                onRefresh: () => _loadInitialItems(isRefresh: true),
                 child: CustomScrollView(
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(),
@@ -366,44 +497,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       return _buildSentRequestsList();
     }
 
-    // 받은 요청인 경우 (기존 코드)
-    // 테스트용 샘플 데이터
-    final List<Map<String, dynamic>> sampleRequests = [
-      {
-        'imageUrl': 'https://picsum.photos/100/100?random=4',
-        'title': '나이키 에어맥스 270 구매 요청',
-        'address': '강남구',
-        'createdDate': DateTime.now().subtract(const Duration(hours: 2)),
-        'isNew': true,
-        'tradeOptions': [ItemTradeOption.directOnly],
-        'tradeStatus': TradeStatus.chatting,
-      },
-      {
-        'imageUrl': 'https://picsum.photos/100/100?random=5',
-        'title': '애플워치 7세대 교환 요청',
-        'address': '서초구',
-        'createdDate': DateTime.now().subtract(const Duration(days: 1)),
-        'isNew': false,
-        'tradeOptions': [ItemTradeOption.deliveryOnly],
-        'tradeStatus': TradeStatus.completed,
-      },
-      {
-        'imageUrl': 'https://picsum.photos/100/100?random=6',
-        'title': '노스페이스 패딩 판매 요청',
-        'address': '송파구',
-        'createdDate': DateTime.now().subtract(const Duration(days: 2)),
-        'isNew': false,
-        'tradeOptions': [
-          ItemTradeOption.directOnly,
-          ItemTradeOption.extraCharge
-        ],
-        'tradeStatus': TradeStatus.chatting,
-      },
-    ];
-
+    // 받은 요청인 경우 - 로드된 데이터 사용
     // 완료 여부에 따른 필터링
-    final filteredRequests = sampleRequests.where((request) {
-      final status = request['tradeStatus'] as TradeStatus;
+    final filteredRequests = _receivedRequests.where((request) {
+      final status = request['tradeStatus'] as TradeStatus?;
       if (_showCompletedRequests) {
         return status == TradeStatus.completed;
       } else {
@@ -412,39 +509,80 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }).toList();
 
     if (filteredRequests.isEmpty) {
-      return Container(
-        height: 200.h,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Center(
-          child: Text(
-            _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        ),
-      );
+      return _isLoading
+          ? SizedBox(
+              height: 200.h,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          : Container(
+              height: 200.h,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Center(
+                child: Text(
+                  _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                  ),
+                ),
+              ),
+            );
     }
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
-      child: Column(
-        children: filteredRequests.map((request) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: 16.h),
-            child: RequestListItemCardWidget(
-              imageUrl: request['imageUrl'],
-              title: request['title'],
-              address: request['address'],
-              createdDate: request['createdDate'],
-              isNew: request['isNew'],
-              tradeOptions: request['tradeOptions'],
-              tradeStatus: request['tradeStatus'],
-            ),
-          );
-        }).toList(),
-      ),
-    );
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Column(
+          children: List.generate(filteredRequests.length, (index) {
+            final request = filteredRequests[index];
+            return Column(
+              children: [
+                RequestListItemCardWidget(
+                  imageUrl: request['otherItemImageUrl'],
+                  title: request['title'],
+                  address: request['location'],
+                  createdDate: request['createdDate'],
+                  isNew: request['isNew'],
+                  tradeOptions: request['tradeOptions'],
+                  tradeStatus: request['tradeStatus'],
+                  onMenuTap: () async {
+                    try {
+                      final tradeOptions =
+                          (request['tradeOptions'] as List<ItemTradeOption>)
+                              .map((option) => option.serverName)
+                              .toList();
+
+                      await TradeApi().cancelTradeRequest(
+                        TradeRequest(
+                          giveItemId: _itemCards[_currentCardIndex]
+                              .itemId, // 내 카드(요청 받은 카드)
+                          takeItemId: request['itemId'],
+                          tradeOptions: tradeOptions,
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint('요청 취소 실패: $e');
+                    }
+                    if (mounted) {
+                      setState(() {
+                        _receivedRequests.removeAt(index);
+                      });
+                    }
+                  },
+                ),
+                if (index < filteredRequests.length - 1)
+                  Divider(
+                    thickness: 1.5,
+                    color: AppColors.opacity10White,
+                    height: 32.h,
+                  ),
+              ],
+            );
+          }),
+        ));
   }
 
   /// 보낸 요청 목록
@@ -531,5 +669,3 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     );
   }
 }
-
-// (사용 안 함) 로컬 헤더 delegate 제거됨. 공통 GlassHeaderDelegate를 사용합니다.

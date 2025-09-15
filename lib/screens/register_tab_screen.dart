@@ -347,7 +347,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     final imageUrl = item.itemImageUrls?.isNotEmpty == true
         ? item.itemImageUrls!.first
         : null;
-    final uploadTime = _formatUploadTime(item.createdDate);
+    final uploadTime = item.createdDate != null
+        ? getTimeAgo(DateTime.parse(item.createdDate!))
+        : 'Unknown';
 
     return SizedBox(
       height: 90.h,
@@ -577,32 +579,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         );
       },
     );
-  }
-
-  /// 업로드 시간 포맷팅
-  String _formatUploadTime(String? createdDate) {
-    if (createdDate == null || createdDate.isEmpty) {
-      return '시간 없음';
-    }
-
-    try {
-      final uploadDate = DateTime.parse(createdDate);
-      final now = DateTime.now();
-      final difference = now.difference(uploadDate);
-
-      if (difference.inDays > 0) {
-        return '${difference.inDays}일 전';
-      } else if (difference.inHours > 0) {
-        return '${difference.inHours}시간 전';
-      } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes}분 전';
-      } else {
-        return '방금 전';
-      }
-    } catch (e) {
-      debugPrint('날짜 파싱 오류: $e');
-      return '시간 없음';
-    }
   }
 
   /// 물품 상세 화면으로 이동

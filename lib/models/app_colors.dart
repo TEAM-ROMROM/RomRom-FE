@@ -8,7 +8,8 @@ class AppColors {
   static const Color opacity90PrimaryBlack =
       Color(0xE61D1E27); // 90% 불투명도 primaryBlack
   static const Color primaryYellow = Color(0xFFFFC300);
-  static const Color secondaryBlack = Color(0xFF34353D);
+  static const Color secondaryBlack1 = Color(0xFF34353D);
+  static const Color secondaryBlack2 = Color(0xFF4C4E54);
   static const Color lightGray = Color(0xFFEEEEEE);
   static const Color opacity10White = Color(0x1AFFFFFF); // 10% 불투명도 흰색
   static const Color opacity20White = Color(0x33FFFFFF); // 20% 불투명도 흰색
@@ -136,4 +137,8 @@ class AppColors {
 
   static const Color errorBorder = Color(0xFFFF5656); // 에러 상태 테두리 색상
   static const Color errorContainer = Color(0x1AFF5656); // 에러 상태 컨테이너 색상
+
+  // 요청 관리 화면
+  static const Color tradeStatusIsChatting = Color(0x80FFC300); // 채팅 중 색상
+  static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
 }

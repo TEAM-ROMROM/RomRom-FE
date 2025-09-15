@@ -8,16 +8,16 @@ import 'package:romrom_fe/models/app_theme.dart';
 class ToggleSelector extends StatefulWidget {
   /// 왼쪽 옵션 텍스트
   final String leftText;
-  
+
   /// 오른쪽 옵션 텍스트
   final String rightText;
-  
+
   /// 현재 선택된 상태 (false: 왼쪽, true: 오른쪽)
   final bool isRightSelected;
-  
+
   /// 토글 선택 변경 시 호출되는 콜백
   final Function(bool) onToggleChanged;
-  
+
   /// 위젯 하단 패딩 (기본값: 24)
   final double bottomPadding;
 
@@ -42,13 +42,13 @@ class _ToggleSelectorState extends State<ToggleSelector>
   @override
   void initState() {
     super.initState();
-    
+
     // 토글 애니메이션 초기화
     _toggleAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _toggleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -56,7 +56,7 @@ class _ToggleSelectorState extends State<ToggleSelector>
       parent: _toggleAnimationController,
       curve: Curves.easeInOut,
     ));
-    
+
     // 초기 상태 설정
     if (widget.isRightSelected) {
       _toggleAnimationController.value = 1.0;
@@ -64,11 +64,11 @@ class _ToggleSelectorState extends State<ToggleSelector>
       _toggleAnimationController.value = 0.0;
     }
   }
-  
+
   @override
   void didUpdateWidget(covariant ToggleSelector oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // 외부에서 상태가 변경된 경우 애니메이션 컨트롤러 값을 업데이트
     if (oldWidget.isRightSelected != widget.isRightSelected) {
       if (widget.isRightSelected) {
@@ -94,7 +94,7 @@ class _ToggleSelectorState extends State<ToggleSelector>
         height: 46.h,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10.r),
-          color: AppColors.secondaryBlack,
+          color: AppColors.secondaryBlack1,
         ),
         child: Stack(
           children: [
@@ -103,7 +103,8 @@ class _ToggleSelectorState extends State<ToggleSelector>
               animation: _toggleAnimation,
               builder: (context, child) {
                 return Positioned(
-                  left: 2.w + (_toggleAnimation.value * 171.w), // 2px + 170px + 1px gap
+                  left: 2.w +
+                      (_toggleAnimation.value * 171.w), // 2px + 170px + 1px gap
                   top: 2.h,
                   child: Container(
                     width: 170.w,

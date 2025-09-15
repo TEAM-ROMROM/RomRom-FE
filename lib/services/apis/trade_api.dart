@@ -61,9 +61,10 @@ class TradeApi {
 
   /// 받은 거래 요청 목록 조회 API
   /// `POST /api/trade/get/received`
-  Future<TradeResponse> getReceivedTradeRequests(TradeRequest request) async {
+  Future<PageTradeResponse> getReceivedTradeRequests(
+      TradeRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/get/received';
-    late TradeResponse tradeResponse;
+    late PageTradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {
       'takeItemId': request.takeItemId,
@@ -82,7 +83,7 @@ class TradeApi {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
-      tradeResponse = TradeResponse.fromJson(responseData);
+      tradeResponse = PageTradeResponse.fromJson(responseData);
       debugPrint('받은 거래 요청 목록 조회 성공');
     } else {
       throw Exception('받은 거래 요청 목록 조회 실패: ${response.statusCode}');
@@ -93,9 +94,9 @@ class TradeApi {
 
   /// 보낸 거래 요청 목록 조회 API
   /// `POST /api/trade/get/sent`
-  Future<TradeResponse> getSentTradeRequests(TradeRequest request) async {
+  Future<PageTradeResponse> getSentTradeRequests(TradeRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/get/sent';
-    late TradeResponse tradeResponse;
+    late PageTradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {
       'giveItemId': request.giveItemId,
@@ -114,7 +115,7 @@ class TradeApi {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
-      tradeResponse = TradeResponse.fromJson(responseData);
+      tradeResponse = PageTradeResponse.fromJson(responseData);
       debugPrint('보낸 거래 요청 목록 조회 성공');
     } else {
       throw Exception('보낸 거래 요청 목록 조회 실패: ${response.statusCode}');
