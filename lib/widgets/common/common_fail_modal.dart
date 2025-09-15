@@ -25,7 +25,7 @@ class CommonFailModal extends StatelessWidget {
           width: 312.w,
           height: 206.h,
           decoration: BoxDecoration(
-            color: AppColors.secondaryBlack,
+            color: AppColors.secondaryBlack1,
             borderRadius: BorderRadius.circular(8.r),
             boxShadow: const [
               BoxShadow(

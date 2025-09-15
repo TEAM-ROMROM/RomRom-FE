@@ -494,15 +494,29 @@ class BlackGradientContainer extends StatelessWidget {
       children: [
         Expanded(
           flex: 627, // 비율 627
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: AppColors.blackGradient, // 검정색 그라데이션
-                stops: const [0.0, 0.24, 0.38],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
+          child: Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: AppColors.blackGradient1, // 검정색 그라데이션
+                    stops: const [0.0, 0.29, 0.45],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                ),
               ),
-            ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: AppColors.blackGradient2, // 검정색 그라데이션
+                    stops: const [0.0, 0.24, 0.73, 0.99],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(

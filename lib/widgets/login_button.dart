@@ -102,7 +102,7 @@ class _LoginButtonState extends State<LoginButton> {
         margin: EdgeInsets.only(bottom: 12.h),
         decoration: BoxDecoration(
           color: widget.platform.backgroundColor,
-          borderRadius: BorderRadius.circular(100.r),
+          borderRadius: BorderRadius.circular(10.r),
         ),
         child: Stack(
           alignment: Alignment.center,

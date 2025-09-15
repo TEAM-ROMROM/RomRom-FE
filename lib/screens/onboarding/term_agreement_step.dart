@@ -228,7 +228,6 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
             padding: EdgeInsets.only(bottom: 48.h),
             child: CompletionButton(
               isEnabled: _allRequiredChecked && !_isSaving,
-              buttonType: 1,
               enabledOnPressed: _handleTermsAgreement,
               buttonText: _isSaving ? '처리 중...' : '동의하고 계속하기',
             ),

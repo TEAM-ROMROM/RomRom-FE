@@ -43,7 +43,6 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
             child: Center(
               child: CompletionButton(
                 isEnabled: isSelectedCategories,
-                buttonType: 1,
                 enabledOnPressed: () async {
                   try {
                     await memberApi.savePreferredCategories(selectedCategories);

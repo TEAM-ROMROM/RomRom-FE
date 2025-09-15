@@ -8,7 +8,6 @@ class CompletionButton extends StatelessWidget {
   final VoidCallback? enabledOnPressed; // 활성화 상태일 때 눌렀을 때 실행 함수
   final VoidCallback? disabledOnPressed; // 비활성화 상태일 때 눌렀을 때 실행 함수
   final String buttonText; // 버튼 중앙 문구
-  final int buttonType; // 버튼 종류 (1 or 2)
 
   // 색 정의
   final Color? enabledBackgroundColor; // 활성화 배경 색
@@ -16,17 +15,21 @@ class CompletionButton extends StatelessWidget {
   final Color? enabledTextColor; // 활성화 문구 색
   final Color? disabledTextColor; // 비활성화 문구 색
 
+  final double buttonWidth;
+  final double buttonHeight;
+
   const CompletionButton({
     super.key,
     required this.isEnabled,
     this.enabledOnPressed,
     this.disabledOnPressed,
     required this.buttonText,
-    required this.buttonType,
     this.enabledBackgroundColor,
     this.disabledBackgroundColor,
     this.enabledTextColor,
     this.disabledTextColor,
+    this.buttonWidth = double.infinity,
+    this.buttonHeight = 56,
   });
 
   @override
@@ -47,23 +50,19 @@ class CompletionButton extends StatelessWidget {
       color: textColor,
     );
 
-    // 버튼 테두리 굴곡 설정
-    final List borderRadius = [100, 10];
-
     return Center(
       child: SizedBox(
-        width: double.infinity, // 전체 너비 사용
+        width: buttonWidth.w,
+        height: buttonHeight.h,
         child: TextButton(
           onPressed: isEnabled
               ? enabledOnPressed
               : disabledOnPressed, // 활성화와 비활성화 일 때 onPressed 별로 처리
           style: TextButton.styleFrom(
             backgroundColor: backgroundColor,
-            padding: EdgeInsets.symmetric(vertical: 20.0.h),
             minimumSize: Size(316.w, 0),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                    borderRadius[buttonType - 1].toDouble())),
+                borderRadius: BorderRadius.circular(10.r)),
           ), // 최소 너비 설정, 높이 자동
           child: Text(
             buttonText,

@@ -1,11 +1,50 @@
 {
   "metadata": {
-    "lastUpdated": "2025-09-08T12:53:29Z",
-    "currentVersion": "1.2.18",
-    "totalReleases": 14,
+    "lastUpdated": "2025-09-15T08:37:44Z",
+    "currentVersion": "1.2.21",
+    "totalReleases": 15,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.2.21",
+      "project_type": "flutter",
+      "date": "2025-09-15",
+      "pr_number": 276,
+      "raw_summary": "Summary by CodeRabbit\n\n\nNew Features\n\n홈 탭 카드 덱 인터랙션(덱 올리기/드래그·드롭)과 플립 효과 도입, 드롭 시 거래 옵션 선택·요청 다이얼로그 제공\n요청 관리 탭에 실데이터 연동, 받음/보냄 토글, 풀투리프레시, 요청 취소 지원\n글래스 스타일 고정 헤더 적용\n새 아이콘 추가(cardDrag)\n\n\n\nUI/Style\n\n컬러 팔레트 확장 및 모달·토글·버튼 색/라운드/그라데이션 개선\n아이템 카드 소형 모드와 옵션/상태 태그 스타일 업데이트\n로그인·리스트 카드 레이아웃 다듬기\n\n\n\nChores\n\nCI 분석 로그 업로드 개선\n버전 1.2.21로 업데이트\n\n\n\nDocumentation\n\nREADME 최신 버전 표기 갱신",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "홈 탭 카드 덱 인터랙션(덱 올리기/드래그·드롭)과 플립 효과 도입, 드롭 시 거래 옵션 선택·요청 다이얼로그 제공",
+            "요청 관리 탭에 실데이터 연동, 받음/보냄 토글, 풀투리프레시, 요청 취소 지원",
+            "글래스 스타일 고정 헤더 적용",
+            "새 아이콘 추가(cardDrag)"
+          ]
+        },
+        "ui_style": {
+          "title": "UI/Style",
+          "items": [
+            "컬러 팔레트 확장 및 모달·토글·버튼 색/라운드/그라데이션 개선",
+            "아이템 카드 소형 모드와 옵션/상태 태그 스타일 업데이트",
+            "로그인·리스트 카드 레이아웃 다듬기"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "CI 분석 로그 업로드 개선",
+            "버전 1.2.21로 업데이트"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "README 최신 버전 표기 갱신"
+          ]
+        }
+      }
+    },
     {
       "version": "1.2.18",
       "project_type": "flutter",
