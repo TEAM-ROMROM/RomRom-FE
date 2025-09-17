@@ -19,6 +19,7 @@ class ItemDetail {
   final List<String>? itemCustomTags;
   final double? longitude;
   final double? latitude;
+  final bool? aiPrice;
 
   ItemDetail({
     this.itemId,
@@ -36,6 +37,7 @@ class ItemDetail {
     this.itemCustomTags,
     this.longitude,
     this.latitude,
+    this.aiPrice,
   });
 
   factory ItemDetail.fromJson(Map<String, dynamic> json) =>

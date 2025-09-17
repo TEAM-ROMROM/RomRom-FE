@@ -19,7 +19,7 @@ class RequestManagementItemCard {
   final int likeCount;
 
   /// AI 분석 적정가 여부
-  final bool isAiAnalyzed;
+  final bool aiPrice;
 
   RequestManagementItemCard({
     required this.itemId,
@@ -28,6 +28,6 @@ class RequestManagementItemCard {
     required this.title,
     required this.price,
     required this.likeCount,
-    this.isAiAnalyzed = false,
+    this.aiPrice = false,
   });
 }
