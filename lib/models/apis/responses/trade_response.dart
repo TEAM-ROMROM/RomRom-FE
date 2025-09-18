@@ -1,7 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/objects/item_image.dart';
-import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 
 part 'trade_response.g.dart';
 
@@ -21,7 +20,8 @@ class TradeResponse {
     this.itemDetailPage,
   });
 
-  factory TradeResponse.fromJson(Map<String, dynamic> json) => _$TradeResponseFromJson(json);
+  factory TradeResponse.fromJson(Map<String, dynamic> json) =>
+      _$TradeResponseFromJson(json);
   Map<String, dynamic> toJson() => _$TradeResponseToJson(this);
 }
 
@@ -49,9 +49,9 @@ class PageTradeResponse {
     this.empty,
   });
 
-  factory PageTradeResponse.fromJson(Map<String, dynamic> json) => 
+  factory PageTradeResponse.fromJson(Map<String, dynamic> json) =>
       _$PageTradeResponseFromJson(json);
-  
+
   Map<String, dynamic> toJson() => _$PageTradeResponseToJson(this);
 }
 
@@ -67,15 +67,15 @@ class TradeResponseItem {
     this.tradeOptions,
   });
 
-  factory TradeResponseItem.fromJson(Map<String, dynamic> json) => 
+  factory TradeResponseItem.fromJson(Map<String, dynamic> json) =>
       _$TradeResponseItemFromJson(json);
-  
+
   Map<String, dynamic> toJson() => _$TradeResponseItemToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)
 class TradeItemDetailPage {
-  final List<ItemDetail>? content;
+  final List<Item>? content;
   final int? totalPages;
   final int? totalElements;
   final bool? last;
@@ -97,8 +97,8 @@ class TradeItemDetailPage {
     this.empty,
   });
 
-  factory TradeItemDetailPage.fromJson(Map<String, dynamic> json) => 
+  factory TradeItemDetailPage.fromJson(Map<String, dynamic> json) =>
       _$TradeItemDetailPageFromJson(json);
-  
+
   Map<String, dynamic> toJson() => _$TradeItemDetailPageToJson(this);
 }

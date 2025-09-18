@@ -6,12 +6,12 @@ import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
@@ -115,7 +115,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         ItemRequest(pageNumber: 0, pageSize: 1),
       );
 
-      userHasItem = (response.itemDetailPage?.content?.isNotEmpty ?? false);
+      userHasItem = (response.itemPage?.content.isNotEmpty ?? false);
     } catch (e) {
       debugPrint('블러 상태 결정용 내 물품 조회 실패: $e');
       // 실패 시에는 "없다"고 간주해 기존 로직 유지
@@ -316,13 +316,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       if (!mounted) return;
 
       final feedItems =
-          await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+          await _convertToFeedItems(response.itemPage?.content ?? []);
 
       setState(() {
         _feedItems
           ..clear()
           ..addAll(feedItems);
-        _hasMoreItems = !(response.itemDetailPage?.last ?? true);
+        _hasMoreItems = !(response.itemPage?.content.isEmpty ?? true);
         _isLoading = false;
       });
     } catch (e) {
@@ -355,11 +355,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       ));
 
       final newItems =
-          await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+          await _convertToFeedItems(response.itemPage?.content ?? []);
 
       setState(() {
         _feedItems.addAll(newItems);
-        _hasMoreItems = !(response.itemDetailPage?.last ?? true);
+        _hasMoreItems = !(response.itemPage?.content.isEmpty ?? true);
         _isLoadingMore = false;
       });
     } catch (e) {
@@ -375,8 +375,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
-  Future<List<HomeFeedItem>> _convertToFeedItems(
-      List<ItemDetail> details) async {
+  Future<List<HomeFeedItem>> _convertToFeedItems(List<Item> details) async {
     final feedItems = <HomeFeedItem>[];
 
     for (int index = 0; index < details.length; index++) {
@@ -417,12 +416,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         name: d.itemName ?? ' ',
         price: d.price ?? 0,
         location: locationText,
-        date: d.createdDate ?? '',
+        date: d.createdDate is DateTime
+            ? d.createdDate as DateTime
+            : DateTime.now(),
         itemCondition: cond,
         transactionTypes: opts,
-        profileUrl: d.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
+        profileUrl:
+            d.member?.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
         likeCount: d.likeCount ?? 0,
-        imageUrls: d.itemImageUrls ?? [''],
+        imageUrls: d.imageUrlList, // List<String>
         description: d.itemDescription ?? '',
         hasAiAnalysis: false,
         latitude: d.latitude,
@@ -445,15 +447,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
       if (!mounted) return;
 
-      final myItems = response.itemDetailPage?.content ?? [];
+      final myItems = response.itemPage?.content ?? [];
       setState(() {
         _myCards = myItems
             .map((item) => {
                   'id': item.itemId ?? '',
                   'name': item.itemName ?? '물품',
                   'category': item.itemCategory ?? '카테고리',
-                  'imageUrl': (item.itemImageUrls?.isNotEmpty ?? false)
-                      ? item.itemImageUrls![0]
+                  'imageUrl': item.primaryImageUrl != null
+                      ? item.primaryImageUrl!
                       : 'https://picsum.photos/400/300',
                 })
             .toList();

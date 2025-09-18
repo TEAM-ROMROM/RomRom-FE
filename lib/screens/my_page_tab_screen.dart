@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart' as trade_opt;
 import 'package:romrom_fe/models/app_colors.dart';
@@ -25,7 +25,7 @@ class MyPageTabScreen extends StatefulWidget {
 }
 
 class _MyPageTabScreenState extends State<MyPageTabScreen> {
-  final List<ItemDetail> _myItems = [];
+  final List<Item> _myItems = [];
   bool _isLoading = true;
 
   @override
@@ -48,7 +48,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
       setState(() {
         _myItems
           ..clear()
-          ..addAll(response.itemDetailPage?.content ?? []);
+          ..addAll(response.itemPage?.content ?? []);
         _isLoading = false;
       });
     } catch (e) {
@@ -117,9 +117,8 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                               itemCategoryLabel:
                                   _mapItemCategory(item.itemCategory),
                               itemName: item.itemName ?? '',
-                              itemCardImageUrl: (item.itemImageUrls != null &&
-                                      item.itemImageUrls!.isNotEmpty)
-                                  ? item.itemImageUrls!.first
+                              itemCardImageUrl: item.primaryImageUrl != null
+                                  ? item.primaryImageUrl!
                                   : 'https://picsum.photos/400/300',
                               itemOptions:
                                   _mapTradeOptions(item.itemTradeOptions),

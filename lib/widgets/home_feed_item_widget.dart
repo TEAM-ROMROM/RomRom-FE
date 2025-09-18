@@ -70,8 +70,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       if (mounted) {
         setState(() {
           _useAiPrice = response.item?.aiPrice ?? false;
-          _isLiked = response.likeStatus == 'LIKE';
-          _likeCount = response.likeCount ?? widget.item.likeCount;
+          _isLiked = response.isLiked == true;
+          _likeCount = response.item?.likeCount ?? widget.item.likeCount;
         });
       }
     } catch (e) {
@@ -262,9 +262,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         );
                         if (!mounted) return;
                         setState(() {
-                          _isLiked = response.likeStatus == 'LIKE';
-                          if (response.likeCount != null) {
-                            _likeCount = response.likeCount!;
+                          _isLiked = response.isLiked == true;
+                          if (response.item?.likeCount != null) {
+                            _likeCount = response.item?.likeCount ?? _likeCount;
                           } else {
                             _likeCount = _isLiked
                                 ? _likeCount + 1

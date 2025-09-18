@@ -75,7 +75,7 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('좋아요 상태 변경 성공: ${itemResponse.likeStatus}');
+        debugPrint('좋아요 상태 변경 성공: ${itemResponse.isLiked}');
       },
     );
 
@@ -99,8 +99,7 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint(
-            '물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
+        debugPrint('물품 목록 조회 성공: ${itemResponse.itemPage?.content.length}개');
       },
     );
 
@@ -149,7 +148,7 @@ class ItemApi {
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
         debugPrint('내 물품 목록 조회 성공: '
-            '${itemResponse.itemDetailPage?.content?.length ?? 0}개');
+            '${itemResponse.itemPage?.content.length ?? 0}개');
       },
     );
 

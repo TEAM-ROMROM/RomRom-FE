@@ -9,7 +9,6 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
-import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
@@ -111,7 +110,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       if (!mounted) return;
 
       final itemCard = await _convertToRequestManagementItemCard(
-          response.itemDetailPage?.content ?? []);
+          response.itemPage?.content ?? []);
 
       setState(() {
         _itemCards
@@ -135,7 +134,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// ItemDetail을 RequestManagementItemCard로 변환
   Future<List<RequestManagementItemCard>> _convertToRequestManagementItemCard(
-      List<ItemDetail> details) async {
+      List<Item> details) async {
     final itemCards = <RequestManagementItemCard>[];
 
     for (int index = 0; index < details.length; index++) {
@@ -146,9 +145,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
       final itemCard = RequestManagementItemCard(
         itemId: d.itemId ?? '',
-        imageUrl: d.itemImageUrls != null && d.itemImageUrls!.isNotEmpty
-            ? d.itemImageUrls!.first
-            : 'https://example.com/default_image.png',
+        imageUrl: d.primaryImageUrl != null
+            ? d.primaryImageUrl!
+            : 'https://picsum.photos/400/300',
         category: category,
         title: d.itemName ?? ' ',
         price: d.price ?? 0,
@@ -250,7 +249,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
           } catch (_) {}
         }
       }
-
+// TODO : 🤪
       return {
         'itemId': tradeItem.itemId,
         'otherItemImageUrl': tradeRequest.itemImages != null &&

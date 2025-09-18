@@ -9,8 +9,8 @@ import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_text_field_phrase.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
@@ -29,12 +29,12 @@ import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
 /// 물품 등록 입력 폼 위젯
 /// 물품 등록 화면에서 사용되는 입력 폼 위젯
 class RegisterInputForm extends StatefulWidget {
-  final ItemResponse? itemResponse; // 수정 모드에서 사용
+  final Item? item; // 수정 모드에서 사용
   final bool isEditMode;
 
   const RegisterInputForm({
     super.key,
-    this.itemResponse,
+    this.item,
     this.isEditMode = false,
   });
 
@@ -246,8 +246,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   Future<void> _initControllers() async {
     // 수정 모드에서 초기화
-    if (widget.isEditMode && widget.itemResponse != null) {
-      final item = widget.itemResponse!.item;
+    if (widget.isEditMode && widget.item != null) {
+      final item = widget.item;
 
       // 좌표가 있으면 주소 변환, 없으면 빈 문자열로 초기화
       if (item?.latitude != null && item?.longitude != null) {
@@ -288,14 +288,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       if (selectedTradeOptions.isNotEmpty) {
         _hasTradeOptionBeenTouched = true;
       }
-      imageUrls = widget.itemResponse!.itemImages != null
-          ? widget.itemResponse!.itemImages!
+      imageUrls = widget.item != null
+          ? widget.item!.itemImages!
               .map((img) => img.imageUrl ?? '')
               .where((url) => url.isNotEmpty)
               .toList()
           : [];
-      imageFiles = widget.itemResponse!.itemImages != null
-          ? widget.itemResponse!.itemImages!
+      imageFiles = widget.item!.itemImages != null
+          ? widget.item!.itemImages!
               .map((img) {
                 final imageUrl = img.imageUrl ?? '';
                 if (imageUrl.startsWith('http://') ||
@@ -1004,9 +1004,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         _isLoading = true;
                       });
                       final itemRequest = ItemRequest(
-                        itemId: widget.isEditMode
-                            ? widget.itemResponse!.item?.itemId
-                            : null,
+                        itemId: widget.isEditMode ? widget.item?.itemId : null,
                         itemName: titleController.text.trim(),
                         itemDescription: descriptionController.text.trim(),
                         itemCategory: selectedCategory!.serverName,

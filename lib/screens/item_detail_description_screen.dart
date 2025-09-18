@@ -60,7 +60,6 @@ class _ItemDetailDescriptionScreenState
 
   Item? item;
   List<ItemImage>? itemImages;
-  List<String>? itemCustomTags;
   String locationName = '위치 정보 로딩 중...';
   String memberLocationName = '위치 정보 로딩 중...';
 
@@ -91,16 +90,15 @@ class _ItemDetailDescriptionScreenState
 
       setState(() {
         item = response.item;
-        itemImages = response.itemImages;
-        itemCustomTags = response.itemCustomTags;
-        isLikedVN.value = (response.likeStatus == 'LIKE');
-        likeCountVN.value = response.likeCount ?? 0;
+        itemImages = item?.itemImages;
+        isLikedVN.value = (response.isLiked == true);
+        likeCountVN.value = item?.likeCount ?? 0;
 
         imageUrls = itemImages
-                ?.map((img) => img.imageUrl ?? '')
-                .where((url) => url.isNotEmpty)
+                ?.map((e) => e.imageUrl) // String?로 매핑
+                .whereType<String>() // null 제거
                 .toList() ??
-            [];
+            const [];
 
         // 물품 좌표를 주소로 변환
         if (item?.latitude != null && item?.longitude != null) {
@@ -497,34 +495,6 @@ class _ItemDetailDescriptionScreenState
                               item?.itemDescription ?? '설명이 없습니다.',
                               style: CustomTextStyles.p2.copyWith(height: 1.4),
                             ),
-                            if (itemCustomTags?.isNotEmpty == true) ...[
-                              SizedBox(height: 16.h),
-                              Wrap(
-                                spacing: 8.w,
-                                runSpacing: 8.h,
-                                children: itemCustomTags!
-                                    .map(
-                                      (tag) => Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 12.w,
-                                          vertical: 6.h,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.opacity20White,
-                                          borderRadius:
-                                              BorderRadius.circular(16.r),
-                                        ),
-                                        child: Text(
-                                          '#$tag',
-                                          style: CustomTextStyles.p3.copyWith(
-                                            color: AppColors.textColorWhite,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            ],
                           ],
                         ),
                       ),
@@ -676,8 +646,8 @@ class _ItemDetailDescriptionScreenState
 
       // 2) 서버 결과로 보정(서버-클라 불일치 대비)
       if (!mounted) return;
-      isLikedVN.value = (res.likeStatus == 'LIKE');
-      likeCountVN.value = res.likeCount ?? likeCountVN.value;
+      isLikedVN.value = (res.isLiked == true);
+      likeCountVN.value = res.item?.likeCount ?? likeCountVN.value;
     } catch (e) {
       debugPrint('좋아요 실패: $e');
       // 3) 실패 롤백

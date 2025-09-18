@@ -87,7 +87,7 @@ Map<String, dynamic> _$TradeResponseItemToJson(TradeResponseItem instance) =>
 TradeItemDetailPage _$TradeItemDetailPageFromJson(Map<String, dynamic> json) =>
     TradeItemDetailPage(
       content: (json['content'] as List<dynamic>?)
-          ?.map((e) => ItemDetail.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => Item.fromJson(e as Map<String, dynamic>))
           .toList(),
       totalPages: (json['totalPages'] as num?)?.toInt(),
       totalElements: (json['totalElements'] as num?)?.toInt(),

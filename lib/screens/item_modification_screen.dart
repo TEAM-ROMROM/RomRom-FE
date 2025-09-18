@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -24,7 +24,7 @@ class ItemModificationScreen extends StatefulWidget {
 
 class _ItemModificationScreenState extends State<ItemModificationScreen> {
   bool _isLoading = true;
-  ItemResponse _myItem = ItemResponse();
+  Item _myItem = Item();
 
   /// 내 물품 리스트 로드
   Future<void> _loadMyItems() async {
@@ -38,7 +38,7 @@ class _ItemModificationScreenState extends State<ItemModificationScreen> {
       final response = await itemApi.getItemDetail(request);
 
       setState(() {
-        _myItem = response;
+        _myItem = response.item!;
         _isLoading = false;
       });
     } catch (e) {
@@ -81,7 +81,7 @@ class _ItemModificationScreenState extends State<ItemModificationScreen> {
                 padding: EdgeInsets.only(top: 24.h, bottom: 24.h, left: 24.w),
                 child: RegisterInputForm(
                   isEditMode: true, // true면 수정화면
-                  itemResponse: _myItem, // 수정 모드에서 사용
+                  item: _myItem, // 수정 모드에서 사용
                 )),
       ),
     );
