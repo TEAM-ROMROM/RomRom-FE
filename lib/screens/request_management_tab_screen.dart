@@ -325,18 +325,28 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   Widget _buildSentRequestsList() {
     // 보낸 요청은 필터링 없이 모든 요청 표시
     if (_sentRequests.isEmpty) {
-      return Container(
-        height: 200.h,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Center(
-          child: Text(
-            '보낸 요청이 없습니다',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        ),
-      );
+      return _isLoading
+          ? SizedBox(
+              height: 500.h,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          : Container(
+              height: 200.h,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Center(
+                child: Text(
+                  '보낸 요청이 없습니다',
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                  ),
+                ),
+              ),
+            );
     }
 
     return Padding(
