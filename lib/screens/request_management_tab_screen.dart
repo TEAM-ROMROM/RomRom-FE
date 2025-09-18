@@ -587,9 +587,25 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         onPageChanged: _onCardPageChanged,
         itemCount: _itemCards.length,
         itemBuilder: (context, index) {
-          return RequestManagementItemCardWidget(
-            card: _itemCards[index],
-            isActive: index == _currentCardIndex,
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ItemDetailDescriptionScreen(
+                    itemId: _itemCards[index].itemId,
+                    imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                    currentImageIndex: 0,
+                    heroTag:
+                        'itemImage_${_itemCards[index].itemId}_0', // ← 인덱스 포함
+                  ),
+                ),
+              );
+            },
+            child: RequestManagementItemCardWidget(
+              card: _itemCards[index],
+              isActive: index == _currentCardIndex,
+            ),
           );
         },
       ),
