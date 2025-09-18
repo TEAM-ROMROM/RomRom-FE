@@ -250,8 +250,7 @@ class SentRequestItemCard extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.secondaryBlack1,
-            width: 1.5.w,
+            color: AppColors.textColorWhite,
           ),
         ),
         child: ClipOval(
