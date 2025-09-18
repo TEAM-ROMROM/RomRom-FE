@@ -648,7 +648,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     if (filteredRequests.isEmpty) {
       return _isLoading
           ? SizedBox(
-              height: 200.h,
+              height: 150.h,
               child: const Center(
                 child: CircularProgressIndicator(
                   color: AppColors.primaryYellow,
@@ -672,7 +672,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
     return _isLoading
         ? SizedBox(
-            height: 200.h,
+            height: 150.h,
             child: const Center(
               child: CircularProgressIndicator(
                 color: AppColors.primaryYellow,
