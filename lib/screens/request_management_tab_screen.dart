@@ -13,6 +13,8 @@ import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
+import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
@@ -302,7 +304,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       }
 
       return {
-        'itemId': tradeItem.itemId,
+        'giveItemId': itemCard.itemId,
+        'takeItemId': tradeItem.itemId,
         'myItemImageUrl': itemCard.imageUrl,
         'otherItemImageUrl': tradeRequest.itemImages != null &&
                 tradeRequest.itemImages!.isNotEmpty
@@ -353,18 +356,75 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         children: [
-          ..._sentRequests.map((request) {
+          ..._sentRequests.asMap().entries.map((entry) {
+            final index = entry.key; // Get the index from the map entry
+            final request = entry.value; // Get the request data
+
             return Padding(
               padding: EdgeInsets.only(bottom: 16.h),
-              child: SentRequestItemCard(
-                myItemImageUrl: request['myItemImageUrl'],
-                otherItemImageUrl: request['otherItemImageUrl'],
-                otherUserProfileUrl: request['otherUserProfileUrl'],
-                title: request['title'],
-                location: request['location'],
-                createdDate: request['createdDate'],
-                tradeOptions: request['tradeOptions'],
-                tradeStatus: request['tradeStatus'],
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailDescriptionScreen(
+                        itemId: request['takeItemId'], // 내가 요청 보낸 카드로 이동
+                        imageSize:
+                            Size(MediaQuery.of(context).size.width, 400.h),
+                        currentImageIndex: 0,
+                        heroTag:
+                            'itemImage_${request['takeItemId']}_0', // ← 인덱스 포함
+                      ),
+                    ),
+                  );
+                },
+                child: SentRequestItemCard(
+                  myItemImageUrl: request['myItemImageUrl'],
+                  otherItemImageUrl: request['otherItemImageUrl'],
+                  otherUserProfileUrl: request['otherUserProfileUrl'],
+                  title: request['title'],
+                  location: request['location'],
+                  createdDate: request['createdDate'],
+                  tradeOptions: request['tradeOptions'],
+                  tradeStatus: request['tradeStatus'],
+                  onEditTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ItemModificationScreen(
+                          itemId: request['giveItemId'],
+                          onClose: () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                  onCancelTap: () async {
+                    try {
+                      final tradeOptions =
+                          (request['tradeOptions'] as List<ItemTradeOption>)
+                              .map((option) => option.serverName)
+                              .toList();
+
+                      await TradeApi().cancelTradeRequest(
+                        TradeRequest(
+                          giveItemId: request['giveItemId'], // 상대 카드 (내가 보낸 카드)
+                          takeItemId: request['takeItemId'], // 내 카드(요청 보낸 카드)
+                          tradeOptions: tradeOptions,
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint('요청 취소 실패: $e');
+                    }
+                    if (mounted) {
+                      setState(() {
+                        _sentRequests
+                            .removeAt(index); // Use the correct index here
+                      });
+                    }
+                  },
+                ),
               ),
             );
           }),
@@ -687,38 +747,56 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 final request = filteredRequests[index];
                 return Column(
                   children: [
-                    RequestListItemCardWidget(
-                      imageUrl: request['otherItemImageUrl'],
-                      title: request['title'],
-                      address: request['location'],
-                      createdDate: request['createdDate'],
-                      isNew: request['isNew'],
-                      tradeOptions: request['tradeOptions'],
-                      tradeStatus: request['tradeStatus'],
-                      onMenuTap: () async {
-                        try {
-                          final tradeOptions =
-                              (request['tradeOptions'] as List<ItemTradeOption>)
-                                  .map((option) => option.serverName)
-                                  .toList();
-
-                          await TradeApi().cancelTradeRequest(
-                            TradeRequest(
-                              giveItemId: _itemCards[_currentCardIndex]
-                                  .itemId, // 내 카드(요청 받은 카드)
-                              takeItemId: request['itemId'],
-                              tradeOptions: tradeOptions,
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque, // 빈 공간도 터치 가능
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ItemDetailDescriptionScreen(
+                              itemId: request['itemId'], // 요청 받은 카드로 이동
+                              imageSize: Size(
+                                  MediaQuery.of(context).size.width, 400.h),
+                              currentImageIndex: 0,
+                              heroTag:
+                                  'itemImage_${request['itemId']}_0', // ← 인덱스 포함
                             ),
-                          );
-                        } catch (e) {
-                          debugPrint('요청 취소 실패: $e');
-                        }
-                        if (mounted) {
-                          setState(() {
-                            _receivedRequests.removeAt(index);
-                          });
-                        }
+                          ),
+                        );
                       },
+                      child: RequestListItemCardWidget(
+                        imageUrl: request['otherItemImageUrl'],
+                        title: request['title'],
+                        address: request['location'],
+                        createdDate: request['createdDate'],
+                        isNew: request['isNew'],
+                        tradeOptions: request['tradeOptions'],
+                        tradeStatus: request['tradeStatus'],
+                        onMenuTap: () async {
+                          try {
+                            final tradeOptions = (request['tradeOptions']
+                                    as List<ItemTradeOption>)
+                                .map((option) => option.serverName)
+                                .toList();
+
+                            await TradeApi().cancelTradeRequest(
+                              TradeRequest(
+                                giveItemId: _itemCards[_currentCardIndex]
+                                    .itemId, // 내 카드(요청 받은 카드)
+                                takeItemId: request['itemId'],
+                                tradeOptions: tradeOptions,
+                              ),
+                            );
+                          } catch (e) {
+                            debugPrint('요청 취소 실패: $e');
+                          }
+                          if (mounted) {
+                            setState(() {
+                              _receivedRequests.removeAt(index);
+                            });
+                          }
+                        },
+                      ),
                     ),
                     if (index < filteredRequests.length - 1)
                       Divider(

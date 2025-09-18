@@ -19,7 +19,8 @@ class SentRequestItemCard extends StatelessWidget {
   final DateTime createdDate;
   final List<ItemTradeOption> tradeOptions;
   final TradeStatus? tradeStatus;
-  final VoidCallback? onMenuTap;
+  final VoidCallback? onEditTap;
+  final VoidCallback? onCancelTap;
 
   const SentRequestItemCard({
     super.key,
@@ -31,7 +32,8 @@ class SentRequestItemCard extends StatelessWidget {
     required this.createdDate,
     required this.tradeOptions,
     this.tradeStatus,
-    this.onMenuTap,
+    this.onEditTap,
+    this.onCancelTap,
   });
 
   @override
@@ -219,6 +221,7 @@ class SentRequestItemCard extends StatelessWidget {
             title: '수정',
             onTap: () {
               // 수정 액션
+              onEditTap?.call();
             },
           ),
           ContextMenuItem(
@@ -226,6 +229,7 @@ class SentRequestItemCard extends StatelessWidget {
             title: '요청 취소',
             onTap: () {
               // 요청 취소 액션
+              onCancelTap?.call();
             },
             textColor: AppColors.warningRed,
           ),
