@@ -233,7 +233,7 @@ class SentRequestItemCard extends StatelessWidget {
         customTrigger: Icon(
           Icons.more_vert,
           size: 24.w,
-          color: AppColors.opacity60White,
+          color: AppColors.textColorWhite,
         ),
       ),
     );

@@ -323,13 +323,29 @@ class _ItemDetailDescriptionScreenState
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: current == index
-                                        ? AppColors.textColorWhite
+                                        ? AppColors.primaryYellow
                                         : AppColors.opacity50White,
                                   ),
                                 ),
                               ),
                             );
                           }),
+                    ),
+
+                    SizedBox(
+                      height: widget.imageSize.height,
+                      width: widget.imageSize.width,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors:
+                                AppColors.itemDetailBlackGradient, // 검정색 그라데이션
+                            stops: const [0.0, 0.15, 0.60, 1.0],
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
