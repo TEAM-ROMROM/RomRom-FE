@@ -1,23 +1,21 @@
+// lib/models/apis/responses/trade_response.dart
 import 'package:json_annotation/json_annotation.dart';
+import 'package:romrom_fe/models/apis/objects/api_page.dart';
+import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/objects/item_image.dart';
 
 part 'trade_response.g.dart';
 
 @JsonSerializable(explicitToJson: true)
 class TradeResponse {
-  final Item? item;
-  final List<ItemImage>? itemImages;
-  final List<String>? tradeOptions;
-  final PageTradeResponse? tradeResponsePage;
-  final TradeItemDetailPage? itemDetailPage;
+  final TradeRequestHistory? tradeRequestHistory;
+  final PagedTradeRequestHistory? tradeRequestHistoryPage;
+  final PagedItem? itemPage;
 
   TradeResponse({
-    this.item,
-    this.itemImages,
-    this.tradeOptions,
-    this.tradeResponsePage,
-    this.itemDetailPage,
+    this.tradeRequestHistory,
+    this.tradeRequestHistoryPage,
+    this.itemPage,
   });
 
   factory TradeResponse.fromJson(Map<String, dynamic> json) =>
@@ -25,80 +23,118 @@ class TradeResponse {
   Map<String, dynamic> toJson() => _$TradeResponseToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
-class PageTradeResponse {
-  final List<TradeResponseItem>? content;
-  final int? totalPages;
-  final int? totalElements;
-  final bool? last;
-  final int? size;
-  final int? number;
-  final int? numberOfElements;
-  final bool? first;
-  final bool? empty;
+@JsonSerializable(
+  explicitToJson: true,
+)
+class TradeRequestHistory extends BaseEntity {
+  final String? tradeRequestHistoryId;
 
-  PageTradeResponse({
-    this.content,
-    this.totalPages,
-    this.totalElements,
-    this.last,
-    this.size,
-    this.number,
-    this.numberOfElements,
-    this.first,
-    this.empty,
+  @JsonKey(fromJson: _itemFromJson, toJson: _itemToJson)
+  final Item takeItem;
+
+  @JsonKey(fromJson: _itemFromJson, toJson: _itemToJson)
+  final Item giveItem;
+
+  @JsonKey(fromJson: _stringListFromJson, toJson: _stringListToJson)
+  final List<String> itemTradeOptions;
+
+  final String? tradeStatus;
+
+  TradeRequestHistory({
+    required this.tradeRequestHistoryId,
+    required this.takeItem,
+    required this.giveItem,
+    required this.itemTradeOptions,
+    required this.tradeStatus,
+    super.createdDate,
+    super.updatedDate,
   });
 
-  factory PageTradeResponse.fromJson(Map<String, dynamic> json) =>
-      _$PageTradeResponseFromJson(json);
-
-  Map<String, dynamic> toJson() => _$PageTradeResponseToJson(this);
+  factory TradeRequestHistory.fromJson(Map<String, dynamic> json) =>
+      _$TradeRequestHistoryFromJson(json);
+  @override
+  Map<String, dynamic> toJson() => _$TradeRequestHistoryToJson(this);
 }
 
+/// Paged<TradeRequestHistory>
 @JsonSerializable(explicitToJson: true)
-class TradeResponseItem {
-  final Item? item;
-  final List<ItemImage>? itemImages;
-  final List<String>? tradeOptions;
+class PagedTradeRequestHistory {
+  @JsonKey(fromJson: _tradeHistoryListFromJson, toJson: _tradeHistoryListToJson)
+  final List<TradeRequestHistory> content;
 
-  TradeResponseItem({
-    this.item,
-    this.itemImages,
-    this.tradeOptions,
+  @JsonKey(name: 'page')
+  final ApiPage? page;
+
+  PagedTradeRequestHistory({
+    required this.content,
+    required this.page,
   });
 
-  factory TradeResponseItem.fromJson(Map<String, dynamic> json) =>
-      _$TradeResponseItemFromJson(json);
-
-  Map<String, dynamic> toJson() => _$TradeResponseItemToJson(this);
+  factory PagedTradeRequestHistory.fromJson(Map<String, dynamic> json) =>
+      _$PagedTradeRequestHistoryFromJson(json);
+  Map<String, dynamic> toJson() => _$PagedTradeRequestHistoryToJson(this);
 }
 
+/// Paged<Item>
 @JsonSerializable(explicitToJson: true)
-class TradeItemDetailPage {
-  final List<Item>? content;
-  final int? totalPages;
-  final int? totalElements;
-  final bool? last;
-  final int? size;
-  final int? number;
-  final int? numberOfElements;
-  final bool? first;
-  final bool? empty;
+class PagedItem {
+  @JsonKey(fromJson: _itemsFromJson, toJson: _itemsToJson)
+  final List<Item> content;
 
-  TradeItemDetailPage({
-    this.content,
-    this.totalPages,
-    this.totalElements,
-    this.last,
-    this.size,
-    this.number,
-    this.numberOfElements,
-    this.first,
-    this.empty,
+  @JsonKey(name: 'page')
+  final ApiPage? page;
+
+  PagedItem({
+    required this.content,
+    required this.page,
   });
 
-  factory TradeItemDetailPage.fromJson(Map<String, dynamic> json) =>
-      _$TradeItemDetailPageFromJson(json);
-
-  Map<String, dynamic> toJson() => _$TradeItemDetailPageToJson(this);
+  factory PagedItem.fromJson(Map<String, dynamic> json) =>
+      _$PagedItemFromJson(json);
+  Map<String, dynamic> toJson() => _$PagedItemToJson(this);
 }
+
+/// ---------- converters ----------
+Item _itemFromJson(Object? value) {
+  if (value is Map<String, dynamic>) return Item.fromJson(value);
+  // null 또는 잘못된 타입이면 빈 Item으로
+  return Item();
+}
+
+Map<String, dynamic> _itemToJson(Item v) => v.toJson();
+
+List<String> _stringListFromJson(Object? value) {
+  if (value is List) {
+    return value.whereType<String>().toList();
+  }
+  return const <String>[];
+}
+
+Object _stringListToJson(List<String> list) => list;
+
+List<TradeRequestHistory> _tradeHistoryListFromJson(Object? value) {
+  if (value is List) {
+    return value
+        .whereType<Map<String, dynamic>>() // null 제거
+        .map(TradeRequestHistory.fromJson)
+        .toList();
+  }
+  return const <TradeRequestHistory>[];
+}
+
+Object _tradeHistoryListToJson(List<TradeRequestHistory> list) =>
+    list.map((e) => e.toJson()).toList();
+
+List<Item> _itemsFromJson(Object? value) {
+  if (value is List) {
+    return value
+        .whereType<Map<String, dynamic>>() // null 제거
+        .map(Item.fromJson)
+        .toList();
+  }
+  return const <Item>[];
+}
+
+Object _itemsToJson(List<Item> list) => list.map((e) => e.toJson()).toList();
+
+/// --------------------------------

@@ -33,6 +33,7 @@ Item _$ItemFromJson(Map<String, dynamic> json) => Item(
       longitude: (json['longitude'] as num?)?.toDouble(),
       latitude: (json['latitude'] as num?)?.toDouble(),
       aiPrice: json['aiPrice'] as bool?,
+      address: json['address'] as String?,
     );
 
 Map<String, dynamic> _$ItemToJson(Item instance) => <String, dynamic>{
@@ -52,4 +53,5 @@ Map<String, dynamic> _$ItemToJson(Item instance) => <String, dynamic>{
       'longitude': instance.longitude,
       'latitude': instance.latitude,
       'aiPrice': instance.aiPrice,
+      'address': instance.address,
     };

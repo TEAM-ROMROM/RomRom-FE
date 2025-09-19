@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'dart:async';
 
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
+import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
@@ -16,10 +17,8 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
-import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
-import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
 import 'package:romrom_fe/widgets/sent_request_item_card.dart';
@@ -66,8 +65,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   final List<RequestManagementItemCard> _itemCards = [];
 
   // 받은 요청 목록 데이터
-  final List<Map<String, dynamic>> _receivedRequests = [];
-  final List<Map<String, dynamic>> _sentRequests = [];
+  final List<TradeRequestHistory> _receivedRequests = [];
+  final List<TradeRequestHistory> _sentRequests = [];
 
   @override
   void initState() {
@@ -98,6 +97,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 초기 아이템 로드
   Future<void> _loadInitialItems({bool isRefresh = false}) async {
+    setState(() {
+      _isLoading = true;
+    });
     if (!mounted) return;
 
     try {
@@ -130,6 +132,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         SnackBar(content: Text('피드 로딩 실패: $e')),
       );
     }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   /// ItemDetail을 RequestManagementItemCard로 변환
@@ -162,165 +167,111 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   }
 
   /// 현재 선택된 카드의 받은 요청 목록 로드
-  Future<void> _loadReceivedRequestsForCurrentCard() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<List<TradeRequestHistory>>
+      _loadReceivedRequestsForCurrentCard() async {
+    if (!mounted) return const [];
 
-    if (_itemCards.isEmpty || _currentCardIndex >= _itemCards.length) return;
-
+    setState(() => _isLoading = true);
     try {
+      if (_itemCards.isEmpty ||
+          _currentCardIndex < 0 ||
+          _currentCardIndex >= _itemCards.length) {
+        if (mounted) setState(() => _receivedRequests.clear());
+        return const [];
+      }
+
       final currentCard = _itemCards[_currentCardIndex];
-      final requests = await _getReceivedRequestsList(currentCard);
+      final api = TradeApi();
+
+      final paged = await api.getReceivedTradeRequests(
+        TradeRequest(
+            takeItemId: currentCard.itemId, pageNumber: 0, pageSize: 10),
+      );
+
+      final list = paged.content;
+      if (list.isEmpty) {
+        if (mounted) setState(() => _receivedRequests.clear());
+        return const [];
+      }
+
+      // 주소 캐시를 모두 채워둠
+      await Future.wait(list.map((r) async {
+        await r.takeItem.resolveAndCacheAddress();
+        await r.giveItem.resolveAndCacheAddress();
+      }));
 
       if (mounted) {
         setState(() {
-          _receivedRequests.clear();
-          _receivedRequests.addAll(requests);
-          _isLoading = false;
+          _receivedRequests
+            ..clear()
+            ..addAll(list);
         });
       }
-    } catch (e) {
-      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e');
-      setState(() {
+      return list;
+    } catch (e, st) {
+      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e\n$st');
+      if (mounted) setState(() => _receivedRequests.clear());
+      return const [];
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      } else {
         _isLoading = false;
-      });
+      }
     }
   }
 
   /// 현재 선택된 카드의 보낸 요청 목록 로드
-  Future<void> _loadSentRequestsForCurrentCard() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<List<TradeRequestHistory>> _loadSentRequestsForCurrentCard() async {
+    if (!mounted) return const [];
 
+    setState(() => _isLoading = true);
     try {
-      final requests = <Map<String, dynamic>>[];
-      for (final card in _itemCards) {
-        final cardRequests = await _getSentRequestsList(card);
-        requests.addAll(cardRequests);
+      if (_itemCards.isEmpty ||
+          _currentCardIndex < 0 ||
+          _currentCardIndex >= _itemCards.length) {
+        if (mounted) setState(() => _sentRequests.clear());
+        return const [];
       }
+
+      final currentCard = _itemCards[_currentCardIndex];
+      final api = TradeApi();
+
+      final paged = await api.getSentTradeRequests(
+        TradeRequest(giveItemId: currentCard.itemId),
+      );
+
+      final list = paged.content;
+      if (list.isEmpty) {
+        if (mounted) setState(() => _sentRequests.clear());
+        return const [];
+      }
+
+      // 주소 캐시를 모두 채워둠
+      await Future.wait(list.map((r) async {
+        await r.takeItem.resolveAndCacheAddress();
+        await r.giveItem.resolveAndCacheAddress();
+      }));
 
       if (mounted) {
         setState(() {
-          _sentRequests.clear();
-          _sentRequests.addAll(requests);
-          _isLoading = false;
+          _sentRequests
+            ..clear()
+            ..addAll(list);
         });
       }
-    } catch (e) {
-      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e');
-      setState(() {
+      return list;
+    } catch (e, st) {
+      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e\n$st');
+      if (mounted) setState(() => _sentRequests.clear());
+      return const [];
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      } else {
         _isLoading = false;
-      });
+      }
     }
-  }
-
-  /// 받은 요청 목록
-  Future<List<Map<String, dynamic>>> _getReceivedRequestsList(
-      RequestManagementItemCard itemCard) async {
-    final api = TradeApi();
-    final response = await api.getReceivedTradeRequests(TradeRequest(
-      takeItemId: itemCard.itemId,
-      pageNumber: 0,
-      pageSize: 10,
-    ));
-
-    final receivedRequests = response.content?.map((tradeRequest) async {
-      final Item tradeItem = tradeRequest.item!;
-      // 위치 정보 변환
-      String locationText = '미지정';
-      if (tradeItem.latitude != null && tradeItem.longitude != null) {
-        final address = await LocationService().getAddressFromCoordinates(
-          NLatLng(tradeItem.latitude!, tradeItem.longitude!),
-        );
-        if (address != null) {
-          locationText =
-              '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-        }
-      }
-
-      final opts = <ItemTradeOption>[];
-      if (tradeItem.itemTradeOptions != null) {
-        for (final s in tradeItem.itemTradeOptions!) {
-          try {
-            opts.add(
-                ItemTradeOption.values.firstWhere((e) => e.serverName == s));
-          } catch (_) {}
-        }
-      }
-// TODO : 🤪
-      return {
-        'itemId': tradeItem.itemId,
-        'otherItemImageUrl': tradeRequest.itemImages != null &&
-                tradeRequest.itemImages!.isNotEmpty
-            ? tradeRequest.itemImages!.first.imageUrl ?? ''
-            : 'https://example.com/default_image.png',
-        'title': tradeItem.itemName ?? ' ',
-        'location': locationText,
-        'createdDate': tradeItem.createdDate,
-        'tradeOptions': opts,
-        'tradeStatus': TradeStatus.listed, // FIXME : 백엔드 거래 상태 로직 구현 후 수정
-        'isNew': true, //  FIXME : 벡엔드 isNew 로직구현 후 수정
-      };
-    }).toList();
-
-    return Future.wait(receivedRequests ?? []);
-  }
-
-  /// 받은 요청 목록
-  Future<List<Map<String, dynamic>>> _getSentRequestsList(
-      RequestManagementItemCard itemCard) async {
-    final api = TradeApi();
-    final response = await api.getSentTradeRequests(TradeRequest(
-      giveItemId: itemCard.itemId,
-      pageNumber: 0,
-      pageSize: 10,
-    ));
-
-    final sentRequests = response.content?.map((tradeRequest) async {
-      final Item tradeItem = tradeRequest.item!;
-      // 위치 정보 변환
-      String locationText = '미지정';
-      if (tradeItem.latitude != null && tradeItem.longitude != null) {
-        final address = await LocationService().getAddressFromCoordinates(
-          NLatLng(tradeItem.latitude!, tradeItem.longitude!),
-        );
-        if (address != null) {
-          locationText =
-              '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-        }
-      }
-
-      final opts = <ItemTradeOption>[];
-      if (tradeItem.itemTradeOptions != null) {
-        for (final s in tradeItem.itemTradeOptions!) {
-          try {
-            opts.add(
-                ItemTradeOption.values.firstWhere((e) => e.serverName == s));
-          } catch (_) {}
-        }
-      }
-
-      return {
-        'giveItemId': itemCard.itemId,
-        'takeItemId': tradeItem.itemId,
-        'myItemImageUrl': itemCard.imageUrl,
-        'otherItemImageUrl': tradeRequest.itemImages != null &&
-                tradeRequest.itemImages!.isNotEmpty
-            ? tradeRequest.itemImages!.first.imageUrl ?? ''
-            : 'https://example.com/default_image.png',
-        'otherUserProfileUrl': tradeItem.member?.profileUrl,
-        'title': tradeItem.itemName ?? ' ',
-        'location': locationText,
-        'createdDate': tradeItem.createdDate,
-        'tradeOptions': opts,
-        'tradeStatus': TradeStatus.chatting, // FIXME : 백엔드 거래 상태 로직 구현 후 수정
-        'isNew': true, //  FIXME : 벡엔드 isNew 로직구현 후 수정
-      };
-    }).toList();
-
-    return Future.wait(sentRequests ?? []);
   }
 
   /// 보낸 요청 목록
@@ -354,80 +305,84 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
-        children: [
-          ..._sentRequests.asMap().entries.map((entry) {
-            final index = entry.key; // Get the index from the map entry
-            final request = entry.value; // Get the request data
+        children: List.generate(_sentRequests.length, (index) {
+          final request = _sentRequests[index];
+          final takeItem = request.takeItem;
+          final giveItem = request.giveItem;
 
-            return Padding(
-              padding: EdgeInsets.only(bottom: 16.h),
-              child: GestureDetector(
-                onTap: () {
+          return Padding(
+            padding: EdgeInsets.only(bottom: 16.h),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ItemDetailDescriptionScreen(
+                      itemId: takeItem.itemId!, // 내가 요청 보낸 카드로 이동
+                      imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                      currentImageIndex: 0,
+                      heroTag: 'itemImage_${takeItem.itemId!}_0', // ← 인덱스 포함
+                    ),
+                  ),
+                );
+              },
+              child: SentRequestItemCard(
+                myItemImageUrl: takeItem.imageUrlList.isNotEmpty
+                    ? takeItem.imageUrlList.first
+                    : 'https://picsum.photos/400/300',
+                otherItemImageUrl: giveItem.imageUrlList.isNotEmpty
+                    ? giveItem.imageUrlList.first
+                    : 'https://picsum.photos/400/300',
+                otherUserProfileUrl: takeItem.member!.profileUrl!,
+                title: takeItem.itemName!,
+                location: takeItem.address!,
+                createdDate: takeItem.createdDate!,
+                tradeOptions: takeItem.itemTradeOptions != null
+                    ? takeItem.itemTradeOptions!
+                        .map((s) => ItemTradeOption.values
+                            .firstWhere((e) => e.serverName == s))
+                        .toList()
+                    : [],
+                tradeStatus: request.tradeStatus != null
+                    ? TradeStatus.values.firstWhere(
+                        (e) => e.serverName == request.tradeStatus,
+                        orElse: () => TradeStatus.chatting,
+                      )
+                    : TradeStatus.chatting,
+                onEditTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ItemDetailDescriptionScreen(
-                        itemId: request['takeItemId'], // 내가 요청 보낸 카드로 이동
-                        imageSize:
-                            Size(MediaQuery.of(context).size.width, 400.h),
-                        currentImageIndex: 0,
-                        heroTag:
-                            'itemImage_${request['takeItemId']}_0', // ← 인덱스 포함
+                      builder: (context) => ItemModificationScreen(
+                        itemId: giveItem.itemId,
+                        onClose: () {
+                          Navigator.pop(context);
+                        },
                       ),
                     ),
                   );
                 },
-                child: SentRequestItemCard(
-                  myItemImageUrl: request['myItemImageUrl'],
-                  otherItemImageUrl: request['otherItemImageUrl'],
-                  otherUserProfileUrl: request['otherUserProfileUrl'],
-                  title: request['title'],
-                  location: request['location'],
-                  createdDate: request['createdDate'],
-                  tradeOptions: request['tradeOptions'],
-                  tradeStatus: request['tradeStatus'],
-                  onEditTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ItemModificationScreen(
-                          itemId: request['giveItemId'],
-                          onClose: () {
-                            Navigator.pop(context);
-                          },
-                        ),
+                onCancelTap: () async {
+                  try {
+                    await TradeApi().cancelTradeRequest(
+                      TradeRequest(
+                        tradeRequestHistoryId: request.tradeRequestHistoryId,
                       ),
                     );
-                  },
-                  onCancelTap: () async {
-                    try {
-                      final tradeOptions =
-                          (request['tradeOptions'] as List<ItemTradeOption>)
-                              .map((option) => option.serverName)
-                              .toList();
-
-                      await TradeApi().cancelTradeRequest(
-                        TradeRequest(
-                          giveItemId: request['giveItemId'], // 상대 카드 (내가 보낸 카드)
-                          takeItemId: request['takeItemId'], // 내 카드(요청 보낸 카드)
-                          tradeOptions: tradeOptions,
-                        ),
-                      );
-                    } catch (e) {
-                      debugPrint('요청 취소 실패: $e');
-                    }
-                    if (mounted) {
-                      setState(() {
-                        _sentRequests
-                            .removeAt(index); // Use the correct index here
-                      });
-                    }
-                  },
-                ),
+                  } catch (e) {
+                    debugPrint('요청 취소 실패: $e');
+                  }
+                  if (mounted) {
+                    setState(() {
+                      _sentRequests
+                          .removeAt(index); // Use the correct index here
+                    });
+                  }
+                },
               ),
-            );
-          }),
-        ],
+            ),
+          );
+        }),
       ),
     );
   }
@@ -565,18 +520,28 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   Widget _buildItemCardsCarousel() {
     if (_itemCards.isEmpty) {
       // 데이터가 없을 때 빈 상태 표시
-      return Container(
-        height: 326.h,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Center(
-          child: Text(
-            '등록된 물품이 없습니다',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        ),
-      );
+      return _isLoading
+          ? SizedBox(
+              height: 150.h,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          : Container(
+              height: 326.h,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Center(
+                child: Text(
+                  '등록된 물품이 없습니다',
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                  ),
+                ),
+              ),
+            );
     }
 
     return SizedBox(
@@ -712,11 +677,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     // 받은 요청인 경우 - 로드된 데이터 사용
     // 완료 여부에 따른 필터링
     final filteredRequests = _receivedRequests.where((request) {
-      final status = request['tradeStatus'] as TradeStatus?;
+      final status = request.tradeStatus;
       if (_showCompletedRequests) {
-        return status == TradeStatus.completed;
+        return status == TradeStatus.accepted.serverName;
       } else {
-        return status != TradeStatus.completed;
+        return status != TradeStatus.accepted.serverName;
       }
     }).toList();
 
@@ -760,6 +725,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             child: Column(
               children: List.generate(filteredRequests.length, (index) {
                 final request = filteredRequests[index];
+                final giveItem = request.giveItem;
+
                 return Column(
                   children: [
                     GestureDetector(
@@ -769,39 +736,42 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                           context,
                           MaterialPageRoute(
                             builder: (context) => ItemDetailDescriptionScreen(
-                              itemId: request['itemId'], // 요청 받은 카드로 이동
+                              itemId: giveItem.itemId!, // 요청 받은 카드로 이동
                               imageSize: Size(
                                   MediaQuery.of(context).size.width, 400.h),
                               currentImageIndex: 0,
                               heroTag:
-                                  'itemImage_${request['itemId']}_0', // ← 인덱스 포함
+                                  'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
                             ),
                           ),
                         );
                       },
                       child: RequestListItemCardWidget(
-                        imageUrl: request['otherItemImageUrl'],
-                        title: request['title'],
-                        address: request['location'],
-                        createdDate: request['createdDate'],
-                        isNew: request['isNew'],
-                        tradeOptions: request['tradeOptions'],
-                        tradeStatus: request['tradeStatus'],
+                        imageUrl: giveItem.imageUrlList.isNotEmpty
+                            ? giveItem.imageUrlList.first
+                            : 'https://picsum.photos/400/300',
+                        title: giveItem.itemName ?? ' ',
+                        address: giveItem.address!,
+                        createdDate: giveItem.createdDate!,
+                        isNew: true, // FIXME : 벡엔드 isNew 로직구현 후 수정
+                        tradeOptions: giveItem.itemTradeOptions != null
+                            ? giveItem.itemTradeOptions!
+                                .map((s) => ItemTradeOption.values
+                                    .firstWhere((e) => e.serverName == s))
+                                .toList()
+                            : [],
+                        tradeStatus: request.tradeStatus != null
+                            ? TradeStatus.values.firstWhere(
+                                (e) => e.serverName == request.tradeStatus,
+                                orElse: () => TradeStatus.chatting,
+                              )
+                            : TradeStatus.chatting,
                         onMenuTap: () async {
                           try {
-                            final tradeOptions = (request['tradeOptions']
-                                    as List<ItemTradeOption>)
-                                .map((option) => option.serverName)
-                                .toList();
-
-                            await TradeApi().cancelTradeRequest(
-                              TradeRequest(
-                                giveItemId: _itemCards[_currentCardIndex]
-                                    .itemId, // 내 카드(요청 받은 카드)
-                                takeItemId: request['itemId'],
-                                tradeOptions: tradeOptions,
-                              ),
-                            );
+                            await TradeApi().cancelTradeRequest(TradeRequest(
+                              tradeRequestHistoryId:
+                                  request.tradeRequestHistoryId,
+                            ));
                           } catch (e) {
                             debugPrint('요청 취소 실패: $e');
                           }

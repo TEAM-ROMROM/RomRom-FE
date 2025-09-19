@@ -24,27 +24,11 @@ Map<String, dynamic> _$ItemResponseToJson(ItemResponse instance) =>
     };
 
 ItemPage _$ItemPageFromJson(Map<String, dynamic> json) => ItemPage(
-      content: (json['content'] as List<dynamic>)
-          .map((e) => Item.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      page: Page.fromJson(json['page'] as Map<String, dynamic>),
+      content: _itemsFromJson(json['content']),
+      page: ApiPage.fromJson(json['page'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$ItemPageToJson(ItemPage instance) => <String, dynamic>{
-      'content': instance.content,
+      'content': _itemsToJson(instance.content),
       'page': instance.page,
-    };
-
-Page _$PageFromJson(Map<String, dynamic> json) => Page(
-      size: (json['size'] as num).toInt(),
-      number: (json['number'] as num).toInt(),
-      totalElements: (json['totalElements'] as num).toInt(),
-      totalPages: (json['totalPages'] as num).toInt(),
-    );
-
-Map<String, dynamic> _$PageToJson(Page instance) => <String, dynamic>{
-      'size': instance.size,
-      'number': instance.number,
-      'totalElements': instance.totalElements,
-      'totalPages': instance.totalPages,
     };

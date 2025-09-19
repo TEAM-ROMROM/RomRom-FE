@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-
-/// 거래 상태 태그 위젯
-enum TradeStatus {
-  listed, // 기본(거래 안됨)
-  chatting, // 채팅중
-  completed, // 거래완료
-}
 
 class TradeStatusTagWidget extends StatelessWidget {
   final TradeStatus status;
@@ -22,7 +16,7 @@ class TradeStatusTagWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isChatting = status == TradeStatus.chatting;
 
-    return status == TradeStatus.listed
+    return status == TradeStatus.pending
         ? Container()
         : Container(
             alignment: Alignment.center,

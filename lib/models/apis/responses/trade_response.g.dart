@@ -8,107 +8,77 @@ part of 'trade_response.dart';
 
 TradeResponse _$TradeResponseFromJson(Map<String, dynamic> json) =>
     TradeResponse(
-      item: json['item'] == null
+      tradeRequestHistory: json['tradeRequestHistory'] == null
           ? null
-          : Item.fromJson(json['item'] as Map<String, dynamic>),
-      itemImages: (json['itemImages'] as List<dynamic>?)
-          ?.map((e) => ItemImage.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      tradeOptions: (json['tradeOptions'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
-      tradeResponsePage: json['tradeResponsePage'] == null
+          : TradeRequestHistory.fromJson(
+              json['tradeRequestHistory'] as Map<String, dynamic>),
+      tradeRequestHistoryPage: json['tradeRequestHistoryPage'] == null
           ? null
-          : PageTradeResponse.fromJson(
-              json['tradeResponsePage'] as Map<String, dynamic>),
-      itemDetailPage: json['itemDetailPage'] == null
+          : PagedTradeRequestHistory.fromJson(
+              json['tradeRequestHistoryPage'] as Map<String, dynamic>),
+      itemPage: json['itemPage'] == null
           ? null
-          : TradeItemDetailPage.fromJson(
-              json['itemDetailPage'] as Map<String, dynamic>),
+          : PagedItem.fromJson(json['itemPage'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$TradeResponseToJson(TradeResponse instance) =>
     <String, dynamic>{
-      'item': instance.item?.toJson(),
-      'itemImages': instance.itemImages?.map((e) => e.toJson()).toList(),
-      'tradeOptions': instance.tradeOptions,
-      'tradeResponsePage': instance.tradeResponsePage?.toJson(),
-      'itemDetailPage': instance.itemDetailPage?.toJson(),
+      'tradeRequestHistory': instance.tradeRequestHistory?.toJson(),
+      'tradeRequestHistoryPage': instance.tradeRequestHistoryPage?.toJson(),
+      'itemPage': instance.itemPage?.toJson(),
     };
 
-PageTradeResponse _$PageTradeResponseFromJson(Map<String, dynamic> json) =>
-    PageTradeResponse(
-      content: (json['content'] as List<dynamic>?)
-          ?.map((e) => TradeResponseItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      totalPages: (json['totalPages'] as num?)?.toInt(),
-      totalElements: (json['totalElements'] as num?)?.toInt(),
-      last: json['last'] as bool?,
-      size: (json['size'] as num?)?.toInt(),
-      number: (json['number'] as num?)?.toInt(),
-      numberOfElements: (json['numberOfElements'] as num?)?.toInt(),
-      first: json['first'] as bool?,
-      empty: json['empty'] as bool?,
-    );
-
-Map<String, dynamic> _$PageTradeResponseToJson(PageTradeResponse instance) =>
-    <String, dynamic>{
-      'content': instance.content?.map((e) => e.toJson()).toList(),
-      'totalPages': instance.totalPages,
-      'totalElements': instance.totalElements,
-      'last': instance.last,
-      'size': instance.size,
-      'number': instance.number,
-      'numberOfElements': instance.numberOfElements,
-      'first': instance.first,
-      'empty': instance.empty,
-    };
-
-TradeResponseItem _$TradeResponseItemFromJson(Map<String, dynamic> json) =>
-    TradeResponseItem(
-      item: json['item'] == null
+TradeRequestHistory _$TradeRequestHistoryFromJson(Map<String, dynamic> json) =>
+    TradeRequestHistory(
+      tradeRequestHistoryId: json['tradeRequestHistoryId'] as String?,
+      takeItem: _itemFromJson(json['takeItem']),
+      giveItem: _itemFromJson(json['giveItem']),
+      itemTradeOptions: _stringListFromJson(json['itemTradeOptions']),
+      tradeStatus: json['tradeStatus'] as String?,
+      createdDate: json['createdDate'] == null
           ? null
-          : Item.fromJson(json['item'] as Map<String, dynamic>),
-      itemImages: (json['itemImages'] as List<dynamic>?)
-          ?.map((e) => ItemImage.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      tradeOptions: (json['tradeOptions'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
+          : DateTime.parse(json['createdDate'] as String),
+      updatedDate: json['updatedDate'] == null
+          ? null
+          : DateTime.parse(json['updatedDate'] as String),
     );
 
-Map<String, dynamic> _$TradeResponseItemToJson(TradeResponseItem instance) =>
+Map<String, dynamic> _$TradeRequestHistoryToJson(
+        TradeRequestHistory instance) =>
     <String, dynamic>{
-      'item': instance.item?.toJson(),
-      'itemImages': instance.itemImages?.map((e) => e.toJson()).toList(),
-      'tradeOptions': instance.tradeOptions,
+      'createdDate': instance.createdDate?.toIso8601String(),
+      'updatedDate': instance.updatedDate?.toIso8601String(),
+      'tradeRequestHistoryId': instance.tradeRequestHistoryId,
+      'takeItem': _itemToJson(instance.takeItem),
+      'giveItem': _itemToJson(instance.giveItem),
+      'itemTradeOptions': _stringListToJson(instance.itemTradeOptions),
+      'tradeStatus': instance.tradeStatus,
     };
 
-TradeItemDetailPage _$TradeItemDetailPageFromJson(Map<String, dynamic> json) =>
-    TradeItemDetailPage(
-      content: (json['content'] as List<dynamic>?)
-          ?.map((e) => Item.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      totalPages: (json['totalPages'] as num?)?.toInt(),
-      totalElements: (json['totalElements'] as num?)?.toInt(),
-      last: json['last'] as bool?,
-      size: (json['size'] as num?)?.toInt(),
-      number: (json['number'] as num?)?.toInt(),
-      numberOfElements: (json['numberOfElements'] as num?)?.toInt(),
-      first: json['first'] as bool?,
-      empty: json['empty'] as bool?,
+PagedTradeRequestHistory _$PagedTradeRequestHistoryFromJson(
+        Map<String, dynamic> json) =>
+    PagedTradeRequestHistory(
+      content: _tradeHistoryListFromJson(json['content']),
+      page: json['page'] == null
+          ? null
+          : ApiPage.fromJson(json['page'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$TradeItemDetailPageToJson(
-        TradeItemDetailPage instance) =>
+Map<String, dynamic> _$PagedTradeRequestHistoryToJson(
+        PagedTradeRequestHistory instance) =>
     <String, dynamic>{
-      'content': instance.content?.map((e) => e.toJson()).toList(),
-      'totalPages': instance.totalPages,
-      'totalElements': instance.totalElements,
-      'last': instance.last,
-      'size': instance.size,
-      'number': instance.number,
-      'numberOfElements': instance.numberOfElements,
-      'first': instance.first,
-      'empty': instance.empty,
+      'content': _tradeHistoryListToJson(instance.content),
+      'page': instance.page?.toJson(),
+    };
+
+PagedItem _$PagedItemFromJson(Map<String, dynamic> json) => PagedItem(
+      content: _itemsFromJson(json['content']),
+      page: json['page'] == null
+          ? null
+          : ApiPage.fromJson(json['page'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$PagedItemToJson(PagedItem instance) => <String, dynamic>{
+      'content': _itemsToJson(instance.content),
+      'page': instance.page?.toJson(),
     };
