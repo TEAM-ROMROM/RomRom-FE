@@ -505,7 +505,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                                 itemCategoryLabel:
                                     ItemCategories.fromServerName(
                                             cardData.itemCategory!)
-                                        .name,
+                                        .label,
                                 itemCardImageUrl:
                                     cardData.primaryImageUrl != null
                                         ? cardData.primaryImageUrl!
@@ -532,7 +532,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                                 itemCategoryLabel:
                                     ItemCategories.fromServerName(
                                             cardData.itemCategory!)
-                                        .name,
+                                        .label,
                                 itemCardImageUrl:
                                     cardData.primaryImageUrl != null
                                         ? cardData.primaryImageUrl!

@@ -596,7 +596,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                               final isSelected =
                                                   tempSelected == category;
                                               return CategoryChip(
-                                                label: category.name,
+                                                label: category.label,
                                                 isSelected: isSelected,
                                                 onTap: () {
                                                   setInnerState(() {
@@ -643,7 +643,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           children: [
                             Expanded(
                               child: Text(
-                                selectedCategory?.name ??
+                                selectedCategory?.label ??
                                     ItemTextFieldPhrase.category.hintText,
                                 style: CustomTextStyles.p2.copyWith(
                                   color: selectedCategory != null
@@ -701,7 +701,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         runSpacing: 8.w,
                         children: ItemCondition.values
                             .map((option) => RegisterOptionChip(
-                                  itemOption: option.name,
+                                  itemOption: option.label,
                                   isSelected: selectedItemConditionTypes
                                       .contains(option),
                                   onTap: () {
@@ -747,7 +747,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         spacing: 8.w,
                         children: ItemTradeOption.values
                             .map((option) => RegisterOptionChip(
-                                  itemOption: option.name,
+                                  itemOption: option.label,
                                   isSelected:
                                       selectedTradeOptions.contains(option),
                                   onTap: () {

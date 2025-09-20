@@ -67,7 +67,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
     if (categoryServerName == null) return '-';
     for (final category in ItemCategories.values) {
       if (category.serverName == categoryServerName) {
-        return category.name;
+        return category.label;
       }
     }
     return categoryServerName; // 매칭 실패 시 그대로 반환

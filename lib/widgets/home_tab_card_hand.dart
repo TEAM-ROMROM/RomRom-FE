@@ -335,7 +335,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                   itemName: cardData.itemName ?? '아이템',
                   itemCategoryLabel:
                       ItemCategories.fromServerName(cardData.itemCategory!)
-                          .name,
+                          .label,
                   itemCardImageUrl: cardData.primaryImageUrl != null
                       ? cardData.primaryImageUrl!
                       : 'https://picsum.photos/400/300',

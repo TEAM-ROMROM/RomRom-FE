@@ -343,13 +343,13 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             children: [
                               // 사용감 태그 - ItemDetail과 동일한 위젯 사용
                               ItemDetailConditionTag(
-                                condition: widget.item.itemCondition.name,
+                                condition: widget.item.itemCondition.label,
                               ),
                               SizedBox(width: 4.w),
                               // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
                               ...widget.item.transactionTypes.map(
                                 (type) => ItemDetailTradeOptionTag(
-                                  option: type.name,
+                                  option: type.label,
                                 ),
                               ),
                             ],

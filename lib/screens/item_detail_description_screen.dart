@@ -176,7 +176,7 @@ class _ItemDetailDescriptionScreenState
   String _getCategoryName(String? serverName) {
     if (serverName == null) return '카테고리 없음';
     try {
-      return ItemCategories.fromServerName(serverName).name;
+      return ItemCategories.fromServerName(serverName).label;
     } catch (e) {
       return '카테고리 없음';
     }
@@ -184,7 +184,7 @@ class _ItemDetailDescriptionScreenState
 
   String _getTradeOptionName(String serverName) {
     try {
-      return ItemTradeOption.fromServerName(serverName).name;
+      return ItemTradeOption.fromServerName(serverName).label;
     } catch (e) {
       return serverName;
     }
@@ -467,7 +467,7 @@ class _ItemDetailDescriptionScreenState
                                   ItemDetailConditionTag(
                                     condition: ItemCondition.fromServerName(
                                             item!.itemCondition!)
-                                        .name,
+                                        .label,
                                   ),
                                 SizedBox(width: 8.w),
                                 if (item?.itemTradeOptions?.isNotEmpty == true)

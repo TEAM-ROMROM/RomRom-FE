@@ -192,7 +192,7 @@ class _ReportScreenState extends State<ReportScreen> {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              reason.name,
+              reason.label,
               style: CustomTextStyles.h3,
             ),
           ),

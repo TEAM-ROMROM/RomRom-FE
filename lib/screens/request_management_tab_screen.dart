@@ -147,7 +147,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       final d = details[index];
 
       String category =
-          ItemCategories.fromServerName(d.itemCategory ?? '기타').name;
+          ItemCategories.fromServerName(d.itemCategory ?? '기타').label;
 
       final itemCard = RequestManagementItemCard(
         itemId: d.itemId ?? '',
