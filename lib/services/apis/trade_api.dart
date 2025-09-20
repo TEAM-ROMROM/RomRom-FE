@@ -42,8 +42,13 @@ class TradeApi {
   Future<void> cancelTradeRequest(TradeRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/delete';
 
+    final id = request.tradeRequestHistoryId;
+    if (id == null || id.isEmpty) {
+      throw ArgumentError('tradeRequestHistoryId is required');
+    }
+
     final Map<String, dynamic> fields = {
-      "tradeRequestHistoryId": request.tradeRequestHistoryId!,
+      "tradeRequestHistoryId": id,
     };
 
     await ApiClient.sendMultipartRequest(

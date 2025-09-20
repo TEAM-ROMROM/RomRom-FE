@@ -24,7 +24,7 @@ class ItemModificationScreen extends StatefulWidget {
 
 class _ItemModificationScreenState extends State<ItemModificationScreen> {
   bool _isLoading = true;
-  Item _myItem = Item();
+  Item? _myItem;
 
   /// 내 물품 리스트 로드
   Future<void> _loadMyItems() async {

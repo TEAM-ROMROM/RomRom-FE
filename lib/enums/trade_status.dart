@@ -1,6 +1,4 @@
-/// 거래 상태 태그 위젯
-library;
-
+/// 거래 상태 태그 ENUM
 enum TradeStatus {
   pending(name: '대기', serverName: 'PENDING'),
   accepted(name: '승인', serverName: 'ACCEPTED'),

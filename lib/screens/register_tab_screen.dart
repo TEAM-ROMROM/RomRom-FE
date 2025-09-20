@@ -369,10 +369,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     height: 90.h,
                     child: item.itemId != null
                         ? Hero(
-                            tag: 'register_item_${item.itemId}',
-                            child: _buildImage(imageUrl as String?),
+                            tag: 'itemImage_${item.itemId}_0',
+                            child: _buildImage(imageUrl),
                           )
-                        : _buildImage(imageUrl as String?),
+                        : _buildImage(imageUrl),
                   ),
                 ),
                 SizedBox(width: 16.h),

@@ -17,6 +17,7 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
@@ -314,24 +315,21 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             padding: EdgeInsets.only(bottom: 16.h),
             child: GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ItemDetailDescriptionScreen(
-                      itemId: takeItem.itemId!, // 내가 요청 보낸 카드로 이동
-                      imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-                      currentImageIndex: 0,
-                      heroTag: 'itemImage_${takeItem.itemId!}_0', // ← 인덱스 포함
-                    ),
+                context.navigateTo(
+                  screen: ItemDetailDescriptionScreen(
+                    itemId: takeItem.itemId!, // 내가 요청 보낸 카드로 이동
+                    imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                    currentImageIndex: 0,
+                    heroTag: 'itemImage_${takeItem.itemId!}_0', // ← 인덱스 포함
                   ),
                 );
               },
               child: SentRequestItemCard(
-                myItemImageUrl: takeItem.imageUrlList.isNotEmpty
-                    ? takeItem.imageUrlList.first
-                    : 'https://picsum.photos/400/300',
-                otherItemImageUrl: giveItem.imageUrlList.isNotEmpty
+                myItemImageUrl: giveItem.imageUrlList.isNotEmpty
                     ? giveItem.imageUrlList.first
+                    : 'https://picsum.photos/400/300',
+                otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
+                    ? takeItem.imageUrlList.first
                     : 'https://picsum.photos/400/300',
                 otherUserProfileUrl: takeItem.member!.profileUrl!,
                 title: takeItem.itemName!,
@@ -350,15 +348,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                       )
                     : TradeStatus.chatting,
                 onEditTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ItemModificationScreen(
-                        itemId: giveItem.itemId,
-                        onClose: () {
-                          Navigator.pop(context);
-                        },
-                      ),
+                  context.navigateTo(
+                    screen: ItemModificationScreen(
+                      itemId: giveItem.itemId,
+                      onClose: () {
+                        Navigator.pop(context);
+                      },
                     ),
                   );
                 },
@@ -553,16 +548,13 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ItemDetailDescriptionScreen(
-                    itemId: _itemCards[index].itemId,
-                    imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-                    currentImageIndex: 0,
-                    heroTag:
-                        'itemImage_${_itemCards[index].itemId}_0', // ← 인덱스 포함
-                  ),
+              context.navigateTo(
+                screen: ItemDetailDescriptionScreen(
+                  itemId: _itemCards[index].itemId,
+                  imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                  currentImageIndex: 0,
+                  heroTag:
+                      'itemImage_${_itemCards[index].itemId}_0', // ← 인덱스 포함
                 ),
               );
             },
@@ -732,17 +724,14 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                     GestureDetector(
                       behavior: HitTestBehavior.opaque, // 빈 공간도 터치 가능
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ItemDetailDescriptionScreen(
-                              itemId: giveItem.itemId!, // 요청 받은 카드로 이동
-                              imageSize: Size(
-                                  MediaQuery.of(context).size.width, 400.h),
-                              currentImageIndex: 0,
-                              heroTag:
-                                  'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
-                            ),
+                        context.navigateTo(
+                          screen: ItemDetailDescriptionScreen(
+                            itemId: giveItem.itemId!, // 요청 받은 카드로 이동
+                            imageSize:
+                                Size(MediaQuery.of(context).size.width, 400.h),
+                            currentImageIndex: 0,
+                            heroTag:
+                                'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
                           ),
                         );
                       },
@@ -777,7 +766,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                           }
                           if (mounted) {
                             setState(() {
-                              _receivedRequests.removeAt(index);
+                              _receivedRequests.removeWhere((e) =>
+                                  e.tradeRequestHistoryId ==
+                                  request.tradeRequestHistoryId);
                             });
                           }
                         },
