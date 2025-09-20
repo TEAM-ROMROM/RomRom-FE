@@ -10,6 +10,7 @@ class BaseEntity {
 
   BaseEntity({this.createdDate, this.updatedDate});
 
-  factory BaseEntity.fromJson(Map<String, dynamic> json) => _$BaseEntityFromJson(json);
+  factory BaseEntity.fromJson(Map<String, dynamic> json) =>
+      _$BaseEntityFromJson(json);
   Map<String, dynamic> toJson() => _$BaseEntityToJson(this);
 }

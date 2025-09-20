@@ -13,18 +13,18 @@ import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 class RequestManagementItemCardWidget extends StatelessWidget {
   final RequestManagementItemCard card;
   final bool isActive;
-  
+
   const RequestManagementItemCardWidget({
     super.key,
     required this.card,
     this.isActive = false,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     // 카드 스케일 조정
     final scale = isActive ? 1.0 : 0.85;
-    
+
     return AnimatedScale(
       scale: scale,
       duration: const Duration(milliseconds: 300),
@@ -59,11 +59,12 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                   width: 219.w,
                   height: 247.h,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(10.r)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(10.r)),
                     child: _buildImage(card.imageUrl),
                   ),
                 ),
-                
+
                 // 정보 영역
                 Expanded(
                   child: Padding(
@@ -83,7 +84,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 8.h),
-                        
+
                         // 제목
                         Text(
                           card.title,
@@ -96,13 +97,13 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(height: 6.h),
-                        
+
                         // 가격과 좋아요 영역
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             // AI 배지
-                            if (card.isAiAnalyzed) ...[
+                            if (card.aiPrice) ...[
                               const AiBadgeWidget(),
                               SizedBox(width: 4.w),
                             ],
@@ -114,9 +115,9 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            
+
                             const Spacer(),
-                            
+
                             // 좋아요 아이콘 및 수
                             _buildLikeCount(card.likeCount),
                           ],
@@ -132,7 +133,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 좋아요 아이콘과 개수 위젯
   Widget _buildLikeCount(int count) {
     return Row(
@@ -161,13 +162,13 @@ class RequestManagementItemCardWidget extends StatelessWidget {
       ],
     );
   }
-  
+
   /// 이미지 로드 위젯
   Widget _buildImage(String imageUrl) {
     if (imageUrl.isEmpty) {
       return const ErrorImagePlaceholder();
     }
-    
+
     return Image.network(
       imageUrl,
       fit: BoxFit.cover,

@@ -9,12 +9,20 @@ class AuthResponse {
   final String? refreshToken;
   final bool? isFirstLogin;
   final bool? isFirstItemPosted;
+  final bool? isItemCategorySaved;
+  final bool? isMemberLocationSaved;
+  final bool? isMarketingInfoAgreed;
+  final bool? isRequiredTermsAgreed;
 
   AuthResponse({
     this.accessToken,
     this.refreshToken,
     this.isFirstLogin,
     this.isFirstItemPosted,
+    this.isItemCategorySaved,
+    this.isMemberLocationSaved,
+    this.isMarketingInfoAgreed,
+    this.isRequiredTermsAgreed,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) => _$AuthResponseFromJson(json);

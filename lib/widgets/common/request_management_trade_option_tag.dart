@@ -26,7 +26,7 @@ class RequestManagementTradeOptionTag extends StatelessWidget {
       ),
       padding: EdgeInsets.fromLTRB(18.w, 6.h, 18.w, 7.h),
       child: Text(
-        option.name,
+        option.label,
         style: CustomTextStyles.p3.copyWith(
           fontSize: 10.sp,
         ),
