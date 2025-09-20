@@ -9,7 +9,7 @@ class TradeRequest {
   String? takeItemId;
   String? giveItemId;
   String? tradeRequestHistoryId;
-  List<String>? tradeOptions;
+  List<String>? itemTradeOptions;
   int pageNumber;
   int pageSize;
 
@@ -18,7 +18,7 @@ class TradeRequest {
     this.takeItemId,
     this.giveItemId,
     this.tradeRequestHistoryId,
-    this.tradeOptions,
+    this.itemTradeOptions,
     this.pageNumber = 0,
     this.pageSize = 10,
   });

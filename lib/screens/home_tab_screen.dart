@@ -586,7 +586,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                                 giveItemId: cardData.itemId!,
                                 takeItemId:
                                     _feedItems[_currentFeedIndex].itemUuid,
-                                tradeOptions: _selectedTradeOptions
+                                itemTradeOptions: _selectedTradeOptions
                                     .map((option) => option.serverName)
                                     .toList(),
                               ));

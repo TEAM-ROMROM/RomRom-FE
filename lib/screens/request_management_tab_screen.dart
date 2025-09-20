@@ -671,9 +671,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     final filteredRequests = _receivedRequests.where((request) {
       final status = request.tradeStatus;
       if (_showCompletedRequests) {
-        return status == TradeStatus.accepted.serverName;
+        return status == TradeStatus.traded.serverName;
       } else {
-        return status != TradeStatus.accepted.serverName;
+        return status != TradeStatus.traded.serverName;
       }
     }).toList();
 

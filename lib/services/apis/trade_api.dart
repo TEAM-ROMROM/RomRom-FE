@@ -23,8 +23,8 @@ class TradeApi {
     final Map<String, dynamic> fields = {
       'takeItemId': request.takeItemId,
       'giveItemId': request.giveItemId,
-      if (request.tradeOptions != null && request.tradeOptions!.isNotEmpty)
-        'itemTradeOptions': request.tradeOptions!.join(','),
+      if (request.itemTradeOptions != null && request.itemTradeOptions!.isNotEmpty)
+        'itemTradeOptions': request.itemTradeOptions!.join(','),
     };
 
     await ApiClient.sendMultipartRequest(
