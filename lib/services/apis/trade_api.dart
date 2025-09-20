@@ -23,8 +23,8 @@ class TradeApi {
     final Map<String, dynamic> fields = {
       'takeItemId': request.takeItemId,
       'giveItemId': request.giveItemId,
-      if (request.tradeOptions != null && request.tradeOptions!.isNotEmpty)
-        'tradeOptions': request.tradeOptions!.join(','),
+      if (request.itemTradeOptions != null && request.itemTradeOptions!.isNotEmpty)
+        'itemTradeOptions': request.itemTradeOptions!.join(','),
     };
 
     await ApiClient.sendMultipartRequest(
@@ -42,11 +42,13 @@ class TradeApi {
   Future<void> cancelTradeRequest(TradeRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/delete';
 
+    final id = request.tradeRequestHistoryId;
+    if (id == null || id.isEmpty) {
+      throw ArgumentError('tradeRequestHistoryId is required');
+    }
+
     final Map<String, dynamic> fields = {
-      'takeItemId': request.takeItemId,
-      'giveItemId': request.giveItemId,
-      if (request.tradeOptions != null && request.tradeOptions!.isNotEmpty)
-        'tradeOptions': request.tradeOptions!.join(','),
+      "tradeRequestHistoryId": id,
     };
 
     await ApiClient.sendMultipartRequest(
@@ -61,15 +63,13 @@ class TradeApi {
 
   /// 받은 거래 요청 목록 조회 API
   /// `POST /api/trade/get/received`
-  Future<PageTradeResponse> getReceivedTradeRequests(
+  Future<PagedTradeRequestHistory> getReceivedTradeRequests(
       TradeRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/get/received';
-    late PageTradeResponse tradeResponse;
+    late PagedTradeRequestHistory tradeResponse;
 
     final Map<String, dynamic> fields = {
       'takeItemId': request.takeItemId,
-      'pageNumber': request.pageNumber.toString(),
-      'pageSize': request.pageSize.toString(),
     };
 
     http.Response response = await ApiClient.sendMultipartRequest(
@@ -83,7 +83,8 @@ class TradeApi {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
-      tradeResponse = PageTradeResponse.fromJson(responseData);
+      tradeResponse =
+          TradeResponse.fromJson(responseData).tradeRequestHistoryPage!;
       debugPrint('받은 거래 요청 목록 조회 성공');
     } else {
       throw Exception('받은 거래 요청 목록 조회 실패: ${response.statusCode}');
@@ -94,14 +95,13 @@ class TradeApi {
 
   /// 보낸 거래 요청 목록 조회 API
   /// `POST /api/trade/get/sent`
-  Future<PageTradeResponse> getSentTradeRequests(TradeRequest request) async {
+  Future<PagedTradeRequestHistory> getSentTradeRequests(
+      TradeRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/get/sent';
-    late PageTradeResponse tradeResponse;
+    late PagedTradeRequestHistory tradeResponse;
 
     final Map<String, dynamic> fields = {
       'giveItemId': request.giveItemId,
-      'pageNumber': request.pageNumber.toString(),
-      'pageSize': request.pageSize.toString(),
     };
 
     http.Response response = await ApiClient.sendMultipartRequest(
@@ -115,7 +115,8 @@ class TradeApi {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
-      tradeResponse = PageTradeResponse.fromJson(responseData);
+      tradeResponse =
+          TradeResponse.fromJson(responseData).tradeRequestHistoryPage!;
       debugPrint('보낸 거래 요청 목록 조회 성공');
     } else {
       throw Exception('보낸 거래 요청 목록 조회 실패: ${response.statusCode}');

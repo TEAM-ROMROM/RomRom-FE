@@ -38,7 +38,7 @@ class ItemCardOptionChip extends ConsumerWidget {
     return asyncState.when(
       data: (state) {
         final cs = externalScale ?? state.scale;
-        final isSelected = state.selectedOptions.contains(itemOption.name);
+        final isSelected = state.selectedOptions.contains(itemOption.label);
         final Color resolvedChipColor = isSelected
             ? (chipSelectedColor ?? AppColors.primaryYellow)
             : (chipColor ?? AppColors.itemCardOptionChip);
@@ -59,13 +59,13 @@ class ItemCardOptionChip extends ConsumerWidget {
               borderRadius: chipRadius,
               onTap: () {
                 onTap(); // 외부에서 전달된 onTap 콜백 호출
-                ref.read(provider.notifier).toggleOption(itemOption.name);
+                ref.read(provider.notifier).toggleOption(itemOption.label);
               },
               child: Container(
                 width: cs.s(72),
                 height: cs.s(29),
                 alignment: Alignment.center,
-                child: Text(itemOption.name, style: textStyle),
+                child: Text(itemOption.label, style: textStyle),
               ),
             ),
           ),

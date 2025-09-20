@@ -7,7 +7,7 @@ class HomeFeedItem {
   final String name; // 물품 이름
   final int price;
   final String location;
-  final String date;
+  final DateTime date;
   final ItemCondition itemCondition;
   final List<ItemTradeOption> transactionTypes;
   final String profileUrl;

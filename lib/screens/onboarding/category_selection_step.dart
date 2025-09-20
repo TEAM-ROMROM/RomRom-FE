@@ -80,7 +80,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
 
     return RawChip(
       label: Text(
-        category.name,
+        category.label,
         style: CustomTextStyles.p2.copyWith(
           fontSize: adjustedFontSize(context, 14.0),
           color:

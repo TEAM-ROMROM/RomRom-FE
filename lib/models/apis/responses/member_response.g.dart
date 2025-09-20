@@ -15,10 +15,14 @@ MemberResponse _$MemberResponseFromJson(Map<String, dynamic> json) =>
           ? null
           : MemberLocation.fromJson(
               json['memberLocation'] as Map<String, dynamic>),
+      memberItemCategories:
+          _memberItemCategoriesFromJson(json['memberItemCategories']),
     );
 
 Map<String, dynamic> _$MemberResponseToJson(MemberResponse instance) =>
     <String, dynamic>{
       'member': instance.member?.toJson(),
       'memberLocation': instance.memberLocation?.toJson(),
+      'memberItemCategories':
+          _memberItemCategoriesToJson(instance.memberItemCategories),
     };
