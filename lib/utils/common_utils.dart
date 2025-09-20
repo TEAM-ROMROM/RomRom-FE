@@ -103,8 +103,8 @@ extension ContextExtension on BuildContext {
 
 /// 날짜 변환 함수
 /// 2025-07-14T17:53:08.807506 -> 2025년 7월 14일
-String formatDate(String date) {
-  return DateFormat('yyyy년 M월 d일').format(DateTime.parse(date));
+String formatDate(DateTime date) {
+  return DateFormat('yyyy년 M월 d일').format(date);
 }
 
 /// 시간 경과 표시 함수

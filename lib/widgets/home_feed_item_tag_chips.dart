@@ -31,7 +31,7 @@ class HomeFeedConditionTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(100.r),
       ),
       child: Text(
-        condition.name,
+        condition.label,
         style:
             CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
       ),
@@ -60,7 +60,7 @@ class HomeFeedTransactionTypeTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(100.r),
       ),
       child: Text(
-        type.name,
+        type.label,
         style:
             CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
       ),

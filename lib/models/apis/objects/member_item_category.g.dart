@@ -1,27 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'item_image.dart';
+part of 'member_item_category.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-ItemImage _$ItemImageFromJson(Map<String, dynamic> json) => ItemImage(
+MemberItemCategory _$MemberItemCategoryFromJson(Map<String, dynamic> json) =>
+    MemberItemCategory(
+      memberItemCategoryId: json['memberItemCategoryId'] as String?,
+      itemCategory: json['itemCategory'] as String?,
       createdDate: json['createdDate'] == null
           ? null
           : DateTime.parse(json['createdDate'] as String),
       updatedDate: json['updatedDate'] == null
           ? null
           : DateTime.parse(json['updatedDate'] as String),
-      itemImageId: json['itemImageId'] as String?,
-      filePath: json['filePath'] as String?,
-      imageUrl: json['imageUrl'] as String?,
     );
 
-Map<String, dynamic> _$ItemImageToJson(ItemImage instance) => <String, dynamic>{
+Map<String, dynamic> _$MemberItemCategoryToJson(MemberItemCategory instance) =>
+    <String, dynamic>{
       'createdDate': instance.createdDate?.toIso8601String(),
       'updatedDate': instance.updatedDate?.toIso8601String(),
-      'itemImageId': instance.itemImageId,
-      'filePath': instance.filePath,
-      'imageUrl': instance.imageUrl,
+      'memberItemCategoryId': instance.memberItemCategoryId,
+      'itemCategory': instance.itemCategory,
     };

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';

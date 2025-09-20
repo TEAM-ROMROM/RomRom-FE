@@ -6,12 +6,12 @@ import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
@@ -72,7 +72,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   ];
 
   // 내 카드 목록 (나중에 API에서 가져올 예정)
-  List<Map<String, dynamic>> _myCards = [];
+  List<Item> _myCards = [];
 
   // 선택된 거래 옵션 저장 리스트
   final List<ItemTradeOption> _selectedTradeOptions = [];
@@ -115,7 +115,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         ItemRequest(pageNumber: 0, pageSize: 1),
       );
 
-      userHasItem = (response.itemDetailPage?.content?.isNotEmpty ?? false);
+      userHasItem = (response.itemPage?.content.isNotEmpty ?? false);
     } catch (e) {
       debugPrint('블러 상태 결정용 내 물품 조회 실패: $e');
       // 실패 시에는 "없다"고 간주해 기존 로직 유지
@@ -316,13 +316,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       if (!mounted) return;
 
       final feedItems =
-          await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+          await _convertToFeedItems(response.itemPage?.content ?? []);
 
       setState(() {
         _feedItems
           ..clear()
           ..addAll(feedItems);
-        _hasMoreItems = !(response.itemDetailPage?.last ?? true);
+        _hasMoreItems = !(response.itemPage?.content.isEmpty ?? true);
         _isLoading = false;
       });
     } catch (e) {
@@ -355,11 +355,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       ));
 
       final newItems =
-          await _convertToFeedItems(response.itemDetailPage?.content ?? []);
+          await _convertToFeedItems(response.itemPage?.content ?? []);
 
       setState(() {
         _feedItems.addAll(newItems);
-        _hasMoreItems = !(response.itemDetailPage?.last ?? true);
+        _hasMoreItems = !(response.itemPage?.content.isEmpty ?? true);
         _isLoadingMore = false;
       });
     } catch (e) {
@@ -375,8 +375,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
-  Future<List<HomeFeedItem>> _convertToFeedItems(
-      List<ItemDetail> details) async {
+  Future<List<HomeFeedItem>> _convertToFeedItems(List<Item> details) async {
     final feedItems = <HomeFeedItem>[];
 
     for (int index = 0; index < details.length; index++) {
@@ -417,12 +416,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         name: d.itemName ?? ' ',
         price: d.price ?? 0,
         location: locationText,
-        date: d.createdDate ?? '',
+        date: d.createdDate is DateTime
+            ? d.createdDate as DateTime
+            : DateTime.now(),
         itemCondition: cond,
         transactionTypes: opts,
-        profileUrl: d.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
+        profileUrl:
+            d.member?.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
         likeCount: d.likeCount ?? 0,
-        imageUrls: d.itemImageUrls ?? [''],
+        imageUrls: d.imageUrlList, // List<String>
         description: d.itemDescription ?? '',
         hasAiAnalysis: false,
         latitude: d.latitude,
@@ -445,42 +447,31 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
       if (!mounted) return;
 
-      final myItems = response.itemDetailPage?.content ?? [];
+      final myItems = response.itemPage?.content ?? [];
       setState(() {
-        _myCards = myItems
-            .map((item) => {
-                  'id': item.itemId ?? '',
-                  'name': item.itemName ?? '물품',
-                  'category': item.itemCategory ?? '카테고리',
-                  'imageUrl': (item.itemImageUrls?.isNotEmpty ?? false)
-                      ? item.itemImageUrls![0]
-                      : 'https://picsum.photos/400/300',
-                })
-            .toList();
+        _myCards = myItems;
       });
     } catch (e) {
       debugPrint('내 카드 로딩 실패: $e');
       // 테스트용 더미 데이터
       setState(() {
-        _myCards = List.generate(
-            6,
-            (index) => {
-                  'id': 'my_card_$index',
-                  'name': '내 물품 ${index + 1}',
-                  'category': '카테고리 ${(index % 3) + 1}',
-                  'imageUrl':
-                      'https://picsum.photos/400/300?random=${100 + index}',
-                });
+        // FIXME : 테스트용더미데이텅
       });
     }
   }
 
   /// 카드 드롭 핸들러 (거래 요청)
   void _handleCardDrop(String cardId) async {
-    final cardData = _myCards.firstWhere((card) => card['id'] == cardId);
+    final cardData = _myCards.firstWhere((card) => card.itemId == cardId);
 
     // 다이얼로그 띄우기 전에 (선택) 이미지 프리캐시
-    await precacheImage(NetworkImage(cardData['imageUrl']), context);
+    await precacheImage(
+        NetworkImage(
+          cardData.primaryImageUrl != null
+              ? cardData.primaryImageUrl!
+              : 'https://picsum.photos/400/300',
+        ),
+        context);
 
     showDialog(
       barrierDismissible: false,
@@ -509,13 +500,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                               height: 496.h,
                               child: ItemCard(
                                 // 실제 카드 데이터 전달
-                                itemId: cardData['id'],
-                                itemName: cardData['name'],
+                                itemId: cardData.itemId!,
+                                itemName: cardData.itemName!,
                                 itemCategoryLabel:
                                     ItemCategories.fromServerName(
-                                            cardData['category'])
-                                        .name,
-                                itemCardImageUrl: cardData['imageUrl'],
+                                            cardData.itemCategory!)
+                                        .label,
+                                itemCardImageUrl:
+                                    cardData.primaryImageUrl != null
+                                        ? cardData.primaryImageUrl!
+                                        : 'https://picsum.photos/400/300',
                                 onOptionSelected: (selectedOption) {
                                   debugPrint('선택된 거래 옵션: $selectedOption');
                                   // 선택된 거래 옵션을 리스트에 추가
@@ -533,13 +527,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                               height: 496.h,
                               child: ItemCard(
                                 // 실제 카드 데이터 전달
-                                itemId: cardData['id'],
-                                itemName: cardData['name'],
+                                itemId: cardData.itemId!,
+                                itemName: cardData.itemName!,
                                 itemCategoryLabel:
                                     ItemCategories.fromServerName(
-                                            cardData['category'])
-                                        .name,
-                                itemCardImageUrl: cardData['imageUrl'],
+                                            cardData.itemCategory!)
+                                        .label,
+                                itemCardImageUrl:
+                                    cardData.primaryImageUrl != null
+                                        ? cardData.primaryImageUrl!
+                                        : 'https://picsum.photos/400/300',
                                 onOptionSelected: (selectedOption) {
                                   debugPrint('선택된 거래 옵션: $selectedOption');
                                   // 선택된 거래 옵션을 리스트에 추가
@@ -586,10 +583,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
                               // 거래 요청 API 호출
                               await api.requestTrade(TradeRequest(
-                                giveItemId: cardData['id'],
+                                giveItemId: cardData.itemId!,
                                 takeItemId:
                                     _feedItems[_currentFeedIndex].itemUuid,
-                                tradeOptions: _selectedTradeOptions
+                                itemTradeOptions: _selectedTradeOptions
                                     .map((option) => option.serverName)
                                     .toList(),
                               ));
@@ -605,20 +602,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                                 builder: (_) => CommonDeleteModal(
                                   description: messageForUser,
                                   leftText: '확인',
-                                  onRight: () async {
-                                    final api = TradeApi();
-                                    // 거래 취소 API 호출
-                                    await api.cancelTradeRequest(TradeRequest(
-                                      giveItemId: cardData['id'],
-                                      takeItemId: _feedItems[_currentFeedIndex]
-                                          .itemUuid,
-                                      tradeOptions: _selectedTradeOptions
-                                          .map((option) => option.serverName)
-                                          .toList(),
-                                    ));
-                                    if (mounted) {
-                                      Navigator.of(context).pop(); // 모달 닫기
-                                    }
+                                  onRight: () {
+                                    Navigator.of(context).pop(); // 모달 닫기
                                   },
                                   onLeft: () => Navigator.of(context).pop(),
                                 ),

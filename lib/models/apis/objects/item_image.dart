@@ -1,30 +1,23 @@
 // lib/models/apis/objects/item_image.dart
 import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/models/apis/objects/base_entity.dart';
-import 'package:romrom_fe/models/apis/objects/item.dart';
 
 part 'item_image.g.dart';
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(
+  explicitToJson: true,
+)
 class ItemImage extends BaseEntity {
   final String? itemImageId;
-  final Item? item;
+  final String? filePath; // null 가능 (샘플에 null)
   final String? imageUrl;
-  final String? filePath;
-  final String? originalFileName;
-  final String? uploadedFileName;
-  final int? fileSize;
 
   ItemImage({
     super.createdDate,
     super.updatedDate,
     this.itemImageId,
-    this.item,
-    this.imageUrl,
     this.filePath,
-    this.originalFileName,
-    this.uploadedFileName,
-    this.fileSize,
+    this.imageUrl,
   });
 
   factory ItemImage.fromJson(Map<String, dynamic> json) =>

@@ -104,6 +104,14 @@ class AppColors {
   static const Color itemPictureRemoveButtonBackground =
       Color(0xFFD2D2D2); // 물품 사진 삭제 버튼 배경색
 
+  // 물품 상세 화면
+  static List<Color> itemDetailBlackGradient = [
+    Colors.black.withValues(alpha: 0.2),
+    Colors.black.withValues(alpha: 0.0),
+    Colors.black.withValues(alpha: 0.0),
+    Colors.black.withValues(alpha: 0.3),
+  ];
+
   // ai 그라데이션
   static const List<Color> aiGradient = [
     Color(0xFF5889F2), // 파란 테두리(Gradient 1)
