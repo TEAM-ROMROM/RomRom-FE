@@ -1,11 +1,54 @@
 {
   "metadata": {
-    "lastUpdated": "2025-09-15T08:37:44Z",
-    "currentVersion": "1.2.21",
-    "totalReleases": 15,
+    "lastUpdated": "2025-09-20T16:59:07Z",
+    "currentVersion": "1.3.1",
+    "totalReleases": 16,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.3.1",
+      "project_type": "flutter",
+      "date": "2025-09-20",
+      "pr_number": 288,
+      "raw_summary": "Summary by CodeRabbit\n\n\nNew Features\n\n거래 요청 관리 개편: 받은/보낸 요청 분리, 상태 태그 지원, 카드별 편집/취소 액션 추가\n아이템 목록 페이지네이션 구조 도입 및 주소/이미지 표시 개선\n좋아요 상태(Boolean) 반영, 아이템 상세 상단 그라디언트 추가\n로그인 로고를 SVG로 교체\n\n\n\nRefactor\n\n전역 라벨 표기 name→label로 통일\n데이터 모델을 ItemDetail→Item로 전환, 날짜 처리 개선\n\n\n\nUI\n\n카테고리/옵션 라벨 표시 일원화, AI 배지 조건(aiPrice) 적용, 여백/레이아웃 조정\n\n\n\nDocumentation\n\n1:1 채팅 기능 구현 가이드 추가, README 배지 업데이트\n\n\n\nChores\n\nGitHub Actions 워크플로 추가/토큰 변경, 버전 1.3.1 및 의존성 업데이트",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "거래 요청 관리 개편: 받은/보낸 요청 분리, 상태 태그 지원, 카드별 편집/취소 액션 추가",
+            "아이템 목록 페이지네이션 구조 도입 및 주소/이미지 표시 개선",
+            "좋아요 상태(Boolean) 반영, 아이템 상세 상단 그라디언트 추가",
+            "로그인 로고를 SVG로 교체"
+          ]
+        },
+        "refactor": {
+          "title": "Refactor",
+          "items": [
+            "전역 라벨 표기 name→label로 통일",
+            "데이터 모델을 ItemDetail→Item로 전환, 날짜 처리 개선"
+          ]
+        },
+        "ui": {
+          "title": "UI",
+          "items": [
+            "카테고리/옵션 라벨 표시 일원화, AI 배지 조건(aiPrice) 적용, 여백/레이아웃 조정"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "1:1 채팅 기능 구현 가이드 추가, README 배지 업데이트"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "GitHub Actions 워크플로 추가/토큰 변경, 버전 1.3.1 및 의존성 업데이트"
+          ]
+        }
+      }
+    },
     {
       "version": "1.2.21",
       "project_type": "flutter",
