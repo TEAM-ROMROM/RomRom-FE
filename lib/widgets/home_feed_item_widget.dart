@@ -21,7 +21,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
-import 'package:romrom_fe/services/current_member_service.dart';
+import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 /// 홈 피드 아이템 위젯

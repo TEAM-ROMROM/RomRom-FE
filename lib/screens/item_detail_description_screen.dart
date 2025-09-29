@@ -24,7 +24,7 @@ import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
-import 'package:romrom_fe/services/current_member_service.dart';
+import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {

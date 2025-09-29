@@ -13,7 +13,7 @@ import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/services/current_member_service.dart';
+import 'package:romrom_fe/services/member_manager_service.dart';
 
 import 'screens/onboarding/onboarding_flow_screen.dart';
 
