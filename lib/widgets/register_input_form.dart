@@ -20,6 +20,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
@@ -234,12 +235,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       setState(() {
         priceController.value = formatted;
       });
+
+      if (context.mounted) {
+        CommonSnackBar.show(context: context, message: 'AI로 적정 가격을 추천해드렸어요!');
+      }
     } catch (e) {
       // 에러 처리 (스낵바 표시 등)
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
-        );
+        CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e');
       }
     }
   }
@@ -876,12 +879,16 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         : (b) {
                             // 조건이 안 맞으면 스낵바로 안내
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      'AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
-                                ),
-                              );
+                              CommonSnackBar.show(
+                                  context: context,
+                                  message:
+                                      'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요');
+                              // ScaffoldMessenger.of(context).showSnackBar(
+                              //   const SnackBar(
+                              //     content: Text(
+                              //         'AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
+                              //   ),
+                              // );
                             }
                             return;
                           }, // 비활성화

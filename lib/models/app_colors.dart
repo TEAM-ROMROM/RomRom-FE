@@ -11,6 +11,7 @@ class AppColors {
   static const Color secondaryBlack1 = Color(0xFF34353D);
   static const Color secondaryBlack2 = Color(0xFF4C4E54);
   static const Color lightGray = Color(0xFFEEEEEE);
+
   static const Color opacity10White = Color(0x1AFFFFFF); // 10% 불투명도 흰색
   static const Color opacity20White = Color(0x33FFFFFF); // 20% 불투명도 흰색
   static const Color opacity30White = Color(0x4DFFFFFF); // 30% 불투명도 흰색
@@ -24,6 +25,8 @@ class AppColors {
   static const Color opacity20Black = Color(0x33000000); // 20% 불투명도 검정
   static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정
   static const Color opacity80Black = Color(0xCC000000); // 80% 불투명도 검정
+
+  static const Color opacity20PrimaryYellow = Color(0x33FFC300);
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
