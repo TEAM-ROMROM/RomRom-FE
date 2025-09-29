@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
@@ -24,9 +23,12 @@ class LoginScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(AppIcons.romromRLogoText,
-                size: 150.h, color: AppColors.textColorWhite),
-            SizedBox(height: 10.h), // 간격 추가
+            SvgPicture.asset(
+              'assets/images/romrom-logo.svg',
+              width: 108.w,
+              height: 112.h,
+            ),
+            SizedBox(height: 45.h), // 간격 추가
             // 서비스 간단 소개 텍스트
             Text(
               '손쉬운 물건 교환',

@@ -27,13 +27,13 @@ class CommonDeleteModal extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.r),
       ),
       elevation: 0,
-      backgroundColor: AppColors.secondaryBlack,
+      backgroundColor: AppColors.secondaryBlack1,
       insetPadding: EdgeInsets.symmetric(horizontal: 40.w),
       child: Container(
         width: 312.w,
         height: 206.h,
         decoration: BoxDecoration(
-          color: AppColors.secondaryBlack,
+          color: AppColors.secondaryBlack1,
           borderRadius: BorderRadius.circular(8.r),
           boxShadow: const [
             BoxShadow(
@@ -73,7 +73,7 @@ class CommonDeleteModal extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 32.h),
+              const Spacer(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

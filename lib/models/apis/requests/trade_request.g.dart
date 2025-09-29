@@ -12,7 +12,8 @@ TradeRequest _$TradeRequestFromJson(Map<String, dynamic> json) => TradeRequest(
           : Member.fromJson(json['member'] as Map<String, dynamic>),
       takeItemId: json['takeItemId'] as String?,
       giveItemId: json['giveItemId'] as String?,
-      tradeOptions: (json['tradeOptions'] as List<dynamic>?)
+      tradeRequestHistoryId: json['tradeRequestHistoryId'] as String?,
+      itemTradeOptions: (json['itemTradeOptions'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
       pageNumber: (json['pageNumber'] as num?)?.toInt() ?? 0,
@@ -24,7 +25,8 @@ Map<String, dynamic> _$TradeRequestToJson(TradeRequest instance) =>
       'member': instance.member?.toJson(),
       'takeItemId': instance.takeItemId,
       'giveItemId': instance.giveItemId,
-      'tradeOptions': instance.tradeOptions,
+      'tradeRequestHistoryId': instance.tradeRequestHistoryId,
+      'itemTradeOptions': instance.itemTradeOptions,
       'pageNumber': instance.pageNumber,
       'pageSize': instance.pageSize,
     };

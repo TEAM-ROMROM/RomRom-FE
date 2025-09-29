@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
@@ -15,7 +16,6 @@ import 'dart:async';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 
 import 'package:romrom_fe/utils/error_utils.dart';
 
@@ -37,7 +37,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   Timer? _scrollTimer;
 
   // 내 물품 데이터
-  final List<ItemDetail> _myItems = [];
+  final List<Item> _myItems = [];
   int _currentPage = 0;
   final int _pageSize = 20;
 
@@ -106,7 +106,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       );
 
       final response = await itemApi.getMyItems(request);
-      final newItems = response.itemDetailPage?.content ?? [];
+      final newItems = response.itemPage?.content ?? [];
 
       if (mounted) {
         setState(() {
@@ -154,7 +154,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       );
 
       final response = await itemApi.getMyItems(request);
-      final newItems = response.itemDetailPage?.content ?? [];
+      final newItems = response.itemPage?.content ?? [];
 
       if (mounted) {
         setState(() {
@@ -343,11 +343,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   }
 
   /// 실제 데이터 아이템 타일
-  Widget _buildItemTile(ItemDetail item, int index) {
-    final imageUrl = item.itemImageUrls?.isNotEmpty == true
-        ? item.itemImageUrls!.first
-        : null;
-    final uploadTime = _formatUploadTime(item.createdDate);
+  Widget _buildItemTile(Item item, int index) {
+    final imageUrl = item.primaryImageUrl != null
+        ? item.primaryImageUrl!
+        : 'https://picsum.photos/400/300';
+
+    final uploadTime =
+        item.createdDate != null ? getTimeAgo(item.createdDate!) : 'Unknown';
 
     return SizedBox(
       height: 90.h,
@@ -367,7 +369,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     height: 90.h,
                     child: item.itemId != null
                         ? Hero(
-                            tag: 'register_item_${item.itemId}',
+                            tag: 'itemImage_${item.itemId}_0',
                             child: _buildImage(imageUrl),
                           )
                         : _buildImage(imageUrl),
@@ -579,34 +581,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     );
   }
 
-  /// 업로드 시간 포맷팅
-  String _formatUploadTime(String? createdDate) {
-    if (createdDate == null || createdDate.isEmpty) {
-      return '시간 없음';
-    }
-
-    try {
-      final uploadDate = DateTime.parse(createdDate);
-      final now = DateTime.now();
-      final difference = now.difference(uploadDate);
-
-      if (difference.inDays > 0) {
-        return '${difference.inDays}일 전';
-      } else if (difference.inHours > 0) {
-        return '${difference.inHours}시간 전';
-      } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes}분 전';
-      } else {
-        return '방금 전';
-      }
-    } catch (e) {
-      debugPrint('날짜 파싱 오류: $e');
-      return '시간 없음';
-    }
-  }
-
   /// 물품 상세 화면으로 이동
-  Future<void> _navigateToItemDetail(ItemDetail item) async {
+  Future<void> _navigateToItemDetail(Item item) async {
     if (item.itemId == null) return;
 
     await Navigator.push(
@@ -623,7 +599,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   }
 
   /// 물품 수정 화면으로 이동
-  Future<void> _navigateToEditItem(ItemDetail item) async {
+  Future<void> _navigateToEditItem(Item item) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -643,7 +619,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   }
 
   /// 삭제 확인 대화상자
-  Future<void> _showDeleteConfirmDialog(ItemDetail item) async {
+  Future<void> _showDeleteConfirmDialog(Item item) async {
     final result = await context.showDeleteDialog(
       title: '물품을 삭제하시겠습니까?',
       description: '삭제된 물품은 복구할 수 없습니다.',
@@ -655,7 +631,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   }
 
   /// 물품 삭제
-  Future<void> _deleteItem(ItemDetail item) async {
+  Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

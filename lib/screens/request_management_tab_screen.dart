@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
 import 'dart:async';
 
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/models/apis/requests/trade_request.dart';
+import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
+import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/item_modification_screen.dart';
+import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
-import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
-import 'package:romrom_fe/widgets/sent_request_item_card.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
+import 'package:romrom_fe/widgets/sent_request_item_card.dart';
 
 class RequestManagementTabScreen extends StatefulWidget {
   const RequestManagementTabScreen({super.key});
@@ -26,6 +36,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   Timer? _scrollTimer;
+
+  final int _currentPage = 0;
+  final int _pageSize = 10;
+
+  // 로딩 상태
+  bool _isLoading = false;
 
   // 스크롤 상태 관리
   bool _isScrolled = false;
@@ -48,6 +64,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   // 테스트용 샘플 데이터
   final List<RequestManagementItemCard> _itemCards = [];
+
+  // 받은 요청 목록 데이터
+  final List<TradeRequestHistory> _receivedRequests = [];
+  final List<TradeRequestHistory> _sentRequests = [];
 
   @override
   void initState() {
@@ -73,39 +93,293 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       curve: Curves.easeInOut,
     ));
 
-    // 테스트용 샘플 데이터 생성
-    _loadSampleData();
+    _loadInitialItems();
   }
 
-  Future<void> _loadSampleData({bool isRefresh = false}) async {
+  /// 초기 아이템 로드
+  Future<void> _loadInitialItems({bool isRefresh = false}) async {
     setState(() {
-      _itemCards.addAll([
-        RequestManagementItemCard(
-          imageUrl: 'https://picsum.photos/200/300?random=1',
-          category: '스포츠/레저',
-          title: '나이키 에어맥스 270',
-          price: 85000,
-          likeCount: 12,
-          isAiAnalyzed: true,
-        ),
-        RequestManagementItemCard(
-          imageUrl: 'https://picsum.photos/200/300?random=2',
-          category: '전자기기',
-          title: '애플워치 7세대 44mm',
-          price: 320000,
-          likeCount: 25,
-          isAiAnalyzed: false,
-        ),
-        RequestManagementItemCard(
-          imageUrl: 'https://picsum.photos/200/300?random=3',
-          category: '패션/의류',
-          title: '노스페이스 패딩 자켓',
-          price: 150000,
-          likeCount: 8,
-          isAiAnalyzed: true,
-        ),
-      ]);
+      _isLoading = true;
     });
+    if (!mounted) return;
+
+    try {
+      final itemApi = ItemApi();
+      final response = await itemApi.getMyItems(ItemRequest(
+        pageNumber: _currentPage,
+        pageSize: _pageSize,
+      ));
+
+      if (!mounted) return;
+
+      final itemCard = await _convertToRequestManagementItemCard(
+          response.itemPage?.content ?? []);
+
+      setState(() {
+        _itemCards
+          ..clear()
+          ..addAll(itemCard);
+      });
+
+      // 아이템 카드가 로드된 후 첫 번째 카드의 받은 요청 목록도 로드
+      await _loadReceivedRequestsForCurrentCard();
+      // 아이템 카드가 로드된 후  보낸 요청 목록도 로드
+      await _loadSentRequestsForCurrentCard();
+    } catch (e) {
+      if (!mounted) return;
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('피드 로딩 실패: $e')),
+      );
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  /// ItemDetail을 RequestManagementItemCard로 변환
+  Future<List<RequestManagementItemCard>> _convertToRequestManagementItemCard(
+      List<Item> details) async {
+    final itemCards = <RequestManagementItemCard>[];
+
+    for (int index = 0; index < details.length; index++) {
+      final d = details[index];
+
+      String category =
+          ItemCategories.fromServerName(d.itemCategory ?? '기타').label;
+
+      final itemCard = RequestManagementItemCard(
+        itemId: d.itemId ?? '',
+        imageUrl: d.primaryImageUrl != null
+            ? d.primaryImageUrl!
+            : 'https://picsum.photos/400/300',
+        category: category,
+        title: d.itemName ?? ' ',
+        price: d.price ?? 0,
+        likeCount: d.likeCount ?? 0,
+        aiPrice: d.aiPrice ?? false,
+      );
+
+      itemCards.add(itemCard);
+    }
+
+    return itemCards;
+  }
+
+  /// 현재 선택된 카드의 받은 요청 목록 로드
+  Future<List<TradeRequestHistory>>
+      _loadReceivedRequestsForCurrentCard() async {
+    if (!mounted) return const [];
+
+    setState(() => _isLoading = true);
+    try {
+      if (_itemCards.isEmpty ||
+          _currentCardIndex < 0 ||
+          _currentCardIndex >= _itemCards.length) {
+        if (mounted) setState(() => _receivedRequests.clear());
+        return const [];
+      }
+
+      final currentCard = _itemCards[_currentCardIndex];
+      final api = TradeApi();
+
+      final paged = await api.getReceivedTradeRequests(
+        TradeRequest(
+            takeItemId: currentCard.itemId, pageNumber: 0, pageSize: 10),
+      );
+
+      final list = paged.content;
+      if (list.isEmpty) {
+        if (mounted) setState(() => _receivedRequests.clear());
+        return const [];
+      }
+
+      // 주소 캐시를 모두 채워둠
+      await Future.wait(list.map((r) async {
+        await r.takeItem.resolveAndCacheAddress();
+        await r.giveItem.resolveAndCacheAddress();
+      }));
+
+      if (mounted) {
+        setState(() {
+          _receivedRequests
+            ..clear()
+            ..addAll(list);
+        });
+      }
+      return list;
+    } catch (e, st) {
+      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e\n$st');
+      if (mounted) setState(() => _receivedRequests.clear());
+      return const [];
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      } else {
+        _isLoading = false;
+      }
+    }
+  }
+
+  /// 현재 선택된 카드의 보낸 요청 목록 로드
+  Future<List<TradeRequestHistory>> _loadSentRequestsForCurrentCard() async {
+    if (!mounted) return const [];
+
+    setState(() => _isLoading = true);
+    try {
+      if (_itemCards.isEmpty ||
+          _currentCardIndex < 0 ||
+          _currentCardIndex >= _itemCards.length) {
+        if (mounted) setState(() => _sentRequests.clear());
+        return const [];
+      }
+
+      final currentCard = _itemCards[_currentCardIndex];
+      final api = TradeApi();
+
+      final paged = await api.getSentTradeRequests(
+        TradeRequest(giveItemId: currentCard.itemId),
+      );
+
+      final list = paged.content;
+      if (list.isEmpty) {
+        if (mounted) setState(() => _sentRequests.clear());
+        return const [];
+      }
+
+      // 주소 캐시를 모두 채워둠
+      await Future.wait(list.map((r) async {
+        await r.takeItem.resolveAndCacheAddress();
+        await r.giveItem.resolveAndCacheAddress();
+      }));
+
+      if (mounted) {
+        setState(() {
+          _sentRequests
+            ..clear()
+            ..addAll(list);
+        });
+      }
+      return list;
+    } catch (e, st) {
+      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e\n$st');
+      if (mounted) setState(() => _sentRequests.clear());
+      return const [];
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      } else {
+        _isLoading = false;
+      }
+    }
+  }
+
+  /// 보낸 요청 목록
+  Widget _buildSentRequestsList() {
+    // 보낸 요청은 필터링 없이 모든 요청 표시
+    if (_sentRequests.isEmpty) {
+      return _isLoading
+          ? SizedBox(
+              height: 500.h,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          : Container(
+              height: 200.h,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Center(
+                child: Text(
+                  '보낸 요청이 없습니다',
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                  ),
+                ),
+              ),
+            );
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: Column(
+        children: List.generate(_sentRequests.length, (index) {
+          final request = _sentRequests[index];
+          final takeItem = request.takeItem;
+          final giveItem = request.giveItem;
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: 16.h),
+            child: GestureDetector(
+              onTap: () {
+                context.navigateTo(
+                  screen: ItemDetailDescriptionScreen(
+                    itemId: takeItem.itemId!, // 내가 요청 보낸 카드로 이동
+                    imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                    currentImageIndex: 0,
+                    heroTag: 'itemImage_${takeItem.itemId!}_0', // ← 인덱스 포함
+                  ),
+                );
+              },
+              child: SentRequestItemCard(
+                myItemImageUrl: giveItem.imageUrlList.isNotEmpty
+                    ? giveItem.imageUrlList.first
+                    : 'https://picsum.photos/400/300',
+                otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
+                    ? takeItem.imageUrlList.first
+                    : 'https://picsum.photos/400/300',
+                otherUserProfileUrl: takeItem.member!.profileUrl!,
+                title: takeItem.itemName!,
+                location: takeItem.address!,
+                createdDate: takeItem.createdDate!,
+                tradeOptions: takeItem.itemTradeOptions != null
+                    ? takeItem.itemTradeOptions!
+                        .map((s) => ItemTradeOption.values
+                            .firstWhere((e) => e.serverName == s))
+                        .toList()
+                    : [],
+                tradeStatus: request.tradeStatus != null
+                    ? TradeStatus.values.firstWhere(
+                        (e) => e.serverName == request.tradeStatus,
+                        orElse: () => TradeStatus.chatting,
+                      )
+                    : TradeStatus.chatting,
+                onEditTap: () {
+                  context.navigateTo(
+                    screen: ItemModificationScreen(
+                      itemId: giveItem.itemId,
+                      onClose: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                },
+                onCancelTap: () async {
+                  try {
+                    await TradeApi().cancelTradeRequest(
+                      TradeRequest(
+                        tradeRequestHistoryId: request.tradeRequestHistoryId,
+                      ),
+                    );
+                  } catch (e) {
+                    debugPrint('요청 취소 실패: $e');
+                  }
+                  if (mounted) {
+                    setState(() {
+                      _sentRequests
+                          .removeAt(index); // Use the correct index here
+                    });
+                  }
+                },
+              ),
+            ),
+          );
+        }),
+      ),
+    );
   }
 
   @override
@@ -158,6 +432,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     setState(() {
       _currentCardIndex = index;
     });
+
+    // 카드가 변경되면 해당 카드의 받은 요청 목록을 로드
+    _loadReceivedRequestsForCurrentCard();
   }
 
   @override
@@ -176,7 +453,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               child: RefreshIndicator(
                 color: AppColors.primaryYellow,
                 backgroundColor: AppColors.transparent,
-                onRefresh: () => _loadSampleData(isRefresh: true),
+                onRefresh: () => _loadInitialItems(isRefresh: true),
                 child: CustomScrollView(
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(),
@@ -238,18 +515,28 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   Widget _buildItemCardsCarousel() {
     if (_itemCards.isEmpty) {
       // 데이터가 없을 때 빈 상태 표시
-      return Container(
-        height: 326.h,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Center(
-          child: Text(
-            '등록된 물품이 없습니다',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        ),
-      );
+      return _isLoading
+          ? SizedBox(
+              height: 150.h,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          : Container(
+              height: 326.h,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Center(
+                child: Text(
+                  '등록된 물품이 없습니다',
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                  ),
+                ),
+              ),
+            );
     }
 
     return SizedBox(
@@ -259,9 +546,22 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         onPageChanged: _onCardPageChanged,
         itemCount: _itemCards.length,
         itemBuilder: (context, index) {
-          return RequestManagementItemCardWidget(
-            card: _itemCards[index],
-            isActive: index == _currentCardIndex,
+          return GestureDetector(
+            onTap: () {
+              context.navigateTo(
+                screen: ItemDetailDescriptionScreen(
+                  itemId: _itemCards[index].itemId,
+                  imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                  currentImageIndex: 0,
+                  heroTag:
+                      'itemImage_${_itemCards[index].itemId}_0', // ← 인덱스 포함
+                ),
+              );
+            },
+            child: RequestManagementItemCardWidget(
+              card: _itemCards[index],
+              isActive: index == _currentCardIndex,
+            ),
           );
         },
       ),
@@ -366,170 +666,123 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       return _buildSentRequestsList();
     }
 
-    // 받은 요청인 경우 (기존 코드)
-    // 테스트용 샘플 데이터
-    final List<Map<String, dynamic>> sampleRequests = [
-      {
-        'imageUrl': 'https://picsum.photos/100/100?random=4',
-        'title': '나이키 에어맥스 270 구매 요청',
-        'address': '강남구',
-        'createdDate': DateTime.now().subtract(const Duration(hours: 2)),
-        'isNew': true,
-        'tradeOptions': [ItemTradeOption.directOnly],
-        'tradeStatus': TradeStatus.chatting,
-      },
-      {
-        'imageUrl': 'https://picsum.photos/100/100?random=5',
-        'title': '애플워치 7세대 교환 요청',
-        'address': '서초구',
-        'createdDate': DateTime.now().subtract(const Duration(days: 1)),
-        'isNew': false,
-        'tradeOptions': [ItemTradeOption.deliveryOnly],
-        'tradeStatus': TradeStatus.completed,
-      },
-      {
-        'imageUrl': 'https://picsum.photos/100/100?random=6',
-        'title': '노스페이스 패딩 판매 요청',
-        'address': '송파구',
-        'createdDate': DateTime.now().subtract(const Duration(days: 2)),
-        'isNew': false,
-        'tradeOptions': [
-          ItemTradeOption.directOnly,
-          ItemTradeOption.extraCharge
-        ],
-        'tradeStatus': TradeStatus.chatting,
-      },
-    ];
-
+    // 받은 요청인 경우 - 로드된 데이터 사용
     // 완료 여부에 따른 필터링
-    final filteredRequests = sampleRequests.where((request) {
-      final status = request['tradeStatus'] as TradeStatus;
+    final filteredRequests = _receivedRequests.where((request) {
+      final status = request.tradeStatus;
       if (_showCompletedRequests) {
-        return status == TradeStatus.completed;
+        return status == TradeStatus.traded.serverName;
       } else {
-        return status != TradeStatus.completed;
+        return status != TradeStatus.traded.serverName;
       }
     }).toList();
 
     if (filteredRequests.isEmpty) {
-      return Container(
-        height: 200.h,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Center(
-          child: Text(
-            _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
-      child: Column(
-        children: filteredRequests.map((request) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: 16.h),
-            child: RequestListItemCardWidget(
-              imageUrl: request['imageUrl'],
-              title: request['title'],
-              address: request['address'],
-              createdDate: request['createdDate'],
-              isNew: request['isNew'],
-              tradeOptions: request['tradeOptions'],
-              tradeStatus: request['tradeStatus'],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  /// 보낸 요청 목록
-  Widget _buildSentRequestsList() {
-    // 테스트용 샘플 데이터
-    final List<Map<String, dynamic>> sentRequests = [
-      {
-        'myItemImageUrl': 'https://picsum.photos/200/200?random=10',
-        'otherItemImageUrl': 'https://picsum.photos/200/200?random=11',
-        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=12',
-        'title': '나이키 에어맥스 교환 요청',
-        'location': '광진구 화양동',
-        'createdDate': DateTime.now().subtract(const Duration(hours: 2)),
-        'tradeOptions': [
-          ItemTradeOption.extraCharge,
-          ItemTradeOption.directOnly,
-          ItemTradeOption.deliveryOnly
-        ],
-        'tradeStatus': TradeStatus.chatting,
-      },
-      {
-        'myItemImageUrl': 'https://picsum.photos/200/200?random=13',
-        'otherItemImageUrl': 'https://picsum.photos/200/200?random=14',
-        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=15',
-        'title': '애플워치 교환하실 분',
-        'location': '서초구 방배동',
-        'createdDate': DateTime.now().subtract(const Duration(days: 1)),
-        'tradeOptions': [ItemTradeOption.directOnly],
-        'tradeStatus': TradeStatus.completed,
-      },
-      {
-        'myItemImageUrl': 'https://picsum.photos/200/200?random=16',
-        'otherItemImageUrl': 'https://picsum.photos/200/200?random=17',
-        'otherUserProfileUrl': 'https://picsum.photos/50/50?random=18',
-        'title': '노스페이스 패딩 교환',
-        'location': '송파구 잠실동',
-        'createdDate': DateTime.now().subtract(const Duration(hours: 5)),
-        'tradeOptions': [
-          ItemTradeOption.deliveryOnly,
-          ItemTradeOption.extraCharge
-        ],
-        'tradeStatus': null,
-      },
-    ];
-
-    // 보낸 요청은 필터링 없이 모든 요청 표시
-    if (sentRequests.isEmpty) {
-      return Container(
-        height: 200.h,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Center(
-          child: Text(
-            '보낸 요청이 없습니다',
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
-      child: Column(
-        children: [
-          SizedBox(height: 24.h), // 토글에서 첫 아이템까지 간격
-          ...sentRequests.map((request) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: 16.h),
-              child: SentRequestItemCard(
-                myItemImageUrl: request['myItemImageUrl'],
-                otherItemImageUrl: request['otherItemImageUrl'],
-                otherUserProfileUrl: request['otherUserProfileUrl'],
-                title: request['title'],
-                location: request['location'],
-                createdDate: request['createdDate'],
-                tradeOptions: request['tradeOptions'],
-                tradeStatus: request['tradeStatus'],
+      return _isLoading
+          ? SizedBox(
+              height: 150.h,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          : Container(
+              height: 200.h,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Center(
+                child: Text(
+                  _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                  ),
+                ),
               ),
             );
-          }),
-        ],
-      ),
-    );
+    }
+
+    return _isLoading
+        ? SizedBox(
+            height: 150.h,
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryYellow,
+                strokeWidth: 2,
+              ),
+            ),
+          )
+        : Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: Column(
+              children: List.generate(filteredRequests.length, (index) {
+                final request = filteredRequests[index];
+                final giveItem = request.giveItem;
+
+                return Column(
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque, // 빈 공간도 터치 가능
+                      onTap: () {
+                        context.navigateTo(
+                          screen: ItemDetailDescriptionScreen(
+                            itemId: giveItem.itemId!, // 요청 받은 카드로 이동
+                            imageSize:
+                                Size(MediaQuery.of(context).size.width, 400.h),
+                            currentImageIndex: 0,
+                            heroTag:
+                                'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
+                          ),
+                        );
+                      },
+                      child: RequestListItemCardWidget(
+                        imageUrl: giveItem.imageUrlList.isNotEmpty
+                            ? giveItem.imageUrlList.first
+                            : 'https://picsum.photos/400/300',
+                        title: giveItem.itemName ?? ' ',
+                        address: giveItem.address!,
+                        createdDate: giveItem.createdDate!,
+                        isNew: true, // FIXME : 벡엔드 isNew 로직구현 후 수정
+                        tradeOptions: giveItem.itemTradeOptions != null
+                            ? giveItem.itemTradeOptions!
+                                .map((s) => ItemTradeOption.values
+                                    .firstWhere((e) => e.serverName == s))
+                                .toList()
+                            : [],
+                        tradeStatus: request.tradeStatus != null
+                            ? TradeStatus.values.firstWhere(
+                                (e) => e.serverName == request.tradeStatus,
+                                orElse: () => TradeStatus.chatting,
+                              )
+                            : TradeStatus.chatting,
+                        onMenuTap: () async {
+                          try {
+                            await TradeApi().cancelTradeRequest(TradeRequest(
+                              tradeRequestHistoryId:
+                                  request.tradeRequestHistoryId,
+                            ));
+                          } catch (e) {
+                            debugPrint('요청 취소 실패: $e');
+                          }
+                          if (mounted) {
+                            setState(() {
+                              _receivedRequests.removeWhere((e) =>
+                                  e.tradeRequestHistoryId ==
+                                  request.tradeRequestHistoryId);
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    if (index < filteredRequests.length - 1)
+                      Divider(
+                        thickness: 1.5,
+                        color: AppColors.opacity10White,
+                        height: 32.h,
+                      ),
+                  ],
+                );
+              }),
+            ));
   }
 }
-
-// (사용 안 함) 로컬 헤더 delegate 제거됨. 공통 GlassHeaderDelegate를 사용합니다.

@@ -14,9 +14,8 @@ class ItemApi {
 
   /// 물품 등록 API
   /// `POST /api/item/post`
-  Future<ItemResponse> postItem(ItemRequest request) async {
+  Future<void> postItem(ItemRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/item/post';
-    late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
       'itemName': request.itemName,
@@ -51,12 +50,9 @@ class ItemApi {
       fields: fields,
       isAuthRequired: true,
       onSuccess: (responseData) {
-        itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('물품 등록 성공: ${itemResponse.item?.itemName}');
+        debugPrint('물품 등록 성공: ${request.itemName}');
       },
     );
-
-    return itemResponse;
   }
 
   /// 좋아요 등록/취소 API
@@ -75,7 +71,7 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('좋아요 상태 변경 성공: ${itemResponse.likeStatus}');
+        debugPrint('좋아요 상태 변경 성공: ${itemResponse.isLiked}');
       },
     );
 
@@ -99,8 +95,7 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint(
-            '물품 목록 조회 성공: ${itemResponse.itemDetailPage?.content?.length}개');
+        debugPrint('물품 목록 조회 성공: ${itemResponse.itemPage?.content.length}개');
       },
     );
 
@@ -149,7 +144,7 @@ class ItemApi {
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
         debugPrint('내 물품 목록 조회 성공: '
-            '${itemResponse.itemDetailPage?.content?.length ?? 0}개');
+            '${itemResponse.itemPage?.content.length ?? 0}개');
       },
     );
 
@@ -209,9 +204,8 @@ class ItemApi {
 
   /// 물품 수정 API
   /// `POST /api/item/edit`
-  Future<ItemResponse> updateItem(ItemRequest request) async {
+  Future<void> updateItem(ItemRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/item/edit';
-    late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
       'itemId': request.itemId,
@@ -247,12 +241,9 @@ class ItemApi {
       fields: fields,
       isAuthRequired: true,
       onSuccess: (responseData) {
-        itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('물품 수정 성공: ${itemResponse.item?.itemName}');
+        debugPrint('물품 수정 성공: ${request.itemName}');
       },
     );
-
-    return itemResponse;
   }
 
   /// 물품 거래 상태 변경 API

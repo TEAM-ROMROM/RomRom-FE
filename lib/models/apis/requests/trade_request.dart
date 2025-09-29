@@ -8,7 +8,8 @@ class TradeRequest {
   Member? member;
   String? takeItemId;
   String? giveItemId;
-  List<String>? tradeOptions;
+  String? tradeRequestHistoryId;
+  List<String>? itemTradeOptions;
   int pageNumber;
   int pageSize;
 
@@ -16,7 +17,8 @@ class TradeRequest {
     this.member,
     this.takeItemId,
     this.giveItemId,
-    this.tradeOptions,
+    this.tradeRequestHistoryId,
+    this.itemTradeOptions,
     this.pageNumber = 0,
     this.pageSize = 10,
   });
@@ -26,6 +28,7 @@ class TradeRequest {
     this.member = member;
   }
 
-  factory TradeRequest.fromJson(Map<String, dynamic> json) => _$TradeRequestFromJson(json);
+  factory TradeRequest.fromJson(Map<String, dynamic> json) =>
+      _$TradeRequestFromJson(json);
   Map<String, dynamic> toJson() => _$TradeRequestToJson(this);
 }

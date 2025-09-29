@@ -19,18 +19,17 @@ class RequestManagementTradeOptionTag extends StatelessWidget {
     return Container(
       width: 62.w,
       height: 23.h,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(100.r),
-        color: const Color(0x661D1E27), // rgba(29, 30, 39, 0.40)
+        color: AppColors.secondaryBlack2,
       ),
       padding: EdgeInsets.fromLTRB(18.w, 6.h, 18.w, 7.h),
       child: Text(
-        option.name,
+        option.label,
         style: CustomTextStyles.p3.copyWith(
-          color: AppColors.textColorWhite,
           fontSize: 10.sp,
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }

@@ -1,12 +1,12 @@
 enum ItemTradeOption {
-  extraCharge(name: '추가금', serverName: 'EXTRA_CHARGE'),
-  directOnly(name: '직거래', serverName: 'DIRECT_ONLY'),
-  deliveryOnly(name: '택배거래', serverName: 'DELIVERY_ONLY');
+  extraCharge(label: '추가금', serverName: 'EXTRA_CHARGE'),
+  directOnly(label: '직거래', serverName: 'DIRECT_ONLY'),
+  deliveryOnly(label: '택배', serverName: 'DELIVERY_ONLY');
 
-  final String name;
+  final String label;
   final String serverName;
 
-  const ItemTradeOption({required this.name, required this.serverName});
+  const ItemTradeOption({required this.label, required this.serverName});
 
   static ItemTradeOption fromServerName(String name) {
     return ItemTradeOption.values.firstWhere(

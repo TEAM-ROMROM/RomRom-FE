@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
@@ -11,7 +13,7 @@ import 'package:romrom_fe/widgets/item_card.dart';
 /// 홈탭 카드 핸드 위젯
 class HomeTabCardHand extends StatefulWidget {
   final Function(String itemId)? onCardDrop;
-  final List<Map<String, dynamic>>? cards;
+  final List<Item>? cards;
 
   const HomeTabCardHand({
     super.key,
@@ -52,7 +54,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   Offset _pullOffset = Offset.zero;
 
   // 카드 리스트
-  List<Map<String, dynamic>> _cards = [];
+  List<Item> _cards = [];
 
   // 카드 레이아웃 파라미터
   final double _cardWidth = 80.w;
@@ -180,7 +182,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
       // 카드 영역 체크 (카드 너비의 절반 범위 내)
       if ((localPosition.dx - cardCenterX).abs() < _cardWidth / 2) {
-        return _cards[i]['id'];
+        return _cards[i].itemId;
       }
     }
     return null;
@@ -244,8 +246,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     };
   }
 
-  Widget _buildCard(Map<String, dynamic> cardData, int index, int totalCards) {
-    final cardId = cardData['id'];
+  Widget _buildCard(Item cardData, int index, int totalCards) {
+    final cardId = cardData.itemId;
     final isPulled = _pulledCardId == cardId;
 
     final isHovered =
@@ -328,11 +330,15 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
               child: Opacity(
                 opacity: opacity,
                 child: ItemCard(
-                  itemId: cardId,
+                  itemId: cardId!,
                   isSmall: true,
-                  itemName: cardData['name'] ?? '아이템',
-                  itemCategoryLabel: cardData['category'] ?? '카테고리',
-                  itemCardImageUrl: cardData['imageUrl'] ?? '',
+                  itemName: cardData.itemName ?? '아이템',
+                  itemCategoryLabel:
+                      ItemCategories.fromServerName(cardData.itemCategory!)
+                          .label,
+                  itemCardImageUrl: cardData.primaryImageUrl != null
+                      ? cardData.primaryImageUrl!
+                      : 'https://picsum.photos/400/300',
                 ),
               ),
             ),

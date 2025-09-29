@@ -1,28 +1,17 @@
 // lib/models/apis/responses/item_response.dart
 import 'package:json_annotation/json_annotation.dart';
+import 'package:romrom_fe/models/apis/objects/api_page.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/objects/item_image.dart';
-import 'package:romrom_fe/models/apis/responses/item_detail.dart';
 
 part 'item_response.g.dart';
 
 @JsonSerializable()
 class ItemResponse {
   final Item? item;
-  final List<ItemImage>? itemImages;
-  final List<String>? itemCustomTags;
-  final String? likeStatus;
-  final int? likeCount;
-  final PageItemDetail? itemDetailPage;
+  final ItemPage? itemPage;
+  final bool? isLiked;
 
-  ItemResponse({
-    this.item,
-    this.itemImages,
-    this.itemCustomTags,
-    this.likeStatus,
-    this.likeCount,
-    this.itemDetailPage,
-  });
+  ItemResponse({this.item, this.itemPage, this.isLiked});
 
   factory ItemResponse.fromJson(Map<String, dynamic> json) =>
       _$ItemResponseFromJson(json);
@@ -30,31 +19,26 @@ class ItemResponse {
 }
 
 @JsonSerializable()
-class PageItemDetail {
-  final List<ItemDetail>? content;
-  final int? totalPages;
-  final int? totalElements;
-  final bool? last;
-  final int? size;
-  final int? number;
-  final int? numberOfElements;
-  final bool? first;
-  final bool? empty;
+class ItemPage {
+  @JsonKey(fromJson: _itemsFromJson, toJson: _itemsToJson)
+  final List<Item> content;
 
-  PageItemDetail({
-    this.content,
-    this.totalPages,
-    this.totalElements,
-    this.last,
-    this.size,
-    this.number,
-    this.numberOfElements,
-    this.first,
-    this.empty,
-  });
+  @JsonKey(name: 'page')
+  final ApiPage page;
 
-  factory PageItemDetail.fromJson(Map<String, dynamic> json) =>
-      _$PageItemDetailFromJson(json);
+  ItemPage({required this.content, required this.page});
 
-  Map<String, dynamic> toJson() => _$PageItemDetailToJson(this);
+  factory ItemPage.fromJson(Map<String, dynamic> json) =>
+      _$ItemPageFromJson(json);
+  Map<String, dynamic> toJson() => _$ItemPageToJson(this);
 }
+
+// ----- 안전 파서 -----
+List<Item> _itemsFromJson(Object? value) {
+  if (value is List) {
+    return value.whereType<Map<String, dynamic>>().map(Item.fromJson).toList();
+  }
+  return const <Item>[];
+}
+
+Object _itemsToJson(List<Item> items) => items.map((e) => e.toJson()).toList();

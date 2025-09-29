@@ -70,8 +70,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       if (mounted) {
         setState(() {
           _useAiPrice = response.item?.aiPrice ?? false;
-          _isLiked = response.likeStatus == 'LIKE';
-          _likeCount = response.likeCount ?? widget.item.likeCount;
+          _isLiked = response.isLiked == true;
+          _likeCount = response.item?.likeCount ?? widget.item.likeCount;
         });
       }
     } catch (e) {
@@ -262,9 +262,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         );
                         if (!mounted) return;
                         setState(() {
-                          _isLiked = response.likeStatus == 'LIKE';
-                          if (response.likeCount != null) {
-                            _likeCount = response.likeCount!;
+                          _isLiked = response.isLiked == true;
+                          if (response.item?.likeCount != null) {
+                            _likeCount = response.item?.likeCount ?? _likeCount;
                           } else {
                             _likeCount = _isLiked
                                 ? _likeCount + 1
@@ -343,13 +343,13 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             children: [
                               // 사용감 태그 - ItemDetail과 동일한 위젯 사용
                               ItemDetailConditionTag(
-                                condition: widget.item.itemCondition.name,
+                                condition: widget.item.itemCondition.label,
                               ),
                               SizedBox(width: 4.w),
                               // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
                               ...widget.item.transactionTypes.map(
                                 (type) => ItemDetailTradeOptionTag(
-                                  option: type.name,
+                                  option: type.label,
                                 ),
                               ),
                             ],
