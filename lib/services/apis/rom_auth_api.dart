@@ -8,6 +8,8 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
+import 'package:romrom_fe/services/current_member_service.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 
 // AuthApi -> RomAuthApi 이름 변경 : kakao SDK ApiAuth 와 충돌
 class RomAuthApi {
@@ -72,6 +74,9 @@ class RomAuthApi {
           isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
           isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
         );
+
+        // 로그인 성공 후 회원 정보 가져와서 저장
+        await _fetchAndSaveMemberInfo();
       } else {
         throw Exception('소셜 로그인 실패: ${response.statusCode}, ${response.body}');
       }
@@ -129,6 +134,9 @@ class RomAuthApi {
           isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
           isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
         );
+
+        // 토큰 갱신 후에도 회원 정보 업데이트
+        await _fetchAndSaveMemberInfo();
         
         debugPrint('====================================');
         debugPrint('access token 이 성공적으로 재발급됨');
@@ -150,8 +158,25 @@ class RomAuthApi {
     return false;
   }
 
+  /// 회원 정보를 가져와서 CurrentMemberService에 저장
+  Future<void> _fetchAndSaveMemberInfo() async {
+    try {
+      final memberApi = MemberApi();
+      final response = await memberApi.getMemberInfo();
+      
+      if (response.member != null) {
+        await MemberManager.saveMemberInfo(response.member!);
+        debugPrint('회원 정보 저장 성공: ${response.member!.memberId}');
+      }
+    } catch (e) {
+      debugPrint('회원 정보 저장 실패: $e');
+    }
+  }
+
   /// POST : `/api/auth/logout` 로그아웃
   Future<void> logoutWithSocial(BuildContext context) async {
+    // 로그아웃 시 회원 정보 캐시 삭제
+    await MemberManager.clearMemberInfo();
     await SocialLogoutService().logout(context);
   }
 

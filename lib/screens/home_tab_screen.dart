@@ -429,6 +429,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         hasAiAnalysis: false,
         latitude: d.latitude,
         longitude: d.longitude,
+        authorMemberId: d.member?.memberId, // 게시글 작성자 ID
       );
 
       feedItems.add(feedItem);

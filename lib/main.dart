@@ -13,6 +13,7 @@ import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/services/current_member_service.dart';
 
 import 'screens/onboarding/onboarding_flow_screen.dart';
 
@@ -71,6 +72,9 @@ Future<Widget> _determineInitialScreen() async {
   var userInfo = UserInfo();
   try {
     await userInfo.getUserInfo();
+
+    // 로그인된 상태에서 회원 정보 미리 로드
+    await MemberManager.getCurrentMember();
 
     if (userInfo.needsOnboarding) {
       debugPrint('온보딩 필요: ${userInfo.nextOnboardingStep} 단계로 이동');
