@@ -3,6 +3,8 @@
 <!-- 수정하지마세요 자동으로 동기화 됩니다 -->
 ## 최신 버전 : v1.3.5 (2025-09-20)
 
+[전체 업데이트 내역 보기](CHANGELOG.md)
+
 <div align="center">
   
   ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
@@ -24,14 +26,6 @@
 - **💬 실시간 채팅**: 구매자와 판매자 간 원활한 소통
 - **🔄 물물교환 지원**: 현금 거래뿐만 아니라 물물교환도 가능
 
-## 🚀 최신 버전: v1.3.3 (2025-09-20)
-
-### 최근 업데이트
-- 거래 요청 관리 UI/UX 전면 개편
-- 아이템 목록 페이지네이션 최적화
-- SVG 로고 적용 및 성능 개선
-
-[전체 업데이트 내역 보기](CHANGELOG.md)
 
 ## 📂 프로젝트 구조
 

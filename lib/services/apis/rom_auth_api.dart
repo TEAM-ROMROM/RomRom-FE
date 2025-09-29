@@ -36,12 +36,16 @@ class RomAuthApi {
         'socialPlatform': socialPlatform,
       };
 
-      // 사용자 정보 필드에 추가
-      userInfo.toMap().forEach((key, value) {
-        if (value != null) {
-          fields[key] = value;
-        }
-      });
+      // 사용자 정보 직접 추가 (null이 아닌 값만)
+      if (userInfo.email?.isNotEmpty == true) {
+        fields['email'] = userInfo.email;
+      }
+      if (userInfo.nickname?.isNotEmpty == true) {
+        fields['nickname'] = userInfo.nickname;
+      }
+      if (userInfo.profileUrl?.isNotEmpty == true) {
+        fields['profileUrl'] = userInfo.profileUrl;
+      }
 
       // HTTP 요청
       http.Response response = await ApiClient.sendMultipartRequest(
