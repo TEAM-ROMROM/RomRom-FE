@@ -31,6 +31,26 @@ class UserInfo {
   factory UserInfo() => _instance;
   UserInfo._internal();
 
+  // === 헬퍼 메서드들 ===
+
+  /// 값이 있으면 저장, null이면 키 제거 (String)
+  static Future<void> _setOrRemove(SharedPreferences prefs, String key, String? value) async {
+    if (value != null && value.isNotEmpty) {
+      await prefs.setString(key, value);
+    } else {
+      await prefs.remove(key);
+    }
+  }
+
+  /// 값이 있으면 저장, null이면 키 제거 (double)
+  static Future<void> _setOrRemoveDouble(SharedPreferences prefs, String key, double? value) async {
+    if (value != null) {
+      await prefs.setDouble(key, value);
+    } else {
+      await prefs.remove(key);
+    }
+  }
+
   // === 데이터 저장 메서드들 ===
 
   /// Member 정보 저장 (API 응답 데이터 저장용)
@@ -49,22 +69,26 @@ class UserInfo {
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Member 관련 정보 저장
-    await prefs.setString('memberId', memberId ?? '');
-    await prefs.setString('nickname', nickname ?? '');
-    await prefs.setString('email', email ?? '');
-    await prefs.setString('profileUrl', profileUrl ?? '');
-    await prefs.setString('socialPlatform', socialPlatform ?? '');
-    await prefs.setString('role', role ?? '');
-    await prefs.setString('accountStatus', accountStatus ?? '');
-    await prefs.setDouble('latitude', latitude ?? 0.0);
-    await prefs.setDouble('longitude', longitude ?? 0.0);
+    // Member 관련 정보 저장 (값 없으면 키 제거)
+    await _setOrRemove(prefs, 'memberId', memberId);
+    await _setOrRemove(prefs, 'nickname', nickname);
+    await _setOrRemove(prefs, 'email', email);
+    await _setOrRemove(prefs, 'profileUrl', profileUrl);
+    await _setOrRemove(prefs, 'socialPlatform', socialPlatform);
+    await _setOrRemove(prefs, 'role', role);
+    await _setOrRemove(prefs, 'accountStatus', accountStatus);
+    await _setOrRemoveDouble(prefs, 'latitude', latitude);
+    await _setOrRemoveDouble(prefs, 'longitude', longitude);
 
     if (createdDate != null) {
       await prefs.setString('createdDate', createdDate.toIso8601String());
+    } else {
+      await prefs.remove('createdDate');
     }
     if (updatedDate != null) {
       await prefs.setString('updatedDate', updatedDate.toIso8601String());
+    } else {
+      await prefs.remove('updatedDate');
     }
 
     // 메모리에 캐시
@@ -129,14 +153,14 @@ class UserInfo {
   Future<void> getUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 기본 정보
-    memberId = prefs.getString('memberId') ?? '';
-    nickname = prefs.getString('nickname') ?? '';
-    email = prefs.getString('email') ?? '';
-    profileUrl = prefs.getString('profileUrl') ?? '';
-    socialPlatform = prefs.getString('socialPlatform') ?? '';
-    role = prefs.getString('role') ?? '';
-    accountStatus = prefs.getString('accountStatus') ?? '';
+    // 기본 정보 (키가 없으면 null 반환)
+    memberId = prefs.getString('memberId');
+    nickname = prefs.getString('nickname');
+    email = prefs.getString('email');
+    profileUrl = prefs.getString('profileUrl');
+    socialPlatform = prefs.getString('socialPlatform');
+    role = prefs.getString('role');
+    accountStatus = prefs.getString('accountStatus');
 
     // 위치 정보
     latitude = prefs.getDouble('latitude');
@@ -192,16 +216,16 @@ class UserInfo {
 
   /// 현재 회원 ID 가져오기
   Future<String?> getCurrentMemberId() async {
-    if (memberId != null && memberId!.isNotEmpty) {
+    if (memberId != null) {
       return memberId;
     }
     await getUserInfo();
-    return memberId?.isNotEmpty == true ? memberId : null;
+    return memberId;
   }
 
   /// 두 멤버 ID가 같은지 비교하는 헬퍼 메서드
   Future<bool> isSameMember(String? targetMemberId) async {
-    if (targetMemberId == null || targetMemberId.isEmpty) {
+    if (targetMemberId == null) {
       return false;
     }
 
