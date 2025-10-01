@@ -24,6 +24,8 @@ import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
+import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -629,8 +631,21 @@ class _ItemDetailDescriptionScreenState
     }
   }
 
+
   Future<void> _toggleLike() async {
     if (_likeInFlight) return;
+
+    // 내가 작성한 게시글인지 확인
+    final isCurrentMember = await MemberManager.isCurrentMember(item?.member?.memberId);
+    if (isCurrentMember) {
+      if (mounted) {
+        CommonSnackBar.show(
+          context: context,
+          message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
+        );
+      }
+      return;
+    }
 
     _likeInFlight = true;
     final prevLiked = isLikedVN.value;

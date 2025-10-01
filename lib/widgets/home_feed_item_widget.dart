@@ -21,6 +21,8 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -55,6 +57,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     _likeCount = widget.item.likeCount;
     _fetchItemLikeStatus();
   }
+
 
   Future<void> _fetchItemLikeStatus() async {
     try {
@@ -251,6 +254,18 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       if (_isLiking ||
                           widget.item.itemUuid == null ||
                           widget.item.itemUuid!.isEmpty) {
+                        return;
+                      }
+
+                      // 내가 작성한 게시글인지 확인
+                      final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
+                      if (isCurrentMember) {
+                        if (mounted) {
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
+                          );
+                        }
                         return;
                       }
 

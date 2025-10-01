@@ -4,7 +4,10 @@
       "Bash(flutter clean:*)",
       "Bash(flutter pub:*)",
       "Bash(flutter build:*)",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(source:*)",
+      "Bash(dart:*)"
     ],
     "deny": [],
     "ask": []
