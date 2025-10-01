@@ -78,9 +78,6 @@ class RomAuthApi {
           isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
           isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
         );
-
-        // 로그인 성공 후 회원 정보 가져와서 저장
-        await _fetchAndSaveMemberInfo();
       } else {
         throw Exception('소셜 로그인 실패: ${response.statusCode}, ${response.body}');
       }
@@ -122,13 +119,13 @@ class RomAuthApi {
       if (response.statusCode == 200) {
         // 로컬 저장소에 토큰 저장
         String accessToken = responseData[TokenKeys.accessToken.name];
-        
+
         // API 응답에서 refreshToken이 있으면 새 토큰 사용, 아니면 기존 토큰 유지
         String? newRefreshToken = responseData[TokenKeys.refreshToken.name];
         String tokenToSave = newRefreshToken ?? refreshToken;
-        
+
         await _tokenManager.saveTokens(accessToken, tokenToSave);
-        
+
         // 회원 상태 정보 업데이트
         await UserInfo().saveLoginStatus(
           isFirstLogin: responseData['isFirstLogin'] ?? false,
@@ -140,8 +137,8 @@ class RomAuthApi {
         );
 
         // 토큰 갱신 후에도 회원 정보 업데이트
-        await _fetchAndSaveMemberInfo();
-        
+        await fetchAndSaveMemberInfo();
+
         debugPrint('====================================');
         debugPrint('access token 이 성공적으로 재발급됨');
         debugPrint('====================================');
@@ -163,11 +160,11 @@ class RomAuthApi {
   }
 
   /// 회원 정보를 가져와서 CurrentMemberService에 저장
-  Future<void> _fetchAndSaveMemberInfo() async {
+  Future<void> fetchAndSaveMemberInfo() async {
     try {
       final memberApi = MemberApi();
       final response = await memberApi.getMemberInfo();
-      
+
       if (response.member != null) {
         await MemberManager.saveMemberInfo(response.member!);
         debugPrint('회원 정보 저장 성공: ${response.member!.memberId}');
@@ -183,5 +180,4 @@ class RomAuthApi {
     await MemberManager.clearMemberInfo();
     await SocialLogoutService().logout(context);
   }
-
 }
