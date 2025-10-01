@@ -20,6 +20,7 @@ import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/chatting_button.dart';
 import 'package:romrom_fe/widgets/common/common_success_modal.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
@@ -413,23 +414,30 @@ class _ItemDetailDescriptionScreenState
                               profileUrl: item?.member?.profileUrl,
                             ),
                             SizedBox(width: 10.w),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item?.member?.nickname ?? '알 수 없음',
-                                  style: CustomTextStyles.p2,
-                                ),
-                                SizedBox(height: 8.h),
-                                Text(
-                                  memberLocationName,
-                                  style: CustomTextStyles.p3.copyWith(
-                                    color: AppColors.lightGray
-                                        .withValues(alpha: 0.7),
-                                    fontWeight: FontWeight.w500,
+                            Container(
+                              constraints:
+                                  !widget.isMyItem && widget.isRequestManagement
+                                      ? BoxConstraints(maxWidth: 120.w)
+                                      : null, // 최대 너비 설정
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item?.member?.nickname ?? '알 수 없음',
+                                    style: CustomTextStyles.p2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
+                                  SizedBox(height: 8.h),
+                                  Text(
+                                    memberLocationName,
+                                    style: CustomTextStyles.p3.copyWith(
+                                      color: AppColors.lightGray
+                                          .withValues(alpha: 0.7),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                             const Spacer(),
                             GestureDetector(
@@ -469,6 +477,17 @@ class _ItemDetailDescriptionScreenState
                                 ),
                               ),
                             ),
+                            !widget.isMyItem && widget.isRequestManagement
+                                ? Padding(
+                                    padding: EdgeInsets.only(left: 16.0.w),
+                                    child: const ChattingButton(
+                                      isEnabled: true,
+                                      buttonText: '채팅하기',
+                                      buttonWidth: 96,
+                                      buttonHeight: 32,
+                                    ),
+                                  )
+                                : const SizedBox(),
                           ],
                         ),
                       ),
