@@ -31,10 +31,13 @@ class UserInfo {
   factory UserInfo() => _instance;
   UserInfo._internal();
 
-  // === 헬퍼 메서드들 ===
+  // === 헬퍼/상수 ===
+  /// named parameter가 "전달되지 않음"을 나타내는 sentinel
+  static const Object _unset = Object();
 
   /// 값이 있으면 저장, null이면 키 제거 (String)
-  static Future<void> _setOrRemove(SharedPreferences prefs, String key, String? value) async {
+  static Future<void> _setOrRemove(
+      SharedPreferences prefs, String key, String? value) async {
     if (value != null && value.isNotEmpty) {
       await prefs.setString(key, value);
     } else {
@@ -43,7 +46,8 @@ class UserInfo {
   }
 
   /// 값이 있으면 저장, null이면 키 제거 (double)
-  static Future<void> _setOrRemoveDouble(SharedPreferences prefs, String key, double? value) async {
+  static Future<void> _setOrRemoveDouble(
+      SharedPreferences prefs, String key, double? value) async {
     if (value != null) {
       await prefs.setDouble(key, value);
     } else {
@@ -55,54 +59,75 @@ class UserInfo {
 
   /// Member 정보 저장 (API 응답 데이터 저장용)
   Future<void> saveMemberInfo({
-    String? memberId,
-    String? nickname,
-    String? email,
-    String? profileUrl,
-    String? socialPlatform,
-    String? role,
-    String? accountStatus,
-    double? latitude,
-    double? longitude,
-    DateTime? createdDate,
-    DateTime? updatedDate,
+    Object? memberId = _unset,
+    Object? nickname = _unset,
+    Object? email = _unset,
+    Object? profileUrl = _unset,
+    Object? socialPlatform = _unset,
+    Object? role = _unset,
+    Object? accountStatus = _unset,
+    Object? latitude = _unset,
+    Object? longitude = _unset,
+    Object? createdDate = _unset,
+    Object? updatedDate = _unset,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Member 관련 정보 저장 (값 없으면 키 제거)
-    await _setOrRemove(prefs, 'memberId', memberId);
-    await _setOrRemove(prefs, 'nickname', nickname);
-    await _setOrRemove(prefs, 'email', email);
-    await _setOrRemove(prefs, 'profileUrl', profileUrl);
-    await _setOrRemove(prefs, 'socialPlatform', socialPlatform);
-    await _setOrRemove(prefs, 'role', role);
-    await _setOrRemove(prefs, 'accountStatus', accountStatus);
-    await _setOrRemoveDouble(prefs, 'latitude', latitude);
-    await _setOrRemoveDouble(prefs, 'longitude', longitude);
-
-    if (createdDate != null) {
-      await prefs.setString('createdDate', createdDate.toIso8601String());
-    } else {
-      await prefs.remove('createdDate');
+    // Member 관련 ㄴ정보 저장 (전달된 필드만 반영)
+    if (!identical(memberId, _unset)) {
+      await _setOrRemove(prefs, 'memberId', memberId as String?);
+      this.memberId = memberId;
     }
-    if (updatedDate != null) {
-      await prefs.setString('updatedDate', updatedDate.toIso8601String());
-    } else {
-      await prefs.remove('updatedDate');
+    if (!identical(nickname, _unset)) {
+      await _setOrRemove(prefs, 'nickname', nickname as String?);
+      this.nickname = nickname;
     }
-
-    // 메모리에 캐시
-    this.memberId = memberId;
-    this.nickname = nickname;
-    this.email = email;
-    this.profileUrl = profileUrl;
-    this.socialPlatform = socialPlatform;
-    this.role = role;
-    this.accountStatus = accountStatus;
-    this.latitude = latitude;
-    this.longitude = longitude;
-    this.createdDate = createdDate;
-    this.updatedDate = updatedDate;
+    if (!identical(email, _unset)) {
+      await _setOrRemove(prefs, 'email', email as String?);
+      this.email = email;
+    }
+    if (!identical(profileUrl, _unset)) {
+      await _setOrRemove(prefs, 'profileUrl', profileUrl as String?);
+      this.profileUrl = profileUrl;
+    }
+    if (!identical(socialPlatform, _unset)) {
+      await _setOrRemove(prefs, 'socialPlatform', socialPlatform as String?);
+      this.socialPlatform = socialPlatform;
+    }
+    if (!identical(role, _unset)) {
+      await _setOrRemove(prefs, 'role', role as String?);
+      this.role = role;
+    }
+    if (!identical(accountStatus, _unset)) {
+      await _setOrRemove(prefs, 'accountStatus', accountStatus as String?);
+      this.accountStatus = accountStatus;
+    }
+    if (!identical(latitude, _unset)) {
+      await _setOrRemoveDouble(prefs, 'latitude', latitude as double?);
+      this.latitude = latitude;
+    }
+    if (!identical(longitude, _unset)) {
+      await _setOrRemoveDouble(prefs, 'longitude', longitude as double?);
+      this.longitude = longitude;
+    }
+    if (!identical(createdDate, _unset)) {
+      final DateTime? cd = createdDate as DateTime?;
+      if (cd != null) {
+        await prefs.setString('createdDate', cd.toIso8601String());
+      } else {
+        await prefs.remove('createdDate');
+      }
+      this.createdDate = cd;
+    }
+    if (!identical(updatedDate, _unset)) {
+      final DateTime? ud = updatedDate as DateTime?;
+      if (ud != null) {
+        await prefs.setString('updatedDate', ud.toIso8601String());
+      } else {
+        await prefs.remove('updatedDate');
+      }
+      this.updatedDate = ud;
+    }
   }
 
   /// 기본 사용자 정보 저장 (소셜 로그인용)
@@ -200,15 +225,15 @@ class UserInfo {
   /// 온보딩이 필요한지 확인
   bool get needsOnboarding {
     return isRequiredTermsAgreed != true ||
-           isMemberLocationSaved != true ||
-           isItemCategorySaved != true;
+        isMemberLocationSaved != true ||
+        isItemCategorySaved != true;
   }
 
   /// 다음 온보딩 단계 결정
   int get nextOnboardingStep {
-    if (isRequiredTermsAgreed != true) return 1;  // 이용약관 동의
-    if (isMemberLocationSaved != true) return 2;  // 위치 인증
-    if (isItemCategorySaved != true) return 3;    // 카테고리 선택
+    if (isRequiredTermsAgreed != true) return 1; // 이용약관 동의
+    if (isMemberLocationSaved != true) return 2; // 위치 인증
+    if (isItemCategorySaved != true) return 3; // 카테고리 선택
     return 1; // 기본값
   }
 
@@ -246,10 +271,23 @@ class UserInfo {
 
     // 모든 키 삭제
     final keysToRemove = [
-      'memberId', 'nickname', 'email', 'profileUrl', 'socialPlatform',
-      'role', 'accountStatus', 'latitude', 'longitude', 'createdDate', 'updatedDate',
-      'isFirstLogin', 'isFirstItemPosted', 'isItemCategorySaved',
-      'isMemberLocationSaved', 'isMarketingInfoAgreed', 'isRequiredTermsAgreed'
+      'memberId',
+      'nickname',
+      'email',
+      'profileUrl',
+      'socialPlatform',
+      'role',
+      'accountStatus',
+      'latitude',
+      'longitude',
+      'createdDate',
+      'updatedDate',
+      'isFirstLogin',
+      'isFirstItemPosted',
+      'isItemCategorySaved',
+      'isMemberLocationSaved',
+      'isMarketingInfoAgreed',
+      'isRequiredTermsAgreed'
     ];
 
     for (final key in keysToRemove) {
@@ -275,5 +313,4 @@ class UserInfo {
     isMarketingInfoAgreed = null;
     isRequiredTermsAgreed = null;
   }
-
 }
