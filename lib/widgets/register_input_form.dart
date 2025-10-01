@@ -369,6 +369,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   @override
   Widget build(BuildContext context) {
+    // 수정 / 등록
+    final String modeText = widget.isEditMode ? '수정' : '등록';
+
     if (_isInitLoading) {
       return const RegisterInputFormSkeleton();
     }
@@ -999,7 +1002,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
                     try {
                       debugPrint(
-                          '물품 등록 시작 - longitude: $_longitude, latitude: $_latitude');
+                          '물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
                       setState(() {
                         _isLoading = true;
                       });
@@ -1030,13 +1033,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       if (context.mounted) {
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('물품이 성공적으로 등록되었습니다.')),
+                          SnackBar(content: Text('물품이 성공적으로 $modeText되었습니다.')),
                         );
                       }
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('물품 등록에 실패했습니다: $e')),
+                          SnackBar(content: Text('물품 $modeText에 실패했습니다: $e')),
                         );
                       }
                     }

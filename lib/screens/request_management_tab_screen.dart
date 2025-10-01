@@ -321,6 +321,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                     imageSize: Size(MediaQuery.of(context).size.width, 400.h),
                     currentImageIndex: 0,
                     heroTag: 'itemImage_${takeItem.itemId!}_0', // ← 인덱스 포함
+                    isMyItem: false,
+                    isRequestManagement: true,
                   ),
                 );
               },
@@ -555,6 +557,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   currentImageIndex: 0,
                   heroTag:
                       'itemImage_${_itemCards[index].itemId}_0', // ← 인덱스 포함
+                  isMyItem: true,
+                  isRequestManagement: true,
                 ),
               );
             },
@@ -732,6 +736,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                             currentImageIndex: 0,
                             heroTag:
                                 'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
+                            isMyItem: false,
+                            isRequestManagement: true,
                           ),
                         );
                       },

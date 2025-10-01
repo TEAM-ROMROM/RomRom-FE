@@ -132,6 +132,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               heroTag:
                                   'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                               homeFeedItem: widget.item,
+                              isMyItem: false,
+                              isRequestManagement: false,
                             ),
                           ),
                         );

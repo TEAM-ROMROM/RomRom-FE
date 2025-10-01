@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:romrom_fe/screens/item_modification_screen.dart';
+import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/services/location_service.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart';
@@ -17,7 +19,11 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/common_success_modal.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/report_menu_button.dart';
+import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/item_detail_image_container.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/utils/location_utils.dart';
@@ -31,6 +37,8 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   final int currentImageIndex;
   final String heroTag;
   final HomeFeedItem? homeFeedItem;
+  final bool isMyItem;
+  final bool isRequestManagement;
 
   const ItemDetailDescriptionScreen({
     super.key,
@@ -38,6 +46,8 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
     required this.imageSize,
     required this.currentImageIndex,
     required this.heroTag,
+    required this.isMyItem, // 내 물품인지 여부
+    required this.isRequestManagement, // 요청 관리 화면에서 왔는지 여부
     this.homeFeedItem,
   });
 
@@ -187,6 +197,42 @@ class _ItemDetailDescriptionScreenState
       return ItemTradeOption.fromServerName(serverName).label;
     } catch (e) {
       return serverName;
+    }
+  }
+
+  /// 물품 삭제
+  Future<void> _deleteItem(Item item) async {
+    if (item.itemId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('물품 ID가 없습니다'),
+          backgroundColor: AppColors.warningRed,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final itemApi = ItemApi();
+      await itemApi.deleteItem(item.itemId!);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('물품이 삭제되었습니다'),
+            backgroundColor: AppColors.primaryYellow,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}'),
+            backgroundColor: AppColors.warningRed,
+          ),
+        );
+      }
     }
   }
 
@@ -600,12 +646,67 @@ class _ItemDetailDescriptionScreenState
                 ? 59.h
                 : MediaQuery.of(context).padding.top),
             right: 24.w,
-            child: GestureDetector(
-              /// TODO: 더보기 기능 구현
-              onTap: () => debugPrint('더보기 버튼 클릭'),
-              child: Icon(AppIcons.dotsVertical,
-                  size: 30.sp, color: AppColors.textColorWhite),
-            ),
+            child: !widget.isMyItem
+                ? ReportMenuButton(
+                    onReportPressed: () async {
+                      final bool? reported = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReportScreen(
+                            itemId: widget.itemId,
+                          ),
+                        ),
+                      );
+
+                      if (reported == true && mounted) {
+                        await showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => CommonSuccessModal(
+                              message: '신고가 접수되었습니다.',
+                              onConfirm: () {
+                                Navigator.of(context).pop();
+                                Navigator.of(context).pop();
+                              }),
+                        );
+                      }
+                    },
+                  )
+                : RomRomContextMenu(items: [
+                    ContextMenuItem(
+                      id: 'changeTradeStatus',
+                      title: '거래 완료로 변경',
+                      onTap: () async {
+                        //TODO : 바꿔야 됨
+                      },
+                    ),
+                    ContextMenuItem(
+                      id: 'edit',
+                      title: '수정',
+                      onTap: () {
+                        context.navigateTo(
+                          screen: ItemModificationScreen(
+                            itemId: item?.itemId!,
+                            onClose: () {
+                              Navigator.pop(context);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    ContextMenuItem(
+                      id: 'delete',
+                      title: '삭제',
+                      textColor: AppColors.itemOptionsMenuDeleteText,
+                      onTap: () async {
+                        await _deleteItem(item!);
+
+                        if (mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
+                  ]),
           ),
         ],
       ),
