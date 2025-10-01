@@ -159,7 +159,7 @@ class TradeApi {
   }
 
   /// 거래 완료로 변경 API
-  /// `POST /api/trade/get/rate`
+  /// `POST /api/trade/accept`
   Future<void> updateTradeStatusAccept(TradeRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/accept';
 

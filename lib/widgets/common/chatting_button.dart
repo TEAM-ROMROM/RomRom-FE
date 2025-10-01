@@ -61,7 +61,7 @@ class ChattingButton extends StatelessWidget {
               : disabledOnPressed, // 활성화와 비활성화 일 때 onPressed 별로 처리
           style: TextButton.styleFrom(
             backgroundColor: backgroundColor,
-            minimumSize: Size(316.w, 0),
+            minimumSize: Size(buttonWidth.w, 0),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4.r)),
           ), // 최소 너비 설정, 높이 자동
