@@ -23,7 +23,8 @@ class TradeApi {
     final Map<String, dynamic> fields = {
       'takeItemId': request.takeItemId,
       'giveItemId': request.giveItemId,
-      if (request.itemTradeOptions != null && request.itemTradeOptions!.isNotEmpty)
+      if (request.itemTradeOptions != null &&
+          request.itemTradeOptions!.isNotEmpty)
         'itemTradeOptions': request.itemTradeOptions!.join(','),
     };
 
@@ -155,5 +156,35 @@ class TradeApi {
     }
 
     return tradeResponse;
+  }
+
+  /// 거래 완료로 변경 API
+  /// `POST /api/trade/accept`
+  Future<void> updateTradeStatusAccept(TradeRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/trade/accept';
+
+    final id = request.tradeRequestHistoryId;
+    if (id == null || id.isEmpty) {
+      throw ArgumentError('tradeRequestHistoryId is required');
+    }
+
+    final Map<String, dynamic> fields = {
+      "tradeRequestHistoryId": id,
+    };
+
+    http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        // 여기서는 호출되지 않음 - 아래에서 직접 처리
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      debugPrint('거래 완료로 변경 성공');
+    } else {
+      throw Exception('거래 완료로 변경 실패: ${response.statusCode}');
+    }
   }
 }
