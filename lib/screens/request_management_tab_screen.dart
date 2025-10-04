@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'dart:async';
 
 import 'package:romrom_fe/enums/item_trade_option.dart';
@@ -108,6 +109,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       final response = await itemApi.getMyItems(ItemRequest(
         pageNumber: _currentPage,
         pageSize: _pageSize,
+        itemStatus: ItemStatus.available.serverName,
       ));
 
       if (!mounted) return;
