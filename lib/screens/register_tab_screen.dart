@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -101,8 +102,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       final request = ItemRequest(
         pageNumber: isRefresh ? 0 : _currentPage,
         pageSize: _pageSize,
-        // TODO: 백엔드에서 거래상태 필터링 지원 시 추가
-        // tradeStatus: _isCompletedSelected ? 'COMPLETED' : 'SELLING',
+        itemStatus: _isCompletedSelected ? 'EXCHANGED' : 'AVAILABLE',
       );
 
       final response = await itemApi.getMyItems(request);
@@ -149,8 +149,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       final request = ItemRequest(
         pageNumber: _currentPage + 1,
         pageSize: _pageSize,
-        // TODO: 백엔드에서 거래상태 필터링 지원 시 추가
-        // tradeStatus: _isCompletedSelected ? 'COMPLETED' : 'SELLING',
+        itemStatus: _isCompletedSelected
+            ? ItemStatus.exchanged.serverName
+            : ItemStatus.available.serverName,
       );
 
       final response = await itemApi.getMyItems(request);
@@ -276,7 +277,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     }
 
     final filteredItems = _myItems.where((item) {
-      return true; // TODO: 필터 로직
+      return _isCompletedSelected
+          ? item.itemStatus == ItemStatus.exchanged.serverName
+          : item.itemStatus == ItemStatus.available.serverName;
     }).toList();
 
     if (filteredItems.isEmpty) {
@@ -545,9 +548,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         _isCompletedSelected = isCompleted;
       });
 
-      // 클라이언트 사이드 필터링 (백엔드 필터링 미지원)
-      // TODO: 백엔드에서 거래상태 필터링 지원 시 API 재요청으로 변경
-      // _loadMyItems(isRefresh: true);
+      _loadMyItems(isRefresh: true);
     }
   }
 
