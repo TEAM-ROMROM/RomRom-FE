@@ -48,8 +48,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                   try {
                     await memberApi.savePreferredCategories(selectedCategories);
                     widget.onComplete();
-                    await RomAuthApi()
-                        .fetchAndSaveMemberInfo(); // FIXME : 로그인 성공 후 회원 정보 가져와서 저장
+                    await RomAuthApi().fetchAndSaveMemberInfo();
                   } catch (e) {
                     debugPrint("Error: $e");
                     if (context.mounted) {

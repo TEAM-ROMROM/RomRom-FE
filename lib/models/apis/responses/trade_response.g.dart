@@ -35,6 +35,7 @@ TradeRequestHistory _$TradeRequestHistoryFromJson(Map<String, dynamic> json) =>
       giveItem: _itemFromJson(json['giveItem']),
       itemTradeOptions: _stringListFromJson(json['itemTradeOptions']),
       tradeStatus: json['tradeStatus'] as String?,
+      isNew: json['isNew'] as bool?,
       createdDate: json['createdDate'] == null
           ? null
           : DateTime.parse(json['createdDate'] as String),
@@ -53,6 +54,7 @@ Map<String, dynamic> _$TradeRequestHistoryToJson(
       'giveItem': _itemToJson(instance.giveItem),
       'itemTradeOptions': _stringListToJson(instance.itemTradeOptions),
       'tradeStatus': instance.tradeStatus,
+      'isNew': instance.isNew,
     };
 
 PagedTradeRequestHistory _$PagedTradeRequestHistoryFromJson(

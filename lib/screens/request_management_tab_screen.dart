@@ -158,7 +158,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         title: d.itemName ?? ' ',
         price: d.price ?? 0,
         likeCount: d.likeCount ?? 0,
-        aiPrice: d.aiPrice ?? false,
+        aiPrice: d.isAiPredictedPrice ?? false,
       );
 
       itemCards.add(itemCard);
@@ -748,7 +748,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         title: giveItem.itemName ?? ' ',
                         address: giveItem.address!,
                         createdDate: giveItem.createdDate!,
-                        isNew: true, // FIXME : 벡엔드 isNew 로직구현 후 수정
+                        isNew: request.isNew!,
                         tradeOptions: giveItem.itemTradeOptions != null
                             ? giveItem.itemTradeOptions!
                                 .map((s) => ItemTradeOption.values
