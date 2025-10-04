@@ -102,7 +102,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       final request = ItemRequest(
         pageNumber: isRefresh ? 0 : _currentPage,
         pageSize: _pageSize,
-        itemStatus: _isCompletedSelected ? 'EXCHANGED' : 'AVAILABLE',
+        itemStatus: _isCompletedSelected
+            ? ItemStatus.exchanged.serverName
+            : ItemStatus.available.serverName,
       );
 
       final response = await itemApi.getMyItems(request);

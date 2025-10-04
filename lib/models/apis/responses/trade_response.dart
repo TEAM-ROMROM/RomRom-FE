@@ -47,7 +47,7 @@ class TradeRequestHistory extends BaseEntity {
     required this.giveItem,
     required this.itemTradeOptions,
     required this.tradeStatus,
-    required this.isNew,
+    this.isNew,
     super.createdDate,
     super.updatedDate,
   });

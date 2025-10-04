@@ -750,7 +750,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         title: giveItem.itemName ?? ' ',
                         address: giveItem.address!,
                         createdDate: giveItem.createdDate!,
-                        isNew: request.isNew!,
+                        isNew: request.isNew ?? false,
                         tradeOptions: giveItem.itemTradeOptions != null
                             ? giveItem.itemTradeOptions!
                                 .map((s) => ItemTradeOption.values
