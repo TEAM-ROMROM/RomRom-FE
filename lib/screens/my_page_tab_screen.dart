@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -42,7 +43,10 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
     try {
       final itemApi = ItemApi();
-      final request = ItemRequest(pageNumber: 0, pageSize: 30);
+      final request = ItemRequest(
+          pageNumber: 0,
+          pageSize: 30,
+          itemStatus: ItemStatus.available.serverName);
       final response = await itemApi.getMyItems(request);
 
       setState(() {
