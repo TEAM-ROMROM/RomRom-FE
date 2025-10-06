@@ -52,7 +52,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   int _currentPage = 0; // 페이징 용(데이터)
   // ignore: unused_field
   int _currentFeedIndex = 0; // 화면 상 현재 보고 있는 피드 인덱스
-  final int _pageSize = 1;
+  final int _pageSize = 10;
   // 초기 로딩 상태
   bool _isLoading = true;
   // 추가 아이템 로딩 상태
