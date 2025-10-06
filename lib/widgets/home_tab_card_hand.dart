@@ -36,7 +36,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   late Animation<double> _pullAnimation;
 
   // 덱/제스처 상태
-  final bool _isDeckRaised = false;
   double _orbitAngle = 0.0;
 
   bool _panStartedOnCard = false; // 터치 시작이 카드 위?
@@ -327,13 +326,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     _startCardId = null;
     _hasStartedCardDrag = false;
 
-    if (_isDeckRaised) {
-      final cardId = _findCardAtPosition(details.localPosition);
-      if (cardId != null) {
-        _panStartedOnCard = true;
-        _startCardId = cardId;
-        // 여기서는 선택 표시하지 않음 (수직 임계치 통과할 때 선택)
-      }
+    final cardId = _findCardAtPosition(details.localPosition);
+    if (cardId != null) {
+      _panStartedOnCard = true;
+      _startCardId = cardId;
+      // 여기서는 선택 표시하지 않음 (수직 임계치 통과할 때 선택)
     }
   }
 
@@ -349,7 +346,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     });
 
     // 2) 카드 드래그는 조건부
-    if (_isDeckRaised && _panStartedOnCard && _startCardId != null) {
+    if (_panStartedOnCard && _startCardId != null) {
       // 수직 임계치 통과 시점에 '카드 드래그 모드' 진입 + 선택 고정
       const double selectThreshold = 10.0; // px
       if (!_hasStartedCardDrag && dy.abs() > selectThreshold) {
@@ -404,7 +401,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   void _handlePanEnd(DragEndDetails details) {
     final dy = _panStartPosition.dy - _currentPanPosition.dy;
 
-    if (_isDeckRaised && _hasStartedCardDrag) {
+    if (_hasStartedCardDrag) {
       if (_pulledCardId != null && dy > 100) {
         // 드롭 발생
         if (widget.onCardDrop != null) {
