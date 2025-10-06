@@ -135,6 +135,7 @@ class ItemApi {
     final Map<String, dynamic> fields = {
       'pageNumber': request.pageNumber.toString(),
       'pageSize': request.pageSize.toString(),
+      'itemStatus': request.itemStatus,
     };
 
     await ApiClient.sendMultipartRequest(
