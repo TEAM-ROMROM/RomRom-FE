@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
@@ -106,10 +107,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     debugPrint('====================================');
     debugPrint('HomeTabScreen.navigateToItemDetail 호출됨: itemId=$itemId');
     debugPrint('mounted: $mounted');
-    
+
     // 첫 물품 상세 화면으로 이동하는 것을 표시 (코치마크를 미루기 위함)
     _isNavigatingToFirstItemDetail = true;
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       debugPrint('PostFrameCallback 실행됨');
       if (mounted) {
@@ -117,7 +118,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         // 화면 크기 가져오기
         final screenWidth = MediaQuery.of(context).size.width;
         final imageHeight = screenWidth; // 정사각형 이미지
-        
+
         await Navigator.push(
           context,
           MaterialPageRoute(
@@ -131,12 +132,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
         );
-        
+
         // 상세 화면에서 돌아왔을 때 코치마크 표시
         debugPrint('상세 화면에서 돌아옴! 이제 코치마크를 표시합니다.');
         _isNavigatingToFirstItemDetail = false;
         _checkAndShowCoachMark();
-        
+
         debugPrint('상세 페이지 네비게이션 완료');
       } else {
         debugPrint('⚠️ HomeTabScreen이 mounted되지 않음!');
@@ -167,6 +168,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       debugPrint('  - isFirstItemPosted: ${userInfo.isFirstItemPosted}');
       debugPrint('  - isCoachMarkShown: ${userInfo.isCoachMarkShown}');
       debugPrint('  - _isNavigatingToFirstItemDetail: $_isNavigatingToFirstItemDetail');
+
+      // 내 물품이 하나라도 있는지 확인 (pageSize=1로 최소 데이터 호출)
+      final itemApi = ItemApi();
+      final response = await itemApi.getMyItems(
+        ItemRequest(
+            pageNumber: 0,
+            pageSize: 1,
+            itemStatus: ItemStatus.available.serverName),
+      );
 
       // 블러 표시 여부: 첫 물건을 등록하지 않았을 때 표시
       final bool shouldShowBlur = userInfo.isFirstItemPosted != true;
@@ -552,7 +562,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     try {
       final itemApi = ItemApi();
       final response = await itemApi.getMyItems(
-        ItemRequest(pageNumber: 0, pageSize: 10),
+        ItemRequest(
+            pageNumber: 0,
+            pageSize: 10,
+            itemStatus: ItemStatus.available.serverName),
       );
 
       if (!mounted) return;

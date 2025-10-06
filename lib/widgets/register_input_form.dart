@@ -319,7 +319,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       imageCount = imageUrls.length.clamp(0, 10);
       _latitude = item?.latitude;
       _longitude = item?.longitude;
-      useAiPrice = item?.aiPrice ?? false;
+      useAiPrice = item?.isAiPredictedPrice ?? false;
     }
   }
 
