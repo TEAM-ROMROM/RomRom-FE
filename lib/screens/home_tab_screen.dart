@@ -146,57 +146,34 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     debugPrint('====================================');
   }
 
-  /// 홈 화면 블러 및 코치마크 표시 로직
+  /// 홈 화면 블러 표시 로직
   ///
   /// 블러 표시 조건:
-  /// - 사용자가 등록한 물품이 하나도 없을 때
+  /// - 내 물건이 0개일 때 (실제 물건 개수 기준)
   ///
   /// 코치마크 표시 조건:
-  /// - 첫 물건 등록 완료 (isFirstItemPosted == true)
-  /// - 코치마크를 아직 보지 않음 (isCoachMarkShown != true)
-  /// - 블러가 표시되지 않을 때 (물품이 있을 때)
-  /// - 첫 물품 상세 화면으로 이동 중이 아닐 때
+  /// - 첫 물품 등록 후 상세 화면에서 돌아올 때만 표시
+  /// - _checkAndShowCoachMark()에서 처리
   Future<void> _checkFirstMainScreen() async {
     debugPrint('====================================');
-    debugPrint('_checkFirstMainScreen 호출됨');
+    debugPrint('_checkFirstMainScreen 호출됨 (초기 진입)');
     try {
-      final userInfo = UserInfo();
-      await userInfo.getUserInfo();
-
-      debugPrint('UserInfo 로드 완료:');
-      debugPrint('  - isFirstItemPosted: ${userInfo.isFirstItemPosted}');
-      debugPrint('  - isCoachMarkShown: ${userInfo.isCoachMarkShown}');
-      debugPrint('  - _isNavigatingToFirstItemDetail: $_isNavigatingToFirstItemDetail');
-
-      // 블러 표시 여부: 첫 물건을 등록하지 않았을 때 표시
-      final bool shouldShowBlur = userInfo.isFirstItemPosted != true;
-
-      // 코치마크 표시 여부: 첫 물건 등록 완료 && 코치마크 미표시 && 상세 화면 이동 중 아님
-      final bool shouldShowCoachMark = (userInfo.isFirstItemPosted == true) &&
-          (userInfo.isCoachMarkShown != true) &&
-          !_isNavigatingToFirstItemDetail;
+      // 블러 표시 여부: 내 물건 개수가 0개일 때
+      final bool shouldShowBlur = _myCards.isEmpty;
 
       debugPrint('조건 체크:');
+      debugPrint('  - 내 물건 개수: ${_myCards.length}');
       debugPrint('  - shouldShowBlur: $shouldShowBlur');
-      debugPrint('  - shouldShowCoachMark: $shouldShowCoachMark');
 
       setState(() {
         _isBlurShown = shouldShowBlur;
       });
 
-      // 코치마크 표시 (상세 화면 이동 중이 아닐 때만)
-      if (shouldShowCoachMark) {
-        debugPrint('✅ 코치마크 표시 조건 충족!');
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          debugPrint('코치마크 오버레이 표시 시작...');
-          _showCoachMarkOverlay();
-        });
-      } else {
-        debugPrint('❌ 코치마크 표시 조건 불충족');
-      }
+      // 코치마크는 여기서 표시하지 않음!
+      // 첫 물품 등록 후 상세 화면 복귀 시에만 _checkAndShowCoachMark()에서 표시
+      debugPrint('코치마크는 첫 물품 등록 플로우에서만 표시됨');
     } catch (e) {
       debugPrint('⚠️ 첫 화면 체크 실패: $e');
-      // 실패 시 블러 숨김 (안전한 기본값)
       setState(() {
         _isBlurShown = false;
       });
@@ -560,7 +537,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       final myItems = response.itemPage?.content ?? [];
       setState(() {
         _myCards = myItems;
+        // 내 물건 개수에 따라 블러 상태 업데이트
+        _isBlurShown = myItems.isEmpty;
       });
+      
+      debugPrint('내 카드 로딩 완료: ${myItems.length}개, 블러 표시: ${myItems.isEmpty}');
     } catch (e) {
       debugPrint('내 카드 로딩 실패: $e');
       // 테스트용 더미 데이터

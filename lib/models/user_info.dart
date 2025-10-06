@@ -275,10 +275,11 @@ class UserInfo {
   // === 데이터 삭제 메서드 ===
 
   /// 로그아웃 시 모든 정보 삭제
+  /// isCoachMarkShown은 디바이스 단위로 유지 (로그아웃과 무관)
   Future<void> clearAllInfo() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 모든 키 삭제
+    // 로그아웃 시 삭제할 키 목록 (isCoachMarkShown 제외)
     final keysToRemove = [
       'memberId',
       'nickname',
@@ -297,14 +298,14 @@ class UserInfo {
       'isMemberLocationSaved',
       'isMarketingInfoAgreed',
       'isRequiredTermsAgreed',
-      'isCoachMarkShown'
+      // 'isCoachMarkShown' - 디바이스에 영구 저장, 로그아웃 시에도 유지
     ];
 
     for (final key in keysToRemove) {
       await prefs.remove(key);
     }
 
-    // 메모리 캐시도 초기화
+    // 메모리 캐시도 초기화 (isCoachMarkShown 제외)
     memberId = null;
     nickname = null;
     email = null;
@@ -322,6 +323,6 @@ class UserInfo {
     isMemberLocationSaved = null;
     isMarketingInfoAgreed = null;
     isRequiredTermsAgreed = null;
-    isCoachMarkShown = null;
+    // isCoachMarkShown은 유지 (다음 로그인 시 계속 사용)
   }
 }
