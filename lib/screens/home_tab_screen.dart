@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
@@ -148,8 +149,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// - _checkAndShowCoachMark()에서 처리
   Future<void> _checkFirstMainScreen() async {
     debugPrint('====================================');
-    debugPrint('_checkFirstMainScreen 호출됨 (초기 진입)');
+    debugPrint('_checkFirstMainScreen 호출됨');
     try {
+
       // 블러 표시 여부: 내 물건 개수가 0개일 때
       final bool shouldShowBlur = _myCards.isEmpty;
 
@@ -521,7 +523,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     try {
       final itemApi = ItemApi();
       final response = await itemApi.getMyItems(
-        ItemRequest(pageNumber: 0, pageSize: 10),
+        ItemRequest(
+            pageNumber: 0,
+            pageSize: 10,
+            itemStatus: ItemStatus.available.serverName),
       );
 
       if (!mounted) return;
@@ -532,7 +537,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         // 내 물건 개수에 따라 블러 상태 업데이트
         _isBlurShown = myItems.isEmpty;
       });
-      
+
       debugPrint('내 카드 로딩 완료: ${myItems.length}개, 블러 표시: ${myItems.isEmpty}');
     } catch (e) {
       debugPrint('내 카드 로딩 실패: $e');
