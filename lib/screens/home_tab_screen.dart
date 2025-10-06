@@ -28,7 +28,6 @@ import 'package:romrom_fe/services/location_service.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -65,8 +64,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   final ValueNotifier<int> _coachMarkPageNotifier = ValueNotifier<int>(0);
   // 오버레이 엔트리
   OverlayEntry? _overlayEntry;
-  // 첫 물품 등록 후 상세 화면 진입 플래그 (코치마크 표시를 미루기 위함)
-  bool _isNavigatingToFirstItemDetail = false;
 
   // 코치마크 이미지 목록
   final List<String> _coachMarkImages = [
@@ -106,10 +103,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     debugPrint('====================================');
     debugPrint('HomeTabScreen.navigateToItemDetail 호출됨: itemId=$itemId');
     debugPrint('mounted: $mounted');
-    
-    // 첫 물품 상세 화면으로 이동하는 것을 표시 (코치마크를 미루기 위함)
-    _isNavigatingToFirstItemDetail = true;
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       debugPrint('PostFrameCallback 실행됨');
       if (mounted) {
@@ -117,7 +111,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         // 화면 크기 가져오기
         final screenWidth = MediaQuery.of(context).size.width;
         final imageHeight = screenWidth; // 정사각형 이미지
-        
+
         await Navigator.push(
           context,
           MaterialPageRoute(
@@ -131,16 +125,14 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
         );
-        
+
         // 상세 화면에서 돌아왔을 때 코치마크 표시
         debugPrint('상세 화면에서 돌아옴! 이제 코치마크를 표시합니다.');
-        _isNavigatingToFirstItemDetail = false;
         _checkAndShowCoachMark();
-        
+
         debugPrint('상세 페이지 네비게이션 완료');
       } else {
         debugPrint('⚠️ HomeTabScreen이 mounted되지 않음!');
-        _isNavigatingToFirstItemDetail = false;
       }
     });
     debugPrint('====================================');
