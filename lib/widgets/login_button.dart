@@ -71,7 +71,7 @@ class _LoginButtonState extends State<LoginButton> {
             initialStep: userInfo.nextOnboardingStep,
           );
         } else {
-          nextScreen = const MainScreen();
+          nextScreen = MainScreen(key: MainScreen.globalKey);
         }
 
         if (context.mounted) {

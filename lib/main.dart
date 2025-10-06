@@ -84,7 +84,7 @@ Future<Widget> _determineInitialScreen() async {
     }
 
     debugPrint('토큰 유효 및 온보딩 완료: 메인 화면으로 이동');
-    return const MainScreen();
+    return MainScreen(key: MainScreen.globalKey);
   } catch (e) {
     debugPrint('사용자 정보 조회 실패: $e');
     return const LoginScreen();

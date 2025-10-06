@@ -19,6 +19,7 @@ class UserInfo {
   bool? isMemberLocationSaved;
   bool? isMarketingInfoAgreed;
   bool? isRequiredTermsAgreed;
+  bool? isCoachMarkShown;
 
   // === 위치 및 메타 정보 ===
   double? latitude;
@@ -148,6 +149,7 @@ class UserInfo {
     required bool isMemberLocationSaved,
     required bool isMarketingInfoAgreed,
     required bool isRequiredTermsAgreed,
+    bool? isCoachMarkShown,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -162,6 +164,12 @@ class UserInfo {
 
     for (final entry in statusMap.entries) {
       await prefs.setBool(entry.key, entry.value);
+    }
+
+    // isCoachMarkShown은 선택적 저장
+    if (isCoachMarkShown != null) {
+      await prefs.setBool('isCoachMarkShown', isCoachMarkShown);
+      this.isCoachMarkShown = isCoachMarkShown;
     }
 
     this.isFirstLogin = isFirstLogin;
@@ -218,6 +226,7 @@ class UserInfo {
     isMemberLocationSaved = prefs.getBool('isMemberLocationSaved');
     isMarketingInfoAgreed = prefs.getBool('isMarketingInfoAgreed');
     isRequiredTermsAgreed = prefs.getBool('isRequiredTermsAgreed');
+    isCoachMarkShown = prefs.getBool('isCoachMarkShown');
   }
 
   // === 온보딩 관련 로직 ===
@@ -287,7 +296,8 @@ class UserInfo {
       'isItemCategorySaved',
       'isMemberLocationSaved',
       'isMarketingInfoAgreed',
-      'isRequiredTermsAgreed'
+      'isRequiredTermsAgreed',
+      'isCoachMarkShown'
     ];
 
     for (final key in keysToRemove) {
@@ -312,5 +322,6 @@ class UserInfo {
     isMemberLocationSaved = null;
     isMarketingInfoAgreed = null;
     isRequiredTermsAgreed = null;
+    isCoachMarkShown = null;
   }
 }
