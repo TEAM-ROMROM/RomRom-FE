@@ -30,15 +30,13 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   // 애니메이션 컨트롤러들
   late AnimationController _fanController;
   late AnimationController _pullController;
-  late AnimationController _deckLiftController;
 
   // 애니메이션들
   late Animation<double> _fanAnimation;
   late Animation<double> _pullAnimation;
-  late Animation<double> _deckLift;
 
   // 덱/제스처 상태
-  bool _isDeckRaised = false;
+  final bool _isDeckRaised = false;
   double _orbitAngle = 0.0;
 
   bool _panStartedOnCard = false; // 터치 시작이 카드 위?
@@ -124,15 +122,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       curve: Curves.easeOut,
     );
 
-    _deckLiftController = AnimationController(
-      duration: const Duration(milliseconds: 220),
-      vsync: this,
-    );
-    _deckLift = CurvedAnimation(
-      parent: _deckLiftController,
-      curve: Curves.easeOutCubic,
-    );
-
     // 초기 팬 애니메이션 실행
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _fanController.forward();
@@ -147,27 +136,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     }
   }
 
-  void _setDeckRaised(bool raised) {
-    if (_isDeckRaised == raised) return;
-    setState(() => _isDeckRaised = raised);
-    if (raised) {
-      _deckLiftController.forward();
-    } else {
-      _deckLiftController.reverse();
-      // 내려갈 때 카드 관련 상태 리셋
-      _pulledCardId = null;
-      _isCardPulled = false;
-      _pullOffset = Offset.zero;
-      _pullController.value = 0.0;
-    }
-  }
-
   @override
   void dispose() {
     _iconAnimationController.dispose();
     _fanController.dispose();
     _pullController.dispose();
-    _deckLiftController.dispose();
     super.dispose();
   }
 
@@ -257,7 +230,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         _calculateCardTransform(index, totalCards, phase: _orbitAngle);
 
     return AnimatedBuilder(
-      animation: Listenable.merge([_fanAnimation, _pullAnimation, _deckLift]),
+      animation: Listenable.merge([_fanAnimation, _pullAnimation]),
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
@@ -290,12 +263,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                 ? 999
                 : transform['zIndex'] as int;
 
-        final deckLiftPx = 40.h; // 덱이 떠오르는 높이(기호대로 튜닝)
-        final liftedBottom = _baseBottom + (deckLiftPx * _deckLift.value);
-
         return Positioned(
           left: MediaQuery.of(context).size.width / 2 - _cardWidth / 2 + x,
-          bottom: liftedBottom + y, // 기본 위치 -130.h
+          bottom: _baseBottom + y, // 기본 위치
           child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
@@ -482,23 +452,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       key: _deckKey,
       clipBehavior: Clip.none,
       children: [
-        // ⬇️ 바깥 오버레이: 덱이 떠 있을 때만 탭으로 닫기
-        if (_isDeckRaised)
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => _setDeckRaised(false),
-            ),
-          ),
-
         // 덱(카드 핸드) 영역
         GestureDetector(
-          // 한 번 탭하면 덱이 올라옴
-          onTap: () {
-            if (!_isDeckRaised) {
-              _setDeckRaised(true);
-            }
-          },
           // 드래그 제스처
           onPanStart: _handlePanStart,
           onPanUpdate: _handlePanUpdate,

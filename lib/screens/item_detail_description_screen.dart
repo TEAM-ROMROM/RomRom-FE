@@ -751,12 +751,12 @@ class _ItemDetailDescriptionScreenState
     }
   }
 
-
   Future<void> _toggleLike() async {
     if (_likeInFlight) return;
 
     // 내가 작성한 게시글인지 확인
-    final isCurrentMember = await MemberManager.isCurrentMember(item?.member?.memberId);
+    final isCurrentMember =
+        await MemberManager.isCurrentMember(item?.member?.memberId);
     if (isCurrentMember) {
       if (mounted) {
         CommonSnackBar.show(
