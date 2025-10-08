@@ -265,7 +265,6 @@ jobs:
           # Flutter 환경 정보 출력
           echo "🔍 Flutter 환경 정보:"
           flutter --version
-          flutter doctor --android-licenses > /dev/null 2>&1 || echo "Android 라이센스 확인 생략"
           flutter doctor -v | head -20
           
           # 빌드 디렉토리 정리
@@ -277,12 +276,18 @@ jobs:
           echo "🔄 Flutter clean 및 의존성 재설치..."
           flutter clean
           flutter pub get
-          
+
+          # Gradle 성능 최적화 설정
+          export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4"
+          export JAVA_OPTS="-Xmx4g"
+          echo "✅ Gradle 최적화 설정 완료"
+
           # Flutter build 명령어에 버전 정보 전달
           # --build-name과 --build-number 플래그가 pubspec.yaml의 version을 오버라이드함
           # pubspec.yaml은 x.y.z 형식 유지, VERSION_CODE는 version.yml에서 자동 관리
           echo "🔨 Flutter build 실행..."
           echo "📋 명령어: flutter build appbundle --release --build-name=$VERSION_NAME --build-number=$VERSION_CODE --verbose"
+          echo "⏱️ 빌드 시작 시간: $(date '+%Y-%m-%d %H:%M:%S')"
 
           flutter build appbundle \
             --release \
