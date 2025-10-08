@@ -262,47 +262,167 @@ jobs:
           VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
           VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
           
-          echo "📝 pubspec.yaml 버전 업데이트: ${VERSION_NAME}+${VERSION_CODE}"
-          echo "🔍 수정 전 pubspec.yaml:"
-          grep "^version:" pubspec.yaml
+          echo "======================================"
+          echo "📝 pubspec.yaml 버전 업데이트 시작"
+          echo "======================================"
+          echo "목표 버전: ${VERSION_NAME}+${VERSION_CODE}"
+          echo "VERSION_NAME: $VERSION_NAME"
+          echo "VERSION_CODE: $VERSION_CODE"
           
-          # pubspec.yaml의 version 필드 업데이트
+          echo "🔍 수정 전 pubspec.yaml:"
+          grep "^version:" pubspec.yaml || echo "version 필드를 찾을 수 없습니다!"
+          
+          # pubspec.yaml의 version 필드 업데이트 (더 안전한 방법)
           cp pubspec.yaml pubspec.yaml.bak
-          awk -v new_version="${VERSION_NAME}+${VERSION_CODE}" '/^version:/ {print "version: " new_version; next} {print}' pubspec.yaml.bak > pubspec.yaml
+          
+          # sed를 사용한 더 직접적인 방법으로 변경
+          sed -i.tmp "s/^version:.*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
           
           echo "✅ 수정 후 pubspec.yaml:"
           grep "^version:" pubspec.yaml
           
-          # 검증: AAB 빌드 시 사용될 버전 확인
-          echo "🎯 Flutter가 인식할 버전:"
-          flutter --version
-          flutter pub get --offline || flutter pub get
+          # 수정이 제대로 되었는지 검증
+          UPDATED_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+          EXPECTED_VERSION="${VERSION_NAME}+${VERSION_CODE}"
+          
+          echo "🔍 버전 검증:"
+          echo "  예상: $EXPECTED_VERSION"
+          echo "  실제: $UPDATED_VERSION"
+          
+          if [ "$UPDATED_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "❌ 치명적 오류: pubspec.yaml 버전 업데이트 실패!"
+            echo "수동으로 다시 시도..."
+            
+            # 수동으로 파일 재작성
+            awk -v new_version="${VERSION_NAME}+${VERSION_CODE}" '
+            /^version:/ {print "version: " new_version; next} 
+            {print}
+            ' pubspec.yaml.bak > pubspec.yaml.new
+            mv pubspec.yaml.new pubspec.yaml
+            
+            echo "🔄 재시도 후 버전:"
+            grep "^version:" pubspec.yaml
+            
+            RETRY_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+            if [ "$RETRY_VERSION" != "$EXPECTED_VERSION" ]; then
+              echo "❌ 재시도도 실패! 빌드 중단"
+              exit 1
+            fi
+          fi
+          
+          echo "✅ pubspec.yaml 버전 업데이트 성공!"
+          
+          # Flutter 의존성 재설치
+          echo "🔄 Flutter 의존성 재설치..."
+          flutter pub get
           flutter analyze --no-fatal-infos || echo "분석 경고 무시"
+          
+          echo "======================================"
 
       # Flutter build appbundle (AAB 생성)
       - name: Build Android App Bundle (AAB)
         run: |
-          echo "🚀 AAB 빌드 시작..."
-          echo "📦 빌드에 사용될 버전: ${{ needs.prepare-build.outputs.version }}+${{ needs.prepare-build.outputs.version_code }}"
+          VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
+          VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
           
-          flutter build appbundle --release --verbose
+          echo "======================================"
+          echo "🚀 AAB 빌드 시작"
+          echo "======================================"
+          echo "빌드 버전: $VERSION_NAME"
+          echo "빌드 코드: $VERSION_CODE"
+          
+          # Flutter build 명령어에 명시적으로 버전 정보 전달
+          echo "🔨 Flutter build 실행 (명시적 버전 지정)..."
+          flutter build appbundle \
+            --release \
+            --build-name="$VERSION_NAME" \
+            --build-number="$VERSION_CODE" \
+            --verbose
           
           echo "✅ AAB 빌드 완료"
           ls -lh build/app/outputs/bundle/release/
           
-          # AAB 파일 내부의 실제 버전 정보 확인 (중요!)
-          echo "🔍 AAB 파일 내부 버전 정보 확인:"
-          if command -v aapt2 &> /dev/null; then
-            aapt2 dump badging build/app/outputs/bundle/release/app-release.aab 2>/dev/null | grep -E "package:|versionCode|versionName" || echo "aapt2로 확인 불가"
-          else
-            echo "⚠️ aapt2가 설치되어 있지 않습니다. bundletool로 확인 시도..."
+          # AAB 파일 존재 확인
+          AAB_FILE="build/app/outputs/bundle/release/app-release.aab"
+          if [ ! -f "$AAB_FILE" ]; then
+            echo "❌ AAB 파일이 생성되지 않았습니다!"
+            echo "빌드 디렉토리 내용:"
+            find build/ -name "*.aab" -o -name "*.apk" 2>/dev/null || echo "AAB/APK 파일을 찾을 수 없습니다"
+            exit 1
           fi
           
-          # bundletool로 버전 확인 (더 정확함)
-          if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
-            echo "📱 AAB 파일 존재 확인: OK"
-            unzip -p build/app/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml | strings | grep -E "versionCode|versionName" || echo "Manifest 직접 추출 시도..."
+          echo "📱 AAB 파일 크기: $(du -h "$AAB_FILE" | cut -f1)"
+          
+          # bundletool 다운로드 및 설치
+          echo "📦 bundletool 다운로드 중..."
+          BUNDLETOOL_VERSION="1.15.6"
+          wget -q "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar" -O bundletool.jar
+          
+          if [ ! -f "bundletool.jar" ]; then
+            echo "❌ bundletool 다운로드 실패"
+            exit 1
           fi
+          
+          echo "✅ bundletool 다운로드 완료"
+          
+          # AAB 파일 내부의 실제 버전 정보 확인 (중요!)
+          echo "======================================"
+          echo "🔍 AAB 파일 내부 버전 정보 검증"
+          echo "======================================"
+          
+          # AndroidManifest.xml에서 버전 정보 추출
+          echo "📋 AAB에서 실제 버전 정보 추출 중..."
+          MANIFEST_OUTPUT=$(java -jar bundletool.jar dump manifest --bundle="$AAB_FILE" 2>/dev/null)
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Manifest 추출 성공"
+            
+            # 실제 버전 코드와 버전 이름 추출
+            ACTUAL_VERSION_CODE=$(echo "$MANIFEST_OUTPUT" | grep -o 'android:versionCode="[0-9]*"' | grep -o '[0-9]*' | head -1)
+            ACTUAL_VERSION_NAME=$(echo "$MANIFEST_OUTPUT" | grep -o 'android:versionName="[^"]*"' | sed 's/android:versionName="//;s/"//' | head -1)
+            
+            echo "🎯 버전 정보 비교:"
+            echo "  예상 VERSION_CODE: $VERSION_CODE"
+            echo "  실제 VERSION_CODE: $ACTUAL_VERSION_CODE"
+            echo "  예상 VERSION_NAME: $VERSION_NAME"
+            echo "  실제 VERSION_NAME: $ACTUAL_VERSION_NAME"
+            
+            # 버전 코드 검증 (가장 중요!)
+            if [ "$ACTUAL_VERSION_CODE" != "$VERSION_CODE" ]; then
+              echo "❌ 치명적 오류: AAB의 VERSION_CODE가 예상과 다릅니다!"
+              echo "   이는 Google Play에서 '이미 사용된 버전 코드' 오류를 발생시킵니다."
+              echo "   pubspec.yaml 수정이나 Flutter build 과정에서 문제가 발생했습니다."
+              echo ""
+              echo "🔍 디버깅 정보:"
+              echo "   현재 pubspec.yaml 버전:"
+              grep "^version:" pubspec.yaml || echo "   version 필드를 찾을 수 없음"
+              echo ""
+              echo "   전체 Manifest 내용:"
+              echo "$MANIFEST_OUTPUT" | grep -E "versionCode|versionName|package"
+              exit 1
+            else
+              echo "✅ VERSION_CODE 검증 성공: $ACTUAL_VERSION_CODE"
+            fi
+            
+            # 버전 이름도 확인 (경고만)
+            if [ "$ACTUAL_VERSION_NAME" != "$VERSION_NAME" ]; then
+              echo "⚠️ 경고: VERSION_NAME이 예상과 다릅니다 (치명적이지 않음)"
+              echo "   예상: $VERSION_NAME, 실제: $ACTUAL_VERSION_NAME"
+            else
+              echo "✅ VERSION_NAME 검증 성공: $ACTUAL_VERSION_NAME"
+            fi
+            
+          else
+            echo "❌ bundletool로 Manifest 추출 실패"
+            echo "대체 방법으로 검증 시도..."
+            
+            # unzip으로 직접 확인 시도
+            unzip -p "$AAB_FILE" base/manifest/AndroidManifest.xml 2>/dev/null | strings | grep -E "versionCode|versionName" || echo "직접 추출도 실패"
+          fi
+          
+          echo "======================================"
+          echo "✅ AAB 빌드 및 검증 완료"
+          echo "======================================"
 
       # AAB 파일을 아티팩트로 업로드
       - name: Upload AAB artifact
@@ -412,6 +532,50 @@ jobs:
           
           echo "✅ AAB 파일 존재 확인"
           ls -lh "$AAB_PATH"
+          
+          # 배포 전 최종 AAB 검증 (중요!)
+          echo "======================================"
+          echo "🔍 배포 전 최종 AAB 검증"
+          echo "======================================"
+          
+          VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
+          VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
+          
+          # bundletool이 있는지 확인하고 없으면 다운로드
+          if [ ! -f "bundletool.jar" ]; then
+            echo "📦 bundletool 재다운로드 중..."
+            BUNDLETOOL_VERSION="1.15.6"
+            wget -q "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar" -O bundletool.jar
+          fi
+          
+          if [ -f "bundletool.jar" ]; then
+            echo "🔍 최종 AAB 버전 검증 중..."
+            MANIFEST_OUTPUT=$(java -jar bundletool.jar dump manifest --bundle="$AAB_PATH" 2>/dev/null)
+            
+            if [ $? -eq 0 ]; then
+              FINAL_VERSION_CODE=$(echo "$MANIFEST_OUTPUT" | grep -o 'android:versionCode="[0-9]*"' | grep -o '[0-9]*' | head -1)
+              FINAL_VERSION_NAME=$(echo "$MANIFEST_OUTPUT" | grep -o 'android:versionName="[^"]*"' | sed 's/android:versionName="//;s/"//' | head -1)
+              
+              echo "🎯 최종 버전 검증:"
+              echo "  기대 VERSION_CODE: $VERSION_CODE"
+              echo "  AAB의 VERSION_CODE: $FINAL_VERSION_CODE"
+              echo "  기대 VERSION_NAME: $VERSION_NAME"
+              echo "  AAB의 VERSION_NAME: $FINAL_VERSION_NAME"
+              
+              if [ "$FINAL_VERSION_CODE" != "$VERSION_CODE" ]; then
+                echo "❌ 치명적 오류: 최종 AAB 파일의 VERSION_CODE가 잘못되었습니다!"
+                echo "   Google Play에서 '버전 코드 $FINAL_VERSION_CODE이 이미 사용됨' 오류가 발생할 것입니다."
+                echo "   배포를 중단합니다."
+                exit 1
+              else
+                echo "✅ 최종 VERSION_CODE 검증 성공: $FINAL_VERSION_CODE"
+              fi
+            else
+              echo "⚠️ bundletool 검증 실패, 배포 계속 진행..."
+            fi
+          else
+            echo "⚠️ bundletool 없음, 검증 생략하고 배포 계속 진행..."
+          fi
 
           # Release notes 준비
           if [ -f "final_release_notes.txt" ]; then
@@ -421,19 +585,18 @@ jobs:
             echo "$RELEASE_NOTES"
             echo "─────────────────────────────────"
           else
-            RELEASE_NOTES="v${{ needs.prepare-build.outputs.version }} 업데이트"
+            RELEASE_NOTES="v$VERSION_NAME 업데이트"
             echo "⚠️ 기본 Release Notes로 업로드: $RELEASE_NOTES"
           fi
 
           # Fastlane이 인식할 수 있도록 changelog 파일 준비
-          VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
-          VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
           CHANGELOG_DIR="android/fastlane/metadata/android/ko-KR/changelogs"
           mkdir -p "$CHANGELOG_DIR"
           
-          echo "📋 버전 정보:"
+          echo "📋 배포 버전 정보:"
           echo "  - VERSION_NAME: $VERSION_NAME"
           echo "  - VERSION_CODE: $VERSION_CODE"
+          echo "  - AAB 파일 크기: $(du -h "$AAB_PATH" | cut -f1)"
           
           # 이미 만들어진 final_release_notes.txt를 Fastlane 디렉토리로 복사
           if [ -f "final_release_notes.txt" ]; then
@@ -463,13 +626,22 @@ jobs:
           echo "작업 디렉토리: $(pwd)"
           echo "AAB 경로: $AAB_PATH"
           echo "Service Account: $GOOGLE_PLAY_JSON_KEY"
-          echo "버전: $VERSION_NAME (코드: $VERSION_CODE)"
+          echo "배포 버전: $VERSION_NAME (코드: $VERSION_CODE)"
           echo "Changelog 파일: $CHANGELOG_DIR/${VERSION_CODE}.txt"
+          echo "현재 시간: $(date)"
+          echo "GitHub Run Number: ${{ github.run_number }}"
           echo "======================================"
           
           # Fastlane 실행
           echo "🚀 Fastlane 배포 시작..."
           cd android
+          
+          # Fastlane 실행 전 마지막 확인
+          echo "📋 Fastlane 실행 전 환경 변수 확인:"
+          echo "  AAB_PATH: $AAB_PATH"
+          echo "  VERSION_CODE: $VERSION_CODE"
+          echo "  VERSION_NAME: $VERSION_NAME"
+          
           fastlane deploy_internal
 
       # 성공 알림
