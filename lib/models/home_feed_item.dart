@@ -19,6 +19,7 @@ class HomeFeedItem {
   final double? latitude; // 위도
   final double? longitude; // 경도
   final bool isLiked; // 좋아요 상태
+  final String? authorMemberId; // 게시글 작성자 ID
 
   HomeFeedItem({
     required this.id,
@@ -38,5 +39,6 @@ class HomeFeedItem {
     this.latitude,
     this.longitude,
     this.isLiked = false,
+    this.authorMemberId,
   });
 }

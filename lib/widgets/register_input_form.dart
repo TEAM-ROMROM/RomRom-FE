@@ -20,6 +20,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
@@ -234,12 +235,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       setState(() {
         priceController.value = formatted;
       });
+
+      if (context.mounted) {
+        CommonSnackBar.show(context: context, message: 'AI로 적정 가격을 추천해드렸어요!');
+      }
     } catch (e) {
       // 에러 처리 (스낵바 표시 등)
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('AI 가격 예측에 실패했습니다: $e')),
-        );
+        CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e');
       }
     }
   }
@@ -313,7 +316,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       imageCount = imageUrls.length.clamp(0, 10);
       _latitude = item?.latitude;
       _longitude = item?.longitude;
-      useAiPrice = item?.aiPrice ?? false;
+      useAiPrice = item?.isAiPredictedPrice ?? false;
     }
   }
 
@@ -369,6 +372,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   @override
   Widget build(BuildContext context) {
+    // 수정 / 등록
+    final String modeText = widget.isEditMode ? '수정' : '등록';
+
     if (_isInitLoading) {
       return const RegisterInputFormSkeleton();
     }
@@ -876,12 +882,16 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         : (b) {
                             // 조건이 안 맞으면 스낵바로 안내
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      'AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
-                                ),
-                              );
+                              CommonSnackBar.show(
+                                  context: context,
+                                  message:
+                                      'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요');
+                              // ScaffoldMessenger.of(context).showSnackBar(
+                              //   const SnackBar(
+                              //     content: Text(
+                              //         'AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
+                              //   ),
+                              // );
                             }
                             return;
                           }, // 비활성화
@@ -999,7 +1009,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
                     try {
                       debugPrint(
-                          '물품 등록 시작 - longitude: $_longitude, latitude: $_latitude');
+                          '물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
                       setState(() {
                         _isLoading = true;
                       });
@@ -1030,13 +1040,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       if (context.mounted) {
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('물품이 성공적으로 등록되었습니다.')),
+                          SnackBar(content: Text('물품이 성공적으로 $modeText되었습니다.')),
                         );
                       }
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('물품 등록에 실패했습니다: $e')),
+                          SnackBar(content: Text('물품 $modeText에 실패했습니다: $e')),
                         );
                       }
                     }

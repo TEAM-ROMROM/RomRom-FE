@@ -39,6 +39,7 @@ class TradeRequestHistory extends BaseEntity {
   final List<String> itemTradeOptions;
 
   final String? tradeStatus;
+  final bool? isNew;
 
   TradeRequestHistory({
     required this.tradeRequestHistoryId,
@@ -46,6 +47,7 @@ class TradeRequestHistory extends BaseEntity {
     required this.giveItem,
     required this.itemTradeOptions,
     required this.tradeStatus,
+    this.isNew,
     super.createdDate,
     super.updatedDate,
   });

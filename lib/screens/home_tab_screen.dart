@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
@@ -112,7 +113,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       // 내 물품이 하나라도 있는지 확인 (pageSize=1로 최소 데이터 호출)
       final itemApi = ItemApi();
       final response = await itemApi.getMyItems(
-        ItemRequest(pageNumber: 0, pageSize: 1),
+        ItemRequest(
+            pageNumber: 0,
+            pageSize: 1,
+            itemStatus: ItemStatus.available.serverName),
       );
 
       userHasItem = (response.itemPage?.content.isNotEmpty ?? false);
@@ -429,6 +433,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         hasAiAnalysis: false,
         latitude: d.latitude,
         longitude: d.longitude,
+        authorMemberId: d.member?.memberId, // 게시글 작성자 ID
       );
 
       feedItems.add(feedItem);
@@ -442,7 +447,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     try {
       final itemApi = ItemApi();
       final response = await itemApi.getMyItems(
-        ItemRequest(pageNumber: 0, pageSize: 10),
+        ItemRequest(
+            pageNumber: 0,
+            pageSize: 10,
+            itemStatus: ItemStatus.available.serverName),
       );
 
       if (!mounted) return;

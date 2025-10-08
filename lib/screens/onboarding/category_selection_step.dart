@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 
@@ -47,6 +48,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                   try {
                     await memberApi.savePreferredCategories(selectedCategories);
                     widget.onComplete();
+                    await RomAuthApi().fetchAndSaveMemberInfo();
                   } catch (e) {
                     debugPrint("Error: $e");
                     if (context.mounted) {

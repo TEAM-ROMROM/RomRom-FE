@@ -25,7 +25,7 @@ class Item extends BaseEntity {
   final int? price;
   final double? longitude;
   final double? latitude;
-  final bool? aiPrice;
+  final bool? isAiPredictedPrice;
 
   @JsonKey(includeFromJson: true)
   String? address;
@@ -46,7 +46,7 @@ class Item extends BaseEntity {
     this.price,
     this.longitude,
     this.latitude,
-    this.aiPrice,
+    this.isAiPredictedPrice,
     this.address, // 선택적 주입 가능
   });
 
