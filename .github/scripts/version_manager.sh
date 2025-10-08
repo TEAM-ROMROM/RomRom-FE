@@ -117,7 +117,18 @@ get_version_code() {
     local code=$(grep "^version_code:" version.yml | sed 's/version_code:[[:space:]]*\([0-9]*\).*/\1/' | head -1)
 
     if [ -z "$code" ]; then
-        log_warning "version_code 필드가 없습니다. 기본값 1 반환"
+        log_warning "version_code 필드가 없습니다. 자동으로 추가합니다 (초기값: 1)"
+
+        # version.yml에 version_code 필드 추가 (version 다음 줄에)
+        if grep -q "^version:" version.yml; then
+            # macOS와 Linux 호환 방식으로 추가
+            awk '/^version:/ {print; print "version_code: 1  # Play Store VERSION_CODE (자동 증가, 1부터 시작)"; next} 1' version.yml > version.yml.tmp
+            mv version.yml.tmp version.yml
+            log_success "version_code 필드 추가 완료: 1"
+        else
+            log_error "version.yml에 version 필드가 없습니다."
+        fi
+
         echo "1"
     else
         log_debug "현재 version_code: $code"
