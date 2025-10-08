@@ -1,11 +1,27 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-08T18:23:39Z",
-    "currentVersion": "1.3.26",
-    "totalReleases": 30,
+    "lastUpdated": "2025-10-08T18:35:49Z",
+    "currentVersion": "1.3.27",
+    "totalReleases": 31,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.3.27",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 313,
+      "raw_summary": "Summary by CodeRabbit\n\nChores\n\n로그 가독성 증가\nGoogle Play Console 초안 앱 문제 : draft 로 업로드 되게 수정",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "로그 가독성 증가",
+            "Google Play Console 초안 앱 문제 : draft 로 업로드 되게 수정"
+          ]
+        }
+      }
+    },
     {
       "version": "1.3.26",
       "project_type": "flutter",
