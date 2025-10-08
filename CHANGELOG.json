@@ -1,11 +1,27 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-08T17:42:09Z",
-    "currentVersion": "1.3.23",
-    "totalReleases": 27,
+    "lastUpdated": "2025-10-08T17:56:30Z",
+    "currentVersion": "1.3.24",
+    "totalReleases": 28,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.3.24",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 310,
+      "raw_summary": "Summary by CodeRabbit\n\nChores\n\n대화형 라이센스 명령어 제거\nGradle 성능 최적화",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "대화형 라이센스 명령어 제거",
+            "Gradle 성능 최적화"
+          ]
+        }
+      }
+    },
     {
       "version": "1.3.23",
       "project_type": "flutter",
