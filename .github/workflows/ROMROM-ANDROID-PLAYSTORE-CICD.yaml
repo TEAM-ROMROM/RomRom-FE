@@ -293,45 +293,7 @@ jobs:
           echo "flutter.versionCode=$VERSION_CODE" >> android/local.properties
 
           echo "✅ local.properties 업데이트 완료"
-          echo "📋 local.properties 내용:"
-          cat android/local.properties
-          
-          # 🔍 디버깅: build.gradle이 읽을 파일 경로 확인
-          echo ""
-          echo "=========================================="
-          echo "🔍 [디버깅] Gradle 빌드 파일 검증"
-          echo "=========================================="
-          echo "📁 android/local.properties 파일 존재 확인:"
-          if [ -f "android/local.properties" ]; then
-            echo "  ✅ 파일 존재함"
-            echo "  📋 파일 크기: $(wc -c < android/local.properties) bytes"
-            echo "  📋 flutter.versionCode 값: $(grep 'flutter.versionCode' android/local.properties | cut -d'=' -f2)"
-            echo "  📋 flutter.versionName 값: $(grep 'flutter.versionName' android/local.properties | cut -d'=' -f2)"
-          else
-            echo "  ❌ 파일이 존재하지 않음!"
-          fi
-          
-          echo ""
-          echo "📁 android/local.properties_stable 파일 존재 확인 (이전 오타 파일):"
-          if [ -f "android/local.properties_stable" ]; then
-            echo "  ⚠️ 이 파일이 존재하면 안됩니다! (이전 버그)"
-            cat android/local.properties_stable
-          else
-            echo "  ✅ 파일 없음 (정상)"
-          fi
-          
-          echo ""
-          echo "📋 build.gradle이 어떤 파일을 읽는지 확인:"
-          echo "  android/app/build.gradle의 localPropertiesFile 설정:"
-          grep -A2 "def localPropertiesFile" android/app/build.gradle | head -3
-          
-          echo ""
-          echo "🎯 최종 확인:"
-          echo "  VERSION_NAME: $VERSION_NAME"
-          echo "  VERSION_CODE: $VERSION_CODE"
-          echo "  local.properties의 versionCode: $(grep 'flutter.versionCode' android/local.properties | cut -d'=' -f2)"
-          echo "=========================================="
-          echo ""
+          echo "📋 버전 정보: VERSION_NAME=$VERSION_NAME, VERSION_CODE=$VERSION_CODE"
 
           # Gradle 성능 최적화 설정
           export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4"
@@ -559,19 +521,19 @@ jobs:
               # Play Store 내부 테스트 트랙에 업로드
               # Changelog는 metadata/android/ko-KR/changelogs/[VERSION_CODE].txt에 준비됨
               # VERSION_CODE는 version.yml에서 관리되며 AAB 파일에 이미 포함됨 (별도 지정 불필요)
-              upload_to_play_store(
-                package_name: 'com.alom.romrom',        # Android 패키지 이름
-                track: 'internal',                      # 내부 테스트 트랙
-                aab: ENV["AAB_PATH"],                   # AAB 파일 경로 (버전 정보 포함)
-                json_key: ENV["GOOGLE_PLAY_JSON_KEY"],  # Service Account JSON 경로
-                skip_upload_apk: true,                  # APK 업로드 안함
-                skip_upload_metadata: true,             # 메타데이터 업로드 안함
-                skip_upload_images: true,               # 이미지 업로드 안함
-                skip_upload_screenshots: true,          # 스크린샷 업로드 안함
-                skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
-                release_status: 'completed',            # 즉시 배포
-                rollout: '1.0'                          # 100% 배포
-              )
+            upload_to_play_store(
+              package_name: 'com.alom.romrom',        # Android 패키지 이름
+              track: 'internal',                      # 내부 테스트 트랙
+              aab: ENV["AAB_PATH"],                   # AAB 파일 경로 (버전 정보 포함)
+              json_key: ENV["GOOGLE_PLAY_JSON_KEY"],  # Service Account JSON 경로
+              skip_upload_apk: true,                  # APK 업로드 안함
+              skip_upload_metadata: true,             # 메타데이터 업로드 안함
+              skip_upload_images: true,               # 이미지 업로드 안함
+              skip_upload_screenshots: true,          # 스크린샷 업로드 안함
+              skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
+              release_status: 'draft',                # Draft로 업로드 (앱이 초안 상태일 때)
+              rollout: '1.0'                          # 100% 배포
+            )
 
               puts "✅ Play Store 내부 테스트 배포 완료!"
               puts "버전: #{ENV['VERSION_NAME']}"
@@ -626,199 +588,69 @@ jobs:
           echo "📋 AAB 파일 정보: $(ls -lah "$AAB_PATH")"
           echo "📱 AAB 파일 크기: $(du -h "$AAB_PATH" | cut -f1)"
           
-          # 배포 전 최종 AAB 검증
-          # version.yml에서 관리되는 VERSION_CODE가 AAB에 올바르게 포함되었는지 확인
+          # 배포 전 AAB 버전 검증
           echo "=========================================="
-          echo "🔍 배포 전 최종 AAB 검증"
+          echo "🔍 AAB 버전 검증 중..."
           echo "=========================================="
           
-          # bundletool이 있는지 확인하고 없으면 다운로드
+          # bundletool 다운로드
           if [ ! -f "bundletool.jar" ]; then
-            echo "📦 bundletool 재다운로드 중..."
-            BUNDLETOOL_VERSION="1.15.6"
-            BUNDLETOOL_URL="https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
-            
-            echo "📋 다운로드 URL: $BUNDLETOOL_URL"
-            wget -q "$BUNDLETOOL_URL" -O bundletool.jar
-            
-            if [ ! -f "bundletool.jar" ]; then
-              echo "❌ bundletool 다운로드 실패"
-              echo "🔄 대체 URL로 재시도..."
-              wget -q "https://github.com/google/bundletool/releases/latest/download/bundletool-all-1.15.6.jar" -O bundletool.jar
-              
-              if [ ! -f "bundletool.jar" ]; then
-                echo "❌ bundletool 다운로드 완전 실패"
-                echo "⚠️ AAB 검증을 건너뛰고 배포를 계속 진행합니다."
-              fi
-            fi
+            wget -q "https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar" -O bundletool.jar
           fi
           
           if [ -f "bundletool.jar" ]; then
-            echo "✅ bundletool 사용 가능"
-            echo "📋 bundletool 파일 크기: $(du -h bundletool.jar | cut -f1)"
-            
-            echo "🔍 최종 AAB 버전 검증 중..."
-            echo "📋 실행할 명령어: java -jar bundletool.jar dump manifest --bundle='$AAB_PATH'"
-            
             MANIFEST_OUTPUT=$(java -jar bundletool.jar dump manifest --bundle="$AAB_PATH" 2>&1)
-            MANIFEST_EXIT_CODE=$?
             
-            echo "📋 bundletool 실행 결과 (Exit code: $MANIFEST_EXIT_CODE):"
-            if [ $MANIFEST_EXIT_CODE -eq 0 ]; then
-              echo "✅ Manifest 추출 성공"
-              
-              # 실제 버전 코드와 버전 이름 추출
+            if [ $? -eq 0 ]; then
               FINAL_VERSION_CODE=$(echo "$MANIFEST_OUTPUT" | grep -o 'android:versionCode="[0-9]*"' | grep -o '[0-9]*' | head -1)
               FINAL_VERSION_NAME=$(echo "$MANIFEST_OUTPUT" | grep -o 'android:versionName="[^"]*"' | sed 's/android:versionName="//;s/"//' | head -1)
               
-              echo "🎯 최종 버전 검증:"
-              echo "  기대 VERSION_CODE: '$VERSION_CODE'"
-              echo "  AAB의 VERSION_CODE: '$FINAL_VERSION_CODE'"
-              echo "  기대 VERSION_NAME: '$VERSION_NAME'"
-              echo "  AAB의 VERSION_NAME: '$FINAL_VERSION_NAME'"
+              echo "📋 AAB 버전: $FINAL_VERSION_NAME (코드: $FINAL_VERSION_CODE)"
               
-              # VERSION_CODE 최종 검증
-              if [ -z "$FINAL_VERSION_CODE" ]; then
-                echo "❌ 치명적 오류: AAB에서 VERSION_CODE를 추출할 수 없습니다!"
-                echo "🔍 전체 Manifest 내용:"
-                echo "$MANIFEST_OUTPUT"
-                echo "❌ 배포를 중단합니다."
+              # VERSION_CODE 검증
+              if [ "$FINAL_VERSION_CODE" != "$VERSION_CODE" ]; then
+                echo "❌ 오류: AAB 버전 코드가 예상과 다릅니다! (예상: $VERSION_CODE, 실제: $FINAL_VERSION_CODE)"
                 exit 1
-              elif [ "$FINAL_VERSION_CODE" != "$VERSION_CODE" ]; then
-                echo "❌ 치명적 오류: 최종 AAB 파일의 VERSION_CODE가 잘못되었습니다!"
-                echo "   Google Play에서 '버전 코드 $FINAL_VERSION_CODE이 이미 사용됨' 오류가 발생할 것입니다."
-                echo "   이는 이전 빌드 단계에서 문제가 발생했음을 의미합니다."
-                echo ""
-                echo "🔍 디버깅 정보:"
-                echo "   version.yml의 VERSION_CODE: $VERSION_CODE"
-                echo "   AAB 파일의 VERSION_CODE: $FINAL_VERSION_CODE"
-                echo "   전체 Manifest 내용:"
-                echo "$MANIFEST_OUTPUT" | grep -E "versionCode|versionName|package"
-                echo "❌ 배포를 중단합니다."
-                exit 1
-              else
-                echo "✅ 최종 VERSION_CODE 검증 성공: $FINAL_VERSION_CODE"
               fi
               
-              # 버전 이름도 확인 (경고만)
-              if [ -z "$FINAL_VERSION_NAME" ]; then
-                echo "⚠️ 경고: AAB에서 VERSION_NAME을 추출할 수 없습니다"
-              elif [ "$FINAL_VERSION_NAME" != "$VERSION_NAME" ]; then
-                echo "⚠️ 경고: VERSION_NAME이 예상과 다릅니다 (치명적이지 않음)"
-                echo "   예상: '$VERSION_NAME', 실제: '$FINAL_VERSION_NAME'"
-              else
-                echo "✅ VERSION_NAME 검증 성공: $FINAL_VERSION_NAME"
-              fi
-              
+              echo "✅ 버전 검증 성공"
             else
-              echo "❌ bundletool로 Manifest 추출 실패"
-              echo "🔍 bundletool 오류 출력:"
-              echo "$MANIFEST_OUTPUT"
-              echo "⚠️ AAB 검증을 건너뛰고 배포를 계속 진행합니다."
+              echo "⚠️ 버전 검증 실패, 배포 계속 진행"
             fi
-          else
-            echo "⚠️ bundletool 없음, AAB 검증을 건너뛰고 배포를 계속 진행합니다."
           fi
 
           # Release notes 준비
-          echo "=========================================="
-          echo "📝 Release Notes 준비"
-          echo "=========================================="
-          
-          if [ -f "final_release_notes.txt" ]; then
-            RELEASE_NOTES=$(cat final_release_notes.txt)
-            echo "✅ final_release_notes.txt에서 Release Notes 로드:"
-            echo "─────────────────────────────────"
-            echo "$RELEASE_NOTES"
-            echo "─────────────────────────────────"
-          else
-            RELEASE_NOTES="v$VERSION_NAME 업데이트"
-            echo "⚠️ final_release_notes.txt가 없어 기본 Release Notes 사용: $RELEASE_NOTES"
-          fi
-
-          # Fastlane이 인식할 수 있도록 changelog 파일 준비
           CHANGELOG_DIR="android/fastlane/metadata/android/ko-KR/changelogs"
           mkdir -p "$CHANGELOG_DIR"
           
-          echo "📋 Fastlane Changelog 디렉토리 생성: $CHANGELOG_DIR"
-          
-          # 이미 만들어진 final_release_notes.txt를 Fastlane 디렉토리로 복사
           if [ -f "final_release_notes.txt" ]; then
             cp final_release_notes.txt "$CHANGELOG_DIR/${VERSION_CODE}.txt"
-            echo "✅ Changelog 복사 완료: $CHANGELOG_DIR/${VERSION_CODE}.txt"
+            echo "✅ Changelog 준비 완료 (버전 코드: $VERSION_CODE)"
           else
-            echo "$RELEASE_NOTES" > "$CHANGELOG_DIR/${VERSION_CODE}.txt"
-            echo "✅ Changelog 생성 완료: $CHANGELOG_DIR/${VERSION_CODE}.txt"
+            echo "v$VERSION_NAME 업데이트" > "$CHANGELOG_DIR/${VERSION_CODE}.txt"
+            echo "⚠️ 기본 Changelog 생성 (버전 코드: $VERSION_CODE)"
           fi
-          
-          echo "📄 생성된 Changelog 내용:"
-          echo "─────────────────────────────────"
-          cat "$CHANGELOG_DIR/${VERSION_CODE}.txt"
-          echo "─────────────────────────────────"
           
           # Service Account JSON 파일 확인
           GOOGLE_PLAY_JSON_KEY="$HOME/.config/gcloud/service-account.json"
-          echo "🔍 Service Account JSON 파일 확인:"
-          if [ -f "$GOOGLE_PLAY_JSON_KEY" ]; then
-            echo "✅ Service Account JSON 파일 존재: $GOOGLE_PLAY_JSON_KEY"
-            echo "📋 파일 크기: $(du -h "$GOOGLE_PLAY_JSON_KEY" | cut -f1)"
-          else
-            echo "❌ Service Account JSON 파일을 찾을 수 없습니다: $GOOGLE_PLAY_JSON_KEY"
-            echo "🔍 ~/.config/gcloud/ 디렉토리 내용:"
-            ls -la ~/.config/gcloud/ || echo "디렉토리가 존재하지 않습니다"
+          if [ ! -f "$GOOGLE_PLAY_JSON_KEY" ]; then
+            echo "❌ Service Account JSON 파일을 찾을 수 없습니다"
             exit 1
           fi
           
           # 환경변수 설정
           export AAB_PATH="$AAB_PATH"
           export GOOGLE_PLAY_JSON_KEY="$GOOGLE_PLAY_JSON_KEY"
-          export RELEASE_NOTES="$RELEASE_NOTES"
           export VERSION_NAME="$VERSION_NAME"
           export VERSION_CODE="$VERSION_CODE"
           
-          # 디버깅 정보 (최종 확인)
+          # 배포 실행
           echo "=========================================="
-          echo "🔍 최종 배포 환경 확인"
+          echo "🚀 Play Store 배포 실행"
+          echo "🎯 버전: $VERSION_NAME (코드: $VERSION_CODE)"
           echo "=========================================="
-          echo "🕐 현재 시간: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "📁 작업 디렉토리: $(pwd)"
-          echo "📦 AAB 경로: $AAB_PATH"
-          echo "🔑 Service Account: $GOOGLE_PLAY_JSON_KEY"
-          echo "🎯 배포 버전: $VERSION_NAME (코드: $VERSION_CODE)"
-          echo "📄 Changelog 파일: $CHANGELOG_DIR/${VERSION_CODE}.txt"
-          echo "🔍 GitHub Run Number: ${{ github.run_number }}"
-          echo "🔍 GitHub SHA: ${{ github.sha }}"
-          
-          # Fastlane 디렉토리 구조 확인
-          echo "📁 Fastlane 디렉토리 구조:"
-          find android/fastlane/ -type f 2>/dev/null || echo "Fastlane 디렉토리가 비어있거나 존재하지 않습니다"
-          
-          echo "=========================================="
-          
-          # Fastlane 실행
-          echo "🚀 Fastlane 배포 시작..."
-          echo "📋 실행할 명령어: cd android && fastlane deploy_internal"
           
           cd android
-          
-          # Fastlane 실행 전 마지막 확인
-          echo "📋 Fastlane 실행 전 환경 변수 최종 확인:"
-          echo "  AAB_PATH: '$AAB_PATH'"
-          echo "  GOOGLE_PLAY_JSON_KEY: '$GOOGLE_PLAY_JSON_KEY'"
-          echo "  VERSION_CODE: '$VERSION_CODE'"
-          echo "  VERSION_NAME: '$VERSION_NAME'"
-          echo "  RELEASE_NOTES: '$RELEASE_NOTES'"
-          
-          # Fastlane 버전 확인
-          echo "🔍 Fastlane 버전:"
-          fastlane --version
-          
-          # Ruby 환경 확인
-          echo "🔍 Ruby 환경:"
-          ruby --version
-          gem --version
-          
-          echo "🚀 Fastlane deploy_internal 실행 중..."
           fastlane deploy_internal
 
       # 성공 알림
