@@ -122,7 +122,7 @@ get_version_code() {
         # version.yml에 version_code 필드 추가 (version 다음 줄에)
         if grep -q "^version:" version.yml; then
             # macOS와 Linux 호환 방식으로 추가
-            awk '/^version:/ {print; print "version_code: 1  # Play Store VERSION_CODE (자동 증가, 1부터 시작)"; next} 1' version.yml > version.yml.tmp
+            awk '/^version:/ {print; print "version_code: 1  # app build number"; next} 1' version.yml > version.yml.tmp
             mv version.yml.tmp version.yml
             log_success "version_code 필드 추가 완료: 1"
         else
@@ -146,11 +146,11 @@ increment_version_code() {
     # version.yml 업데이트
     if grep -q "^version_code:" version.yml; then
         # 기존 필드 업데이트
-        sed -i.bak "s/^version_code:.*/version_code: $new_code  # Play Store VERSION_CODE (자동 증가, 1부터 시작)/" version.yml
+        sed -i.bak "s/^version_code:.*/version_code: $new_code  # app build number/" version.yml
     else
         # 필드 없으면 추가 (version 다음 줄에)
         sed -i.bak "/^version:/a\\
-version_code: $new_code  # Play Store VERSION_CODE (자동 증가, 1부터 시작)" version.yml
+version_code: $new_code  # app build number" version.yml
     fi
     rm -f version.yml.bak
 

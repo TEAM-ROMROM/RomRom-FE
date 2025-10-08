@@ -7,7 +7,10 @@
       "Bash(flutter analyze:*)",
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(source:*)",
-      "Bash(dart:*)"
+      "Bash(dart:*)",
+      "SlashCommand(/sc:analyze .github/workflows/ROMROM-ANDROID-PLAYSTORE-CICD.yaml --focus \"architecture\" --think-hard)",
+      "Bash(./.github/scripts/version_manager.sh get-code:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
