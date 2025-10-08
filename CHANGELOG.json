@@ -1,11 +1,33 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-08T14:49:03Z",
-    "currentVersion": "1.3.14",
-    "totalReleases": 22,
+    "lastUpdated": "2025-10-08T15:02:47Z",
+    "currentVersion": "1.3.15",
+    "totalReleases": 23,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.3.15",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 305,
+      "raw_summary": "Summary by CodeRabbit\n\n\nChores\n\nAndroid Play Store CI 워크플로우에 상세 로깅·검증 추가: 버전 처리 확인, AAB 빌드/내용 점검, 업로드 경로 및 배포 진행 메시지, Fastlane 실행 전 환경 정보 출력 등으로 가시성 향상.\n버전 갱신: 1.3.14 → 1.3.15 반영(pubspec.yaml, version.yml 동기화 및 타임스탬프/예시 문구 업데이트).\n\n\n\nDocumentation\n\nREADME 최신 버전 배지와 날짜 업데이트(여러 섹션 포함).",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "Android Play Store CI 워크플로우에 상세 로깅·검증 추가: 버전 처리 확인, AAB 빌드/내용 점검, 업로드 경로 및 배포 진행 메시지, Fastlane 실행 전 환경 정보 출력 등으로 가시성 향상.",
+            "버전 갱신: 1.3.14 → 1.3.15 반영(pubspec.yaml, version.yml 동기화 및 타임스탬프/예시 문구 업데이트)."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "README 최신 버전 배지와 날짜 업데이트(여러 섹션 포함)."
+          ]
+        }
+      }
+    },
     {
       "version": "1.3.14",
       "project_type": "flutter",
