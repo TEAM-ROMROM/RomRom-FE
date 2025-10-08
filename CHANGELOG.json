@@ -1,11 +1,58 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-08T19:30:16Z",
-    "currentVersion": "1.3.29",
-    "totalReleases": 33,
+    "lastUpdated": "2025-10-08T20:27:13Z",
+    "currentVersion": "1.4.1",
+    "totalReleases": 34,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.4.1",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 316,
+      "raw_summary": "Summary by CodeRabbit\n\n\n신기능\n\n\n버그 수정\n\n\n문서\n\n최신 버전 표기를 v1.3.28 → v1.3.29로 업데이트.\n\n\n\n작업(Chores)\n\nPlay 스토어 배포가 드래프트 상태로 업로드되도록 조정.\n버전 메타데이터 업데이트: 1.3.29 → 1.4.1.\n버전 동기화 정보와 최종 업데이트 타임스탬프 갱신.\n\n\n\n리팩터\n\n\n스타일\n\n\n테스트\n\n\n되돌리기(Revert)",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": []
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": []
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "최신 버전 표기를 v1.3.28 → v1.3.29로 업데이트."
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "Play 스토어 배포가 드래프트 상태로 업로드되도록 조정.",
+            "버전 메타데이터 업데이트: 1.3.29 → 1.4.1.",
+            "버전 동기화 정보와 최종 업데이트 타임스탬프 갱신."
+          ]
+        },
+        "리팩터": {
+          "title": "리팩터",
+          "items": []
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": []
+        },
+        "테스트": {
+          "title": "테스트",
+          "items": []
+        },
+        "되돌리기_revert": {
+          "title": "되돌리기(Revert)",
+          "items": []
+        }
+      }
+    },
     {
       "version": "1.3.29",
       "project_type": "flutter",
