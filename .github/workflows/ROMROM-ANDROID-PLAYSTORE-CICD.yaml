@@ -277,6 +277,25 @@ jobs:
           flutter clean
           flutter pub get
 
+          # local.properties에 버전 정보 추가 (Flutter 플래그가 무시되는 문제 해결)
+          echo "🔧 local.properties에 버전 정보 설정..."
+
+          # 기존 local.properties가 있으면 버전 정보 제거
+          if [ -f "android/local.properties" ]; then
+            grep -v "flutter.versionName\|flutter.versionCode" android/local.properties > android/local.properties.tmp || true
+            mv android/local.properties.tmp android/local.properties
+          else
+            touch android/local.properties
+          fi
+
+          # 버전 정보 추가
+          echo "flutter.versionName=$VERSION_NAME" >> android/local.properties
+          echo "flutter.versionCode=$VERSION_CODE" >> android/local.properties
+
+          echo "✅ local.properties 업데이트 완료"
+          echo "📋 local.properties 내용:"
+          cat android/local.properties
+
           # Gradle 성능 최적화 설정
           export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4"
           export JAVA_OPTS="-Xmx4g"
