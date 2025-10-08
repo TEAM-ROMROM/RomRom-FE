@@ -106,6 +106,58 @@ validate_version() {
     fi
 }
 
+# version_code 가져오기
+get_version_code() {
+    if [ ! -f "version.yml" ]; then
+        log_warning "version.yml 파일이 없습니다. 기본값 1 반환"
+        echo "1"
+        return
+    fi
+
+    local code=$(grep "^version_code:" version.yml | sed 's/version_code:[[:space:]]*\([0-9]*\).*/\1/' | head -1)
+
+    if [ -z "$code" ]; then
+        log_warning "version_code 필드가 없습니다. 자동으로 추가합니다 (초기값: 1)"
+
+        # version.yml에 version_code 필드 추가 (version 다음 줄에)
+        if grep -q "^version:" version.yml; then
+            # macOS와 Linux 호환 방식으로 추가
+            awk '/^version:/ {print; print "version_code: 1  # Play Store VERSION_CODE (자동 증가, 1부터 시작)"; next} 1' version.yml > version.yml.tmp
+            mv version.yml.tmp version.yml
+            log_success "version_code 필드 추가 완료: 1"
+        else
+            log_error "version.yml에 version 필드가 없습니다."
+        fi
+
+        echo "1"
+    else
+        log_debug "현재 version_code: $code"
+        echo "$code"
+    fi
+}
+
+# version_code 증가
+increment_version_code() {
+    local current_code=$(get_version_code)
+    local new_code=$((current_code + 1))
+
+    log_info "VERSION_CODE 증가: $current_code → $new_code"
+
+    # version.yml 업데이트
+    if grep -q "^version_code:" version.yml; then
+        # 기존 필드 업데이트
+        sed -i.bak "s/^version_code:.*/version_code: $new_code  # Play Store VERSION_CODE (자동 증가, 1부터 시작)/" version.yml
+    else
+        # 필드 없으면 추가 (version 다음 줄에)
+        sed -i.bak "/^version:/a\\
+version_code: $new_code  # Play Store VERSION_CODE (자동 증가, 1부터 시작)" version.yml
+    fi
+    rm -f version.yml.bak
+
+    log_success "VERSION_CODE 업데이트 완료: $new_code"
+    echo "$new_code"
+}
+
 # patch 버전 증가
 increment_patch_version() {
     local version=$1
@@ -392,31 +444,44 @@ main() {
             log_success "현재 버전: $version"
             echo "$version"
             ;;
+        "get-code")
+            # 현재 version_code 반환
+            local code=$(get_version_code)
+            log_success "현재 VERSION_CODE: $code"
+            echo "$code"
+            ;;
+        "increment-code")
+            # version_code만 증가 (별도 사용 가능)
+            increment_version_code
+            ;;
         "increment")
             # 먼저 동기화 수행
             log_info "버전 동기화 확인"
             local current_version
             current_version=$(sync_versions)
-            
+
             if ! validate_version "$current_version"; then
                 log_error "잘못된 버전 형식: $current_version"
                 exit 1
             fi
-            
+
             # 패치 버전 증가
             local new_version
             new_version=$(increment_patch_version "$current_version")
-            
+
             if [ -z "$new_version" ]; then
                 log_error "버전 증가 실패"
                 exit 1
             fi
-            
+
             log_info "버전 업데이트: $current_version → $new_version"
-            
+
             # 모든 버전 파일 업데이트
             update_all_versions "$new_version"
-            
+
+            # version_code도 함께 증가
+            increment_version_code > /dev/null
+
             log_success "버전 업데이트 완료: $new_version"
             echo "$new_version"
             ;;
@@ -460,18 +525,22 @@ main() {
             fi
             ;;
         *)
-            echo "사용법: $0 {get|increment|set|sync|validate} [version]" >&2
+            echo "사용법: $0 {get|get-code|increment|increment-code|set|sync|validate} [version]" >&2
             echo "" >&2
             echo "Commands:" >&2
-            echo "  get       - 현재 버전 가져오기 (동기화 포함)" >&2
-            echo "  increment - patch 버전 증가" >&2
-            echo "  set       - 특정 버전으로 설정" >&2
-            echo "  sync      - 버전 파일 간 동기화" >&2
-            echo "  validate  - 버전 형식 검증" >&2
+            echo "  get           - 현재 버전 가져오기 (동기화 포함)" >&2
+            echo "  get-code      - 현재 VERSION_CODE 가져오기" >&2
+            echo "  increment     - patch 버전 증가 + VERSION_CODE 증가" >&2
+            echo "  increment-code - VERSION_CODE만 증가" >&2
+            echo "  set           - 특정 버전으로 설정" >&2
+            echo "  sync          - 버전 파일 간 동기화" >&2
+            echo "  validate      - 버전 형식 검증" >&2
             echo "" >&2
             echo "Examples:" >&2
             echo "  $0 get" >&2
+            echo "  $0 get-code" >&2
             echo "  $0 increment" >&2
+            echo "  $0 increment-code" >&2
             echo "  $0 set 1.2.3" >&2
             echo "  $0 sync" >&2
             echo "  $0 validate 1.2.3" >&2

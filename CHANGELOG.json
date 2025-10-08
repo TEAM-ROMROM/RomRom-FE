@@ -1,11 +1,35 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-08T15:46:17Z",
-    "currentVersion": "1.3.17",
-    "totalReleases": 25,
+    "lastUpdated": "2025-10-08T17:06:02Z",
+    "currentVersion": "1.3.19",
+    "totalReleases": 26,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.3.19",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 308,
+      "raw_summary": "Summary by CodeRabbit\n\n\nChores\n\nCI/CD 버전 관리 단순화: VERSION_CODE를 분리·자동 증가하고, 빌드 시 버전 이름/코드를 플래그로 주입.\nAAB 내 버전 이름/코드 일치 여부를 빌드 후 자동 검증하여 스토어 배포 신뢰성 강화.\n버전 업데이트: 1.3.19로 상승, version_code 도입 및 관리 일원화.\n앱 기능 변화는 없습니다.\n\n\n\nDocumentation\n\nREADME 최신 버전 표기 업데이트.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "CI/CD 버전 관리 단순화: VERSION_CODE를 분리·자동 증가하고, 빌드 시 버전 이름/코드를 플래그로 주입.",
+            "AAB 내 버전 이름/코드 일치 여부를 빌드 후 자동 검증하여 스토어 배포 신뢰성 강화.",
+            "버전 업데이트: 1.3.19로 상승, version_code 도입 및 관리 일원화.",
+            "앱 기능 변화는 없습니다."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "README 최신 버전 표기 업데이트."
+          ]
+        }
+      }
+    },
     {
       "version": "1.3.17",
       "project_type": "flutter",
