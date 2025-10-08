@@ -282,12 +282,13 @@ jobs:
           # --build-name과 --build-number 플래그가 pubspec.yaml의 version을 오버라이드함
           # pubspec.yaml은 x.y.z 형식 유지, VERSION_CODE는 version.yml에서 자동 관리
           echo "🔨 Flutter build 실행..."
-          echo "📋 명령어: flutter build appbundle --release --build-name=$VERSION_NAME --build-number=$VERSION_CODE"
+          echo "📋 명령어: flutter build appbundle --release --build-name=$VERSION_NAME --build-number=$VERSION_CODE --verbose"
 
           flutter build appbundle \
             --release \
             --build-name="$VERSION_NAME" \
-            --build-number="$VERSION_CODE"
+            --build-number="$VERSION_CODE" \
+            --verbose
           
           BUILD_EXIT_CODE=$?
           
