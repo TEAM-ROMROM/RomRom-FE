@@ -263,20 +263,46 @@ jobs:
           VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
           
           echo "📝 pubspec.yaml 버전 업데이트: ${VERSION_NAME}+${VERSION_CODE}"
+          echo "🔍 수정 전 pubspec.yaml:"
+          grep "^version:" pubspec.yaml
           
           # pubspec.yaml의 version 필드 업데이트
-          sed -i "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
+          cp pubspec.yaml pubspec.yaml.bak
+          awk -v new_version="${VERSION_NAME}+${VERSION_CODE}" '/^version:/ {print "version: " new_version; next} {print}' pubspec.yaml.bak > pubspec.yaml
           
-          echo "✅ 업데이트된 pubspec.yaml:"
+          echo "✅ 수정 후 pubspec.yaml:"
           grep "^version:" pubspec.yaml
+          
+          # 검증: AAB 빌드 시 사용될 버전 확인
+          echo "🎯 Flutter가 인식할 버전:"
+          flutter --version
+          flutter pub get --offline || flutter pub get
+          flutter analyze --no-fatal-infos || echo "분석 경고 무시"
 
       # Flutter build appbundle (AAB 생성)
       - name: Build Android App Bundle (AAB)
         run: |
-          flutter build appbundle --release
+          echo "🚀 AAB 빌드 시작..."
+          echo "📦 빌드에 사용될 버전: ${{ needs.prepare-build.outputs.version }}+${{ needs.prepare-build.outputs.version_code }}"
+          
+          flutter build appbundle --release --verbose
           
           echo "✅ AAB 빌드 완료"
           ls -lh build/app/outputs/bundle/release/
+          
+          # AAB 파일 내부의 실제 버전 정보 확인 (중요!)
+          echo "🔍 AAB 파일 내부 버전 정보 확인:"
+          if command -v aapt2 &> /dev/null; then
+            aapt2 dump badging build/app/outputs/bundle/release/app-release.aab 2>/dev/null | grep -E "package:|versionCode|versionName" || echo "aapt2로 확인 불가"
+          else
+            echo "⚠️ aapt2가 설치되어 있지 않습니다. bundletool로 확인 시도..."
+          fi
+          
+          # bundletool로 버전 확인 (더 정확함)
+          if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+            echo "📱 AAB 파일 존재 확인: OK"
+            unzip -p build/app/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml | strings | grep -E "versionCode|versionName" || echo "Manifest 직접 추출 시도..."
+          fi
 
       # AAB 파일을 아티팩트로 업로드
       - name: Upload AAB artifact
@@ -369,9 +395,13 @@ jobs:
       # Play Store에 업로드
       - name: Upload to Play Store Internal Testing
         run: |
+          echo "======================================"
+          echo "🚀 Play Store 배포 시작"
+          echo "======================================"
+          
           # AAB 파일 절대 경로 찾기
           AAB_PATH=$(realpath build/app/outputs/bundle/release/app-release.aab)
-          echo "Found AAB at: $AAB_PATH"
+          echo "📦 AAB 파일 경로: $AAB_PATH"
 
           if [ ! -f "$AAB_PATH" ]; then
             echo "❌ AAB 파일을 찾을 수 없습니다!"
@@ -379,45 +409,66 @@ jobs:
             ls -la build/app/outputs/bundle/release/
             exit 1
           fi
+          
+          echo "✅ AAB 파일 존재 확인"
+          ls -lh "$AAB_PATH"
 
           # Release notes 준비
           if [ -f "final_release_notes.txt" ]; then
             RELEASE_NOTES=$(cat final_release_notes.txt)
-            echo "Release Notes 포함하여 업로드:"
+            echo "📝 Release Notes 포함하여 업로드:"
+            echo "─────────────────────────────────"
             echo "$RELEASE_NOTES"
+            echo "─────────────────────────────────"
           else
             RELEASE_NOTES="v${{ needs.prepare-build.outputs.version }} 업데이트"
-            echo "기본 Release Notes로 업로드: $RELEASE_NOTES"
+            echo "⚠️ 기본 Release Notes로 업로드: $RELEASE_NOTES"
           fi
 
           # Fastlane이 인식할 수 있도록 changelog 파일 준비
           VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
+          VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
           CHANGELOG_DIR="android/fastlane/metadata/android/ko-KR/changelogs"
           mkdir -p "$CHANGELOG_DIR"
+          
+          echo "📋 버전 정보:"
+          echo "  - VERSION_NAME: $VERSION_NAME"
+          echo "  - VERSION_CODE: $VERSION_CODE"
           
           # 이미 만들어진 final_release_notes.txt를 Fastlane 디렉토리로 복사
           if [ -f "final_release_notes.txt" ]; then
             cp final_release_notes.txt "$CHANGELOG_DIR/${VERSION_CODE}.txt"
-            echo "📝 Changelog 복사 완료: $CHANGELOG_DIR/${VERSION_CODE}.txt"
+            echo "✅ Changelog 복사 완료: $CHANGELOG_DIR/${VERSION_CODE}.txt"
           else
             echo "$RELEASE_NOTES" > "$CHANGELOG_DIR/${VERSION_CODE}.txt"
-            echo "📝 Changelog 생성 완료: $CHANGELOG_DIR/${VERSION_CODE}.txt"
+            echo "✅ Changelog 생성 완료: $CHANGELOG_DIR/${VERSION_CODE}.txt"
           fi
-
+          
+          echo "📄 생성된 Changelog 내용:"
+          echo "─────────────────────────────────"
+          cat "$CHANGELOG_DIR/${VERSION_CODE}.txt"
+          echo "─────────────────────────────────"
+          
           # 환경변수 설정
           export AAB_PATH="$AAB_PATH"
           export GOOGLE_PLAY_JSON_KEY="$HOME/.config/gcloud/service-account.json"
           export RELEASE_NOTES="$RELEASE_NOTES"
-          export VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
+          export VERSION_NAME="$VERSION_NAME"
           export VERSION_CODE="$VERSION_CODE"
-
-          # 디버깅 정보
-          echo "Working directory: $(pwd)"
-          echo "AAB_PATH (absolute): $AAB_PATH"
-          echo "GOOGLE_PLAY_JSON_KEY: $GOOGLE_PLAY_JSON_KEY"
-          echo "VERSION: $VERSION_NAME ($VERSION_CODE)"
-
+          
+          # 디버깅 정보 (최종 확인)
+          echo "======================================"
+          echo "🔍 최종 배포 환경 확인"
+          echo "======================================"
+          echo "작업 디렉토리: $(pwd)"
+          echo "AAB 경로: $AAB_PATH"
+          echo "Service Account: $GOOGLE_PLAY_JSON_KEY"
+          echo "버전: $VERSION_NAME (코드: $VERSION_CODE)"
+          echo "Changelog 파일: $CHANGELOG_DIR/${VERSION_CODE}.txt"
+          echo "======================================"
+          
           # Fastlane 실행
+          echo "🚀 Fastlane 배포 시작..."
           cd android
           fastlane deploy_internal
 
