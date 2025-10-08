@@ -1,11 +1,40 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-08T15:02:47Z",
-    "currentVersion": "1.3.15",
-    "totalReleases": 23,
+    "lastUpdated": "2025-10-08T15:21:00Z",
+    "currentVersion": "1.3.16",
+    "totalReleases": 24,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.3.16",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 306,
+      "raw_summary": "Summary by CodeRabbit\n\n신규 기능\n\n없음\n\n\n문서\n\nREADME의 버전 표기 업데이트로 설치/빌드 안내 최신화.\n\n\n작업(Chores)\n\n앱 버전을 1.3.16으로 상향하고 메타데이터 갱신.\n빌드/배포 파이프라인 강화: 버전 갱신 검증, AAB 산출물 유효성 검사, 사전·사후 점검, 상세 로깅 추가로 배포 신뢰성 향상.\n환경 및 아티팩트 무결성 점검을 도입하여 Play 스토어 배포 안정성 개선.",
+      "parsed_changes": {
+        "신규_기능": {
+          "title": "신규 기능",
+          "items": [
+            "없음"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README의 버전 표기 업데이트로 설치/빌드 안내 최신화."
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "앱 버전을 1.3.16으로 상향하고 메타데이터 갱신.",
+            "빌드/배포 파이프라인 강화: 버전 갱신 검증, AAB 산출물 유효성 검사, 사전·사후 점검, 상세 로깅 추가로 배포 신뢰성 향상.",
+            "환경 및 아티팩트 무결성 점검을 도입하여 Play 스토어 배포 안정성 개선."
+          ]
+        }
+      }
+    },
     {
       "version": "1.3.15",
       "project_type": "flutter",
