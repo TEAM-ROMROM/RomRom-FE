@@ -531,8 +531,7 @@ jobs:
               skip_upload_images: true,               # 이미지 업로드 안함
               skip_upload_screenshots: true,          # 스크린샷 업로드 안함
               skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
-              release_status: 'draft',                # Draft로 업로드 (앱이 초안 상태일 때)
-              rollout: '1.0'                          # 100% 배포
+              release_status: 'draft'                 # Draft로 업로드 (앱이 초안 상태일 때)
             )
 
               puts "✅ Play Store 내부 테스트 배포 완료!"
