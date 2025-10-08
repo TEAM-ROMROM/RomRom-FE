@@ -328,11 +328,12 @@ jobs:
 
           platform :android do
             lane :deploy_internal do
-              # Release notes 읽기
-              release_notes = ENV["RELEASE_NOTES"] || "새로운 버전 업데이트"
+              version_code = ENV["VERSION_CODE"].to_i
 
               # Play Store 내부 테스트 트랙에 업로드
+              # Changelog는 이미 metadata/android/ko-KR/changelogs/[VERSION_CODE].txt에 준비됨
               upload_to_play_store(
+                package_name: 'com.alom.romrom',        # Android 패키지 이름
                 track: 'internal',                      # 내부 테스트 트랙
                 aab: ENV["AAB_PATH"],                   # AAB 파일 경로
                 json_key: ENV["GOOGLE_PLAY_JSON_KEY"],  # Service Account JSON 경로
@@ -340,15 +341,15 @@ jobs:
                 skip_upload_metadata: true,             # 메타데이터 업로드 안함
                 skip_upload_images: true,               # 이미지 업로드 안함
                 skip_upload_screenshots: true,          # 스크린샷 업로드 안함
-                skip_upload_changelogs: false,          # 릴리즈 노트는 업로드
+                skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
                 release_status: 'completed',            # 즉시 배포
                 rollout: '1.0',                         # 100% 배포
                 version_name: ENV["VERSION_NAME"],      # 버전 이름
-                version_code: ENV["VERSION_CODE"]       # 버전 코드
+                version_code: version_code              # 버전 코드 (정수)
               )
 
               puts "✅ Play Store 내부 테스트 배포 완료!"
-              puts "버전: #{ENV['VERSION_NAME']} (#{ENV['VERSION_CODE']})"
+              puts "버전: #{ENV['VERSION_NAME']} (#{version_code})"
             end
           end
           EOF
@@ -380,12 +381,26 @@ jobs:
             echo "기본 Release Notes로 업로드: $RELEASE_NOTES"
           fi
 
-          # 환경변수 설정 (절대 경로 사용)
+          # Fastlane이 인식할 수 있도록 changelog 파일 준비
+          VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
+          CHANGELOG_DIR="android/fastlane/metadata/android/ko-KR/changelogs"
+          mkdir -p "$CHANGELOG_DIR"
+          
+          # 이미 만들어진 final_release_notes.txt를 Fastlane 디렉토리로 복사
+          if [ -f "final_release_notes.txt" ]; then
+            cp final_release_notes.txt "$CHANGELOG_DIR/${VERSION_CODE}.txt"
+            echo "📝 Changelog 복사 완료: $CHANGELOG_DIR/${VERSION_CODE}.txt"
+          else
+            echo "$RELEASE_NOTES" > "$CHANGELOG_DIR/${VERSION_CODE}.txt"
+            echo "📝 Changelog 생성 완료: $CHANGELOG_DIR/${VERSION_CODE}.txt"
+          fi
+
+          # 환경변수 설정
           export AAB_PATH="$AAB_PATH"
           export GOOGLE_PLAY_JSON_KEY="$HOME/.config/gcloud/service-account.json"
           export RELEASE_NOTES="$RELEASE_NOTES"
           export VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
-          export VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
+          export VERSION_CODE="$VERSION_CODE"
 
           # 디버깅 정보
           echo "Working directory: $(pwd)"
