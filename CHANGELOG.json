@@ -1,11 +1,51 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-08T15:21:00Z",
-    "currentVersion": "1.3.16",
-    "totalReleases": 24,
+    "lastUpdated": "2025-10-08T15:46:17Z",
+    "currentVersion": "1.3.17",
+    "totalReleases": 25,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.3.17",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 307,
+      "raw_summary": "Summary by CodeRabbit\n\n\n신기능\n\n(해당 없음)\n\n\n\n버그 수정\n\n(해당 없음)\n\n\n\n문서\n\nREADME의 최신 버전 표기를 v1.3.16으로 갱신하여 안내 일관성 강화.\n\n\n\n작업(Chores)\n\n앱 버전을 1.3.17로 상향.\n\n\n\nCI/CD\n\n안드로이드 빌드·배포 파이프라인 안정성/가시성 강화: 버전 검증, 환경 점검, 자세한 로깅, 실패 대비 복구·검증 절차 추가.\nPlay 스토어 업로드 전 점검과 릴리스 노트 처리 개선으로 배포 신뢰도 향상.",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": [
+            "(해당 없음)"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "(해당 없음)"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README의 최신 버전 표기를 v1.3.16으로 갱신하여 안내 일관성 강화."
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "앱 버전을 1.3.17로 상향."
+          ]
+        },
+        "ci_cd": {
+          "title": "CI/CD",
+          "items": [
+            "안드로이드 빌드·배포 파이프라인 안정성/가시성 강화: 버전 검증, 환경 점검, 자세한 로깅, 실패 대비 복구·검증 절차 추가.",
+            "Play 스토어 업로드 전 점검과 릴리스 노트 처리 개선으로 배포 신뢰도 향상."
+          ]
+        }
+      }
+    },
     {
       "version": "1.3.16",
       "project_type": "flutter",
