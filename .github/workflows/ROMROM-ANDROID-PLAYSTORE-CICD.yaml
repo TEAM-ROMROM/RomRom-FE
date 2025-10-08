@@ -256,12 +256,24 @@ jobs:
           fi
           echo "✅ Android 빌드 설정 확인 완료"
 
+      # pubspec.yaml 버전 업데이트 (버전정보+런타임번호 로 수정하여 빌드)
+      - name: Update pubspec.yaml version
+        run: |
+          VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
+          VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
+          
+          echo "📝 pubspec.yaml 버전 업데이트: ${VERSION_NAME}+${VERSION_CODE}"
+          
+          # pubspec.yaml의 version 필드 업데이트
+          sed -i "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
+          
+          echo "✅ 업데이트된 pubspec.yaml:"
+          grep "^version:" pubspec.yaml
+
       # Flutter build appbundle (AAB 생성)
       - name: Build Android App Bundle (AAB)
         run: |
-          flutter build appbundle --release \
-            --build-name="${{ needs.prepare-build.outputs.version }}" \
-            --build-number="${{ needs.prepare-build.outputs.version_code }}"
+          flutter build appbundle --release
           
           echo "✅ AAB 빌드 완료"
           ls -lh build/app/outputs/bundle/release/
@@ -328,14 +340,13 @@ jobs:
 
           platform :android do
             lane :deploy_internal do
-              version_code = ENV["VERSION_CODE"].to_i
-
               # Play Store 내부 테스트 트랙에 업로드
               # Changelog는 이미 metadata/android/ko-KR/changelogs/[VERSION_CODE].txt에 준비됨
+              # version_code는 AAB 파일에 이미 포함되어 있으므로 별도 지정 불필요
               upload_to_play_store(
                 package_name: 'com.alom.romrom',        # Android 패키지 이름
                 track: 'internal',                      # 내부 테스트 트랙
-                aab: ENV["AAB_PATH"],                   # AAB 파일 경로
+                aab: ENV["AAB_PATH"],                   # AAB 파일 경로 (버전 정보 포함)
                 json_key: ENV["GOOGLE_PLAY_JSON_KEY"],  # Service Account JSON 경로
                 skip_upload_apk: true,                  # APK 업로드 안함
                 skip_upload_metadata: true,             # 메타데이터 업로드 안함
@@ -343,13 +354,11 @@ jobs:
                 skip_upload_screenshots: true,          # 스크린샷 업로드 안함
                 skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
                 release_status: 'completed',            # 즉시 배포
-                rollout: '1.0',                         # 100% 배포
-                version_name: ENV["VERSION_NAME"],      # 버전 이름
-                version_code: version_code              # 버전 코드 (정수)
+                rollout: '1.0'                          # 100% 배포
               )
 
               puts "✅ Play Store 내부 테스트 배포 완료!"
-              puts "버전: #{ENV['VERSION_NAME']} (#{version_code})"
+              puts "버전: #{ENV['VERSION_NAME']}"
             end
           end
           EOF
