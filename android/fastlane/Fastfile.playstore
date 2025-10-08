@@ -1,0 +1,97 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build AAB for Play Store"
+  lane :build_aab do
+    flutter_build(
+      build: 'appbundle',
+      project_dir: '..'
+    )
+  end
+
+  desc "Deploy to Play Store Internal Testing Track"
+  lane :deploy_internal do
+    # Release notes 읽기
+    release_notes = ENV["RELEASE_NOTES"] || "새로운 버전 업데이트"
+    version_name = ENV["VERSION_NAME"] || "1.0.0"
+    version_code = ENV["VERSION_CODE"] || "1"
+
+    puts "📦 배포 정보:"
+    puts "  버전: #{version_name} (#{version_code})"
+    puts "  릴리즈 노트: #{release_notes}"
+
+    # Play Store 내부 테스트 트랙에 업로드
+    upload_to_play_store(
+      track: 'internal',                      # 내부 테스트 트랙
+      aab: ENV["AAB_PATH"],                   # AAB 파일 경로
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"],  # Service Account JSON 경로
+      skip_upload_apk: true,                  # APK 업로드 안함
+      skip_upload_metadata: true,             # 메타데이터 업로드 안함
+      skip_upload_images: true,               # 이미지 업로드 안함
+      skip_upload_screenshots: true,          # 스크린샷 업로드 안함
+      skip_upload_changelogs: false,          # 릴리즈 노트는 업로드
+      release_status: 'completed',            # 즉시 배포
+      rollout: '1.0'                          # 100% 배포
+    )
+
+    puts "✅ Play Store 내부 테스트 배포 완료!"
+    puts "버전: #{version_name} (#{version_code})"
+  end
+
+  desc "Promote internal to alpha testing"
+  lane :promote_to_alpha do
+    upload_to_play_store(
+      track: 'internal',
+      track_promote_to: 'alpha',
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"],
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Promote alpha to beta testing"
+  lane :promote_to_beta do
+    upload_to_play_store(
+      track: 'alpha',
+      track_promote_to: 'beta',
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"],
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Promote beta to production"
+  lane :promote_to_production do
+    upload_to_play_store(
+      track: 'beta',
+      track_promote_to: 'production',
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"],
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      rollout: '0.1'  # 10% 단계적 출시
+    )
+  end
+end
+
+def flutter_build(options)
+  Dir.chdir(options[:project_dir]) do
+    sh(
+      "flutter",
+      "build",
+      options[:build],
+      "--release",
+      "--no-tree-shake-icons",
+      "-v"
+    )
+  end
+end
+
