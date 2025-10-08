@@ -1,11 +1,28 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-08T17:56:30Z",
-    "currentVersion": "1.3.24",
-    "totalReleases": 28,
+    "lastUpdated": "2025-10-08T18:05:27Z",
+    "currentVersion": "1.3.25",
+    "totalReleases": 29,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.3.25",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 311,
+      "raw_summary": "Summary by CodeRabbit\n\nChores\n\nlocal.properties에 올바른 버전 정보 포함\nbuild.gradle.kts가 이 값을 읽음\nAAB 파일에 올바른 버전 코드 포함",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "local.properties에 올바른 버전 정보 포함",
+            "build.gradle.kts가 이 값을 읽음",
+            "AAB 파일에 올바른 버전 코드 포함"
+          ]
+        }
+      }
+    },
     {
       "version": "1.3.24",
       "project_type": "flutter",
