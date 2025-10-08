@@ -359,8 +359,8 @@ jobs:
       # Play Store에 업로드
       - name: Upload to Play Store Internal Testing
         run: |
-          # AAB 파일 경로 찾기
-          AAB_PATH=$(find build/app/outputs/bundle/release -name "*.aab" | head -1)
+          # AAB 파일 절대 경로 찾기
+          AAB_PATH=$(realpath build/app/outputs/bundle/release/app-release.aab)
           echo "Found AAB at: $AAB_PATH"
 
           if [ ! -f "$AAB_PATH" ]; then
@@ -380,7 +380,7 @@ jobs:
             echo "기본 Release Notes로 업로드: $RELEASE_NOTES"
           fi
 
-          # 환경변수 설정
+          # 환경변수 설정 (절대 경로 사용)
           export AAB_PATH="$AAB_PATH"
           export GOOGLE_PLAY_JSON_KEY="$HOME/.config/gcloud/service-account.json"
           export RELEASE_NOTES="$RELEASE_NOTES"
@@ -389,7 +389,7 @@ jobs:
 
           # 디버깅 정보
           echo "Working directory: $(pwd)"
-          echo "AAB_PATH: $AAB_PATH"
+          echo "AAB_PATH (absolute): $AAB_PATH"
           echo "GOOGLE_PLAY_JSON_KEY: $GOOGLE_PLAY_JSON_KEY"
           echo "VERSION: $VERSION_NAME ($VERSION_CODE)"
 
