@@ -19,6 +19,7 @@ class UserInfo {
   bool? isMemberLocationSaved;
   bool? isMarketingInfoAgreed;
   bool? isRequiredTermsAgreed;
+  bool? isCoachMarkShown;
 
   // === 위치 및 메타 정보 ===
   double? latitude;
@@ -148,6 +149,7 @@ class UserInfo {
     required bool isMemberLocationSaved,
     required bool isMarketingInfoAgreed,
     required bool isRequiredTermsAgreed,
+    bool? isCoachMarkShown,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -162,6 +164,12 @@ class UserInfo {
 
     for (final entry in statusMap.entries) {
       await prefs.setBool(entry.key, entry.value);
+    }
+
+    // isCoachMarkShown은 선택적 저장
+    if (isCoachMarkShown != null) {
+      await prefs.setBool('isCoachMarkShown', isCoachMarkShown);
+      this.isCoachMarkShown = isCoachMarkShown;
     }
 
     this.isFirstLogin = isFirstLogin;
@@ -218,6 +226,7 @@ class UserInfo {
     isMemberLocationSaved = prefs.getBool('isMemberLocationSaved');
     isMarketingInfoAgreed = prefs.getBool('isMarketingInfoAgreed');
     isRequiredTermsAgreed = prefs.getBool('isRequiredTermsAgreed');
+    isCoachMarkShown = prefs.getBool('isCoachMarkShown');
   }
 
   // === 온보딩 관련 로직 ===
@@ -265,11 +274,11 @@ class UserInfo {
 
   // === 데이터 삭제 메서드 ===
 
-  /// 로그아웃 시 모든 정보 삭제
-  Future<void> clearAllInfo() async {
+  /// 로그아웃 시 정보 삭제 (isCoachMarkShown 제외)
+  Future<void> clearUserInfoExceptIsCoachMarkShown() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 모든 키 삭제
+    // 로그아웃 시 삭제할 키 목록 (isCoachMarkShown 제외)
     final keysToRemove = [
       'memberId',
       'nickname',
@@ -287,14 +296,15 @@ class UserInfo {
       'isItemCategorySaved',
       'isMemberLocationSaved',
       'isMarketingInfoAgreed',
-      'isRequiredTermsAgreed'
+      'isRequiredTermsAgreed',
+      // 'isCoachMarkShown' - 디바이스에 영구 저장
     ];
 
     for (final key in keysToRemove) {
       await prefs.remove(key);
     }
 
-    // 메모리 캐시도 초기화
+    // 메모리 캐시도 초기화 (isCoachMarkShown 제외)
     memberId = null;
     nickname = null;
     email = null;
@@ -312,5 +322,6 @@ class UserInfo {
     isMemberLocationSaved = null;
     isMarketingInfoAgreed = null;
     isRequiredTermsAgreed = null;
+    // isCoachMarkShown은 유지 (다음 로그인 시 계속 사용)
   }
 }

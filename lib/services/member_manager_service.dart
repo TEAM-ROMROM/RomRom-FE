@@ -187,7 +187,7 @@ class MemberManagerService {
 
   /// 로그아웃 시 캐시 및 저장된 정보 삭제 (UserInfo에 위임)
   Future<void> clearMemberInfo() async {
-    await _userInfo.clearAllInfo();
+    await _userInfo.clearUserInfoExceptIsCoachMarkShown();
 
     _cachedMember = null;
     _isInitialized = false;

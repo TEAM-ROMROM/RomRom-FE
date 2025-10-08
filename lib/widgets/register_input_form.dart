@@ -14,6 +14,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
@@ -215,6 +216,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       }
     }
   }
+
+  /// 첫 물건 등록 상태 업데이트
 
   // ai 가격 측정 함수
   Future<void> _measureAiPrice() async {
@@ -1032,16 +1035,54 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         latitude: _latitude,
                         aiPrice: useAiPrice,
                       );
+
                       if (widget.isEditMode) {
+                        // 수정 모드
                         await ItemApi().updateItem(itemRequest);
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('물품이 성공적으로 $modeText되었습니다.')),
+                          );
+                        }
                       } else {
-                        await ItemApi().postItem(itemRequest);
-                      }
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('물품이 성공적으로 $modeText되었습니다.')),
-                        );
+                        // 등록 모드
+                        final response = await ItemApi().postItem(itemRequest);
+                        debugPrint('====================================');
+                        debugPrint('물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}');
+                        debugPrint('====================================');
+
+                        final userInfo = UserInfo();
+                        await userInfo.getUserInfo();
+
+                        if (response.isFirstItemPosted == true) {
+                          debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
+                          await userInfo.saveLoginStatus(
+                            isFirstLogin: false,
+                            isFirstItemPosted: true,
+                            isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
+                            isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+                            isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+                            isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
+                            isCoachMarkShown: userInfo.isCoachMarkShown,
+                          );
+                        }
+
+                        if (context.mounted) {
+                          final resultData = {
+                            if (response.item?.itemId != null)
+                              'itemId': response.item!.itemId,
+                            'isFirstItemPosted': response.isFirstItemPosted ?? false,
+                          };
+                          debugPrint('Navigator.pop 전달 데이터: $resultData');
+                          
+                          // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
+                          Navigator.of(context).pop(resultData);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('물품이 성공적으로 $modeText되었습니다.')),
+                          );
+                        }
                       }
                     } catch (e) {
                       if (context.mounted) {

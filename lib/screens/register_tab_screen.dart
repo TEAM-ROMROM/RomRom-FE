@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/home_tab_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
@@ -19,6 +20,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/screens/main_screen.dart';
 
 class RegisterTabScreen extends StatefulWidget {
   const RegisterTabScreen({super.key});
@@ -181,6 +183,38 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         );
       }
     }
+  }
+
+  /// 첫 물건 등록 후 홈탭으로 전환하고 상세 페이지로 이동
+  void _navigateToHomeAndShowDetail(String itemId) {
+    debugPrint('====================================');
+    debugPrint('_navigateToHomeAndShowDetail 호출됨: itemId=$itemId');
+    
+    // MainScreen의 GlobalKey를 통해 홈탭(인덱스 0)으로 전환
+    final mainState = MainScreen.globalKey.currentState;
+    debugPrint('MainScreen.globalKey.currentState: $mainState');
+    
+    if (mainState != null) {
+      debugPrint('홈 탭(인덱스 0)으로 전환 시도...');
+      (mainState as dynamic).switchToTab(0);
+    } else {
+      debugPrint('⚠️ MainScreen.globalKey.currentState가 null입니다!');
+    }
+
+    // 탭 전환 후 홈탭의 context에서 상세 페이지로 이동
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeState = HomeTabScreen.globalKey.currentState;
+      debugPrint('HomeTabScreen.globalKey.currentState: $homeState');
+      
+      if (homeState != null) {
+        debugPrint('HomeTabScreen의 navigateToItemDetail 호출 시도...');
+        // _HomeTabScreenState의 navigateToItemDetail 메서드 호출
+        (homeState as dynamic).navigateToItemDetail(itemId);
+      } else {
+        debugPrint('⚠️ HomeTabScreen.globalKey.currentState가 null입니다!');
+      }
+    });
+    debugPrint('====================================');
   }
 
   void _scrollListener() {
@@ -492,7 +526,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   child: InkWell(
                     borderRadius: BorderRadius.circular(100.r),
                     onTap: () async {
-                      await Navigator.push(
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ItemRegisterScreen(
@@ -502,8 +536,28 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                           ),
                         ),
                       );
+
+                      debugPrint('====================================');
+                      debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
+                      debugPrint('result type: ${result.runtimeType}');
+                      if (result is Map<String, dynamic>) {
+                        debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
+                        debugPrint('  - itemId: ${result['itemId']}');
+                      }
+                      debugPrint('====================================');
+
                       // 등록 화면에서 돌아온 뒤 목록 새로고침
                       _loadMyItems(isRefresh: true);
+
+                      // 첫 물건 등록 완료 시 홈탭으로 전환 후 상세 페이지로 이동
+                      if (result is Map<String, dynamic> &&
+                          result['isFirstItemPosted'] == true &&
+                          result['itemId'] != null) {
+                        debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
+                        _navigateToHomeAndShowDetail(result['itemId'] as String);
+                      } else {
+                        debugPrint('첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}');
+                      }
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(
