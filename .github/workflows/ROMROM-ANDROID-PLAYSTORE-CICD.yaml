@@ -295,6 +295,43 @@ jobs:
           echo "✅ local.properties 업데이트 완료"
           echo "📋 local.properties 내용:"
           cat android/local.properties
+          
+          # 🔍 디버깅: build.gradle이 읽을 파일 경로 확인
+          echo ""
+          echo "=========================================="
+          echo "🔍 [디버깅] Gradle 빌드 파일 검증"
+          echo "=========================================="
+          echo "📁 android/local.properties 파일 존재 확인:"
+          if [ -f "android/local.properties" ]; then
+            echo "  ✅ 파일 존재함"
+            echo "  📋 파일 크기: $(wc -c < android/local.properties) bytes"
+            echo "  📋 flutter.versionCode 값: $(grep 'flutter.versionCode' android/local.properties | cut -d'=' -f2)"
+            echo "  📋 flutter.versionName 값: $(grep 'flutter.versionName' android/local.properties | cut -d'=' -f2)"
+          else
+            echo "  ❌ 파일이 존재하지 않음!"
+          fi
+          
+          echo ""
+          echo "📁 android/local.properties_stable 파일 존재 확인 (이전 오타 파일):"
+          if [ -f "android/local.properties_stable" ]; then
+            echo "  ⚠️ 이 파일이 존재하면 안됩니다! (이전 버그)"
+            cat android/local.properties_stable
+          else
+            echo "  ✅ 파일 없음 (정상)"
+          fi
+          
+          echo ""
+          echo "📋 build.gradle이 어떤 파일을 읽는지 확인:"
+          echo "  android/app/build.gradle의 localPropertiesFile 설정:"
+          grep -A2 "def localPropertiesFile" android/app/build.gradle | head -3
+          
+          echo ""
+          echo "🎯 최종 확인:"
+          echo "  VERSION_NAME: $VERSION_NAME"
+          echo "  VERSION_CODE: $VERSION_CODE"
+          echo "  local.properties의 versionCode: $(grep 'flutter.versionCode' android/local.properties | cut -d'=' -f2)"
+          echo "=========================================="
+          echo ""
 
           # Gradle 성능 최적화 설정
           export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4"
