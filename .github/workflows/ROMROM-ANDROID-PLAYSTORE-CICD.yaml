@@ -67,39 +67,24 @@ jobs:
       - name: 현재 버전 정보 가져오기
         id: current_version
         run: |
-          # 버전 관리 스크립트로 버전 정보 가져오기
+          # VERSION 가져오기 (x.y.z 형식)
           VERSION=$(./.github/scripts/version_manager.sh get | tail -n 1)
-          echo "📋 버전 정보: $VERSION"
 
-          # Flutter 버전이 x.x.x+y 형식인지 확인
-          if [[ "$VERSION" == *"+"* ]]; then
-            # 기존 x.x.x+y 형식에서 빌드 번호 추출
-            VERSION_NAME=$(echo "$VERSION" | cut -d'+' -f1)
-            VERSION_CODE=$(echo "$VERSION" | cut -d'+' -f2)
-            echo "📋 기존 형식 감지: 버전=$VERSION_NAME, 빌드코드=$VERSION_CODE"
-          else
-            # x.x.x 형식에서는 별도 빌드 코드 사용
-            VERSION_NAME=$VERSION
-          
-            # Android 빌드를 위한 버전 코드 생성 (CI 환경에서는 GITHUB_RUN_NUMBER 활용)
-            if [ -n "$GITHUB_RUN_NUMBER" ]; then
-              VERSION_CODE=$GITHUB_RUN_NUMBER
-            else
-              # CI 환경이 아닌 경우 타임스탬프로 대체
-              VERSION_CODE=$(date +%s | tail -c 6)
-            fi
-          fi
+          # VERSION_CODE 가져오기 (version.yml에서 관리되는 단순 증가 번호)
+          VERSION_CODE=$(./.github/scripts/version_manager.sh get-code)
 
           # 결과 출력
-          echo "version=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "✅ VERSION: $VERSION"
+          echo "✅ VERSION_CODE: $VERSION_CODE"
+          echo "🔧 프로젝트 타입: ${{ env.PROJECT_TYPE }}"
+
+          # GitHub outputs 설정
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "project_type=${{ env.PROJECT_TYPE }}" >> $GITHUB_OUTPUT
 
-          echo "📋 현재 버전: $VERSION_NAME (버전코드: $VERSION_CODE)"
-          echo "🔧 프로젝트 타입: ${{ env.PROJECT_TYPE }}"
-
           # 환경변수로도 설정 (스크립트에서 사용)
-          echo "VERSION=$VERSION_NAME" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "TODAY=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
           echo "TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
@@ -256,181 +241,26 @@ jobs:
           fi
           echo "✅ Android 빌드 설정 확인 완료"
 
-      # pubspec.yaml 버전 업데이트 (버전정보+런타임번호 로 수정하여 빌드)
-      - name: Update pubspec.yaml version
-        run: |
-          VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
-          VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
-          
-          echo "=========================================="
-          echo "📝 pubspec.yaml 버전 업데이트 시작"
-          echo "=========================================="
-          echo "🎯 목표 버전: ${VERSION_NAME}+${VERSION_CODE}"
-          echo "📋 VERSION_NAME: '$VERSION_NAME'"
-          echo "📋 VERSION_CODE: '$VERSION_CODE'"
-          echo "🔍 GitHub Run Number: ${{ github.run_number }}"
-          
-          # 입력 검증
-          if [ -z "$VERSION_NAME" ] || [ -z "$VERSION_CODE" ]; then
-            echo "❌ 치명적 오류: VERSION_NAME 또는 VERSION_CODE가 비어있습니다!"
-            echo "VERSION_NAME: '$VERSION_NAME'"
-            echo "VERSION_CODE: '$VERSION_CODE'"
-            exit 1
-          fi
-          
-          echo "🔍 수정 전 pubspec.yaml 전체 내용:"
-          echo "----------------------------------------"
-          cat pubspec.yaml | head -20
-          echo "----------------------------------------"
-          
-          echo "🔍 수정 전 version 필드:"
-          grep -n "^version:" pubspec.yaml || echo "❌ version 필드를 찾을 수 없습니다!"
-          
-          # 백업 생성
-          cp pubspec.yaml pubspec.yaml.bak
-          echo "✅ pubspec.yaml 백업 생성 완료"
-          
-          # 새 버전 문자열 생성
-          NEW_VERSION="${VERSION_NAME}+${VERSION_CODE}"
-          echo "🎯 새 버전 문자열: '$NEW_VERSION'"
-          
-          # Python을 사용한 더 안전한 파일 수정
-          echo "🔧 Python을 사용하여 pubspec.yaml 수정 중..."
-          python3 << EOF
-import re
-
-# 파일 읽기
-with open('pubspec.yaml', 'r', encoding='utf-8') as f:
-    content = f.read()
-
-print(f"📋 원본 파일 크기: {len(content)} bytes")
-
-# version 필드 찾기 및 교체
-pattern = r'^version:\s*.*$'
-replacement = f'version: ${NEW_VERSION}'
-
-new_content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
-
-# 변경사항 확인
-if content != new_content:
-    print("✅ 버전 필드 변경 감지됨")
-    with open('pubspec.yaml', 'w', encoding='utf-8') as f:
-        f.write(new_content)
-    print("✅ pubspec.yaml 파일 수정 완료")
-else:
-    print("❌ 버전 필드 변경이 감지되지 않음!")
-    exit(1)
-EOF
-          
-          if [ $? -ne 0 ]; then
-            echo "❌ Python 스크립트 실행 실패! 대체 방법 시도..."
-            
-            # 대체 방법: awk 사용
-            echo "🔄 awk를 사용한 대체 방법 시도..."
-            awk -v new_version="$NEW_VERSION" '
-            /^version:/ {print "version: " new_version; next} 
-            {print}
-            ' pubspec.yaml.bak > pubspec.yaml.tmp
-            
-            if [ -f pubspec.yaml.tmp ]; then
-              mv pubspec.yaml.tmp pubspec.yaml
-              echo "✅ awk를 사용한 수정 완료"
-            else
-              echo "❌ awk 수정도 실패!"
-              exit 1
-            fi
-          fi
-          
-          echo "🔍 수정 후 pubspec.yaml version 필드:"
-          grep -n "^version:" pubspec.yaml || echo "❌ version 필드를 찾을 수 없습니다!"
-          
-          echo "🔍 수정 후 pubspec.yaml 전체 내용 (처음 20줄):"
-          echo "----------------------------------------"
-          cat pubspec.yaml | head -20
-          echo "----------------------------------------"
-          
-          # 수정 검증 (더 강력한 방법)
-          UPDATED_VERSION=$(grep "^version:" pubspec.yaml | sed 's/^version:\s*//' | tr -d ' \t\n\r')
-          EXPECTED_VERSION=$(echo "$NEW_VERSION" | tr -d ' \t\n\r')
-          
-          echo "🔍 버전 검증 (공백 제거 후):"
-          echo "  예상: '$EXPECTED_VERSION'"
-          echo "  실제: '$UPDATED_VERSION'"
-          echo "  길이 비교: 예상=${#EXPECTED_VERSION}, 실제=${#UPDATED_VERSION}"
-          
-          if [ "$UPDATED_VERSION" != "$EXPECTED_VERSION" ]; then
-            echo "❌ 치명적 오류: pubspec.yaml 버전 업데이트 검증 실패!"
-            echo "🔍 디버깅 정보:"
-            echo "  예상 (hex): $(echo -n "$EXPECTED_VERSION" | xxd)"
-            echo "  실제 (hex): $(echo -n "$UPDATED_VERSION" | xxd)"
-            
-            echo "🔍 전체 version 라인:"
-            grep "^version:" pubspec.yaml | xxd
-            
-            echo "❌ 빌드를 중단합니다."
-            exit 1
-          fi
-          
-          echo "✅ pubspec.yaml 버전 업데이트 검증 성공!"
-          
-          # Flutter 의존성 재설치 및 검증
-          echo "🔄 Flutter 의존성 재설치..."
-          flutter pub get
-          
-          echo "🔍 Flutter가 인식하는 버전 확인:"
-          flutter --version
-          
-          # pubspec.yaml이 Flutter에 의해 올바르게 파싱되는지 확인
-          echo "🔍 Flutter pub deps로 버전 확인:"
-          flutter pub deps --style=compact | head -5 || echo "pub deps 실행 실패"
-          
-          echo "✅ Flutter 분석 실행..."
-          flutter analyze --no-fatal-infos || echo "⚠️ 분석 경고 무시"
-          
-          echo "=========================================="
-          echo "✅ pubspec.yaml 버전 업데이트 완료"
-          echo "🎯 최종 버전: $NEW_VERSION"
-          echo "=========================================="
+      # pubspec.yaml은 x.y.z 형식 그대로 유지
+      # Flutter build 명령어의 --build-name, --build-number 플래그가 pubspec.yaml을 오버라이드함
 
       # Flutter build appbundle (AAB 생성)
       - name: Build Android App Bundle (AAB)
         run: |
           VERSION_NAME="${{ needs.prepare-build.outputs.version }}"
           VERSION_CODE="${{ needs.prepare-build.outputs.version_code }}"
-          
+
           echo "=========================================="
           echo "🚀 AAB 빌드 시작"
           echo "=========================================="
-          echo "🎯 빌드 버전: '$VERSION_NAME'"
-          echo "🎯 빌드 코드: '$VERSION_CODE'"
-          echo "🔍 GitHub Run Number: ${{ github.run_number }}"
-          
+          echo "🎯 빌드 버전: $VERSION_NAME"
+          echo "🎯 빌드 코드: $VERSION_CODE"
+
           # 입력 검증
           if [ -z "$VERSION_NAME" ] || [ -z "$VERSION_CODE" ]; then
-            echo "❌ 치명적 오류: VERSION_NAME 또는 VERSION_CODE가 비어있습니다!"
-            echo "VERSION_NAME: '$VERSION_NAME'"
-            echo "VERSION_CODE: '$VERSION_CODE'"
+            echo "❌ VERSION_NAME 또는 VERSION_CODE가 비어있습니다!"
             exit 1
           fi
-          
-          # 빌드 전 pubspec.yaml 최종 확인
-          echo "🔍 빌드 전 pubspec.yaml 최종 확인:"
-          grep -n "^version:" pubspec.yaml || echo "❌ version 필드를 찾을 수 없습니다!"
-          
-          CURRENT_PUBSPEC_VERSION=$(grep "^version:" pubspec.yaml | sed 's/^version:\s*//' | tr -d ' \t\n\r')
-          EXPECTED_PUBSPEC_VERSION="${VERSION_NAME}+${VERSION_CODE}"
-          
-          echo "🔍 pubspec.yaml 버전 재검증:"
-          echo "  예상: '$EXPECTED_PUBSPEC_VERSION'"
-          echo "  실제: '$CURRENT_PUBSPEC_VERSION'"
-          
-          if [ "$CURRENT_PUBSPEC_VERSION" != "$EXPECTED_PUBSPEC_VERSION" ]; then
-            echo "❌ 치명적 오류: pubspec.yaml의 버전이 예상과 다릅니다!"
-            echo "이전 단계에서 pubspec.yaml 수정이 실패했을 가능성이 있습니다."
-            exit 1
-          fi
-          
-          echo "✅ pubspec.yaml 버전 재검증 성공"
           
           # Flutter 환경 정보 출력
           echo "🔍 Flutter 환경 정보:"
@@ -448,17 +278,16 @@ EOF
           flutter clean
           flutter pub get
           
-          # Flutter build 명령어에 명시적으로 버전 정보 전달
-          echo "🔨 Flutter build 실행 (명시적 버전 지정)..."
-          echo "📋 실행할 명령어:"
-          echo "flutter build appbundle --release --build-name='$VERSION_NAME' --build-number='$VERSION_CODE' --verbose"
-          
-          # 실제 빌드 실행
+          # Flutter build 명령어에 버전 정보 전달
+          # --build-name과 --build-number 플래그가 pubspec.yaml의 version을 오버라이드함
+          # pubspec.yaml은 x.y.z 형식 유지, VERSION_CODE는 version.yml에서 자동 관리
+          echo "🔨 Flutter build 실행..."
+          echo "📋 명령어: flutter build appbundle --release --build-name=$VERSION_NAME --build-number=$VERSION_CODE"
+
           flutter build appbundle \
             --release \
             --build-name="$VERSION_NAME" \
-            --build-number="$VERSION_CODE" \
-            --verbose
+            --build-number="$VERSION_CODE"
           
           BUILD_EXIT_CODE=$?
           
@@ -516,11 +345,12 @@ EOF
           echo "🔍 Java 환경 확인:"
           java -version
           
-          # AAB 파일 내부의 실제 버전 정보 확인 (중요!)
+          # AAB 파일 내부의 실제 버전 정보 확인
+          # Flutter CLI 플래그로 전달한 VERSION_CODE가 제대로 적용되었는지 검증
           echo "=========================================="
           echo "🔍 AAB 파일 내부 버전 정보 검증"
           echo "=========================================="
-          
+
           # AndroidManifest.xml에서 버전 정보 추출
           echo "📋 AAB에서 실제 버전 정보 추출 중..."
           echo "📋 실행할 명령어: java -jar bundletool.jar dump manifest --bundle='$AAB_FILE'"
@@ -544,7 +374,7 @@ EOF
             echo "  예상 VERSION_NAME: '$VERSION_NAME'"
             echo "  실제 VERSION_NAME: '$ACTUAL_VERSION_NAME'"
             
-            # 버전 코드 검증 (가장 중요!)
+            # VERSION_CODE 검증 - version.yml에서 관리되는 단순 증가 번호
             if [ -z "$ACTUAL_VERSION_CODE" ]; then
               echo "❌ 치명적 오류: AAB에서 VERSION_CODE를 추출할 수 없습니다!"
               echo "🔍 전체 Manifest 내용:"
@@ -553,13 +383,12 @@ EOF
             elif [ "$ACTUAL_VERSION_CODE" != "$VERSION_CODE" ]; then
               echo "❌ 치명적 오류: AAB의 VERSION_CODE가 예상과 다릅니다!"
               echo "   이는 Google Play에서 '이미 사용된 버전 코드' 오류를 발생시킵니다."
-              echo "   pubspec.yaml 수정이나 Flutter build 과정에서 문제가 발생했습니다."
               echo ""
               echo "🔍 디버깅 정보:"
-              echo "   현재 pubspec.yaml 버전:"
-              grep "^version:" pubspec.yaml || echo "   version 필드를 찾을 수 없음"
+              echo "   version.yml의 VERSION_CODE: $VERSION_CODE"
+              echo "   AAB 파일 내부의 VERSION_CODE: $ACTUAL_VERSION_CODE"
               echo ""
-              echo "   Flutter build 명령어에 전달된 인수:"
+              echo "   Flutter build 명령어에 전달된 플래그:"
               echo "   --build-name='$VERSION_NAME'"
               echo "   --build-number='$VERSION_CODE'"
               echo ""
@@ -666,8 +495,8 @@ EOF
           platform :android do
             lane :deploy_internal do
               # Play Store 내부 테스트 트랙에 업로드
-              # Changelog는 이미 metadata/android/ko-KR/changelogs/[VERSION_CODE].txt에 준비됨
-              # version_code는 AAB 파일에 이미 포함되어 있으므로 별도 지정 불필요
+              # Changelog는 metadata/android/ko-KR/changelogs/[VERSION_CODE].txt에 준비됨
+              # VERSION_CODE는 version.yml에서 관리되며 AAB 파일에 이미 포함됨 (별도 지정 불필요)
               upload_to_play_store(
                 package_name: 'com.alom.romrom',        # Android 패키지 이름
                 track: 'internal',                      # 내부 테스트 트랙
@@ -735,7 +564,8 @@ EOF
           echo "📋 AAB 파일 정보: $(ls -lah "$AAB_PATH")"
           echo "📱 AAB 파일 크기: $(du -h "$AAB_PATH" | cut -f1)"
           
-          # 배포 전 최종 AAB 검증 (중요!)
+          # 배포 전 최종 AAB 검증
+          # version.yml에서 관리되는 VERSION_CODE가 AAB에 올바르게 포함되었는지 확인
           echo "=========================================="
           echo "🔍 배포 전 최종 AAB 검증"
           echo "=========================================="
@@ -785,7 +615,7 @@ EOF
               echo "  기대 VERSION_NAME: '$VERSION_NAME'"
               echo "  AAB의 VERSION_NAME: '$FINAL_VERSION_NAME'"
               
-              # 버전 코드 검증 (가장 중요!)
+              # VERSION_CODE 최종 검증
               if [ -z "$FINAL_VERSION_CODE" ]; then
                 echo "❌ 치명적 오류: AAB에서 VERSION_CODE를 추출할 수 없습니다!"
                 echo "🔍 전체 Manifest 내용:"
@@ -798,6 +628,8 @@ EOF
                 echo "   이는 이전 빌드 단계에서 문제가 발생했음을 의미합니다."
                 echo ""
                 echo "🔍 디버깅 정보:"
+                echo "   version.yml의 VERSION_CODE: $VERSION_CODE"
+                echo "   AAB 파일의 VERSION_CODE: $FINAL_VERSION_CODE"
                 echo "   전체 Manifest 내용:"
                 echo "$MANIFEST_OUTPUT" | grep -E "versionCode|versionName|package"
                 echo "❌ 배포를 중단합니다."
@@ -945,4 +777,3 @@ EOF
         run: |
           echo "❌ Play Store 배포 실패!"
           echo "로그를 확인해주세요."
-
