@@ -98,3 +98,6 @@ Flutter/flutter_assets/
 *.p12
 *.p8
 *.mobileprovision
+
+# iOS/macOS 빌드 아티팩트
+ios/Flutter/AppFrameworkInfo.plist

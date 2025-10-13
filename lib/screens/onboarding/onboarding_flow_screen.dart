@@ -76,7 +76,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   // 온보딩 완료 후 메인 화면으로 이동
   void _completeOnboarding() {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const MainScreen()),
+      MaterialPageRoute(builder: (context) => MainScreen(key: MainScreen.globalKey)),
       (route) => false,
     );
   }

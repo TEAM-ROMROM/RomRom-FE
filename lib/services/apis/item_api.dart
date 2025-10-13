@@ -14,8 +14,9 @@ class ItemApi {
 
   /// 물품 등록 API
   /// `POST /api/item/post`
-  Future<void> postItem(ItemRequest request) async {
+  Future<ItemResponse> postItem(ItemRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/item/post';
+    late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
       'itemName': request.itemName,
@@ -50,9 +51,12 @@ class ItemApi {
       fields: fields,
       isAuthRequired: true,
       onSuccess: (responseData) {
-        debugPrint('물품 등록 성공: ${request.itemName}');
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}');
       },
     );
+
+    return itemResponse;
   }
 
   /// 좋아요 등록/취소 API

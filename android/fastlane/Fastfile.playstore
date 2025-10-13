@@ -22,6 +22,7 @@ platform :android do
 
     # Play Store 내부 테스트 트랙에 업로드
     upload_to_play_store(
+      package_name: 'com.alom.romrom',        # Android 패키지 이름
       track: 'internal',                      # 내부 테스트 트랙
       aab: ENV["AAB_PATH"],                   # AAB 파일 경로
       json_key: ENV["GOOGLE_PLAY_JSON_KEY"],  # Service Account JSON 경로
@@ -29,9 +30,10 @@ platform :android do
       skip_upload_metadata: true,             # 메타데이터 업로드 안함
       skip_upload_images: true,               # 이미지 업로드 안함
       skip_upload_screenshots: true,          # 스크린샷 업로드 안함
-      skip_upload_changelogs: false,          # 릴리즈 노트는 업로드
-      release_status: 'completed',            # 즉시 배포
-      rollout: '1.0'                          # 100% 배포
+      skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
+      release_status: 'draft',                # 'draft' 상태로 배포 (수동 검토 후 릴리즈)
+      version_name: ENV["VERSION_NAME"],      # 버전 이름
+      version_code: ENV["VERSION_CODE"]       # 버전 코드
     )
 
     puts "✅ Play Store 내부 테스트 배포 완료!"

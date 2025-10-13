@@ -10,8 +10,14 @@ class ItemResponse {
   final Item? item;
   final ItemPage? itemPage;
   final bool? isLiked;
+  final bool? isFirstItemPosted;
 
-  ItemResponse({this.item, this.itemPage, this.isLiked});
+  ItemResponse({
+    this.item,
+    this.itemPage,
+    this.isLiked,
+    this.isFirstItemPosted,
+  });
 
   factory ItemResponse.fromJson(Map<String, dynamic> json) =>
       _$ItemResponseFromJson(json);

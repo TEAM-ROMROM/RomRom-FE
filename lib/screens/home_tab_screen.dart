@@ -17,6 +17,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
@@ -25,14 +26,18 @@ import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
   const HomeTabScreen({super.key});
+
+  // HomeTabScreen의 상태에 접근하기 위한 GlobalKey
+  static final GlobalKey<State<HomeTabScreen>> globalKey =
+      GlobalKey<State<HomeTabScreen>>();
 
   @override
   State<HomeTabScreen> createState() => _HomeTabScreenState();
@@ -95,65 +100,135 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     super.dispose();
   }
 
-  /// 메인화면 첫 진입 여부와 "내 물품 보유 여부"를 함께 고려해
-  /// 블러·코치마크 노출 여부를 결정한다.
-  ///
-  /// 조건
-  /// 1) 사용자가 **등록한 물품이 하나도 없고**
-  /// 2) 앱 최초 진입일 때(isFirstMainScreen == true)
-  /// → 블러 & 코치마크 ON
-  ///
-  /// 그 외에는 블러·코치마크 OFF
-  Future<void> _checkFirstMainScreen() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bool isFirst = prefs.getBool('isFirstMainScreen') ?? true;
+  /// 첫 물건 등록 후 상세 페이지로 이동 (외부 호출용)
+  void navigateToItemDetail(String itemId) {
+    debugPrint('====================================');
+    debugPrint('HomeTabScreen.navigateToItemDetail 호출됨: itemId=$itemId');
+    debugPrint('mounted: $mounted');
 
-    bool userHasItem = false;
-    try {
-      // 내 물품이 하나라도 있는지 확인 (pageSize=1로 최소 데이터 호출)
-      final itemApi = ItemApi();
-      final response = await itemApi.getMyItems(
-        ItemRequest(
-            pageNumber: 0,
-            pageSize: 1,
-            itemStatus: ItemStatus.available.serverName),
-      );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      debugPrint('PostFrameCallback 실행됨');
+      if (mounted) {
+        debugPrint('상세 페이지로 네비게이션 시작...');
+        // 화면 크기 가져오기
+        final screenWidth = MediaQuery.of(context).size.width;
+        final imageHeight = screenWidth; // 정사각형 이미지
 
-      userHasItem = (response.itemPage?.content.isNotEmpty ?? false);
-    } catch (e) {
-      debugPrint('블러 상태 결정용 내 물품 조회 실패: $e');
-      // 실패 시에는 "없다"고 간주해 기존 로직 유지
-    }
+        // context.navigateTo() 헬퍼 사용 (iOS 스와이프 백 지원)
+        context.navigateTo(
+          screen: ItemDetailDescriptionScreen(
+            itemId: itemId,
+            imageSize: Size(screenWidth, imageHeight),
+            currentImageIndex: 0,
+            heroTag: 'first_item_$itemId',
+            isMyItem: true,
+            isRequestManagement: false,
+          ),
+        );
 
-    final bool shouldShowBlur = !userHasItem && isFirst;
+        // 상세 화면에서 돌아왔을 때 코치마크 표시
+        debugPrint('상세 화면에서 돌아옴! 이제 코치마크를 표시합니다.');
+        _checkAndShowCoachMark();
 
-    setState(() {
-      _isBlurShown = shouldShowBlur;
+        debugPrint('상세 페이지 네비게이션 완료');
+      } else {
+        debugPrint('⚠️ HomeTabScreen이 mounted되지 않음!');
+      }
     });
-
-    // 블러를 보여줄 필요가 없다면 최초 진입 플래그도 바로 해제 (다음 진입 시 재호출 방지)
-    if (!shouldShowBlur) {
-      await prefs.setBool('isFirstMainScreen', false);
-    }
-
-    // 코치마크가 필요한 경우 오버레이 표시
-    if (shouldShowBlur) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showCoachMarkOverlay();
-      });
-    }
+    debugPrint('====================================');
   }
 
-  /// 코치마크 노출 플래그 해제 (이후 재진입 시 코치마크 미노출)
-  Future<void> _clearFirstMainScreenFlag() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isFirstMainScreen', false);
+  /// 홈 화면 블러 표시 로직
+  ///
+  /// 블러 표시 조건:
+  /// - 내 물건이 0개일 때 (실제 물건 개수 기준)
+  ///
+  /// 코치마크 표시 조건:
+  /// - 첫 물품 등록 후 상세 화면에서 돌아올 때만 표시
+  /// - _checkAndShowCoachMark()에서 처리
+  Future<void> _checkFirstMainScreen() async {
+    debugPrint('====================================');
+    debugPrint('_checkFirstMainScreen 호출됨');
+    try {
+
+      // 블러 표시 여부: 내 물건 개수가 0개일 때
+      final bool shouldShowBlur = _myCards.isEmpty;
+
+      debugPrint('조건 체크:');
+      debugPrint('  - 내 물건 개수: ${_myCards.length}');
+      debugPrint('  - shouldShowBlur: $shouldShowBlur');
+
+      setState(() {
+        _isBlurShown = shouldShowBlur;
+      });
+
+      // 코치마크는 여기서 표시하지 않음!
+      // 첫 물품 등록 후 상세 화면 복귀 시에만 _checkAndShowCoachMark()에서 표시
+      debugPrint('코치마크는 첫 물품 등록 플로우에서만 표시됨');
+    } catch (e) {
+      debugPrint('⚠️ 첫 화면 체크 실패: $e');
+      setState(() {
+        _isBlurShown = false;
+      });
+    }
+    debugPrint('====================================');
+  }
+
+  /// 코치마크를 표시해야 하는지 체크하고 표시 (상세 화면에서 돌아올 때 호출)
+  Future<void> _checkAndShowCoachMark() async {
+    debugPrint('====================================');
+    debugPrint('_checkAndShowCoachMark 호출됨 (상세 화면에서 돌아옴)');
+    try {
+      final userInfo = UserInfo();
+      await userInfo.getUserInfo();
+
+      debugPrint('UserInfo 로드 완료:');
+      debugPrint('  - isFirstItemPosted: ${userInfo.isFirstItemPosted}');
+      debugPrint('  - isCoachMarkShown: ${userInfo.isCoachMarkShown}');
+
+      // 코치마크 표시 여부: 첫 물건 등록 완료 && 코치마크 미표시
+      final bool shouldShowCoachMark = (userInfo.isFirstItemPosted == true) &&
+          (userInfo.isCoachMarkShown != true);
+
+      debugPrint('조건 체크:');
+      debugPrint('  - shouldShowCoachMark: $shouldShowCoachMark');
+
+      // 코치마크 표시
+      if (shouldShowCoachMark) {
+        debugPrint('✅ 코치마크 표시 조건 충족!');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            debugPrint('코치마크 오버레이 표시 시작...');
+            _showCoachMarkOverlay();
+          }
+        });
+      } else {
+        debugPrint('❌ 코치마크 표시 조건 불충족');
+      }
+    } catch (e) {
+      debugPrint('⚠️ 코치마크 체크 실패: $e');
+    }
+    debugPrint('====================================');
   }
 
   // 코치마크 닫기
-  void _closeCoachMark() {
+  void _closeCoachMark() async {
     _removeCoachMarkOverlay();
-    _clearFirstMainScreenFlag();
+
+    // 코치마크 표시 완료 플래그 설정
+    final userInfo = UserInfo();
+    await userInfo.getUserInfo();
+    await userInfo.saveLoginStatus(
+      isFirstLogin: userInfo.isFirstLogin ?? false,
+      isFirstItemPosted: userInfo.isFirstItemPosted ?? false,
+      isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
+      isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+      isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+      isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
+      isCoachMarkShown: true,
+    );
+
+    debugPrint('코치마크 닫기: isCoachMarkShown = true');
   }
 
   // 코치마크 오버레이 표시 (성능/메모리/오류 처리 최적화)
@@ -458,7 +533,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       final myItems = response.itemPage?.content ?? [];
       setState(() {
         _myCards = myItems;
+        // 내 물건 개수에 따라 블러 상태 업데이트
+        _isBlurShown = myItems.isEmpty;
       });
+
+      debugPrint('내 카드 로딩 완료: ${myItems.length}개, 블러 표시: ${myItems.isEmpty}');
     } catch (e) {
       debugPrint('내 카드 로딩 실패: $e');
       // 테스트용 더미 데이터
