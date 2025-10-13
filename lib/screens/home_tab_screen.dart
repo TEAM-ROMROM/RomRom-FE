@@ -17,6 +17,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
@@ -113,17 +114,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         final screenWidth = MediaQuery.of(context).size.width;
         final imageHeight = screenWidth; // 정사각형 이미지
 
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ItemDetailDescriptionScreen(
-              itemId: itemId,
-              imageSize: Size(screenWidth, imageHeight),
-              currentImageIndex: 0,
-              heroTag: 'first_item_$itemId',
-              isMyItem: true,
-              isRequestManagement: false,
-            ),
+        // context.navigateTo() 헬퍼 사용 (iOS 스와이프 백 지원)
+        context.navigateTo(
+          screen: ItemDetailDescriptionScreen(
+            itemId: itemId,
+            imageSize: Size(screenWidth, imageHeight),
+            currentImageIndex: 0,
+            heroTag: 'first_item_$itemId',
+            isMyItem: true,
+            isRequestManagement: false,
           ),
         );
 

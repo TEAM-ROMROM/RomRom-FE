@@ -55,13 +55,13 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                     await userInfo.saveLoginStatus(
                       isFirstLogin: userInfo.isFirstLogin ?? true,
                       isFirstItemPosted: userInfo.isFirstItemPosted ?? false,
-                      isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
+                      isItemCategorySaved: true, // 카테고리 저장 완료 상태로 설정
                       isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
                       isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
                       isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
                       isCoachMarkShown: false, // 명시적으로 false 설정
                     );
-                    debugPrint('온보딩 완료: isCoachMarkShown = false로 설정됨');
+                    debugPrint('온보딩 완료: isItemCategorySaved=true, isCoachMarkShown=false로 설정됨');
                     
                     widget.onComplete();
                     await RomAuthApi().fetchAndSaveMemberInfo();

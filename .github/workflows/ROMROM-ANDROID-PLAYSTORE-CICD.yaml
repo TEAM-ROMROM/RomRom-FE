@@ -213,7 +213,7 @@ jobs:
         run: flutter pub get
 
       - name: Set up Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: ${{ env.JAVA_VERSION }}
@@ -506,38 +506,14 @@ jobs:
           echo "✅ Fastlane 설치 완료"
           fastlane --version
 
-      # Fastfile 생성 (Play Store 배포용)
-      - name: Create Fastfile for Play Store
+      # Fastfile 복사 (Play Store 배포용)
+      # android/fastlane/Fastfile.playstore를 사용하여 일관성 유지
+      - name: Copy Fastfile for Play Store
         run: |
           mkdir -p android/fastlane
-          cat > android/fastlane/Fastfile << 'EOF'
-          default_platform(:android)
-
-          platform :android do
-            lane :deploy_internal do
-              # Play Store 내부 테스트 트랙에 업로드
-              # Changelog는 metadata/android/ko-KR/changelogs/[VERSION_CODE].txt에 준비됨
-              # VERSION_CODE는 version.yml에서 관리되며 AAB 파일에 이미 포함됨 (별도 지정 불필요)
-            upload_to_play_store(
-              package_name: 'com.alom.romrom',        # Android 패키지 이름
-              track: 'internal',                      # 내부 테스트 트랙
-              aab: ENV["AAB_PATH"],                   # AAB 파일 경로 (버전 정보 포함)
-              json_key: ENV["GOOGLE_PLAY_JSON_KEY"],  # Service Account JSON 경로
-              skip_upload_apk: true,                  # APK 업로드 안함
-              skip_upload_metadata: true,             # 메타데이터 업로드 안함
-              skip_upload_images: true,               # 이미지 업로드 안함
-              skip_upload_screenshots: true,          # 스크린샷 업로드 안함
-              skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
-              release_status: 'draft'                 # 'draft', 'completed'
-            )
-
-              puts "✅ Play Store 내부 테스트 배포 완료!"
-              puts "버전: #{ENV['VERSION_NAME']}"
-            end
-          end
-          EOF
-          
-          echo "✅ Fastfile 생성 완료"
+          cp android/fastlane/Fastfile.playstore android/fastlane/Fastfile
+          echo "✅ Fastfile 복사 완료 (Fastfile.playstore → Fastfile)"
+          echo "📋 Fastfile 내용:"
           cat android/fastlane/Fastfile
 
       # Play Store에 업로드
