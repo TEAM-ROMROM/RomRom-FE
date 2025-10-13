@@ -99,9 +99,5 @@ Flutter/flutter_assets/
 *.p8
 *.mobileprovision
 
-# Podfile.lock (iOS/macOS 의존성 잠금 파일)
-ios/Podfile.lock
-macos/Podfile.lock
-
 # iOS/macOS 빌드 아티팩트
 ios/Flutter/AppFrameworkInfo.plist

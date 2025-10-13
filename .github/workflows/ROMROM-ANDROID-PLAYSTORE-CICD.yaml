@@ -131,12 +131,12 @@ jobs:
           retention-days: 1
 
       # 프로젝트 파일들을 아티팩트로 업로드
+      # .env는 보안상 아티팩트에 포함하지 않고, 각 job에서 secrets로 재생성
       - name: Upload project files
         uses: actions/upload-artifact@v4
         with:
           name: project-files
           path: |
-            .env
             pubspec.yaml
             lib/
             assets/
@@ -164,14 +164,11 @@ jobs:
           name: project-files
           path: .
 
-      # .env 파일 확인 및 재생성 (복구 로직)
-      - name: Ensure .env file exists
+      # .env 파일 생성 (보안을 위해 아티팩트가 아닌 시크릿에서 생성)
+      - name: Create .env file
         run: |
-          if [ ! -f .env ]; then
-            echo "⚠️ .env 파일이 아티팩트에서 복원되지 않았습니다. 재생성합니다."
-            echo "${{ secrets.ENV_FILE }}" > .env
-          fi
-          echo "✅ .env 파일 확인됨 (크기: $(wc -c < .env) bytes)"
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo "✅ .env 파일 생성됨 (크기: $(wc -c < .env) bytes)"
 
       # Release Keystore 설정
       - name: Setup Release Keystore
