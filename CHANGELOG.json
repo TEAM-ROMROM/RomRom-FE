@@ -1,11 +1,47 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-09T05:39:35Z",
-    "currentVersion": "1.4.2",
-    "totalReleases": 35,
+    "lastUpdated": "2025-10-13T15:19:48Z",
+    "currentVersion": "1.4.3",
+    "totalReleases": 36,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.4.3",
+      "project_type": "flutter",
+      "date": "2025-10-13",
+      "pr_number": 321,
+      "raw_summary": "Summary by CodeRabbit\n\n신기능\n\n최초 물품 등록 후 홈으로 자동 이동하고 상세 화면 표시, 복귀 시 코치마크(6단계) 오버레이 안내\n최초 등록 여부를 기반으로 코치마크 1회만 노출 및 상태 영구 저장\n\n\n개선\n\n홈 카드 3D 효과 미세 조정(퍼스펙티브 추가)\n\n\n문서\n\n분석/설계/구현/리뷰/테스트/트러블슈팅/디자인 전환 가이드 대폭 추가\n\n\n작업(Chores)\n\niOS 최소 지원 13.0, macOS 최소 지원 10.15로 상향\nPlay Store 배포 파이프라인 개선(드래프트 업로드, 설정 정비)\n버전 1.4.3(빌드 12)로 업데이트",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": [
+            "최초 물품 등록 후 홈으로 자동 이동하고 상세 화면 표시, 복귀 시 코치마크(6단계) 오버레이 안내",
+            "최초 등록 여부를 기반으로 코치마크 1회만 노출 및 상태 영구 저장"
+          ]
+        },
+        "개선": {
+          "title": "개선",
+          "items": [
+            "홈 카드 3D 효과 미세 조정(퍼스펙티브 추가)"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "분석/설계/구현/리뷰/테스트/트러블슈팅/디자인 전환 가이드 대폭 추가"
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "iOS 최소 지원 13.0, macOS 최소 지원 10.15로 상향",
+            "Play Store 배포 파이프라인 개선(드래프트 업로드, 설정 정비)",
+            "버전 1.4.3(빌드 12)로 업데이트"
+          ]
+        }
+      }
+    },
     {
       "version": "1.4.2",
       "project_type": "flutter",

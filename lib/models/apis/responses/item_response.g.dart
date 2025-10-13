@@ -14,6 +14,7 @@ ItemResponse _$ItemResponseFromJson(Map<String, dynamic> json) => ItemResponse(
           ? null
           : ItemPage.fromJson(json['itemPage'] as Map<String, dynamic>),
       isLiked: json['isLiked'] as bool?,
+      isFirstItemPosted: json['isFirstItemPosted'] as bool?,
     );
 
 Map<String, dynamic> _$ItemResponseToJson(ItemResponse instance) =>
@@ -21,6 +22,7 @@ Map<String, dynamic> _$ItemResponseToJson(ItemResponse instance) =>
       'item': instance.item,
       'itemPage': instance.itemPage,
       'isLiked': instance.isLiked,
+      'isFirstItemPosted': instance.isFirstItemPosted,
     };
 
 ItemPage _$ItemPageFromJson(Map<String, dynamic> json) => ItemPage(

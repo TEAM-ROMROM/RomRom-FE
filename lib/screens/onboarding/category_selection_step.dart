@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -47,6 +48,21 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                 enabledOnPressed: () async {
                   try {
                     await memberApi.savePreferredCategories(selectedCategories);
+                    
+                    // 온보딩 완료 시 코치마크 미표시 상태로 초기화
+                    final userInfo = UserInfo();
+                    await userInfo.getUserInfo();
+                    await userInfo.saveLoginStatus(
+                      isFirstLogin: userInfo.isFirstLogin ?? true,
+                      isFirstItemPosted: userInfo.isFirstItemPosted ?? false,
+                      isItemCategorySaved: true, // 카테고리 저장 완료 상태로 설정
+                      isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+                      isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+                      isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
+                      isCoachMarkShown: false, // 명시적으로 false 설정
+                    );
+                    debugPrint('온보딩 완료: isItemCategorySaved=true, isCoachMarkShown=false로 설정됨');
+                    
                     widget.onComplete();
                     await RomAuthApi().fetchAndSaveMemberInfo();
                   } catch (e) {

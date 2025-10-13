@@ -12,6 +12,10 @@ import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
+  // MainScreen의 상태에 접근하기 위한 GlobalKey
+  static final GlobalKey<State<MainScreen>> globalKey =
+      GlobalKey<State<MainScreen>>();
+
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
@@ -19,9 +23,18 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentTabIndex = 0; // 선택된 탭 인덱스 관리
 
+  /// 외부에서 탭을 전환할 수 있는 메서드
+  void switchToTab(int index) {
+    if (index >= 0 && index < _navigationTabScreens.length) {
+      setState(() {
+        _currentTabIndex = index;
+      });
+    }
+  }
+
   // 각 탭에 해당하는 페이지 위젯 리스트
   final List<Widget> _navigationTabScreens = [
-    const HomeTabScreen(),
+    HomeTabScreen(key: HomeTabScreen.globalKey),
     const RequestManagementTabScreen(),
     const RegisterTabScreen(),
     const ChatTabScreen(),
