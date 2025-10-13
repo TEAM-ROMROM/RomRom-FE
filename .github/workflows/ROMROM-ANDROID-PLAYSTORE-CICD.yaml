@@ -342,7 +342,6 @@ jobs:
                 skip_upload_screenshots: true,          # 스크린샷 업로드 안함
                 skip_upload_changelogs: false,          # 릴리즈 노트는 업로드
                 release_status: 'completed',            # 즉시 배포
-                rollout: '1.0',                         # 100% 배포
                 version_name: ENV["VERSION_NAME"],      # 버전 이름
                 version_code: ENV["VERSION_CODE"]       # 버전 코드
               )
