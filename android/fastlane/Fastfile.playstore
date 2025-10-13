@@ -20,7 +20,12 @@ platform :android do
     puts "  버전: #{version_name} (#{version_code})"
     puts "  릴리즈 노트: #{release_notes}"
 
-    # Play Store 내부 테스트 트랙에 업로드
+    # Step 1: Play Store 내부 테스트 트랙에 Draft로 업로드
+    puts ""
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    puts "📤 1단계: Draft 상태로 AAB 업로드 중..."
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
     upload_to_play_store(
       package_name: 'com.alom.romrom',        # Android 패키지 이름
       track: 'internal',                      # 내부 테스트 트랙
@@ -31,13 +36,192 @@ platform :android do
       skip_upload_images: true,               # 이미지 업로드 안함
       skip_upload_screenshots: true,          # 스크린샷 업로드 안함
       skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
-      release_status: 'draft',                # 'draft' 상태로 배포 (수동 검토 후 릴리즈)
+      release_status: 'draft',                # Draft App 제약 우회를 위해 먼저 draft로 업로드
       version_name: ENV["VERSION_NAME"],      # 버전 이름
       version_code: ENV["VERSION_CODE"]       # 버전 코드
     )
 
+    puts "✅ Draft 업로드 완료!"
+    puts ""
+    
+    # Step 2: 실험적 기능 - Draft를 Completed로 자동 전환 시도
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    puts "🧪 2단계: 실험적 자동 전환 시도 (Draft → Completed)"
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    puts "💡 Google Play API를 사용하여 draft 릴리즈를 completed로 전환합니다."
+    puts "⏱️  API 반영 대기 중... (10초)"
+    sleep(10)
+    
+    begin
+      require 'googleauth'
+      require 'google/apis/androidpublisher_v3'
+      
+      puts "🔐 Service Account 인증 중..."
+      
+      # Google Play Developer API 인증
+      scopes = ['https://www.googleapis.com/auth/androidpublisher']
+      authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
+        json_key_io: File.open(ENV["GOOGLE_PLAY_JSON_KEY"]),
+        scope: scopes
+      )
+      authorizer.fetch_access_token!
+      
+      puts "✅ 인증 성공!"
+      
+      # AndroidPublisher API 클라이언트 생성
+      service = Google::Apis::AndroidpublisherV3::AndroidPublisherService.new
+      service.authorization = authorizer
+      
+      package_name = 'com.alom.romrom'
+      
+      puts "📝 Edit 세션 시작 중..."
+      
+      # 1. 새 Edit 세션 시작
+      edit = service.insert_edit(package_name)
+      edit_id = edit.id
+      
+      puts "✅ Edit 세션 생성: #{edit_id}"
+      puts "🔍 Internal 트랙에서 Draft 릴리즈 조회 중..."
+      
+      # 2. Internal 트랙의 현재 상태 가져오기
+      track = service.get_edit_track(package_name, edit_id, 'internal')
+      
+      puts "📋 트랙 정보: #{track.releases.size}개 릴리즈 발견"
+      
+      # 3. 방금 업로드한 Draft 릴리즈 찾기
+      latest_release = track.releases.find do |release|
+        release.version_codes.include?(version_code.to_i) && release.status == 'draft'
+      end
+      
+      if latest_release.nil?
+        puts "⚠️ Draft 릴리즈를 찾을 수 없습니다. (버전 코드: #{version_code})"
+        puts "📋 현재 트랙의 릴리즈 목록:"
+        track.releases.each do |r|
+          puts "  - 버전 코드: #{r.version_codes.join(', ')}, 상태: #{r.status}"
+        end
+        raise "Draft release not found for version code #{version_code}"
+      end
+      
+      puts "✅ Draft 릴리즈 발견!"
+      puts "   버전 코드: #{latest_release.version_codes.join(', ')}"
+      puts "   현재 상태: #{latest_release.status}"
+      puts "   릴리즈 이름: #{latest_release.name || 'N/A'}"
+      
+      puts ""
+      puts "🚀 릴리즈 상태를 'completed'로 변경 중..."
+      
+      # 4. 릴리즈 상태를 completed로 변경
+      latest_release.status = 'completed'
+      
+      # 5. 트랙 업데이트 요청
+      updated_track = Google::Apis::AndroidpublisherV3::Track.new(
+        track: 'internal',
+        releases: [latest_release]
+      )
+      
+      service.update_edit_track(package_name, edit_id, 'internal', updated_track)
+      
+      puts "✅ 트랙 업데이트 완료!"
+      puts "💾 Edit 세션 커밋 중 (실제 적용)..."
+      
+      # 6. Edit 커밋 (실제로 Play Store에 반영)
+      service.commit_edit(package_name, edit_id)
+      
+      puts ""
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      puts "🎉 자동 출시 성공!"
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      puts "✅ 버전 #{version_name} (#{version_code})이 내부 테스터에게 자동 배포되었습니다!"
+      puts "📱 테스터는 Play Store에서 즉시 업데이트 가능합니다."
+      puts "🎊 프로덕션 출시 없이 완전 자동화 성공!"
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+    rescue Google::Apis::ClientError => e
+      puts ""
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      puts "⚠️ 자동 전환 실패 - Google Play API 제약"
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      puts "📋 오류 메시지: #{e.message}"
+      puts ""
+      
+      # Draft App 제약 확인
+      if e.message.include?("Only releases with status draft may be created on draft app")
+        puts "🔍 실험 결과: Draft App 제약은 API 수정에도 적용됨"
+        puts ""
+        puts "📊 원인 분석:"
+        puts "  Google Play는 '한 번도 프로덕션 출시를 하지 않은 앱(Draft App)'에 대해"
+        puts "  API를 통한 자동 출시(completed)를 허용하지 않습니다."
+        puts "  이는 생성뿐만 아니라 수정 시에도 동일하게 적용되는 정책입니다."
+        puts ""
+        puts "💡 해결 방법:"
+        puts "  1. 프로덕션 트랙에 최소 1회 출시"
+        puts "  2. 앱 상태가 'Published App'으로 전환됨"
+        puts "  3. 이후부터는 이 자동화 스크립트가 성공적으로 동작합니다!"
+        puts ""
+        puts "📋 현재 필요한 수동 작업:"
+        puts "  1. Play Console 접속: https://play.google.com/console"
+        puts "  2. 테스트 및 출시 → 내부 테스트"
+        puts "  3. '다음' 버튼 클릭"
+        puts "  4. '저장 및 출시' 버튼 클릭"
+        puts ""
+        puts "🎯 프로덕션 1회 출시 후:"
+        puts "  이 스크립트가 iOS TestFlight처럼 완전 자동으로 동작합니다!"
+      elsif e.message.include?("edit") && e.message.include?("not found")
+        puts "🔍 실험 결과: Edit 세션 타이밍 이슈"
+        puts ""
+        puts "📊 원인 분석:"
+        puts "  첫 번째 upload_to_play_store() 호출로 Edit가 이미 커밋되었습니다."
+        puts "  별도 Edit 세션에서 방금 생성된 릴리즈를 찾을 수 없습니다."
+        puts ""
+        puts "💡 기술적 제약:"
+        puts "  Fastlane의 upload_to_play_store는 내부적으로 Edit를 자동 커밋하므로"
+        puts "  동일 세션에서 수정할 수 없습니다."
+      else
+        puts "🔍 예상치 못한 오류 발생"
+        puts "📋 디버깅 정보:"
+        puts "  오류 타입: #{e.class}"
+        puts "  상태 코드: #{e.status_code}" if e.respond_to?(:status_code)
+        puts "  응답 본문: #{e.body[0..500]}" if e.respond_to?(:body)
+      end
+      
+      puts ""
+      puts "✅ AAB 업로드는 성공했으므로 워크플로우는 정상 완료 처리됩니다."
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+    rescue LoadError => e
+      puts ""
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      puts "⚠️ Google API 라이브러리 누락"
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      puts "📋 오류: #{e.message}"
+      puts ""
+      puts "💡 해결 방법:"
+      puts "  gem install google-api-client"
+      puts ""
+      puts "✅ AAB 업로드는 성공했으므로 워크플로우는 정상 완료 처리됩니다."
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+    rescue => e
+      puts ""
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      puts "⚠️ 예상치 못한 오류"
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      puts "📋 오류 타입: #{e.class}"
+      puts "📋 오류 메시지: #{e.message}"
+      puts "📋 스택 트레이스:"
+      puts e.backtrace.first(10).join("\n") if e.respond_to?(:backtrace)
+      puts ""
+      puts "✅ AAB 업로드는 성공했으므로 워크플로우는 정상 완료 처리됩니다."
+      puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    end
+    
+    puts ""
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     puts "✅ Play Store 내부 테스트 배포 완료!"
-    puts "버전: #{version_name} (#{version_code})"
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    puts "📦 버전: #{version_name} (#{version_code})"
+    puts "📋 상태: Draft 업로드 성공"
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   end
 
   desc "Promote internal to alpha testing"
