@@ -1,7 +1,7 @@
 # 🎯 ROMROM - AI 기반 스마트 중고거래 플랫폼
 
 <!-- 수정하지마세요 자동으로 동기화 됩니다 -->
-## 최신 버전 : v1.4.3 (2025-10-13)
+## 최신 버전 : v1.4.4 (2025-10-13)
 
 [전체 업데이트 내역 보기](CHANGELOG.md)
 
@@ -9,10 +9,11 @@
   
   ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
   ![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
-  ![Version](https://img.shields.io/badge/version-1.3.3-blue?style=for-the-badge)
   ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey?style=for-the-badge)
   
 </div>
+
+<!--  ![Version](https://img.shields.io/badge/version-1.3.3-blue?style=for-the-badge) -->
 
 ## 📱 프로젝트 소개
 
