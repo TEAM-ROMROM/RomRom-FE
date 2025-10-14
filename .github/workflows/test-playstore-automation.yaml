@@ -1,0 +1,142 @@
+name: Test Playstore Browser Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      headless:
+        description: 'Run in headless mode'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      wait_time:
+        description: 'Wait time in seconds'
+        required: false
+        default: '30'
+        type: string
+      debug:
+        description: 'Enable debug mode (save screenshots)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  test-selenium-automation:
+    name: Test Selenium Automation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install Chrome
+        run: |
+          echo "📦 Chrome 설치 중..."
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+          
+          echo "✅ Chrome 설치 완료"
+          google-chrome --version
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-selenium-${{ hashFiles('.github/requirements-selenium.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-selenium-
+      
+      - name: Install Python dependencies
+        run: |
+          echo "📦 Python 의존성 설치 중..."
+          pip install -r .github/requirements-selenium.txt
+          echo "✅ Python 의존성 설치 완료"
+          pip list | grep selenium
+      
+      - name: Verify environment
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔍 환경 검증"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Python: $(python --version)"
+          echo "Chrome: $(google-chrome --version)"
+          echo "Selenium: $(pip show selenium | grep Version)"
+          echo "WebDriver Manager: $(pip show webdriver-manager | grep Version)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+      - name: Run Selenium automation
+        env:
+          GOOGLE_EMAIL: ${{ secrets.GOOGLE_EMAIL }}
+          GOOGLE_PASSWORD: ${{ secrets.GOOGLE_PASSWORD }}
+          PLAY_CONSOLE_DEVELOPER_ID: ${{ secrets.PLAY_CONSOLE_DEVELOPER_ID }}
+          PLAY_CONSOLE_APP_ID: ${{ secrets.PLAY_CONSOLE_APP_ID }}
+          HEADLESS: ${{ github.event.inputs.headless }}
+          WAIT_TIME: ${{ github.event.inputs.wait_time }}
+          DEBUG: ${{ github.event.inputs.debug }}
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 Selenium 자동화 실행"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "헤드리스 모드: ${{ github.event.inputs.headless }}"
+          echo "대기 시간: ${{ github.event.inputs.wait_time }}초"
+          echo "디버그 모드: ${{ github.event.inputs.debug }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          python .github/scripts/automate_playstore.py \
+            --email "${{ secrets.GOOGLE_EMAIL }}" \
+            --password "${{ secrets.GOOGLE_PASSWORD }}" \
+            --developer-id "${{ secrets.PLAY_CONSOLE_DEVELOPER_ID }}" \
+            --app-id "${{ secrets.PLAY_CONSOLE_APP_ID }}" \
+            $( [ "${{ github.event.inputs.headless }}" = "true" ] && echo "--headless" || echo "" ) \
+            --wait-time ${{ github.event.inputs.wait_time }} \
+            $( [ "${{ github.event.inputs.debug }}" = "true" ] && echo "--debug" || echo "" )
+      
+      - name: Upload screenshots on failure
+        if: failure() && github.event.inputs.debug == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-screenshots
+          path: screenshots/
+          retention-days: 7
+          if-no-files-found: warn
+      
+      - name: Upload screenshots on success (debug)
+        if: success() && github.event.inputs.debug == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-screenshots-success
+          path: screenshots/
+          retention-days: 3
+          if-no-files-found: warn
+      
+      - name: Notify success
+        if: success()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Play Store 자동화 성공!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Draft 릴리즈가 성공적으로 출시되었습니다."
+          echo "테스터는 Play Store에서 즉시 업데이트 가능합니다."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "❌ Play Store 자동화 실패"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "로그와 스크린샷을 확인하세요."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
