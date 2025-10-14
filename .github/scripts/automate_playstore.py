@@ -26,12 +26,11 @@ try:
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.chrome.options import Options
     from selenium.common.exceptions import TimeoutException, NoSuchElementException
-    from webdriver_manager.chrome import ChromeDriverManager
     from selenium.webdriver.chrome.service import Service
 except ImportError:
     print("❌ 필요한 패키지가 설치되지 않았습니다.")
     print("다음 명령어로 설치하세요:")
-    print("  pip install selenium webdriver-manager")
+    print("  pip install selenium")
     sys.exit(1)
 
 
@@ -215,12 +214,19 @@ def setup_chrome_driver(headless: bool = True, debug: bool = False) -> webdriver
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
     
-    # ChromeDriver 자동 설치 및 실행
+    # ChromeDriver 실행
     try:
-        service = Service(ChromeDriverManager().install())
+        # ChromeDriver 경로 확인 (환경 변수 또는 시스템 PATH)
+        chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', 'chromedriver')
+        
+        # Service 객체 생성
+        service = Service(executable_path=chromedriver_path)
         driver = webdriver.Chrome(service=service, options=options)
+        
+        log_debug(f"ChromeDriver 경로: {chromedriver_path}", debug)
     except Exception as e:
         log_error(f"ChromeDriver 초기화 실패: {e}")
+        log_error("ChromeDriver가 설치되어 있고 PATH에 있는지 확인하세요.")
         sys.exit(1)
     
     # 타임아웃 설정
