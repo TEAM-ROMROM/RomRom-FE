@@ -9,10 +9,11 @@
   
   ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
   ![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
-  ![Version](https://img.shields.io/badge/version-1.3.3-blue?style=for-the-badge)
   ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey?style=for-the-badge)
   
 </div>
+
+<!--  ![Version](https://img.shields.io/badge/version-1.3.3-blue?style=for-the-badge) -->
 
 ## 📱 프로젝트 소개
 
