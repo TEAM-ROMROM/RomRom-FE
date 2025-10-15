@@ -92,14 +92,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-selenium-${{ hashFiles('.github/requirements-selenium.txt') }}
+          key: ${{ runner.os }}-pip-selenium-4.18.1
           restore-keys: |
             ${{ runner.os }}-pip-selenium-
       
       - name: Install Python dependencies
         run: |
           echo "📦 Python 의존성 설치 중..."
-          pip install -r .github/requirements-selenium.txt
+          pip install selenium==4.18.1
           echo "✅ Python 의존성 설치 완료"
           pip list | grep selenium
       
@@ -120,6 +120,7 @@ jobs:
           GOOGLE_PASSWORD: ${{ secrets.GOOGLE_PASSWORD }}
           PLAY_CONSOLE_DEVELOPER_ID: ${{ secrets.PLAY_CONSOLE_DEVELOPER_ID }}
           PLAY_CONSOLE_APP_ID: ${{ secrets.PLAY_CONSOLE_APP_ID }}
+          CHROMEDRIVER_PATH: /usr/local/bin/chromedriver
           # workflow_run 트리거 시 기본값 사용, workflow_dispatch 시 입력값 사용
           HEADLESS: ${{ github.event.inputs.headless || 'true' }}
           WAIT_TIME: ${{ github.event.inputs.wait_time || '30' }}
