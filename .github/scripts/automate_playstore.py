@@ -206,14 +206,20 @@ def setup_chrome_driver(headless: bool = True, debug: bool = False) -> webdriver
     """Chrome WebDriver 설정 및 초기화"""
     log_info("Chrome WebDriver 설정 중...")
     
-    # ChromeDriver 경로 확인 (환경 변수 또는 시스템 PATH)
+    # ChromeDriver 및 Chrome 바이너리 경로 확인 (환경 변수)
     chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', None)
+    chrome_binary_path = os.environ.get('CHROME_BINARY_PATH', None)
     
     # Undetected ChromeDriver 사용 시도
     if UNDETECTED_AVAILABLE:
         log_info("🔓 Undetected ChromeDriver 사용 (CAPTCHA 우회)")
         
         options = uc.ChromeOptions()
+        
+        # Chrome 바이너리 경로 설정 (시스템 Chrome 사용 강제)
+        if chrome_binary_path:
+            options.binary_location = chrome_binary_path
+            log_debug(f"Chrome 바이너리 경로: {chrome_binary_path}", debug)
         
         # 헤드리스 모드
         if headless:
@@ -226,18 +232,20 @@ def setup_chrome_driver(headless: bool = True, debug: bool = False) -> webdriver
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1920,1080")
         
-        # User-Agent (실제 Chrome과 동일하게)
-        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
+        # User-Agent (실제 Chrome과 동일하게 - Linux 환경)
+        options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
         
         try:
             # undetected_chromedriver로 드라이버 생성
             driver = uc.Chrome(
                 options=options,
                 driver_executable_path=chromedriver_path,
-                version_main=None,  # 자동 버전 감지
+                browser_executable_path=chrome_binary_path,  # Chrome 바이너리 경로 명시
+                version_main=141,  # Chrome 141 버전 명시
                 use_subprocess=False
             )
             log_debug(f"ChromeDriver 경로: {chromedriver_path or '자동 감지'}", debug)
+            log_success("Undetected ChromeDriver 초기화 완료 (Chrome 141 사용)")
             
         except Exception as e:
             log_error(f"Undetected ChromeDriver 초기화 실패: {e}")

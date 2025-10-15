@@ -138,6 +138,7 @@ jobs:
           PLAY_CONSOLE_DEVELOPER_ID: ${{ secrets.PLAY_CONSOLE_DEVELOPER_ID }}
           PLAY_CONSOLE_APP_ID: ${{ secrets.PLAY_CONSOLE_APP_ID }}
           CHROMEDRIVER_PATH: /usr/local/bin/chromedriver
+          CHROME_BINARY_PATH: /usr/bin/google-chrome
           # workflow_run 트리거 시 기본값 사용, workflow_dispatch 시 입력값 사용
           HEADLESS: ${{ github.event.inputs.headless || 'true' }}
           WAIT_TIME: ${{ github.event.inputs.wait_time || '30' }}
