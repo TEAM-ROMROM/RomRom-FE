@@ -41,7 +41,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: deploy
+          # workflow_dispatch: 현재 브랜치 사용
+          # workflow_run: deploy 브랜치 사용
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || 'deploy' }}
+      
+      - name: Display branch info
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 워크플로우 실행 정보"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "트리거: ${{ github.event_name }}"
+          echo "현재 브랜치: $(git branch --show-current)"
+          echo "커밋 해시: $(git rev-parse --short HEAD)"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "자동 실행 (PlayStore 배포 완료 후)"
+          else
+            echo "수동 실행 (workflow_dispatch)"
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
       - name: Install Chrome and ChromeDriver
         run: |
