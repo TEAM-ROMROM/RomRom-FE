@@ -60,46 +60,6 @@ jobs:
           fi
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
-      - name: Install Chrome and ChromeDriver
-        run: |
-          echo "📦 Chrome 및 ChromeDriver 설치 중..."
-          
-          # Chrome 설치
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-          
-          # Chrome 버전 확인
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1-3)
-          echo "✅ Chrome 설치 완료: $CHROME_VERSION"
-          
-          # ChromeDriver 다운로드
-          echo "📥 ChromeDriver 다운로드 중..."
-          
-          # Chrome for Testing API를 사용하여 ChromeDriver 다운로드
-          CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip"
-          
-          # ChromeDriver 다운로드 및 설치
-          wget -q "$CHROMEDRIVER_URL" -O /tmp/chromedriver.zip || {
-            echo "⚠️ 정확한 버전을 찾을 수 없습니다. 최신 stable 버전 다운로드 시도..."
-            # 대체: 최신 stable 버전
-            wget -q "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_STABLE" -O /tmp/version.txt
-            LATEST_VERSION=$(cat /tmp/version.txt)
-            echo "📋 최신 stable 버전: $LATEST_VERSION"
-            wget -q "https://storage.googleapis.com/chrome-for-testing-public/${LATEST_VERSION}/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver.zip
-          }
-          
-          # 압축 해제 및 설치
-          sudo apt-get install -y unzip
-          unzip -q /tmp/chromedriver.zip -d /tmp/
-          sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/chromedriver
-          
-          # 확인
-          echo "✅ ChromeDriver 설치 완료"
-          chromedriver --version
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -109,16 +69,23 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-selenium-4.18.1
+          key: ${{ runner.os }}-pip-playwright-1.41.0
           restore-keys: |
-            ${{ runner.os }}-pip-selenium-
+            ${{ runner.os }}-pip-playwright-
       
       - name: Install Python dependencies
         run: |
           echo "📦 Python 의존성 설치 중..."
-          pip install selenium==4.18.1 undetected-chromedriver
+          pip install playwright==1.41.0 playwright-stealth
           echo "✅ Python 의존성 설치 완료"
-          pip list | grep -E "selenium|undetected"
+          pip list | grep -E "playwright"
+      
+      - name: Install Playwright browsers
+        run: |
+          echo "📦 Playwright 브라우저 설치 중..."
+          playwright install chromium
+          playwright install-deps chromium
+          echo "✅ Playwright 브라우저 설치 완료"
       
       - name: Verify environment
         run: |
@@ -126,26 +93,23 @@ jobs:
           echo "🔍 환경 검증"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Python: $(python --version)"
-          echo "Chrome: $(google-chrome --version)"
-          echo "ChromeDriver: $(chromedriver --version)"
-          echo "Selenium: $(pip show selenium | grep Version)"
+          echo "Playwright: $(pip show playwright | grep Version)"
+          echo "Playwright 브라우저: $(playwright --version)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
-      - name: Run Selenium automation
+      - name: Run Playwright automation
         env:
           GOOGLE_EMAIL: ${{ secrets.GOOGLE_EMAIL }}
           GOOGLE_PASSWORD: ${{ secrets.GOOGLE_PASSWORD }}
           PLAY_CONSOLE_DEVELOPER_ID: ${{ secrets.PLAY_CONSOLE_DEVELOPER_ID }}
           PLAY_CONSOLE_APP_ID: ${{ secrets.PLAY_CONSOLE_APP_ID }}
-          CHROMEDRIVER_PATH: /usr/local/bin/chromedriver
-          CHROME_BINARY_PATH: /usr/bin/google-chrome
           # workflow_run 트리거 시 기본값 사용, workflow_dispatch 시 입력값 사용
           HEADLESS: ${{ github.event.inputs.headless || 'true' }}
           WAIT_TIME: ${{ github.event.inputs.wait_time || '30' }}
           DEBUG: ${{ github.event.inputs.debug || 'true' }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🚀 Selenium 자동화 실행"
+          echo "🚀 Playwright 자동화 실행"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "트리거: ${{ github.event_name }}"
           echo "헤드리스 모드: ${{ env.HEADLESS }}"
@@ -153,7 +117,7 @@ jobs:
           echo "디버그 모드: ${{ env.DEBUG }}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           
-          python .github/scripts/automate_playstore.py \
+          python .github/scripts/automate_playstore_playwright.py \
             --email "${{ secrets.GOOGLE_EMAIL }}" \
             --password "${{ secrets.GOOGLE_PASSWORD }}" \
             --developer-id "${{ secrets.PLAY_CONSOLE_DEVELOPER_ID }}" \
