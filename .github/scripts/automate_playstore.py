@@ -19,6 +19,7 @@ import sys
 import time
 from typing import List, Optional
 
+# Selenium imports
 try:
     from selenium import webdriver
     from selenium.webdriver.common.by import By
@@ -32,6 +33,16 @@ except ImportError:
     print("다음 명령어로 설치하세요:")
     print("  pip install selenium")
     sys.exit(1)
+
+# Undetected ChromeDriver (optional, fallback to standard webdriver)
+try:
+    import undetected_chromedriver as uc
+    UNDETECTED_AVAILABLE = True
+except ImportError:
+    UNDETECTED_AVAILABLE = False
+    print("⚠️  undetected-chromedriver를 사용할 수 없습니다. 표준 webdriver를 사용합니다.")
+    print("   Google 로그인 시 CAPTCHA가 나타날 수 있습니다.")
+    print("   설치: pip install undetected-chromedriver")
 
 
 # ----------------------------- 상수 정의 -----------------------------
@@ -195,45 +206,94 @@ def setup_chrome_driver(headless: bool = True, debug: bool = False) -> webdriver
     """Chrome WebDriver 설정 및 초기화"""
     log_info("Chrome WebDriver 설정 중...")
     
-    options = Options()
+    # ChromeDriver 및 Chrome 바이너리 경로 확인 (환경 변수)
+    chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', None)
+    chrome_binary_path = os.environ.get('CHROME_BINARY_PATH', None)
     
-    # 헤드리스 모드
-    if headless:
-        options.add_argument("--headless=new")
-        log_info("헤드리스 모드 활성화")
-    
-    # 기본 옵션
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    
-    # 자동화 감지 방지
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option("useAutomationExtension", False)
-    
-    # ChromeDriver 실행
-    try:
-        # ChromeDriver 경로 확인 (환경 변수 또는 시스템 PATH)
-        chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', 'chromedriver')
+    # Undetected ChromeDriver 사용 시도
+    if UNDETECTED_AVAILABLE:
+        log_info("🔓 Undetected ChromeDriver 사용 (CAPTCHA 우회)")
         
-        # Service 객체 생성
-        service = Service(executable_path=chromedriver_path)
-        driver = webdriver.Chrome(service=service, options=options)
+        options = uc.ChromeOptions()
         
-        log_debug(f"ChromeDriver 경로: {chromedriver_path}", debug)
-    except Exception as e:
-        log_error(f"ChromeDriver 초기화 실패: {e}")
-        log_error("ChromeDriver가 설치되어 있고 PATH에 있는지 확인하세요.")
-        sys.exit(1)
+        # Chrome 바이너리 경로 설정 (시스템 Chrome 사용 강제)
+        if chrome_binary_path:
+            options.binary_location = chrome_binary_path
+            log_debug(f"Chrome 바이너리 경로: {chrome_binary_path}", debug)
+        
+        # 헤드리스 모드
+        if headless:
+            options.add_argument("--headless=new")
+            log_info("헤드리스 모드 활성화")
+        
+        # 기본 옵션
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=1920,1080")
+        
+        # User-Agent (실제 Chrome과 동일하게 - Linux 환경)
+        options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
+        
+        try:
+            # undetected_chromedriver로 드라이버 생성
+            driver = uc.Chrome(
+                options=options,
+                driver_executable_path=chromedriver_path,
+                browser_executable_path=chrome_binary_path,  # Chrome 바이너리 경로 명시
+                version_main=141,  # Chrome 141 버전 명시
+                use_subprocess=False
+            )
+            log_debug(f"ChromeDriver 경로: {chromedriver_path or '자동 감지'}", debug)
+            log_success("Undetected ChromeDriver 초기화 완료 (Chrome 141 사용)")
+            
+        except Exception as e:
+            log_error(f"Undetected ChromeDriver 초기화 실패: {e}")
+            log_error("ChromeDriver가 설치되어 있고 PATH에 있는지 확인하세요.")
+            sys.exit(1)
+    
+    else:
+        # 표준 Selenium WebDriver 사용 (Fallback)
+        log_info("⚠️  표준 Selenium WebDriver 사용 (CAPTCHA 발생 가능)")
+        
+        options = Options()
+        
+        # 헤드리스 모드
+        if headless:
+            options.add_argument("--headless=new")
+            log_info("헤드리스 모드 활성화")
+        
+        # 기본 옵션
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
+        
+        # 자동화 감지 방지
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option("useAutomationExtension", False)
+        
+        try:
+            if chromedriver_path:
+                service = Service(executable_path=chromedriver_path)
+                driver = webdriver.Chrome(service=service, options=options)
+            else:
+                driver = webdriver.Chrome(options=options)
+            
+            log_debug(f"ChromeDriver 경로: {chromedriver_path or '시스템 PATH'}", debug)
+            
+            # 자동화 감지 방지 스크립트 (표준 WebDriver용)
+            driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            
+        except Exception as e:
+            log_error(f"ChromeDriver 초기화 실패: {e}")
+            log_error("ChromeDriver가 설치되어 있고 PATH에 있는지 확인하세요.")
+            sys.exit(1)
     
     # 타임아웃 설정
     driver.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
-    
-    # 자동화 감지 방지 스크립트
-    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     
     log_success("Chrome WebDriver 설정 완료")
     return driver
@@ -298,19 +358,31 @@ def google_login(
         # "다음" 버튼 클릭 (이메일)
         next_button_selectors = [
             "button#identifierNext",
-            "button:contains('다음')",
+            "button[jsname='LgbsSe'][type='button']",
+            "//button[.//span[contains(text(), '다음')]]",
+            "//button[.//span[text()='Next']]",
             "button[type='button']"
         ]
         
         if not wait_and_click(driver, next_button_selectors, wait_time, "이메일 다음", debug):
             return False
         
-        time.sleep(2)
+        time.sleep(3)  # 페이지 전환 대기 시간 증가
         take_screenshot(driver, "03_after_email_next.png", debug)
+        
+        # 비밀번호 페이지 완전 로딩 대기
+        log_debug("비밀번호 페이지 로딩 대기 중...", debug)
+        time.sleep(2)
+        wait_for_page_load(driver, wait_time)
         
         # 비밀번호 입력
         log_info("비밀번호 입력 중...")
         password_selectors = [
+            "input[name='Passwd']",  # Google의 실제 name 속성
+            "input[type='password'][name='Passwd']",
+            "input[type='password'][autocomplete='current-password']",
+            "input[jsname='YPqjbf'][type='password']",
+            "input.whsOnd.zHQkBf[type='password']",
             "input[type='password']",
             "input[name='password']",
             "input#password"
@@ -329,6 +401,19 @@ def google_login(
                 continue
         else:
             log_error("비밀번호 입력란을 찾을 수 없습니다")
+            log_error(f"현재 URL: {driver.current_url}")
+            log_error("가능한 원인:")
+            log_error("  1. 2FA가 활성화되어 있음")
+            log_error("  2. Google이 로그인 페이지 구조를 변경함")
+            log_error("  3. 네트워크 지연으로 페이지 로딩 미완료")
+            if debug:
+                try:
+                    ensure_screenshot_dir()
+                    with open("screenshots/password_page_source.html", "w", encoding="utf-8") as f:
+                        f.write(driver.page_source)
+                    log_debug("페이지 소스를 screenshots/password_page_source.html에 저장", debug)
+                except Exception as e:
+                    log_error(f"페이지 소스 저장 실패: {e}")
             return False
         
         take_screenshot(driver, "04_password_entered.png", debug)
@@ -336,7 +421,9 @@ def google_login(
         # "다음" 버튼 클릭 (비밀번호)
         next_password_selectors = [
             "button#passwordNext",
-            "button:contains('다음')",
+            "button[jsname='LgbsSe'][type='button']",
+            "//button[.//span[contains(text(), '다음')]]",
+            "//button[.//span[text()='Next']]",
             "button[type='button']"
         ]
         
