@@ -193,6 +193,8 @@ class ApiClient {
     if (fields != null) {
       fields.forEach((key, value) {
         request.fields[key] = value.toString();
+        debugPrint('전송되는 필드 목록:');
+        fields.forEach((k, v) => debugPrint('$k : $v'));
       });
     }
 
