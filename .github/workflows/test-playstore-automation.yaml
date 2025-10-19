@@ -1,6 +1,10 @@
 name: Test Playstore Browser Automation
 
 on:
+  workflow_run:
+    workflows: ["Android-PlayStore-Internal-Deploy"]
+    types: [completed]
+    branches: [deploy]
   workflow_dispatch:
     inputs:
       headless:
@@ -26,24 +30,35 @@ on:
           - 'false'
 
 jobs:
-  test-selenium-automation:
-    name: Test Selenium Automation
+  test-playwright-automation:
+    name: Test Playwright Automation
     runs-on: ubuntu-latest
+    # 메인 워크플로우가 성공한 경우에만 실행 (workflow_run 트리거 시)
+    # workflow_dispatch로 실행하는 경우 항상 실행
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # workflow_run (자동): deploy 브랜치
+          # workflow_dispatch (수동): 현재 브랜치 (main 등)
+          ref: ${{ github.event_name == 'workflow_run' && 'deploy' || github.ref }}
       
-      - name: Install Chrome
+      - name: 워크플로우 실행 정보
         run: |
-          echo "📦 Chrome 설치 중..."
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-          
-          echo "✅ Chrome 설치 완료"
-          google-chrome --version
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 워크플로우 실행 정보"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "트리거: ${{ github.event_name }}"
+          echo "현재 브랜치: $(git branch --show-current)"
+          echo "커밋 해시: $(git rev-parse --short HEAD)"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "🤖 자동 실행 (deploy 브랜치)"
+          else
+            echo "🖱️  수동 실행 (main 브랜치)"
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -54,16 +69,69 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-selenium-${{ hashFiles('.github/requirements-selenium.txt') }}
+          key: ${{ runner.os }}-pip-playwright-${{ hashFiles('.github/requirements-playwright.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-selenium-
+            ${{ runner.os }}-pip-playwright-
       
       - name: Install Python dependencies
         run: |
           echo "📦 Python 의존성 설치 중..."
-          pip install -r .github/requirements-selenium.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r .github/requirements-playwright.txt
           echo "✅ Python 의존성 설치 완료"
-          pip list | grep selenium
+          python -m pip list | grep -E "playwright"
+      
+      - name: Install Playwright browsers (Ubuntu 24.04 compatible)
+        run: |
+          echo "📦 Playwright 브라우저 설치 중..."
+          
+          # Ubuntu 24.04 호환성: 시스템 의존성 수동 설치
+          echo "🔧 시스템 의존성 설치 중..."
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2t64 \
+            libatk-bridge2.0-0 \
+            libatk1.0-0 \
+            libatspi2.0-0 \
+            libcairo2 \
+            libcups2 \
+            libdbus-1-3 \
+            libdrm2 \
+            libgbm1 \
+            libglib2.0-0 \
+            libnspr4 \
+            libnss3 \
+            libpango-1.0-0 \
+            libx11-6 \
+            libxcb1 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxkbcommon0 \
+            libxrandr2 \
+            libxshmfence1 \
+            fonts-liberation \
+            libvpx9 \
+            libopus0 \
+            libharfbuzz0b \
+            libgstreamer1.0-0 \
+            libgstreamer-plugins-base1.0-0 \
+            libevent-2.1-7t64 \
+            libenchant-2-2 \
+            libsecret-1-0 \
+            libhyphen0 \
+            libmanette-0.2-0 \
+            libflite1 \
+            libwoff1
+          
+          echo "✅ 시스템 의존성 설치 완료"
+          
+          # Playwright 브라우저 설치 (의존성 체크 스킵)
+          echo "🌐 Chromium 브라우저 설치 중..."
+          python -m playwright install chromium
+          
+          echo "✅ Playwright 브라우저 설치 완료"
       
       - name: Verify environment
         run: |
@@ -71,52 +139,54 @@ jobs:
           echo "🔍 환경 검증"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Python: $(python --version)"
-          echo "Chrome: $(google-chrome --version)"
-          echo "Selenium: $(pip show selenium | grep Version)"
-          echo "WebDriver Manager: $(pip show webdriver-manager | grep Version)"
+          echo "Python Path: $(which python)"
+          echo "Pip Path: $(which pip)"
+          echo "Playwright: $(python -m pip show playwright | grep Version)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
-      - name: Run Selenium automation
+      - name: Run Playwright automation
         env:
           GOOGLE_EMAIL: ${{ secrets.GOOGLE_EMAIL }}
           GOOGLE_PASSWORD: ${{ secrets.GOOGLE_PASSWORD }}
           PLAY_CONSOLE_DEVELOPER_ID: ${{ secrets.PLAY_CONSOLE_DEVELOPER_ID }}
           PLAY_CONSOLE_APP_ID: ${{ secrets.PLAY_CONSOLE_APP_ID }}
-          HEADLESS: ${{ github.event.inputs.headless }}
-          WAIT_TIME: ${{ github.event.inputs.wait_time }}
-          DEBUG: ${{ github.event.inputs.debug }}
+          # workflow_run 트리거 시 기본값 사용, workflow_dispatch 시 입력값 사용
+          HEADLESS: ${{ github.event.inputs.headless || 'true' }}
+          WAIT_TIME: ${{ github.event.inputs.wait_time || '30' }}
+          DEBUG: ${{ github.event.inputs.debug || 'true' }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🚀 Selenium 자동화 실행"
+          echo "🚀 Playwright 자동화 실행"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "헤드리스 모드: ${{ github.event.inputs.headless }}"
-          echo "대기 시간: ${{ github.event.inputs.wait_time }}초"
-          echo "디버그 모드: ${{ github.event.inputs.debug }}"
+          echo "트리거: ${{ github.event_name }}"
+          echo "헤드리스 모드: ${{ env.HEADLESS }}"
+          echo "대기 시간: ${{ env.WAIT_TIME }}초"
+          echo "디버그 모드: ${{ env.DEBUG }}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           
-          python .github/scripts/automate_playstore.py \
+          python .github/scripts/automate_playstore_playwright.py \
             --email "${{ secrets.GOOGLE_EMAIL }}" \
             --password "${{ secrets.GOOGLE_PASSWORD }}" \
             --developer-id "${{ secrets.PLAY_CONSOLE_DEVELOPER_ID }}" \
             --app-id "${{ secrets.PLAY_CONSOLE_APP_ID }}" \
-            $( [ "${{ github.event.inputs.headless }}" = "true" ] && echo "--headless" || echo "" ) \
-            --wait-time ${{ github.event.inputs.wait_time }} \
-            $( [ "${{ github.event.inputs.debug }}" = "true" ] && echo "--debug" || echo "" )
+            $( [ "${{ env.HEADLESS }}" = "true" ] && echo "--headless" || echo "" ) \
+            --wait-time ${{ env.WAIT_TIME }} \
+            $( [ "${{ env.DEBUG }}" = "true" ] && echo "--debug" || echo "" )
       
       - name: Upload screenshots on failure
-        if: failure() && github.event.inputs.debug == 'true'
+        if: failure() && (github.event.inputs.debug == 'true' || github.event_name == 'workflow_run')
         uses: actions/upload-artifact@v4
         with:
-          name: selenium-screenshots
+          name: playwright-screenshots-failure
           path: screenshots/
           retention-days: 7
           if-no-files-found: warn
       
       - name: Upload screenshots on success (debug)
-        if: success() && github.event.inputs.debug == 'true'
+        if: success() && (github.event.inputs.debug == 'true' || github.event_name == 'workflow_run')
         uses: actions/upload-artifact@v4
         with:
-          name: selenium-screenshots-success
+          name: playwright-screenshots-success
           path: screenshots/
           retention-days: 3
           if-no-files-found: warn
@@ -126,6 +196,13 @@ jobs:
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Play Store 자동화 성공!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "트리거: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "🤖 메인 CI/CD 완료 후 자동 실행됨"
+            echo "📦 워크플로우: ${{ github.event.workflow_run.name }}"
+            echo "🔗 워크플로우 결과: ${{ github.event.workflow_run.conclusion }}"
+          fi
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Draft 릴리즈가 성공적으로 출시되었습니다."
           echo "테스터는 Play Store에서 즉시 업데이트 가능합니다."
@@ -137,6 +214,11 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "❌ Play Store 자동화 실패"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "트리거: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "🤖 메인 CI/CD 완료 후 자동 실행됨"
+            echo "📦 워크플로우: ${{ github.event.workflow_run.name }}"
+          fi
           echo "로그와 스크린샷을 확인하세요."
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
