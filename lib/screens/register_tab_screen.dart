@@ -14,6 +14,7 @@ import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'dart:async';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
@@ -473,6 +474,12 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
               child: RomRomContextMenu(
                 items: [
                   ContextMenuItem(
+                    id: 'changeTradeStatus',
+                    title: '거래 완료로 변경',
+                    onTap: () => _showChangeStatusConfirmDialog(item),
+                    showDividerAfter: true,
+                  ),
+                  ContextMenuItem(
                     id: 'edit',
                     title: '수정',
                     onTap: () => _navigateToEditItem(item),
@@ -677,6 +684,18 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     }
   }
 
+  /// 거래 완료로 변경 확인 대화상자
+  Future<void> _showChangeStatusConfirmDialog(Item item) async {
+    final result = await context.showDeleteDialog(
+      title: '거래 완료로 변경하시겠습니까?',
+      description: '물픔 상태를 거래완료로 변경하시겠습니까?',
+    );
+
+    if (result == true) {
+      await _markItemAsCompleted(item);
+    }
+  }
+
   /// 삭제 확인 대화상자
   Future<void> _showDeleteConfirmDialog(Item item) async {
     final result = await context.showDeleteDialog(
@@ -686,6 +705,48 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
     if (result == true) {
       await _deleteItem(item);
+    }
+  }
+
+  /// 물품을 거래 완료로 변경
+  Future<void> _markItemAsCompleted(Item item) async {
+    if (item.itemId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('물품 ID가 없습니다'),
+          backgroundColor: AppColors.warningRed,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final itemApi = ItemApi();
+      final request = ItemRequest(
+        itemId: item.itemId,
+        itemStatus: ItemStatus.exchanged.serverName,
+      );
+      
+      await itemApi.updateItemStatus(request);
+
+      // 성공 시 목록 새로고침
+      _loadMyItems(isRefresh: true);
+
+      if (mounted) {
+        CommonSnackBar.show(
+          context: context,
+          message: '거래 완료로 변경되었습니다',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}'),
+            backgroundColor: AppColors.warningRed,
+          ),
+        );
+      }
     }
   }
 

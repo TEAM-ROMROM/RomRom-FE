@@ -8,6 +8,7 @@ import 'package:romrom_fe/services/location_service.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -22,6 +23,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/chatting_button.dart';
 import 'package:romrom_fe/widgets/common/common_success_modal.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
@@ -32,7 +34,6 @@ import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -200,6 +201,48 @@ class _ItemDetailDescriptionScreenState
       return ItemTradeOption.fromServerName(serverName).label;
     } catch (e) {
       return serverName;
+    }
+  }
+
+  /// 물품을 거래 완료로 변경
+  Future<void> _markItemAsCompleted(Item item) async {
+    if (item.itemId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('물품 ID가 없습니다'),
+          backgroundColor: AppColors.warningRed,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final itemApi = ItemApi();
+      final request = ItemRequest(
+        itemId: item.itemId,
+        itemStatus: ItemStatus.exchanged.serverName,
+      );
+      
+      await itemApi.updateItemStatus(request);
+
+      if (mounted) {
+        CommonSnackBar.show(
+          context: context,
+          message: '거래 완료로 변경되었습니다',
+        );
+        
+        // 상태 변경 후 화면 닫기
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}'),
+            backgroundColor: AppColors.warningRed,
+          ),
+        );
+      }
     }
   }
 
@@ -698,7 +741,7 @@ class _ItemDetailDescriptionScreenState
                       id: 'changeTradeStatus',
                       title: '거래 완료로 변경',
                       onTap: () async {
-                        //TODO : 바꿔야 됨
+                        await _markItemAsCompleted(item!);
                       },
                     ),
                     ContextMenuItem(
