@@ -1,11 +1,42 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-13T15:19:48Z",
-    "currentVersion": "1.4.3",
-    "totalReleases": 36,
+    "lastUpdated": "2025-10-19T12:51:03Z",
+    "currentVersion": "1.5.0",
+    "totalReleases": 37,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.5.0",
+      "project_type": "flutter",
+      "date": "2025-10-19",
+      "pr_number": 329,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\n새 기능\n\n새로운 브라우저 자동화 도구 기반의 Play Store 테스트 프레임워크 추가\n\n\n\n개선사항\n\nFlutter 버전 업그레이드 (3.27.3 → 3.35.5)\n자동화 스크립트의 오류 처리 및 재시도 로직 강화\nDart SDK 최소 버전 요구사항 상향 (3.3.0 → 3.9.0)\n\n\n\n업데이트\n\n패키지 버전 1.4.6 → 1.4.17\n스켈레톤 UI 라이브러리 업데이트\n안드로이드 빌드 설정 최적화",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "새로운 브라우저 자동화 도구 기반의 Play Store 테스트 프레임워크 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "Flutter 버전 업그레이드 (3.27.3 → 3.35.5)",
+            "자동화 스크립트의 오류 처리 및 재시도 로직 강화",
+            "Dart SDK 최소 버전 요구사항 상향 (3.3.0 → 3.9.0)"
+          ]
+        },
+        "업데이트": {
+          "title": "업데이트",
+          "items": [
+            "패키지 버전 1.4.6 → 1.4.17",
+            "스켈레톤 UI 라이브러리 업데이트",
+            "안드로이드 빌드 설정 최적화"
+          ]
+        }
+      }
+    },
     {
       "version": "1.4.3",
       "project_type": "flutter",
