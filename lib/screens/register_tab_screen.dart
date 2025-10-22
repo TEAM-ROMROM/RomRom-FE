@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_status.dart';
+import 'package:romrom_fe/enums/my_item_toggle_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -14,6 +15,7 @@ import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'dart:async';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
@@ -44,8 +46,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   int _currentPage = 0;
   final int _pageSize = 20;
 
-  // 토글 상태 (false: 판매 중, true: 거래 완료)
-  bool _isCompletedSelected = false;
+  // 토글 상태
+  MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.selling;
   late AnimationController _toggleAnimationController;
   late Animation<double> _toggleAnimation;
 
@@ -104,9 +106,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       final request = ItemRequest(
         pageNumber: isRefresh ? 0 : _currentPage,
         pageSize: _pageSize,
-        itemStatus: _isCompletedSelected
-            ? ItemStatus.exchanged.serverName
-            : ItemStatus.available.serverName,
+        itemStatus: _currentTabStatus.serverName,
       );
 
       final response = await itemApi.getMyItems(request);
@@ -153,9 +153,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       final request = ItemRequest(
         pageNumber: _currentPage + 1,
         pageSize: _pageSize,
-        itemStatus: _isCompletedSelected
-            ? ItemStatus.exchanged.serverName
-            : ItemStatus.available.serverName,
+        itemStatus: _currentTabStatus.serverName,
       );
 
       final response = await itemApi.getMyItems(request);
@@ -277,9 +275,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                         headerTitle: '나의 등록된 물건',
                         toggle: GlassHeaderToggleBuilder.buildDefaultToggle(
                           animation: _toggleAnimation,
-                          isRightSelected: _isCompletedSelected,
-                          onLeftTap: () => _onToggleChanged(false),
-                          onRightTap: () => _onToggleChanged(true),
+                          isRightSelected: _currentTabStatus == MyItemToggleStatus.completed,
+                          onLeftTap: () => _onToggleChanged(MyItemToggleStatus.selling),
+                          onRightTap: () => _onToggleChanged(MyItemToggleStatus.completed),
                           leftText: '판매 중',
                           rightText: '거래 완료',
                         ),
@@ -313,9 +311,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     }
 
     final filteredItems = _myItems.where((item) {
-      return _isCompletedSelected
-          ? item.itemStatus == ItemStatus.exchanged.serverName
-          : item.itemStatus == ItemStatus.available.serverName;
+      return item.itemStatus == _currentTabStatus.serverName;
     }).toList();
 
     if (filteredItems.isEmpty) {
@@ -473,6 +469,14 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
               child: RomRomContextMenu(
                 items: [
                   ContextMenuItem(
+                    id: 'changeTradeStatus',
+                    title: _currentTabStatus == MyItemToggleStatus.selling 
+                        ? '거래완료로 변경' 
+                        : '판매중으로 변경',
+                    onTap: () => _showChangeStatusConfirmDialog(item),
+                    showDividerAfter: true,
+                  ),
+                  ContextMenuItem(
                     id: 'edit',
                     title: '수정',
                     onTap: () => _navigateToEditItem(item),
@@ -592,16 +596,16 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   }
 
   /// 토글 상태 변경
-  void _onToggleChanged(bool isCompleted) {
-    if (_isCompletedSelected != isCompleted) {
-      if (isCompleted) {
+  void _onToggleChanged(MyItemToggleStatus newStatus) {
+    if (_currentTabStatus != newStatus) {
+      if (newStatus == MyItemToggleStatus.completed) {
         _toggleAnimationController.forward();
       } else {
         _toggleAnimationController.reverse();
       }
 
       setState(() {
-        _isCompletedSelected = isCompleted;
+        _currentTabStatus = newStatus;
       });
 
       _loadMyItems(isRefresh: true);
@@ -677,6 +681,26 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     }
   }
 
+  /// 상태 변경 확인 대화상자
+  Future<void> _showChangeStatusConfirmDialog(Item item) async {
+    final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
+    final title = isToCompleted 
+        ? '거래 완료로 변경하시겠습니까?' 
+        : '판매중으로 변경하시겠습니까?';
+    final description = isToCompleted 
+        ? '거래완료로 변경하시겠습니까?' 
+        : '판매중으로 변경하시겠습니까?';
+
+    final result = await context.showDeleteDialog(
+      title: title,
+      description: description,
+    );
+
+    if (result == true) {
+      await _toggleItemStatus(item);
+    }
+  }
+
   /// 삭제 확인 대화상자
   Future<void> _showDeleteConfirmDialog(Item item) async {
     final result = await context.showDeleteDialog(
@@ -686,6 +710,56 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
     if (result == true) {
       await _deleteItem(item);
+    }
+  }
+
+  /// 물품 상태 토글
+  Future<void> _toggleItemStatus(Item item) async {
+    if (item.itemId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('물품 ID가 없습니다'),
+          backgroundColor: AppColors.warningRed,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final itemApi = ItemApi();
+      final targetStatus = _currentTabStatus == MyItemToggleStatus.selling
+          ? ItemStatus.exchanged.serverName
+          : ItemStatus.available.serverName;
+      
+      final request = ItemRequest(
+        itemId: item.itemId,
+        itemStatus: targetStatus,
+      );
+      
+      await itemApi.updateItemStatus(request);
+
+      // 성공 시 목록 새로고침
+      _loadMyItems(isRefresh: true);
+
+      if (mounted) {
+        final successMessage = _currentTabStatus == MyItemToggleStatus.selling
+            ? '거래 완료로 변경되었습니다'
+            : '판매중으로 변경되었습니다';
+            
+        CommonSnackBar.show(
+          context: context,
+          message: successMessage,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}'),
+            backgroundColor: AppColors.warningRed,
+          ),
+        );
+      }
     }
   }
 
