@@ -26,8 +26,8 @@ class ItemApi {
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
-      'aiPrice': request.aiPrice?.toString() ?? 'false',
       'itemImageUrls': request.itemImageUrls?.join(','),
+      'isAiPredictedPrice': request.isAiPredictedPrice,
     };
 
     // 위치 정보 추가 (필수값)
@@ -52,7 +52,8 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}');
+        debugPrint(
+            '물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}');
       },
     );
 
@@ -221,7 +222,7 @@ class ItemApi {
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
-      'aiPrice': request.aiPrice?.toString() ?? 'false',
+      'aiPrice': request.isAiPredictedPrice?.toString() ?? 'false',
       'itemImageUrls': request.itemImageUrls?.join(','),
     };
 

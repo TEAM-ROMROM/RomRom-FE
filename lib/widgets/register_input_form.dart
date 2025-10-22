@@ -1033,7 +1033,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         itemImageUrls: imageUrls,
                         longitude: _longitude,
                         latitude: _latitude,
-                        aiPrice: useAiPrice,
+                        isAiPredictedPrice: useAiPrice,
                       );
 
                       if (widget.isEditMode) {
@@ -1042,14 +1042,16 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         if (context.mounted) {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('물품이 성공적으로 $modeText되었습니다.')),
+                            SnackBar(
+                                content: Text('물품이 성공적으로 $modeText되었습니다.')),
                           );
                         }
                       } else {
                         // 등록 모드
                         final response = await ItemApi().postItem(itemRequest);
                         debugPrint('====================================');
-                        debugPrint('물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}');
+                        debugPrint(
+                            '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}');
                         debugPrint('====================================');
 
                         final userInfo = UserInfo();
@@ -1060,10 +1062,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           await userInfo.saveLoginStatus(
                             isFirstLogin: false,
                             isFirstItemPosted: true,
-                            isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
-                            isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
-                            isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
-                            isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
+                            isItemCategorySaved:
+                                userInfo.isItemCategorySaved ?? false,
+                            isMemberLocationSaved:
+                                userInfo.isMemberLocationSaved ?? false,
+                            isMarketingInfoAgreed:
+                                userInfo.isMarketingInfoAgreed ?? false,
+                            isRequiredTermsAgreed:
+                                userInfo.isRequiredTermsAgreed ?? false,
                             isCoachMarkShown: userInfo.isCoachMarkShown,
                           );
                         }
@@ -1072,15 +1078,17 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           final resultData = {
                             if (response.item?.itemId != null)
                               'itemId': response.item!.itemId,
-                            'isFirstItemPosted': response.isFirstItemPosted ?? false,
+                            'isFirstItemPosted':
+                                response.isFirstItemPosted ?? false,
                           };
                           debugPrint('Navigator.pop 전달 데이터: $resultData');
-                          
+
                           // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
                           Navigator.of(context).pop(resultData);
 
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('물품이 성공적으로 $modeText되었습니다.')),
+                            SnackBar(
+                                content: Text('물품이 성공적으로 $modeText되었습니다.')),
                           );
                         }
                       }
