@@ -435,11 +435,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   }
 
   void _handlePanEnd(DragEndDetails details) {
-    final dy = _panStartPosition.dy - _currentPanPosition.dy;
-
     if (_isDeckRaised && _hasStartedCardDrag) {
-      if (_pulledCardId != null && dy > 100) {
-        // 드롭 발생
+      if (_pulledCardId != null && _wasOverDropZone) {
+        // 드롭 발생 - 드롭존에 들어갔었다면 드롭 허용
         if (widget.onCardDrop != null) {
           widget.onCardDrop!(_pulledCardId!);
           HapticFeedback.heavyImpact();

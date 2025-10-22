@@ -76,9 +76,10 @@ jobs:
       - name: Install Python dependencies
         run: |
           echo "📦 Python 의존성 설치 중..."
-          pip install -r .github/requirements-playwright.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r .github/requirements-playwright.txt
           echo "✅ Python 의존성 설치 완료"
-          pip list | grep -E "playwright"
+          python -m pip list | grep -E "playwright"
       
       - name: Install Playwright browsers (Ubuntu 24.04 compatible)
         run: |
@@ -128,7 +129,7 @@ jobs:
           
           # Playwright 브라우저 설치 (의존성 체크 스킵)
           echo "🌐 Chromium 브라우저 설치 중..."
-          playwright install chromium
+          python -m playwright install chromium
           
           echo "✅ Playwright 브라우저 설치 완료"
       
@@ -138,7 +139,9 @@ jobs:
           echo "🔍 환경 검증"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Python: $(python --version)"
-          echo "Playwright: $(pip show playwright | grep Version)"
+          echo "Python Path: $(which python)"
+          echo "Pip Path: $(which pip)"
+          echo "Playwright: $(python -m pip show playwright | grep Version)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
       - name: Run Playwright automation
