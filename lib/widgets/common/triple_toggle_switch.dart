@@ -30,102 +30,109 @@ class TripleToggleSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
-      child: Container(
-        width: 345.w,
-        height: 46.h,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.r),
-          color: AppColors.secondaryBlack1,
-        ),
-        child: AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) {
-            // 각 탭 너비: (345 - 6) / 3 = 113.w (여백 2.w씩 양쪽)
-            final tabWidth = 113.w;
-            return Stack(
-              children: [
-                // 선택된 배경 이동
-                Positioned(
-                  left: 2.w + (animation.value * tabWidth),
-                  top: 2.h,
-                  child: Container(
-                    width: tabWidth,
-                    height: 42.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.r),
-                      color: AppColors.primaryBlack,
-                    ),
-                  ),
-                ),
-                // 3개 탭 영역
-                Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 실제 사용 가능한 너비 계산
+          final containerWidth = constraints.maxWidth;
+          // 여백 제외한 탭 너비: (전체 너비 - 좌우 여백 4.w) / 3
+          final tabWidth = (containerWidth - 4.w) / 3;
+
+          return Container(
+            width: containerWidth,
+            height: 46.h,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10.r),
+              color: AppColors.secondaryBlack1,
+            ),
+            child: AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) {
+                return Stack(
                   children: [
-                    // 첫 번째 탭
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: onFirstTap,
-                        child: Container(
-                          height: 46.h,
-                          color: Colors.transparent,
-                          alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p2.copyWith(
-                              color: selectedIndex == 0
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity50White,
-                            ),
-                            child: Text(firstText),
-                          ),
+                    // 선택된 배경 이동
+                    Positioned(
+                      left: 2.w + (animation.value * tabWidth),
+                      top: 2.h,
+                      child: Container(
+                        width: tabWidth,
+                        height: 42.h,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8.r),
+                          color: AppColors.primaryBlack,
                         ),
                       ),
                     ),
-                    // 두 번째 탭
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: onSecondTap,
-                        child: Container(
-                          height: 46.h,
-                          color: Colors.transparent,
-                          alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p2.copyWith(
-                              color: selectedIndex == 1
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity50White,
+                    // 3개 탭 영역
+                    Row(
+                      children: [
+                        // 첫 번째 탭
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: onFirstTap,
+                            child: Container(
+                              height: 46.h,
+                              color: Colors.transparent,
+                              alignment: Alignment.center,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 300),
+                                style: CustomTextStyles.p2.copyWith(
+                                  color: selectedIndex == 0
+                                      ? AppColors.textColorWhite
+                                      : AppColors.opacity50White,
+                                ),
+                                child: Text(firstText),
+                              ),
                             ),
-                            child: Text(secondText),
                           ),
                         ),
-                      ),
-                    ),
-                    // 세 번째 탭
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: onThirdTap,
-                        child: Container(
-                          height: 46.h,
-                          color: Colors.transparent,
-                          alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
-                            style: CustomTextStyles.p2.copyWith(
-                              color: selectedIndex == 2
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity50White,
+                        // 두 번째 탭
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: onSecondTap,
+                            child: Container(
+                              height: 46.h,
+                              color: Colors.transparent,
+                              alignment: Alignment.center,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 300),
+                                style: CustomTextStyles.p2.copyWith(
+                                  color: selectedIndex == 1
+                                      ? AppColors.textColorWhite
+                                      : AppColors.opacity50White,
+                                ),
+                                child: Text(secondText),
+                              ),
                             ),
-                            child: Text(thirdText),
                           ),
                         ),
-                      ),
+                        // 세 번째 탭
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: onThirdTap,
+                            child: Container(
+                              height: 46.h,
+                              color: Colors.transparent,
+                              alignment: Alignment.center,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 300),
+                                style: CustomTextStyles.p2.copyWith(
+                                  color: selectedIndex == 2
+                                      ? AppColors.textColorWhite
+                                      : AppColors.opacity50White,
+                                ),
+                                child: Text(thirdText),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ],
-            );
-          },
-        ),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }

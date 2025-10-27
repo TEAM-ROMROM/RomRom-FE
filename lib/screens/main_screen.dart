@@ -50,12 +50,12 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      appBar: (_currentTabIndex != 0 && _currentTabIndex != 1 && _currentTabIndex != 2)
+      appBar: _currentTabIndex == 4
           ? AppBar(
               backgroundColor: Colors.transparent,
               title: Text(currentTab.title, style: CustomTextStyles.h3),
             )
-          : null, // 홈 탭, 요청관리 탭, 등록 탭에서는 AppBar 숨김
+          : null, // 마이페이지 탭에서만 AppBar 표시
       body: _navigationTabScreens[_currentTabIndex],
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _currentTabIndex,

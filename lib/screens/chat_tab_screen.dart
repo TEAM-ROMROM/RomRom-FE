@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
-import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 
 /// 채팅 탭 화면
@@ -19,9 +19,6 @@ class _ChatTabScreenState extends State<ChatTabScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
 
-  // 스크롤 상태
-  bool _isScrolled = false;
-
   // 토글 상태 (0: 전체, 1: 보낸 요청, 2: 받은 요청)
   int _selectedTabIndex = 0;
 
@@ -35,7 +32,6 @@ class _ChatTabScreenState extends State<ChatTabScreen>
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_scrollListener);
 
     // 애니메이션 컨트롤러 (0.0 ~ 2.0)
     _toggleAnimationController = AnimationController(
@@ -43,23 +39,10 @@ class _ChatTabScreenState extends State<ChatTabScreen>
       vsync: this,
       upperBound: 2.0, // 3개 탭이므로 2.0
     );
-    _toggleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 2.0,
-    ).animate(CurvedAnimation(
-      parent: _toggleAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    // 컨트롤러를 직접 사용 (CurvedAnimation은 0~1 범위만 지원)
+    _toggleAnimation = _toggleAnimationController;
 
     _loadDummyData();
-  }
-
-  void _scrollListener() {
-    if (_scrollController.offset > 10 && !_isScrolled) {
-      setState(() => _isScrolled = true);
-    } else if (_scrollController.offset <= 10 && _isScrolled) {
-      setState(() => _isScrolled = false);
-    }
   }
 
   void _onTabChanged(int index) {
@@ -115,6 +98,86 @@ class _ChatTabScreenState extends State<ChatTabScreen>
         unreadCount: 0,
         isNew: false,
       ),
+      ChatRoom(
+        chatRoomId: '5',
+        otherUserNickname: '김철수',
+        otherUserProfileUrl: null,
+        otherUserLocation: '성동구',
+        lastMessage: '네 감사합니다~',
+        lastMessageTime: DateTime.now().subtract(const Duration(hours: 3)),
+        unreadCount: 0,
+        isNew: false,
+      ),
+      ChatRoom(
+        chatRoomId: '6',
+        otherUserNickname: '이영희',
+        otherUserProfileUrl: null,
+        otherUserLocation: '강남구',
+        lastMessage: '직거래 가능한가요?',
+        lastMessageTime: DateTime.now().subtract(const Duration(hours: 5)),
+        unreadCount: 3,
+        isNew: false,
+      ),
+      ChatRoom(
+        chatRoomId: '7',
+        otherUserNickname: '박민수',
+        otherUserProfileUrl: null,
+        otherUserLocation: '송파구',
+        lastMessage: '상품 상태 좋네요',
+        lastMessageTime: DateTime.now().subtract(const Duration(hours: 8)),
+        unreadCount: 0,
+        isNew: false,
+      ),
+      ChatRoom(
+        chatRoomId: '8',
+        otherUserNickname: '최지훈',
+        otherUserProfileUrl: null,
+        otherUserLocation: '마포구',
+        lastMessage: '내일 오후에 만날 수 있을까요?',
+        lastMessageTime: DateTime.now().subtract(const Duration(days: 1)),
+        unreadCount: 1,
+        isNew: false,
+      ),
+      ChatRoom(
+        chatRoomId: '9',
+        otherUserNickname: '정수진',
+        otherUserProfileUrl: null,
+        otherUserLocation: '용산구',
+        lastMessage: '좋아요! 거래할게요',
+        lastMessageTime: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
+        unreadCount: 0,
+        isNew: false,
+      ),
+      ChatRoom(
+        chatRoomId: '10',
+        otherUserNickname: '강동원',
+        otherUserProfileUrl: null,
+        otherUserLocation: '광진구',
+        lastMessage: '혹시 다른 상품도 있나요?',
+        lastMessageTime: DateTime.now().subtract(const Duration(days: 2)),
+        unreadCount: 0,
+        isNew: false,
+      ),
+      ChatRoom(
+        chatRoomId: '11',
+        otherUserNickname: '윤서아',
+        otherUserProfileUrl: null,
+        otherUserLocation: '서초구',
+        lastMessage: '가격 조정 가능할까요?',
+        lastMessageTime: DateTime.now().subtract(const Duration(days: 3)),
+        unreadCount: 0,
+        isNew: false,
+      ),
+      ChatRoom(
+        chatRoomId: '12',
+        otherUserNickname: '한지민',
+        otherUserProfileUrl: null,
+        otherUserLocation: '강동구',
+        lastMessage: '사진 더 보내주실 수 있나요?',
+        lastMessageTime: DateTime.now().subtract(const Duration(days: 5)),
+        unreadCount: 0,
+        isNew: false,
+      ),
     ];
     setState(() {});
   }
@@ -142,26 +205,28 @@ class _ChatTabScreenState extends State<ChatTabScreen>
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // 헤더 (토글 포함)
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: GlassHeaderDelegate(
-                headerTitle: '채팅',
-                toggle: TripleToggleSwitch(
-                  animation: _toggleAnimation,
-                  selectedIndex: _selectedTabIndex,
-                  onFirstTap: () => _onTabChanged(0),
-                  onSecondTap: () => _onTabChanged(1),
-                  onThirdTap: () => _onTabChanged(2),
-                  firstText: '전체',
-                  secondText: '보낸 요청',
-                  thirdText: '받은 요청',
+            // 정적 제목
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 24.h),
+                child: Text(
+                  '채팅',
+                  style: CustomTextStyles.h1,
                 ),
-                statusBarHeight: MediaQuery.of(context).padding.top,
-                toolbarHeight: 58.h,
-                toggleHeight: 70.h,
-                expandedExtra: 32.h,
-                enableBlur: _isScrolled,
+              ),
+            ),
+
+            // 토글 스위치
+            SliverToBoxAdapter(
+              child: TripleToggleSwitch(
+                animation: _toggleAnimation,
+                selectedIndex: _selectedTabIndex,
+                onFirstTap: () => _onTabChanged(0),
+                onSecondTap: () => _onTabChanged(1),
+                onThirdTap: () => _onTabChanged(2),
+                firstText: '전체',
+                secondText: '보낸 요청',
+                thirdText: '받은 요청',
               ),
             ),
 
@@ -176,7 +241,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                         profileImageUrl: chatRoom.otherUserProfileUrl,
                         nickname: chatRoom.otherUserNickname,
                         location: chatRoom.otherUserLocation,
-                        timeAgo: CommonUtils.getTimeAgo(chatRoom.lastMessageTime),
+                        timeAgo: getTimeAgo(chatRoom.lastMessageTime),
                         messagePreview: chatRoom.lastMessage,
                         unreadCount: chatRoom.unreadCount,
                         isNew: chatRoom.isNew,
