@@ -1,11 +1,39 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-19T12:51:03Z",
-    "currentVersion": "1.5.0",
-    "totalReleases": 37,
+    "lastUpdated": "2025-10-27T14:25:12Z",
+    "currentVersion": "1.5.1",
+    "totalReleases": 38,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.5.1",
+      "project_type": "flutter",
+      "date": "2025-10-27",
+      "pr_number": 334,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\nNew Features\n\n상품 상태를 판매 중/거래 완료로 토글할 수 있는 새로운 상태 관리 기능 추가\n상품 상세 화면에서 거래 완료로 변경하는 옵션 추가\n\n\n\nBug Fixes\n\n카드 드롭 영역 감지 로직 개선으로 더 정확한 드래그 앤 드롭 동작 구현\n\n\n\nChores\n\n버전 1.5.1 업데이트",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "상품 상태를 판매 중/거래 완료로 토글할 수 있는 새로운 상태 관리 기능 추가",
+            "상품 상세 화면에서 거래 완료로 변경하는 옵션 추가"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "카드 드롭 영역 감지 로직 개선으로 더 정확한 드래그 앤 드롭 동작 구현"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 1.5.1 업데이트"
+          ]
+        }
+      }
+    },
     {
       "version": "1.5.0",
       "project_type": "flutter",
