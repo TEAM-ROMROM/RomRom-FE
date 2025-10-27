@@ -88,7 +88,7 @@ read_version_config() {
             VERSION_FILE="version.yml"
             ;;
     esac
-    
+
     log_info "프로젝트 설정"
     log_info "  타입: $PROJECT_TYPE"
     log_info "  버전 파일: $VERSION_FILE"
@@ -164,7 +164,7 @@ increment_patch_version() {
     if ! validate_version "$version"; then
         return 1
     fi
-    
+
     local major=$(echo "$version" | cut -d. -f1)
     local minor=$(echo "$version" | cut -d. -f2)
     local patch=$(echo "$version" | cut -d. -f3)
@@ -177,18 +177,18 @@ increment_patch_version() {
 compare_versions() {
     local v1=$1
     local v2=$2
-    
+
     log_debug "버전 비교: '$v1' vs '$v2'"
-    
+
     # 버전을 배열로 분리
     IFS='.' read -ra v1_parts <<< "$v1"
     IFS='.' read -ra v2_parts <<< "$v2"
-    
+
     # major, minor, patch 순서로 비교
     for i in 0 1 2; do
         local a=$(echo "${v1_parts[$i]:-0}" | sed 's/^0*\([0-9]\)/\1/; s/^0*$/0/')
         local b=$(echo "${v2_parts[$i]:-0}" | sed 's/^0*\([0-9]\)/\1/; s/^0*$/0/')
-        
+
         if [ "$a" -gt "$b" ]; then
             log_debug "$v1 > $v2 (위치 $i: $a > $b)"
             return 1
@@ -197,7 +197,7 @@ compare_versions() {
             return 2
         fi
     done
-    
+
     log_debug "$v1 = $v2 (동일)"
     return 0
 }
@@ -206,9 +206,9 @@ compare_versions() {
 get_higher_version() {
     local v1=$1
     local v2=$2
-    
+
     log_debug "높은 버전 선택: '$v1' vs '$v2'"
-    
+
     compare_versions "$v1" "$v2"
     case $? in
         0) # 같음
@@ -229,9 +229,9 @@ get_project_file_version() {
         echo "$CURRENT_VERSION"
         return
     fi
-    
+
     local project_version=""
-    
+
     case "$PROJECT_TYPE" in
         "spring")
             project_version=$(sed -nE "s/^[[:space:]]*version[[:space:]]*=[[:space:]]*['\"]([0-9]+\.[0-9]+\.[0-9]+)['\"].*/\1/p" "$VERSION_FILE" | head -1)
@@ -269,12 +269,12 @@ get_project_file_version() {
             project_version="$CURRENT_VERSION"
             ;;
     esac
-    
+
     # 빈 값이면 version.yml 버전 사용
     if [ -z "$project_version" ]; then
         project_version="$CURRENT_VERSION"
     fi
-    
+
     log_debug "프로젝트 파일 버전: '$project_version'"
     echo "$project_version"
 }
@@ -284,29 +284,29 @@ sync_versions() {
     local yml_version="$CURRENT_VERSION"
     local project_version
     project_version=$(get_project_file_version)
-    
+
     log_info "버전 동기화 검사"
     log_info "  version.yml: $yml_version"
     log_info "  프로젝트 파일: $project_version"
-    
+
     if [ "$yml_version" != "$project_version" ]; then
         if validate_version "$yml_version" && validate_version "$project_version"; then
             local higher_version
             higher_version=$(get_higher_version "$yml_version" "$project_version")
-            
+
             log_info "버전 불일치 감지, 높은 버전으로 동기화: $higher_version"
-            
+
             # version.yml 업데이트
             if [ "$higher_version" != "$yml_version" ]; then
                 update_version_yml "$higher_version"
                 CURRENT_VERSION="$higher_version"
             fi
-            
+
             # 프로젝트 파일 업데이트
             if [ "$higher_version" != "$project_version" ]; then
                 update_project_file_version "$higher_version"
             fi
-            
+
             echo "$higher_version"
         else
             log_warning "버전 형식 오류로 동기화 불가"
@@ -321,14 +321,14 @@ sync_versions() {
 # 프로젝트 파일 버전 업데이트
 update_project_file_version() {
     local new_version=$1
-    
+
     if [ "$PROJECT_TYPE" = "basic" ] || [ ! -f "$VERSION_FILE" ]; then
         log_info "기본 타입이거나 프로젝트 파일 없음, 건너뛰기"
         return
     fi
-    
+
     log_info "프로젝트 파일 업데이트: $VERSION_FILE -> $new_version"
-    
+
     case "$PROJECT_TYPE" in
         "spring")
             # 모든 build.gradle 파일 업데이트
@@ -339,7 +339,14 @@ update_project_file_version() {
             done
             ;;
         "flutter")
-            sed -i.bak "s/^version:.*/version: $new_version/" "$VERSION_FILE"
+            # Flutter는 version: x.y.z+buildNumber 형식 사용
+            # version.yml의 version + version_code를 조합하여 pubspec.yaml에 저장
+            local code=$(get_version_code)
+            local full_version="$new_version+$code"
+            
+            log_debug "Flutter 버전 저장: $new_version (version) + $code (code) = $full_version"
+            
+            sed -i.bak "s/^version:.*/version: $full_version/" "$VERSION_FILE"
             rm -f "${VERSION_FILE}.bak"
             ;;
         "react"|"node")
@@ -381,22 +388,22 @@ update_project_file_version() {
             fi
             ;;
     esac
-    
+
     log_success "프로젝트 파일 업데이트 완료: $new_version"
 }
 
 # 모든 버전 파일 업데이트
 update_all_versions() {
     local new_version=$1
-    
+
     log_info "모든 버전 파일 업데이트: $new_version"
-    
+
     # version.yml 업데이트
     update_version_yml "$new_version"
-    
+
     # 프로젝트 파일 업데이트
     update_project_file_version "$new_version"
-    
+
     log_success "모든 버전 파일 업데이트 완료: $new_version"
 }
 
@@ -405,15 +412,15 @@ update_version_yml() {
     local new_version=$1
     local timestamp
     local user
-    
+
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     user=${GITHUB_ACTOR:-$(whoami)}
-    
+
     log_debug "version.yml 업데이트: $new_version"
-    
+
     # version.yml 업데이트
     sed -i.bak "s/version: *[\"']*[^\"']*[\"']*/version: \"$new_version\"/" version.yml
-    
+
     # metadata 섹션 업데이트 (있는 경우만)
     if grep -q "last_updated:" version.yml; then
         sed -i.bak "s/last_updated: *[\"']*[^\"']*[\"']*/last_updated: \"$timestamp\"/" version.yml
@@ -422,20 +429,20 @@ update_version_yml() {
         sed -i.bak "s/last_updated_by: *[\"']*[^\"']*[\"']*/last_updated_by: \"$user\"/" version.yml
     fi
     rm -f version.yml.bak
-    
+
     # 전역 변수 업데이트
     CURRENT_VERSION="$new_version"
-    
+
     log_success "version.yml 업데이트 완료: $new_version"
 }
 
 # 메인 함수
 main() {
     local command=${1:-get}
-    
+
     # 설정 읽기
     read_version_config
-    
+
     case "$command" in
         "get")
             # 현재 버전 가져오기 (동기화 포함)
@@ -491,12 +498,12 @@ main() {
                 log_error "새 버전을 지정해주세요: $0 set 1.2.3"
                 exit 1
             fi
-            
+
             if ! validate_version "$new_version"; then
                 log_error "잘못된 버전 형식: $new_version (x.y.z 형식이어야 합니다)"
                 exit 1
             fi
-            
+
             log_info "버전 설정: $new_version"
             update_all_versions "$new_version"
             log_success "버전 설정 완료: $new_version"
@@ -514,7 +521,7 @@ main() {
             if [ -z "$version" ]; then
                 version=$(get_project_file_version)
             fi
-            
+
             if validate_version "$version"; then
                 log_success "유효한 버전 형식: $version"
                 echo "$version"
