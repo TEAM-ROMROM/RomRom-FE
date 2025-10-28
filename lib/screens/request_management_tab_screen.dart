@@ -230,42 +230,45 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
     setState(() => _isLoading = true);
     try {
-      if (_itemCards.isEmpty ||
-          _currentCardIndex < 0 ||
-          _currentCardIndex >= _itemCards.length) {
+      if (_itemCards.isEmpty) {
         if (mounted) setState(() => _sentRequests.clear());
         return const [];
       }
 
-      final currentCard = _itemCards[_currentCardIndex];
       final api = TradeApi();
 
-      final paged = await api.getSentTradeRequests(
-        TradeRequest(giveItemId: currentCard.itemId),
-      );
+      // 모든 카드에 대해 병렬로 요청을 보내고 결과를 합칩니다.
+      final futures = _itemCards.map((card) {
+        return api.getSentTradeRequests(
+          TradeRequest(giveItemId: card.itemId),
+        );
+      }).toList();
 
-      final list = paged.content;
-      if (list.isEmpty) {
-        if (mounted) setState(() => _sentRequests.clear());
-        return const [];
+      final pagedResults = await Future.wait(futures);
+
+      final allRequests = <TradeRequestHistory>[];
+      for (final paged in pagedResults) {
+        final list = paged.content;
+        if (list.isNotEmpty) {
+          // 각 요청의 take/give 아이템 주소 캐시 채우기
+          await Future.wait(list.map((r) async {
+            await r.takeItem.resolveAndCacheAddress();
+            await r.giveItem.resolveAndCacheAddress();
+          }));
+          allRequests.addAll(list);
+        }
       }
-
-      // 주소 캐시를 모두 채워둠
-      await Future.wait(list.map((r) async {
-        await r.takeItem.resolveAndCacheAddress();
-        await r.giveItem.resolveAndCacheAddress();
-      }));
 
       if (mounted) {
         setState(() {
           _sentRequests
             ..clear()
-            ..addAll(list);
+            ..addAll(allRequests);
         });
       }
-      return list;
+      return allRequests;
     } catch (e, st) {
-      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e\n$st');
+      debugPrint('보낸 요청 목록 로드 실패: $e\n$st');
       if (mounted) setState(() => _sentRequests.clear());
       return const [];
     } finally {
