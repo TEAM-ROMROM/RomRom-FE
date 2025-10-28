@@ -19,7 +19,7 @@ class ItemRequest {
   int pageSize;
   double? longitude;
   double? latitude;
-  bool? aiPrice;
+  bool? isAiPredictedPrice;
   String? itemStatus;
 
   ItemRequest({
@@ -37,7 +37,7 @@ class ItemRequest {
     this.pageSize = 10,
     this.longitude,
     this.latitude,
-    this.aiPrice,
+    this.isAiPredictedPrice,
     this.itemStatus,
   });
 
