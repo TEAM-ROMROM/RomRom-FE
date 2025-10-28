@@ -61,7 +61,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
       height: height,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
+        color: AppColors.textColorWhite,
         border: widget.hasBorder
             ? Border.all(
                 color: AppColors.textColorWhite, // 테두리 색상
