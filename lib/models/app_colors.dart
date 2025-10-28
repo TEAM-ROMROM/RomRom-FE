@@ -152,4 +152,9 @@ class AppColors {
   // 요청 관리 화면
   static const Color tradeStatusIsChatting = Color(0x80FFC300); // 채팅 중 색상
   static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
+
+  // 채팅 화면
+  static const Color chatLocationTimeMessage =
+      Color(0x99FFFFFF); // 장소, 시간, 메시지 (white e60% opacity)
+  static const Color chatUnreadBadge = Color(0xFFFF3E3E); // 읽지 않은 메시지 뱃지
 }
