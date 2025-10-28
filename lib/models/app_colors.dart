@@ -155,6 +155,6 @@ class AppColors {
 
   // 채팅 화면
   static const Color chatLocationTimeMessage =
-      Color(0x99FFFFFF); // 장소, 시간, 메시지 (60% opacity)
-  static const Color chatUnreadBadge = Color(0xFFFF5656); // 읽지 않은 메시지 뱃지
+      Color(0x99FFFFFF); // 장소, 시간, 메시지 (white e60% opacity)
+  static const Color chatUnreadBadge = Color(0xFFFF3E3E); // 읽지 않은 메시지 뱃지
 }

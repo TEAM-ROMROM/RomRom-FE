@@ -29,7 +29,7 @@ class TripleToggleSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
+      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 16.h),
       child: LayoutBuilder(
         builder: (context, constraints) {
           // 실제 사용 가능한 너비 계산
@@ -71,7 +71,7 @@ class TripleToggleSwitch extends StatelessWidget {
                             onTap: onFirstTap,
                             child: Container(
                               height: 46.h,
-                              color: Colors.transparent,
+                              color: AppColors.transparent,
                               alignment: Alignment.center,
                               child: AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 300),
@@ -91,7 +91,7 @@ class TripleToggleSwitch extends StatelessWidget {
                             onTap: onSecondTap,
                             child: Container(
                               height: 46.h,
-                              color: Colors.transparent,
+                              color: AppColors.transparent,
                               alignment: Alignment.center,
                               child: AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 300),
@@ -111,7 +111,7 @@ class TripleToggleSwitch extends StatelessWidget {
                             onTap: onThirdTap,
                             child: Container(
                               height: 46.h,
-                              color: Colors.transparent,
+                              color: AppColors.transparent,
                               alignment: Alignment.center,
                               child: AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 300),

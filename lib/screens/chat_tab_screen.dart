@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
-import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
@@ -144,7 +143,9 @@ class _ChatTabScreenState extends State<ChatTabScreen>
         otherUserProfileUrl: null,
         otherUserLocation: '용산구',
         lastMessage: '좋아요! 거래할게요',
-        lastMessageTime: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
+        lastMessageTime: DateTime.now().subtract(
+          const Duration(days: 1, hours: 3),
+        ),
         unreadCount: 0,
         isNew: false,
       ),
@@ -208,11 +209,8 @@ class _ChatTabScreenState extends State<ChatTabScreen>
             // 정적 제목
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 24.h),
-                child: Text(
-                  '채팅',
-                  style: CustomTextStyles.h1,
-                ),
+                padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 24.h),
+                child: Text('채팅', style: CustomTextStyles.h1),
               ),
             ),
 
@@ -232,34 +230,27 @@ class _ChatTabScreenState extends State<ChatTabScreen>
 
             // 채팅방 리스트
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final chatRoom = _getFilteredChatRooms()[index];
-                  return Column(
-                    children: [
-                      ChatRoomListItem(
-                        profileImageUrl: chatRoom.otherUserProfileUrl,
-                        nickname: chatRoom.otherUserNickname,
-                        location: chatRoom.otherUserLocation,
-                        timeAgo: getTimeAgo(chatRoom.lastMessageTime),
-                        messagePreview: chatRoom.lastMessage,
-                        unreadCount: chatRoom.unreadCount,
-                        isNew: chatRoom.isNew,
-                        onTap: () {
-                          // TODO: 채팅방 상세 화면으로 이동
-                          debugPrint('채팅방 클릭: ${chatRoom.chatRoomId}');
-                        },
-                      ),
-                      Divider(
-                        height: 1.h,
-                        thickness: 1.h,
-                        color: AppColors.opacity10White,
-                      ),
-                    ],
-                  );
-                },
-                childCount: _getFilteredChatRooms().length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final chatRoom = _getFilteredChatRooms()[index];
+                return Column(
+                  children: [
+                    ChatRoomListItem(
+                      profileImageUrl: chatRoom.otherUserProfileUrl,
+                      nickname: chatRoom.otherUserNickname,
+                      location: chatRoom.otherUserLocation,
+                      timeAgo: getTimeAgo(chatRoom.lastMessageTime),
+                      messagePreview: chatRoom.lastMessage,
+                      unreadCount: chatRoom.unreadCount,
+                      isNew: chatRoom.isNew,
+                      onTap: () {
+                        // TODO: 채팅방 상세 화면으로 이동
+                        debugPrint('채팅방 클릭: ${chatRoom.chatRoomId}');
+                      },
+                    ),
+                    SizedBox(height: 8.h),
+                  ],
+                );
+              }, childCount: _getFilteredChatRooms().length),
             ),
           ],
         ),

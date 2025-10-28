@@ -32,14 +32,15 @@ class ChatRoomListItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
         child: Row(
           children: [
-            // 1. 프로필 이미지 (48×48, 원형)
+            // 1. 프로필 이미지 (40×40, 원형)
             UserProfileCircularAvatar(
-              avatarSize: Size(48.w, 48.h),
+              avatarSize: Size(40.w, 40.h),
               profileUrl: profileImageUrl,
+              hasBorder: true,
             ),
 
             SizedBox(width: 12.w),
@@ -49,34 +50,34 @@ class ChatRoomListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 첫 줄: 닉네임
-                  Text(
-                    nickname,
-                    style: CustomTextStyles.p1.copyWith(
-                      color: AppColors.textColorWhite,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  SizedBox(height: 4.h),
-
-                  // 둘째 줄: 장소 • 시간
+                  
                   Row(
                     children: [
-                      // 장소
-                      Flexible(
-                        child: Text(
-                          location,
-                          style: CustomTextStyles.p3.copyWith(
-                            color: AppColors.chatLocationTimeMessage,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      // 첫 줄: 닉네임
+                      Text(
+                        nickname,
+                        style: CustomTextStyles.p1.copyWith(
+                          color: AppColors.textColorWhite,
+                          fontWeight: FontWeight.w500,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(width: 4.w),
+
+                      SizedBox(width: 8.h),
+                      
+                      // 둘째 줄: 장소 • 시간
+                      // 장소
+                      Text(
+                        location,
+                        style: CustomTextStyles.p3.copyWith(
+                          color: AppColors.chatLocationTimeMessage,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(width: 2.w),
                       // 중간점
                       Container(
                         width: 2.w,
@@ -86,56 +87,63 @@ class ChatRoomListItem extends StatelessWidget {
                           color: AppColors.chatLocationTimeMessage,
                         ),
                       ),
-                      SizedBox(width: 4.w),
+                      SizedBox(width: 2.w),
                       // 시간
                       Text(
                         timeAgo,
                         style: CustomTextStyles.p3.copyWith(
                           color: AppColors.chatLocationTimeMessage,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
 
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 7.h),
 
                   // 셋째 줄: 메시지 미리보기
-                  Text(
-                    messagePreview,
-                    style: CustomTextStyles.p2.copyWith(
-                      color: AppColors.chatLocationTimeMessage,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          messagePreview,
+                          style: CustomTextStyles.p2.copyWith(
+                            color: AppColors.chatLocationTimeMessage,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // 3. 읽지 않은 메시지 뱃지
+                      if (unreadCount > 0) ...[
+                        SizedBox(width: 8.w),
+                        Container(
+                          width: 16.w,
+                          height: 16.h,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.chatUnreadBadge,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            // 99 초과 시 '99+' 표시
+                            unreadCount > 99 ? '99+' : '$unreadCount',
+                            style: CustomTextStyles.p3.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
-
-            // 3. 읽지 않은 메시지 뱃지
-            if (unreadCount > 0) ...[
-              SizedBox(width: 12.w),
-              Container(
-                width: 20.w,
-                height: 20.h,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.chatUnreadBadge,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  unreadCount > 99 ? '99+' : '$unreadCount',
-                  style: CustomTextStyles.p3.copyWith(
-                    color: Colors.white,
-                    fontSize: 10.sp,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
 }
-
