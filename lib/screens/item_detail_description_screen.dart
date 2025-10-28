@@ -369,28 +369,58 @@ class _ItemDetailDescriptionScreenState
                     SizedBox(
                       height: widget.imageSize.height,
                       width: widget.imageSize.width,
-                      child: imageUrls.isNotEmpty
-                          ? PageView.builder(
-                              itemCount: imageUrls.length,
-                              controller: pageController,
-                              onPageChanged: (i) => currentIndexVN.value = i,
-                              itemBuilder: (context, i) {
-                                // Hero 태그를 HomeFeed와 동일한 규칙으로 통일: 'itemImage_<uuidOrId>_<index>'
-                                final String heroBaseId =
-                                    'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
-                                return PhotoViewerMultipleImage(
-                                  imageUrls: imageUrls,
-                                  index: i,
-                                  id: heroBaseId + i.toString(),
-                                );
-                              },
-                            )
-                          : ErrorImagePlaceholder(
-                              size: Size(
-                                widget.imageSize.width,
-                                widget.imageSize.height,
+                      child: PageView.builder(
+                        itemCount: imageUrls.isNotEmpty
+                            ? imageUrls.length
+                            : 1, // ← 최소 1페이지
+                        controller: pageController,
+                        onPageChanged: (i) => currentIndexVN.value = i,
+                        itemBuilder: (context, i) {
+                          final hasImages = imageUrls.isNotEmpty;
+                          final safeIndex = hasImages ? i : 0;
+                          final String heroBaseId =
+                              'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
+
+                          return PhotoViewerMultipleImage(
+                            // 이미지가 없으면 더미 URL을 넘겨서 로딩 실패 → errorWidget 호출
+                            imageUrls: hasImages
+                                ? imageUrls
+                                : const ['__NO_IMAGE__'],
+                            index: safeIndex,
+                            id: heroBaseId + safeIndex.toString(),
+                            onPageChanged: (idx) {
+                              currentIndexVN.value = idx;
+                              if (pageController.hasClients) {
+                                final now = pageController.page?.round();
+                                if (now != idx) {
+                                  pageController.jumpToPage(
+                                    idx,
+                                  ); // 닫기 전에 목적지 미리 맞추기
+                                }
+                              }
+                            },
+
+                            // 로딩 인디케이터
+                            placeholder: (ctx, url) => const Center(
+                              child: SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  color: AppColors.primaryYellow,
+                                ),
                               ),
                             ),
+
+                            // 이미지 없음/로딩 실패 시
+                            errorWidget: (ctx, url, err) => Center(
+                              child: ErrorImagePlaceholder(
+                                size: widget.imageSize,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
 
                     /// 이미지 인디케이터
