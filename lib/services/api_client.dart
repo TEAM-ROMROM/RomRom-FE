@@ -91,7 +91,8 @@ class ApiClient {
             return response;
           } else {
             throw Exception(
-                'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
+              'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}',
+            );
           }
         } else {
           throw Exception('토큰 갱신 실패: 재로그인 필요');
@@ -159,7 +160,8 @@ class ApiClient {
             return response;
           } else {
             throw Exception(
-                'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
+              'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}',
+            );
           }
         } else {
           throw Exception('토큰 갱신 실패: 재로그인 필요');
@@ -193,8 +195,6 @@ class ApiClient {
     if (fields != null) {
       fields.forEach((key, value) {
         request.fields[key] = value.toString();
-        debugPrint('전송되는 필드 목록:');
-        fields.forEach((k, v) => debugPrint('$k : $v'));
       });
     }
 
@@ -242,9 +242,7 @@ class ApiClient {
   }) async {
     // Request 준비
     Uri uri = Uri.parse(url);
-    Map<String, String> headers = {
-      'Content-Type': 'application/json',
-    };
+    Map<String, String> headers = {'Content-Type': 'application/json'};
 
     if (accessToken != null) {
       headers['Authorization'] = 'Bearer $accessToken';
