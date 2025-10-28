@@ -349,7 +349,7 @@ class _ItemDetailDescriptionScreenState
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
         body: Center(
-          child: Text('물품 정보가 없습니다.', style: TextStyle(color: Colors.white)),
+          child: Text('물품 정보가 없습니다.', style: TextStyle(color: AppColors.textColorWhite)),
         ),
       );
     }

@@ -1020,10 +1020,10 @@ packages:
     dependency: "direct main"
     description:
       name: photo_viewer
-      sha256: e0a817c61961d1f5bebf2fd7bf278f3f7cfb55426aaa884ef9bf950cc02b9334
+      sha256: "16edd1f322e3b768f600e1eb5072168ff92a101dcd64d32fc00a2542e406d552"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.3"
+    version: "0.1.0"
   platform:
     dependency: transitive
     description:
