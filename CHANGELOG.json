@@ -1,11 +1,48 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-27T14:25:12Z",
-    "currentVersion": "1.5.1",
-    "totalReleases": 38,
+    "lastUpdated": "2025-10-28T08:51:52Z",
+    "currentVersion": "1.5.4",
+    "totalReleases": 39,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.5.4",
+      "project_type": "flutter",
+      "date": "2025-10-28",
+      "pr_number": 336,
+      "raw_summary": "Summary by CodeRabbit\n릴리즈 노트\n\n\n새로운 기능\n\n채팅 기능 추가: 채팅 탭, 채팅방 목록 및 메시지 표시\n사진 뷰어 기능 개선으로 여러 이미지 탐색 지원\n3탭 토글 스위치로 향상된 필터링 옵션\n\n\n\n개선사항\n\nAI 예측 가격 기능 명칭 개선\n사용자 프로필 아바타에 테두리 옵션 추가\n자동 버전 관리 및 변경 로그 시스템 강화\n\n\n\n버그 수정\n\n버전 관리 시스템 오류 해결\n\n\n\n업데이트\n\nv1.5.1 → v1.5.4",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅 기능 추가: 채팅 탭, 채팅방 목록 및 메시지 표시",
+            "사진 뷰어 기능 개선으로 여러 이미지 탐색 지원",
+            "3탭 토글 스위치로 향상된 필터링 옵션"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "AI 예측 가격 기능 명칭 개선",
+            "사용자 프로필 아바타에 테두리 옵션 추가",
+            "자동 버전 관리 및 변경 로그 시스템 강화"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "버전 관리 시스템 오류 해결"
+          ]
+        },
+        "업데이트": {
+          "title": "업데이트",
+          "items": [
+            "v1.5.1 → v1.5.4"
+          ]
+        }
+      }
+    },
     {
       "version": "1.5.1",
       "project_type": "flutter",
