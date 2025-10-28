@@ -26,8 +26,8 @@ class ItemApi {
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
-      'aiPrice': request.aiPrice?.toString() ?? 'false',
       'itemImageUrls': request.itemImageUrls?.join(','),
+      'isAiPredictedPrice': request.isAiPredictedPrice,
     };
 
     // 위치 정보 추가 (필수값)
@@ -52,7 +52,9 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}');
+        debugPrint(
+          '물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}',
+        );
       },
     );
 
@@ -65,9 +67,7 @@ class ItemApi {
     const String url = '${AppUrls.baseUrl}/api/item/like/post';
     late ItemResponse itemResponse;
 
-    final Map<String, dynamic> fields = {
-      'itemId': request.itemId,
-    };
+    final Map<String, dynamic> fields = {'itemId': request.itemId};
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -112,9 +112,7 @@ class ItemApi {
     const String url = '${AppUrls.baseUrl}/api/item/get';
     late ItemResponse itemResponse;
 
-    final Map<String, dynamic> fields = {
-      'itemId': request.itemId,
-    };
+    final Map<String, dynamic> fields = {'itemId': request.itemId};
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -123,7 +121,8 @@ class ItemApi {
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
         debugPrint(
-            '물품 상세 조회 성공: ${itemResponse.item?.latitude}, ${itemResponse.item?.longitude}');
+          '물품 상세 조회 성공: ${itemResponse.item?.latitude}, ${itemResponse.item?.longitude}',
+        );
       },
     );
 
@@ -148,8 +147,10 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint('내 물품 목록 조회 성공: '
-            '${itemResponse.itemPage?.content.length ?? 0}개');
+        debugPrint(
+          '내 물품 목록 조회 성공: '
+          '${itemResponse.itemPage?.content.length ?? 0}개',
+        );
       },
     );
 
@@ -193,9 +194,7 @@ class ItemApi {
   Future<void> deleteItem(String itemId) async {
     const String url = '${AppUrls.baseUrl}/api/item/delete';
 
-    final Map<String, dynamic> fields = {
-      'itemId': itemId,
-    };
+    final Map<String, dynamic> fields = {'itemId': itemId};
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -221,7 +220,7 @@ class ItemApi {
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
       'itemCustomTags': request.itemCustomTags?.join(','),
-      'aiPrice': request.aiPrice?.toString() ?? 'false',
+      'isAiPredictedPrice': request.isAiPredictedPrice?.toString() ?? 'false',
       'itemImageUrls': request.itemImageUrls?.join(','),
     };
 
