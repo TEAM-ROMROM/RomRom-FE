@@ -238,16 +238,23 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       final api = TradeApi();
 
       // 모든 카드에 대해 병렬로 요청을 보내고 결과를 합칩니다.
-      final futures = _itemCards.map((card) {
-        return api.getSentTradeRequests(
-          TradeRequest(giveItemId: card.itemId),
-        );
-      }).toList();
+      final pagedResults = await Future.wait<PagedTradeRequestHistory?>(_itemCards.map((card) async{
+        try {
+          return await api.getSentTradeRequests(
+            TradeRequest(giveItemId: card.itemId),
+          );
+        } catch (error, stackTrace) {
+          debugPrint('보낸 요청 로드 실패 for itemId ${card.itemId}: $error\n$stackTrace');
+          return null;
+        }
+      },),
+      eagerError: false,
+      );
 
-      final pagedResults = await Future.wait(futures);
 
       final allRequests = <TradeRequestHistory>[];
       for (final paged in pagedResults) {
+        if(paged == null) continue;
         final list = paged.content;
         if (list.isNotEmpty) {
           // 각 요청의 take/give 아이템 주소 캐시 채우기
