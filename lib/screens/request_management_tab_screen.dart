@@ -451,16 +451,39 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
   }
 
-  void _onToggleChanged(bool isRightSelected) {
-    setState(() {
-      _isRightSelected = isRightSelected;
-      if (isRightSelected) {
-        _toggleAnimationController.forward();
-      } else {
-        _toggleAnimationController.reverse();
-      }
-    });
+  // 카드 컨트롤러 재생성
+  void _recreateCardController(int initialPage) {
+  // 기존 컨트롤러 정리 후 새로 생성
+  _cardController.dispose();
+  _cardController = PageController(
+    initialPage: initialPage,
+    keepPage: false, // 이전 위치 자동 복원 방지
+     viewportFraction: 0.6, // 화면에 보이는 카드의 비율
+  );
+}
+
+// 토글 변경 처리
+void _onToggleChanged(bool isRightSelected) {
+  // 탭 전환 직전에(= 빌드 전) 컨트롤러를 재생성해서 초기 페이지 지정
+  if (!isRightSelected && _itemCards.isNotEmpty) {
+    final int targetIndex = (_currentCardIndex < 0)
+        ? 0
+        : (_currentCardIndex >= _itemCards.length
+            ? _itemCards.length - 1
+            : _currentCardIndex);
+
+    _recreateCardController(targetIndex);
   }
+
+  setState(() {
+    _isRightSelected = isRightSelected;
+    if (isRightSelected) {
+      _toggleAnimationController.forward();
+    } else {
+      _toggleAnimationController.reverse();
+    }
+  });
+}
 
   void _toggleCompletedRequests(bool value) {
     setState(() {
