@@ -103,3 +103,6 @@ Flutter/flutter_assets/
 
 # iOS/macOS 빌드 아티팩트
 ios/Flutter/AppFrameworkInfo.plist
+
+# Claude Code local settings
+.claude/settings.local.json
