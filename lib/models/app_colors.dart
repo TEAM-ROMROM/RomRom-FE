@@ -23,6 +23,7 @@ class AppColors {
   static const Color opacity10Black = Color(0x1A000000); // 10% 불투명도 검정
   static const Color opacity15Black = Color(0x26000000); // 15% 불투명도 검정
   static const Color opacity20Black = Color(0x33000000); // 20% 불투명도 검정
+  static const Color opacity50Black = Color(0x80000000); // 50% 불투명도 검정
   static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정
   static const Color opacity80Black = Color(0xCC000000); // 80% 불투명도 검정
 

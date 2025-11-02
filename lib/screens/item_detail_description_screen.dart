@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -469,6 +470,50 @@ class _ItemDetailDescriptionScreenState
                         ),
                       ),
                     ),
+
+                    /// 거래완료 오버레이 (검정 50%)
+                    if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                      IgnorePointer(
+                        child: Container(
+                          height: widget.imageSize.height,
+                          width: widget.imageSize.width,
+                          color: AppColors.opacity50Black,
+                        ),
+                      ),
+
+                    /// 거래완료 글라스모피즘 배지 (이미지 중앙)
+                    if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4.r),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                              child: Container(
+                                width: 122.w,
+                                height: 47.h,
+                                decoration: BoxDecoration(
+                                  color: AppColors.opacity10White,
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  border: Border.all(
+                                    color: AppColors.textColorWhite,
+                                    width: 1.w,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '거래 완료',
+                                  style: CustomTextStyles.p1.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textColorWhite,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
 
