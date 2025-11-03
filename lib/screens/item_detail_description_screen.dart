@@ -796,7 +796,7 @@ class _ItemDetailDescriptionScreenState
                 : MediaQuery.of(context).padding.top),
             left: 24.w,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context, currentIndexVN.value),
+              onTap: () => Navigator.pop(context),
               child: Icon(
                 AppIcons.navigateBefore,
                 size: 24.sp,
