@@ -140,39 +140,50 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
           SizedBox(height: 40.h), // 상단 공간
 
           // 약관 전체 동의
-          Row(
-            children: [
-              SizedBox(
-                width: 20.w,
-                height: 20.h,
-                child: Checkbox(
-                  value: _allTermsChecked,
-                  onChanged: (value) {
-                    setState(() {
-                      for (var term in TermsType.values) {
-                        _termsChecked[term] = value ?? false;
-                      }
-                    });
-                  },
-                  activeColor: AppColors.primaryYellow,
-                  checkColor: AppColors.primaryBlack,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  side: BorderSide(
-                    color: AppColors.primaryYellow,
-                    width: 1.w,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              setState(() {
+                final newValue = !_allTermsChecked;
+                for (var term in TermsType.values) {
+                  _termsChecked[term] = newValue;
+                }
+              });
+            },
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20.w,
+                  height: 20.h,
+                  child: Checkbox(
+                    value: _allTermsChecked,
+                    onChanged: (value) {
+                      setState(() {
+                        for (var term in TermsType.values) {
+                          _termsChecked[term] = value ?? false;
+                        }
+                      });
+                    },
+                    activeColor: AppColors.primaryYellow,
+                    checkColor: AppColors.primaryBlack,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    side: BorderSide(
+                      color: AppColors.primaryYellow,
+                      width: 1.w,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 12.w),
-              Text(
-                '약관 전체 동의',
-                style: CustomTextStyles.h3.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              )
-            ],
+                SizedBox(width: 12.w),
+                Text(
+                  '약관 전체 동의',
+                  style: CustomTextStyles.h3.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                )
+              ],
+            ),
           ),
 
           SizedBox(height: 16.h), // 약관 전체 동의와 다음 항목 사이 공간
@@ -239,64 +250,72 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
 
   // 약관 항목 생성 함수
   Widget _buildTermsItem(TermsType term) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 20.w,
-          height: 20.h,
-          child: Checkbox(
-            value: _termsChecked[term],
-            onChanged: (value) {
-              setState(() {
-                _termsChecked[term] = value ?? false;
-              });
-            },
-            activeColor: AppColors.primaryYellow,
-            checkColor: AppColors.primaryBlack,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4.r),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        setState(() {
+          _termsChecked[term] = !(_termsChecked[term] ?? false);
+        });
+      },
+      child: Row(
+        children: [
+          SizedBox(
+            width: 20.w,
+            height: 20.h,
+            child: Checkbox(
+              value: _termsChecked[term],
+              onChanged: (value) {
+                setState(() {
+                  _termsChecked[term] = value ?? false;
+                });
+              },
+              activeColor: AppColors.primaryYellow,
+              checkColor: AppColors.primaryBlack,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+              side: BorderSide(
+                color: AppColors.primaryYellow,
+                width: 1.w,
+              ),
             ),
-            side: BorderSide(
-              color: AppColors.primaryYellow,
-              width: 1.w,
+          ),
+          SizedBox(width: 12.w),
+          Text(
+            term.isRequired ? '[필수] ' : '[선택]',
+            style: CustomTextStyles.p1.copyWith(
+              color: AppColors.primaryYellow.withValues(alpha: 0.6),
+              fontWeight: FontWeight.w400,
             ),
           ),
-        ),
-        SizedBox(width: 12.w),
-        Text(
-          term.isRequired ? '[필수] ' : '[선택]',
-          style: CustomTextStyles.p1.copyWith(
-            color: AppColors.primaryYellow.withValues(alpha: 0.6),
-            fontWeight: FontWeight.w400,
+          SizedBox(width: 9.w),
+          Expanded(
+            child: Text(
+              term.title,
+              style: CustomTextStyles.h3,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-        SizedBox(width: 9.w),
-        Expanded(
-          child: Text(
-            term.title,
-            style: CustomTextStyles.h3,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
 
-        // 상세 보기 버튼
-        GestureDetector(
-          onTap: () async {
-            if (_termsContents != null) {
-              final termsContent = _termsContents![term]!;
-              context.navigateTo(
-                screen: TermDetailScreen(termsContent: termsContent),
-                type: NavigationTypes.push,
-              );
-            }
-          },
-          child: Icon(
-            AppIcons.dotsVertical,
-            size: 18.h,
-            color: AppColors.textColorWhite,
+          // 상세 보기 버튼
+          GestureDetector(
+            onTap: () async {
+              if (_termsContents != null) {
+                final termsContent = _termsContents![term]!;
+                context.navigateTo(
+                  screen: TermDetailScreen(termsContent: termsContent),
+                  type: NavigationTypes.push,
+                );
+              }
+            },
+            child: Icon(
+              AppIcons.dotsVertical,
+              size: 18.h,
+              color: AppColors.textColorWhite,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

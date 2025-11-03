@@ -161,42 +161,54 @@ class _ReportScreenState extends State<ReportScreen> {
   Widget _buildReasonRow(ItemReportReason reason) {
     return Padding(
       padding: EdgeInsets.only(bottom: 24.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 20.w,
-            height: 20.w,
-            child: Checkbox(
-              value: _selectedReasons.contains(reason),
-              onChanged: (value) {
-                setState(() {
-                  if (value == true) {
-                    _selectedReasons.add(reason);
-                  } else {
-                    _selectedReasons.remove(reason);
-                  }
-                });
-              },
-              activeColor: AppColors.primaryYellow,
-              checkColor: AppColors.primaryBlack,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4.r),
-              ),
-              side: BorderSide(
-                color: AppColors.primaryYellow,
-                width: 1.w,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          setState(() {
+            if (_selectedReasons.contains(reason)) {
+              _selectedReasons.remove(reason);
+            } else {
+              _selectedReasons.add(reason);
+            }
+          });
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20.w,
+              height: 20.w,
+              child: Checkbox(
+                value: _selectedReasons.contains(reason),
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      _selectedReasons.add(reason);
+                    } else {
+                      _selectedReasons.remove(reason);
+                    }
+                  });
+                },
+                activeColor: AppColors.primaryYellow,
+                checkColor: AppColors.primaryBlack,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+                side: BorderSide(
+                  color: AppColors.primaryYellow,
+                  width: 1.w,
+                ),
               ),
             ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Text(
-              reason.label,
-              style: CustomTextStyles.h3,
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Text(
+                reason.label,
+                style: CustomTextStyles.h3,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
