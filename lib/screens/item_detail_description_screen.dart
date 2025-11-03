@@ -244,8 +244,8 @@ class _ItemDetailDescriptionScreenState
           message: successMessage,
         );
 
-        // 상태 변경 후 화면 닫기
-        Navigator.of(context).pop();
+        // 상태 변경 후 화면 닫기 (성공 시 true 반환)
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
@@ -868,7 +868,7 @@ class _ItemDetailDescriptionScreenState
                           await _deleteItem(item!);
 
                           if (mounted) {
-                            Navigator.of(context).pop();
+                            Navigator.of(context).pop(true);
                           }
                         },
                       ),

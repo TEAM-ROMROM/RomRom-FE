@@ -646,7 +646,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   Future<void> _navigateToItemDetail(Item item) async {
     if (item.itemId == null) return;
 
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ItemDetailDescriptionScreen(
@@ -659,6 +659,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         ),
       ),
     );
+
+    // 상태 변경 또는 삭제 후 목록 새로고침
+    if (result == true) {
+      _loadMyItems(isRefresh: true);
+    }
   }
 
   /// 물품 수정 화면으로 이동
