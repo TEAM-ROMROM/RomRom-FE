@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -207,8 +208,8 @@ class _ItemDetailDescriptionScreenState
     }
   }
 
-  /// 물품을 거래 완료로 변경
-  Future<void> _markItemAsCompleted(Item item) async {
+  /// 물품 상태 토글 (판매중 ↔ 거래완료)
+  Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -221,18 +222,30 @@ class _ItemDetailDescriptionScreenState
 
     try {
       final itemApi = ItemApi();
+      // 현재 상태의 반대로 전환
+      final targetStatus = item.itemStatus == ItemStatus.available.serverName
+          ? ItemStatus.exchanged.serverName
+          : ItemStatus.available.serverName;
+
       final request = ItemRequest(
         itemId: item.itemId,
-        itemStatus: ItemStatus.exchanged.serverName,
+        itemStatus: targetStatus,
       );
 
       await itemApi.updateItemStatus(request);
 
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '거래 완료로 변경되었습니다');
+        final successMessage = item.itemStatus == ItemStatus.available.serverName
+            ? '거래 완료로 변경되었습니다'
+            : '판매중으로 변경되었습니다';
 
-        // 상태 변경 후 화면 닫기
-        Navigator.of(context).pop();
+        CommonSnackBar.show(
+          context: context,
+          message: successMessage,
+        );
+
+        // 상태 변경 후 화면 닫기 (성공 시 true 반환)
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
@@ -469,6 +482,50 @@ class _ItemDetailDescriptionScreenState
                         ),
                       ),
                     ),
+
+                    /// 거래완료 오버레이 (검정 50%)
+                    if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                      IgnorePointer(
+                        child: Container(
+                          height: widget.imageSize.height,
+                          width: widget.imageSize.width,
+                          color: AppColors.opacity50Black,
+                        ),
+                      ),
+
+                    /// 거래완료 글라스모피즘 배지 (이미지 중앙)
+                    if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4.r),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                              child: Container(
+                                width: 122.w,
+                                height: 47.h,
+                                decoration: BoxDecoration(
+                                  color: AppColors.opacity10White,
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  border: Border.all(
+                                    color: AppColors.textColorWhite,
+                                    width: 1.w,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '거래 완료',
+                                  style: CustomTextStyles.p1.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textColorWhite,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
 
@@ -739,7 +796,7 @@ class _ItemDetailDescriptionScreenState
                 : MediaQuery.of(context).padding.top),
             left: 24.w,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context, currentIndexVN.value),
+              onTap: () => Navigator.pop(context),
               child: Icon(
                 AppIcons.navigateBefore,
                 size: 24.sp,
@@ -782,9 +839,11 @@ class _ItemDetailDescriptionScreenState
                     items: [
                       ContextMenuItem(
                         id: 'changeTradeStatus',
-                        title: '거래 완료로 변경',
+                        title: item?.itemStatus == ItemStatus.available.serverName
+                            ? '거래완료로 변경'
+                            : '판매중으로 변경',
                         onTap: () async {
-                          await _markItemAsCompleted(item!);
+                          await _toggleItemStatus(item!);
                         },
                       ),
                       ContextMenuItem(
@@ -809,7 +868,7 @@ class _ItemDetailDescriptionScreenState
                           await _deleteItem(item!);
 
                           if (mounted) {
-                            Navigator.of(context).pop();
+                            Navigator.of(context).pop(true);
                           }
                         },
                       ),
