@@ -93,8 +93,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
       if (imageFiles.length == 10) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('이미지는 최대 10장까지 등록할 수 있습니다.')),
+          CommonSnackBar.show(
+            context: context,
+            message: '이미지는 최대 10장까지 등록할 수 있습니다.',
+            type: SnackBarType.info,
           );
         }
         return;
@@ -108,8 +110,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       final int remain = (kMaxImages - imageFiles.length).clamp(0, kMaxImages);
       if (remain == 0) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('이미지는 최대 10장까지 등록할 수 있습니다.')),
+          CommonSnackBar.show(
+            context: context,
+            message: '이미지는 최대 10장까지 등록할 수 있습니다.',
+            type: SnackBarType.info,
           );
         }
         return;
@@ -150,8 +154,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('이미지 업로드에 실패했습니다: $e')),
+          CommonSnackBar.show(
+            context: context,
+            message: '이미지 업로드에 실패했습니다: $e',
+            type: SnackBarType.error,
           );
         }
       } finally {
@@ -165,8 +171,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('이미지 선택에 실패했습니다: $e')),
+        CommonSnackBar.show(
+          context: context,
+          message: '이미지 선택에 실패했습니다: $e',
+          type: SnackBarType.error,
         );
       }
     }
@@ -204,8 +212,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('이미지 삭제에 실패했습니다: $e')),
+        CommonSnackBar.show(
+          context: context,
+          message: '이미지 삭제에 실패했습니다: $e',
+          type: SnackBarType.error,
         );
       }
     } finally {
@@ -245,7 +255,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
     } catch (e) {
       // 에러 처리 (스낵바 표시 등)
       if (context.mounted) {
-        CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e');
+        CommonSnackBar.show(
+          context: context,
+          message: 'AI 가격 예측에 실패했습니다: $e',
+          type: SnackBarType.error,
+        );
       }
     }
   }
@@ -886,9 +900,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             // 조건이 안 맞으면 스낵바로 안내
                             if (context.mounted) {
                               CommonSnackBar.show(
-                                  context: context,
-                                  message:
-                                      'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요');
+                                context: context,
+                                message: 'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요',
+                                type: SnackBarType.info,
+                              );
                               // ScaffoldMessenger.of(context).showSnackBar(
                               //   const SnackBar(
                               //     content: Text(

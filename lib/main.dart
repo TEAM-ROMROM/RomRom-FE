@@ -121,10 +121,13 @@ class MyApp extends StatelessWidget {
               home: initialScreen,
               // iOS에서 뒤로가기 스와이프 제스처 활성화
               builder: (context, child) {
-                return GestureDetector(
-                  onTap: () {
+                return Listener(
+                  onPointerDown: (_) {
                     // 키보드가 열려있을 때 화면을 터치하면 키보드 닫기
-                    FocusScope.of(context).unfocus();
+                    final currentFocus = FocusScope.of(context);
+                    if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+                      currentFocus.focusedChild!.unfocus();
+                    }
                   },
                   child: child,
                 );

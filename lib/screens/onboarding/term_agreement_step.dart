@@ -10,6 +10,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/onboarding/term_detail_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 
 class TermAgreementStep extends StatefulWidget {
@@ -95,22 +96,20 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
       } else {
         // 실패 시
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('약관 동의 저장에 실패했습니다. 다시 시도해주세요.'),
-              backgroundColor: Colors.red,
-            ),
+          CommonSnackBar.show(
+            context: context,
+            message: '약관 동의 저장에 실패했습니다. 다시 시도해주세요.',
+            type: SnackBarType.error,
           );
         }
       }
     } catch (e) {
       debugPrint('약관 동의 처리 실패: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('오류가 발생했습니다. 다시 시도해주세요.'),
-            backgroundColor: Colors.red,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '오류가 발생했습니다. 다시 시도해주세요.',
+          type: SnackBarType.error,
         );
       }
     } finally {

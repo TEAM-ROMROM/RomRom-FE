@@ -3,14 +3,32 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
+enum SnackBarType {
+  success,
+  info,
+  error,
+}
+
 class CommonSnackBar {
+  static String _getIconPath(SnackBarType type) {
+    switch (type) {
+      case SnackBarType.success:
+        return 'assets/images/successToast.svg';
+      case SnackBarType.info:
+        return 'assets/images/infoToast.svg';
+      case SnackBarType.error:
+        return 'assets/images/errorToast.svg';
+    }
+  }
+
   static void show({
     required BuildContext context,
     required String message,
+    SnackBarType type = SnackBarType.success,
     Duration duration = const Duration(seconds: 2),
   }) {
     final overlay = Overlay.of(context);
@@ -60,13 +78,10 @@ class CommonSnackBar {
                         children: [
                           Container(
                             margin: EdgeInsets.only(right: 16.w),
-                            decoration: const BoxDecoration(
-                              color: AppColors.opacity20PrimaryYellow,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              AppIcons.onboardingProgressCheck,
-                              color: AppColors.primaryYellow,
+                            child: SvgPicture.asset(
+                              _getIconPath(type),
+                              width: 20.w,
+                              height: 20.h,
                             ),
                           ),
                           Expanded(
