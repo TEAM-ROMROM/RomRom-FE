@@ -19,6 +19,7 @@ import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
@@ -133,9 +134,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       if (!mounted) return;
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('피드 로딩 실패: $e')));
+      CommonSnackBar.show(
+        context: context,
+        message: '피드 로딩 실패: $e',
+        type: SnackBarType.error,
+      );
     }
     setState(() {
       _isLoading = false;

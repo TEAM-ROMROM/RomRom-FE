@@ -211,11 +211,10 @@ class _ItemDetailDescriptionScreenState
   /// 물품 상태 토글 (판매중 ↔ 거래완료)
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('물품 ID가 없습니다'),
-          backgroundColor: AppColors.warningRed,
-        ),
+      CommonSnackBar.show(
+        context: context,
+        message: '물품 ID가 없습니다',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -249,11 +248,10 @@ class _ItemDetailDescriptionScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }
@@ -262,11 +260,10 @@ class _ItemDetailDescriptionScreenState
   /// 물품 삭제
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('물품 ID가 없습니다'),
-          backgroundColor: AppColors.warningRed,
-        ),
+      CommonSnackBar.show(
+        context: context,
+        message: '물품 ID가 없습니다',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -276,20 +273,17 @@ class _ItemDetailDescriptionScreenState
       await itemApi.deleteItem(item.itemId!);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('물품이 삭제되었습니다'),
-            backgroundColor: AppColors.primaryYellow,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '물품이 삭제되었습니다',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }

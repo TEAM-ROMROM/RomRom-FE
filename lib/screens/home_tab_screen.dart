@@ -20,6 +20,7 @@ import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/flip_card_spin.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
@@ -411,8 +412,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('피드 로딩 실패: $e')),
+      CommonSnackBar.show(
+        context: context,
+        message: '피드 로딩 실패: $e',
+        type: SnackBarType.error,
       );
     }
   }
@@ -446,8 +449,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _isLoadingMore = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('추가 피드 로딩 실패: $e')),
+        CommonSnackBar.show(
+          context: context,
+          message: '추가 피드 로딩 실패: $e',
+          type: SnackBarType.error,
         );
       }
     }

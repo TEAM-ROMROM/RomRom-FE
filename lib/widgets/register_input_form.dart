@@ -1016,11 +1016,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     }
 
                     if (_longitude == null || _latitude == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(ItemTextFieldPhrase.location.errorText),
-                          backgroundColor: AppColors.warningRed,
-                        ),
+                      CommonSnackBar.show(
+                        context: context,
+                        message: ItemTextFieldPhrase.location.errorText,
+                        type: SnackBarType.info,
                       );
                       return;
                     }
@@ -1056,9 +1055,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         await ItemApi().updateItem(itemRequest);
                         if (context.mounted) {
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('물품이 성공적으로 $modeText되었습니다.')),
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '물품이 성공적으로 $modeText되었습니다.',
                           );
                         }
                       } else {
@@ -1101,16 +1100,18 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
                           Navigator.of(context).pop(resultData);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('물품이 성공적으로 $modeText되었습니다.')),
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '물품이 성공적으로 $modeText되었습니다.',
                           );
                         }
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('물품 $modeText에 실패했습니다: $e')),
+                        CommonSnackBar.show(
+                          context: context,
+                          message: '물품 $modeText에 실패했습니다: $e',
+                          type: SnackBarType.error,
                         );
                       }
                     }

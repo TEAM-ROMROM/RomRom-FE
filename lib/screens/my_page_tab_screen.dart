@@ -61,8 +61,11 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('내 물품 목록 로드 실패: $e')));
+        CommonSnackBar.show(
+          context: context,
+          message: '내 물품 목록 로드 실패: $e',
+          type: SnackBarType.error,
+        );
       }
     }
   }
