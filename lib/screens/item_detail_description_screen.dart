@@ -208,8 +208,8 @@ class _ItemDetailDescriptionScreenState
     }
   }
 
-  /// 물품을 거래 완료로 변경
-  Future<void> _markItemAsCompleted(Item item) async {
+  /// 물품 상태 토글 (판매중 ↔ 거래완료)
+  Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -222,15 +222,27 @@ class _ItemDetailDescriptionScreenState
 
     try {
       final itemApi = ItemApi();
+      // 현재 상태의 반대로 전환
+      final targetStatus = item.itemStatus == ItemStatus.available.serverName
+          ? ItemStatus.exchanged.serverName
+          : ItemStatus.available.serverName;
+
       final request = ItemRequest(
         itemId: item.itemId,
-        itemStatus: ItemStatus.exchanged.serverName,
+        itemStatus: targetStatus,
       );
 
       await itemApi.updateItemStatus(request);
 
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '거래 완료로 변경되었습니다');
+        final successMessage = item.itemStatus == ItemStatus.available.serverName
+            ? '거래 완료로 변경되었습니다'
+            : '판매중으로 변경되었습니다';
+
+        CommonSnackBar.show(
+          context: context,
+          message: successMessage,
+        );
 
         // 상태 변경 후 화면 닫기
         Navigator.of(context).pop();
@@ -827,9 +839,11 @@ class _ItemDetailDescriptionScreenState
                     items: [
                       ContextMenuItem(
                         id: 'changeTradeStatus',
-                        title: '거래 완료로 변경',
+                        title: item?.itemStatus == ItemStatus.available.serverName
+                            ? '거래완료로 변경'
+                            : '판매중으로 변경',
                         onTap: () async {
-                          await _markItemAsCompleted(item!);
+                          await _toggleItemStatus(item!);
                         },
                       ),
                       ContextMenuItem(
