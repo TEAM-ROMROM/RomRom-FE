@@ -58,7 +58,6 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     _fetchItemLikeStatus();
   }
 
-
   Future<void> _fetchItemLikeStatus() async {
     try {
       if (widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {
@@ -72,7 +71,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
       if (mounted) {
         setState(() {
-          _useAiPrice = response.item?.aiPrice ?? false;
+          _useAiPrice = response.item?.isAiPredictedPrice ?? false;
           _isLiked = response.isLiked == true;
           _likeCount = response.item?.likeCount ?? widget.item.likeCount;
         });
@@ -260,12 +259,15 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       }
 
                       // 내가 작성한 게시글인지 확인
-                      final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
+                      final isCurrentMember =
+                          await MemberManager.isCurrentMember(
+                              widget.item.authorMemberId);
                       if (isCurrentMember) {
                         if (mounted) {
                           CommonSnackBar.show(
                             context: context,
                             message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
+                            type: SnackBarType.info,
                           );
                         }
                         return;

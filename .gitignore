@@ -83,6 +83,8 @@ xcuserdata/
 .sconsign.dblite
 *.pbxproj_temp
 Flutter/ephemeral/
+**/Flutter/ephemeral/**
+ios/Flutter/ephemeral/
 Flutter/app.flx
 Flutter/app.zip
 Flutter/flutter_assets/
@@ -98,3 +100,9 @@ Flutter/flutter_assets/
 *.p12
 *.p8
 *.mobileprovision
+
+# iOS/macOS 빌드 아티팩트
+ios/Flutter/AppFrameworkInfo.plist
+
+# Claude Code local settings
+.claude/settings.local.json

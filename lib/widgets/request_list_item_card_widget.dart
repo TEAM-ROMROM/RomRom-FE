@@ -78,7 +78,6 @@ class RequestListItemCardWidget extends StatelessWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          // FIXME: 백엔드에서 isNew 구현 후 연결
                           if (isNew) ...[
                             SizedBox(width: 8.w),
                             SvgPicture.asset(

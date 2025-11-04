@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_status.dart';
+import 'package:romrom_fe/enums/my_item_toggle_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -8,16 +10,19 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/home_tab_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'dart:async';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/screens/main_screen.dart';
 
 class RegisterTabScreen extends StatefulWidget {
   const RegisterTabScreen({super.key});
@@ -41,8 +46,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   int _currentPage = 0;
   final int _pageSize = 20;
 
-  // 토글 상태 (false: 판매 중, true: 거래 완료)
-  bool _isCompletedSelected = false;
+  // 토글 상태
+  MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.selling;
   late AnimationController _toggleAnimationController;
   late Animation<double> _toggleAnimation;
 
@@ -101,8 +106,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       final request = ItemRequest(
         pageNumber: isRefresh ? 0 : _currentPage,
         pageSize: _pageSize,
-        // TODO: 백엔드에서 거래상태 필터링 지원 시 추가
-        // tradeStatus: _isCompletedSelected ? 'COMPLETED' : 'SELLING',
+        itemStatus: _currentTabStatus.serverName,
       );
 
       final response = await itemApi.getMyItems(request);
@@ -126,11 +130,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('내 물품 목록 로드 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '내 물품 목록 로드 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }
@@ -149,8 +152,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       final request = ItemRequest(
         pageNumber: _currentPage + 1,
         pageSize: _pageSize,
-        // TODO: 백엔드에서 거래상태 필터링 지원 시 추가
-        // tradeStatus: _isCompletedSelected ? 'COMPLETED' : 'SELLING',
+        itemStatus: _currentTabStatus.serverName,
       );
 
       final response = await itemApi.getMyItems(request);
@@ -170,14 +172,45 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           _isLoadingMore = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('추가 물품 로드 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '추가 물품 로드 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }
+  }
+
+  /// 첫 물건 등록 후 홈탭으로 전환하고 상세 페이지로 이동
+  void _navigateToHomeAndShowDetail(String itemId) {
+    debugPrint('====================================');
+    debugPrint('_navigateToHomeAndShowDetail 호출됨: itemId=$itemId');
+    
+    // MainScreen의 GlobalKey를 통해 홈탭(인덱스 0)으로 전환
+    final mainState = MainScreen.globalKey.currentState;
+    debugPrint('MainScreen.globalKey.currentState: $mainState');
+    
+    if (mainState != null) {
+      debugPrint('홈 탭(인덱스 0)으로 전환 시도...');
+      (mainState as dynamic).switchToTab(0);
+    } else {
+      debugPrint('⚠️ MainScreen.globalKey.currentState가 null입니다!');
+    }
+
+    // 탭 전환 후 홈탭의 context에서 상세 페이지로 이동
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeState = HomeTabScreen.globalKey.currentState;
+      debugPrint('HomeTabScreen.globalKey.currentState: $homeState');
+      
+      if (homeState != null) {
+        debugPrint('HomeTabScreen의 navigateToItemDetail 호출 시도...');
+        // _HomeTabScreenState의 navigateToItemDetail 메서드 호출
+        (homeState as dynamic).navigateToItemDetail(itemId);
+      } else {
+        debugPrint('⚠️ HomeTabScreen.globalKey.currentState가 null입니다!');
+      }
+    });
+    debugPrint('====================================');
   }
 
   void _scrollListener() {
@@ -240,9 +273,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                         headerTitle: '나의 등록된 물건',
                         toggle: GlassHeaderToggleBuilder.buildDefaultToggle(
                           animation: _toggleAnimation,
-                          isRightSelected: _isCompletedSelected,
-                          onLeftTap: () => _onToggleChanged(false),
-                          onRightTap: () => _onToggleChanged(true),
+                          isRightSelected: _currentTabStatus == MyItemToggleStatus.completed,
+                          onLeftTap: () => _onToggleChanged(MyItemToggleStatus.selling),
+                          onRightTap: () => _onToggleChanged(MyItemToggleStatus.completed),
                           leftText: '판매 중',
                           rightText: '거래 완료',
                         ),
@@ -276,7 +309,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     }
 
     final filteredItems = _myItems.where((item) {
-      return true; // TODO: 필터 로직
+      return item.itemStatus == _currentTabStatus.serverName;
     }).toList();
 
     if (filteredItems.isEmpty) {
@@ -434,6 +467,14 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
               child: RomRomContextMenu(
                 items: [
                   ContextMenuItem(
+                    id: 'changeTradeStatus',
+                    title: _currentTabStatus == MyItemToggleStatus.selling 
+                        ? '거래완료로 변경' 
+                        : '판매중으로 변경',
+                    onTap: () => _showChangeStatusConfirmDialog(item),
+                    showDividerAfter: true,
+                  ),
+                  ContextMenuItem(
                     id: 'edit',
                     title: '수정',
                     onTap: () => _navigateToEditItem(item),
@@ -487,7 +528,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   child: InkWell(
                     borderRadius: BorderRadius.circular(100.r),
                     onTap: () async {
-                      await Navigator.push(
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ItemRegisterScreen(
@@ -497,8 +538,28 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                           ),
                         ),
                       );
+
+                      debugPrint('====================================');
+                      debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
+                      debugPrint('result type: ${result.runtimeType}');
+                      if (result is Map<String, dynamic>) {
+                        debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
+                        debugPrint('  - itemId: ${result['itemId']}');
+                      }
+                      debugPrint('====================================');
+
                       // 등록 화면에서 돌아온 뒤 목록 새로고침
                       _loadMyItems(isRefresh: true);
+
+                      // 첫 물건 등록 완료 시 홈탭으로 전환 후 상세 페이지로 이동
+                      if (result is Map<String, dynamic> &&
+                          result['isFirstItemPosted'] == true &&
+                          result['itemId'] != null) {
+                        debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
+                        _navigateToHomeAndShowDetail(result['itemId'] as String);
+                      } else {
+                        debugPrint('첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}');
+                      }
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(
@@ -533,21 +594,19 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   }
 
   /// 토글 상태 변경
-  void _onToggleChanged(bool isCompleted) {
-    if (_isCompletedSelected != isCompleted) {
-      if (isCompleted) {
+  void _onToggleChanged(MyItemToggleStatus newStatus) {
+    if (_currentTabStatus != newStatus) {
+      if (newStatus == MyItemToggleStatus.completed) {
         _toggleAnimationController.forward();
       } else {
         _toggleAnimationController.reverse();
       }
 
       setState(() {
-        _isCompletedSelected = isCompleted;
+        _currentTabStatus = newStatus;
       });
 
-      // 클라이언트 사이드 필터링 (백엔드 필터링 미지원)
-      // TODO: 백엔드에서 거래상태 필터링 지원 시 API 재요청으로 변경
-      // _loadMyItems(isRefresh: true);
+      _loadMyItems(isRefresh: true);
     }
   }
 
@@ -585,7 +644,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   Future<void> _navigateToItemDetail(Item item) async {
     if (item.itemId == null) return;
 
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ItemDetailDescriptionScreen(
@@ -598,6 +657,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         ),
       ),
     );
+
+    // 상태 변경 또는 삭제 후 목록 새로고침
+    if (result == true) {
+      _loadMyItems(isRefresh: true);
+    }
   }
 
   /// 물품 수정 화면으로 이동
@@ -620,6 +684,26 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     }
   }
 
+  /// 상태 변경 확인 대화상자
+  Future<void> _showChangeStatusConfirmDialog(Item item) async {
+    final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
+    final title = isToCompleted 
+        ? '거래 완료로 변경하시겠습니까?' 
+        : '판매중으로 변경하시겠습니까?';
+    final description = isToCompleted 
+        ? '거래완료로 변경하시겠습니까?' 
+        : '판매중으로 변경하시겠습니까?';
+
+    final result = await context.showDeleteDialog(
+      title: title,
+      description: description,
+    );
+
+    if (result == true) {
+      await _toggleItemStatus(item);
+    }
+  }
+
   /// 삭제 확인 대화상자
   Future<void> _showDeleteConfirmDialog(Item item) async {
     final result = await context.showDeleteDialog(
@@ -632,14 +716,61 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     }
   }
 
+  /// 물품 상태 토글
+  Future<void> _toggleItemStatus(Item item) async {
+    if (item.itemId == null) {
+      CommonSnackBar.show(
+        context: context,
+        message: '물품 ID가 없습니다',
+        type: SnackBarType.info,
+      );
+      return;
+    }
+
+    try {
+      final itemApi = ItemApi();
+      final targetStatus = _currentTabStatus == MyItemToggleStatus.selling
+          ? ItemStatus.exchanged.serverName
+          : ItemStatus.available.serverName;
+      
+      final request = ItemRequest(
+        itemId: item.itemId,
+        itemStatus: targetStatus,
+      );
+      
+      await itemApi.updateItemStatus(request);
+
+      // 성공 시 목록 새로고침
+      _loadMyItems(isRefresh: true);
+
+      if (mounted) {
+        final successMessage = _currentTabStatus == MyItemToggleStatus.selling
+            ? '거래 완료로 변경되었습니다'
+            : '판매중으로 변경되었습니다';
+            
+        CommonSnackBar.show(
+          context: context,
+          message: successMessage,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CommonSnackBar.show(
+          context: context,
+          message: '상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
   /// 물품 삭제
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('물품 ID가 없습니다'),
-          backgroundColor: AppColors.warningRed,
-        ),
+      CommonSnackBar.show(
+        context: context,
+        message: '물품 ID가 없습니다',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -654,20 +785,17 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('물품이 삭제되었습니다'),
-            backgroundColor: AppColors.primaryYellow,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '물품이 삭제되었습니다',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }

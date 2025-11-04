@@ -10,6 +10,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/onboarding/term_detail_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 
 class TermAgreementStep extends StatefulWidget {
@@ -95,22 +96,20 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
       } else {
         // 실패 시
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('약관 동의 저장에 실패했습니다. 다시 시도해주세요.'),
-              backgroundColor: Colors.red,
-            ),
+          CommonSnackBar.show(
+            context: context,
+            message: '약관 동의 저장에 실패했습니다. 다시 시도해주세요.',
+            type: SnackBarType.error,
           );
         }
       }
     } catch (e) {
       debugPrint('약관 동의 처리 실패: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('오류가 발생했습니다. 다시 시도해주세요.'),
-            backgroundColor: Colors.red,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '오류가 발생했습니다. 다시 시도해주세요.',
+          type: SnackBarType.error,
         );
       }
     } finally {
@@ -140,39 +139,50 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
           SizedBox(height: 40.h), // 상단 공간
 
           // 약관 전체 동의
-          Row(
-            children: [
-              SizedBox(
-                width: 20.w,
-                height: 20.h,
-                child: Checkbox(
-                  value: _allTermsChecked,
-                  onChanged: (value) {
-                    setState(() {
-                      for (var term in TermsType.values) {
-                        _termsChecked[term] = value ?? false;
-                      }
-                    });
-                  },
-                  activeColor: AppColors.primaryYellow,
-                  checkColor: AppColors.primaryBlack,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  side: BorderSide(
-                    color: AppColors.primaryYellow,
-                    width: 1.w,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              setState(() {
+                final newValue = !_allTermsChecked;
+                for (var term in TermsType.values) {
+                  _termsChecked[term] = newValue;
+                }
+              });
+            },
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20.w,
+                  height: 20.h,
+                  child: Checkbox(
+                    value: _allTermsChecked,
+                    onChanged: (value) {
+                      setState(() {
+                        for (var term in TermsType.values) {
+                          _termsChecked[term] = value ?? false;
+                        }
+                      });
+                    },
+                    activeColor: AppColors.primaryYellow,
+                    checkColor: AppColors.primaryBlack,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    side: BorderSide(
+                      color: AppColors.primaryYellow,
+                      width: 1.w,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 12.w),
-              Text(
-                '약관 전체 동의',
-                style: CustomTextStyles.h3.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              )
-            ],
+                SizedBox(width: 12.w),
+                Text(
+                  '약관 전체 동의',
+                  style: CustomTextStyles.h3.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                )
+              ],
+            ),
           ),
 
           SizedBox(height: 16.h), // 약관 전체 동의와 다음 항목 사이 공간
@@ -239,64 +249,72 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
 
   // 약관 항목 생성 함수
   Widget _buildTermsItem(TermsType term) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 20.w,
-          height: 20.h,
-          child: Checkbox(
-            value: _termsChecked[term],
-            onChanged: (value) {
-              setState(() {
-                _termsChecked[term] = value ?? false;
-              });
-            },
-            activeColor: AppColors.primaryYellow,
-            checkColor: AppColors.primaryBlack,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4.r),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        setState(() {
+          _termsChecked[term] = !(_termsChecked[term] ?? false);
+        });
+      },
+      child: Row(
+        children: [
+          SizedBox(
+            width: 20.w,
+            height: 20.h,
+            child: Checkbox(
+              value: _termsChecked[term],
+              onChanged: (value) {
+                setState(() {
+                  _termsChecked[term] = value ?? false;
+                });
+              },
+              activeColor: AppColors.primaryYellow,
+              checkColor: AppColors.primaryBlack,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+              side: BorderSide(
+                color: AppColors.primaryYellow,
+                width: 1.w,
+              ),
             ),
-            side: BorderSide(
-              color: AppColors.primaryYellow,
-              width: 1.w,
+          ),
+          SizedBox(width: 12.w),
+          Text(
+            term.isRequired ? '[필수] ' : '[선택]',
+            style: CustomTextStyles.p1.copyWith(
+              color: AppColors.primaryYellow.withValues(alpha: 0.6),
+              fontWeight: FontWeight.w400,
             ),
           ),
-        ),
-        SizedBox(width: 12.w),
-        Text(
-          term.isRequired ? '[필수] ' : '[선택]',
-          style: CustomTextStyles.p1.copyWith(
-            color: AppColors.primaryYellow.withValues(alpha: 0.6),
-            fontWeight: FontWeight.w400,
+          SizedBox(width: 9.w),
+          Expanded(
+            child: Text(
+              term.title,
+              style: CustomTextStyles.h3,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-        SizedBox(width: 9.w),
-        Expanded(
-          child: Text(
-            term.title,
-            style: CustomTextStyles.h3,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
 
-        // 상세 보기 버튼
-        GestureDetector(
-          onTap: () async {
-            if (_termsContents != null) {
-              final termsContent = _termsContents![term]!;
-              context.navigateTo(
-                screen: TermDetailScreen(termsContent: termsContent),
-                type: NavigationTypes.push,
-              );
-            }
-          },
-          child: Icon(
-            AppIcons.dotsVertical,
-            size: 18.h,
-            color: AppColors.textColorWhite,
+          // 상세 보기 버튼
+          GestureDetector(
+            onTap: () async {
+              if (_termsContents != null) {
+                final termsContent = _termsContents![term]!;
+                context.navigateTo(
+                  screen: TermDetailScreen(termsContent: termsContent),
+                  type: NavigationTypes.push,
+                );
+              }
+            },
+            child: Icon(
+              AppIcons.dotsVertical,
+              size: 18.h,
+              color: AppColors.textColorWhite,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

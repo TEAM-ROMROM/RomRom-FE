@@ -7,10 +7,35 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
+enum SnackBarType { success, info, error }
+
 class CommonSnackBar {
+  static IconData _getIconData(SnackBarType type) {
+    switch (type) {
+      case SnackBarType.success:
+        return AppIcons.onboardingProgressCheck;
+      case SnackBarType.info:
+        return AppIcons.information;
+      case SnackBarType.error:
+        return AppIcons.warning;
+    }
+  }
+
+  static Color _getIconBackgroundColor(SnackBarType type) {
+    switch (type) {
+      case SnackBarType.success:
+        return AppColors.toastSuccessBackground;
+      case SnackBarType.info:
+        return AppColors.toastInfoBackground;
+      case SnackBarType.error:
+        return AppColors.toastErrorBackground;
+    }
+  }
+
   static void show({
     required BuildContext context,
     required String message,
+    SnackBarType type = SnackBarType.success,
     Duration duration = const Duration(seconds: 2),
   }) {
     final overlay = Overlay.of(context);
@@ -26,13 +51,9 @@ class CommonSnackBar {
       vsync: tickerProvider,
     );
 
-    final fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: animationController,
-      curve: Curves.easeInOut,
-    ));
+    final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: animationController, curve: Curves.easeInOut),
+    );
 
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -55,19 +76,19 @@ class CommonSnackBar {
                       borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 16.h,
+                      ),
                       child: Row(
                         children: [
                           Container(
                             margin: EdgeInsets.only(right: 16.w),
-                            decoration: const BoxDecoration(
-                              color: AppColors.opacity20PrimaryYellow,
-                              shape: BoxShape.circle,
+                            decoration:  BoxDecoration(
+                              color:_getIconBackgroundColor(type),
+                              shape: BoxShape.circle
                             ),
-                            child: const Icon(
-                              AppIcons.onboardingProgressCheck,
-                              color: AppColors.primaryYellow,
-                            ),
+                            child: Icon(_getIconData(type), color: AppColors.textColorWhite,size: 16,),
                           ),
                           Expanded(
                             child: Text(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -14,6 +15,7 @@ import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,7 +44,10 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
     try {
       final itemApi = ItemApi();
-      final request = ItemRequest(pageNumber: 0, pageSize: 30);
+      final request = ItemRequest(
+          pageNumber: 0,
+          pageSize: 30,
+          itemStatus: ItemStatus.available.serverName);
       final response = await itemApi.getMyItems(request);
 
       setState(() {
@@ -56,8 +61,11 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('내 물품 목록 로드 실패: $e')));
+        CommonSnackBar.show(
+          context: context,
+          message: '내 물품 목록 로드 실패: $e',
+          type: SnackBarType.error,
+        );
       }
     }
   }
@@ -226,8 +234,10 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
           type: NavigationTypes.pushAndRemoveUntil);
     } else {
       // 실패 안내
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('회원 탈퇴에 실패했습니다. 다시 시도해주세요.')),
+      CommonSnackBar.show(
+        context: context,
+        message: '회원 탈퇴에 실패했습니다. 다시 시도해주세요.',
+        type: SnackBarType.error,
       );
     }
   }

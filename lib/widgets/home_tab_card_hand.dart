@@ -268,8 +268,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              // ignore: deprecated_member_use
               ..translate(0.0, 0.0, zIndex.toDouble())
               ..rotateZ(angle)
+              // ignore: deprecated_member_use
               ..scale(scale),
             child: AnimatedContainer(
               duration: Duration(milliseconds: isPulled ? 100 : 200),
@@ -399,11 +402,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   }
 
   void _handlePanEnd(DragEndDetails details) {
-    final dy = _panStartPosition.dy - _currentPanPosition.dy;
-
-    if (_hasStartedCardDrag) {
-      if (_pulledCardId != null && dy > 100) {
-        // 드롭 발생
+    if ( _hasStartedCardDrag) {
+      if (_pulledCardId != null && _wasOverDropZone) {
+        // 드롭 발생 - 드롭존에 들어갔었다면 드롭 허용
         if (widget.onCardDrop != null) {
           widget.onCardDrop!(_pulledCardId!);
           HapticFeedback.heavyImpact();

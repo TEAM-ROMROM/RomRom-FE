@@ -6,6 +6,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -202,8 +203,10 @@ class _ItemRegisterLocationScreenState
                             }
                           } catch (e) {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('위치 등록에 실패했습니다: $e')),
+                              CommonSnackBar.show(
+                                context: context,
+                                message: '위치 등록에 실패했습니다: $e',
+                                type: SnackBarType.error,
                               );
                             }
                             if (mounted) {

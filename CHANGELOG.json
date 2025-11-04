@@ -1,11 +1,595 @@
 {
   "metadata": {
-    "lastUpdated": "2025-09-20T22:17:24Z",
-    "currentVersion": "1.3.5",
-    "totalReleases": 18,
+    "lastUpdated": "2025-10-28T08:51:52Z",
+    "currentVersion": "1.5.4",
+    "totalReleases": 39,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.5.4",
+      "project_type": "flutter",
+      "date": "2025-10-28",
+      "pr_number": 336,
+      "raw_summary": "Summary by CodeRabbit\n릴리즈 노트\n\n\n새로운 기능\n\n채팅 기능 추가: 채팅 탭, 채팅방 목록 및 메시지 표시\n사진 뷰어 기능 개선으로 여러 이미지 탐색 지원\n3탭 토글 스위치로 향상된 필터링 옵션\n\n\n\n개선사항\n\nAI 예측 가격 기능 명칭 개선\n사용자 프로필 아바타에 테두리 옵션 추가\n자동 버전 관리 및 변경 로그 시스템 강화\n\n\n\n버그 수정\n\n버전 관리 시스템 오류 해결\n\n\n\n업데이트\n\nv1.5.1 → v1.5.4",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅 기능 추가: 채팅 탭, 채팅방 목록 및 메시지 표시",
+            "사진 뷰어 기능 개선으로 여러 이미지 탐색 지원",
+            "3탭 토글 스위치로 향상된 필터링 옵션"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "AI 예측 가격 기능 명칭 개선",
+            "사용자 프로필 아바타에 테두리 옵션 추가",
+            "자동 버전 관리 및 변경 로그 시스템 강화"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "버전 관리 시스템 오류 해결"
+          ]
+        },
+        "업데이트": {
+          "title": "업데이트",
+          "items": [
+            "v1.5.1 → v1.5.4"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.5.1",
+      "project_type": "flutter",
+      "date": "2025-10-27",
+      "pr_number": 334,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\nNew Features\n\n상품 상태를 판매 중/거래 완료로 토글할 수 있는 새로운 상태 관리 기능 추가\n상품 상세 화면에서 거래 완료로 변경하는 옵션 추가\n\n\n\nBug Fixes\n\n카드 드롭 영역 감지 로직 개선으로 더 정확한 드래그 앤 드롭 동작 구현\n\n\n\nChores\n\n버전 1.5.1 업데이트",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "상품 상태를 판매 중/거래 완료로 토글할 수 있는 새로운 상태 관리 기능 추가",
+            "상품 상세 화면에서 거래 완료로 변경하는 옵션 추가"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "카드 드롭 영역 감지 로직 개선으로 더 정확한 드래그 앤 드롭 동작 구현"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 1.5.1 업데이트"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.5.0",
+      "project_type": "flutter",
+      "date": "2025-10-19",
+      "pr_number": 329,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\n새 기능\n\n새로운 브라우저 자동화 도구 기반의 Play Store 테스트 프레임워크 추가\n\n\n\n개선사항\n\nFlutter 버전 업그레이드 (3.27.3 → 3.35.5)\n자동화 스크립트의 오류 처리 및 재시도 로직 강화\nDart SDK 최소 버전 요구사항 상향 (3.3.0 → 3.9.0)\n\n\n\n업데이트\n\n패키지 버전 1.4.6 → 1.4.17\n스켈레톤 UI 라이브러리 업데이트\n안드로이드 빌드 설정 최적화",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "새로운 브라우저 자동화 도구 기반의 Play Store 테스트 프레임워크 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "Flutter 버전 업그레이드 (3.27.3 → 3.35.5)",
+            "자동화 스크립트의 오류 처리 및 재시도 로직 강화",
+            "Dart SDK 최소 버전 요구사항 상향 (3.3.0 → 3.9.0)"
+          ]
+        },
+        "업데이트": {
+          "title": "업데이트",
+          "items": [
+            "패키지 버전 1.4.6 → 1.4.17",
+            "스켈레톤 UI 라이브러리 업데이트",
+            "안드로이드 빌드 설정 최적화"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.4.3",
+      "project_type": "flutter",
+      "date": "2025-10-13",
+      "pr_number": 321,
+      "raw_summary": "Summary by CodeRabbit\n\n신기능\n\n최초 물품 등록 후 홈으로 자동 이동하고 상세 화면 표시, 복귀 시 코치마크(6단계) 오버레이 안내\n최초 등록 여부를 기반으로 코치마크 1회만 노출 및 상태 영구 저장\n\n\n개선\n\n홈 카드 3D 효과 미세 조정(퍼스펙티브 추가)\n\n\n문서\n\n분석/설계/구현/리뷰/테스트/트러블슈팅/디자인 전환 가이드 대폭 추가\n\n\n작업(Chores)\n\niOS 최소 지원 13.0, macOS 최소 지원 10.15로 상향\nPlay Store 배포 파이프라인 개선(드래프트 업로드, 설정 정비)\n버전 1.4.3(빌드 12)로 업데이트",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": [
+            "최초 물품 등록 후 홈으로 자동 이동하고 상세 화면 표시, 복귀 시 코치마크(6단계) 오버레이 안내",
+            "최초 등록 여부를 기반으로 코치마크 1회만 노출 및 상태 영구 저장"
+          ]
+        },
+        "개선": {
+          "title": "개선",
+          "items": [
+            "홈 카드 3D 효과 미세 조정(퍼스펙티브 추가)"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "분석/설계/구현/리뷰/테스트/트러블슈팅/디자인 전환 가이드 대폭 추가"
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "iOS 최소 지원 13.0, macOS 최소 지원 10.15로 상향",
+            "Play Store 배포 파이프라인 개선(드래프트 업로드, 설정 정비)",
+            "버전 1.4.3(빌드 12)로 업데이트"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.4.2",
+      "project_type": "flutter",
+      "date": "2025-10-09",
+      "pr_number": 317,
+      "raw_summary": "Summary by CodeRabbit\n\n\n새 소식 없음\n\n\n문서\n\nREADME를 간소화하여 핵심만 제공하고 상세 섹션을 제거했습니다.\n주요 기능 안내는 유지되며, 물물교환(바터) 지원 표기는 그대로입니다.\n사용자 입장에서는 더 빠르게 개요를 파악할 수 있습니다.\n\n\n\n작업 정리(Chores)\n\n앱 버전을 1.4.2로 갱신하고 빌드 번호를 증가시켰습니다.\n버전 메타데이터를 최신 상태로 동기화했습니다.\n기능 변화나 동작상의 변경은 없습니다.",
+      "parsed_changes": {
+        "새_소식_없음": {
+          "title": "새 소식 없음",
+          "items": []
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README를 간소화하여 핵심만 제공하고 상세 섹션을 제거했습니다.",
+            "주요 기능 안내는 유지되며, 물물교환(바터) 지원 표기는 그대로입니다.",
+            "사용자 입장에서는 더 빠르게 개요를 파악할 수 있습니다."
+          ]
+        },
+        "작업_정리_chores": {
+          "title": "작업 정리(Chores)",
+          "items": [
+            "앱 버전을 1.4.2로 갱신하고 빌드 번호를 증가시켰습니다.",
+            "버전 메타데이터를 최신 상태로 동기화했습니다.",
+            "기능 변화나 동작상의 변경은 없습니다."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.4.1",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 316,
+      "raw_summary": "Summary by CodeRabbit\n\n\n신기능\n\n\n버그 수정\n\n\n문서\n\n최신 버전 표기를 v1.3.28 → v1.3.29로 업데이트.\n\n\n\n작업(Chores)\n\nPlay 스토어 배포가 드래프트 상태로 업로드되도록 조정.\n버전 메타데이터 업데이트: 1.3.29 → 1.4.1.\n버전 동기화 정보와 최종 업데이트 타임스탬프 갱신.\n\n\n\n리팩터\n\n\n스타일\n\n\n테스트\n\n\n되돌리기(Revert)",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": []
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": []
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "최신 버전 표기를 v1.3.28 → v1.3.29로 업데이트."
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "Play 스토어 배포가 드래프트 상태로 업로드되도록 조정.",
+            "버전 메타데이터 업데이트: 1.3.29 → 1.4.1.",
+            "버전 동기화 정보와 최종 업데이트 타임스탬프 갱신."
+          ]
+        },
+        "리팩터": {
+          "title": "리팩터",
+          "items": []
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": []
+        },
+        "테스트": {
+          "title": "테스트",
+          "items": []
+        },
+        "되돌리기_revert": {
+          "title": "되돌리기(Revert)",
+          "items": []
+        }
+      }
+    },
+    {
+      "version": "1.3.29",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 315,
+      "raw_summary": "Summary by CodeRabbit\n\n출시\n\n앱 버전을 1.3.29로 업데이트하고 빌드 번호를 증가했습니다.\n\n\n문서\n\nREADME의 최신 버전 배지를 v1.3.28에서 v1.3.29로 갱신했습니다.\n\n\n작업(Chores)\n\nPlay 스토어 내부 트랙 배포가 초안 상태가 아닌 완료 상태로 마감되도록 CI/CD 설정을 조정하여 배포 가시성과 전달 완결성을 높였습니다.",
+      "parsed_changes": {
+        "출시": {
+          "title": "출시",
+          "items": [
+            "앱 버전을 1.3.29로 업데이트하고 빌드 번호를 증가했습니다."
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README의 최신 버전 배지를 v1.3.28에서 v1.3.29로 갱신했습니다."
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "Play 스토어 내부 트랙 배포가 초안 상태가 아닌 완료 상태로 마감되도록 CI/CD 설정을 조정하여 배포 가시성과 전달 완결성을 높였습니다."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.28",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 314,
+      "raw_summary": "Summary by CodeRabbit\n\nChores\n\nrelease_status: 'draft'일 때는 rollout: '1.0' 옵션을 사용할 수 없음 &gt; rollout 라인을 제거",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "release_status: 'draft'일 때는 rollout: '1.0' 옵션을 사용할 수 없음 > rollout 라인을 제거"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.27",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 313,
+      "raw_summary": "Summary by CodeRabbit\n\nChores\n\n로그 가독성 증가\nGoogle Play Console 초안 앱 문제 : draft 로 업로드 되게 수정",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "로그 가독성 증가",
+            "Google Play Console 초안 앱 문제 : draft 로 업로드 되게 수정"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.26",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 312,
+      "raw_summary": "Summary by CodeRabbit\n\nChores\n\n디버깅 코드 추가, 잘못된 path 참조 수정 local.properties",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "디버깅 코드 추가, 잘못된 path 참조 수정 local.properties"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.25",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 311,
+      "raw_summary": "Summary by CodeRabbit\n\nChores\n\nlocal.properties에 올바른 버전 정보 포함\nbuild.gradle.kts가 이 값을 읽음\nAAB 파일에 올바른 버전 코드 포함",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "local.properties에 올바른 버전 정보 포함",
+            "build.gradle.kts가 이 값을 읽음",
+            "AAB 파일에 올바른 버전 코드 포함"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.24",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 310,
+      "raw_summary": "Summary by CodeRabbit\n\nChores\n\n대화형 라이센스 명령어 제거\nGradle 성능 최적화",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "대화형 라이센스 명령어 제거",
+            "Gradle 성능 최적화"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.23",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 309,
+      "raw_summary": "Summary by CodeRabbit\n\n문서화\n\nREADME를 간소화하여 핵심 소개·에코시스템·라이선스만 유지하고 설치/개발 가이드 등 부가 섹션을 제거했습니다.\n\n\nChores\n\n앱 버전을 1.3.23으로 업데이트하고 빌드 넘버를 증가시켰습니다.\n릴리스 메타데이터(버전, 타임스탬프)를 최신화했습니다.\n빌드 로그 상세도를 높여 문제 진단이 용이해졌습니다.",
+      "parsed_changes": {
+        "문서화": {
+          "title": "문서화",
+          "items": [
+            "README를 간소화하여 핵심 소개·에코시스템·라이선스만 유지하고 설치/개발 가이드 등 부가 섹션을 제거했습니다."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전을 1.3.23으로 업데이트하고 빌드 넘버를 증가시켰습니다.",
+            "릴리스 메타데이터(버전, 타임스탬프)를 최신화했습니다.",
+            "빌드 로그 상세도를 높여 문제 진단이 용이해졌습니다."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.19",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 308,
+      "raw_summary": "Summary by CodeRabbit\n\n\nChores\n\nCI/CD 버전 관리 단순화: VERSION_CODE를 분리·자동 증가하고, 빌드 시 버전 이름/코드를 플래그로 주입.\nAAB 내 버전 이름/코드 일치 여부를 빌드 후 자동 검증하여 스토어 배포 신뢰성 강화.\n버전 업데이트: 1.3.19로 상승, version_code 도입 및 관리 일원화.\n앱 기능 변화는 없습니다.\n\n\n\nDocumentation\n\nREADME 최신 버전 표기 업데이트.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "CI/CD 버전 관리 단순화: VERSION_CODE를 분리·자동 증가하고, 빌드 시 버전 이름/코드를 플래그로 주입.",
+            "AAB 내 버전 이름/코드 일치 여부를 빌드 후 자동 검증하여 스토어 배포 신뢰성 강화.",
+            "버전 업데이트: 1.3.19로 상승, version_code 도입 및 관리 일원화.",
+            "앱 기능 변화는 없습니다."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "README 최신 버전 표기 업데이트."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.17",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 307,
+      "raw_summary": "Summary by CodeRabbit\n\n\n신기능\n\n(해당 없음)\n\n\n\n버그 수정\n\n(해당 없음)\n\n\n\n문서\n\nREADME의 최신 버전 표기를 v1.3.16으로 갱신하여 안내 일관성 강화.\n\n\n\n작업(Chores)\n\n앱 버전을 1.3.17로 상향.\n\n\n\nCI/CD\n\n안드로이드 빌드·배포 파이프라인 안정성/가시성 강화: 버전 검증, 환경 점검, 자세한 로깅, 실패 대비 복구·검증 절차 추가.\nPlay 스토어 업로드 전 점검과 릴리스 노트 처리 개선으로 배포 신뢰도 향상.",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": [
+            "(해당 없음)"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "(해당 없음)"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README의 최신 버전 표기를 v1.3.16으로 갱신하여 안내 일관성 강화."
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "앱 버전을 1.3.17로 상향."
+          ]
+        },
+        "ci_cd": {
+          "title": "CI/CD",
+          "items": [
+            "안드로이드 빌드·배포 파이프라인 안정성/가시성 강화: 버전 검증, 환경 점검, 자세한 로깅, 실패 대비 복구·검증 절차 추가.",
+            "Play 스토어 업로드 전 점검과 릴리스 노트 처리 개선으로 배포 신뢰도 향상."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.16",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 306,
+      "raw_summary": "Summary by CodeRabbit\n\n신규 기능\n\n없음\n\n\n문서\n\nREADME의 버전 표기 업데이트로 설치/빌드 안내 최신화.\n\n\n작업(Chores)\n\n앱 버전을 1.3.16으로 상향하고 메타데이터 갱신.\n빌드/배포 파이프라인 강화: 버전 갱신 검증, AAB 산출물 유효성 검사, 사전·사후 점검, 상세 로깅 추가로 배포 신뢰성 향상.\n환경 및 아티팩트 무결성 점검을 도입하여 Play 스토어 배포 안정성 개선.",
+      "parsed_changes": {
+        "신규_기능": {
+          "title": "신규 기능",
+          "items": [
+            "없음"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README의 버전 표기 업데이트로 설치/빌드 안내 최신화."
+          ]
+        },
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "앱 버전을 1.3.16으로 상향하고 메타데이터 갱신.",
+            "빌드/배포 파이프라인 강화: 버전 갱신 검증, AAB 산출물 유효성 검사, 사전·사후 점검, 상세 로깅 추가로 배포 신뢰성 향상.",
+            "환경 및 아티팩트 무결성 점검을 도입하여 Play 스토어 배포 안정성 개선."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.15",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 305,
+      "raw_summary": "Summary by CodeRabbit\n\n\nChores\n\nAndroid Play Store CI 워크플로우에 상세 로깅·검증 추가: 버전 처리 확인, AAB 빌드/내용 점검, 업로드 경로 및 배포 진행 메시지, Fastlane 실행 전 환경 정보 출력 등으로 가시성 향상.\n버전 갱신: 1.3.14 → 1.3.15 반영(pubspec.yaml, version.yml 동기화 및 타임스탬프/예시 문구 업데이트).\n\n\n\nDocumentation\n\nREADME 최신 버전 배지와 날짜 업데이트(여러 섹션 포함).",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "Android Play Store CI 워크플로우에 상세 로깅·검증 추가: 버전 처리 확인, AAB 빌드/내용 점검, 업로드 경로 및 배포 진행 메시지, Fastlane 실행 전 환경 정보 출력 등으로 가시성 향상.",
+            "버전 갱신: 1.3.14 → 1.3.15 반영(pubspec.yaml, version.yml 동기화 및 타임스탬프/예시 문구 업데이트)."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "README 최신 버전 배지와 날짜 업데이트(여러 섹션 포함)."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.14",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 304,
+      "raw_summary": "Summary by CodeRabbit\n\n신규 기능\n\n해당 없음\n\n\n문서\n\nREADME의 최신 버전 표기를 갱신하여 안내 내용을 최신 상태로 정리했습니다.\n\n\nChores\n\n앱 버전을 1.3.14로 상향했습니다.\n배포 파이프라인을 단순화하여 AAB에 포함된 버전 정보를 직접 사용하도록 개선하고, 수동 versionCode 전달을 제거했습니다.\n빌드 단계에서 불필요한 버전 인자 사용을 제거하고, 버전 갱신 및 로그 표기를 간소화했습니다.",
+      "parsed_changes": {
+        "신규_기능": {
+          "title": "신규 기능",
+          "items": [
+            "해당 없음"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README의 최신 버전 표기를 갱신하여 안내 내용을 최신 상태로 정리했습니다."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전을 1.3.14로 상향했습니다.",
+            "배포 파이프라인을 단순화하여 AAB에 포함된 버전 정보를 직접 사용하도록 개선하고, 수동 versionCode 전달을 제거했습니다.",
+            "빌드 단계에서 불필요한 버전 인자 사용을 제거하고, 버전 갱신 및 로그 표기를 간소화했습니다."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.13",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 303,
+      "raw_summary": "Summary by CodeRabbit\n\n\n신규 기능\n\n\n버그 수정\n\n\n문서\n\nREADME의 버전 표기 전반을 최신 버전으로 업데이트하여 설치·빌드 안내를 최신 상태로 유지.\n\n\n\n잡무(Chores)\n\n배포 파이프라인에서 버전 코드 계산·전파 로직을 일원화하고, 스토어 업로드 시 패키지 정보를 명시해 일관성 강화.\n변경로그를 자동으로 메타데이터 경로에 생성/복사하여 스토어 제출용 노트를 안정적으로 준비.\n애플리케이션 버전을 1.3.13으로 상향하고 관련 메타 정보(타임스탬프 등)를 갱신.",
+      "parsed_changes": {
+        "신규_기능": {
+          "title": "신규 기능",
+          "items": []
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": []
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "README의 버전 표기 전반을 최신 버전으로 업데이트하여 설치·빌드 안내를 최신 상태로 유지."
+          ]
+        },
+        "잡무_chores": {
+          "title": "잡무(Chores)",
+          "items": [
+            "배포 파이프라인에서 버전 코드 계산·전파 로직을 일원화하고, 스토어 업로드 시 패키지 정보를 명시해 일관성 강화.",
+            "변경로그를 자동으로 메타데이터 경로에 생성/복사하여 스토어 제출용 노트를 안정적으로 준비.",
+            "애플리케이션 버전을 1.3.13으로 상향하고 관련 메타 정보(타임스탬프 등)를 갱신."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.12",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 302,
+      "raw_summary": "Summary by CodeRabbit\n\n\n작업(Chores)\n\nAndroid Play Store 배포 워크플로가 AAB 절대 경로를 사용하도록 개선되어 경로 인식 안정성이 향상되었습니다.\n관련 로그 출력이 절대 경로 기준으로 갱신되었습니다.\n앱 버전을 1.3.12로 상향하고 메타데이터를 최신화했습니다(pubspec.yaml, version.yml).\n\n\n\n문서화(Documentation)\n\nREADME의 버전 배지와 설치 안내를 최신 버전으로 업데이트했습니다(날짜 포함).\n기능 변경은 없으며 텍스트만 갱신되었습니다.",
+      "parsed_changes": {
+        "작업_chores": {
+          "title": "작업(Chores)",
+          "items": [
+            "Android Play Store 배포 워크플로가 AAB 절대 경로를 사용하도록 개선되어 경로 인식 안정성이 향상되었습니다.",
+            "관련 로그 출력이 절대 경로 기준으로 갱신되었습니다.",
+            "앱 버전을 1.3.12로 상향하고 메타데이터를 최신화했습니다(pubspec.yaml, version.yml)."
+          ]
+        },
+        "문서화_documentation": {
+          "title": "문서화(Documentation)",
+          "items": [
+            "README의 버전 배지와 설치 안내를 최신 버전으로 업데이트했습니다(날짜 포함).",
+            "기능 변경은 없으며 텍스트만 갱신되었습니다."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.11",
+      "project_type": "flutter",
+      "date": "2025-10-08",
+      "pr_number": 301,
+      "raw_summary": "Summary by CodeRabbit\n\n신기능\n\n아이템 상세에서 신고/채팅 버튼 컨텍스트별 노출, 내 아이템 삭제 기능 추가\n공통 스낵바(CommonSnackBar), 채팅 버튼 위젯 도입\n\n\n개선\n\n피드/내 아이템/요청 관리에 판매상태(itemStatus) 필터 적용\n로그인 사용자 멤버 정보 선로딩 및 캐시로 화면 전환 속도 개선\n본인 게시물 ‘좋아요’ 방지 가드 추가\n\n\n버그 수정\n\n요청 목록의 새 요청 표시(isNew) 로직 정교화\n\n\n문서\n\n보고서/가이드라인 문서 추가 및 README 최신화\n\n\nCI/CD\n\nPlay Store 내부 테스트 자동 배포 워크플로우 및 Fastlane 추가\n\n\n기타\n\n버전 1.3.11로 업데이트",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": [
+            "아이템 상세에서 신고/채팅 버튼 컨텍스트별 노출, 내 아이템 삭제 기능 추가",
+            "공통 스낵바(CommonSnackBar), 채팅 버튼 위젯 도입"
+          ]
+        },
+        "개선": {
+          "title": "개선",
+          "items": [
+            "피드/내 아이템/요청 관리에 판매상태(itemStatus) 필터 적용",
+            "로그인 사용자 멤버 정보 선로딩 및 캐시로 화면 전환 속도 개선",
+            "본인 게시물 ‘좋아요’ 방지 가드 추가"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "요청 목록의 새 요청 표시(isNew) 로직 정교화"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "보고서/가이드라인 문서 추가 및 README 최신화"
+          ]
+        },
+        "ci_cd": {
+          "title": "CI/CD",
+          "items": [
+            "Play Store 내부 테스트 자동 배포 워크플로우 및 Fastlane 추가"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 1.3.11로 업데이트"
+          ]
+        }
+      }
+    },
     {
       "version": "1.3.5",
       "project_type": "flutter",

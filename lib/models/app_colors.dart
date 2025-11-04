@@ -23,6 +23,7 @@ class AppColors {
   static const Color opacity10Black = Color(0x1A000000); // 10% 불투명도 검정
   static const Color opacity15Black = Color(0x26000000); // 15% 불투명도 검정
   static const Color opacity20Black = Color(0x33000000); // 20% 불투명도 검정
+  static const Color opacity50Black = Color(0x80000000); // 50% 불투명도 검정
   static const Color opacity70Black = Color(0xB3000000); // 70% 불투명도 검정
   static const Color opacity80Black = Color(0xCC000000); // 80% 불투명도 검정
 
@@ -97,6 +98,11 @@ class AppColors {
   static const Color dialogBarrier =
       Color(0x80000000); // 50% 불투명도 검정 (다이얼로그 배경)
 
+  // toast 배경 색상
+  static const Color toastSuccessBackground = Color(0xFF30CF00); // 성공 및 확인 토스트 아이콘 배경색
+  static const Color toastErrorBackground = Color(0xFFFF5656); // 오류 토스트 아이콘 배경색
+  static const Color toastInfoBackground = Color(0xFF4C4E54); // 정보 토스트 아이콘 배경색
+
   // 물품 등록 화면
   // 물품 교환 AI 추천 가격 토글 Switch
   static const Color toggleSwitchIndicatorShadow =
@@ -152,4 +158,9 @@ class AppColors {
   // 요청 관리 화면
   static const Color tradeStatusIsChatting = Color(0x80FFC300); // 채팅 중 색상
   static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
+
+  // 채팅 화면
+  static const Color chatLocationTimeMessage =
+      Color(0x99FFFFFF); // 장소, 시간, 메시지 (white e60% opacity)
+  static const Color chatUnreadBadge = Color(0xFFFF3E3E); // 읽지 않은 메시지 뱃지
 }

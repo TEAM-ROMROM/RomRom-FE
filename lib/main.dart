@@ -84,7 +84,7 @@ Future<Widget> _determineInitialScreen() async {
     }
 
     debugPrint('토큰 유효 및 온보딩 완료: 메인 화면으로 이동');
-    return const MainScreen();
+    return MainScreen(key: MainScreen.globalKey);
   } catch (e) {
     debugPrint('사용자 정보 조회 실패: $e');
     return const LoginScreen();
@@ -121,10 +121,13 @@ class MyApp extends StatelessWidget {
               home: initialScreen,
               // iOS에서 뒤로가기 스와이프 제스처 활성화
               builder: (context, child) {
-                return GestureDetector(
-                  onTap: () {
+                return Listener(
+                  onPointerDown: (_) {
                     // 키보드가 열려있을 때 화면을 터치하면 키보드 닫기
-                    FocusScope.of(context).unfocus();
+                    final currentFocus = FocusScope.of(context);
+                    if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+                      currentFocus.focusedChild!.unfocus();
+                    }
                   },
                   child: child,
                 );

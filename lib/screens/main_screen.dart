@@ -12,6 +12,10 @@ import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
+  // MainScreen의 상태에 접근하기 위한 GlobalKey
+  static final GlobalKey<State<MainScreen>> globalKey =
+      GlobalKey<State<MainScreen>>();
+
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
@@ -19,9 +23,18 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentTabIndex = 0; // 선택된 탭 인덱스 관리
 
+  /// 외부에서 탭을 전환할 수 있는 메서드
+  void switchToTab(int index) {
+    if (index >= 0 && index < _navigationTabScreens.length) {
+      setState(() {
+        _currentTabIndex = index;
+      });
+    }
+  }
+
   // 각 탭에 해당하는 페이지 위젯 리스트
   final List<Widget> _navigationTabScreens = [
-    const HomeTabScreen(),
+    HomeTabScreen(key: HomeTabScreen.globalKey),
     const RequestManagementTabScreen(),
     const RegisterTabScreen(),
     const ChatTabScreen(),
@@ -37,12 +50,12 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      appBar: (_currentTabIndex != 0 && _currentTabIndex != 1 && _currentTabIndex != 2)
+      appBar: _currentTabIndex == 4
           ? AppBar(
               backgroundColor: Colors.transparent,
               title: Text(currentTab.title, style: CustomTextStyles.h3),
             )
-          : null, // 홈 탭, 요청관리 탭, 등록 탭에서는 AppBar 숨김
+          : null, // 마이페이지 탭에서만 AppBar 표시
       body: _navigationTabScreens[_currentTabIndex],
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _currentTabIndex,

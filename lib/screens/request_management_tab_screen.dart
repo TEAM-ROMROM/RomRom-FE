@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'dart:async';
 
 import 'package:romrom_fe/enums/item_trade_option.dart';
@@ -18,6 +19,7 @@ import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
@@ -85,13 +87,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _toggleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _toggleAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _toggleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _toggleAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     _loadInitialItems();
   }
@@ -105,15 +106,19 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getMyItems(ItemRequest(
-        pageNumber: _currentPage,
-        pageSize: _pageSize,
-      ));
+      final response = await itemApi.getMyItems(
+        ItemRequest(
+          pageNumber: _currentPage,
+          pageSize: _pageSize,
+          itemStatus: ItemStatus.available.serverName,
+        ),
+      );
 
       if (!mounted) return;
 
       final itemCard = await _convertToRequestManagementItemCard(
-          response.itemPage?.content ?? []);
+        response.itemPage?.content ?? [],
+      );
 
       setState(() {
         _itemCards
@@ -129,8 +134,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       if (!mounted) return;
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('피드 로딩 실패: $e')),
+      CommonSnackBar.show(
+        context: context,
+        message: '피드 로딩 실패: $e',
+        type: SnackBarType.error,
       );
     }
     setState(() {
@@ -140,14 +147,16 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// ItemDetail을 RequestManagementItemCard로 변환
   Future<List<RequestManagementItemCard>> _convertToRequestManagementItemCard(
-      List<Item> details) async {
+    List<Item> details,
+  ) async {
     final itemCards = <RequestManagementItemCard>[];
 
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
 
-      String category =
-          ItemCategories.fromServerName(d.itemCategory ?? '기타').label;
+      String category = ItemCategories.fromServerName(
+        d.itemCategory ?? '기타',
+      ).label;
 
       final itemCard = RequestManagementItemCard(
         itemId: d.itemId ?? '',
@@ -158,7 +167,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         title: d.itemName ?? ' ',
         price: d.price ?? 0,
         likeCount: d.likeCount ?? 0,
-        aiPrice: d.aiPrice ?? false,
+        aiPrice: d.isAiPredictedPrice ?? false,
       );
 
       itemCards.add(itemCard);
@@ -169,7 +178,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 현재 선택된 카드의 받은 요청 목록 로드
   Future<List<TradeRequestHistory>>
-      _loadReceivedRequestsForCurrentCard() async {
+  _loadReceivedRequestsForCurrentCard() async {
     if (!mounted) return const [];
 
     setState(() => _isLoading = true);
@@ -186,7 +195,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
       final paged = await api.getReceivedTradeRequests(
         TradeRequest(
-            takeItemId: currentCard.itemId, pageNumber: 0, pageSize: 10),
+          takeItemId: currentCard.itemId,
+          pageNumber: 0,
+          pageSize: 10,
+        ),
       );
 
       final list = paged.content;
@@ -196,10 +208,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       }
 
       // 주소 캐시를 모두 채워둠
-      await Future.wait(list.map((r) async {
-        await r.takeItem.resolveAndCacheAddress();
-        await r.giveItem.resolveAndCacheAddress();
-      }));
+      await Future.wait(
+        list.map((r) async {
+          await r.takeItem.resolveAndCacheAddress();
+          await r.giveItem.resolveAndCacheAddress();
+        }),
+      );
 
       if (mounted) {
         setState(() {
@@ -228,42 +242,65 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
     setState(() => _isLoading = true);
     try {
-      if (_itemCards.isEmpty ||
-          _currentCardIndex < 0 ||
-          _currentCardIndex >= _itemCards.length) {
+      if (_itemCards.isEmpty) {
         if (mounted) setState(() => _sentRequests.clear());
         return const [];
       }
 
-      final currentCard = _itemCards[_currentCardIndex];
       final api = TradeApi();
 
-      final paged = await api.getSentTradeRequests(
-        TradeRequest(giveItemId: currentCard.itemId),
+      // 모든 카드에 대해 병렬로 요청을 보내고 결과를 합칩니다.
+      final pagedResults = await Future.wait<PagedTradeRequestHistory?>(
+        _itemCards.map((card) async {
+          try {
+            return await api.getSentTradeRequests(
+              TradeRequest(giveItemId: card.itemId),
+            );
+          } catch (error, stackTrace) {
+            debugPrint(
+              '보낸 요청 로드 실패 for itemId ${card.itemId}: $error\n$stackTrace',
+            );
+            return null;
+          }
+        }),
+        eagerError: false,
       );
 
-      final list = paged.content;
-      if (list.isEmpty) {
-        if (mounted) setState(() => _sentRequests.clear());
-        return const [];
+      final allRequests = <TradeRequestHistory>[];
+      for (final paged in pagedResults) {
+        if (paged == null) continue;
+        final list = paged.content;
+        if (list.isNotEmpty) {
+          // 각 요청의 take/give 아이템 주소 캐시 채우기
+          await Future.wait(
+            list.map((r) async {
+              try {
+                await r.takeItem.resolveAndCacheAddress();
+              } catch (e) {
+                debugPrint('takeItem 주소 해석 실패: $e');
+              }
+              try {
+                await r.giveItem.resolveAndCacheAddress();
+              } catch (e) {
+                debugPrint('giveItem 주소 해석 실패: $e');
+              }
+            }),
+            eagerError: false,
+          );
+          allRequests.addAll(list);
+        }
       }
-
-      // 주소 캐시를 모두 채워둠
-      await Future.wait(list.map((r) async {
-        await r.takeItem.resolveAndCacheAddress();
-        await r.giveItem.resolveAndCacheAddress();
-      }));
 
       if (mounted) {
         setState(() {
           _sentRequests
             ..clear()
-            ..addAll(list);
+            ..addAll(allRequests);
         });
       }
-      return list;
+      return allRequests;
     } catch (e, st) {
-      debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e\n$st');
+      debugPrint('보낸 요청 목록 로드 실패: $e\n$st');
       if (mounted) setState(() => _sentRequests.clear());
       return const [];
     } finally {
@@ -339,9 +376,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 createdDate: takeItem.createdDate!,
                 tradeOptions: takeItem.itemTradeOptions != null
                     ? takeItem.itemTradeOptions!
-                        .map((s) => ItemTradeOption.values
-                            .firstWhere((e) => e.serverName == s))
-                        .toList()
+                          .map(
+                            (s) => ItemTradeOption.values.firstWhere(
+                              (e) => e.serverName == s,
+                            ),
+                          )
+                          .toList()
                     : [],
                 tradeStatus: request.tradeStatus != null
                     ? TradeStatus.values.firstWhere(
@@ -371,8 +411,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   }
                   if (mounted) {
                     setState(() {
-                      _sentRequests
-                          .removeAt(index); // Use the correct index here
+                      _sentRequests.removeAt(
+                        index,
+                      ); // Use the correct index here
                     });
                   }
                 },
@@ -413,16 +454,39 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
   }
 
-  void _onToggleChanged(bool isRightSelected) {
-    setState(() {
-      _isRightSelected = isRightSelected;
-      if (isRightSelected) {
-        _toggleAnimationController.forward();
-      } else {
-        _toggleAnimationController.reverse();
-      }
-    });
+  // 카드 컨트롤러 재생성
+  void _recreateCardController(int initialPage) {
+  // 기존 컨트롤러 정리 후 새로 생성
+  _cardController.dispose();
+  _cardController = PageController(
+    initialPage: initialPage,
+    keepPage: false, // 이전 위치 자동 복원 방지
+     viewportFraction: 0.6, // 화면에 보이는 카드의 비율
+  );
+}
+
+// 토글 변경 처리
+void _onToggleChanged(bool isRightSelected) {
+  // 탭 전환 직전에(= 빌드 전) 컨트롤러를 재생성해서 초기 페이지 지정
+  if (!isRightSelected && _itemCards.isNotEmpty) {
+    final int targetIndex = (_currentCardIndex < 0)
+        ? 0
+        : (_currentCardIndex >= _itemCards.length
+            ? _itemCards.length - 1
+            : _currentCardIndex);
+
+    _recreateCardController(targetIndex);
   }
+
+  setState(() {
+    _isRightSelected = isRightSelected;
+    if (isRightSelected) {
+      _toggleAnimationController.forward();
+    } else {
+      _toggleAnimationController.reverse();
+    }
+  });
+}
 
   void _toggleCompletedRequests(bool value) {
     setState(() {
@@ -442,8 +506,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light
-          .copyWith(statusBarColor: AppColors.transparent),
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: AppColors.transparent,
+      ),
       child: Scaffold(
         backgroundColor: AppColors.primaryBlack,
         extendBodyBehindAppBar: true,
@@ -472,8 +537,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                           leftText: '받은 요청',
                           rightText: '보낸 요청',
                         ),
-                        statusBarHeight:
-                            MediaQuery.of(context).padding.top, // ★ 꼭 전달
+                        statusBarHeight: MediaQuery.of(
+                          context,
+                        ).padding.top, // ★ 꼭 전달
                         toolbarHeight: 58.h,
                         toggleHeight: 70.h,
                         expandedExtra: 32.h, // 큰 제목/여백
@@ -731,8 +797,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         context.navigateTo(
                           screen: ItemDetailDescriptionScreen(
                             itemId: giveItem.itemId!, // 요청 받은 카드로 이동
-                            imageSize:
-                                Size(MediaQuery.of(context).size.width, 400.h),
+                            imageSize: Size(
+                              MediaQuery.of(context).size.width,
+                              400.h,
+                            ),
                             currentImageIndex: 0,
                             heroTag:
                                 'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
@@ -748,12 +816,15 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         title: giveItem.itemName ?? ' ',
                         address: giveItem.address!,
                         createdDate: giveItem.createdDate!,
-                        isNew: true, // FIXME : 벡엔드 isNew 로직구현 후 수정
+                        isNew: request.isNew ?? false,
                         tradeOptions: giveItem.itemTradeOptions != null
                             ? giveItem.itemTradeOptions!
-                                .map((s) => ItemTradeOption.values
-                                    .firstWhere((e) => e.serverName == s))
-                                .toList()
+                                  .map(
+                                    (s) => ItemTradeOption.values.firstWhere(
+                                      (e) => e.serverName == s,
+                                    ),
+                                  )
+                                  .toList()
                             : [],
                         tradeStatus: request.tradeStatus != null
                             ? TradeStatus.values.firstWhere(
@@ -763,18 +834,22 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                             : TradeStatus.chatting,
                         onMenuTap: () async {
                           try {
-                            await TradeApi().cancelTradeRequest(TradeRequest(
-                              tradeRequestHistoryId:
-                                  request.tradeRequestHistoryId,
-                            ));
+                            await TradeApi().cancelTradeRequest(
+                              TradeRequest(
+                                tradeRequestHistoryId:
+                                    request.tradeRequestHistoryId,
+                              ),
+                            );
                           } catch (e) {
                             debugPrint('요청 취소 실패: $e');
                           }
                           if (mounted) {
                             setState(() {
-                              _receivedRequests.removeWhere((e) =>
-                                  e.tradeRequestHistoryId ==
-                                  request.tradeRequestHistoryId);
+                              _receivedRequests.removeWhere(
+                                (e) =>
+                                    e.tradeRequestHistoryId ==
+                                    request.tradeRequestHistoryId,
+                              );
                             });
                           }
                         },
@@ -789,6 +864,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   ],
                 );
               }),
-            ));
+            ),
+          );
   }
 }

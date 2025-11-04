@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/user_info.dart';
 
 class UserProfileCircularAvatar extends StatefulWidget {
   final Size avatarSize;
   final String? profileUrl;
+  final bool hasBorder;
 
   const UserProfileCircularAvatar({
     super.key,
     required this.avatarSize,
     this.profileUrl,
+    this.hasBorder = false,
   });
 
   @override
@@ -56,22 +59,28 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
     return Container(
       width: width,
       height: height,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
+        color: AppColors.textColorWhite,
+        border: widget.hasBorder
+            ? Border.all(
+                color: AppColors.textColorWhite, // 테두리 색상
+                width: 1.0, // 테두리 두께
+              )
+            : null,
       ),
       child: ClipOval(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _avatarUrl != null && _avatarUrl!.isNotEmpty
-                ? Image.network(
-                    _avatarUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildDefaultImage();
-                    },
-                  )
-                : _buildDefaultImage(),
+            ? Image.network(
+                _avatarUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildDefaultImage();
+                },
+              )
+            : _buildDefaultImage(),
       ),
     );
   }
