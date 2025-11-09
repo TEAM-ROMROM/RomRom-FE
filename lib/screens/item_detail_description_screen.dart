@@ -35,6 +35,8 @@ import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/services/apis/chat_api.dart';
+import 'package:romrom_fe/screens/chat_room_screen.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -44,6 +46,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   final HomeFeedItem? homeFeedItem;
   final bool isMyItem;
   final bool isRequestManagement;
+  final String? tradeRequestHistoryId;
 
   const ItemDetailDescriptionScreen({
     super.key,
@@ -54,6 +57,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
     required this.isMyItem, // 내 물품인지 여부
     required this.isRequestManagement, // 요청 관리 화면에서 왔는지 여부
     this.homeFeedItem,
+    this.tradeRequestHistoryId, // 거래 요청 ID (채팅방 생성용)
   });
 
   @override
@@ -614,8 +618,9 @@ class _ItemDetailDescriptionScreenState
                             !widget.isMyItem && widget.isRequestManagement
                                 ? Padding(
                                     padding: EdgeInsets.only(left: 16.0.w),
-                                    child: const ChattingButton(
+                                    child: ChattingButton(
                                       isEnabled: true,
+                                      enabledOnPressed: _handleChatButtonPressed,
                                       buttonText: '채팅하기',
                                       buttonWidth: 96,
                                       buttonHeight: 32,
@@ -936,6 +941,43 @@ class _ItemDetailDescriptionScreenState
       likeCountVN.value = prevCount;
     } finally {
       _likeInFlight = false;
+    }
+  }
+
+  /// 채팅하기 버튼 핸들러
+  Future<void> _handleChatButtonPressed() async {
+    if (item == null || widget.tradeRequestHistoryId == null) {
+      CommonSnackBar.show(
+        context: context,
+        message: '채팅방을 생성할 수 없습니다',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
+    try {
+      // 1. 채팅방 생성 (이미 있으면 기존 방 반환)
+      final chatApi = ChatApi();
+      final chatRoom = await chatApi.createChatRoom(
+        opponentMemberId: item!.member!.memberId!,
+        tradeRequestHistoryId: widget.tradeRequestHistoryId!,
+      );
+
+      if (!mounted) return;
+
+      // 2. 채팅방 화면으로 이동
+      context.navigateTo(
+        screen: ChatRoomScreen(chatRoom: chatRoom),
+      );
+    } catch (e) {
+      debugPrint('채팅방 생성 실패: $e');
+      if (!mounted) return;
+
+      CommonSnackBar.show(
+        context: context,
+        message: '채팅방 생성 실패: ${ErrorUtils.getErrorMessage(e)}',
+        type: SnackBarType.error,
+      );
     }
   }
 }
