@@ -38,8 +38,8 @@ class ChatWebSocketService {
         throw Exception('Access token not found');
       }
 
-      // WebSocket URL (ws:// 프로토콜 사용)
-      final wsUrl = '${AppUrls.baseUrl.replaceFirst('https://', 'ws://').replaceFirst('http://', 'ws://')}/chat';
+      // SockJS 연결 URL (HTTPS 프로토콜 사용, SockJS가 자동으로 WebSocket 업그레이드 처리)
+      const wsUrl = '${AppUrls.baseUrl}/chat';
 
       debugPrint('Connecting to WebSocket: $wsUrl');
 
