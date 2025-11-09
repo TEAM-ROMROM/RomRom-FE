@@ -39,6 +39,7 @@ dependencies:
   shadex: ^1.0.2
   shared_preferences: ^2.5.2
   skeletonizer: ^2.1.0+1
+  stomp_dart_client: ^2.0.0
   geocoding: ^3.0.0
 
 dev_dependencies:

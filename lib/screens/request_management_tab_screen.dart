@@ -806,6 +806,7 @@ void _onToggleChanged(bool isRightSelected) {
                                 'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
                             isMyItem: false,
                             isRequestManagement: true,
+                            tradeRequestHistoryId: request.tradeRequestHistoryId,
                           ),
                         );
                       },
