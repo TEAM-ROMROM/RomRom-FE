@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// 앱바에 표시될 제목
   final String title;
+  final TextStyle? titleTextStyle;
 
   /// 뒤로가기 버튼 클릭 시 실행될 콜백
   /// 제공되지 않을 경우 기본적으로 Navigator.pop()이 실행됨
@@ -27,6 +28,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CommonAppBar({
     super.key,
     required this.title,
+    this.titleTextStyle,
     this.onBackPressed,
     this.actions,
     this.bottomWidgets = const PreferredSize(
@@ -62,7 +64,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       bottom:  bottomWidgets,
       title: Padding(
         padding: EdgeInsets.zero,
-        child: Text(title, style: CustomTextStyles.h1),
+        child: Text(title, style: titleTextStyle ?? CustomTextStyles.h1),
       ),
 
       shape: Border(
