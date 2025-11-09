@@ -31,7 +31,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
   late Animation<double> _toggleAnimation;
 
   // 채팅방 목록
-  List<ChatRoom> _chatRooms = [];
+  final List<ChatRoom> _chatRooms = [];
 
   // 페이지네이션 상태
   bool _isLoading = false;
