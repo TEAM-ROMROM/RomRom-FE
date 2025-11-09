@@ -203,6 +203,9 @@ class MemberManagerService {
   /// 캐시된 회원 정보 (즉시 접근용)
   Member? get cachedMember => _cachedMember;
 
+  /// 현재 회원 정보 (동기 접근용, cachedMember와 동일)
+  Member? get currentMember => _cachedMember;
+
   /// 캐시된 회원 ID (즉시 접근용)
   String? get cachedMemberId => _userInfo.memberId;
 }
