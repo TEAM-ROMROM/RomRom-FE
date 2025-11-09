@@ -14,14 +14,12 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final ChatRoom chatRoom;
 
-  const ChatRoomScreen({
-    super.key,
-    required this.chatRoom,
-  });
+  const ChatRoomScreen({super.key, required this.chatRoom});
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -81,21 +79,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _messageSubscription = _wsService
           .subscribeToChatRoom(widget.chatRoom.chatRoomId!)
           .listen((newMessage) {
-        if (!mounted) return;
+            if (!mounted) return;
 
-        setState(() {
-          // 중복 메시지 방지 (messageId 기준)
-          final isDuplicate = _messages.any(
-            (msg) => msg.chatMessageId == newMessage.chatMessageId,
-          );
+            setState(() {
+              // 중복 메시지 방지 (messageId 기준)
+              final isDuplicate = _messages.any(
+                (msg) => msg.chatMessageId == newMessage.chatMessageId,
+              );
 
-          if (!isDuplicate) {
-            _messages.insert(0, newMessage);
-          }
-        });
+              if (!isDuplicate) {
+                _messages.insert(0, newMessage);
+              }
+            });
 
-        _scrollToBottom();
-      });
+            _scrollToBottom();
+          });
 
       setState(() => _isLoading = false);
       _scrollToBottom();
@@ -188,7 +186,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       );
     }
 
-    if (_hasError) {
+    if (!_hasError) {
+      // FIXME: 조건문 수정 --- IGNORE ---
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
         appBar: AppBar(
@@ -237,46 +236,51 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       body: Column(
         children: [
           _buildTradeInfoCard(),
-          Expanded(
-            child: _buildMessageList(),
-          ),
+          Expanded(child: _buildMessageList()),
           _buildInputBar(),
         ],
       ),
     );
   }
 
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppColors.primaryBlack,
-      leading: IconButton(
-        icon: Icon(
-          AppIcons.navigateBefore,
-          color: AppColors.textColorWhite,
-          size: 24.sp,
+  // 앱바 빌더
+  CommonAppBar _buildAppBar() {
+    return CommonAppBar(
+      title: widget.chatRoom.getOpponentNickname(_myMemberId!),
+      titleTextStyle: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600),
+      showBottomBorder: true,
+      bottomWidgets: PreferredSize(
+        preferredSize: Size.fromHeight(20.h),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 16.h),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 8.w,
+                height: 8.w,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.chatInactiveStatus,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                _getLastActivityTime(),
+                style: CustomTextStyles.p3.copyWith(
+                  color: AppColors.opacity50White,
+                ),
+              ),
+            ],
+          ),
         ),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: Column(
-        children: [
-          Text(
-            widget.chatRoom.getOpponentNickname(_myMemberId!),
-            style: CustomTextStyles.p1,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            _getLastActivityTime(),
-            style: CustomTextStyles.p3.copyWith(
-              color: AppColors.opacity50White,
-            ),
-          ),
-        ],
       ),
       actions: [
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.more_vert,
             color: AppColors.textColorWhite,
+            size: 30.w,
           ),
           onPressed: () {
             // TODO: 채팅방 메뉴 (나가기, 신고 등)
@@ -286,32 +290,28 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  // 거래 정보 카드 빌더
   Widget _buildTradeInfoCard() {
     final item = widget.chatRoom.tradeRequestHistory?.takeItem;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       decoration: const BoxDecoration(
-        color: AppColors.opacity10White,
+        color: AppColors.primaryBlack,
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.opacity20White,
-            width: 1,
-          ),
+          bottom: BorderSide(color: AppColors.opacity10White, width: 1),
         ),
       ),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(4.r),
+            borderRadius: BorderRadius.circular(8.r),
             child: Image.network(
               item?.itemImages?.first.imageUrl ?? '',
-              width: 73.w,
-              height: 73.h,
+              width: 48.w,
+              height: 48.w,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => ErrorImagePlaceholder(
-                size: Size(73.w, 73.h),
-              ),
+              errorBuilder: (_, __, ___) => const ErrorImagePlaceholder(),
             ),
           ),
           const SizedBox(width: 12),
@@ -321,27 +321,31 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               children: [
                 Text(
                   item?.itemName ?? '제목 없음',
-                  style: CustomTextStyles.p2,
+                  style: CustomTextStyles.p1.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 10.h),
                 Text(
                   '${formatPrice(item?.price ?? 0)}원',
-                  style: CustomTextStyles.p2.copyWith(
-                    fontWeight: FontWeight.w600,
+                  style: CustomTextStyles.p1.copyWith(
+                    color: AppColors.opacity60White,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
           if (item?.itemImages != null && item!.itemImages!.length > 1)
             ClipRRect(
-              borderRadius: BorderRadius.circular(4.r),
+              borderRadius: BorderRadius.circular(8.r),
               child: Image.network(
                 item.itemImages![1].imageUrl ?? '',
-                width: 52.w,
-                height: 52.h,
+                width: 48.w,
+                height: 48.h,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const SizedBox.shrink(),
               ),
@@ -356,9 +360,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       return Center(
         child: Text(
           '메시지를 입력해보세요',
-          style: CustomTextStyles.p2.copyWith(
-            color: AppColors.opacity50White,
-          ),
+          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
         ),
       );
     }
@@ -412,68 +414,114 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  // 입력 바 빌더
   Widget _buildInputBar() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryBlack,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.opacity20White,
-            width: 1,
-          ),
-        ),
+      padding: EdgeInsets.only(
+        top: 8.w,
+        right: 8.h,
+        left: 8.h,
+        bottom: MediaQuery.paddingOf(context).bottom + 8.h,
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(
-              Icons.add,
-              color: AppColors.textColorWhite,
+          Padding(
+            padding: EdgeInsets.only(right: 8.0.w),
+            child: SizedBox(
+              width: 32.w,
+              height: 32.w,
+              child: IconButton(
+                constraints: BoxConstraints(minWidth: 32.w, minHeight: 32.w),
+                icon: const Icon(
+                  AppIcons.addItemPlus,
+                  color: AppColors.textColorWhite,
+                ),
+                iconSize: 16.w,
+                padding: EdgeInsets.zero,
+                style: ButtonStyle(
+                  backgroundColor: WidgetStateProperty.all(
+                    AppColors.secondaryBlack1,
+                  ),
+                  shape: WidgetStateProperty.all(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100.r),
+                    ),
+                  ),
+                ),
+                onPressed: () {
+                  // TODO: 이미지 전송 기능
+                },
+              ),
             ),
-            onPressed: () {
-              // TODO: 이미지 전송 기능
-            },
           ),
           Expanded(
-            child: TextField(
-              controller: _messageController,
-              style: CustomTextStyles.p2,
-              maxLines: null,
-              decoration: InputDecoration(
-                hintText: '안녕하세요',
-                hintStyle: CustomTextStyles.p2.copyWith(
-                  color: AppColors.opacity50White,
+            child: SizedBox(
+              height: 40.h,
+              child: TextField(
+                controller: _messageController,
+                style: CustomTextStyles.p3.copyWith(
+                  color: AppColors.textColorWhite,
+                  fontWeight: FontWeight.w400,
                 ),
-                filled: true,
-                fillColor: AppColors.opacity10White,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(100.r),
-                  borderSide: BorderSide.none,
+                cursorColor: AppColors.textColorWhite,
+                maxLines: null,
+                decoration: InputDecoration(
+                  hintText: '메세지를 입력하세요',
+                  hintStyle: CustomTextStyles.p3.copyWith(
+                    color: AppColors.opacity50White,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.opacity10White,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100.r),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 3.h,
+                  ),
+                  suffixIcon: Container(
+                    padding: EdgeInsets.all(4.w),
+                    width: 40.w,
+                    height: 40.w,
+                    child: IconButton(
+                      constraints: BoxConstraints(
+                        minWidth: 40.w,
+                        minHeight: 40.w,
+                        maxWidth: 40.w,
+                        maxHeight: 40.w,
+                      ),
+                      icon: const Icon(
+                        AppIcons.arrow_upward,
+                        color: AppColors.secondaryBlack1,
+                      ),
+                      iconSize: 32.w,
+                      padding: EdgeInsets.zero,
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(
+                          AppColors.secondaryBlack2,
+                        ),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100.r),
+                          ),
+                        ),
+                      ),
+                      onPressed: _sendMessage,
+                    ),
+                  ),
+                  suffixIconConstraints: BoxConstraints(
+                    minWidth: 40.w,
+                    minHeight: 40.w,
+                    maxWidth: 40.w,
+                    maxHeight: 40.w,
+                  ),
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16.w,
-                  vertical: 10.h,
-                ),
+                onSubmitted: (_) => _sendMessage(),
               ),
-              onSubmitted: (_) => _sendMessage(),
             ),
           ),
           const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              padding: EdgeInsets.all(8.w),
-              decoration: const BoxDecoration(
-                color: AppColors.primaryYellow,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_upward,
-                color: AppColors.textColorBlack,
-              ),
-            ),
-          ),
         ],
       ),
     );

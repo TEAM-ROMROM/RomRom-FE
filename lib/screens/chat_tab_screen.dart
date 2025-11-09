@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
@@ -33,6 +34,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
 
   // 채팅방 목록
   final List<ChatRoom> _chatRooms = [];
+  final Member _member = MemberManagerService().currentMember!;
 
   // 페이지네이션 상태
   bool _isLoading = false;
@@ -71,7 +73,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
     );
   }
 
-/// API 호출: 채팅방 목록 로드
+  /// API 호출: 채팅방 목록 로드
   Future<void> _loadChatRooms({bool isRefresh = false}) async {
     if (_isLoading || (!_hasMore && !isRefresh)) return;
 
@@ -92,6 +94,9 @@ class _ChatTabScreenState extends State<ChatTabScreen>
 
       setState(() {
         _chatRooms.addAll(pagedChatRooms.content);
+        _chatRooms.add(
+          ChatRoom(tradeSender: _member, chatRoomId: '0'),
+        ); // 더미 아이템 추가 FIXME : 삭제 필요
         _hasMore = _currentPage < (pagedChatRooms.page?.totalPages ?? 1) - 1;
         _currentPage++;
         _isLoading = false;
@@ -169,11 +174,10 @@ class _ChatTabScreenState extends State<ChatTabScreen>
             // 데이터 있을 때: 채팅방 리스트
             if (_chatRooms.isNotEmpty)
               SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final chatRoom = _getFilteredChatRooms()[index];
-                    final myMemberId =
-                        _memberService.currentMember?.memberId ?? '';
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final chatRoom = _getFilteredChatRooms()[index];
+                  final myMemberId =
+                      _memberService.currentMember?.memberId ?? '';
 
                     return Column(
                       children: [
