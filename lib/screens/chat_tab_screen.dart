@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -186,8 +187,10 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                           unreadCount: chatRoom.getUnreadCount(),
                           isNew: chatRoom.isNewChat(),
                           onTap: () {
-                            // FIXME: 채팅방 상세 화면 구현 필요
                             debugPrint('채팅방 클릭: ${chatRoom.chatRoomId}');
+                            context.navigateTo(
+                              screen: ChatRoomScreen(chatRoom: chatRoom),
+                            );
                           },
                         ),
                         SizedBox(height: 8.h),
