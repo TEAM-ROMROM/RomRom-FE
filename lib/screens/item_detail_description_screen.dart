@@ -460,6 +460,7 @@ class _ItemDetailDescriptionScreenState
                     ),
 
                     IgnorePointer(
+                      ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
                       child: SizedBox(
                         height: widget.imageSize.height,
                         width: widget.imageSize.width,

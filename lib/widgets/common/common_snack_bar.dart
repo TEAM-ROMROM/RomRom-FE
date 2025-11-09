@@ -3,25 +3,32 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
-enum SnackBarType {
-  success,
-  info,
-  error,
-}
+enum SnackBarType { success, info, error }
 
 class CommonSnackBar {
-  static String _getIconPath(SnackBarType type) {
+  static IconData _getIconData(SnackBarType type) {
     switch (type) {
       case SnackBarType.success:
-        return 'assets/images/successToast.svg';
+        return AppIcons.onboardingProgressCheck;
       case SnackBarType.info:
-        return 'assets/images/infoToast.svg';
+        return AppIcons.information;
       case SnackBarType.error:
-        return 'assets/images/errorToast.svg';
+        return AppIcons.warning;
+    }
+  }
+
+  static Color _getIconBackgroundColor(SnackBarType type) {
+    switch (type) {
+      case SnackBarType.success:
+        return AppColors.toastSuccessBackground;
+      case SnackBarType.info:
+        return AppColors.toastInfoBackground;
+      case SnackBarType.error:
+        return AppColors.toastErrorBackground;
     }
   }
 
@@ -44,13 +51,9 @@ class CommonSnackBar {
       vsync: tickerProvider,
     );
 
-    final fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: animationController,
-      curve: Curves.easeInOut,
-    ));
+    final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: animationController, curve: Curves.easeInOut),
+    );
 
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -73,16 +76,19 @@ class CommonSnackBar {
                       borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 16.h,
+                      ),
                       child: Row(
                         children: [
                           Container(
                             margin: EdgeInsets.only(right: 16.w),
-                            child: SvgPicture.asset(
-                              _getIconPath(type),
-                              width: 20.w,
-                              height: 20.h,
+                            decoration:  BoxDecoration(
+                              color:_getIconBackgroundColor(type),
+                              shape: BoxShape.circle
                             ),
+                            child: Icon(_getIconData(type), color: AppColors.textColorWhite,size: 16,),
                           ),
                           Expanded(
                             child: Text(
