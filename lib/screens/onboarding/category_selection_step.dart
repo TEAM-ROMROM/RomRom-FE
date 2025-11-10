@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 
 class CategorySelectionStep extends StatefulWidget {
@@ -68,8 +69,10 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                   } catch (e) {
                     debugPrint("Error: $e");
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('카테고리 저장에 실패했습니다: $e')),
+                      CommonSnackBar.show(
+                        context: context,
+                        message: '카테고리 저장에 실패했습니다: $e',
+                        type: SnackBarType.error,
                       );
                     }
                   }

@@ -98,6 +98,11 @@ class AppColors {
   static const Color dialogBarrier =
       Color(0x80000000); // 50% 불투명도 검정 (다이얼로그 배경)
 
+  // toast 배경 색상
+  static const Color toastSuccessBackground = Color(0xFF30CF00); // 성공 및 확인 토스트 아이콘 배경색
+  static const Color toastErrorBackground = Color(0xFFFF5656); // 오류 토스트 아이콘 배경색
+  static const Color toastInfoBackground = Color(0xFF4C4E54); // 정보 토스트 아이콘 배경색
+
   // 물품 등록 화면
   // 물품 교환 AI 추천 가격 토글 Switch
   static const Color toggleSwitchIndicatorShadow =

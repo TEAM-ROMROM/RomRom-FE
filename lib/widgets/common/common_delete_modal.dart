@@ -56,9 +56,9 @@ class CommonDeleteModal extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
-                  child: Icon(
+                  child:  Icon(
                     AppIcons.warning,
-                    size: 28.sp,
+                    size: 40.sp,
                     color: AppColors.warningRed,
                   ),
                 ),

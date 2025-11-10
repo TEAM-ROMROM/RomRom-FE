@@ -35,6 +35,8 @@ import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/services/apis/chat_api.dart';
+import 'package:romrom_fe/screens/chat_room_screen.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -44,6 +46,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   final HomeFeedItem? homeFeedItem;
   final bool isMyItem;
   final bool isRequestManagement;
+  final String? tradeRequestHistoryId;
 
   const ItemDetailDescriptionScreen({
     super.key,
@@ -54,6 +57,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
     required this.isMyItem, // 내 물품인지 여부
     required this.isRequestManagement, // 요청 관리 화면에서 왔는지 여부
     this.homeFeedItem,
+    this.tradeRequestHistoryId, // 거래 요청 ID (채팅방 생성용)
   });
 
   @override
@@ -211,11 +215,10 @@ class _ItemDetailDescriptionScreenState
   /// 물품 상태 토글 (판매중 ↔ 거래완료)
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('물품 ID가 없습니다'),
-          backgroundColor: AppColors.warningRed,
-        ),
+      CommonSnackBar.show(
+        context: context,
+        message: '물품 ID가 없습니다',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -249,11 +252,10 @@ class _ItemDetailDescriptionScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }
@@ -262,11 +264,10 @@ class _ItemDetailDescriptionScreenState
   /// 물품 삭제
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('물품 ID가 없습니다'),
-          backgroundColor: AppColors.warningRed,
-        ),
+      CommonSnackBar.show(
+        context: context,
+        message: '물품 ID가 없습니다',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -276,20 +277,17 @@ class _ItemDetailDescriptionScreenState
       await itemApi.deleteItem(item.itemId!);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('물품이 삭제되었습니다'),
-            backgroundColor: AppColors.primaryYellow,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '물품이 삭제되었습니다',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }
@@ -466,6 +464,7 @@ class _ItemDetailDescriptionScreenState
                     ),
 
                     IgnorePointer(
+                      ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
                       child: SizedBox(
                         height: widget.imageSize.height,
                         width: widget.imageSize.width,
@@ -619,8 +618,9 @@ class _ItemDetailDescriptionScreenState
                             !widget.isMyItem && widget.isRequestManagement
                                 ? Padding(
                                     padding: EdgeInsets.only(left: 16.0.w),
-                                    child: const ChattingButton(
+                                    child: ChattingButton(
                                       isEnabled: true,
+                                      enabledOnPressed: _handleChatButtonPressed,
                                       buttonText: '채팅하기',
                                       buttonWidth: 96,
                                       buttonHeight: 32,
@@ -909,6 +909,7 @@ class _ItemDetailDescriptionScreenState
         CommonSnackBar.show(
           context: context,
           message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
+          type: SnackBarType.info,
         );
       }
       return;
@@ -940,6 +941,43 @@ class _ItemDetailDescriptionScreenState
       likeCountVN.value = prevCount;
     } finally {
       _likeInFlight = false;
+    }
+  }
+
+  /// 채팅하기 버튼 핸들러
+  Future<void> _handleChatButtonPressed() async {
+    if (item == null || widget.tradeRequestHistoryId == null) {
+      CommonSnackBar.show(
+        context: context,
+        message: '채팅방을 생성할 수 없습니다',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
+    try {
+      // 1. 채팅방 생성 (이미 있으면 기존 방 반환)
+      final chatApi = ChatApi();
+      final chatRoom = await chatApi.createChatRoom(
+        opponentMemberId: item!.member!.memberId!,
+        tradeRequestHistoryId: widget.tradeRequestHistoryId!,
+      );
+
+      if (!mounted) return;
+
+      // 2. 채팅방 화면으로 이동
+      context.navigateTo(
+        screen: ChatRoomScreen(chatRoom: chatRoom),
+      );
+    } catch (e) {
+      debugPrint('채팅방 생성 실패: $e');
+      if (!mounted) return;
+
+      CommonSnackBar.show(
+        context: context,
+        message: '채팅방 생성 실패: ${ErrorUtils.getErrorMessage(e)}',
+        type: SnackBarType.error,
+      );
     }
   }
 }

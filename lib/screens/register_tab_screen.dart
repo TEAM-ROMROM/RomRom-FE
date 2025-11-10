@@ -130,11 +130,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('내 물품 목록 로드 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '내 물품 목록 로드 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }
@@ -173,11 +172,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           _isLoadingMore = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('추가 물품 로드 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '추가 물품 로드 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }
@@ -721,11 +719,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   /// 물품 상태 토글
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('물품 ID가 없습니다'),
-          backgroundColor: AppColors.warningRed,
-        ),
+      CommonSnackBar.show(
+        context: context,
+        message: '물품 ID가 없습니다',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -758,11 +755,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }
@@ -771,11 +767,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   /// 물품 삭제
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('물품 ID가 없습니다'),
-          backgroundColor: AppColors.warningRed,
-        ),
+      CommonSnackBar.show(
+        context: context,
+        message: '물품 ID가 없습니다',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -790,20 +785,17 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('물품이 삭제되었습니다'),
-            backgroundColor: AppColors.primaryYellow,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '물품이 삭제되었습니다',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}'),
-            backgroundColor: AppColors.warningRed,
-          ),
+        CommonSnackBar.show(
+          context: context,
+          message: '물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}',
+          type: SnackBarType.error,
         );
       }
     }

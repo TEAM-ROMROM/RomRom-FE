@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 
 class LocationVerificationStep extends StatefulWidget {
@@ -151,8 +152,10 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
 
           if (!mounted) return;
           if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('위치 정보를 가져오지 못했습니다. 다시 시도해주세요.')),
+            CommonSnackBar.show(
+              context: context,
+              message: '위치 정보를 가져오지 못했습니다. 다시 시도해주세요.',
+              type: SnackBarType.info,
             );
             return;
           }
@@ -171,8 +174,10 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
         widget.onNext();
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('위치 저장에 실패했습니다: $e')),
+        CommonSnackBar.show(
+          context: context,
+          message: '위치 저장에 실패했습니다: $e',
+          type: SnackBarType.error,
         );
       }
     }
