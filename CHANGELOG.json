@@ -1,11 +1,36 @@
 {
   "metadata": {
-    "lastUpdated": "2025-10-28T08:51:52Z",
-    "currentVersion": "1.5.4",
-    "totalReleases": 39,
+    "lastUpdated": "2025-11-10T08:16:33Z",
+    "currentVersion": "1.7.2",
+    "totalReleases": 40,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.7.2",
+      "project_type": "flutter",
+      "date": "2025-11-10",
+      "pr_number": 359,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트 v1.7.2\n\n\n새로운 기능\n\n실시간 채팅 기능 추가 - 사용자 간 메시지 송수신 가능\n채팅 목록 화면 추가 - 거래 요청 기반 채팅방 필터링 지원\n새로운 아이콘 추가 - 정보 및 로고 텍스트 아이콘 추가\n\n\n\n개선사항\n\n토스트 알림 디자인 개선 - 성공/에러/정보 상태별 구분 표시\n로딩 화면 개선 - 채팅 목록 스켈레톤 UI 추가\n키보드 해제 방식 최적화",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "실시간 채팅 기능 추가 - 사용자 간 메시지 송수신 가능",
+            "채팅 목록 화면 추가 - 거래 요청 기반 채팅방 필터링 지원",
+            "새로운 아이콘 추가 - 정보 및 로고 텍스트 아이콘 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "토스트 알림 디자인 개선 - 성공/에러/정보 상태별 구분 표시",
+            "로딩 화면 개선 - 채팅 목록 스켈레톤 UI 추가",
+            "키보드 해제 방식 최적화"
+          ]
+        }
+      }
+    },
     {
       "version": "1.5.4",
       "project_type": "flutter",
