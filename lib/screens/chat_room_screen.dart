@@ -149,7 +149,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   String _formatMessageTime(DateTime? dateTime) {
     if (dateTime == null) return '';
-    return DateFormat('a h:mm', 'ko_KR').format(dateTime);
+    return DateFormat('a h:mm').format(dateTime);
   }
 
   String _getLastActivityTime() {
