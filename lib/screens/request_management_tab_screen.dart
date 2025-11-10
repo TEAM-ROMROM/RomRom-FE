@@ -360,6 +360,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                     heroTag: 'itemImage_${takeItem.itemId!}_0', // ← 인덱스 포함
                     isMyItem: false,
                     isRequestManagement: true,
+                    tradeRequestHistoryId: request.tradeRequestHistoryId,
                   ),
                 );
               },

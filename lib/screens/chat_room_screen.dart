@@ -204,6 +204,7 @@ String _formatMessageTime(DateTime? dt) {
   void dispose() {
     _messageSubscription?.cancel();
     _wsService.unsubscribeFromChatRoom(widget.chatRoom.chatRoomId!);
+    _wsService.disconnect();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
