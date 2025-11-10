@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
@@ -30,7 +29,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  List<ChatMessage> _messages = [];
+  List<ChatMessage> _messages = [
+    //FIXME : 테스트 데이터 추후 삭제 필요
+    ChatMessage(
+      content: "테스트 메시지",
+      senderId: "test_sender",
+      chatMessageId: "msg_0",
+      createdDate: DateTime.now(),
+      chatRoomId: 'room_1',
+    ),
+    ChatMessage(
+      content: "두 번째 테스트 메시지",
+      senderId: "test_sender",
+      chatMessageId: "msg_1",
+      createdDate: DateTime.now(),
+      chatRoomId: 'room_1',
+    ),
+     ChatMessage(
+      content: "세 번째 테스트 메시지",
+      senderId: "9d9603a4-b154-4974-9e0b-81e9a7aad53b",
+      chatMessageId: "msg_2",
+      createdDate: DateTime.now(),
+      chatRoomId: 'room_1',
+    ),
+  ];
   StreamSubscription<ChatMessage>? _messageSubscription;
 
   bool _isLoading = true;
@@ -145,10 +167,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-  String _formatMessageTime(DateTime? dateTime) {
-    if (dateTime == null) return '';
-    return DateFormat('a h:mm', 'ko_KR').format(dateTime);
-  }
+String _formatMessageTime(DateTime? dt) {
+  if (dt == null) return '';
+
+  // UTC에서 넘어올 수 있으니 로컬화
+  final local = dt.isUtc ? dt.toLocal() : dt;
+
+  final hour = local.hour;
+  final minute = local.minute.toString().padLeft(2, '0');
+
+  final period = hour < 12 ? '오전' : '오후';
+  // 12시간제 변환: 0시→12, 13시→1, 12시→12
+  final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
+
+  return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
+}
+
 
   String _getLastActivityTime() {
     final lastActivity = widget.chatRoom.getLastActivityTime();
@@ -399,7 +433,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _formatMessageTime(message.createdDate),
+                  _formatMessageTime(message.createdDate),                 
                   style: CustomTextStyles.p3.copyWith(
                     color: isMine
                         ? AppColors.textColorBlack.withValues(alpha: 0.6)
