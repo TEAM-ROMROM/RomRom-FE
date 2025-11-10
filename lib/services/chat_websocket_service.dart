@@ -6,7 +6,7 @@ import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
-/// STOMP + SockJS WebSocket 서비스 (stomp_dart_client 사용)
+/// STOMP + WebSocket 서비스 (stomp_dart_client 사용)
 class ChatWebSocketService {
   static final ChatWebSocketService _instance =
       ChatWebSocketService._internal();
@@ -22,7 +22,7 @@ class ChatWebSocketService {
   /// 연결 상태 확인
   bool get isConnected => _isConnected;
 
-  /// SockJS + STOMP 연결
+  ///  STOMP 연결
   Future<void> connect() async {
     if (_isConnected) {
       debugPrint('[WebSocket] Already connected');
@@ -30,7 +30,7 @@ class ChatWebSocketService {
     }
 
     try {
-      debugPrint('[WebSocket] Starting SockJS connection...');
+      debugPrint('[WebSocket] Starting connection...');
 
       // 1. JWT 토큰 가져오기
       final accessToken = await _tokenManager.getAccessToken();
@@ -38,30 +38,31 @@ class ChatWebSocketService {
         throw Exception('Access token not found');
       }
 
-      // 2. SockJS 엔드포인트 URL 생성
+      // 2. 엔드포인트 URL 생성
       // 🔧 TEST: HTTP로 시도 (stomp_dart_client의 HTTPS URL 파싱 버그 우회)
-      const wsUrl = 'http://api.romrom.xyz/chat';
+      const wsUrl = 'wss://api.romrom.xyz/chat';
       debugPrint('[WebSocket] ========================================');
       debugPrint('[WebSocket] 연결 시도 시작 (HTTP 테스트)');
       debugPrint('[WebSocket] AppUrls.baseUrl: ${AppUrls.baseUrl}');
       debugPrint('[WebSocket] wsUrl: $wsUrl');
-      debugPrint('[WebSocket] Access Token: ${accessToken.substring(0, 20)}...');
+      debugPrint(
+        '[WebSocket] Access Token: ${accessToken.substring(0, 20)}...',
+      );
       debugPrint('[WebSocket] ========================================');
 
-      // 3. StompClient 생성 (SockJS 자동 처리)
+      // 3. StompClient 생성
       _stompClient = StompClient(
-        config: StompConfig.sockJS(
+        config: StompConfig(
           url: wsUrl,
           onConnect: _onConnect,
           onDisconnect: _onDisconnect,
           onStompError: _onStompError,
           onWebSocketError: _onWebSocketError,
-          stompConnectHeaders: {
-            'Authorization': 'Bearer $accessToken',
-          },
-          webSocketConnectHeaders: {
-            'Authorization': 'Bearer $accessToken',
-          },
+          stompConnectHeaders: {'Authorization': 'Bearer $accessToken'},
+          webSocketConnectHeaders: {'Authorization': 'Bearer $accessToken'},
+          reconnectDelay: const Duration(seconds: 2),
+          heartbeatIncoming: const Duration(seconds: 10),
+          heartbeatOutgoing: const Duration(seconds: 10),
         ),
       );
 
@@ -130,7 +131,9 @@ class ChatWebSocketService {
     if (_isConnected) {
       _subscribeToRoom(chatRoomId);
     } else {
-      debugPrint('[WebSocket] Not connected yet, will subscribe when connected');
+      debugPrint(
+        '[WebSocket] Not connected yet, will subscribe when connected',
+      );
     }
 
     return controller.stream;
@@ -188,9 +191,7 @@ class ChatWebSocketService {
     _stompClient!.send(
       destination: '/app/chat.send',
       body: payload,
-      headers: {
-        'content-type': 'application/json',
-      },
+      headers: {'content-type': 'application/json'},
     );
   }
 

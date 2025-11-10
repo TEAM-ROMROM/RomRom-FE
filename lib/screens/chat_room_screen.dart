@@ -149,7 +149,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   String _formatMessageTime(DateTime? dateTime) {
     if (dateTime == null) return '';
-    return DateFormat('a h:mm', 'ko_KR').format(dateTime);
+    return DateFormat('a h:mm').format(dateTime);
   }
 
   String _getLastActivityTime() {
@@ -172,6 +172,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void dispose() {
     _messageSubscription?.cancel();
     _wsService.unsubscribeFromChatRoom(widget.chatRoom.chatRoomId!);
+    _wsService.disconnect();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
