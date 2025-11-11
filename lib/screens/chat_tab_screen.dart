@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
-import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
@@ -34,7 +33,6 @@ class _ChatTabScreenState extends State<ChatTabScreen>
 
   // 채팅방 목록
   final List<ChatRoom> _chatRooms = [];
-  final Member _member = MemberManagerService().currentMember!;
 
   // 페이지네이션 상태
   bool _isLoading = false;
@@ -94,9 +92,6 @@ class _ChatTabScreenState extends State<ChatTabScreen>
 
       setState(() {
         _chatRooms.addAll(pagedChatRooms.content);
-        _chatRooms.add(
-          ChatRoom(tradeSender: _member, chatRoomId: '0'),
-        ); // 더미 아이템 추가 FIXME : 삭제 필요
         _hasMore = _currentPage < (pagedChatRooms.page?.totalPages ?? 1) - 1;
         _currentPage++;
         _isLoading = false;
@@ -126,11 +121,11 @@ class _ChatTabScreenState extends State<ChatTabScreen>
         return _chatRooms;
       case 1: // 보낸 요청 (내가 tradeSender)
         return _chatRooms
-            .where((room) => room.tradeSender?.memberId == myMemberId)
+            .where((room) => room.targetMember?.memberId == myMemberId)
             .toList();
       case 2: // 받은 요청 (내가 tradeReceiver)
         return _chatRooms
-            .where((room) => room.tradeReceiver?.memberId == myMemberId)
+            .where((room) => room.targetMember?.memberId == myMemberId)
             .toList();
       default:
         return _chatRooms;
@@ -176,33 +171,33 @@ class _ChatTabScreenState extends State<ChatTabScreen>
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final chatRoom = _getFilteredChatRooms()[index];
-                  final myMemberId =
-                      _memberService.currentMember?.memberId ?? '';
 
-                    return Column(
-                      children: [
-                        ChatRoomListItem(
-                          profileImageUrl:
-                              chatRoom.getOpponentProfileUrl(myMemberId),
-                          nickname: chatRoom.getOpponentNickname(myMemberId),
-                          location: chatRoom.getOpponentLocation(myMemberId),
-                          timeAgo: getTimeAgo(chatRoom.getLastActivityTime()),
-                          messagePreview: chatRoom.getMessagePreview(),
-                          unreadCount: chatRoom.getUnreadCount(),
-                          isNew: chatRoom.isNewChat(),
-                          onTap: () {
-                            debugPrint('채팅방 클릭: ${chatRoom.chatRoomId}');
-                            context.navigateTo(
-                              screen: ChatRoomScreen(chatRoom: chatRoom),
-                            );
-                          },
+                  return Column(
+                    children: [
+                      ChatRoomListItem(
+                        profileImageUrl:
+                            chatRoom.targetMember?.profileUrl ?? '',
+                        nickname: chatRoom.targetMember?.nickname ?? '',
+                        location: chatRoom.targetMemberEupMyeonDong ?? '',
+                        timeAgo: getTimeAgo(
+                          chatRoom.lastMessageTime ?? DateTime.now(),
                         ),
-                        SizedBox(height: 8.h),
-                      ],
-                    );
-                  },
-                  childCount: _getFilteredChatRooms().length,
-                ),
+                        messagePreview: chatRoom.lastMessageContent ?? '',
+                        unreadCount: chatRoom.unreadCount ?? 0,
+                        isNew:
+                            chatRoom.unreadCount != null &&
+                            chatRoom.unreadCount! > 0,
+                        onTap: () {
+                          debugPrint('채팅방 클릭: ${chatRoom.chatRoomId}');
+                          context.navigateTo(
+                            screen: ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!),
+                          );
+                        },
+                      ),
+                      SizedBox(height: 8.h),
+                    ],
+                  );
+                }, childCount: _getFilteredChatRooms().length),
               ),
 
             // 추가 페이지 로딩: 작은 인디케이터 (무한 스크롤)

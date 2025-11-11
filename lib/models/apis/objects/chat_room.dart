@@ -13,6 +13,11 @@ class ChatRoom extends BaseEntity {
   final Member? tradeReceiver; // 거래 요청 받은 사람
   final Member? tradeSender; // 거래 요청 보낸 사람
   final TradeRequestHistory? tradeRequestHistory;
+  final Member? targetMember; // 채팅 상대방
+  final String? targetMemberEupMyeonDong; // 채팅 상대방 읍면동
+  final String? lastMessageContent; // 마지막 메시지 내용
+  final DateTime? lastMessageTime; // 마지막 메시지 시간
+  final int? unreadCount; // 읽지 않은 메시지 수
 
   ChatRoom({
     super.createdDate,
@@ -21,6 +26,11 @@ class ChatRoom extends BaseEntity {
     this.tradeReceiver,
     this.tradeSender,
     this.tradeRequestHistory,
+    this.targetMember,
+    this.targetMemberEupMyeonDong,
+    this.lastMessageContent,
+    this.lastMessageTime,
+    this.unreadCount,
   });
 
   factory ChatRoom.fromJson(Map<String, dynamic> json) =>

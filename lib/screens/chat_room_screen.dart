@@ -16,9 +16,9 @@ import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 class ChatRoomScreen extends StatefulWidget {
-  final ChatRoom chatRoom;
+  final String chatRoomId;
 
-  const ChatRoomScreen({super.key, required this.chatRoom});
+  const ChatRoomScreen({super.key, required this.chatRoomId});
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -29,31 +29,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  List<ChatMessage> _messages = [
-    //FIXME : 테스트 데이터 추후 삭제 필요
-    ChatMessage(
-      content: "테스트 메시지",
-      senderId: "test_sender",
-      chatMessageId: "msg_0",
-      createdDate: DateTime.now(),
-      chatRoomId: 'room_1',
-    ),
-    ChatMessage(
-      content: "두 번째 테스트 메시지",
-      senderId: "test_sender",
-      chatMessageId: "msg_1",
-      createdDate: DateTime.now(),
-      chatRoomId: 'room_1',
-    ),
-     ChatMessage(
-      content: "세 번째 테스트 메시지",
-      senderId: "9d9603a4-b154-4974-9e0b-81e9a7aad53b",
-      chatMessageId: "msg_2",
-      createdDate: DateTime.now(),
-      chatRoomId: 'room_1',
-    ),
-  ];
+  List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSubscription;
+
+  ChatRoom chatRoom = ChatRoom();
 
   bool _isLoading = true;
   bool _hasError = false;
@@ -86,7 +65,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       // 3. 과거 메시지 조회 (REST API)
       final chatApi = ChatApi();
       final response = await chatApi.getChatMessages(
-        chatRoomId: widget.chatRoom.chatRoomId!,
+        chatRoomId: widget.chatRoomId,
         pageNumber: 0,
         pageSize: 50,
       );
@@ -94,12 +73,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (!mounted) return;
 
       setState(() {
+        chatRoom = response.chatRoom!;
         _messages = response.messages?.content ?? [];
       });
 
       // 4. 실시간 메시지 구독 (WebSocket)
       _messageSubscription = _wsService
-          .subscribeToChatRoom(widget.chatRoom.chatRoomId!)
+          .subscribeToChatRoom(widget.chatRoomId)
           .listen((newMessage) {
             if (!mounted) return;
 
@@ -137,7 +117,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     try {
       _wsService.sendMessage(
-        chatRoomId: widget.chatRoom.chatRoomId!,
+        chatRoomId: widget.chatRoomId,
         content: content,
         type: MessageType.text,
       );
@@ -167,25 +147,24 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-String _formatMessageTime(DateTime? dt) {
-  if (dt == null) return '';
+  String _formatMessageTime(DateTime? dt) {
+    if (dt == null) return '';
 
-  // UTC에서 넘어올 수 있으니 로컬화
-  final local = dt.isUtc ? dt.toLocal() : dt;
+    // UTC에서 넘어올 수 있으니 로컬화
+    final local = dt.isUtc ? dt.toLocal() : dt;
 
-  final hour = local.hour;
-  final minute = local.minute.toString().padLeft(2, '0');
+    final hour = local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
 
-  final period = hour < 12 ? '오전' : '오후';
-  // 12시간제 변환: 0시→12, 13시→1, 12시→12
-  final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
+    final period = hour < 12 ? '오전' : '오후';
+    // 12시간제 변환: 0시→12, 13시→1, 12시→12
+    final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
 
-  return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
-}
-
+    return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
+  }
 
   String _getLastActivityTime() {
-    final lastActivity = widget.chatRoom.getLastActivityTime();
+    final lastActivity = chatRoom.getLastActivityTime();
     final now = DateTime.now();
     final difference = now.difference(lastActivity);
 
@@ -203,7 +182,7 @@ String _formatMessageTime(DateTime? dt) {
   @override
   void dispose() {
     _messageSubscription?.cancel();
-    _wsService.unsubscribeFromChatRoom(widget.chatRoom.chatRoomId!);
+    _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
     _wsService.disconnect();
     _messageController.dispose();
     _scrollController.dispose();
@@ -221,7 +200,7 @@ String _formatMessageTime(DateTime? dt) {
       );
     }
 
-    if (!_hasError) {
+    if (_hasError) {
       // FIXME: 조건문 수정 --- IGNORE ---
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
@@ -281,7 +260,7 @@ String _formatMessageTime(DateTime? dt) {
   // 앱바 빌더
   CommonAppBar _buildAppBar() {
     return CommonAppBar(
-      title: widget.chatRoom.getOpponentNickname(_myMemberId!),
+      title: chatRoom.getOpponentNickname(_myMemberId!),
       titleTextStyle: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600),
       showBottomBorder: true,
       bottomWidgets: PreferredSize(
@@ -327,7 +306,7 @@ String _formatMessageTime(DateTime? dt) {
 
   // 거래 정보 카드 빌더
   Widget _buildTradeInfoCard() {
-    final item = widget.chatRoom.tradeRequestHistory?.takeItem;
+    final item = chatRoom.tradeRequestHistory?.takeItem;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
@@ -409,40 +388,74 @@ String _formatMessageTime(DateTime? dt) {
         final message = _messages[index];
         final isMine = message.senderId == _myMemberId;
 
-        return Align(
-          alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: EdgeInsets.only(bottom: 12.h),
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-            constraints: BoxConstraints(maxWidth: 280.w),
-            decoration: BoxDecoration(
-              color: isMine
-                  ? AppColors.primaryYellow
-                  : AppColors.opacity20White,
-              borderRadius: BorderRadius.circular(4.r),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  message.content ?? '',
-                  style: CustomTextStyles.p2.copyWith(
-                    color: isMine
-                        ? AppColors.textColorBlack
-                        : AppColors.textColorWhite,
+        return Padding(
+          padding: EdgeInsets.only(top: 8.h), // 메시지 간 간격 8
+          child: Row(
+            mainAxisAlignment: isMine
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start, // isMine에 따라 정렬 방향 변경
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!isMine) ...[
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  constraints: BoxConstraints(maxWidth: 264.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryBlack1,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    message.content ?? '',
+                    style: CustomTextStyles.p3.copyWith(
+                      color: AppColors.textColorWhite,
+                      fontWeight: FontWeight.w400,
+                      height: 1.2,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(width: 8.w),
                 Text(
-                  _formatMessageTime(message.createdDate),                 
+                  _formatMessageTime(message.createdDate),
                   style: CustomTextStyles.p3.copyWith(
-                    color: isMine
-                        ? AppColors.textColorBlack.withValues(alpha: 0.6)
-                        : AppColors.opacity50White,
+                    fontSize: 10.sp,
+                    color: AppColors.opacity50White,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ] else ...[
+                Text(
+                  _formatMessageTime(message.createdDate),
+                  style: CustomTextStyles.p3.copyWith(
+                    fontSize: 10.sp,
+                    color: AppColors.opacity50White,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  constraints: BoxConstraints(maxWidth: 240.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryYellow,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    message.content ?? '',
+                    style: CustomTextStyles.p3.copyWith(
+                      color: AppColors.textColorBlack,
+                      fontWeight: FontWeight.w400,
+                      height: 1.2,
+                    ),
                   ),
                 ),
               ],
-            ),
+            ],
           ),
         );
       },
