@@ -306,7 +306,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 거래 정보 카드 빌더
   Widget _buildTradeInfoCard() {
-    final item = chatRoom.tradeRequestHistory?.takeItem;
+    // 내 아이템과 상대방 아이템 구분
+    final targetItem =
+        chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId
+        ? chatRoom.tradeRequestHistory?.giveItem
+        : chatRoom.tradeRequestHistory?.takeItem;
+    final myItem =
+        chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId
+        ? chatRoom.tradeRequestHistory?.takeItem
+        : chatRoom.tradeRequestHistory?.giveItem;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
@@ -321,7 +329,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(8.r),
             child: Image.network(
-              item?.itemImages?.first.imageUrl ?? '',
+              targetItem?.itemImages?.first.imageUrl ?? '',
               width: 48.w,
               height: 48.w,
               fit: BoxFit.cover,
@@ -334,7 +342,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item?.itemName ?? '제목 없음',
+                  targetItem?.itemName ?? '제목 없음',
                   style: CustomTextStyles.p1.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -343,7 +351,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
                 SizedBox(height: 10.h),
                 Text(
-                  '${formatPrice(item?.price ?? 0)}원',
+                  '${formatPrice(targetItem?.price ?? 0)}원',
                   style: CustomTextStyles.p1.copyWith(
                     color: AppColors.opacity60White,
                   ),
@@ -353,11 +361,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ],
             ),
           ),
-          if (item?.itemImages != null && item!.itemImages!.length > 1)
+          
             ClipRRect(
               borderRadius: BorderRadius.circular(8.r),
               child: Image.network(
-                item.itemImages![1].imageUrl ?? '',
+                myItem?.itemImages?.first.imageUrl ?? '',
                 width: 48.w,
                 height: 48.h,
                 fit: BoxFit.cover,
