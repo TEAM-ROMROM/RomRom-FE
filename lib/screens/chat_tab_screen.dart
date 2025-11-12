@@ -187,11 +187,15 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                         isNew:
                             chatRoom.unreadCount != null &&
                             chatRoom.unreadCount! > 0,
-                        onTap: () {
+                        onTap: () async {
                           debugPrint('채팅방 클릭: ${chatRoom.chatRoomId}');
-                          context.navigateTo(
-                            screen: ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!),
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!),
+                            ),
                           );
+                          // 채팅방에서 돌아왔을 때, 채팅방 목록 새로고침
+                          _loadChatRooms(isRefresh: true);
                         },
                       ),
                       SizedBox(height: 8.h),

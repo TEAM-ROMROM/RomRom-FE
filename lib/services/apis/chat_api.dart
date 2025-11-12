@@ -113,14 +113,10 @@ class ChatApi {
 
   /// 채팅방 삭제 API
   /// POST /api/chat/rooms/delete
-  Future<void> deleteChatRoom({
-    required String chatRoomId,
-  }) async {
+  Future<void> deleteChatRoom({required String chatRoomId}) async {
     const String url = '${AppUrls.baseUrl}/api/chat/rooms/delete';
 
-    final Map<String, dynamic> fields = {
-      'chatRoomId': chatRoomId,
-    };
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -166,5 +162,30 @@ class ChatApi {
     }
 
     return chatRoomResponse;
+  }
+
+  /// 특정 채팅방의 읽음 표시 커서 갱신 API
+  /// POST /api/chat/rooms/read-cursor/update
+  Future<void> updateChatRoomReadCursor({
+    required String chatRoomId,
+    required bool isEntered,
+  }) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/read-cursor/update';
+
+    final Map<String, dynamic> fields = {
+      'chatRoomId': chatRoomId,
+      'isEntered': isEntered.toString(),
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        isEntered
+            ? debugPrint('채팅방 입장 처리 성공: $chatRoomId')
+            : debugPrint('채팅방 퇴장 처리 성공: $chatRoomId');
+      },
+    );
   }
 }

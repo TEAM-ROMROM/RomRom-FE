@@ -11,7 +11,6 @@ import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
@@ -31,6 +30,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSubscription;
+
+  // 낙관적 로컬 메시지(서버 응답 대기)
+  final Map<String, ChatMessage> _pendingLocalMessages = {};
 
   ChatRoom chatRoom = ChatRoom();
 
@@ -84,12 +86,31 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             if (!mounted) return;
 
             setState(() {
-              // 중복 메시지 방지 (messageId 기준)
-              final isDuplicate = _messages.any(
-                (msg) => msg.chatMessageId == newMessage.chatMessageId,
-              );
+              // 중복 서버 ID 체크
+              if (_messages.any((m) => m.chatMessageId == newMessage.chatMessageId)) return;
 
-              if (!isDuplicate) {
+              // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
+              String? matchedLocalId;
+              _pendingLocalMessages.forEach((localId, localMsg) {
+                if (matchedLocalId != null) return;
+                if (localMsg.senderId != _myMemberId) return;
+                if ((localMsg.content ?? '') != (newMessage.content ?? '')) return;
+                final localDt = localMsg.createdDate ?? DateTime.now();
+                final serverDt = newMessage.createdDate ?? DateTime.now();
+                if (serverDt.difference(localDt).inSeconds.abs() <= 10) {
+                  matchedLocalId = localId;
+                }
+              });
+
+              if (matchedLocalId != null) {
+                final localMsg = _pendingLocalMessages.remove(matchedLocalId)!;
+                final idx = _messages.indexWhere((m) => m.chatMessageId == localMsg.chatMessageId);
+                if (idx != -1) {
+                  _messages[idx] = newMessage; // 로컬을 서버 메시지로 교체
+                } else {
+                  _messages.insert(0, newMessage);
+                }
+              } else {
                 _messages.insert(0, newMessage);
               }
             });
@@ -99,6 +120,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
       setState(() => _isLoading = false);
       _scrollToBottom();
+      chatApi.updateChatRoomReadCursor(
+        chatRoomId: widget.chatRoomId,
+        isEntered: true,
+      ); // 입장 처리
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;
@@ -115,22 +140,28 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final content = _messageController.text.trim();
     if (content.isEmpty) return;
 
-    try {
-      _wsService.sendMessage(
-        chatRoomId: widget.chatRoomId,
-        content: content,
-        type: MessageType.text,
-      );
+    // 1) 로컬에 즉시 추가(낙관적 업데이트) 및 pending에 등록
+    final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
+    final localMsg = ChatMessage(
+      chatMessageId: localId,
+      senderId: _myMemberId,
+      content: content,
+      createdDate: DateTime.now(),
+    );
+    setState(() {
+      _messages.insert(0, localMsg);
+      _pendingLocalMessages[localId] = localMsg;
+    });
+    _scrollToBottom();
 
-      _messageController.clear();
-    } catch (e) {
-      debugPrint('메시지 전송 실패: $e');
-      CommonSnackBar.show(
-        context: context,
-        message: '메시지 전송에 실패했습니다',
-        type: SnackBarType.error,
-      );
-    }
+    // 2) 서버로 전송 (가능하면 clientMessageId 전송하도록 서비스 확장 권장)
+    _wsService.sendMessage(
+      chatRoomId: widget.chatRoomId,
+      content: content,
+      type: MessageType.text,
+    );
+
+    _messageController.clear();
   }
 
   void _scrollToBottom() {
@@ -184,6 +215,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _messageSubscription?.cancel();
     _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
     _wsService.disconnect();
+    ChatApi().updateChatRoomReadCursor(
+      chatRoomId: widget.chatRoomId,
+      isEntered: false,
+    );
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -201,7 +236,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
 
     if (_hasError) {
-      // FIXME: 조건문 수정 --- IGNORE ---
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
         appBar: AppBar(
@@ -211,7 +245,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               AppIcons.navigateBefore,
               color: AppColors.textColorWhite,
             ),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context).pop(true),
           ),
         ),
         body: Center(
@@ -361,17 +395,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ],
             ),
           ),
-          
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8.r),
-              child: Image.network(
-                myItem?.itemImages?.first.imageUrl ?? '',
-                width: 48.w,
-                height: 48.h,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8.r),
+            child: Image.network(
+              myItem?.itemImages?.first.imageUrl ?? '',
+              width: 48.w,
+              height: 48.h,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
+          ),
         ],
       ),
     );
@@ -396,8 +430,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         final message = _messages[index];
         final isMine = message.senderId == _myMemberId;
 
+        // 메시지 간격: 같은 사람이 연속으로 보낸 메시지면 8, 아니면 24
+        final double topGap =
+            (index < _messages.length - 1 &&
+                _messages[index].senderId == _messages[index + 1].senderId)
+            ? 8.h
+            : 24.h;
+
         return Padding(
-          padding: EdgeInsets.only(top: 8.h), // 메시지 간 간격 8
+          padding: EdgeInsets.only(top: topGap),
           child: Row(
             mainAxisAlignment: isMine
                 ? MainAxisAlignment.end
