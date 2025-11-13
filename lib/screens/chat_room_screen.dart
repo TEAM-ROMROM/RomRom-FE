@@ -91,6 +91,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               if (_messages.any(
                 (m) => m.chatMessageId == newMessage.chatMessageId,
               ))
+                // ignore: curly_braces_in_flow_control_structures
                 return;
 
               // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
@@ -99,6 +100,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 if (matchedLocalId != null) return;
                 if (localMsg.senderId != _myMemberId) return;
                 if ((localMsg.content ?? '') != (newMessage.content ?? ''))
+                  // ignore: curly_braces_in_flow_control_structures
                   return;
                 final localDt = localMsg.createdDate ?? DateTime.now();
                 final serverDt = newMessage.createdDate ?? DateTime.now();
