@@ -967,7 +967,7 @@ class _ItemDetailDescriptionScreenState
 
       // 2. 채팅방 화면으로 이동
       context.navigateTo(
-        screen: ChatRoomScreen(chatRoom: chatRoom),
+        screen: ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!),
       );
     } catch (e) {
       debugPrint('채팅방 생성 실패: $e');

@@ -1,11 +1,42 @@
 {
   "metadata": {
-    "lastUpdated": "2025-11-10T08:16:38Z",
-    "currentVersion": "1.7.2",
-    "totalReleases": 41,
+    "lastUpdated": "2025-11-13T09:28:54Z",
+    "currentVersion": "1.7.3",
+    "totalReleases": 42,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.7.3",
+      "project_type": "flutter",
+      "date": "2025-11-13",
+      "pr_number": 361,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\n새로운 기능\n\n채팅방을 요청함과 받은 요청으로 분류하는 채팅 유형 시스템 추가\n채팅 활성/비활성 상태를 나타내는 색상 표시 기능 추가\n새로운 화살표 위로 아이콘 추가\n\n\n\n개선사항\n\n채팅방 목록의 상세 정보 표시 개선\n채팅방 네비게이션 안정성 향상\n앱바 커스터마이징 옵션 확대\n\n\n\n기타\n\n버전 1.7.3으로 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅방을 요청함과 받은 요청으로 분류하는 채팅 유형 시스템 추가",
+            "채팅 활성/비활성 상태를 나타내는 색상 표시 기능 추가",
+            "새로운 화살표 위로 아이콘 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "채팅방 목록의 상세 정보 표시 개선",
+            "채팅방 네비게이션 안정성 향상",
+            "앱바 커스터마이징 옵션 확대"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 1.7.3으로 업데이트"
+          ]
+        }
+      }
+    },
     {
       "version": "1.7.2",
       "project_type": "flutter",
