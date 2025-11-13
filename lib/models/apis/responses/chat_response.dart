@@ -3,6 +3,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/models/apis/objects/api_page.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
+import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 
 part 'chat_response.g.dart';
 
@@ -11,12 +12,12 @@ part 'chat_response.g.dart';
 class ChatRoomResponse {
   final ChatRoom? chatRoom; // 단일 채팅방
   final PagedChatMessage? messages; // 메시지 페이지
-  final PagedChatRoom? chatRooms; // 채팅방 목록 페이지
+  final PagedChatRoomDetail? chatRoomDetailDtoPage; // 채팅방 목록 페이지 (detail dto)
 
   ChatRoomResponse({
     this.chatRoom,
     this.messages,
-    this.chatRooms,
+    this.chatRoomDetailDtoPage,
   });
 
   factory ChatRoomResponse.fromJson(Map<String, dynamic> json) =>
@@ -43,23 +44,23 @@ class PagedChatMessage {
   Map<String, dynamic> toJson() => _$PagedChatMessageToJson(this);
 }
 
-/// Paged<ChatRoom>
+/// Paged<ChatRoomDetailDto>
 @JsonSerializable(explicitToJson: true)
-class PagedChatRoom {
-  @JsonKey(fromJson: _chatRoomListFromJson, toJson: _chatRoomListToJson)
-  final List<ChatRoom> content;
+class PagedChatRoomDetail {
+  @JsonKey(fromJson: _chatRoomDetailListFromJson, toJson: _chatRoomDetailListToJson)
+  final List<ChatRoomDetailDto> content;
 
   @JsonKey(name: 'page')
   final ApiPage? page;
 
-  PagedChatRoom({
+  PagedChatRoomDetail({
     required this.content,
     this.page,
   });
 
-  factory PagedChatRoom.fromJson(Map<String, dynamic> json) =>
-      _$PagedChatRoomFromJson(json);
-  Map<String, dynamic> toJson() => _$PagedChatRoomToJson(this);
+  factory PagedChatRoomDetail.fromJson(Map<String, dynamic> json) =>
+      _$PagedChatRoomDetailFromJson(json);
+  Map<String, dynamic> toJson() => _$PagedChatRoomDetailToJson(this);
 }
 
 // ---------- converters ----------
@@ -75,13 +76,13 @@ List<Object?> _chatMessageListToJson(List<ChatMessage> messages) {
   return messages.map((e) => e.toJson()).toList();
 }
 
-List<ChatRoom> _chatRoomListFromJson(Object? value) {
+List<ChatRoomDetailDto> _chatRoomDetailListFromJson(Object? value) {
   if (value is List) {
-    return value.map((e) => ChatRoom.fromJson(e)).toList();
+    return value.map((e) => ChatRoomDetailDto.fromJson(e)).toList();
   }
   return [];
 }
 
-List<Object?> _chatRoomListToJson(List<ChatRoom> chatRooms) {
+List<Object?> _chatRoomDetailListToJson(List<ChatRoomDetailDto> chatRooms) {
   return chatRooms.map((e) => e.toJson()).toList();
 }

@@ -90,4 +90,10 @@ class ChatRoom extends BaseEntity {
   bool isNewChat() {
     return tradeRequestHistory?.isNew ?? false;
   }
+
+  /// 엔티티 메서드 대응: 주어진 memberId가 이 채팅방의 참여자인지 검사
+  /// (Java 엔티티의 isMember(UUID) 대응)
+  bool isMember(String memberId) {
+    return tradeReceiver?.memberId == memberId || tradeSender?.memberId == memberId;
+  }
 }

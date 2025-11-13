@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/objects/api_page.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
+import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/api_client.dart';
@@ -49,12 +50,12 @@ class ChatApi {
 
   /// 본인 채팅방 목록 조회 API
   /// POST /api/chat/rooms/get
-  Future<PagedChatRoom> getChatRooms({
+  Future<PagedChatRoomDetail> getChatRooms({
     int pageNumber = 0,
     int pageSize = 20,
   }) async {
     const String url = '${AppUrls.baseUrl}/api/chat/rooms/get';
-    late PagedChatRoom pagedChatRooms;
+    late PagedChatRoomDetail pagedChatRooms;
 
     final Map<String, dynamic> fields = {
       'pageNumber': pageNumber.toString(),
@@ -72,15 +73,15 @@ class ChatApi {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
 
       // 백엔드 응답 구조: { "chatRooms": { "content": [...], "totalPages": 5 } }
-      final chatRoomsData = responseData['chatRooms'];
+      final chatRoomsData = responseData['chatRoomDetailDtoPage'];
 
       if (chatRoomsData != null) {
         // Spring Page 구조 파싱
         final content = (chatRoomsData['content'] as List)
-            .map((e) => ChatRoom.fromJson(e as Map<String, dynamic>))
+            .map((e) => ChatRoomDetailDto.fromJson(e as Map<String, dynamic>))
             .toList();
 
-        pagedChatRooms = PagedChatRoom(
+        pagedChatRooms = PagedChatRoomDetail(
           content: content,
           page: ApiPage(
             size: chatRoomsData['size'] ?? pageSize,
@@ -93,7 +94,7 @@ class ChatApi {
         debugPrint('채팅방 목록 조회 성공: ${pagedChatRooms.content.length}개');
       } else {
         // chatRooms 필드가 없는 경우 빈 목록 반환
-        pagedChatRooms = PagedChatRoom(
+        pagedChatRooms = PagedChatRoomDetail(
           content: [],
           page: ApiPage(
             size: pageSize,
@@ -113,14 +114,10 @@ class ChatApi {
 
   /// 채팅방 삭제 API
   /// POST /api/chat/rooms/delete
-  Future<void> deleteChatRoom({
-    required String chatRoomId,
-  }) async {
+  Future<void> deleteChatRoom({required String chatRoomId}) async {
     const String url = '${AppUrls.baseUrl}/api/chat/rooms/delete';
 
-    final Map<String, dynamic> fields = {
-      'chatRoomId': chatRoomId,
-    };
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -166,5 +163,30 @@ class ChatApi {
     }
 
     return chatRoomResponse;
+  }
+
+  /// 특정 채팅방의 읽음 표시 커서 갱신 API
+  /// POST /api/chat/rooms/read-cursor/update
+  Future<void> updateChatRoomReadCursor({
+    required String chatRoomId,
+    required bool isEntered,
+  }) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/read-cursor/update';
+
+    final Map<String, dynamic> fields = {
+      'chatRoomId': chatRoomId,
+      'isEntered': isEntered.toString(),
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        isEntered
+            ? debugPrint('채팅방 입장 처리 성공: $chatRoomId')
+            : debugPrint('채팅방 퇴장 처리 성공: $chatRoomId');
+      },
+    );
   }
 }
