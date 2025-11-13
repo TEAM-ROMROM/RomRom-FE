@@ -12,6 +12,7 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 class ChatRoomScreen extends StatefulWidget {
@@ -87,14 +88,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
             setState(() {
               // 중복 서버 ID 체크
-              if (_messages.any((m) => m.chatMessageId == newMessage.chatMessageId)) return;
+              if (_messages.any(
+                (m) => m.chatMessageId == newMessage.chatMessageId,
+              ))
+                return;
 
               // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
               String? matchedLocalId;
               _pendingLocalMessages.forEach((localId, localMsg) {
                 if (matchedLocalId != null) return;
                 if (localMsg.senderId != _myMemberId) return;
-                if ((localMsg.content ?? '') != (newMessage.content ?? '')) return;
+                if ((localMsg.content ?? '') != (newMessage.content ?? ''))
+                  return;
                 final localDt = localMsg.createdDate ?? DateTime.now();
                 final serverDt = newMessage.createdDate ?? DateTime.now();
                 if (serverDt.difference(localDt).inSeconds.abs() <= 10) {
@@ -104,7 +109,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
               if (matchedLocalId != null) {
                 final localMsg = _pendingLocalMessages.remove(matchedLocalId)!;
-                final idx = _messages.indexWhere((m) => m.chatMessageId == localMsg.chatMessageId);
+                final idx = _messages.indexWhere(
+                  (m) => m.chatMessageId == localMsg.chatMessageId,
+                );
                 if (idx != -1) {
                   _messages[idx] = newMessage; // 로컬을 서버 메시지로 교체
                 } else {
@@ -324,15 +331,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ),
       ),
       actions: [
-        IconButton(
-          icon: Icon(
-            Icons.more_vert,
-            color: AppColors.textColorWhite,
-            size: 30.w,
-          ),
-          onPressed: () {
-            // TODO: 채팅방 메뉴 (나가기, 신고 등)
-          },
+        RomRomContextMenu(
+          menuPadding: EdgeInsets.only(right: 24.h),
+          items: [
+            ContextMenuItem(
+              id: 'report',
+              title: '신고하기',
+              onTap: () async {
+                // TODO : 신고하기 화면으로 이동
+              },
+            ),
+            ContextMenuItem(
+              id: 'leave_chat_room',
+              title: '채팅방 나가기',
+              textColor: AppColors.itemOptionsMenuDeleteText,
+              onTap: () {
+                // TODO : 채팅방 나가기 기능 구현
+                ChatApi().deleteChatRoom(chatRoomId: chatRoom.chatRoomId!);
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
         ),
       ],
     );
