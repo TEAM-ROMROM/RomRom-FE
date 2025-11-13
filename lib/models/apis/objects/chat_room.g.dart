@@ -25,15 +25,6 @@ ChatRoom _$ChatRoomFromJson(Map<String, dynamic> json) => ChatRoom(
       : TradeRequestHistory.fromJson(
           json['tradeRequestHistory'] as Map<String, dynamic>,
         ),
-  targetMember: json['targetMember'] == null
-      ? null
-      : Member.fromJson(json['targetMember'] as Map<String, dynamic>),
-  targetMemberEupMyeonDong: json['targetMemberEupMyeonDong'] as String?,
-  lastMessageContent: json['lastMessageContent'] as String?,
-  lastMessageTime: json['lastMessageTime'] == null
-      ? null
-      : DateTime.parse(json['lastMessageTime'] as String),
-  unreadCount: (json['unreadCount'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ChatRoomToJson(ChatRoom instance) => <String, dynamic>{
@@ -43,9 +34,4 @@ Map<String, dynamic> _$ChatRoomToJson(ChatRoom instance) => <String, dynamic>{
   'tradeReceiver': instance.tradeReceiver?.toJson(),
   'tradeSender': instance.tradeSender?.toJson(),
   'tradeRequestHistory': instance.tradeRequestHistory?.toJson(),
-  'targetMember': instance.targetMember?.toJson(),
-  'targetMemberEupMyeonDong': instance.targetMemberEupMyeonDong,
-  'lastMessageContent': instance.lastMessageContent,
-  'lastMessageTime': instance.lastMessageTime?.toIso8601String(),
-  'unreadCount': instance.unreadCount,
 };

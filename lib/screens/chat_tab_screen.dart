@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/models/apis/objects/chat_room.dart';
+import 'package:romrom_fe/enums/chat_room_type.dart';
+import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
-import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
@@ -22,7 +22,6 @@ class _ChatTabScreenState extends State<ChatTabScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ChatApi _chatApi = ChatApi();
-  final MemberManagerService _memberService = MemberManagerService();
 
   // 토글 상태 (0: 전체, 1: 보낸 요청, 2: 받은 요청)
   int _selectedTabIndex = 0;
@@ -32,7 +31,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
   late Animation<double> _toggleAnimation;
 
   // 채팅방 목록
-  final List<ChatRoom> _chatRooms = [];
+  final List<ChatRoomDetailDto> _chatRoomsDetail = [];
 
   // 페이지네이션 상태
   bool _isLoading = false;
@@ -79,20 +78,21 @@ class _ChatTabScreenState extends State<ChatTabScreen>
       _isLoading = true;
       if (isRefresh) {
         _currentPage = 0;
-        _chatRooms.clear();
+        _chatRoomsDetail.clear();
         _hasMore = true;
       }
     });
 
     try {
-      final pagedChatRooms = await _chatApi.getChatRooms(
+      final pagedChatRoomsDetail = await _chatApi.getChatRooms(
         pageNumber: _currentPage,
         pageSize: _pageSize,
       );
 
       setState(() {
-        _chatRooms.addAll(pagedChatRooms.content);
-        _hasMore = _currentPage < (pagedChatRooms.page?.totalPages ?? 1) - 1;
+        _chatRoomsDetail.addAll(pagedChatRoomsDetail.content);
+        _hasMore =
+            _currentPage < (pagedChatRoomsDetail.page?.totalPages ?? 1) - 1;
         _currentPage++;
         _isLoading = false;
       });
@@ -113,22 +113,20 @@ class _ChatTabScreenState extends State<ChatTabScreen>
   }
 
   /// 필터링된 채팅방 목록 반환
-  List<ChatRoom> _getFilteredChatRooms() {
-    final myMemberId = _memberService.currentMember?.memberId ?? '';
-
+  List<ChatRoomDetailDto> _getFilteredChatRooms() {
     switch (_selectedTabIndex) {
       case 0: // 전체
-        return _chatRooms;
+        return _chatRoomsDetail;
       case 1: // 보낸 요청 (내가 tradeSender)
-        return _chatRooms
-            .where((room) => room.targetMember?.memberId == myMemberId)
+        return _chatRoomsDetail
+            .where((room) => room.chatRoomType == ChatRoomType.requested)
             .toList();
       case 2: // 받은 요청 (내가 tradeReceiver)
-        return _chatRooms
-            .where((room) => room.targetMember?.memberId == myMemberId)
+        return _chatRoomsDetail
+            .where((room) => room.chatRoomType == ChatRoomType.received)
             .toList();
       default:
-        return _chatRooms;
+        return _chatRoomsDetail;
     }
   }
 
@@ -163,35 +161,37 @@ class _ChatTabScreenState extends State<ChatTabScreen>
             ),
 
             // 초기 로딩: 스켈레톤 표시
-            if (_isLoading && _chatRooms.isEmpty)
+            if (_isLoading && _chatRoomsDetail.isEmpty)
               const ChatRoomListSkeletonSliver(itemCount: 5),
 
             // 데이터 있을 때: 채팅방 리스트
-            if (_chatRooms.isNotEmpty)
+            if (_chatRoomsDetail.isNotEmpty)
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  final chatRoom = _getFilteredChatRooms()[index];
+                  final chatRoomDetail = _getFilteredChatRooms()[index];
 
                   return Column(
                     children: [
                       ChatRoomListItem(
                         profileImageUrl:
-                            chatRoom.targetMember?.profileUrl ?? '',
-                        nickname: chatRoom.targetMember?.nickname ?? '',
-                        location: chatRoom.targetMemberEupMyeonDong ?? '',
+                            chatRoomDetail.targetMember?.profileUrl ?? '',
+                        nickname: chatRoomDetail.targetMember?.nickname ?? '',
+                        location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
                         timeAgo: getTimeAgo(
-                          chatRoom.lastMessageTime ?? DateTime.now(),
+                          chatRoomDetail.lastMessageTime ?? DateTime.now(),
                         ),
-                        messagePreview: chatRoom.lastMessageContent ?? '',
-                        unreadCount: chatRoom.unreadCount ?? 0,
+                        messagePreview: chatRoomDetail.lastMessageContent ?? '',
+                        unreadCount: chatRoomDetail.unreadCount ?? 0,
                         isNew:
-                            chatRoom.unreadCount != null &&
-                            chatRoom.unreadCount! > 0,
+                            chatRoomDetail.unreadCount != null &&
+                            chatRoomDetail.unreadCount! > 0,
                         onTap: () async {
-                          debugPrint('채팅방 클릭: ${chatRoom.chatRoomId}');
+                          debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
                           await Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!),
+                              builder: (_) => ChatRoomScreen(
+                                chatRoomId: chatRoomDetail.chatRoomId!,
+                              ),
                             ),
                           );
                           // 채팅방에서 돌아왔을 때, 채팅방 목록 새로고침
@@ -205,7 +205,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
               ),
 
             // 추가 페이지 로딩: 작은 인디케이터 (무한 스크롤)
-            if (_isLoading && _chatRooms.isNotEmpty)
+            if (_isLoading && _chatRoomsDetail.isNotEmpty)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 20.h),
