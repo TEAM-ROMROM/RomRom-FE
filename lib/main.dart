@@ -115,23 +115,10 @@ class MyApp extends StatelessWidget {
           child: MediaQuery(
             data: MediaQuery.of(context)
                 .copyWith(textScaler: const TextScaler.linear(1.0)),
-            child: MaterialApp(
+            child:  MaterialApp(
               title: 'RomRom',
               theme: AppTheme.defaultTheme,
               home: initialScreen,
-              // iOS에서 뒤로가기 스와이프 제스처 활성화
-              builder: (context, child) {
-                return Listener(
-                  onPointerDown: (_) {
-                    // 키보드가 열려있을 때 화면을 터치하면 키보드 닫기
-                    final currentFocus = FocusScope.of(context);
-                    if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
-                      currentFocus.focusedChild!.unfocus();
-                    }
-                  },
-                  child: child,
-                );
-              },
             ),
           ),
         );
