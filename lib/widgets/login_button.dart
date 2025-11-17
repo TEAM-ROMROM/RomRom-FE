@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
+import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -59,6 +60,7 @@ class _LoginButtonState extends State<LoginButton> {
         if (userInfo.isFirstLogin == true) {
           await prefs.setBool('isFirstMainScreen', true);
           await prefs.setBool('dontShowCoachMark', false);
+          
         } else {
           if (!prefs.containsKey('isFirstMainScreen')) {
             await prefs.setBool('isFirstMainScreen', false);
@@ -71,6 +73,7 @@ class _LoginButtonState extends State<LoginButton> {
             initialStep: userInfo.nextOnboardingStep,
           );
         } else {
+          await RomAuthApi().fetchAndSaveMemberInfo();
           nextScreen = MainScreen(key: MainScreen.globalKey);
         }
 

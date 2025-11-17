@@ -114,10 +114,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 final idx = _messages.indexWhere(
                   (m) => m.chatMessageId == localMsg.chatMessageId,
                 );
+
+                // 🔧 createdDate 보정
+                final fixedServer = ChatMessage(
+                  chatRoomId: newMessage.chatRoomId ?? localMsg.chatRoomId,
+                  chatMessageId: newMessage.chatMessageId,
+                  senderId: newMessage.senderId,
+                  content: newMessage.content,
+                  createdDate:
+                      newMessage.createdDate ?? localMsg.createdDate, // ⬅️ 핵심
+                  // 필요한 다른 필드도 그대로 복사
+                );
+
                 if (idx != -1) {
-                  _messages[idx] = newMessage; // 로컬을 서버 메시지로 교체
+                  _messages[idx] = fixedServer;
                 } else {
-                  _messages.insert(0, newMessage);
+                  _messages.insert(0, fixedServer);
                 }
               } else {
                 _messages.insert(0, newMessage);
@@ -152,6 +164,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     // 1) 로컬에 즉시 추가(낙관적 업데이트) 및 pending에 등록
     final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
     final localMsg = ChatMessage(
+      chatRoomId: widget.chatRoomId,
       chatMessageId: localId,
       senderId: _myMemberId,
       content: content,
@@ -287,15 +300,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
-      appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildTradeInfoCard(),
-          Expanded(child: _buildMessageList()),
-          _buildInputBar(),
-        ],
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        appBar: _buildAppBar(),
+        body: Column(
+          children: [
+            _buildTradeInfoCard(),
+            Expanded(child: _buildMessageList()),
+            _buildInputBar(),
+          ],
+        ),
       ),
     );
   }
