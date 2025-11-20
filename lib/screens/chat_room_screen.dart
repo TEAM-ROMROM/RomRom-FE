@@ -88,11 +88,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
             setState(() {
               // 중복 서버 ID 체크
-              if (_messages.any(
-                (m) => m.chatMessageId == newMessage.chatMessageId,
-              ))
-                // ignore: curly_braces_in_flow_control_structures
-                return;
+              final newId = newMessage.chatMessageId;
+              final isDup =
+                  (newId != null) &&
+                  _messages.any(
+                    (m) => m.chatMessageId != null && m.chatMessageId == newId,
+                  );
+              if (isDup) return;
 
               // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
               String? matchedLocalId;
@@ -121,9 +123,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   chatMessageId: newMessage.chatMessageId,
                   senderId: newMessage.senderId,
                   content: newMessage.content,
-                  createdDate:
-                      newMessage.createdDate ?? localMsg.createdDate, // ⬅️ 핵심
-                  // 필요한 다른 필드도 그대로 복사
+                  createdDate: newMessage.createdDate,
                 );
 
                 if (idx != -1) {
@@ -230,6 +230,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     } else {
       return '${difference.inDays}일 전 활동';
     }
+  }
+
+  // 동일한 '분'인지 체크
+  bool _isSameMinute(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    final la = a.isUtc ? a.toLocal() : a;
+    final lb = b.isUtc ? b.toLocal() : b;
+    return la.year == lb.year &&
+        la.month == lb.month &&
+        la.day == lb.day &&
+        la.hour == lb.hour &&
+        la.minute == lb.minute;
   }
 
   @override
@@ -475,6 +487,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ? 8.h
             : 24.h;
 
+        // 같은 사람 연속 메시지일 때는 같은 '분'에 속한 메시지들 중
+        // 가장 마지막(=가장 최신) 메시지에만 시간 표시
+        // 리스트는 reverse: true 이므로 index == 0 이 가장 최신 메시지
+        final bool showTime = (index == 0) ||
+            (index > 0 &&
+                (
+                  // 발신자가 바뀌면 시간 표시
+                  _messages[index].senderId != _messages[index - 1].senderId
+                  ||
+                  // 같은 발신자라도 이전(더 최신) 메시지와 분 단위가 다르면 표시
+                  !_isSameMinute(_messages[index].createdDate, _messages[index - 1].createdDate)
+                )
+            );
+
         return Padding(
           padding: EdgeInsets.only(top: topGap),
           child: Row(
@@ -503,25 +529,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     ),
                   ),
                 ),
-                SizedBox(width: 8.w),
-                Text(
-                  _formatMessageTime(message.createdDate),
-                  style: CustomTextStyles.p3.copyWith(
-                    fontSize: 10.sp,
-                    color: AppColors.opacity50White,
-                    fontWeight: FontWeight.w400,
+                if (showTime) ...[
+                  SizedBox(width: 8.w),
+                  Text(
+                    _formatMessageTime(message.createdDate),
+                    style: CustomTextStyles.p3.copyWith(
+                      fontSize: 10.sp,
+                      color: AppColors.opacity50White,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
+                ],
               ] else ...[
-                Text(
-                  _formatMessageTime(message.createdDate),
-                  style: CustomTextStyles.p3.copyWith(
-                    fontSize: 10.sp,
-                    color: AppColors.opacity50White,
-                    fontWeight: FontWeight.w400,
+                if (showTime) ...[
+                  Text(
+                    _formatMessageTime(message.createdDate),
+                    style: CustomTextStyles.p3.copyWith(
+                      fontSize: 10.sp,
+                      color: AppColors.opacity50White,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
-                SizedBox(width: 8.w),
+                  SizedBox(width: 8.w),
+                ],
                 Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: 12.w,

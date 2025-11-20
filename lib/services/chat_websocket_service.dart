@@ -156,9 +156,46 @@ class ChatWebSocketService {
 
         try {
           final jsonBody = jsonDecode(frame.body!);
-          final message = ChatMessage.fromJson(jsonBody);
 
-          // 해당 채팅방 스트림에 메시지 전달
+          // 1) STOMP 헤더 timestamp(ms) → DateTime
+          DateTime? headerTs;
+          final tsHdr = frame.headers['timestamp'];
+          if (tsHdr != null) {
+            final ms = int.tryParse(tsHdr);
+            if (ms != null) {
+              headerTs = DateTime.fromMillisecondsSinceEpoch(
+                ms,
+                isUtc: true,
+              ).toLocal();
+            }
+          }
+
+          // 2) 페이로드 시간 파싱(createdDate/clientSentAt)
+          DateTime? payloadTs;
+          final createdDate = jsonBody['createdDate'];
+          if (createdDate is int) {
+            payloadTs = DateTime.fromMillisecondsSinceEpoch(
+              createdDate,
+              isUtc: true,
+            ).toLocal();
+          } else if (createdDate is String) {
+            final parsed = DateTime.tryParse(createdDate);
+            if (parsed != null) payloadTs = parsed.toLocal();
+          } else if (jsonBody['clientSentAt'] is int) {
+            payloadTs = DateTime.fromMillisecondsSinceEpoch(
+              jsonBody['clientSentAt'],
+              isUtc: true,
+            ).toLocal();
+          }
+
+          // 3) 최종 시간 확정: 헤더 → 페이로드 → 지금
+          final finalCreated = headerTs ?? payloadTs ?? DateTime.now();
+
+          // 모델로 변환
+          final message = ChatMessage.fromJson(
+            jsonBody,
+          ).copyWith(createdDate: finalCreated);
+
           _subscriptions[chatRoomId]?.add(message);
         } catch (e) {
           debugPrint('[WebSocket] Failed to parse message: $e');
@@ -166,7 +203,6 @@ class ChatWebSocketService {
       },
     );
 
-    // 구독 해제 함수 저장
     _stompSubscriptions[chatRoomId] = unsubscribe;
   }
 
@@ -181,10 +217,15 @@ class ChatWebSocketService {
       throw Exception('STOMP not connected');
     }
 
+    final now = DateTime.now()
+        .toUtc()
+        .millisecondsSinceEpoch; // epoch ms (UTC 권장)
+
     final payload = jsonEncode({
       'chatRoomId': chatRoomId,
       'content': content,
       'type': type.toString().split('.').last.toUpperCase(),
+      'clientSentAt': now,
     });
 
     debugPrint('[WebSocket] Sending message to /app/chat.send');
@@ -241,4 +282,20 @@ class ChatWebSocketService {
       debugPrint('[WebSocket] Disconnect error: $e');
     }
   }
+}
+
+extension ChatMessageCopy on ChatMessage {
+  ChatMessage copyWith({
+    String? chatMessageId,
+    String? chatRoomId,
+    String? senderId,
+    String? content,
+    DateTime? createdDate,
+  }) => ChatMessage(
+    chatMessageId: chatMessageId ?? this.chatMessageId,
+    chatRoomId: chatRoomId ?? this.chatRoomId,
+    senderId: senderId ?? this.senderId,
+    content: content ?? this.content,
+    createdDate: createdDate ?? this.createdDate,
+  );
 }
