@@ -6,6 +6,7 @@ import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
@@ -410,14 +411,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8.r),
-            child: Image.network(
-              targetItem?.itemImages?.first.imageUrl ?? '',
-              width: 48.w,
-              height: 48.w,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const ErrorImagePlaceholder(),
+          GestureDetector(
+            onTap: () {
+              // 화면 크기 가져오기
+              final screenWidth = MediaQuery.of(context).size.width;
+              final imageHeight = screenWidth; // 정사각형 이미지
+
+              // context.navigateTo() 헬퍼 사용 (iOS 스와이프 백 지원)
+              context.navigateTo(
+                screen: ItemDetailDescriptionScreen(
+                  itemId: targetItem?.itemId ?? '',
+                  imageSize: Size(screenWidth, imageHeight),
+                  currentImageIndex: 0,
+                  heroTag: 'first_item_${targetItem?.itemId}',
+                  isMyItem: false,
+                  isRequestManagement: false,
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8.r),
+              child: Image.network(
+                targetItem?.itemImages?.first.imageUrl ?? '',
+                width: 48.w,
+                height: 48.w,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const ErrorImagePlaceholder(),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -446,14 +466,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
           ),
 
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8.r),
-            child: Image.network(
-              myItem?.itemImages?.first.imageUrl ?? '',
-              width: 48.w,
-              height: 48.h,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          GestureDetector(
+            onTap: () {
+              // 화면 크기 가져오기
+              final screenWidth = MediaQuery.of(context).size.width;
+              final imageHeight = screenWidth; // 정사각형 이미지
+
+              // context.navigateTo() 헬퍼 사용 (iOS 스와이프 백 지원)
+              context.navigateTo(
+                screen: ItemDetailDescriptionScreen(
+                  itemId: myItem?.itemId ?? '',
+                  imageSize: Size(screenWidth, imageHeight),
+                  currentImageIndex: 0,
+                  heroTag: 'first_item_${myItem?.itemId}',
+                  isMyItem: true,
+                  isRequestManagement: false,
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8.r),
+              child: Image.network(
+                myItem?.itemImages?.first.imageUrl ?? '',
+                width: 48.w,
+                height: 48.h,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
             ),
           ),
         ],
@@ -490,16 +529,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         // 같은 사람 연속 메시지일 때는 같은 '분'에 속한 메시지들 중
         // 가장 마지막(=가장 최신) 메시지에만 시간 표시
         // 리스트는 reverse: true 이므로 index == 0 이 가장 최신 메시지
-        final bool showTime = (index == 0) ||
+        final bool showTime =
+            (index == 0) ||
             (index > 0 &&
                 (
-                  // 발신자가 바뀌면 시간 표시
-                  _messages[index].senderId != _messages[index - 1].senderId
-                  ||
-                  // 같은 발신자라도 이전(더 최신) 메시지와 분 단위가 다르면 표시
-                  !_isSameMinute(_messages[index].createdDate, _messages[index - 1].createdDate)
-                )
-            );
+                // 발신자가 바뀌면 시간 표시
+                _messages[index].senderId != _messages[index - 1].senderId ||
+                    // 같은 발신자라도 이전(더 최신) 메시지와 분 단위가 다르면 표시
+                    !_isSameMinute(
+                      _messages[index].createdDate,
+                      _messages[index - 1].createdDate,
+                    )));
 
         return Padding(
           padding: EdgeInsets.only(top: topGap),
