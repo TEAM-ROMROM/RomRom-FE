@@ -47,6 +47,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
+
+    // 입력 텍스트 변화에 따라 전송 버튼 색상/상태를 갱신하기 위한 리스너
+    _messageController.addListener(_onMessageChanged);
+  }
+
+  void _onMessageChanged() {
+    // 간단히 rebuild 해서 suffixIcon의 색/활성 상태를 반영
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadInitialData() async {
@@ -254,6 +262,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       chatRoomId: widget.chatRoomId,
       isEntered: false,
     );
+    _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -685,34 +694,38 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     horizontal: 12.w,
                     vertical: 3.h,
                   ),
-                  suffixIcon: Container(
-                    padding: EdgeInsets.all(4.w),
-                    width: 40.w,
-                    height: 40.w,
-                    child: IconButton(
-                      constraints: BoxConstraints(
-                        minWidth: 40.w,
-                        minHeight: 40.w,
-                        maxWidth: 40.w,
-                        maxHeight: 40.w,
-                      ),
-                      icon: const Icon(
-                        AppIcons.arrow_upward,
-                        color: AppColors.secondaryBlack1,
-                      ),
-                      iconSize: 32.w,
-                      padding: EdgeInsets.zero,
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(
-                          AppColors.secondaryBlack2,
+
+                  // 텍스트 유무에 따라 버튼/아이콘 색상 및 활성화 상태 변경
+                  suffixIcon: TextFieldTapRegion(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _messageController.text.trim().isEmpty
+                          ? null
+                          : () {
+                              _sendMessage();
+                            },
+                      child: Container(
+                        margin: EdgeInsets.all(4.w),
+                        width: 40.w,
+                        height: 40.w,
+                        decoration: BoxDecoration(
+                          color: _messageController.text.trim().isEmpty
+                              ? AppColors
+                                    .secondaryBlack2 // 비활성 배경
+                              : AppColors.primaryYellow, // 활성 배경
+                          shape: BoxShape.circle,
                         ),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(100.r),
+                        child: Center(
+                          child: Icon(
+                            AppIcons.arrow_upward,
+                            color: _messageController.text.trim().isEmpty
+                                ? AppColors
+                                      .secondaryBlack1 // 비활성 아이콘
+                                : AppColors.primaryBlack, // 활성 아이콘
+                            size: 32.w,
                           ),
                         ),
                       ),
-                      onPressed: _sendMessage,
                     ),
                   ),
                   suffixIconConstraints: BoxConstraints(
