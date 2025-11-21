@@ -12,6 +12,7 @@ import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -50,6 +51,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     // 입력 텍스트 변화에 따라 전송 버튼 색상/상태를 갱신하기 위한 리스너
     _messageController.addListener(_onMessageChanged);
+  }
+
+  bool _isLeaving = false;
+
+  Future<void> _leaveRoom() async {
+    if (_isLeaving) return; // 중복 방지
+    _isLeaving = true;
+    try {
+      await ChatApi().updateChatRoomReadCursor(
+        chatRoomId: widget.chatRoomId,
+        isEntered: false,
+      );
+    } catch (_) {
+      // 실패해도 화면은 닫는다. 필요하면 로깅만
+    }
+    if (!mounted) return;
   }
 
   void _onMessageChanged() {
@@ -256,12 +273,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   void dispose() {
     _messageSubscription?.cancel();
-    _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
+    if (chatRoom.chatRoomId != null) {
+      _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
+    }
     _wsService.disconnect();
-    ChatApi().updateChatRoomReadCursor(
-      chatRoomId: widget.chatRoomId,
-      isEntered: false,
-    );
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.dispose();
@@ -322,18 +337,24 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       );
     }
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: AppColors.primaryBlack,
-        appBar: _buildAppBar(),
-        body: Column(
-          children: [
-            _buildTradeInfoCard(),
-            Expanded(child: _buildMessageList()),
-            _buildInputBar(),
-          ],
+    return PopScope(
+      canPop: false, // 기본 pop 막기
+      onPopInvokedWithResult: (didPop, result) {
+        _leaveRoom(); // 비동기 함수 호출 (우리가 pop까지 처리)
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: AppColors.primaryBlack,
+          appBar: _buildAppBar(),
+          body: Column(
+            children: [
+              _buildTradeInfoCard(),
+              Expanded(child: _buildMessageList()),
+              _buildInputBar(),
+            ],
+          ),
         ),
       ),
     );
@@ -387,10 +408,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 id: 'leave_chat_room',
                 title: '채팅방 나가기',
                 textColor: AppColors.itemOptionsMenuDeleteText,
-                onTap: () {
-                  // TODO : 채팅방 나가기 기능 구현
-                  ChatApi().deleteChatRoom(chatRoomId: chatRoom.chatRoomId!);
-                  Navigator.of(context).pop(true);
+                onTap: () async {
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => CommonDeleteModal(
+                      description: '정말로 채팅방을 나가시겠습니까?',
+                      leftText: '취소',
+                      onLeft: () {
+                        Navigator.of(context).pop(); // 모달 닫기
+                      },
+                      rightText: '나가기',
+                      onRight: () async {
+                        await ChatApi().deleteChatRoom(
+                          chatRoomId: chatRoom.chatRoomId!,
+                        );
+                        if (context.mounted) {
+                          Navigator.of(context).pop(); // 모달 닫기
+                        }
+                        // 화면 닫을 때도 동일한 _leaveRoom 로직(업데이트 → pop(true))
+                        if (context.mounted) await _leaveRoom();
+                      },
+                    ),
+                  );
                 },
               ),
             ],

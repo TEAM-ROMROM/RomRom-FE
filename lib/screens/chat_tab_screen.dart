@@ -187,15 +187,22 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                             chatRoomDetail.unreadCount! > 0,
                         onTap: () async {
                           debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ChatRoomScreen(
-                                chatRoomId: chatRoomDetail.chatRoomId!,
-                              ),
-                            ),
-                          );
-                          // 채팅방에서 돌아왔을 때, 채팅방 목록 새로고침
-                          _loadChatRooms(isRefresh: true);
+                          final refreshed = await Navigator.of(context)
+                              .push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => ChatRoomScreen(
+                                    chatRoomId: chatRoomDetail.chatRoomId!,
+                                  ),
+                                ),
+                              );
+
+                          // 엄격히 true일 때만 새로고침
+                          if (refreshed == true) {
+                            _loadChatRooms(isRefresh: true);
+                          }
+
+                          // 혹시 결과 누락 대비 기본 새로고침을 원하면 아래처럼
+                          // _loadChatRooms(isRefresh: refreshed ?? true);
                         },
                       ),
                       SizedBox(height: 8.h),

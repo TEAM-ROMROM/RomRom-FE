@@ -27,11 +27,26 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
   @override
   void initState() {
     super.initState();
+    _loadAvatar();
+  }
+
+  @override
+  void didUpdateWidget(UserProfileCircularAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // widget.profileUrl이 변경되면 다시 로드
+    if (oldWidget.profileUrl != widget.profileUrl) {
+      _loadAvatar();
+    }
+  }
+
+  Future<void> _loadAvatar() async {
     if (widget.profileUrl != null && widget.profileUrl!.isNotEmpty) {
-      _avatarUrl = widget.profileUrl;
-      _isLoading = false;
+      setState(() {
+        _avatarUrl = widget.profileUrl;
+        _isLoading = false;
+      });
     } else {
-      _loadUserProfile();
+      await _loadUserProfile();
     }
   }
 
