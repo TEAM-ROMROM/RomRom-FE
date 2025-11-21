@@ -677,8 +677,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   color: AppColors.textColorWhite,
                   fontWeight: FontWeight.w400,
                 ),
-                cursorColor: AppColors.textColorWhite,
                 maxLines: null,
+                cursorHeight: 14.h,                
+                cursorColor: AppColors.primaryYellow,
+                cursorWidth: 1.5.w,
                 decoration: InputDecoration(
                   hintText: '메세지를 입력하세요',
                   hintStyle: CustomTextStyles.p3.copyWith(
