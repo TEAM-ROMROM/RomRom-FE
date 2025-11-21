@@ -60,13 +60,12 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _toggleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _toggleAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _toggleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _toggleAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     _loadMyItems();
     _scrollController.addListener(_scrollListener);
@@ -84,7 +83,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   /// 내 물품 목록 로드 (초기 로딩)
   Future<void> _loadMyItems({bool isRefresh = false}) async {
     debugPrint(
-        '_loadMyItems 호출됨: isRefresh=$isRefresh, _isLoading=$_isLoading');
+      '_loadMyItems 호출됨: isRefresh=$isRefresh, _isLoading=$_isLoading',
+    );
 
     // 초기 로딩이 아닌 경우에만 중복 호출 방지
     if (!isRefresh && _isLoading && _myItems.isNotEmpty) {
@@ -185,11 +185,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   void _navigateToHomeAndShowDetail(String itemId) {
     debugPrint('====================================');
     debugPrint('_navigateToHomeAndShowDetail 호출됨: itemId=$itemId');
-    
+
     // MainScreen의 GlobalKey를 통해 홈탭(인덱스 0)으로 전환
     final mainState = MainScreen.globalKey.currentState;
     debugPrint('MainScreen.globalKey.currentState: $mainState');
-    
+
     if (mainState != null) {
       debugPrint('홈 탭(인덱스 0)으로 전환 시도...');
       (mainState as dynamic).switchToTab(0);
@@ -201,7 +201,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final homeState = HomeTabScreen.globalKey.currentState;
       debugPrint('HomeTabScreen.globalKey.currentState: $homeState');
-      
+
       if (homeState != null) {
         debugPrint('HomeTabScreen의 navigateToItemDetail 호출 시도...');
         // _HomeTabScreenState의 navigateToItemDetail 메서드 호출
@@ -249,8 +249,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light
-          .copyWith(statusBarColor: AppColors.transparent),
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: AppColors.transparent,
+      ),
       child: Scaffold(
         backgroundColor: AppColors.primaryBlack,
         extendBodyBehindAppBar: true,
@@ -273,14 +274,18 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                         headerTitle: '나의 등록된 물건',
                         toggle: GlassHeaderToggleBuilder.buildDefaultToggle(
                           animation: _toggleAnimation,
-                          isRightSelected: _currentTabStatus == MyItemToggleStatus.completed,
-                          onLeftTap: () => _onToggleChanged(MyItemToggleStatus.selling),
-                          onRightTap: () => _onToggleChanged(MyItemToggleStatus.completed),
+                          isRightSelected:
+                              _currentTabStatus == MyItemToggleStatus.completed,
+                          onLeftTap: () =>
+                              _onToggleChanged(MyItemToggleStatus.selling),
+                          onRightTap: () =>
+                              _onToggleChanged(MyItemToggleStatus.completed),
                           leftText: '판매 중',
                           rightText: '거래 완료',
                         ),
-                        statusBarHeight:
-                            MediaQuery.of(context).padding.top, // ★ 꼭 전달
+                        statusBarHeight: MediaQuery.of(
+                          context,
+                        ).padding.top, // ★ 꼭 전달
                         toolbarHeight: 58.h,
                         toggleHeight: 70.h,
                         expandedExtra: 32.h, // 큰 제목/여백
@@ -326,26 +331,23 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
     return [
       SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            if (index.isOdd) {
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-                child: Divider(
-                  thickness: 1.5,
-                  color: AppColors.opacity10White,
-                  height: 32.h,
-                ),
-              );
-            }
-            final item = filteredItems[index ~/ 2];
+        delegate: SliverChildBuilderDelegate((context, index) {
+          if (index.isOdd) {
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-              child: _buildItemTile(item, index ~/ 2),
+              child: Divider(
+                thickness: 1.5,
+                color: AppColors.opacity10White,
+                height: 32.h,
+              ),
             );
-          },
-          childCount: itemCountWithSeparators,
-        ),
+          }
+          final item = filteredItems[index ~/ 2];
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+            child: _buildItemTile(item, index ~/ 2),
+          );
+        }, childCount: itemCountWithSeparators),
       ),
       if (_hasMoreItems)
         SliverToBoxAdapter(
@@ -355,9 +357,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           ),
         ),
       // 하단 여백 24px
-      SliverToBoxAdapter(
-        child: SizedBox(height: 24.h),
-      ),
+      SliverToBoxAdapter(child: SizedBox(height: 24.h)),
     ];
   }
 
@@ -381,8 +381,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         ? item.primaryImageUrl!
         : 'https://picsum.photos/400/300';
 
-    final uploadTime =
-        item.createdDate != null ? getTimeAgo(item.createdDate!) : 'Unknown';
+    final uploadTime = item.createdDate != null
+        ? getTimeAgo(item.createdDate!)
+        : 'Unknown';
 
     return SizedBox(
       height: 90.h,
@@ -418,15 +419,17 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     children: [
                       Text(
                         item.itemName ?? '물품명 없음',
-                        style: CustomTextStyles.p1
-                            .copyWith(fontWeight: FontWeight.w500),
+                        style: CustomTextStyles.p1.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 6.h),
                       Text(
                         uploadTime,
-                        style: CustomTextStyles.p2
-                            .copyWith(color: AppColors.opacity60White),
+                        style: CustomTextStyles.p2.copyWith(
+                          color: AppColors.opacity60White,
+                        ),
                       ),
                       SizedBox(height: 12.h),
                       Text(
@@ -444,8 +447,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                           SizedBox(width: 4.w),
                           Text(
                             '${item.likeCount ?? 0}',
-                            style: CustomTextStyles.p2
-                                .copyWith(color: AppColors.opacity60White),
+                            style: CustomTextStyles.p2.copyWith(
+                              color: AppColors.opacity60White,
+                            ),
                           ),
                         ],
                       ),
@@ -468,8 +472,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                 items: [
                   ContextMenuItem(
                     id: 'changeTradeStatus',
-                    title: _currentTabStatus == MyItemToggleStatus.selling 
-                        ? '거래완료로 변경' 
+                    title: _currentTabStatus == MyItemToggleStatus.selling
+                        ? '거래완료로 변경'
                         : '판매중으로 변경',
                     onTap: () => _showChangeStatusConfirmDialog(item),
                     showDividerAfter: true,
@@ -543,7 +547,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                       debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
                       debugPrint('result type: ${result.runtimeType}');
                       if (result is Map<String, dynamic>) {
-                        debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
+                        debugPrint(
+                          '  - isFirstItemPosted: ${result['isFirstItemPosted']}',
+                        );
                         debugPrint('  - itemId: ${result['itemId']}');
                       }
                       debugPrint('====================================');
@@ -556,14 +562,20 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                           result['isFirstItemPosted'] == true &&
                           result['itemId'] != null) {
                         debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
-                        _navigateToHomeAndShowDetail(result['itemId'] as String);
+                        _navigateToHomeAndShowDetail(
+                          result['itemId'] as String,
+                        );
                       } else {
-                        debugPrint('첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}');
+                        debugPrint(
+                          '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
+                        );
                       }
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                          horizontal: 18.w, vertical: 15.h),
+                        horizontal: 18.w,
+                        vertical: 15.h,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -687,16 +699,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   /// 상태 변경 확인 대화상자
   Future<void> _showChangeStatusConfirmDialog(Item item) async {
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
-    final title = isToCompleted 
-        ? '거래 완료로 변경하시겠습니까?' 
-        : '판매중으로 변경하시겠습니까?';
-    final description = isToCompleted 
-        ? '거래완료로 변경하시겠습니까?' 
-        : '판매중으로 변경하시겠습니까?';
+    final title = isToCompleted ? '거래 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
+    final description = isToCompleted ? '거래완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
 
     final result = await context.showDeleteDialog(
       title: title,
       description: description,
+      confirmText: '확인',
     );
 
     if (result == true) {
@@ -732,12 +741,12 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       final targetStatus = _currentTabStatus == MyItemToggleStatus.selling
           ? ItemStatus.exchanged.serverName
           : ItemStatus.available.serverName;
-      
+
       final request = ItemRequest(
         itemId: item.itemId,
         itemStatus: targetStatus,
       );
-      
+
       await itemApi.updateItemStatus(request);
 
       // 성공 시 목록 새로고침
@@ -747,11 +756,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
         final successMessage = _currentTabStatus == MyItemToggleStatus.selling
             ? '거래 완료로 변경되었습니다'
             : '판매중으로 변경되었습니다';
-            
-        CommonSnackBar.show(
-          context: context,
-          message: successMessage,
-        );
+
+        CommonSnackBar.show(context: context, message: successMessage);
       }
     } catch (e) {
       if (mounted) {
@@ -785,10 +791,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       });
 
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '물품이 삭제되었습니다',
-        );
+        CommonSnackBar.show(context: context, message: '물품이 삭제되었습니다');
       }
     } catch (e) {
       if (mounted) {
