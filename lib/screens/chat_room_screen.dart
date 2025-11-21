@@ -273,10 +273,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   void dispose() {
     _messageSubscription?.cancel();
+    // 채팅방 구독 해제 (참조 카운팅으로 ChatTabScreen의 구독은 유지됨)
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
     }
-    _wsService.disconnect();
+    // WebSocket 연결은 유지 (ChatTabScreen에서도 사용 중일 수 있음)
+    // _wsService.disconnect(); // 제거: 앱 전체 연결을 끊으면 안 됨
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.dispose();

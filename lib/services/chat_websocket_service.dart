@@ -17,6 +17,14 @@ class ChatWebSocketService {
   bool _isConnected = false;
   final Map<String, StreamController<ChatMessage>> _subscriptions = {};
   final Map<String, StompUnsubscribe> _stompSubscriptions = {};
+  
+  // 구독 참조 카운팅 (여러 화면에서 같은 채팅방을 구독할 수 있도록)
+  final Map<String, int> _subscriptionRefCounts = {};
+  
+  // 사용자 전체 메시지 구독 (채팅방 목록 업데이트용)
+  StreamController<ChatMessage>? _userMessagesController;
+  StompUnsubscribe? _userMessagesSubscription;
+  
   final TokenManager _tokenManager = TokenManager();
 
   /// 연결 상태 확인
@@ -114,10 +122,18 @@ class ChatWebSocketService {
     for (var chatRoomId in _subscriptions.keys) {
       _subscribeToRoom(chatRoomId);
     }
+    // 사용자 전체 메시지 구독도 재연결
+    if (_userMessagesController != null) {
+      _subscribeToUserMessages();
+    }
   }
 
   /// 채팅방 구독
   Stream<ChatMessage> subscribeToChatRoom(String chatRoomId) {
+    // 참조 카운트 증가
+    _subscriptionRefCounts[chatRoomId] = (_subscriptionRefCounts[chatRoomId] ?? 0) + 1;
+    debugPrint('[WebSocket] Subscribe to $chatRoomId (refCount: ${_subscriptionRefCounts[chatRoomId]})');
+
     // 이미 구독 중이면 기존 스트림 반환
     if (_subscriptions.containsKey(chatRoomId)) {
       return _subscriptions[chatRoomId]!.stream;
@@ -239,17 +255,140 @@ class ChatWebSocketService {
   /// 채팅방 구독 해제
   void unsubscribeFromChatRoom(String chatRoomId) {
     try {
-      // STOMP 구독 해제
-      _stompSubscriptions[chatRoomId]?.call();
-      _stompSubscriptions.remove(chatRoomId);
+      // 참조 카운트 감소
+      final currentCount = _subscriptionRefCounts[chatRoomId] ?? 0;
+      if (currentCount <= 0) {
+        debugPrint('[WebSocket] Already unsubscribed from $chatRoomId');
+        return;
+      }
 
-      // 스트림 컨트롤러 닫기
-      _subscriptions[chatRoomId]?.close();
-      _subscriptions.remove(chatRoomId);
+      _subscriptionRefCounts[chatRoomId] = currentCount - 1;
+      final newCount = _subscriptionRefCounts[chatRoomId]!;
+      debugPrint('[WebSocket] Unsubscribe from $chatRoomId (refCount: $newCount)');
 
-      debugPrint('[WebSocket] Unsubscribed from $chatRoomId');
+      // 참조 카운트가 0이 되면 실제로 구독 해제
+      if (newCount <= 0) {
+        _subscriptionRefCounts.remove(chatRoomId);
+
+        // STOMP 구독 해제
+        _stompSubscriptions[chatRoomId]?.call();
+        _stompSubscriptions.remove(chatRoomId);
+
+        // 스트림 컨트롤러 닫기
+        _subscriptions[chatRoomId]?.close();
+        _subscriptions.remove(chatRoomId);
+
+        debugPrint('[WebSocket] ✅ Fully unsubscribed from $chatRoomId');
+      } else {
+        debugPrint('[WebSocket] Still $newCount active subscription(s) for $chatRoomId');
+      }
     } catch (e) {
       debugPrint('[WebSocket] Unsubscribe error: $e');
+    }
+  }
+
+  /// 사용자 전체 메시지 구독 (채팅방 목록 실시간 업데이트용)
+  /// 모든 채팅방의 메시지를 받을 수 있음
+  Stream<ChatMessage> subscribeToUserMessages(String userId) {
+    // 이미 구독 중이면 기존 스트림 반환
+    if (_userMessagesController != null) {
+      return _userMessagesController!.stream;
+    }
+
+    // 새 스트림 컨트롤러 생성
+    _userMessagesController = StreamController<ChatMessage>.broadcast();
+
+    // 연결 상태 확인 후 구독
+    if (_isConnected) {
+      _subscribeToUserMessages();
+    } else {
+      debugPrint(
+        '[WebSocket] Not connected yet, will subscribe to user messages when connected',
+      );
+    }
+
+    return _userMessagesController!.stream;
+  }
+
+  /// 실제 사용자 전체 메시지 구독 실행
+  void _subscribeToUserMessages() {
+    if (_stompClient == null || !_isConnected || _userMessagesController == null) {
+      debugPrint('[WebSocket] Cannot subscribe to user messages: not connected or no controller');
+      return;
+    }
+
+    // TODO: 백엔드 엔드포인트 확인 필요
+    // 예상: /sub/chat.user.{userId} 또는 /sub/chat.user.{userId}/messages
+    // 현재는 userId를 가져올 수 없으므로, 일단 채팅방별 구독을 활용하는 방식으로 구현
+    // 또는 백엔드에서 사용자별 전체 메시지 구독 엔드포인트를 제공하는 경우 사용
+    debugPrint('[WebSocket] ⚠️ User messages subscription not implemented yet');
+    debugPrint('[WebSocket] Using per-room subscriptions for now');
+    
+    // 백엔드에서 사용자 전체 메시지 구독을 지원한다면 아래 주석을 해제하고 수정
+    /*
+    final destination = '/sub/chat.user.$userId';
+    debugPrint('[WebSocket] ✅ Subscribing to user messages: $destination');
+
+    _userMessagesSubscription = _stompClient!.subscribe(
+      destination: destination,
+      callback: (StompFrame frame) {
+        if (frame.body == null) return;
+
+        try {
+          final jsonBody = jsonDecode(frame.body!);
+
+          // 시간 파싱 (채팅방 구독과 동일한 로직)
+          DateTime? headerTs;
+          final tsHdr = frame.headers['timestamp'];
+          if (tsHdr != null) {
+            final ms = int.tryParse(tsHdr);
+            if (ms != null) {
+              headerTs = DateTime.fromMillisecondsSinceEpoch(
+                ms,
+                isUtc: true,
+              ).toLocal();
+            }
+          }
+
+          DateTime? payloadTs;
+          final createdDate = jsonBody['createdDate'];
+          if (createdDate is int) {
+            payloadTs = DateTime.fromMillisecondsSinceEpoch(
+              createdDate,
+              isUtc: true,
+            ).toLocal();
+          } else if (createdDate is String) {
+            final parsed = DateTime.tryParse(createdDate);
+            if (parsed != null) payloadTs = parsed.toLocal();
+          } else if (jsonBody['clientSentAt'] is int) {
+            payloadTs = DateTime.fromMillisecondsSinceEpoch(
+              jsonBody['clientSentAt'],
+              isUtc: true,
+            ).toLocal();
+          }
+
+          final finalCreated = headerTs ?? payloadTs ?? DateTime.now();
+
+          final message = ChatMessage.fromJson(jsonBody).copyWith(createdDate: finalCreated);
+          _userMessagesController?.add(message);
+        } catch (e) {
+          debugPrint('[WebSocket] Failed to parse user message: $e');
+        }
+      },
+    );
+    */
+  }
+
+  /// 사용자 전체 메시지 구독 해제
+  void unsubscribeFromUserMessages() {
+    try {
+      _userMessagesSubscription?.call();
+      _userMessagesSubscription = null;
+      _userMessagesController?.close();
+      _userMessagesController = null;
+      debugPrint('[WebSocket] Unsubscribed from user messages');
+    } catch (e) {
+      debugPrint('[WebSocket] Unsubscribe user messages error: $e');
     }
   }
 
@@ -270,6 +409,9 @@ class ChatWebSocketService {
         unsubscribe();
       }
       _stompSubscriptions.clear();
+
+      // 사용자 전체 메시지 구독 해제
+      unsubscribeFromUserMessages();
 
       // 모든 스트림 컨트롤러 닫기
       for (var controller in _subscriptions.values) {
