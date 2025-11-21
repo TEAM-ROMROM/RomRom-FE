@@ -372,27 +372,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ),
       ),
       actions: [
-        RomRomContextMenu(
-          menuPadding: EdgeInsets.only(right: 24.h),
-          items: [
-            ContextMenuItem(
-              id: 'report',
-              title: '신고하기',
-              onTap: () async {
-                // TODO : 신고하기 화면으로 이동
-              },
-            ),
-            ContextMenuItem(
-              id: 'leave_chat_room',
-              title: '채팅방 나가기',
-              textColor: AppColors.itemOptionsMenuDeleteText,
-              onTap: () {
-                // TODO : 채팅방 나가기 기능 구현
-                ChatApi().deleteChatRoom(chatRoomId: chatRoom.chatRoomId!);
-                Navigator.of(context).pop(true);
-              },
-            ),
-          ],
+        Padding(
+          padding: EdgeInsets.only(right: 24.0.w),
+          child: RomRomContextMenu(
+            items: [
+              ContextMenuItem(
+                id: 'report',
+                title: '신고하기',
+                onTap: () async {
+                  // TODO : 신고하기 화면으로 이동
+                },
+              ),
+              ContextMenuItem(
+                id: 'leave_chat_room',
+                title: '채팅방 나가기',
+                textColor: AppColors.itemOptionsMenuDeleteText,
+                onTap: () {
+                  // TODO : 채팅방 나가기 기능 구현
+                  ChatApi().deleteChatRoom(chatRoomId: chatRoom.chatRoomId!);
+                  Navigator.of(context).pop(true);
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -678,7 +680,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   fontWeight: FontWeight.w400,
                 ),
                 maxLines: null,
-                cursorHeight: 14.h,                
+                cursorHeight: 14.h,
                 cursorColor: AppColors.primaryYellow,
                 cursorWidth: 1.5.w,
                 decoration: InputDecoration(
