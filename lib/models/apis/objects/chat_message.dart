@@ -40,3 +40,20 @@ class ChatMessage extends BaseEntity {
   @override
   Map<String, dynamic> toJson() => _$ChatMessageToJson(this);
 }
+
+/// ChatMessage 복사 및 수정용 확장 메서드
+extension ChatMessageCopy on ChatMessage {
+  ChatMessage copyWith({
+    String? chatMessageId,
+    String? chatRoomId,
+    String? senderId,
+    String? content,
+    DateTime? createdDate,
+  }) => ChatMessage(
+    chatMessageId: chatMessageId ?? this.chatMessageId,
+    chatRoomId: chatRoomId ?? this.chatRoomId,
+    senderId: senderId ?? this.senderId,
+    content: content ?? this.content,
+    createdDate: createdDate ?? this.createdDate,
+  );
+}

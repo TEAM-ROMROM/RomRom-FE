@@ -13,6 +13,7 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -29,6 +30,8 @@ class ChatRoomScreen extends StatefulWidget {
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final ChatWebSocketService _wsService = ChatWebSocketService();
   final TextEditingController _messageController = TextEditingController();
+  bool _hasText = false;
+
   final ScrollController _scrollController = ScrollController();
 
   List<ChatMessage> _messages = [];
@@ -48,14 +51,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
-
     // 입력 텍스트 변화에 따라 전송 버튼 색상/상태를 갱신하기 위한 리스너
     _messageController.addListener(_onMessageChanged);
   }
 
   bool _isLeaving = false;
 
-  Future<void> _leaveRoom() async {
+  Future<void> _leaveRoom({required bool shouldPop}) async {
     if (_isLeaving) return; // 중복 방지
     _isLeaving = true;
     try {
@@ -65,13 +67,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       );
     } catch (_) {
       // 실패해도 화면은 닫는다. 필요하면 로깅만
+      debugPrint('채팅방 나가기 처리 실패');
     }
-    if (!mounted) return;
+    if (shouldPop && mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   void _onMessageChanged() {
-    // 간단히 rebuild 해서 suffixIcon의 색/활성 상태를 반영
-    if (mounted) setState(() {});
+    final has = _messageController.text.trim().isNotEmpty;
+    if (_hasText != has && mounted) {
+      setState(() => _hasText = has);
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -120,7 +127,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   _messages.any(
                     (m) => m.chatMessageId != null && m.chatMessageId == newId,
                   );
-              if (isDup) return;
+              if (isDup) {
+                debugPrint('중복 메시지 수신 무시: chatMessageId=$newId');
+                return;
+              }
 
               // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
               String? matchedLocalId;
@@ -226,50 +236,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-  String _formatMessageTime(DateTime? dt) {
-    if (dt == null) return '';
-
-    // UTC에서 넘어올 수 있으니 로컬화
-    final local = dt.isUtc ? dt.toLocal() : dt;
-
-    final hour = local.hour;
-    final minute = local.minute.toString().padLeft(2, '0');
-
-    final period = hour < 12 ? '오전' : '오후';
-    // 12시간제 변환: 0시→12, 13시→1, 12시→12
-    final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
-
-    return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
-  }
-
-  String _getLastActivityTime() {
-    final lastActivity = chatRoom.getLastActivityTime();
-    final now = DateTime.now();
-    final difference = now.difference(lastActivity);
-
-    if (difference.inMinutes < 1) {
-      return '방금 전 활동';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}분 전 활동';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}시간 전 활동';
-    } else {
-      return '${difference.inDays}일 전 활동';
-    }
-  }
-
-  // 동일한 '분'인지 체크
-  bool _isSameMinute(DateTime? a, DateTime? b) {
-    if (a == null || b == null) return false;
-    final la = a.isUtc ? a.toLocal() : a;
-    final lb = b.isUtc ? b.toLocal() : b;
-    return la.year == lb.year &&
-        la.month == lb.month &&
-        la.day == lb.day &&
-        la.hour == lb.hour &&
-        la.minute == lb.minute;
-  }
-
   @override
   void dispose() {
     _messageSubscription?.cancel();
@@ -277,8 +243,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
     }
-    // WebSocket 연결은 유지 (ChatTabScreen에서도 사용 중일 수 있음)
-    // _wsService.disconnect(); // 제거: 앱 전체 연결을 끊으면 안 됨
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.dispose();
@@ -342,7 +306,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return PopScope(
       canPop: false, // 기본 pop 막기
       onPopInvokedWithResult: (didPop, result) {
-        _leaveRoom(); // 비동기 함수 호출 (우리가 pop까지 처리)
+        if (didPop) {
+          _leaveRoom(shouldPop: false);
+        } else {
+          _leaveRoom(shouldPop: true);
+        }
       },
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -385,7 +353,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
               SizedBox(width: 8.w),
               Text(
-                _getLastActivityTime(),
+                getLastActivityTime(chatRoom),
                 style: CustomTextStyles.p3.copyWith(
                   color: AppColors.opacity50White,
                 ),
@@ -422,14 +390,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       },
                       rightText: '나가기',
                       onRight: () async {
-                        await ChatApi().deleteChatRoom(
-                          chatRoomId: chatRoom.chatRoomId!,
-                        );
-                        if (context.mounted) {
-                          Navigator.of(context).pop(); // 모달 닫기
+                        try {
+                          await ChatApi().deleteChatRoom(
+                            chatRoomId: chatRoom.chatRoomId!,
+                          );
+                          if (context.mounted) {
+                            Navigator.of(context).pop(); // 모달 닫기
+                          }
+                          // 화면 닫을 때도 동일한 _leaveRoom 로직
+                          if (context.mounted) {
+                            await _leaveRoom(shouldPop: true);
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(context).pop(); // 모달 닫기
+                            CommonSnackBar.show(
+                              context: context,
+                              message:
+                                  '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
+                            );
+                          }
                         }
-                        // 화면 닫을 때도 동일한 _leaveRoom 로직(업데이트 → pop(true))
-                        if (context.mounted) await _leaveRoom();
                       },
                     ),
                   );
@@ -589,7 +570,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 // 발신자가 바뀌면 시간 표시
                 _messages[index].senderId != _messages[index - 1].senderId ||
                     // 같은 발신자라도 이전(더 최신) 메시지와 분 단위가 다르면 표시
-                    !_isSameMinute(
+                    !isSameMinute(
                       _messages[index].createdDate,
                       _messages[index - 1].createdDate,
                     )));
@@ -625,7 +606,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 if (showTime) ...[
                   SizedBox(width: 8.w),
                   Text(
-                    _formatMessageTime(message.createdDate),
+                    formatMessageTime(message.createdDate),
                     style: CustomTextStyles.p3.copyWith(
                       fontSize: 10.sp,
                       color: AppColors.opacity50White,
@@ -636,7 +617,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ] else ...[
                 if (showTime) ...[
                   Text(
-                    _formatMessageTime(message.createdDate),
+                    formatMessageTime(message.createdDate),
                     style: CustomTextStyles.p3.copyWith(
                       fontSize: 10.sp,
                       color: AppColors.opacity50White,
@@ -755,19 +736,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         width: 40.w,
                         height: 40.w,
                         decoration: BoxDecoration(
-                          color: _messageController.text.trim().isEmpty
-                              ? AppColors
-                                    .secondaryBlack2 // 비활성 배경
-                              : AppColors.primaryYellow, // 활성 배경
+                          color: !_hasText
+                              ? AppColors.secondaryBlack2
+                              : AppColors.primaryYellow,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Icon(
                             AppIcons.arrow_upward,
-                            color: _messageController.text.trim().isEmpty
-                                ? AppColors
-                                      .secondaryBlack1 // 비활성 아이콘
-                                : AppColors.primaryBlack, // 활성 아이콘
+                            color: !_hasText
+                                ? AppColors.secondaryBlack1
+                                : AppColors.primaryBlack,
                             size: 32.w,
                           ),
                         ),

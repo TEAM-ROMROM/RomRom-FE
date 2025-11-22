@@ -58,10 +58,10 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
             onBackPressed ??
             () => Navigator.of(
               context,
-            ).pop(true), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
+            ).pop(), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
         padding: EdgeInsets.zero, // 패딩 제거
       ),
-      bottom:  bottomWidgets,
+      bottom: bottomWidgets,
       title: Padding(
         padding: EdgeInsets.zero,
         child: Text(title, style: titleTextStyle ?? CustomTextStyles.h1),
