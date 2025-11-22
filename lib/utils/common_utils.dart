@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import '../widgets/common/common_delete_modal.dart';
 
@@ -134,3 +135,47 @@ String getTimeAgo(DateTime createdDate) {
     return '$years년 전';
   }
 }
+
+  // 동일한 '분'인지 체크
+  bool isSameMinute(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    final la = a.isUtc ? a.toLocal() : a;
+    final lb = b.isUtc ? b.toLocal() : b;
+    return la.year == lb.year &&
+        la.month == lb.month &&
+        la.day == lb.day &&
+        la.hour == lb.hour &&
+        la.minute == lb.minute;
+  }
+
+  String formatMessageTime(DateTime? dt) {
+    if (dt == null) return '';
+
+    // UTC에서 넘어올 수 있으니 로컬화
+    final local = dt.isUtc ? dt.toLocal() : dt;
+
+    final hour = local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
+
+    final period = hour < 12 ? '오전' : '오후';
+    // 12시간제 변환: 0시→12, 13시→1, 12시→12
+    final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
+
+    return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
+  }
+
+  String getLastActivityTime(ChatRoom chatRoom) {
+    final lastActivity = chatRoom.getLastActivityTime();
+    final now = DateTime.now();
+    final difference = now.difference(lastActivity);
+
+    if (difference.inMinutes < 1) {
+      return '방금 전 활동';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}분 전 활동';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}시간 전 활동';
+    } else {
+      return '${difference.inDays}일 전 활동';
+    }
+  }

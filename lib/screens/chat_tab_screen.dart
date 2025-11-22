@@ -189,10 +189,14 @@ class _ChatTabScreenState extends State<ChatTabScreen>
       setState(() {
         if (isRefresh) {
           // 새로고침 시 기존 구독 모두 해제
-          for (final subscription in _roomSubscriptions.values) {
-            subscription.cancel();
-          }
+          final previousSubscriptions = Map<String, StreamSubscription<ChatMessage>>.from(
+            _roomSubscriptions,
+          );
           _roomSubscriptions.clear();
+          for(final entry in previousSubscriptions.entries) {
+            entry.value.cancel();
+            _wsService.unsubscribeFromChatRoom(entry.key);
+          }
         }
 
         _chatRoomsDetail.addAll(pagedChatRoomsDetail.content);
