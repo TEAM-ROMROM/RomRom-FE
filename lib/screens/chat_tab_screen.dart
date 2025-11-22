@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/chat_room_type.dart';
+import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
+import 'package:romrom_fe/services/chat_websocket_service.dart';
+import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
@@ -22,6 +26,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ChatApi _chatApi = ChatApi();
+  final ChatWebSocketService _wsService = ChatWebSocketService();
 
   // 토글 상태 (0: 전체, 1: 보낸 요청, 2: 받은 요청)
   int _selectedTabIndex = 0;
@@ -39,6 +44,10 @@ class _ChatTabScreenState extends State<ChatTabScreen>
   int _currentPage = 0;
   final int _pageSize = 20;
 
+  // WebSocket 구독 관리
+  final Map<String, StreamSubscription<ChatMessage>> _roomSubscriptions = {};
+  String? _myMemberId;
+
   @override
   void initState() {
     super.initState();
@@ -52,11 +61,99 @@ class _ChatTabScreenState extends State<ChatTabScreen>
     // 컨트롤러를 직접 사용 (CurvedAnimation은 0~1 범위만 지원)
     _toggleAnimation = _toggleAnimationController;
 
+    // 현재 사용자 ID 가져오기
+    _initializeWebSocket();
+
     // API 호출로 채팅방 목록 로드
     _loadChatRooms();
 
     // 무한 스크롤 리스너 추가
     _scrollController.addListener(_onScroll);
+  }
+
+  /// WebSocket 초기화 및 연결
+  Future<void> _initializeWebSocket() async {
+    try {
+      _myMemberId = await MemberManager.getCurrentMemberId();
+      if (_myMemberId == null) {
+        debugPrint('채팅방 목록: 사용자 ID를 가져올 수 없습니다');
+        return;
+      }
+
+      // WebSocket 연결
+      await _wsService.connect();
+
+      // 채팅방 목록이 로드되면 각 채팅방을 구독
+      // _loadChatRooms 완료 후 _subscribeToAllRooms 호출
+    } catch (e) {
+      debugPrint('채팅방 목록 WebSocket 초기화 실패: $e');
+    }
+  }
+
+  /// 모든 채팅방에 대해 WebSocket 구독
+  void _subscribeToAllRooms() {
+    if (_myMemberId == null) return;
+
+    for (final room in _chatRoomsDetail) {
+      if (room.chatRoomId == null) continue;
+
+      // 이미 구독 중이면 스킵
+      if (_roomSubscriptions.containsKey(room.chatRoomId)) continue;
+
+      final subscription = _wsService
+          .subscribeToChatRoom(room.chatRoomId!)
+          .listen((message) {
+            _onMessageReceived(message);
+          });
+
+      _roomSubscriptions[room.chatRoomId!] = subscription;
+    }
+  }
+
+  /// 메시지 수신 시 채팅방 목록 업데이트
+  void _onMessageReceived(ChatMessage message) {
+    if (!mounted || message.chatRoomId == null) return;
+
+    final roomId = message.chatRoomId!;
+    final roomIndex = _chatRoomsDetail.indexWhere(
+      (room) => room.chatRoomId == roomId,
+    );
+
+    if (roomIndex == -1) {
+      // 채팅방이 목록에 없으면 무시 (또는 새로고침)
+      debugPrint('채팅방 목록에 없는 메시지 수신: $roomId');
+      return;
+    }
+
+    setState(() {
+      final room = _chatRoomsDetail[roomIndex];
+
+      // 최근 메시지 정보 업데이트
+      final updatedRoom = ChatRoomDetailDto(
+        chatRoomId: room.chatRoomId,
+        targetMember: room.targetMember,
+        targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
+        lastMessageContent: message.content ?? '',
+        lastMessageTime: message.createdDate ?? DateTime.now(),
+        unreadCount: _calculateUnreadCount(room, message),
+        chatRoomType: room.chatRoomType,
+      );
+
+      // 목록에서 제거 후 맨 앞에 추가 (최신 메시지가 있는 채팅방이 위로)
+      _chatRoomsDetail.removeAt(roomIndex);
+      _chatRoomsDetail.insert(0, updatedRoom);
+    });
+  }
+
+  /// 읽지 않은 메시지 수 계산
+  int _calculateUnreadCount(ChatRoomDetailDto room, ChatMessage message) {
+    // 내가 보낸 메시지면 unreadCount 증가하지 않음
+    if (message.senderId == _myMemberId) {
+      return room.unreadCount ?? 0;
+    }
+
+    // 상대방이 보낸 메시지면 unreadCount 증가
+    return (room.unreadCount ?? 0) + 1;
   }
 
   void _onTabChanged(int index) {
@@ -90,12 +187,27 @@ class _ChatTabScreenState extends State<ChatTabScreen>
       );
 
       setState(() {
+        if (isRefresh) {
+          // 새로고침 시 기존 구독 모두 해제
+          final previousSubscriptions = Map<String, StreamSubscription<ChatMessage>>.from(
+            _roomSubscriptions,
+          );
+          _roomSubscriptions.clear();
+          for(final entry in previousSubscriptions.entries) {
+            entry.value.cancel();
+            _wsService.unsubscribeFromChatRoom(entry.key);
+          }
+        }
+
         _chatRoomsDetail.addAll(pagedChatRoomsDetail.content);
         _hasMore =
             _currentPage < (pagedChatRoomsDetail.page?.totalPages ?? 1) - 1;
         _currentPage++;
         _isLoading = false;
       });
+
+      // 새로 로드된 채팅방들에 대해 WebSocket 구독
+      _subscribeToAllRooms();
     } catch (e) {
       debugPrint('채팅방 목록 로드 실패: $e');
       setState(() => _isLoading = false);
@@ -187,15 +299,41 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                             chatRoomDetail.unreadCount! > 0,
                         onTap: () async {
                           debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ChatRoomScreen(
-                                chatRoomId: chatRoomDetail.chatRoomId!,
-                              ),
-                            ),
+
+                          // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
+                          final roomId = chatRoomDetail.chatRoomId!;
+                          final roomIndex = _chatRoomsDetail.indexWhere(
+                            (r) => r.chatRoomId == roomId,
                           );
-                          // 채팅방에서 돌아왔을 때, 채팅방 목록 새로고침
-                          _loadChatRooms(isRefresh: true);
+
+                          if (roomIndex != -1) {
+                            setState(() {
+                              final room = _chatRoomsDetail[roomIndex];
+                              _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
+                                chatRoomId: room.chatRoomId,
+                                targetMember: room.targetMember,
+                                targetMemberEupMyeonDong:
+                                    room.targetMemberEupMyeonDong,
+                                lastMessageContent: room.lastMessageContent,
+                                lastMessageTime: room.lastMessageTime,
+                                unreadCount: 0, // 읽음 처리
+                                chatRoomType: room.chatRoomType,
+                              );
+                            });
+                          }
+
+                          final refreshed = await Navigator.of(context)
+                              .push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      ChatRoomScreen(chatRoomId: roomId),
+                                ),
+                              );
+
+                          // 엄격히 true일 때만 새로고침
+                          if (refreshed == true) {
+                            _loadChatRooms(isRefresh: true);
+                          }
                         },
                       ),
                       SizedBox(height: 8.h),
@@ -226,6 +364,16 @@ class _ChatTabScreenState extends State<ChatTabScreen>
 
   @override
   void dispose() {
+    // 모든 채팅방 구독 해제 (참조 카운팅으로 다른 화면의 구독은 유지됨)
+    for (final entry in _roomSubscriptions.entries) {
+      entry.value.cancel();
+      _wsService.unsubscribeFromChatRoom(entry.key);
+    }
+    _roomSubscriptions.clear();
+
+    // WebSocket은 싱글톤이므로 여기서 disconnect하지 않음
+    // (다른 화면에서도 사용 중일 수 있음)
+
     _scrollController.dispose();
     _toggleAnimationController.dispose();
     super.dispose();
