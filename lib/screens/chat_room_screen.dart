@@ -55,7 +55,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   bool _isLeaving = false;
 
-  Future<void> _leaveRoom() async {
+  Future<void> _leaveRoom({required bool shouldPop}) async {
     if (_isLeaving) return; // 중복 방지
     _isLeaving = true;
     try {
@@ -66,7 +66,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     } catch (_) {
       // 실패해도 화면은 닫는다. 필요하면 로깅만
     }
-    if (!mounted) return;
+    if (shouldPop && mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   void _onMessageChanged() {
@@ -342,7 +344,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return PopScope(
       canPop: false, // 기본 pop 막기
       onPopInvokedWithResult: (didPop, result) {
-        _leaveRoom(); // 비동기 함수 호출 (우리가 pop까지 처리)
+        if (didPop) {
+          _leaveRoom(shouldPop: false);
+        } else {
+          _leaveRoom(shouldPop: true);
+        }
       },
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -428,8 +434,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         if (context.mounted) {
                           Navigator.of(context).pop(); // 모달 닫기
                         }
-                        // 화면 닫을 때도 동일한 _leaveRoom 로직(업데이트 → pop(true))
-                        if (context.mounted) await _leaveRoom();
+                        // 화면 닫을 때도 동일한 _leaveRoom 로직
+                        if (context.mounted) await _leaveRoom(shouldPop: true);
                       },
                     ),
                   );
