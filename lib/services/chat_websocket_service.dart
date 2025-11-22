@@ -17,6 +17,10 @@ class ChatWebSocketService {
   bool _isConnected = false;
   final Map<String, StreamController<ChatMessage>> _subscriptions = {};
   final Map<String, StompUnsubscribe> _stompSubscriptions = {};
+
+  // 구독 참조 카운팅 (여러 화면에서 같은 채팅방을 구독할 수 있도록)
+  final Map<String, int> _subscriptionRefCounts = {};
+
   final TokenManager _tokenManager = TokenManager();
 
   /// 연결 상태 확인
@@ -118,6 +122,13 @@ class ChatWebSocketService {
 
   /// 채팅방 구독
   Stream<ChatMessage> subscribeToChatRoom(String chatRoomId) {
+    // 참조 카운트 증가
+    _subscriptionRefCounts[chatRoomId] =
+        (_subscriptionRefCounts[chatRoomId] ?? 0) + 1;
+    debugPrint(
+      '[WebSocket] Subscribe to $chatRoomId (refCount: ${_subscriptionRefCounts[chatRoomId]})',
+    );
+
     // 이미 구독 중이면 기존 스트림 반환
     if (_subscriptions.containsKey(chatRoomId)) {
       return _subscriptions[chatRoomId]!.stream;
@@ -156,9 +167,46 @@ class ChatWebSocketService {
 
         try {
           final jsonBody = jsonDecode(frame.body!);
-          final message = ChatMessage.fromJson(jsonBody);
 
-          // 해당 채팅방 스트림에 메시지 전달
+          // 1) STOMP 헤더 timestamp(ms) → DateTime
+          DateTime? headerTs;
+          final tsHdr = frame.headers['timestamp'];
+          if (tsHdr != null) {
+            final ms = int.tryParse(tsHdr);
+            if (ms != null) {
+              headerTs = DateTime.fromMillisecondsSinceEpoch(
+                ms,
+                isUtc: true,
+              ).toLocal();
+            }
+          }
+
+          // 2) 페이로드 시간 파싱(createdDate/clientSentAt)
+          DateTime? payloadTs;
+          final createdDate = jsonBody['createdDate'];
+          if (createdDate is int) {
+            payloadTs = DateTime.fromMillisecondsSinceEpoch(
+              createdDate,
+              isUtc: true,
+            ).toLocal();
+          } else if (createdDate is String) {
+            final parsed = DateTime.tryParse(createdDate);
+            if (parsed != null) payloadTs = parsed.toLocal();
+          } else if (jsonBody['clientSentAt'] is int) {
+            payloadTs = DateTime.fromMillisecondsSinceEpoch(
+              jsonBody['clientSentAt'],
+              isUtc: true,
+            ).toLocal();
+          }
+
+          // 3) 최종 시간 확정: 헤더 → 페이로드 → 지금
+          final finalCreated = headerTs ?? payloadTs ?? DateTime.now();
+
+          // 모델로 변환
+          final message = ChatMessage.fromJson(
+            jsonBody,
+          ).copyWith(createdDate: finalCreated);
+
           _subscriptions[chatRoomId]?.add(message);
         } catch (e) {
           debugPrint('[WebSocket] Failed to parse message: $e');
@@ -166,7 +214,6 @@ class ChatWebSocketService {
       },
     );
 
-    // 구독 해제 함수 저장
     _stompSubscriptions[chatRoomId] = unsubscribe;
   }
 
@@ -181,10 +228,15 @@ class ChatWebSocketService {
       throw Exception('STOMP not connected');
     }
 
+    final now = DateTime.now()
+        .toUtc()
+        .millisecondsSinceEpoch; // epoch ms (UTC 권장)
+
     final payload = jsonEncode({
       'chatRoomId': chatRoomId,
       'content': content,
       'type': type.toString().split('.').last.toUpperCase(),
+      'clientSentAt': now,
     });
 
     debugPrint('[WebSocket] Sending message to /app/chat.send');
@@ -198,15 +250,37 @@ class ChatWebSocketService {
   /// 채팅방 구독 해제
   void unsubscribeFromChatRoom(String chatRoomId) {
     try {
-      // STOMP 구독 해제
-      _stompSubscriptions[chatRoomId]?.call();
-      _stompSubscriptions.remove(chatRoomId);
+      // 참조 카운트 감소
+      final currentCount = _subscriptionRefCounts[chatRoomId] ?? 0;
+      if (currentCount <= 0) {
+        debugPrint('[WebSocket] Already unsubscribed from $chatRoomId');
+        return;
+      }
 
-      // 스트림 컨트롤러 닫기
-      _subscriptions[chatRoomId]?.close();
-      _subscriptions.remove(chatRoomId);
+      _subscriptionRefCounts[chatRoomId] = currentCount - 1;
+      final newCount = _subscriptionRefCounts[chatRoomId]!;
+      debugPrint(
+        '[WebSocket] Unsubscribe from $chatRoomId (refCount: $newCount)',
+      );
 
-      debugPrint('[WebSocket] Unsubscribed from $chatRoomId');
+      // 참조 카운트가 0이 되면 실제로 구독 해제
+      if (newCount <= 0) {
+        _subscriptionRefCounts.remove(chatRoomId);
+
+        // STOMP 구독 해제
+        _stompSubscriptions[chatRoomId]?.call();
+        _stompSubscriptions.remove(chatRoomId);
+
+        // 스트림 컨트롤러 닫기
+        _subscriptions[chatRoomId]?.close();
+        _subscriptions.remove(chatRoomId);
+
+        debugPrint('[WebSocket] ✅ Fully unsubscribed from $chatRoomId');
+      } else {
+        debugPrint(
+          '[WebSocket] Still $newCount active subscription(s) for $chatRoomId',
+        );
+      }
     } catch (e) {
       debugPrint('[WebSocket] Unsubscribe error: $e');
     }

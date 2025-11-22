@@ -1,11 +1,75 @@
 {
   "metadata": {
-    "lastUpdated": "2025-11-17T08:51:55Z",
-    "currentVersion": "1.7.4",
-    "totalReleases": 44,
+    "lastUpdated": "2025-11-22T11:49:33Z",
+    "currentVersion": "1.7.5",
+    "totalReleases": 46,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.7.5",
+      "project_type": "flutter",
+      "date": "2025-11-22",
+      "pr_number": 367,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\n새로운 기능\n\n실시간 채팅 메시지 동기화 및 자동 업데이트 추가\n읽지 않은 메시지 카운트 기능 추가\n메시지 입력 시 전송 버튼 활성화/비활성화 동적 전환\n채팅방 나가기 시 확인 팝업 추가\n\n\n\n버그 수정\n\n중복 메시지 수신 시 자동 필터링 추가\n메시지 타임스탐프 정확도 개선\n\n\n\n기타\n\n메시지 시간 표시 형식 개선\n버전 업데이트 (1.7.5)\n\n\n\n✏️ Tip: You can customize this high-level summary in your review settings.",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "실시간 채팅 메시지 동기화 및 자동 업데이트 추가",
+            "읽지 않은 메시지 카운트 기능 추가",
+            "메시지 입력 시 전송 버튼 활성화/비활성화 동적 전환",
+            "채팅방 나가기 시 확인 팝업 추가"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "중복 메시지 수신 시 자동 필터링 추가",
+            "메시지 타임스탐프 정확도 개선"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "메시지 시간 표시 형식 개선",
+            "버전 업데이트 (1.7.5)"
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.7.5",
+      "project_type": "flutter",
+      "date": "2025-11-22",
+      "pr_number": 367,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\n새로운 기능\n\n실시간 채팅 메시지 동기화 및 자동 업데이트 추가\n읽지 않은 메시지 카운트 기능 추가\n메시지 입력 시 전송 버튼 활성화/비활성화 동적 전환\n채팅방 나가기 시 확인 팝업 추가\n\n\n\n버그 수정\n\n중복 메시지 수신 시 자동 필터링 추가\n메시지 타임스탐프 정확도 개선\n\n\n\n기타\n\n메시지 시간 표시 형식 개선\n버전 업데이트 (1.7.5)\n\n\n\n✏️ Tip: You can customize this high-level summary in your review settings.",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "실시간 채팅 메시지 동기화 및 자동 업데이트 추가",
+            "읽지 않은 메시지 카운트 기능 추가",
+            "메시지 입력 시 전송 버튼 활성화/비활성화 동적 전환",
+            "채팅방 나가기 시 확인 팝업 추가"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "중복 메시지 수신 시 자동 필터링 추가",
+            "메시지 타임스탐프 정확도 개선"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "메시지 시간 표시 형식 개선",
+            "버전 업데이트 (1.7.5)"
+          ]
+        }
+      }
+    },
     {
       "version": "1.7.4",
       "project_type": "flutter",

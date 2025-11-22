@@ -6,11 +6,14 @@ import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -27,6 +30,8 @@ class ChatRoomScreen extends StatefulWidget {
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final ChatWebSocketService _wsService = ChatWebSocketService();
   final TextEditingController _messageController = TextEditingController();
+  bool _hasText = false;
+
   final ScrollController _scrollController = ScrollController();
 
   List<ChatMessage> _messages = [];
@@ -46,6 +51,34 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
+    // 입력 텍스트 변화에 따라 전송 버튼 색상/상태를 갱신하기 위한 리스너
+    _messageController.addListener(_onMessageChanged);
+  }
+
+  bool _isLeaving = false;
+
+  Future<void> _leaveRoom({required bool shouldPop}) async {
+    if (_isLeaving) return; // 중복 방지
+    _isLeaving = true;
+    try {
+      await ChatApi().updateChatRoomReadCursor(
+        chatRoomId: widget.chatRoomId,
+        isEntered: false,
+      );
+    } catch (_) {
+      // 실패해도 화면은 닫는다. 필요하면 로깅만
+      debugPrint('채팅방 나가기 처리 실패');
+    }
+    if (shouldPop && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  void _onMessageChanged() {
+    final has = _messageController.text.trim().isNotEmpty;
+    if (_hasText != has && mounted) {
+      setState(() => _hasText = has);
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -88,11 +121,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
             setState(() {
               // 중복 서버 ID 체크
-              if (_messages.any(
-                (m) => m.chatMessageId == newMessage.chatMessageId,
-              ))
-                // ignore: curly_braces_in_flow_control_structures
+              final newId = newMessage.chatMessageId;
+              final isDup =
+                  (newId != null) &&
+                  _messages.any(
+                    (m) => m.chatMessageId != null && m.chatMessageId == newId,
+                  );
+              if (isDup) {
+                debugPrint('중복 메시지 수신 무시: chatMessageId=$newId');
                 return;
+              }
 
               // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
               String? matchedLocalId;
@@ -121,9 +159,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   chatMessageId: newMessage.chatMessageId,
                   senderId: newMessage.senderId,
                   content: newMessage.content,
-                  createdDate:
-                      newMessage.createdDate ?? localMsg.createdDate, // ⬅️ 핵심
-                  // 필요한 다른 필드도 그대로 복사
+                  createdDate: newMessage.createdDate,
                 );
 
                 if (idx != -1) {
@@ -200,47 +236,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-  String _formatMessageTime(DateTime? dt) {
-    if (dt == null) return '';
-
-    // UTC에서 넘어올 수 있으니 로컬화
-    final local = dt.isUtc ? dt.toLocal() : dt;
-
-    final hour = local.hour;
-    final minute = local.minute.toString().padLeft(2, '0');
-
-    final period = hour < 12 ? '오전' : '오후';
-    // 12시간제 변환: 0시→12, 13시→1, 12시→12
-    final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
-
-    return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
-  }
-
-  String _getLastActivityTime() {
-    final lastActivity = chatRoom.getLastActivityTime();
-    final now = DateTime.now();
-    final difference = now.difference(lastActivity);
-
-    if (difference.inMinutes < 1) {
-      return '방금 전 활동';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}분 전 활동';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}시간 전 활동';
-    } else {
-      return '${difference.inDays}일 전 활동';
-    }
-  }
-
   @override
   void dispose() {
     _messageSubscription?.cancel();
-    _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
-    _wsService.disconnect();
-    ChatApi().updateChatRoomReadCursor(
-      chatRoomId: widget.chatRoomId,
-      isEntered: false,
-    );
+    // 채팅방 구독 해제 (참조 카운팅으로 ChatTabScreen의 구독은 유지됨)
+    if (chatRoom.chatRoomId != null) {
+      _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
+    }
+    _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -300,18 +303,28 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       );
     }
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: AppColors.primaryBlack,
-        appBar: _buildAppBar(),
-        body: Column(
-          children: [
-            _buildTradeInfoCard(),
-            Expanded(child: _buildMessageList()),
-            _buildInputBar(),
-          ],
+    return PopScope(
+      canPop: false, // 기본 pop 막기
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          _leaveRoom(shouldPop: false);
+        } else {
+          _leaveRoom(shouldPop: true);
+        }
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: AppColors.primaryBlack,
+          appBar: _buildAppBar(),
+          body: Column(
+            children: [
+              _buildTradeInfoCard(),
+              Expanded(child: _buildMessageList()),
+              _buildInputBar(),
+            ],
+          ),
         ),
       ),
     );
@@ -340,7 +353,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
               SizedBox(width: 8.w),
               Text(
-                _getLastActivityTime(),
+                getLastActivityTime(chatRoom),
                 style: CustomTextStyles.p3.copyWith(
                   color: AppColors.opacity50White,
                 ),
@@ -350,27 +363,61 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ),
       ),
       actions: [
-        RomRomContextMenu(
-          menuPadding: EdgeInsets.only(right: 24.h),
-          items: [
-            ContextMenuItem(
-              id: 'report',
-              title: '신고하기',
-              onTap: () async {
-                // TODO : 신고하기 화면으로 이동
-              },
-            ),
-            ContextMenuItem(
-              id: 'leave_chat_room',
-              title: '채팅방 나가기',
-              textColor: AppColors.itemOptionsMenuDeleteText,
-              onTap: () {
-                // TODO : 채팅방 나가기 기능 구현
-                ChatApi().deleteChatRoom(chatRoomId: chatRoom.chatRoomId!);
-                Navigator.of(context).pop(true);
-              },
-            ),
-          ],
+        Padding(
+          padding: EdgeInsets.only(right: 24.0.w),
+          child: RomRomContextMenu(
+            items: [
+              ContextMenuItem(
+                id: 'report',
+                title: '신고하기',
+                onTap: () async {
+                  // TODO : 신고하기 화면으로 이동
+                },
+              ),
+              ContextMenuItem(
+                id: 'leave_chat_room',
+                title: '채팅방 나가기',
+                textColor: AppColors.itemOptionsMenuDeleteText,
+                onTap: () async {
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => CommonDeleteModal(
+                      description: '정말로 채팅방을 나가시겠습니까?',
+                      leftText: '취소',
+                      onLeft: () {
+                        Navigator.of(context).pop(); // 모달 닫기
+                      },
+                      rightText: '나가기',
+                      onRight: () async {
+                        try {
+                          await ChatApi().deleteChatRoom(
+                            chatRoomId: chatRoom.chatRoomId!,
+                          );
+                          if (context.mounted) {
+                            Navigator.of(context).pop(); // 모달 닫기
+                          }
+                          // 화면 닫을 때도 동일한 _leaveRoom 로직
+                          if (context.mounted) {
+                            await _leaveRoom(shouldPop: true);
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(context).pop(); // 모달 닫기
+                            CommonSnackBar.show(
+                              context: context,
+                              message:
+                                  '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -398,14 +445,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8.r),
-            child: Image.network(
-              targetItem?.itemImages?.first.imageUrl ?? '',
-              width: 48.w,
-              height: 48.w,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const ErrorImagePlaceholder(),
+          GestureDetector(
+            onTap: () {
+              // 화면 크기 가져오기
+              final screenWidth = MediaQuery.of(context).size.width;
+              final imageHeight = screenWidth; // 정사각형 이미지
+
+              // context.navigateTo() 헬퍼 사용 (iOS 스와이프 백 지원)
+              context.navigateTo(
+                screen: ItemDetailDescriptionScreen(
+                  itemId: targetItem?.itemId ?? '',
+                  imageSize: Size(screenWidth, imageHeight),
+                  currentImageIndex: 0,
+                  heroTag: 'first_item_${targetItem?.itemId}',
+                  isMyItem: false,
+                  isRequestManagement: false,
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8.r),
+              child: Image.network(
+                targetItem?.itemImages?.first.imageUrl ?? '',
+                width: 48.w,
+                height: 48.w,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const ErrorImagePlaceholder(),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -434,14 +500,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
           ),
 
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8.r),
-            child: Image.network(
-              myItem?.itemImages?.first.imageUrl ?? '',
-              width: 48.w,
-              height: 48.h,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          GestureDetector(
+            onTap: () {
+              // 화면 크기 가져오기
+              final screenWidth = MediaQuery.of(context).size.width;
+              final imageHeight = screenWidth; // 정사각형 이미지
+
+              // context.navigateTo() 헬퍼 사용 (iOS 스와이프 백 지원)
+              context.navigateTo(
+                screen: ItemDetailDescriptionScreen(
+                  itemId: myItem?.itemId ?? '',
+                  imageSize: Size(screenWidth, imageHeight),
+                  currentImageIndex: 0,
+                  heroTag: 'first_item_${myItem?.itemId}',
+                  isMyItem: true,
+                  isRequestManagement: false,
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8.r),
+              child: Image.network(
+                myItem?.itemImages?.first.imageUrl ?? '',
+                width: 48.w,
+                height: 48.h,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
             ),
           ),
         ],
@@ -475,6 +560,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ? 8.h
             : 24.h;
 
+        // 같은 사람 연속 메시지일 때는 같은 '분'에 속한 메시지들 중
+        // 가장 마지막(=가장 최신) 메시지에만 시간 표시
+        // 리스트는 reverse: true 이므로 index == 0 이 가장 최신 메시지
+        final bool showTime =
+            (index == 0) ||
+            (index > 0 &&
+                (
+                // 발신자가 바뀌면 시간 표시
+                _messages[index].senderId != _messages[index - 1].senderId ||
+                    // 같은 발신자라도 이전(더 최신) 메시지와 분 단위가 다르면 표시
+                    !isSameMinute(
+                      _messages[index].createdDate,
+                      _messages[index - 1].createdDate,
+                    )));
+
         return Padding(
           padding: EdgeInsets.only(top: topGap),
           child: Row(
@@ -503,25 +603,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     ),
                   ),
                 ),
-                SizedBox(width: 8.w),
-                Text(
-                  _formatMessageTime(message.createdDate),
-                  style: CustomTextStyles.p3.copyWith(
-                    fontSize: 10.sp,
-                    color: AppColors.opacity50White,
-                    fontWeight: FontWeight.w400,
+                if (showTime) ...[
+                  SizedBox(width: 8.w),
+                  Text(
+                    formatMessageTime(message.createdDate),
+                    style: CustomTextStyles.p3.copyWith(
+                      fontSize: 10.sp,
+                      color: AppColors.opacity50White,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
+                ],
               ] else ...[
-                Text(
-                  _formatMessageTime(message.createdDate),
-                  style: CustomTextStyles.p3.copyWith(
-                    fontSize: 10.sp,
-                    color: AppColors.opacity50White,
-                    fontWeight: FontWeight.w400,
+                if (showTime) ...[
+                  Text(
+                    formatMessageTime(message.createdDate),
+                    style: CustomTextStyles.p3.copyWith(
+                      fontSize: 10.sp,
+                      color: AppColors.opacity50White,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
-                SizedBox(width: 8.w),
+                  SizedBox(width: 8.w),
+                ],
                 Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: 12.w,
@@ -598,8 +702,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   color: AppColors.textColorWhite,
                   fontWeight: FontWeight.w400,
                 ),
-                cursorColor: AppColors.textColorWhite,
                 maxLines: null,
+                cursorHeight: 14.h,
+                cursorColor: AppColors.primaryYellow,
+                cursorWidth: 1.5.w,
                 decoration: InputDecoration(
                   hintText: '메세지를 입력하세요',
                   hintStyle: CustomTextStyles.p3.copyWith(
@@ -615,34 +721,36 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     horizontal: 12.w,
                     vertical: 3.h,
                   ),
-                  suffixIcon: Container(
-                    padding: EdgeInsets.all(4.w),
-                    width: 40.w,
-                    height: 40.w,
-                    child: IconButton(
-                      constraints: BoxConstraints(
-                        minWidth: 40.w,
-                        minHeight: 40.w,
-                        maxWidth: 40.w,
-                        maxHeight: 40.w,
-                      ),
-                      icon: const Icon(
-                        AppIcons.arrow_upward,
-                        color: AppColors.secondaryBlack1,
-                      ),
-                      iconSize: 32.w,
-                      padding: EdgeInsets.zero,
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(
-                          AppColors.secondaryBlack2,
+
+                  // 텍스트 유무에 따라 버튼/아이콘 색상 및 활성화 상태 변경
+                  suffixIcon: TextFieldTapRegion(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _messageController.text.trim().isEmpty
+                          ? null
+                          : () {
+                              _sendMessage();
+                            },
+                      child: Container(
+                        margin: EdgeInsets.all(4.w),
+                        width: 40.w,
+                        height: 40.w,
+                        decoration: BoxDecoration(
+                          color: !_hasText
+                              ? AppColors.secondaryBlack2
+                              : AppColors.primaryYellow,
+                          shape: BoxShape.circle,
                         ),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(100.r),
+                        child: Center(
+                          child: Icon(
+                            AppIcons.arrow_upward,
+                            color: !_hasText
+                                ? AppColors.secondaryBlack1
+                                : AppColors.primaryBlack,
+                            size: 32.w,
                           ),
                         ),
                       ),
-                      onPressed: _sendMessage,
                     ),
                   ),
                   suffixIconConstraints: BoxConstraints(
