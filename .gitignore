@@ -49,7 +49,7 @@ lib/generated/
 lib/firebase_options.dart
 
 # Ignore iOS config files
-android/Google-Services.json
+android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 
 # IOS 빌드
