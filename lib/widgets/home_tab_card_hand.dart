@@ -15,11 +15,7 @@ class HomeTabCardHand extends StatefulWidget {
   final Function(String itemId)? onCardDrop;
   final List<Item>? cards;
 
-  const HomeTabCardHand({
-    super.key,
-    this.onCardDrop,
-    this.cards,
-  });
+  const HomeTabCardHand({super.key, this.onCardDrop, this.cards});
 
   @override
   State<HomeTabCardHand> createState() => _HomeTabCardHandState();
@@ -41,6 +37,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   bool _panStartedOnCard = false; // 터치 시작이 카드 위?
   String? _startCardId; // 터치 시작 카드
   bool _hasStartedCardDrag = false; // 수직 드래그 임계치 넘겨 카드 드래그 모드 진입?
+  String? _pressedCardId; // 터치로 강조된 카드
 
   // 카드 상태
   String? _hoveredCardId;
@@ -60,6 +57,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   final double _maxFanAngle = 18.0; // 최대 펼침 각도 (도)
   final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
   final double _baseBottom = 50.h; // 기본 bottom 위치 (네비게이션 바 위)
+  final double _deckOrbitRadius = 65.w; // 덱 전체가 도는 원 반지름
 
   // keys: 전역 좌표 구하려고
   final GlobalKey _deckKey = GlobalKey(); // 카드 스택 영역
@@ -148,21 +146,38 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final screenWidth = MediaQuery.of(context).size.width;
     final centerX = screenWidth / 2;
 
-    for (int i = 0; i < _cards.length; i++) {
-      final transform = _calculateCardTransform(i, _cards.length);
+    final transforms = List.generate(
+      _cards.length,
+      (index) =>
+          _calculateCardTransform(index, _cards.length, phase: _orbitAngle),
+    );
+
+    final indexedCards = List.generate(_cards.length, (index) => index)
+      ..sort((a, b) {
+        return (transforms[b]['zIndex'] as int).compareTo(
+          transforms[a]['zIndex'] as int,
+        );
+      });
+
+    for (final index in indexedCards) {
+      final transform = transforms[index];
       final cardCenterX = centerX + transform['x'];
 
       // 카드 영역 체크 (카드 너비의 절반 범위 내)
       if ((localPosition.dx - cardCenterX).abs() < _cardWidth / 2) {
-        return _cards[i].itemId;
+        return _cards[index].itemId;
       }
     }
+
     return null;
   }
 
   // 카드 위치 및 회전 계산
-  Map<String, dynamic> _calculateCardTransform(int index, int totalCards,
-      {double phase = 0.0}) {
+  Map<String, dynamic> _calculateCardTransform(
+    int index,
+    int totalCards, {
+    double phase = 0.0,
+  }) {
     final centerIndex = (totalCards - 1) / 2;
     final relativeIndex = index - centerIndex;
 
@@ -170,8 +185,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final cardSpacing = totalCards <= 5
         ? 60.w
         : totalCards <= 7
-            ? 65.w
-            : 50.w;
+        ? 65.w
+        : 50.w;
 
     // 각도 계산 (라디안)
     double angle = 0.0;
@@ -186,7 +201,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       }
     }
 
-    // ⬇️ 덱 전체 위상 이동 적용: fan 각도에 phase를 '더한다'
+    // ⬇️ 덱 전체 위상 이동 적용(회전에는 phase 반영, 곡률 계산은 기본 각도 유지)
     final angleWithPhase = angle + phase;
 
     // ===== 튜닝 파라미터 =====
@@ -198,21 +213,28 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final r = _fanRadius;
 
     // X
-    final x = relativeIndex * cardSpacing;
+    final baseX = relativeIndex * cardSpacing;
 
     // 기본 곡률
-    final baseY = -r * (1 - math.cos(angleWithPhase)) * curveK;
+    final baseY = -r * (1 - math.cos(angle)) * curveK;
 
     // 가장자리 추가 드롭 (0~1 정규화)
-    final absNorm =
-        (centerIndex == 0) ? 0.0 : (relativeIndex.abs() / centerIndex);
+    final absNorm = (centerIndex == 0)
+        ? 0.0
+        : (relativeIndex.abs() / centerIndex);
     final extraEdgeDrop = -edgeDrop * math.pow(absNorm, edgeGamma).toDouble();
 
     final y = baseY + extraEdgeDrop;
 
+    // 덱을 다이얼처럼 회전시키기 위해 좌표 자체에 phase 회전 적용
+    final cosPhase = math.cos(phase);
+    final sinPhase = math.sin(phase);
+    final rotatedX = baseX * cosPhase - y * sinPhase;
+    final rotatedY = baseX * sinPhase + y * cosPhase;
+
     return {
-      'x': x,
-      'y': y,
+      'x': rotatedX,
+      'y': rotatedY,
       'angle': angleWithPhase * 0.7,
       'zIndex': totalCards - math.max((relativeIndex.abs() * 2).toInt(), 0),
     };
@@ -225,29 +247,48 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final isHovered =
         _hasStartedCardDrag && _hoveredCardId == cardId && !isPulled;
 
-    final transform =
-        _calculateCardTransform(index, totalCards, phase: _orbitAngle);
+    final transform = _calculateCardTransform(
+      index,
+      totalCards,
+      phase: _orbitAngle,
+    );
+    final bool isPressed = _pressedCardId == cardId;
+    final double orbitOffsetX = math.sin(_orbitAngle) * _deckOrbitRadius;
+    final double orbitOffsetY =
+        (math.cos(_orbitAngle) - 1) * _deckOrbitRadius; // 시작점 기준 원운동
 
     return AnimatedBuilder(
       animation: Listenable.merge([_fanAnimation, _pullAnimation]),
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
-        final staggeredFanValue =
-            (_fanAnimation.value - staggerDelay).clamp(0.0, 1.0);
+        final staggeredFanValue = (_fanAnimation.value - staggerDelay).clamp(
+          0.0,
+          1.0,
+        );
 
-        double x = transform['x'] * staggeredFanValue;
-        double y = transform['y'] * staggeredFanValue;
+        double x = transform['x'] * staggeredFanValue + orbitOffsetX;
+        double y = transform['y'] * staggeredFanValue + orbitOffsetY;
         double angle = transform['angle'] * staggeredFanValue;
         double scale = 1.0;
         double opacity = staggeredFanValue;
+
+        if (!isPulled) {
+          if (isHovered) {
+            scale = math.max(scale, 1.12);
+          } else if (isPressed) {
+            scale = math.max(scale, 1.05);
+          }
+        }
 
         // 카드 뽑기 효과
         if (isPulled) {
           final pullValue = _pullAnimation.value;
           x += _pullOffset.dx * pullValue;
           y -= (_pullOffset.dy - _pullLift) * pullValue; // 위로 드래그 시 카드가 위로 이동
-          scale = 1.0 + (0.15 * pullValue);
+          const double dragBaseScale = 1.15;
+          const double dragScaleGain = 0.40;
+          scale = dragBaseScale + (dragScaleGain * pullValue);
           angle *= (1 - pullValue * 0.8);
 
           if (_isCardPulled) {
@@ -259,8 +300,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         final zIndex = isPulled
             ? 1000
             : isHovered
-                ? 999
-                : transform['zIndex'] as int;
+            ? 999
+            : transform['zIndex'] as int;
 
         return Positioned(
           left: MediaQuery.of(context).size.width / 2 - _cardWidth / 2 + x,
@@ -282,10 +323,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
               decoration: BoxDecoration(
                 // 선택된 카드에 노란색 테두리 추가
                 border: (isHovered || isPulled)
-                    ? Border.all(
-                        color: AppColors.primaryYellow,
-                        width: 2,
-                      )
+                    ? Border.all(color: AppColors.primaryYellow, width: 2)
                     : null,
                 borderRadius: BorderRadius.circular(4.r),
                 boxShadow: [
@@ -305,9 +343,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                   itemId: cardId!,
                   isSmall: true,
                   itemName: cardData.itemName ?? '아이템',
-                  itemCategoryLabel:
-                      ItemCategories.fromServerName(cardData.itemCategory!)
-                          .label,
+                  itemCategoryLabel: ItemCategories.fromServerName(
+                    cardData.itemCategory!,
+                  ).label,
                   itemCardImageUrl: cardData.primaryImageUrl != null
                       ? cardData.primaryImageUrl!
                       : 'https://picsum.photos/400/300',
@@ -330,6 +368,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     _hasStartedCardDrag = false;
 
     final cardId = _findCardAtPosition(details.localPosition);
+    setState(() => _pressedCardId = cardId);
     if (cardId != null) {
       _panStartedOnCard = true;
       _startCardId = cardId;
@@ -342,11 +381,13 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final dy = _panStartPosition.dy - details.localPosition.dy;
     _currentPanPosition = details.localPosition;
 
-    // 1) 좌우 = 항상 원호 회전만
-    const double orbitSensitivity = 0.003; // 감도 튜닝
-    setState(() {
-      _orbitAngle += dx * orbitSensitivity;
-    });
+    // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
+    if (!_hasStartedCardDrag) {
+      const double orbitSensitivity = 0.003; // 감도 튜닝
+      setState(() {
+        _orbitAngle += dx * orbitSensitivity;
+      });
+    }
 
     // 2) 카드 드래그는 조건부
     if (_panStartedOnCard && _startCardId != null) {
@@ -365,13 +406,17 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         setState(() {
           if (_pulledCardId == null && dy > 30) {
             _pulledCardId = _hoveredCardId;
-            _pullOffset =
-                Offset(details.localPosition.dx - _panStartPosition.dx, -dy);
+            _pullOffset = Offset(
+              details.localPosition.dx - _panStartPosition.dx,
+              -dy,
+            );
             _pullController.forward();
             HapticFeedback.mediumImpact();
           } else if (_pulledCardId != null) {
-            _pullOffset =
-                Offset(details.localPosition.dx - _panStartPosition.dx, -dy);
+            _pullOffset = Offset(
+              details.localPosition.dx - _panStartPosition.dx,
+              -dy,
+            );
           }
         });
 
@@ -402,7 +447,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   }
 
   void _handlePanEnd(DragEndDetails details) {
-    if ( _hasStartedCardDrag) {
+    if (_hasStartedCardDrag) {
       if (_pulledCardId != null && _wasOverDropZone) {
         // 드롭 발생 - 드롭존에 들어갔었다면 드롭 허용
         if (widget.onCardDrop != null) {
@@ -439,6 +484,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       _startCardId = null;
       _hasStartedCardDrag = false;
       _hoveredCardId = null;
+      _pressedCardId = null;
       _panStartPosition = Offset.zero;
       _currentPanPosition = Offset.zero;
     });
@@ -501,9 +547,12 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                                 fit: StackFit.expand,
                                 children: [
                                   BackdropFilter(
-                                      filter: ImageFilter.blur(
-                                          sigmaX: 30, sigmaY: 30),
-                                      child: const SizedBox.expand()),
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 30,
+                                      sigmaY: 30,
+                                    ),
+                                    child: const SizedBox.expand(),
+                                  ),
                                   Container(
                                     decoration: BoxDecoration(
                                       border: Border.all(
