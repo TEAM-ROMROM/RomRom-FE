@@ -8,6 +8,7 @@ import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
+import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -90,7 +91,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               _MenuItem(
                 label: '내 위치인증',
                 onTap: () {
-                  // TODO: 내 위치인증 화면으로 이동
+                  context.navigateTo(
+                    screen: const MyLocationVerificationScreen(),
+                  );
                 },
               ),
               _MenuItem(
