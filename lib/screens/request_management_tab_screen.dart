@@ -361,6 +361,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                     isMyItem: false,
                     isRequestManagement: true,
                     tradeRequestHistoryId: request.tradeRequestHistoryId,
+                    isChatAccessAllowed: false, // 보낸요청 = 채팅 불가
                   ),
                 );
               },
@@ -626,6 +627,7 @@ void _onToggleChanged(bool isRightSelected) {
                       'itemImage_${_itemCards[index].itemId}_0', // ← 인덱스 포함
                   isMyItem: true,
                   isRequestManagement: true,
+                  isChatAccessAllowed: false, // 내 물품 = 채팅 불가
                 ),
               );
             },
@@ -808,6 +810,7 @@ void _onToggleChanged(bool isRightSelected) {
                             isMyItem: false,
                             isRequestManagement: true,
                             tradeRequestHistoryId: request.tradeRequestHistoryId,
+                            isChatAccessAllowed: true, // 받은요청 = 채팅 가능
                           ),
                         );
                       },
