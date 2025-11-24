@@ -9,6 +9,7 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
+import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -151,56 +152,63 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
   /// 닉네임 박스 위젯
   Widget _buildNicknameBox() {
-    return Container(
-      width: double.infinity,
-      height: 82.h,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Row(
-        children: [
-          // 프로필 이미지
-          _buildProfileImage(),
-          SizedBox(width: 12.w),
+    return GestureDetector(
+      onTap: () {
+        context.navigateTo(
+          screen: const MyProfileEditScreen(),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        height: 82.h,
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        decoration: BoxDecoration(
+          color: AppColors.secondaryBlack1,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Row(
+          children: [
+            // 프로필 이미지
+            _buildProfileImage(),
+            SizedBox(width: 12.w),
 
-          // 닉네임 및 장소
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(_nickname, style: CustomTextStyles.h3),
-                SizedBox(height: 4.h),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 12.sp,
-                      color: AppColors.opacity60White,
-                    ),
-                    SizedBox(width: 2.w),
-                    Text(
-                      _location,
-                      style: CustomTextStyles.p3.copyWith(
-                        fontWeight: FontWeight.w500,
+            // 닉네임 및 장소
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(_nickname, style: CustomTextStyles.h3),
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 12.sp,
                         color: AppColors.opacity60White,
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      SizedBox(width: 2.w),
+                      Text(
+                        _location,
+                        style: CustomTextStyles.p3.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.opacity60White,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // 오른쪽 화살표 아이콘
-          Icon(
-            Icons.chevron_right,
-            size: 30.sp,
-            color: AppColors.textColorWhite,
-          ),
-        ],
+            // 오른쪽 화살표 아이콘
+            Icon(
+              Icons.chevron_right,
+              size: 30.sp,
+              color: AppColors.textColorWhite,
+            ),
+          ],
+        ),
       ),
     );
   }
