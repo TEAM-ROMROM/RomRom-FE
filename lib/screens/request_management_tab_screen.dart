@@ -796,8 +796,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                       behavior: HitTestBehavior.opaque, // 빈 공간도 터치 가능
                       onTap: () {
                         TradeApi()
-                            .getDetailedTradeRequst(request)
+                            .getDetailedTradeRequest(request)
                             .then((detailedRequest) {
+                              if (mounted) return;
                               setState(() {
                                 // isNew 상태 갱신
                                 final targetIndex = _receivedRequests

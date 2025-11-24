@@ -160,7 +160,7 @@ class TradeApi {
 
    /// 거래 요청 상세 조회 API
   /// `POST /api/trade/get`
-  Future<TradeResponse> getDetailedTradeRequst(TradeRequestHistory request) async {
+  Future<TradeResponse> getDetailedTradeRequest(TradeRequestHistory request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/get';
     late TradeResponse tradeResponse;
 
@@ -182,7 +182,7 @@ class TradeApi {
       tradeResponse = TradeResponse.fromJson(responseData);
       debugPrint('거래 요청 상세 조회 성공 및 isNew 갱신');
     } else {
-      throw Exception('거래 요청 상체 조회 실패: ${response.statusCode}');
+      throw Exception('거래 요청 상세 조회 실패: ${response.statusCode}');
     }
 
     return tradeResponse;
