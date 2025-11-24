@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:romrom_fe/enums/navigation_tab_items.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
 import 'package:romrom_fe/screens/my_page_tab_screen.dart';
@@ -43,19 +41,9 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 현재 선택된 탭 정보 가져오기
-    final NavigationTabItems currentTab =
-        NavigationTabItems.fromIndex(_currentTabIndex);
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      appBar: _currentTabIndex == 4
-          ? AppBar(
-              backgroundColor: Colors.transparent,
-              title: Text(currentTab.title, style: CustomTextStyles.h3),
-            )
-          : null, // 마이페이지 탭에서만 AppBar 표시
       body: _navigationTabScreens[_currentTabIndex],
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _currentTabIndex,
