@@ -138,8 +138,8 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
             child: Container(
               width: 24.w,
               height: 24.h,
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryYellow,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -147,7 +147,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                   'assets/images/camera.svg',
                   width: 16.w,
                   height: 16.h,
-                  colorFilter: ColorFilter.mode(
+                  colorFilter: const ColorFilter.mode(
                     AppColors.textColorWhite,
                     BlendMode.srcIn,
                   ),
@@ -187,7 +187,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
           child: Container(
             width: 24.w,
             height: 24.h,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.secondaryBlack1,
               shape: BoxShape.circle,
             ),
@@ -196,7 +196,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                 'assets/images/editPen.svg',
                 width: 16.w,
                 height: 16.h,
-                colorFilter: ColorFilter.mode(
+                colorFilter: const ColorFilter.mode(
                   AppColors.textColorWhite,
                   BlendMode.srcIn,
                 ),

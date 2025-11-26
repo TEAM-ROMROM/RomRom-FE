@@ -11,7 +11,6 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
-import 'package:shadex/shadex.dart';
 
 class MyLocationVerificationScreen extends StatefulWidget {
   const MyLocationVerificationScreen({super.key});
@@ -139,13 +138,8 @@ class _MyLocationVerificationScreenState
                 Center(
                   child: Container(
                     margin: EdgeInsets.only(bottom: 40.h),
-                    child: Shadex(
-                      shadowColor: AppColors.opacity20Black,
-                      shadowBlurRadius: 2.0,
-                      shadowOffset: const Offset(2, 2),
-                      child: SvgPicture.asset(
-                        'assets/images/location-pin.svg',
-                      ),
+                    child: SvgPicture.asset(
+                      'assets/images/location-pin.svg',
                     ),
                   ),
                 ),
@@ -168,12 +162,12 @@ class _MyLocationVerificationScreenState
                               Icon(
                                 Icons.location_on,
                                 size: 16.sp,
-                                color: AppColors.primaryColor,
+                                color: AppColors.primaryYellow,
                               ),
                               SizedBox(width: 8.w),
                               Expanded(
                                 child: Text(
-                                  '${_selectedAddress!.siGunGu ?? ''} ${_selectedAddress!.eupMyoenDong ?? ''}'.trim(),
+                                  '${_selectedAddress!.siGunGu} ${_selectedAddress!.eupMyoenDong}'.trim(),
                                   style: CustomTextStyles.p2.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),
