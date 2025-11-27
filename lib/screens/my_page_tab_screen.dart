@@ -313,13 +313,12 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              size: 30.sp,
-              color: isDestructive
-                  ? AppColors.warningRed
-                  : AppColors.textColorWhite,
-            ),
+            if (!isDestructive)
+              Icon(
+                Icons.chevron_right,
+                size: 30.sp,
+                color: AppColors.textColorWhite,
+              ),
           ],
         ),
       ),
