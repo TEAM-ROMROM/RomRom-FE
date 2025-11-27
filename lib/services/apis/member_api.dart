@@ -122,4 +122,24 @@ class MemberApi {
     );
     return isSuccess;
   }
+
+  /// 탐색 범위 설정 API
+  /// `POST /api/members/post/search-radius`
+  Future<bool> saveSearchRadius(double searchRadiusInMeters) async {
+    const String url = '${AppUrls.baseUrl}/api/members/post/search-radius';
+    bool isSuccess = false;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {
+        'searchRadiusInMeters': searchRadiusInMeters.toString(),
+      },
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('탐색 범위 저장 성공: ${searchRadiusInMeters}m');
+        isSuccess = true;
+      },
+    );
+    return isSuccess;
+  }
 }

@@ -5,7 +5,9 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common/range_slider_widget.dart';
 
@@ -172,7 +174,34 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
     });
     _updateRangeCircle();
     _updateCameraZoom();
+    _saveSearchRadius(index);
     widget.onRangeChanged?.call(index);
+  }
+
+  /// 탐색 범위 저장
+  Future<void> _saveSearchRadius(int index) async {
+    try {
+      final radiusInMeters =
+          defaultSearchRangeOptions[index].distanceKm * 1000;
+      final isSuccess = await MemberApi().saveSearchRadius(radiusInMeters);
+
+      if (mounted && isSuccess) {
+        CommonSnackBar.show(
+          context: context,
+          message: '탐색 범위가 저장되었습니다',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      debugPrint('탐색 범위 저장 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(
+          context: context,
+          message: '탐색 범위 저장에 실패했습니다',
+          type: SnackBarType.error,
+        );
+      }
+    }
   }
 
   /// 범위 원 업데이트
