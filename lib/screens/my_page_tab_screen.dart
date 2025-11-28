@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/enums/item_status.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
-import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/enums/item_categories.dart';
-import 'package:romrom_fe/enums/item_trade_option.dart' as trade_opt;
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
+import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
+import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
+import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
+import 'package:romrom_fe/screens/search_range_setting_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/widgets/item_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MyPageTabScreen extends StatefulWidget {
@@ -27,148 +25,303 @@ class MyPageTabScreen extends StatefulWidget {
 }
 
 class _MyPageTabScreenState extends State<MyPageTabScreen> {
-  final List<Item> _myItems = [];
-  bool _isLoading = true;
+  String _nickname = '닉네임';
+  String _location = '위치정보 없음';
+  String? _profileUrl;
 
   @override
   void initState() {
     super.initState();
-    _loadMyItems();
+    _loadUserInfo();
   }
 
-  /// 내 물품 리스트 로드
-  Future<void> _loadMyItems() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+  /// 사용자 정보 로드
+  Future<void> _loadUserInfo() async {
     try {
-      final itemApi = ItemApi();
-      final request = ItemRequest(
-          pageNumber: 0,
-          pageSize: 30,
-          itemStatus: ItemStatus.available.serverName);
-      final response = await itemApi.getMyItems(request);
+      final memberApi = MemberApi();
+      final memberResponse = await memberApi.getMemberInfo();
 
-      setState(() {
-        _myItems
-          ..clear()
-          ..addAll(response.itemPage?.content ?? []);
-        _isLoading = false;
-      });
-    } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          // 닉네임
+          _nickname = memberResponse.member?.nickname ?? '닉네임';
+
+          // 프로필 이미지
+          _profileUrl = memberResponse.member?.profileUrl;
+
+          // 위치 정보 (주소 조합)
+          final location = memberResponse.memberLocation;
+          if (location != null) {
+            final siGunGu = location.siGunGu ?? '';
+            final eupMyoenDong = location.eupMyoenDong ?? '';
+            final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
+
+            _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
+          }
         });
-        CommonSnackBar.show(
-          context: context,
-          message: '내 물품 목록 로드 실패: $e',
-          type: SnackBarType.error,
-        );
       }
+    } catch (e) {
+      debugPrint('사용자 정보 로드 실패: $e');
+      // 기본값 유지
     }
-  }
-
-  /// 서버에서 받은 카테고리(serverName) → 한글 이름 매핑
-  String _mapItemCategory(String? categoryServerName) {
-    if (categoryServerName == null) return '-';
-    for (final category in ItemCategories.values) {
-      if (category.serverName == categoryServerName) {
-        return category.label;
-      }
-    }
-    return categoryServerName; // 매칭 실패 시 그대로 반환
-  }
-
-  /// 서버에서 받은 거래 옵션(serverName) 리스트 → ItemTradeOption enum 리스트 매핑
-  List<trade_opt.ItemTradeOption> _mapTradeOptions(List<String>? options) {
-    if (options == null) return [];
-    final result = <trade_opt.ItemTradeOption>[];
-    for (final opt in options) {
-      try {
-        final match = trade_opt.ItemTradeOption.values
-            .firstWhere((e) => e.serverName == opt);
-        result.add(match);
-      } catch (_) {
-        // 매칭 실패 시 건너뛰기
-      }
-    }
-    return result;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 물품 카드 리스트 영역
-          SizedBox(
-            height: 500.h,
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _myItems.isEmpty
-                    ? Center(
-                        child:
-                            Text('등록한 물품이 없습니다.', style: CustomTextStyles.h3),
-                      )
-                    : ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        itemBuilder: (context, index) {
-                          final item = _myItems[index];
-                          return SizedBox(
-                            width: 85.w,
-                            child: ItemCard(
-                              itemId: item.itemId ?? 'unknown',
-                              itemCategoryLabel:
-                                  _mapItemCategory(item.itemCategory),
-                              itemName: item.itemName ?? '',
-                              itemCardImageUrl: item.primaryImageUrl != null
-                                  ? item.primaryImageUrl!
-                                  : 'https://picsum.photos/400/300',
-                              itemOptions:
-                                  _mapTradeOptions(item.itemTradeOptions),
-                            ),
-                          );
-                        },
-                        separatorBuilder: (_, __) => SizedBox(width: 12.w),
-                        itemCount: _myItems.length,
-                      ),
-          ),
-          _buildActionButton(
-            onPressed: () => AuthService().logout(context),
-            backgroundColor: Colors.pink[300],
-            text: '로그아웃',
-          ),
-          SizedBox(height: 20.h),
-          _buildActionButton(
-            onPressed: () => _handleDeleteMemberButtonTap(context),
-            backgroundColor: Colors.red[400],
-            text: '회원탈퇴',
-          ),
-        ],
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더: "마이페이지"
+            SizedBox(height: 16.h),
+            Text('마이페이지', style: CustomTextStyles.h1),
+            SizedBox(height: 37.h),
+
+            // 닉네임 박스
+            _buildNicknameBox(),
+            SizedBox(height: 16.h),
+
+            // 메뉴 섹션 1
+            _buildMenuSection([
+              _MenuItem(
+                label: '좋아요 목록',
+                onTap: () {
+                  // TODO: 좋아요 목록 화면으로 이동
+                },
+              ),
+              _MenuItem(
+                label: '내 위치인증',
+                onTap: () {
+                  context.navigateTo(
+                    screen: const MyLocationVerificationScreen(),
+                  );
+                },
+              ),
+              _MenuItem(
+                label: '선호 카테고리 설정',
+                onTap: () {
+                  context.navigateTo(
+                    screen: const MyCategorySettingsScreen(),
+                  );
+                },
+              ),
+              _MenuItem(
+                label: '탐색 범위 설정',
+                onTap: () {
+                  context.navigateTo(
+                    screen: const SearchRangeSettingScreen(),
+                  );
+                },
+              ),
+              _MenuItem(
+                label: '차단 관리',
+                onTap: () {
+                  // TODO: 차단 관리 화면으로 이동
+                },
+              ),
+            ]),
+            SizedBox(height: 16.h),
+
+            // 메뉴 섹션 2
+            _buildMenuSection([
+              _MenuItem(
+                label: '이용 약관',
+                onTap: () {
+                  // TODO: 이용 약관 화면으로 이동
+                },
+              ),
+            ]),
+            SizedBox(height: 16.h),
+
+            // 로그아웃/회원탈퇴 섹션
+            _buildMenuSection(
+              [
+                _MenuItem(
+                  label: '로그아웃',
+                  onTap: () => AuthService().logout(context),
+                  isDestructive: true,
+                ),
+                _MenuItem(
+                  label: '회원탈퇴',
+                  onTap: () => _handleDeleteMemberButtonTap(context),
+                  isDestructive: true,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// 액션 버튼 위젯 생성
-  Widget _buildActionButton({
-    required VoidCallback onPressed,
-    required Color? backgroundColor,
-    required String text,
-  }) {
-    return TextButton(
-      onPressed: onPressed,
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.all(backgroundColor),
-        padding: WidgetStateProperty.all(
-          EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+  /// 닉네임 박스 위젯
+  Widget _buildNicknameBox() {
+    return GestureDetector(
+      onTap: () {
+        context.navigateTo(
+          screen: const MyProfileEditScreen(),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        height: 82.h,
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        decoration: BoxDecoration(
+          color: AppColors.secondaryBlack1,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Row(
+          children: [
+            // 프로필 이미지
+            _buildProfileImage(),
+            SizedBox(width: 12.w),
+
+            // 닉네임 및 장소
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(_nickname, style: CustomTextStyles.h3),
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 12.sp,
+                        color: AppColors.opacity60White,
+                      ),
+                      SizedBox(width: 2.w),
+                      Text(
+                        _location,
+                        style: CustomTextStyles.p3.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.opacity60White,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // 오른쪽 화살표 아이콘
+            Icon(
+              Icons.chevron_right,
+              size: 30.sp,
+              color: AppColors.textColorWhite,
+            ),
+          ],
         ),
       ),
-      child: Text(text,
-          style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite)),
+    );
+  }
+
+  /// 프로필 이미지 위젯
+  Widget _buildProfileImage() {
+    if (_profileUrl != null && _profileUrl!.isNotEmpty) {
+      // 네트워크 이미지 (API에서 받은 프로필 이미지)
+      return ClipOval(
+        child: Image.network(
+          _profileUrl!,
+          width: 50.w,
+          height: 50.h,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // 이미지 로드 실패 시 기본 아이콘 표시
+            return _buildDefaultProfileIcon();
+          },
+        ),
+      );
+    } else {
+      // 기본 프로필 아이콘 (SVG)
+      return _buildDefaultProfileIcon();
+    }
+  }
+
+  /// 기본 프로필 아이콘 (SVG)
+  Widget _buildDefaultProfileIcon() {
+    return ClipOval(
+      child: SvgPicture.asset(
+        'assets/images/basicProfile.svg',
+        width: 50.w,
+        height: 50.h,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  /// 메뉴 섹션 위젯
+  Widget _buildMenuSection(List<_MenuItem> items) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.secondaryBlack1,
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Column(
+        children: List.generate(
+          items.length,
+          (index) {
+            final item = items[index];
+            return Column(
+              children: [
+                _buildMenuItem(
+                  label: item.label,
+                  onTap: item.onTap,
+                  isDestructive: item.isDestructive,
+                ),
+                if (index < items.length - 1)
+                  Divider(
+                    height: 1.h,
+                    thickness: 1.h,
+                    color: AppColors.opacity10White,
+                    indent: 24.w,
+                    endIndent: 24.w,
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 메뉴 아이템 위젯
+  Widget _buildMenuItem({
+    required String label,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10.r),
+      child: Container(
+        height: 54.h,
+        padding: EdgeInsets.only(left: 24.w, right: 12.w),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: CustomTextStyles.p2.copyWith(
+                  fontWeight: FontWeight.w400,
+                  color: isDestructive
+                      ? AppColors.warningRed
+                      : AppColors.textColorWhite,
+                ),
+              ),
+            ),
+            if (!isDestructive)
+              Icon(
+                Icons.chevron_right,
+                size: 30.sp,
+                color: AppColors.textColorWhite,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -191,9 +344,14 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
           TextButton(
             onPressed: () => _confirmDeleteMember(dialogContext, context),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+              foregroundColor: AppColors.warningRed,
             ),
-            child: Text('탈퇴하기', style: CustomTextStyles.p2),
+            child: Text(
+              '탈퇴하기',
+              style: CustomTextStyles.p2.copyWith(
+                color: AppColors.warningRed,
+              ),
+            ),
           ),
         ],
       ),
@@ -241,4 +399,17 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
       );
     }
   }
+}
+
+/// 메뉴 아이템 데이터 클래스
+class _MenuItem {
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  _MenuItem({
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
 }
