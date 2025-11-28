@@ -158,6 +158,36 @@ class TradeApi {
     return tradeResponse;
   }
 
+   /// 거래 요청 상세 조회 API
+  /// `POST /api/trade/get`
+  Future<TradeResponse> getDetailedTradeRequest(TradeRequestHistory request) async {
+    const String url = '${AppUrls.baseUrl}/api/trade/get';
+    late TradeResponse tradeResponse;
+
+    final Map<String, dynamic> fields = {
+      'tradeRequestHistoryId': request.tradeRequestHistoryId,      
+    };
+
+    http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        // 여기서는 호출되지 않음 - 아래에서 직접 처리
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      tradeResponse = TradeResponse.fromJson(responseData);
+      debugPrint('거래 요청 상세 조회 성공 및 isNew 갱신');
+    } else {
+      throw Exception('거래 요청 상세 조회 실패: ${response.statusCode}');
+    }
+
+    return tradeResponse;
+  }
+
   /// 거래 완료로 변경 API
   /// `POST /api/trade/accept`
   Future<void> updateTradeStatusAccept(TradeRequest request) async {

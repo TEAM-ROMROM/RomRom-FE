@@ -47,6 +47,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   final bool isMyItem;
   final bool isRequestManagement;
   final String? tradeRequestHistoryId;
+  final bool isChatAccessAllowed; // 채팅 접근 권한 여부
 
   const ItemDetailDescriptionScreen({
     super.key,
@@ -58,6 +59,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
     required this.isRequestManagement, // 요청 관리 화면에서 왔는지 여부
     this.homeFeedItem,
     this.tradeRequestHistoryId, // 거래 요청 ID (채팅방 생성용)
+    this.isChatAccessAllowed = false, // 채팅 접근 권한 기본값: false
   });
 
   @override
@@ -615,7 +617,7 @@ class _ItemDetailDescriptionScreenState
                                 ),
                               ),
                             ),
-                            !widget.isMyItem && widget.isRequestManagement
+                            widget.isChatAccessAllowed
                                 ? Padding(
                                     padding: EdgeInsets.only(left: 16.0.w),
                                     child: ChattingButton(

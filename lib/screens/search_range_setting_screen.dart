@@ -1,0 +1,264 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/current_location_button.dart';
+import 'package:romrom_fe/widgets/common/range_slider_widget.dart';
+
+/// 탐색 범위 설정 화면
+/// 네이버 지도와 커스텀 범위 슬라이더를 통해 탐색 범위를 설정합니다.
+class SearchRangeSettingScreen extends StatefulWidget {
+  /// 초기 선택된 범위 인덱스 (기본값: 0)
+  final int initialRangeIndex;
+
+  /// 범위 변경 완료 시 호출되는 콜백
+  final ValueChanged<int>? onRangeChanged;
+
+  const SearchRangeSettingScreen({
+    super.key,
+    this.initialRangeIndex = 0,
+    this.onRangeChanged,
+  });
+
+  @override
+  State<SearchRangeSettingScreen> createState() =>
+      _SearchRangeSettingScreenState();
+}
+
+class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
+  final _locationService = LocationService();
+  final Completer<NaverMapController> _mapControllerCompleter = Completer();
+
+  NLatLng? _currentPosition;
+  int _selectedRangeIndex = 0;
+  NCircleOverlay? _rangeCircle;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRangeIndex = widget.initialRangeIndex;
+    _initializeLocation();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.primaryBlack,
+      appBar: _buildAppBar(),
+      body: _currentPosition == null
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                // 지도 영역
+                Expanded(
+                  child: _buildMapSection(),
+                ),
+                // 슬라이더 영역
+                _buildSliderSection(),
+              ],
+            ),
+    );
+  }
+
+  /// 앱바 빌드
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.primaryBlack,
+      elevation: 0,
+      leading: IconButton(
+        icon: Icon(
+          Icons.arrow_back_ios,
+          color: AppColors.textColorWhite,
+          size: 24.sp,
+        ),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      centerTitle: true,
+      title: Text(
+        '탐색 범위 설정',
+        style: CustomTextStyles.h3,
+      ),
+    );
+  }
+
+  /// 지도 섹션 빌드
+  Widget _buildMapSection() {
+    return Stack(
+      children: [
+        NaverMap(
+          options: NaverMapViewOptions(
+            initialCameraPosition: NCameraPosition(
+              target: _currentPosition!,
+              zoom: _getZoomLevel(_selectedRangeIndex),
+            ),
+            logoAlign: NLogoAlign.leftBottom,
+            logoMargin: NEdgeInsets.fromEdgeInsets(
+              EdgeInsets.only(left: 24.w, bottom: 20.h),
+            ),
+            indoorEnable: true,
+            locationButtonEnable: false,
+            consumeSymbolTapEvents: false,
+          ),
+          forceGesture: false,
+          onMapReady: (controller) async {
+            if (!_mapControllerCompleter.isCompleted) {
+              _mapControllerCompleter.complete(controller);
+            }
+            await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+            _updateRangeCircle();
+          },
+        ),
+        // 현재 위치 버튼
+        Positioned(
+          bottom: 48.h,
+          left: 24.w,
+          child: CurrentLocationButton(
+            onTap: () async {
+              final controller = await _mapControllerCompleter.future;
+              await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+            },
+            iconSize: 24.h,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 슬라이더 섹션 빌드
+  Widget _buildSliderSection() {
+    return Container(
+      padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 48.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryBlack,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24.r),
+          topRight: Radius.circular(24.r),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RangeSliderWidget(
+            selectedIndex: _selectedRangeIndex,
+            options: defaultSearchRangeOptions,
+            onChanged: _onRangeChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 위치 초기화
+  Future<void> _initializeLocation() async {
+    final hasPermission = await _locationService.requestPermission();
+    if (!hasPermission) return;
+
+    final position = await _locationService.getCurrentPosition();
+    if (position != null) {
+      setState(() {
+        _currentPosition = _locationService.positionToLatLng(position);
+      });
+    }
+  }
+
+  /// 범위 변경 처리
+  void _onRangeChanged(int index) {
+    setState(() {
+      _selectedRangeIndex = index;
+    });
+    _updateRangeCircle();
+    _updateCameraZoom();
+    _saveSearchRadius(index);
+    widget.onRangeChanged?.call(index);
+  }
+
+  /// 탐색 범위 저장
+  Future<void> _saveSearchRadius(int index) async {
+    try {
+      final radiusInMeters =
+          defaultSearchRangeOptions[index].distanceKm * 1000;
+      final isSuccess = await MemberApi().saveSearchRadius(radiusInMeters);
+
+      if (mounted && isSuccess) {
+        CommonSnackBar.show(
+          context: context,
+          message: '탐색 범위가 저장되었습니다',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      debugPrint('탐색 범위 저장 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(
+          context: context,
+          message: '탐색 범위 저장에 실패했습니다',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  /// 범위 원 업데이트
+  Future<void> _updateRangeCircle() async {
+    if (!_mapControllerCompleter.isCompleted || _currentPosition == null) return;
+
+    final controller = await _mapControllerCompleter.future;
+    final radiusMeters =
+        defaultSearchRangeOptions[_selectedRangeIndex].distanceKm * 1000;
+
+    // 기존 원 제거
+    if (_rangeCircle != null) {
+      await controller.deleteOverlay(_rangeCircle!.info);
+    }
+
+    // 새 원 추가
+    _rangeCircle = NCircleOverlay(
+      id: 'range_circle',
+      center: _currentPosition!,
+      radius: radiusMeters,
+      color: AppColors.primaryYellow.withValues(alpha: 0.15),
+      outlineColor: AppColors.primaryYellow.withValues(alpha: 0.5),
+      outlineWidth: 2,
+    );
+
+    await controller.addOverlay(_rangeCircle!);
+  }
+
+  /// 카메라 줌 업데이트
+  Future<void> _updateCameraZoom() async {
+    if (!_mapControllerCompleter.isCompleted || _currentPosition == null) return;
+
+    final controller = await _mapControllerCompleter.future;
+    final zoom = _getZoomLevel(_selectedRangeIndex);
+
+    await controller.updateCamera(
+      NCameraUpdate.withParams(
+        target: _currentPosition,
+        zoom: zoom,
+      ),
+    );
+  }
+
+  /// 범위에 따른 줌 레벨 반환
+  double _getZoomLevel(int rangeIndex) {
+    // 범위가 클수록 줌 아웃
+    switch (rangeIndex) {
+      case 0: // 2.5km
+        return 14.0;
+      case 1: // 5km
+        return 13.0;
+      case 2: // 7.5km
+        return 12.5;
+      case 3: // 10km
+        return 12.0;
+      default:
+        return 14.0;
+    }
+  }
+}
