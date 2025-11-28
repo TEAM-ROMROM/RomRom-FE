@@ -1,11 +1,35 @@
 {
   "metadata": {
-    "lastUpdated": "2025-11-22T11:49:33Z",
-    "currentVersion": "1.7.5",
-    "totalReleases": 46,
+    "lastUpdated": "2025-11-28T09:22:19Z",
+    "currentVersion": "1.7.10",
+    "totalReleases": 47,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.7.10",
+      "project_type": "flutter",
+      "date": "2025-11-28",
+      "pr_number": 376,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\n새로운 기능\n\n마이 페이지 개편: 카테고리 설정, 위치 인증, 프로필 편집 기능 추가\n검색 범위 설정 화면 추가 (지도 기반 범위 선택)\n요청 관리 화면에서 채팅 접근 제어 개선\n\n\n\n개선 사항\n\n메인 화면 UI 단순화\n앱 버전 1.7.10으로 업데이트\n\n\n\n✏️ Tip: You can customize this high-level summary in your review settings.",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "마이 페이지 개편: 카테고리 설정, 위치 인증, 프로필 편집 기능 추가",
+            "검색 범위 설정 화면 추가 (지도 기반 범위 선택)",
+            "요청 관리 화면에서 채팅 접근 제어 개선"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "메인 화면 UI 단순화",
+            "앱 버전 1.7.10으로 업데이트"
+          ]
+        }
+      }
+    },
     {
       "version": "1.7.5",
       "project_type": "flutter",
