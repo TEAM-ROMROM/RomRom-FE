@@ -294,7 +294,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           const double dragBaseScale = 1.15;
           const double dragScaleGain = 0.20;
           scale = dragBaseScale + (dragScaleGain * pullValue);
-          angle *= (1 - pullValue * 0.8);
+           angle *= (1 - pullValue);
 
           if (_isCardPulled) {
             opacity = 1.0 - (pullValue * 0.2);
