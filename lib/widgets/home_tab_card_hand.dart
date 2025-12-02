@@ -146,6 +146,23 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     }
   }
 
+  // 각도 제한 계산 메서드 추가
+  double _getMinOrbitAngle() {
+    if (_cards.isEmpty) return -math.pi / 2;
+    final totalCards = _cards.length;
+    final midIndex = (totalCards - 1) / 2;
+    // 맨 오른쪽 카드가 오른쪽 끝에 올 때의 각도
+    return -math.pi / 2 - (midIndex * _deckStepAngle);
+  }
+
+  double _getMaxOrbitAngle() {
+    if (_cards.isEmpty) return -math.pi / 2;
+    final totalCards = _cards.length;
+    final midIndex = (totalCards - 1) / 2;
+    // 맨 왼쪽 카드가 왼쪽 끝에 올 때의 각도
+    return -math.pi / 2 + (midIndex * _deckStepAngle);
+  }
+
   @override
   void dispose() {
     _iconAnimationController.dispose();
@@ -360,15 +377,18 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final dispX = details.localPosition.dx - _panStartPosition.dx; // → 오른쪽 +
     final dispY = details.localPosition.dy - _panStartPosition.dy; // → 아래로 +
 
-
     // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
     if (!_hasStartedCardDrag) {
       final double dragDx = -details.localPosition.dx + _orbitDragStart;
       final double targetAngle =
           _orbitAccumulated + (-dragDx * _orbitSensitivity);
+
+      final double minAngle = _getMinOrbitAngle();
+      final double maxAngle = _getMaxOrbitAngle();
+      final double clampedAngle = targetAngle.clamp(minAngle, maxAngle);
       setState(() {
-        _orbitAngle = targetAngle;
-        _orbitController?.value = targetAngle;
+        _orbitAngle = clampedAngle;
+        _orbitController?.value = clampedAngle;
       });
     }
 
@@ -490,14 +510,25 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       final double horizontalVelocity = details.velocity.pixelsPerSecond.dx;
       if (horizontalVelocity.abs() > 10) {
         final double angularVelocity = -horizontalVelocity * _orbitSensitivity;
+
+        final double minAngle = _getMinOrbitAngle();
+        final double maxAngle = _getMaxOrbitAngle();
+
         final simulation = FrictionSimulation(
           0.12,
           _orbitAngle,
           angularVelocity,
         );
+        
         _orbitController?.animateWith(simulation).whenComplete(() {
           if (!mounted) return;
-          _orbitAccumulated = _orbitController?.value ?? _orbitAngle;
+          // 최종 위치도 제한
+          final clampedValue = (_orbitController?.value ?? _orbitAngle).clamp(
+            minAngle,
+            maxAngle,
+          );
+          _orbitController?.value = clampedValue;
+          _orbitAccumulated = clampedValue;
         });
       } else {
         _orbitController?.value = _orbitAngle;
