@@ -49,7 +49,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   String? _pulledCardId;
   bool _isCardPulled = false;
   Offset _panStartPosition = Offset.zero;
-  Offset _currentPanPosition = Offset.zero;
   Offset _pullOffset = Offset.zero;
 
   // 카드 리스트
@@ -68,7 +67,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
   // keys: 전역 좌표 구하려고
   final GlobalKey _deckKey = GlobalKey(); // 카드 스택 영역
-  final GlobalKey _dropZoneKey = GlobalKey(); // 노란 드롭존
+  final GlobalKey _dropZoneKey = GlobalKey(); // 흰색 드롭존
 
   double _dropShadowT = 0.0; // 0~1, 드롭존 그림자 강도
   bool _wasOverDropZone = false; // 진입/이탈 감지용(햅틱 등)
@@ -340,7 +339,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   // 전체 카드 영역에 대한 제스처 처리
   void _handlePanStart(DragStartDetails details) {
     _panStartPosition = details.localPosition;
-    _currentPanPosition = details.localPosition;
     _orbitController?.stop();
     _orbitDragStart = details.localPosition.dx;
 
@@ -362,7 +360,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final dispX = details.localPosition.dx - _panStartPosition.dx; // → 오른쪽 +
     final dispY = details.localPosition.dy - _panStartPosition.dy; // → 아래로 +
 
-    _currentPanPosition = details.localPosition;
 
     // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
     if (!_hasStartedCardDrag) {
@@ -408,22 +405,48 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
             _deckKey.currentContext?.findRenderObject() as RenderBox?;
         final dropRect = _globalRectOf(_dropZoneKey);
         if (deckBox != null && dropRect != null && _pulledCardId != null) {
-          // 현재 포인터 위치(덱 로컬) → 글로벌
-          final globalPointer = deckBox.localToGlobal(_currentPanPosition);
+          // 현재 카드의 위치 계산
+          final cardIndex = _cards.indexWhere(
+            (card) => card.itemId == _pulledCardId,
+          );
+          if (cardIndex != -1) {
+            final transform = _calculateCardTransform(
+              context,
+              cardIndex,
+              _cards.length,
+            );
+            final pullValue = _pullAnimation.value;
 
-          // 카드 중심을 포인터로 대체(충분히 자연스러움).
-          final isOver = dropRect.contains(globalPointer);
+            // 카드의 실제 위치 계산 (pull 효과 포함)
+            final cardLeft =
+                (transform['left'] as double) + _pullOffset.dx * pullValue;
+            final cardTop =
+                (transform['top'] as double) +
+                _pullOffset.dy * pullValue -
+                _pullLift * pullValue;
 
-          // 스무딩(선형 보간)
-          final target = isOver ? 1.0 : 0.0;
-          final newT = (_dropShadowT * 0.7) + (target * 0.3); // 부드럽게
+            // 카드의 글로벌 위치
+            final cardGlobalTopLeft = deckBox.localToGlobal(
+              Offset(cardLeft, cardTop),
+            );
 
-          if (isOver && !_wasOverDropZone) {
-            HapticFeedback.selectionClick(); // 드롭존 진입시 손맛
+            // 카드의 전체 영역 (Rect)
+            final cardRect = cardGlobalTopLeft & Size(_cardWidth, _cardHeight);
+
+            // 드롭존과 카드 영역이 겹치는지 체크
+            final isOver = dropRect.overlaps(cardRect);
+
+            // 스무딩(선형 보간)
+            final target = isOver ? 1.0 : 0.0;
+            final newT = (_dropShadowT * 0.7) + (target * 0.3); // 부드럽게
+
+            if (isOver && !_wasOverDropZone) {
+              HapticFeedback.selectionClick(); // 드롭존 진입시 손맛
+            }
+            _wasOverDropZone = isOver;
+
+            setState(() => _dropShadowT = newT.clamp(0.0, 1.0));
           }
-          _wasOverDropZone = isOver;
-
-          setState(() => _dropShadowT = newT.clamp(0.0, 1.0));
         }
       }
     }
@@ -489,7 +512,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       _hoveredCardId = null;
       _pressedCardId = null;
       _panStartPosition = Offset.zero;
-      _currentPanPosition = Offset.zero;
     });
   }
 
