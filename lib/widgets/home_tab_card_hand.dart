@@ -39,9 +39,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   double _orbitAccumulated = -math.pi / 2;
   static const double _orbitSensitivity = 0.0045;
 
-  bool _panStartedOnCard = false; // 터치 시작이 카드 위?
+  bool _panStartedOnCard = false; // 터치 시작이 카드 위
   String? _startCardId; // 터치 시작 카드
-  bool _hasStartedCardDrag = false; // 수직 드래그 임계치 넘겨 카드 드래그 모드 진입?
+  bool _hasStartedCardDrag = false; // 수직 드래그 임계치 넘겨 카드 드래그 모드 진입
   String? _pressedCardId; // 터치로 강조된 카드
 
   // 카드 상태
@@ -276,7 +276,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           left += _pullOffset.dx * pullValue;
           top += _pullOffset.dy * pullValue - _pullLift * pullValue;
           const double dragBaseScale = 1.15;
-          const double dragScaleGain = 0.40;
+          const double dragScaleGain = 0.20;
           scale = dragBaseScale + (dragScaleGain * pullValue);
           angle *= (1 - pullValue * 0.8);
 
@@ -285,22 +285,12 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           }
         }
 
-        // Z-Index를 위한 순서 조정
-        final zIndex = isPulled
-            ? 1000
-            : isHovered
-            ? 999
-            : transform['zIndex'] as int;
-
         return Positioned(
           left: left,
           top: top,
           child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001)
-              // ignore: deprecated_member_use
-              ..translate(0.0, 0.0, zIndex.toDouble())
               ..rotateZ(angle)
               // ignore: deprecated_member_use
               ..scale(scale),
