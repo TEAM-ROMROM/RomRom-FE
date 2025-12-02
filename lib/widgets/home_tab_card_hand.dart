@@ -274,7 +274,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         if (isPulled) {
           final pullValue = _pullAnimation.value;
           left += _pullOffset.dx * pullValue;
-          top -= (_pullOffset.dy - _pullLift) * pullValue; // 위로 드래그 시 카드가 위로 이동
+          top += _pullOffset.dy * pullValue - _pullLift * pullValue;
           const double dragBaseScale = 1.15;
           const double dragScaleGain = 0.40;
           scale = dragBaseScale + (dragScaleGain * pullValue);
@@ -368,7 +368,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    final dy = _panStartPosition.dy - details.localPosition.dy;
+    // 드래그 변위(손가락 방향과 동일한 부호)
+    final dispX = details.localPosition.dx - _panStartPosition.dx; // → 오른쪽 +
+    final dispY = details.localPosition.dy - _panStartPosition.dy; // → 아래로 +
+
     _currentPanPosition = details.localPosition;
 
     // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
@@ -386,7 +389,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     if (_panStartedOnCard && _startCardId != null) {
       // 수직 임계치 통과 시점에 '카드 드래그 모드' 진입 + 선택 고정
       const double selectThreshold = 10.0; // px
-      if (!_hasStartedCardDrag && dy.abs() > selectThreshold) {
+      if (!_hasStartedCardDrag && dispY.abs() > selectThreshold) {
         setState(() {
           _hasStartedCardDrag = true;
           _hoveredCardId = _startCardId; // 이때 처음으로 선택 상태 표시
@@ -399,19 +402,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       // 카드 드래그 모드에서만 뽑기/위치 업데이트
       if (_hasStartedCardDrag) {
         setState(() {
-          if (_pulledCardId == null && dy > 30) {
+          // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -30px
+          if (_pulledCardId == null && dispY < -30) {
             _pulledCardId = _hoveredCardId;
-            _pullOffset = Offset(
-              details.localPosition.dx - _panStartPosition.dx,
-              -dy,
-            );
+            _pullOffset = Offset(dispX, dispY);
             _pullController.forward();
             HapticFeedback.mediumImpact();
           } else if (_pulledCardId != null) {
-            _pullOffset = Offset(
-              details.localPosition.dx - _panStartPosition.dx,
-              -dy,
-            );
+            _pullOffset = Offset(dispX, dispY);
           }
         });
 
