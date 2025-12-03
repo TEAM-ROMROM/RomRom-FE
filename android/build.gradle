@@ -2,11 +2,11 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-        jcenter()  // 필요하다면 추가
+        // jcenter() 제거
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:8.4.0"  // Android Gradle Plugin
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10"  // Kotlin Plugin
+        classpath "com.android.tools.build:gradle:8.6.1"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0"
     }
 }
 

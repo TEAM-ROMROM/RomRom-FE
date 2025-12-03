@@ -1,9 +1,12 @@
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/firebase_options.dart';
 
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
@@ -12,10 +15,19 @@ import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
+import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 
 import 'screens/onboarding/onboarding_flow_screen.dart';
+
+/// 백그라운드에서 알림 설정(최상단에 위치 해야 함)
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  debugPrint("Handling a background message: ${message.messageId}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,11 +38,21 @@ void main() async {
   // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseService().verifyFirebase();  
+  FirebaseMessaging.onMessage.listen((RemoteMessage? message) {});
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // firestore 초기화
+  await FirebaseService().setupPushNotifications(); // 알림 권한 요청 설정  
+
   // 시스템 오버레이 색상 설정
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    systemNavigationBarColor: Colors.transparent,
-    statusBarColor: Colors.transparent,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent,
+      statusBarColor: Colors.transparent,
+    ),
+  );
 
   // 안드로이드에서 제스처 모드인지 확인
   bool isGestureMode = false;
@@ -44,10 +66,7 @@ void main() async {
 
   runApp(
     ProviderScope(
-      child: MyApp(
-        initialScreen: initialScreen,
-        isGestureMode: isGestureMode,
-      ),
+      child: MyApp(initialScreen: initialScreen, isGestureMode: isGestureMode),
     ),
   );
 }
@@ -78,9 +97,7 @@ Future<Widget> _determineInitialScreen() async {
 
     if (userInfo.needsOnboarding) {
       debugPrint('온보딩 필요: ${userInfo.nextOnboardingStep} 단계로 이동');
-      return OnboardingFlowScreen(
-        initialStep: userInfo.nextOnboardingStep,
-      );
+      return OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
     }
 
     debugPrint('토큰 유효 및 온보딩 완료: 메인 화면으로 이동');
@@ -108,21 +125,24 @@ class MyApp extends StatelessWidget {
       designSize: const Size(393, 852),
       useInheritedMediaQuery: true,
       minTextAdapt: true,
-      child: Builder(builder: (context) {
-        return SafeArea(
-          top: false,
-          bottom: !isGestureMode,
-          child: MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: const TextScaler.linear(1.0)),
-            child:  MaterialApp(
-              title: 'RomRom',
-              theme: AppTheme.defaultTheme,
-              home: initialScreen,
+      child: Builder(
+        builder: (context) {
+          return SafeArea(
+            top: false,
+            bottom: !isGestureMode,
+            child: MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.0)),
+              child: MaterialApp(
+                title: 'RomRom',
+                theme: AppTheme.defaultTheme,
+                home: initialScreen,
+              ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 }
