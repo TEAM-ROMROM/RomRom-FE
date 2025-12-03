@@ -1,11 +1,41 @@
 {
   "metadata": {
-    "lastUpdated": "2025-11-28T09:22:26Z",
-    "currentVersion": "1.7.10",
-    "totalReleases": 48,
+    "lastUpdated": "2025-12-03T16:05:15Z",
+    "currentVersion": "1.7.12",
+    "totalReleases": 49,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.7.12",
+      "project_type": "flutter",
+      "date": "2025-12-03",
+      "pr_number": 380,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\n\n새로운 기능\n\n푸시 알림 지원 추가\nFirebase 클라우드 메시징 통합\n\n\n\n개선사항\n\n홈 화면 카드 인터페이스 UI 개선\niOS 최소 배포 대상 업데이트\n\n\n\n업데이트\n\n빌드 도구 및 플러그인 업그레이드\n앱 버전 1.7.12로 업데이트\n\n\n\n✏️ Tip: You can customize this high-level summary in your review settings.",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "푸시 알림 지원 추가",
+            "Firebase 클라우드 메시징 통합"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "홈 화면 카드 인터페이스 UI 개선",
+            "iOS 최소 배포 대상 업데이트"
+          ]
+        },
+        "업데이트": {
+          "title": "업데이트",
+          "items": [
+            "빌드 도구 및 플러그인 업그레이드",
+            "앱 버전 1.7.12로 업데이트"
+          ]
+        }
+      }
+    },
     {
       "version": "1.7.10",
       "project_type": "flutter",
