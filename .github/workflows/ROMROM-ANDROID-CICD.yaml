@@ -67,26 +67,6 @@ jobs:
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
-      - name: Validate & peek non-secret fields
-        shell: bash
-        run: |
-          # JSON 문법 체크
-          jq . android/app/google-services.json >/dev/null
-
-          # 파일 크기/해시로 동일성 확인(내용 노출 없이)
-          stat -c "size=%s" android/app/google-services.json || wc -c < android/app/google-services.json
-          sha256sum android/app/google-services.json | awk '{print "sha256="$1}'
-
-          # 비밀이 아닌 필드만 확인(패키지명/프로젝트 번호/버킷)
-          echo "package_names:"
-          jq -r '.client[].client_info.android_client_info.package_name' android/app/google-services.json | sort -u
-
-          echo "project_number:"
-          jq -r '.project_info.project_number' android/app/google-services.json
-
-          echo "storage_bucket:"
-          jq -r '.project_info.storage_bucket' android/app/google-services.json
-
       # Flutter 설정 및 버전 확인
       - name: Set up Flutter
         uses: subosito/flutter-action@v2

@@ -101,6 +101,16 @@ jobs:
           pod install || pod install --repo-update
           cd ..
 
+      - name: Create GoogleService-Info.plist (safe heredoc)
+        shell: bash
+        run: |
+          mkdir -p ios/Runner
+          cat > ios/Runner/GoogleService-Info.plist << 'PLIST'
+          ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+          PLIST
+              echo "GoogleService-Info.plist created"
+              /usr/bin/plutil -lint ios/Runner/GoogleService-Info.plist
+
       # iOS 앱 빌드 (코드 서명 없이)
       - name: Build iOS app (no codesign)
         run: |

@@ -290,6 +290,16 @@ jobs:
           </plist>
           EOF
 
+      - name: Create GoogleService-Info.plist (safe heredoc)
+        shell: bash
+        run: |
+          mkdir -p ios/Runner
+          cat > ios/Runner/GoogleService-Info.plist << 'PLIST'
+          ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+          PLIST
+              echo "GoogleService-Info.plist created"
+              /usr/bin/plutil -lint ios/Runner/GoogleService-Info.plist
+
       # Flutter build (no codesign) to generate Xcode project artifacts
       - name: Flutter build (no codesign)
         run: |
