@@ -801,7 +801,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: -120.h, // 네비게이션 바 위에 표시
+            bottom: -140.h, // 네비게이션 바 위에 표시
             child: HomeTabCardHand(
               cards: _myCards,
               onCardDrop: _handleCardDrop,

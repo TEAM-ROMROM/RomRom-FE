@@ -90,6 +90,15 @@ jobs:
       - name: Android SDK 설정
         id: setup-android
         uses: android-actions/setup-android@v3
+      
+      - name: google-services.json 설정
+        shell: bash
+        run: |
+          mkdir -p android/app
+          # 시크릿의 줄바꿈을 그대로 보존해서 파일로 기록
+          printf '%s' "${GOOGLE_SERVICES_JSON}" > android/app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
       - name: 코드 분석 실행
         run: |
