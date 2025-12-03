@@ -80,11 +80,11 @@ jobs:
           fi
 
           # Google Services JSON
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/Google-services.json
-          if [ -s "android/Google-services.json" ]; then
-            echo "Google-services.json 생성 성공 (크기: $(stat -c%s android/Google-services.json) 바이트)"
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+          if [ -s "android/app/google-services.json" ]; then
+            echo "google-services.json 생성 성공 (크기: $(stat -c%s android/app/google-services.json) 바이트)"
           else
-            echo "경고: Google-services.json이 비어 있거나 생성되지 않았습니다"
+            echo "경고: google-services.json이 비어 있거나 생성되지 않았습니다"
           fi
 
           # iOS용 Secrets.xcconfig 파일 생성
@@ -101,7 +101,7 @@ jobs:
           echo "=== 현재 디렉토리 (/): ==="
           ls -la .env
           echo "=== android/ 디렉토리: ==="
-          ls -la android/key.properties android/Google-services.json
+          ls -la android/key.properties android/app/google-services.json
           echo "=== android/app/keystore/ 디렉토리: ==="
           ls -la android/app/keystore/key.jks
           echo "=== ios/Flutter/ 디렉토리: ==="
@@ -124,7 +124,7 @@ jobs:
           DEBUG_KEYSTORE_SIZE=$(stat -c%s ~/.android/debug.keystore 2>/dev/null || echo "0")
           KEY_SIZE=$(stat -c%s "android/app/keystore/key.jks" 2>/dev/null || echo "0")
           KEY_PROPERTIES_SIZE=$(stat -c%s "android/key.properties" 2>/dev/null || echo "0")
-          GOOGLE_SERVICES_SIZE=$(stat -c%s "android/Google-services.json" 2>/dev/null || echo "0")
+          GOOGLE_SERVICES_SIZE=$(stat -c%s "android/app/google-services.json" 2>/dev/null || echo "0")
           SECRETS_XCCONFIG_SIZE=$(stat -c%s "ios/Flutter/Secrets.xcconfig" 2>/dev/null || echo "0")
           
           # JSON 파일 생성
@@ -173,8 +173,8 @@ jobs:
                 "last_updated": "${BUILD_DATE}"
               },
               {
-                "file_name": "Google-services.json",
-                "file_path": "android/",
+                "file_name": "google-services.json",
+                "file_path": "android/app/",
                 "file_size": "${GOOGLE_SERVICES_SIZE}",
                 "last_updated": "${BUILD_DATE}"
               },
@@ -209,7 +209,7 @@ jobs:
           cp -v ~/.android/debug.keystore gitignore_files/${TIMESTAMP}/ 2>/dev/null || echo "debug.keystore 파일 복사 실패"
           cp -v android/app/keystore/key.jks gitignore_files/${TIMESTAMP}/ || echo "key.jks 파일 복사 실패"
           cp -v android/key.properties gitignore_files/${TIMESTAMP}/ || echo "key.properties 파일 복사 실패"
-          cp -v android/Google-services.json gitignore_files/${TIMESTAMP}/ || echo "Google-services.json 파일 복사 실패"
+          cp -v android/app/google-services.json gitignore_files/${TIMESTAMP}/ || echo "google-services.json 파일 복사 실패"
           cp -v ios/Flutter/Secrets.xcconfig gitignore_files/${TIMESTAMP}/ || echo "Secrets.xcconfig 파일 복사 실패"
           cp -v cicd-gitignore-file.json gitignore_files/${TIMESTAMP}/ || echo "cicd-gitignore-file.json 파일 복사 실패"
           
@@ -236,7 +236,7 @@ jobs:
           cp -v ~/.android/debug.keystore gitignore_files/latest/ 2>/dev/null || echo "debug.keystore 파일 복사 실패"
           cp -v android/app/keystore/key.jks gitignore_files/latest/ || echo "key.jks 파일 복사 실패"
           cp -v android/key.properties gitignore_files/latest/ || echo "key.properties 파일 복사 실패"
-          cp -v android/Google-services.json gitignore_files/latest/ || echo "Google-services.json 파일 복사 실패"
+          cp -v android/app/google-services.json gitignore_files/latest/ || echo "google-services.json 파일 복사 실패"
           cp -v ios/Flutter/Secrets.xcconfig gitignore_files/latest/ || echo "Secrets.xcconfig 파일 복사 실패"
           cp -v cicd-gitignore-file.json gitignore_files/latest/ || echo "cicd-gitignore-file.json 파일 복사 실패"
           

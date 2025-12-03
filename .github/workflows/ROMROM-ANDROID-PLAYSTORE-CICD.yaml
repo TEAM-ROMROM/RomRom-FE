@@ -190,11 +190,11 @@ jobs:
           echo "✅ key.properties 생성 완료"
           cat android/key.properties
 
-      # Google-services.json 생성
-      - name: Create Google-services.json
+      # google-services.json 생성
+      - name: Create google-services.json
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
-          echo "✅ Google-services.json 생성 완료"
+          echo "✅ google-services.json 생성 완료"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
