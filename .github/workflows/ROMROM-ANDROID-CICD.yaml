@@ -60,10 +60,15 @@ jobs:
 
       # google-services.json 생성
       - name: Create google-services.json
-        run: |
+        run: |          
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
           echo "google-services.json created"
           ls -la android/app/
+
+      - name: Validate google-services.json
+        run: |
+          jq . android/app/google-services.json >/dev/null
+          cat android/app/google-services.json | jq .  # Valid JSON will pretty-print, invalid will error
 
       # Flutter 설정 및 버전 확인
       - name: Set up Flutter
