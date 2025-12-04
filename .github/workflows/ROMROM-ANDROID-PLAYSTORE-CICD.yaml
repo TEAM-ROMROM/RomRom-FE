@@ -192,9 +192,12 @@ jobs:
 
       # google-services.json 생성
       - name: Create google-services.json
+        shell: bash
         run: |
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
-          echo "✅ google-services.json 생성 완료"
+          mkdir -p android/app
+          printf '%s' "${GOOGLE_SERVICES_JSON}" > android/app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
