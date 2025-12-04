@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
@@ -15,6 +15,7 @@ import 'package:romrom_fe/screens/search_range_setting_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MyPageTabScreen extends StatefulWidget {
@@ -56,7 +57,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             final eupMyoenDong = location.eupMyoenDong ?? '';
             final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
 
-            _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
+            _location = combinedLocation.isNotEmpty
+                ? combinedLocation
+                : '위치정보 없음';
           }
         });
       }
@@ -75,15 +78,17 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 헤더: "마이페이지"
-            SizedBox(height: 16.h),
-            Text('마이페이지', style: CustomTextStyles.h1),
-            SizedBox(height: 37.h),
+            Padding(
+              padding: EdgeInsets.only(top: 32.h, bottom: 16.h),
+              child: Text('마이페이지', style: CustomTextStyles.h1),
+            ),
 
             // 닉네임 박스
-            _buildNicknameBox(),
             SizedBox(height: 16.h),
+            _buildNicknameBox(),
 
             // 메뉴 섹션 1
+            SizedBox(height: 16.h),
             _buildMenuSection([
               _MenuItem(
                 label: '좋아요 목록',
@@ -102,17 +107,13 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               _MenuItem(
                 label: '선호 카테고리 설정',
                 onTap: () {
-                  context.navigateTo(
-                    screen: const MyCategorySettingsScreen(),
-                  );
+                  context.navigateTo(screen: const MyCategorySettingsScreen());
                 },
               ),
               _MenuItem(
                 label: '탐색 범위 설정',
                 onTap: () {
-                  context.navigateTo(
-                    screen: const SearchRangeSettingScreen(),
-                  );
+                  context.navigateTo(screen: const SearchRangeSettingScreen());
                 },
               ),
               _MenuItem(
@@ -124,7 +125,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             ]),
             SizedBox(height: 16.h),
 
-            // 메뉴 섹션 2
+            // 이용약관 / 로그아웃 / 회원탈퇴 섹션
             _buildMenuSection([
               _MenuItem(
                 label: '이용 약관',
@@ -132,24 +133,17 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                   // TODO: 이용 약관 화면으로 이동
                 },
               ),
+              _MenuItem(
+                label: '로그아웃',
+                onTap: () => AuthService().logout(context),
+                isDestructive: true,
+              ),
+              _MenuItem(
+                label: '회원탈퇴',
+                onTap: () => _handleDeleteMemberButtonTap(context),
+                isDestructive: true,
+              ),
             ]),
-            SizedBox(height: 16.h),
-
-            // 로그아웃/회원탈퇴 섹션
-            _buildMenuSection(
-              [
-                _MenuItem(
-                  label: '로그아웃',
-                  onTap: () => AuthService().logout(context),
-                  isDestructive: true,
-                ),
-                _MenuItem(
-                  label: '회원탈퇴',
-                  onTap: () => _handleDeleteMemberButtonTap(context),
-                  isDestructive: true,
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -160,14 +154,17 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   Widget _buildNicknameBox() {
     return GestureDetector(
       onTap: () {
-        context.navigateTo(
-          screen: const MyProfileEditScreen(),
-        );
+        context.navigateTo(screen: const MyProfileEditScreen());
       },
       child: Container(
         width: double.infinity,
         height: 82.h,
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        padding: EdgeInsets.only(
+          left: 16.w,
+          right: 12.w,
+          top: 16.h,
+          bottom: 16.h,
+        ),
         decoration: BoxDecoration(
           color: AppColors.secondaryBlack1,
           borderRadius: BorderRadius.circular(10.r),
@@ -175,8 +172,12 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         child: Row(
           children: [
             // 프로필 이미지
-            _buildProfileImage(),
-            SizedBox(width: 12.w),
+            UserProfileCircularAvatar(
+              avatarSize: const Size(50, 50),
+              profileUrl: _profileUrl,
+              hasBorder: true,
+            ),
+            SizedBox(width: 16.w),
 
             // 닉네임 및 장소
             Expanded(
@@ -184,16 +185,21 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(_nickname, style: CustomTextStyles.h3),
-                  SizedBox(height: 4.h),
+                  Text(
+                    _nickname,
+                    style: CustomTextStyles.p1.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
                   Row(
                     children: [
                       Icon(
-                        Icons.location_on,
-                        size: 12.sp,
+                        AppIcons.location,
+                        size: 13.sp,
                         color: AppColors.opacity60White,
                       ),
-                      SizedBox(width: 2.w),
+                      SizedBox(width: 3.w),
                       Text(
                         _location,
                         style: CustomTextStyles.p3.copyWith(
@@ -209,46 +215,12 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
             // 오른쪽 화살표 아이콘
             Icon(
-              Icons.chevron_right,
-              size: 30.sp,
-              color: AppColors.textColorWhite,
+              AppIcons.detailView,
+              size: 15.sp,
+              color: AppColors.opacity30White,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  /// 프로필 이미지 위젯
-  Widget _buildProfileImage() {
-    if (_profileUrl != null && _profileUrl!.isNotEmpty) {
-      // 네트워크 이미지 (API에서 받은 프로필 이미지)
-      return ClipOval(
-        child: Image.network(
-          _profileUrl!,
-          width: 50.w,
-          height: 50.h,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            // 이미지 로드 실패 시 기본 아이콘 표시
-            return _buildDefaultProfileIcon();
-          },
-        ),
-      );
-    } else {
-      // 기본 프로필 아이콘 (SVG)
-      return _buildDefaultProfileIcon();
-    }
-  }
-
-  /// 기본 프로필 아이콘 (SVG)
-  Widget _buildDefaultProfileIcon() {
-    return ClipOval(
-      child: SvgPicture.asset(
-        'assets/images/basicProfile.svg',
-        width: 50.w,
-        height: 50.h,
-        fit: BoxFit.cover,
       ),
     );
   }
@@ -260,30 +232,15 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         color: AppColors.secondaryBlack1,
         borderRadius: BorderRadius.circular(10.r),
       ),
-      child: Column(
-        children: List.generate(
-          items.length,
-          (index) {
-            final item = items[index];
-            return Column(
-              children: [
-                _buildMenuItem(
-                  label: item.label,
-                  onTap: item.onTap,
-                  isDestructive: item.isDestructive,
-                ),
-                if (index < items.length - 1)
-                  Divider(
-                    height: 1.h,
-                    thickness: 1.h,
-                    color: AppColors.opacity10White,
-                    indent: 24.w,
-                    endIndent: 24.w,
-                  ),
-              ],
-            );
-          },
-        ),
+      child: Wrap(
+        runSpacing: 8.w,
+        children: items.map((item) {
+          return _buildMenuItem(
+        label: item.label,
+        onTap: item.onTap,
+        isDestructive: item.isDestructive,
+          );
+        }).toList(),
       ),
     );
   }
@@ -315,9 +272,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             ),
             if (!isDestructive)
               Icon(
-                Icons.chevron_right,
-                size: 30.sp,
-                color: AppColors.textColorWhite,
+                AppIcons.detailView,
+                size: 15.sp,
+                color: AppColors.opacity30White,
               ),
           ],
         ),
@@ -343,14 +300,10 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
           ),
           TextButton(
             onPressed: () => _confirmDeleteMember(dialogContext, context),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.warningRed,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.warningRed),
             child: Text(
               '탈퇴하기',
-              style: CustomTextStyles.p2.copyWith(
-                color: AppColors.warningRed,
-              ),
+              style: CustomTextStyles.p2.copyWith(color: AppColors.warningRed),
             ),
           ),
         ],
@@ -360,7 +313,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
   /// 회원 탈퇴 확인 후 처리
   Future<void> _confirmDeleteMember(
-      BuildContext dialogContext, BuildContext context) async {
+    BuildContext dialogContext,
+    BuildContext context,
+  ) async {
     Navigator.pop(dialogContext); // 다이얼로그 닫기
 
     // 회원 탈퇴 진행
@@ -388,8 +343,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
       // 로그인 페이지로 이동
       context.navigateTo(
-          screen: const LoginScreen(),
-          type: NavigationTypes.pushAndRemoveUntil);
+        screen: const LoginScreen(),
+        type: NavigationTypes.pushAndRemoveUntil,
+      );
     } else {
       // 실패 안내
       CommonSnackBar.show(

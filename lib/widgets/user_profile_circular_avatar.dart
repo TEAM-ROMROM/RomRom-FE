@@ -60,7 +60,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
       });
     } catch (e) {
       setState(() {
-        _avatarUrl = null;
+        _avatarUrl = 'assets/images/basicProfile.svg';
         _isLoading = false;
       });
     }

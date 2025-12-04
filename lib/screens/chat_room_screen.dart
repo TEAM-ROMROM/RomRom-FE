@@ -743,7 +743,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         ),
                         child: Center(
                           child: Icon(
-                            AppIcons.arrow_upward,
+                            AppIcons.arrowUpward,
                             color: !_hasText
                                 ? AppColors.secondaryBlack1
                                 : AppColors.primaryBlack,
