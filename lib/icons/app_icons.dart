@@ -17,6 +17,9 @@ class AppIcons {
   static const IconData currentLocation = IconData(0xe80c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData chat = IconData(0xe80d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrowUpward = IconData(0xe813, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData camera = IconData(0xe815, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData edit = IconData(0xe816, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData profilelikecount = IconData(0xe817, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData cancel = IconData(0xe820, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData detailView = IconData(0xe821, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData dotsVertical = IconData(0xe822, fontFamily: _kFontFam, fontPackage: _kFontPkg);
