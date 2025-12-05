@@ -161,7 +161,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         height: 82.h,
         padding: EdgeInsets.only(
           left: 16.w,
-          right: 12.w,
+          right: 18.w,
           top: 16.h,
           bottom: 16.h,
         ),
@@ -216,7 +216,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             // 오른쪽 화살표 아이콘
             Icon(
               AppIcons.detailView,
-              size: 15.sp,
+              size: 18.sp,
               color: AppColors.opacity30White,
             ),
           ],
@@ -256,7 +256,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
       borderRadius: BorderRadius.circular(10.r),
       child: Container(
         height: 54.h,
-        padding: EdgeInsets.only(left: 24.w, right: 12.w),
+        padding: EdgeInsets.only(left: 24.w, right: 18.w),
         child: Row(
           children: [
             Expanded(
@@ -273,7 +273,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             if (!isDestructive)
               Icon(
                 AppIcons.detailView,
-                size: 15.sp,
+                size: 18.sp,
                 color: AppColors.opacity30White,
               ),
           ],
