@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -18,6 +21,19 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
   String _nickname = '닉네임';
   String _location = '위치정보 없음';
   int _receivedLikes = 0;
+
+  bool _hasImageBeenTouched = false;
+  bool _showProfileSaveButton = false;
+  bool _isProfileEdited = false;
+
+  // 이미지 관련 변수들
+  final ImagePicker _picker = ImagePicker();
+  XFile? imageFile; // 선택된 이미지 저장
+  String imageUrl = ''; // 서버에 업로드된 이미지 URL 저장
+
+  // nickname 수정 컨트롤러
+  TextEditingController nicknameController = TextEditingController();
+  FocusNode nicknameFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -34,6 +50,8 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       if (mounted) {
         setState(() {
           _nickname = memberResponse.member?.nickname ?? '닉네임';
+          nicknameController.text = _nickname;
+          imageUrl = memberResponse.member?.profileUrl ?? '';
 
           final location = memberResponse.memberLocation;
           if (location != null) {
@@ -55,6 +73,71 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
     }
   }
 
+  // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원)
+  Future<void> onPickImage() async {
+    try {
+      setState(() {
+        _hasImageBeenTouched = true;
+        _showProfileSaveButton = true;
+      });
+
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
+
+      // 사용자가 취소했거나 선택 없음
+      if (picked == null) {
+        debugPrint('프로필 이미지 변경 취소');
+        return;
+      }
+
+      setState(() {
+        // 선택한 사진으로 사진 변경
+        imageFile = picked;
+      });
+
+      try {
+        // 여러 장 업로드 (API가 List<XFile> -> List<String> 반환한다고 가정)
+        final List<String> urls = await ImageApi().uploadImages([picked]);
+
+        if (mounted) {
+          setState(() {
+            // 서버 URL 추가 (개수 불일치 대비하여 안전하게 처리)
+            if (urls.isNotEmpty) {
+              imageUrl = urls.first;
+              _isProfileEdited = true;
+            } else {
+              // 필요 시: 업로드 실패한 항목 처리 로직 추가 가능
+            }
+          });
+          debugPrint('프로필 이미지 변경 성공: $imageUrl');
+        }
+      } catch (e) {
+        if (context.mounted) {
+          CommonSnackBar.show(
+            context: context,
+            message: '이미지 업로드에 실패했습니다: $e',
+            type: SnackBarType.error,
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _hasImageBeenTouched = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CommonSnackBar.show(
+          context: context,
+          message: '이미지 선택에 실패했습니다: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,6 +146,45 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         title: '프로필',
         showBottomBorder: true,
         onBackPressed: () => Navigator.pop(context),
+        actions: [
+          if (_showProfileSaveButton)
+            Padding(
+              padding: EdgeInsets.only(right: 24.0.w),
+              child: GestureDetector(
+                onTap: () async {
+                  await MemberApi()
+                      .updateMemberProfile(nicknameController.text, imageUrl)
+                      .then((_) {
+                        if (context.mounted) {
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '프로필이 성공적으로 업데이트되었습니다.',
+                            type: SnackBarType.success,
+                          );
+                          Navigator.pop(context);
+                        }
+                      })
+                      .catchError((e) {
+                        if (context.mounted) {
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '프로필 업데이트에 실패했습니다: $e',
+                            type: SnackBarType.error,
+                          );
+                        }
+                      });
+                },
+                child: Text(
+                  '저장',
+                  style: CustomTextStyles.h2.copyWith(
+                    color: _isProfileEdited
+                        ? AppColors.primaryYellow
+                        : AppColors.secondaryBlack2,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -97,21 +219,33 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
 
   /// 프로필 이미지 + 카메라 아이콘
   Widget _buildProfileImageSection() {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // 프로필 이미지
-        const UserProfileCircularAvatar(avatarSize: Size(132, 132)),
+    return GestureDetector(
+      onTap: () async {
+        await onPickImage();
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 프로필 이미지
+          _hasImageBeenTouched && imageFile != null
+              ? Container(
+                  width: 132.w,
+                  height: 132.h,
+                  padding: EdgeInsets.all(48.w),
+                  child: const CircularProgressIndicator(
+                    color: AppColors.primaryYellow,
+                  ),
+                )
+              : UserProfileCircularAvatar(
+                  avatarSize: Size(132.w, 132.h),
+                  profileUrl: imageUrl,
+                  hasBorder: true,
+                ),
 
-        // 카메라 아이콘 (우하단)
-        Positioned(
-          right: 8.w,
-          bottom: 8.h,
-          child: GestureDetector(
-            onTap: () {
-              // TODO: 프로필 이미지 변경 기능
-              debugPrint('프로필 이미지 변경');
-            },
+          // 카메라 아이콘 (우하단)
+          Positioned(
+            right: 8.w,
+            bottom: 8.h,
             child: Container(
               width: 24.w,
               height: 24.h,
@@ -128,43 +262,135 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  /// 텍스트 폭 측정 함수
+  double _measureTextWidth(BuildContext context, String text, TextStyle style) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout(minWidth: 0, maxWidth: double.infinity);
+    return tp.width;
   }
 
   /// 닉네임 + 편집 버튼
   Widget _buildNicknameSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    // 포커스 아닐 때만 우측 아이콘 노출 중이니, 이 상태에서 텍스트 실측
+    final String viewText = _nickname; // 포커스 없을 때 표시되는 텍스트
+    final TextStyle style = CustomTextStyles.h2;
+    final double textW = _measureTextWidth(context, viewText, style); // 실제 폭
+    final double gap = 8.w; // 8px(스케일 반영)
+    final double iconW = 24.w; // 아이콘 컨테이너 폭
+    final double iconOffsetX =
+        (textW + iconW) / 2 + gap; // “텍스트 중심”에서 오른쪽으로 이동할 양
+
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
       children: [
-        Text(
-          _nickname,
-          style: CustomTextStyles.h2,
-          textAlign: TextAlign.center,
+        // 중앙 텍스트 or 입력창
+        Align(
+          alignment: Alignment.center,
+          child: nicknameFocusNode.hasFocus
+              ? ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 244.w, maxHeight: 28.h),
+                  child: TextField(
+                    controller: nicknameController,
+                    focusNode: nicknameFocusNode,
+                    style: style,
+                    textAlign: TextAlign.center,
+                    cursorColor: AppColors.textColorWhite,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: AppColors.secondaryBlack2,
+                        ),
+                      ),
+                      hintText: '닉네임을 입력하세요',
+                      hintStyle: style.copyWith(
+                        color: AppColors.opacity30White,
+                      ),
+                      
+                      suffix: GestureDetector(
+                        onTap: () {
+                          nicknameController.clear();
+                          setState(() {
+                            _nickname = '';
+                            _isProfileEdited = true;
+                          });
+                        },
+                        child: Container(
+                          width: 16.w,
+                          height: 16.h,
+                          decoration: const BoxDecoration(
+                            color: AppColors.secondaryBlack2,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              AppIcons.cancel,
+                              size: 11.sp,
+                              color: AppColors.textColorWhite,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    onTap: () => setState(() => _showProfileSaveButton = true),
+                    onTapOutside: (_) =>
+                        setState(() => nicknameFocusNode.unfocus()),
+                    onChanged: (_) => setState(() {
+                      _nickname = nicknameController.text;
+                      _isProfileEdited = true;
+                    }),
+                  ),
+                )
+              : GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).requestFocus(nicknameFocusNode);
+                    setState(() {});
+                  },
+                  child: Text(
+                    viewText,
+                    style: style,
+                    maxLines: 1, // 실측과 표시를 일치시키기 위해 한 줄 고정
+                    overflow: TextOverflow.clip, // 필요 시 ellipsis로 교체 가능
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
         ),
-        SizedBox(width: 8.w),
-        GestureDetector(
-          onTap: () {
-            // TODO: 닉네임 수정 기능
-            debugPrint('닉네임 수정');
-          },
-          child: Container(
-            width: 24.w,
-            height: 24.h,
-            decoration: const BoxDecoration(
-              color: AppColors.secondaryBlack2,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Icon(
-                AppIcons.edit,
-                size: 16.sp,
-                color: AppColors.textColorWhite,
+
+        // 텍스트 "오른쪽 끝 + 8px" 위치에 버튼
+        if (!nicknameFocusNode.hasFocus)
+          Transform.translate(
+            offset: Offset(iconOffsetX, 0),
+            child: Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 24.w,
+                height: 24.h,
+                decoration: const BoxDecoration(
+                  color: AppColors.secondaryBlack2,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    AppIcons.edit,
+                    size: 16.sp,
+                    color: AppColors.textColorWhite,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

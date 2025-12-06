@@ -14,17 +14,13 @@ class MemberApi {
 
   /// 이용약관 동의 API
   /// `POST /api/members/terms`
-  Future<bool> saveTermsAgreement({
-    required bool isMarketingInfoAgreed,
-  }) async {
+  Future<bool> saveTermsAgreement({required bool isMarketingInfoAgreed}) async {
     const String url = '${AppUrls.baseUrl}/api/members/terms';
     bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
       url: url,
-      fields: {
-        'isMarketingInfoAgreed': isMarketingInfoAgreed.toString(),
-      },
+      fields: {'isMarketingInfoAgreed': isMarketingInfoAgreed.toString()},
       isAuthRequired: true,
       onSuccess: (responseData) {
         debugPrint('이용약관 동의 저장 성공');
@@ -45,8 +41,9 @@ class MemberApi {
     await ApiClient.sendMultipartRequest(
       url: url,
       fields: {
-        "preferredCategories":
-            preferredCategories.map((e) => e.toString()).join(','),
+        "preferredCategories": preferredCategories
+            .map((e) => e.toString())
+            .join(','),
       },
       isAuthRequired: true,
       onSuccess: (_) {
@@ -131,9 +128,7 @@ class MemberApi {
 
     await ApiClient.sendMultipartRequest(
       url: url,
-      fields: {
-        'searchRadiusInMeters': searchRadiusInMeters.toString(),
-      },
+      fields: {'searchRadiusInMeters': searchRadiusInMeters.toString()},
       isAuthRequired: true,
       onSuccess: (_) {
         debugPrint('탐색 범위 저장 성공: ${searchRadiusInMeters}m');
@@ -141,5 +136,23 @@ class MemberApi {
       },
     );
     return isSuccess;
+  }
+
+  /// 회원 프로필 변경 API
+  /// `POST /api/members/profile/update`
+  Future<void> updateMemberProfile(String nickname, String profileUrl) async {
+    const String url = '${AppUrls.baseUrl}/api/members/profile/update';
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {
+        'nickname': nickname.toString(),
+        'profileUrl': profileUrl.toString(),
+      },
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('회원 프로필 변경 성공: $nickname');
+      },
+    );
   }
 }
