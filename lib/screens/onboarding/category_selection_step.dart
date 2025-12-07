@@ -32,7 +32,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 32.h),
+          SizedBox(height: 1.h),
           // 카테고리 칩 표시
           Expanded(
             child: SingleChildScrollView(
@@ -42,7 +42,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
 
           // 완료 버튼 - CategoryCompletionButton 위젯으로 변경
           Padding(
-            padding: EdgeInsets.only(bottom: 48.h),
+            padding: EdgeInsets.only(bottom: 63.h + MediaQuery.of(context).padding.bottom),
             child: Center(
               child: CompletionButton(
                 isEnabled: isSelectedCategories,
@@ -118,7 +118,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
         side: BorderSide(
           color:
               isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
-          strokeAlign: BorderSide.strokeAlignInside,
+          strokeAlign: BorderSide.strokeAlignOutside,
           width: 1.0.w,
         ),
         borderRadius: BorderRadiusDirectional.circular(100.r),
