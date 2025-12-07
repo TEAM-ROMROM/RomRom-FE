@@ -28,10 +28,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   late AnimationController _fanController;
   late AnimationController _pullController;
   AnimationController? _orbitController;
+  late AnimationController _cardAbsorbController;
+  late AnimationController _dropZonePulseController;
 
   // 애니메이션들
   late Animation<double> _fanAnimation;
   late Animation<double> _pullAnimation;
+  late Animation<double> _cardAbsorbAnimation;
+  late Animation<double> _dropZonePulseAnimation;
 
   // 덱/제스처 상태
   double _orbitAngle = -math.pi / 2;
@@ -71,6 +75,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
   double _dropShadowT = 0.0; // 0~1, 드롭존 그림자 강도
   bool _wasOverDropZone = false; // 진입/이탈 감지용(햅틱 등)
+  bool _isAbsorbing = false; // 카드 흡수 중 상태
+  Offset? _dropZoneCenter; // 드롭존 중심 좌표
 
   Rect? _globalRectOf(GlobalKey key) {
     final ctx = key.currentContext;
@@ -132,6 +138,28 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       curve: Curves.easeOut,
     );
 
+    // 카드 흡수 애니메이션 (드롭존으로 흡수)
+    _cardAbsorbController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _cardAbsorbAnimation = CurvedAnimation(
+      parent: _cardAbsorbController,
+      curve: Curves.easeInOutCubic,
+    );
+
+    // 드롭존 펄스 애니메이션
+    _dropZonePulseController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _dropZonePulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(
+        parent: _dropZonePulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     // 초기 팬 애니메이션 실행
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _fanController.forward();
@@ -168,6 +196,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     _iconAnimationController.dispose();
     _fanController.dispose();
     _pullController.dispose();
+    _cardAbsorbController.dispose();
+    _dropZonePulseController.dispose();
     _orbitController?.dispose();
     super.dispose();
   }
@@ -245,8 +275,13 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final transform = _calculateCardTransform(context, index, totalCards);
     final bool isPressed = _pressedCardId == cardId;
 
-    return AnimatedBuilder(
-      animation: Listenable.merge([_fanAnimation, _pullAnimation]),
+        return AnimatedBuilder(
+      animation: Listenable.merge([
+        _fanAnimation,
+        _pullAnimation,
+        _cardAbsorbAnimation,
+        _dropZonePulseAnimation,
+      ]),
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
@@ -294,10 +329,25 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           const double dragBaseScale = 1.15;
           const double dragScaleGain = 0.20;
           scale = dragBaseScale + (dragScaleGain * pullValue);
-           angle *= (1 - pullValue);
+          angle *= (1 - pullValue);
 
           if (_isCardPulled) {
             opacity = 1.0 - (pullValue * 0.2);
+          }
+
+          // 카드 흡수 애니메이션 (드롭존으로 이동)
+          if (_isAbsorbing && _dropZoneCenter != null) {
+            final absorbValue = _cardAbsorbAnimation.value;
+            final startLeft = left;
+            final startTop = top;
+            final targetLeft = _dropZoneCenter!.dx - (_cardWidth / 2);
+            final targetTop = _dropZoneCenter!.dy - (_cardHeight / 2);
+
+            left = lerpDouble(startLeft, targetLeft, absorbValue)!;
+            top = lerpDouble(startTop, targetTop, absorbValue)!;
+            scale = lerpDouble(scale, 0.3, absorbValue)!;
+            opacity = lerpDouble(opacity, 0.0, absorbValue)!;
+            angle *= (1 - absorbValue);
           }
         }
 
@@ -477,21 +527,57 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     if (_hasStartedCardDrag) {
       if (_pulledCardId != null && _wasOverDropZone) {
         // 드롭 발생 - 드롭존에 들어갔었다면 드롭 허용
-        if (widget.onCardDrop != null) {
-          widget.onCardDrop!(_pulledCardId!);
-          HapticFeedback.heavyImpact();
+        // 드롭존 중심 좌표 계산
+        final dropRect = _globalRectOf(_dropZoneKey);
+        final deckBox =
+            _deckKey.currentContext?.findRenderObject() as RenderBox?;
+        
+        if (dropRect != null && deckBox != null) {
+          final dropZoneGlobalCenter = Offset(
+            dropRect.left + dropRect.width / 2,
+            dropRect.top + dropRect.height / 2,
+          );
+          _dropZoneCenter = deckBox.globalToLocal(dropZoneGlobalCenter);
         }
-        setState(() => _isCardPulled = true);
-        Future.delayed(const Duration(milliseconds: 300), () {
+
+        setState(() {
+          _isCardPulled = true;
+          _isAbsorbing = true;
+        });
+
+        // 드롭존 펄스 애니메이션 시작
+        _dropZonePulseController.forward().then((_) {
+          if (mounted) {
+            _dropZonePulseController.reverse();
+          }
+        });
+
+        // 카드 흡수 애니메이션 시작
+        _cardAbsorbController.forward().then((_) {
           if (!mounted) return;
-          setState(() {
-            _pulledCardId = null;
-            _isCardPulled = false;
-            _pullOffset = Offset.zero;
-            _dropShadowT = 0.0; // 그림자 원복
-            _wasOverDropZone = false;
+          
+          // 애니메이션 완료 후 콜백 호출
+          if (widget.onCardDrop != null) {
+            widget.onCardDrop!(_pulledCardId!);
+            HapticFeedback.heavyImpact();
+          }
+
+          // 상태 초기화
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (!mounted) return;
+            setState(() {
+              _pulledCardId = null;
+              _isCardPulled = false;
+              _isAbsorbing = false;
+              _pullOffset = Offset.zero;
+              _dropShadowT = 0.0;
+              _wasOverDropZone = false;
+              _dropZoneCenter = null;
+            });
+            _pullController.reverse();
+            _cardAbsorbController.reset();
+            _dropZonePulseController.reset();
           });
-          _pullController.reverse();
         });
       } else {
         // 원위치
@@ -582,21 +668,41 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                       children: [
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 136.w),
-                          child: Container(
-                            key: _dropZoneKey,
-                            width: 122.w,
-                            height: 189.h,
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.cardDropZoneShadow
-                                      .withValues(alpha: 0.8 * _dropShadowT),
-                                  blurRadius: 30 * (0.5 + 0.5 * _dropShadowT),
-                                  spreadRadius: 2 * _dropShadowT,
-                                  offset: const Offset(0, 0),
+                          child: AnimatedBuilder(
+                            animation: _dropZonePulseAnimation,
+                            builder: (context, child) {
+                              final pulseScale = _isAbsorbing
+                                  ? _dropZonePulseAnimation.value
+                                  : 1.0;
+                              return Transform.scale(
+                                scale: pulseScale,
+                                child: Container(
+                                  key: _dropZoneKey,
+                                  width: 122.w,
+                                  height: 189.h,
+                                  decoration: BoxDecoration(
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.cardDropZoneShadow
+                                            .withValues(
+                                          alpha: _isAbsorbing
+                                              ? 1.0
+                                              : 0.8 * _dropShadowT,
+                                        ),
+                                        blurRadius: _isAbsorbing
+                                            ? 40
+                                            : 30 * (0.5 + 0.5 * _dropShadowT),
+                                        spreadRadius: _isAbsorbing
+                                            ? 4
+                                            : 2 * _dropShadowT,
+                                        offset: const Offset(0, 0),
+                                      ),
+                                    ],
+                                  ),
+                                  child: child,
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Stack(
