@@ -153,8 +153,14 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   /// 닉네임 박스 위젯
   Widget _buildNicknameBox() {
     return GestureDetector(
-      onTap: () {
-        context.navigateTo(screen: const MyProfileEditScreen());
+      onTap: () async {
+        final result = await context.navigateTo<bool>(
+          screen: const MyProfileEditScreen(),
+        );
+
+        if (result == true) {
+          await _loadUserInfo();
+        }
       },
       child: Container(
         width: double.infinity,
@@ -236,9 +242,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         runSpacing: 8.w,
         children: items.map((item) {
           return _buildMenuItem(
-        label: item.label,
-        onTap: item.onTap,
-        isDestructive: item.isDestructive,
+            label: item.label,
+            onTap: item.onTap,
+            isDestructive: item.isDestructive,
           );
         }).toList(),
       ),

@@ -11,15 +11,17 @@ import '../widgets/common/common_delete_modal.dart';
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
   /// 네비게이션 메서드
-  void navigateTo({
+  Future<T?> navigateTo<T extends Object?>({
     required Widget screen, // 이동할 page
-    NavigationTypes type = NavigationTypes.push, // 이동 형식 (기본적으로 Push로 설정)
+    NavigationTypes type = NavigationTypes.push, // 이동 형식 (기본 Push)
     RouteSettings? routeSettings, // routing할 때 화면에 넘겨줄 값
-    bool Function(Route<dynamic>)? predicate, // 라우트 제거 유무
+    bool Function(Route<dynamic>)? predicate, // pushAndRemoveUntil 용
   }) {
     // iOS에서는 CupertinoPageRoute, 안드로이드에서는 MaterialPageRoute 사용
     PageRoute<T> createRoute<T extends Object?>(
-        Widget screen, RouteSettings? settings) {
+      Widget screen,
+      RouteSettings? settings,
+    ) {
       if (Platform.isIOS) {
         return CupertinoPageRoute<T>(
           builder: (context) => screen,
@@ -34,25 +36,22 @@ extension NavigationExtension on BuildContext {
     }
 
     switch (type) {
-      case NavigationTypes.push: // 기존 화면 위에 새 화면 추가
-        Navigator.push(
+      case NavigationTypes.push:
+        return Navigator.push<T>(this, createRoute<T>(screen, routeSettings));
+
+      case NavigationTypes.pushReplacement:
+        // 이전 라우트로 결과를 줄 일이 없으면 <T, T?> 정도로 맞추면 됨
+        return Navigator.pushReplacement<T, T?>(
           this,
-          createRoute(screen, routeSettings),
+          createRoute<T>(screen, routeSettings),
         );
-        break;
-      case NavigationTypes.pushReplacement: // 기존 화면을 새 화면으로 대체
-        Navigator.pushReplacement(
+
+      case NavigationTypes.pushAndRemoveUntil:
+        return Navigator.pushAndRemoveUntil<T>(
           this,
-          createRoute(screen, routeSettings),
+          createRoute<T>(screen, routeSettings),
+          predicate ?? (route) => false,
         );
-        break;
-      case NavigationTypes.pushAndRemoveUntil: // 기존 화면을 지우고 새 화면 push
-        Navigator.pushAndRemoveUntil(
-          this,
-          createRoute(screen, routeSettings),
-          predicate ?? (route) => false, // 기본값은 모든 이전 라우트 제거
-        );
-        break;
     }
   }
 }
@@ -136,46 +135,46 @@ String getTimeAgo(DateTime createdDate) {
   }
 }
 
-  // 동일한 '분'인지 체크
-  bool isSameMinute(DateTime? a, DateTime? b) {
-    if (a == null || b == null) return false;
-    final la = a.isUtc ? a.toLocal() : a;
-    final lb = b.isUtc ? b.toLocal() : b;
-    return la.year == lb.year &&
-        la.month == lb.month &&
-        la.day == lb.day &&
-        la.hour == lb.hour &&
-        la.minute == lb.minute;
+// 동일한 '분'인지 체크
+bool isSameMinute(DateTime? a, DateTime? b) {
+  if (a == null || b == null) return false;
+  final la = a.isUtc ? a.toLocal() : a;
+  final lb = b.isUtc ? b.toLocal() : b;
+  return la.year == lb.year &&
+      la.month == lb.month &&
+      la.day == lb.day &&
+      la.hour == lb.hour &&
+      la.minute == lb.minute;
+}
+
+String formatMessageTime(DateTime? dt) {
+  if (dt == null) return '';
+
+  // UTC에서 넘어올 수 있으니 로컬화
+  final local = dt.isUtc ? dt.toLocal() : dt;
+
+  final hour = local.hour;
+  final minute = local.minute.toString().padLeft(2, '0');
+
+  final period = hour < 12 ? '오전' : '오후';
+  // 12시간제 변환: 0시→12, 13시→1, 12시→12
+  final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
+
+  return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
+}
+
+String getLastActivityTime(ChatRoom chatRoom) {
+  final lastActivity = chatRoom.getLastActivityTime();
+  final now = DateTime.now();
+  final difference = now.difference(lastActivity);
+
+  if (difference.inMinutes < 1) {
+    return '방금 전 활동';
+  } else if (difference.inMinutes < 60) {
+    return '${difference.inMinutes}분 전 활동';
+  } else if (difference.inHours < 24) {
+    return '${difference.inHours}시간 전 활동';
+  } else {
+    return '${difference.inDays}일 전 활동';
   }
-
-  String formatMessageTime(DateTime? dt) {
-    if (dt == null) return '';
-
-    // UTC에서 넘어올 수 있으니 로컬화
-    final local = dt.isUtc ? dt.toLocal() : dt;
-
-    final hour = local.hour;
-    final minute = local.minute.toString().padLeft(2, '0');
-
-    final period = hour < 12 ? '오전' : '오후';
-    // 12시간제 변환: 0시→12, 13시→1, 12시→12
-    final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
-
-    return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
-  }
-
-  String getLastActivityTime(ChatRoom chatRoom) {
-    final lastActivity = chatRoom.getLastActivityTime();
-    final now = DateTime.now();
-    final difference = now.difference(lastActivity);
-
-    if (difference.inMinutes < 1) {
-      return '방금 전 활동';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}분 전 활동';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}시간 전 활동';
-    } else {
-      return '${difference.inDays}일 전 활동';
-    }
-  }
+}
