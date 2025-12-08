@@ -22,8 +22,6 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>GIDClientID</key>
-	<string>$(GOOGLE_CLIENT_ID)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -36,6 +34,12 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GIDClientID</key>
+	<string>$(GOOGLE_CLIENT_ID)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>kakaokompassauth</string>
@@ -43,8 +47,6 @@
 		<string>kakaotalk</string>
 		<string>kakaoplus</string>
 	</array>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
@@ -61,10 +63,13 @@
 	<string>마이크 사용에 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>사진 라이브러리 사용에 필요합니다.</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

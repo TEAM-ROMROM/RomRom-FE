@@ -23,9 +23,7 @@ class TradeResponse {
   Map<String, dynamic> toJson() => _$TradeResponseToJson(this);
 }
 
-@JsonSerializable(
-  explicitToJson: true,
-)
+@JsonSerializable(explicitToJson: true)
 class TradeRequestHistory extends BaseEntity {
   final String? tradeRequestHistoryId;
 
@@ -39,7 +37,7 @@ class TradeRequestHistory extends BaseEntity {
   final List<String> itemTradeOptions;
 
   final String? tradeStatus;
-  final bool? isNew;
+  bool? isNew;
 
   TradeRequestHistory({
     required this.tradeRequestHistoryId,
@@ -67,10 +65,7 @@ class PagedTradeRequestHistory {
   @JsonKey(name: 'page')
   final ApiPage? page;
 
-  PagedTradeRequestHistory({
-    required this.content,
-    required this.page,
-  });
+  PagedTradeRequestHistory({required this.content, required this.page});
 
   factory PagedTradeRequestHistory.fromJson(Map<String, dynamic> json) =>
       _$PagedTradeRequestHistoryFromJson(json);
@@ -86,10 +81,7 @@ class PagedItem {
   @JsonKey(name: 'page')
   final ApiPage? page;
 
-  PagedItem({
-    required this.content,
-    required this.page,
-  });
+  PagedItem({required this.content, required this.page});
 
   factory PagedItem.fromJson(Map<String, dynamic> json) =>
       _$PagedItemFromJson(json);

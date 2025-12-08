@@ -58,12 +58,14 @@ jobs:
           echo "key.properties created"
           ls -la android/
 
-      # Google-services.json 생성
-      - name: Create Google-services.json
+      # google-services.json 생성
+      - name: Create google-services.json
+        shell: bash
         run: |
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/Google-services.json
-          echo "Google-services.json created"
-          ls -la android/
+          mkdir -p android/app
+          printf '%s' "${GOOGLE_SERVICES_JSON}" > android/app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
       # Flutter 설정 및 버전 확인
       - name: Set up Flutter
