@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import '../widgets/common/common_delete_modal.dart';
+import '../widgets/common/common_modal.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
@@ -87,17 +87,13 @@ extension ContextExtension on BuildContext {
     String cancelText = '취소',
     String confirmText = '삭제',
   }) async {
-    return showDialog<bool>(
+    return CommonModal.confirm(
       context: this,
-      barrierDismissible: false,
-      barrierColor: AppColors.dialogBarrier,
-      builder: (context) => CommonDeleteModal(
-        description: description,
-        leftText: cancelText,
-        rightText: confirmText,
-        onLeft: () => Navigator.of(context).pop(false),
-        onRight: () => Navigator.of(context).pop(true),
-      ),
+      message: description,
+      cancelText: cancelText,
+      confirmText: confirmText,
+      onCancel: () => Navigator.of(this).pop(false),
+      onConfirm: () => Navigator.of(this).pop(true),
     );
   }
 }

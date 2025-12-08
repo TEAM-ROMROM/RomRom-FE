@@ -20,6 +20,7 @@ class MyCategorySettingsScreen extends StatefulWidget {
 class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
   final List<int> selectedCategories = [];
   final memberApi = MemberApi();
+  bool _isLoading = true;
 
   bool get isSelectedCategories => selectedCategories.isNotEmpty;
 
@@ -32,19 +33,32 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
   /// 기존 선호 카테고리 로드
   Future<void> _loadPreferredCategories() async {
     try {
-      // TODO: MemberApi에서 기존 선호 카테고리 가져오기
-      // final memberResponse = await memberApi.getMemberInfo();
-      // final categories = memberResponse.memberItemCategories;
-      // if (categories != null && mounted) {
-      //   setState(() {
-      //     selectedCategories.addAll(
-      //       categories.map((e) => e.categoryId).toList(),
-      //     );
-      //   });
-      // }
-      debugPrint('선호 카테고리 로드 (TODO)');
+      final memberResponse = await memberApi.getMemberInfo();
+      final categories = memberResponse.memberItemCategories;
+      if (categories != null && mounted) {
+        setState(() {
+          selectedCategories.clear();
+          for (final category in categories) {
+            if (category.itemCategory != null) {
+              try {
+                final itemCategory =
+                    ItemCategories.fromServerName(category.itemCategory!);
+                selectedCategories.add(itemCategory.id);
+              } catch (e) {
+                debugPrint('카테고리 변환 실패: ${category.itemCategory}');
+              }
+            }
+          }
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint('선호 카테고리 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -56,56 +70,57 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
         title: '선호 카테고리 설정',
         onBackPressed: () => Navigator.pop(context),
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 카테고리 칩 표시
-            Expanded(
-              child: SingleChildScrollView(
-                child: _buildCategoryChips(context),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 카테고리 칩 표시
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: _buildCategoryChips(context),
+                    ),
+                  ),
+
+                  // 저장하기 버튼
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 48.h),
+                    child: Center(
+                      child: CompletionButton(
+                        isEnabled: isSelectedCategories,
+                        enabledOnPressed: () async {
+                          try {
+                            final isSuccess = await memberApi
+                                .savePreferredCategories(selectedCategories);
+
+                            if (mounted && isSuccess) {
+                              CommonSnackBar.show(
+                                context: context,
+                                message: '선호 카테고리가 저장되었습니다',
+                                type: SnackBarType.success,
+                              );
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            debugPrint('선호 카테고리 저장 실패: $e');
+                            if (context.mounted) {
+                              CommonSnackBar.show(
+                                context: context,
+                                message: '카테고리 저장에 실패했습니다: $e',
+                                type: SnackBarType.error,
+                              );
+                            }
+                          }
+                        },
+                        buttonText: '저장하기',
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            // 저장하기 버튼
-            Padding(
-              padding: EdgeInsets.only(bottom: 48.h),
-              child: Center(
-                child: CompletionButton(
-                  isEnabled: isSelectedCategories,
-                  enabledOnPressed: () async {
-                    try {
-                      // TODO: MemberApi().savePreferredCategories(selectedCategories) 호출
-                      // await memberApi.savePreferredCategories(selectedCategories);
-                      debugPrint('선호 카테고리 저장: $selectedCategories (TODO)');
-
-                      if (mounted) {
-                        CommonSnackBar.show(
-                          context: context,
-                          message: '선호 카테고리가 저장되었습니다',
-                          type: SnackBarType.success,
-                        );
-                        Navigator.pop(context);
-                      }
-                    } catch (e) {
-                      debugPrint('선호 카테고리 저장 실패: $e');
-                      if (context.mounted) {
-                        CommonSnackBar.show(
-                          context: context,
-                          message: '카테고리 저장에 실패했습니다: $e',
-                          type: SnackBarType.error,
-                        );
-                      }
-                    }
-                  },
-                  buttonText: '저장하기',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

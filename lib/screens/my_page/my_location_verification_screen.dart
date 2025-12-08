@@ -6,12 +6,12 @@ import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
-import 'package:shadex/shadex.dart';
 
 class MyLocationVerificationScreen extends StatefulWidget {
   const MyLocationVerificationScreen({super.key});
@@ -139,13 +139,8 @@ class _MyLocationVerificationScreenState
                 Center(
                   child: Container(
                     margin: EdgeInsets.only(bottom: 40.h),
-                    child: Shadex(
-                      shadowColor: AppColors.opacity20Black,
-                      shadowBlurRadius: 2.0,
-                      shadowOffset: const Offset(2, 2),
-                      child: SvgPicture.asset(
-                        'assets/images/location-pin.svg',
-                      ),
+                    child: SvgPicture.asset(
+                      'assets/images/location-pin.svg',
                     ),
                   ),
                 ),
@@ -168,12 +163,12 @@ class _MyLocationVerificationScreenState
                               Icon(
                                 Icons.location_on,
                                 size: 16.sp,
-                                color: AppColors.primaryColor,
+                                color: AppColors.primaryYellow,
                               ),
                               SizedBox(width: 8.w),
                               Expanded(
                                 child: Text(
-                                  '${_selectedAddress!.siGunGu ?? ''} ${_selectedAddress!.eupMyoenDong ?? ''}'.trim(),
+                                  '${_selectedAddress!.siGunGu} ${_selectedAddress!.eupMyoenDong}'.trim(),
                                   style: CustomTextStyles.p2.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -212,19 +207,21 @@ class _MyLocationVerificationScreenState
 
                             if (_selectedAddress != null &&
                                 _selectedPosition != null) {
-                              // TODO: MemberApi().saveMemberLocation() 호출
-                              // final locationData = LocationAddress(
-                              //   siDo: _selectedAddress!.siDo,
-                              //   siGunGu: _selectedAddress!.siGunGu,
-                              //   eupMyoenDong: _selectedAddress!.eupMyoenDong,
-                              //   ri: _selectedAddress!.ri,
-                              //   latitude: _selectedPosition!.latitude,
-                              //   longitude: _selectedPosition!.longitude,
-                              // );
-                              // final memberApi = MemberApi();
-                              // await memberApi.saveMemberLocation(locationData);
+                              await MemberApi().saveMemberLocation(
+                                longitude: _selectedPosition!.longitude,
+                                latitude: _selectedPosition!.latitude,
+                                siDo: _selectedAddress!.siDo,
+                                siGunGu: _selectedAddress!.siGunGu,
+                                eupMyoenDong: _selectedAddress!.eupMyoenDong,
+                                ri: _selectedAddress!.ri,
+                              );
 
                               if (mounted) {
+                                CommonSnackBar.show(
+                                  context: context,
+                                  message: '위치 인증이 완료되었습니다',
+                                  type: SnackBarType.success,
+                                );
                                 setState(() {
                                   _isLoading = false;
                                 });

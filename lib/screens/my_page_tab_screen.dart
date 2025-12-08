@@ -11,6 +11,7 @@ import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
+import 'package:romrom_fe/screens/search_range_setting_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -109,7 +110,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               _MenuItem(
                 label: '탐색 범위 설정',
                 onTap: () {
-                  // TODO: 탐색 범위 설정 화면으로 이동
+                  context.navigateTo(
+                    screen: const SearchRangeSettingScreen(),
+                  );
                 },
               ),
               _MenuItem(
@@ -310,13 +313,12 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              size: 30.sp,
-              color: isDestructive
-                  ? AppColors.warningRed
-                  : AppColors.textColorWhite,
-            ),
+            if (!isDestructive)
+              Icon(
+                Icons.chevron_right,
+                size: 30.sp,
+                color: AppColors.textColorWhite,
+              ),
           ],
         ),
       ),
