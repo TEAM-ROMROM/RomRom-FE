@@ -287,6 +287,7 @@ jobs:
             echo "⚠️ 경고: APK 파일 크기가 500MB를 초과합니다 (${APK_SIZE_MB}MB)"
           else
             echo "✅ APK 파일 크기가 아티팩트 제한 내입니다 (${APK_SIZE_MB}MB / 500MB)"
+          fi
 
       # 빌드 정보 파일 생성
       - name: Create build info file
@@ -355,4 +356,5 @@ jobs:
         run: |
           echo "❌ Android 테스트 APK 빌드 실패!"
           echo "로그를 확인해주세요."
+
 
