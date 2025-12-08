@@ -1,0 +1,358 @@
+# ===================================================================
+# Android 테스트용 APK 빌드 워크플로우
+# ===================================================================
+#
+# 이 워크플로우는 test-deploy 브랜치에서 수동으로 실행하여
+# 테스트용 Android APK를 빌드합니다.
+#
+# 주요 특징:
+# - workflow_dispatch로 수동 실행만 가능
+# - 버전 관리 불필요 (안드로이드는 버전 제약 없음)
+# - 브랜치명에서 이슈 번호 자동 추출 (YYYYMMDD_#이슈번호_내용 형식)
+# - GitHub API로 이슈 정보 가져와서 빌드 정보에 포함
+# - APK 파일만 생성 (Play Store 배포 제거)
+# - 아티팩트로 업로드하여 다운로드 가능 (최대 500MB/아티팩트)
+#
+# 브랜치명 예시:
+# - 20251208_#387_내용
+# - 20250115_#123_버그수정
+#
+# 사용 방법:
+# 1. test-deploy 브랜치로 체크아웃
+# 2. GitHub Actions에서 "ROMROM-ANDROID-TEST-APK" 워크플로우 선택
+# 3. "Run workflow" 버튼 클릭
+# 4. 빌드 완료 후 아티팩트에서 APK 다운로드
+#
+# 아티팩트 용량 제한:
+# - 무료 플랜: 500MB/아티팩트, 10GB/저장소 전체
+# - APK 파일은 보통 50-200MB이므로 무료 플랜으로 충분
+#
+# ===================================================================
+
+name: ROMROM-ANDROID-TEST-APK
+
+on:
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: "3.35.5"
+  JAVA_VERSION: "17"
+
+jobs:
+  prepare-test-build:
+    name: 테스트 빌드 준비
+    runs-on: ubuntu-latest
+
+    outputs:
+      issue_url: ${{ steps.issue_info.outputs.issue_url }}
+      issue_title: ${{ steps.issue_info.outputs.issue_title }}
+      issue_number: ${{ steps.issue_info.outputs.issue_number }}
+      commit_hash: ${{ steps.build_info.outputs.commit_hash }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      # 브랜치명에서 이슈 번호 추출 및 GitHub API로 이슈 정보 가져오기
+      - name: 브랜치명에서 이슈 정보 추출
+        id: issue_info
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          echo "🌿 브랜치명: $BRANCH_NAME"
+          
+          # 브랜치명에서 이슈 번호 추출 (#387 형식)
+          ISSUE_NUMBER=$(echo "$BRANCH_NAME" | grep -oP '#\K\d+' || echo "")
+          
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⚠️ 브랜치명에서 이슈 번호를 찾을 수 없습니다."
+            echo "issue_url=" >> $GITHUB_OUTPUT
+            echo "issue_title=" >> $GITHUB_OUTPUT
+            echo "issue_number=" >> $GITHUB_OUTPUT
+          else
+            echo "✅ 추출된 이슈 번호: #$ISSUE_NUMBER"
+            ISSUE_URL="https://github.com/${{ github.repository }}/issues/$ISSUE_NUMBER"
+            echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
+            echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+            
+            # GitHub API로 이슈 정보 가져오기
+            echo "🔍 GitHub API로 이슈 정보 조회 중..."
+            ISSUE_RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER")
+            
+            # 이슈 제목 추출
+            ISSUE_TITLE=$(echo "$ISSUE_RESPONSE" | jq -r '.title // "이슈 정보 없음"')
+            
+            # 이슈 상태 확인
+            ISSUE_STATE=$(echo "$ISSUE_RESPONSE" | jq -r '.state // "unknown"')
+            
+            if [ "$ISSUE_TITLE" = "null" ] || [ "$ISSUE_TITLE" = "이슈 정보 없음" ]; then
+              echo "⚠️ 이슈 #$ISSUE_NUMBER를 찾을 수 없습니다."
+              echo "issue_title=" >> $GITHUB_OUTPUT
+            else
+              echo "📋 이슈 제목: $ISSUE_TITLE"
+              echo "📌 이슈 상태: $ISSUE_STATE"
+              echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      # 빌드 정보 생성
+      - name: 빌드 정보 생성
+        id: build_info
+        run: |
+          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHORT=$(echo "$COMMIT_SHA" | cut -c1-7)
+          BUILD_NUMBER="${{ github.run_number }}"
+          BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          echo "commit_hash=$COMMIT_SHORT" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+          
+          echo "📋 빌드 정보:"
+          echo "  빌드 번호: #$BUILD_NUMBER"
+          echo "  커밋 해시: $COMMIT_SHORT"
+          echo "  빌드 날짜: $BUILD_DATE"
+
+  build-android-test:
+    name: Android 테스트 APK 빌드
+    runs-on: ubuntu-latest
+    needs: prepare-test-build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      # Debug Keystore 설정
+      - name: Setup Debug Keystore
+        run: |
+          mkdir -p ~/.android
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > ~/.android/debug.keystore || echo "Base64 decoding failed"
+          echo "Debug Keystore created (for debugging)"
+          ls -la ~/.android/
+
+      # .env 파일 생성
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo ".env file created"
+
+      # Keystore와 key.properties 설정
+      - name: Setup Keystore and key.properties
+        run: |
+          mkdir -p android/app/keystore
+          echo "${{ secrets.DEBUG_KEYSTORE }}" | base64 -d > android/app/keystore/key.jks || echo "Base64 decoding failed"
+          echo "Keystore created from DEBUG_KEYSTORE"
+          ls -la android/app/keystore
+          echo "storeFile=keystore/key.jks" > android/key.properties
+          echo "storePassword=android" >> android/key.properties
+          echo "keyAlias=androiddebugkey" >> android/key.properties
+          echo "keyPassword=android" >> android/key.properties
+          echo "key.properties created"
+          ls -la android/
+
+      # google-services.json 생성
+      - name: Create google-services.json
+        shell: bash
+        run: |
+          mkdir -p android/app
+          printf '%s' "${GOOGLE_SERVICES_JSON}" > android/app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
+      # Flutter 설정
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Verify Flutter version
+        run: |
+          echo "Flutter setup completed"
+          flutter --version
+
+      # Flutter 및 Gradle 캐시
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-flutter-pub-
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 프로젝트 의존성 설치
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          echo "Dependencies installed"
+
+      # Gradle 셋업
+      - name: Setup Gradle
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          echo "Gradle wrapper permissions set"
+
+      # Java 설정
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Verify Java version
+        run: |
+          echo "Java setup completed"
+          java -version
+
+      # Android SDK 설정
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Verify Android SDK setup
+        run: echo "Android SDK setup completed"
+
+      # Ruby 설정
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4.1"
+          bundler-cache: true
+
+      - name: Verify Ruby version
+        run: |
+          echo "Ruby setup completed"
+          ruby -v
+
+      # Fastlane 설치
+      - name: Install Fastlane
+        run: |
+          gem install fastlane
+          echo "Fastlane installed"
+          fastlane --version
+
+      # APK 파일명 생성
+      - name: Generate APK filename
+        id: apk_filename
+        run: |
+          COMMIT_SHORT="${{ needs.prepare-test-build.outputs.commit_hash }}"
+          BUILD_NUMBER="${{ github.run_number }}"
+          APK_NAME="romrom-test-${BUILD_NUMBER}-${COMMIT_SHORT}.apk"
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "📦 APK 파일명: $APK_NAME"
+
+      # Fastlane을 이용하여 APK 빌드
+      - name: Build APK with Fastlane
+        run: |
+          cd android
+          fastlane build --verbose
+          ls -la ../build/app/outputs/flutter-apk/ || true
+          echo "APK built with Fastlane"
+
+      # APK 파일 이름 변경 및 준비
+      - name: Rename and Prepare APK
+        run: |
+          mkdir -p ./android/app/build/outputs/apk/release/
+          APK_NAME="${{ steps.apk_filename.outputs.apk_name }}"
+          mv ./build/app/outputs/flutter-apk/app-release.apk ./android/app/build/outputs/apk/release/${APK_NAME}
+          echo "APK renamed to ${APK_NAME}"
+          ls -la ./android/app/build/outputs/apk/release/
+          
+          # APK 파일 크기 확인
+          APK_SIZE=$(stat -c%s "./android/app/build/outputs/apk/release/${APK_NAME}" 2>/dev/null || stat -f%z "./android/app/build/outputs/apk/release/${APK_NAME}" 2>/dev/null || echo "0")
+          APK_SIZE_MB=$(echo "scale=2; $APK_SIZE / 1024 / 1024" | bc)
+          echo "📦 APK 파일 크기: ${APK_SIZE_MB}MB"
+          
+          # 아티팩트 용량 제한 확인 (500MB)
+          if [ "$APK_SIZE" -gt 524288000 ]; then
+            echo "⚠️ 경고: APK 파일 크기가 500MB를 초과합니다 (${APK_SIZE_MB}MB)"
+          else
+            echo "✅ APK 파일 크기가 아티팩트 제한 내입니다 (${APK_SIZE_MB}MB / 500MB)"
+
+      # 빌드 정보 파일 생성
+      - name: Create build info file
+        run: |
+          BUILD_NUMBER="${{ github.run_number }}"
+          BRANCH_NAME="${{ github.ref_name }}"
+          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHORT="${{ needs.prepare-test-build.outputs.commit_hash }}"
+          BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          cat > build-info.txt << EOF
+          테스트 APK 빌드 정보
+          
+          빌드 번호: #$BUILD_NUMBER
+          브랜치: $BRANCH_NAME
+          커밋: $COMMIT_SHORT
+          전체 커밋 해시: $COMMIT_SHA
+          빌드 날짜: $BUILD_DATE
+          
+          EOF
+          
+          # 이슈 정보가 있으면 추가
+          if [ -n "${{ needs.prepare-test-build.outputs.issue_number }}" ]; then
+            ISSUE_NUMBER="${{ needs.prepare-test-build.outputs.issue_number }}"
+            ISSUE_TITLE="${{ needs.prepare-test-build.outputs.issue_title }}"
+            ISSUE_URL="${{ needs.prepare-test-build.outputs.issue_url }}"
+            
+            cat >> build-info.txt << EOF
+          관련 이슈:
+          - #$ISSUE_NUMBER: $ISSUE_TITLE
+          - URL: $ISSUE_URL
+          
+          EOF
+          fi
+          
+          echo "📋 빌드 정보 파일 생성 완료:"
+          cat build-info.txt
+
+      # APK와 빌드 정보를 아티팩트로 업로드
+      - name: Upload APK and build info as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: romrom-test-apk
+          path: |
+            ./android/app/build/outputs/apk/release/*.apk
+            build-info.txt
+          retention-days: 7
+          if-no-files-found: error
+
+      # 성공 알림
+      - name: Notify Build Success
+        if: success()
+        run: |
+          echo "✅ Android 테스트 APK 빌드 성공!"
+          echo "빌드 번호: ${{ github.run_number }}"
+          echo "브랜치: ${{ github.ref_name }}"
+          echo "커밋: ${{ needs.prepare-test-build.outputs.commit_hash }}"
+          if [ -n "${{ needs.prepare-test-build.outputs.issue_url }}" ]; then
+            echo "관련 이슈: ${{ needs.prepare-test-build.outputs.issue_url }}"
+          fi
+          echo ""
+          echo "📦 아티팩트에서 APK 파일을 다운로드할 수 있습니다."
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ Android 테스트 APK 빌드 실패!"
+          echo "로그를 확인해주세요."
+
