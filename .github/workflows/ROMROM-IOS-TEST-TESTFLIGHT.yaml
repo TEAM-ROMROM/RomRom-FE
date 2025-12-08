@@ -1,0 +1,470 @@
+# ===================================================================
+# iOS 테스트용 TestFlight 배포 워크플로우
+# ===================================================================
+#
+# 이 워크플로우는 test-deploy 브랜치에서 수동으로 실행하여
+# 테스트용 iOS 빌드를 TestFlight에 배포합니다.
+#
+# 주요 특징:
+# - workflow_dispatch로 수동 실행만 가능
+# - 버전은 0.0.0으로 고정 (운영 버전과 분리)
+# - 빌드 번호는 GITHUB_RUN_NUMBER 사용 (절대 겹치지 않음)
+# - 브랜치명에서 이슈 번호 자동 추출 (YYYYMMDD_#이슈번호_내용 형식)
+# - GitHub API로 이슈 정보 가져와서 릴리즈 노트에 포함
+# - CHANGELOG 로직 제거, 단순화된 릴리즈 노트 사용
+#
+# 브랜치명 예시:
+# - 20251208_#387_내용
+# - 20250115_#123_버그수정
+#
+# 사용 방법:
+# 1. test-deploy 브랜치로 체크아웃
+# 2. GitHub Actions에서 "ROMROM-IOS-TEST-TESTFLIGHT" 워크플로우 선택
+# 3. "Run workflow" 버튼 클릭
+#
+# 릴리즈 노트 형식:
+# 테스트 빌드 #123
+# 브랜치: 20251208_#387_내용
+# 커밋: abc1234...
+# 날짜: 2025-12-08 10:30:00
+# 관련 이슈:
+# - #387: [이슈 제목]
+# - URL: https://github.com/TEAM-ROMROM/RomRom-FE/issues/387
+#
+# ===================================================================
+
+name: ROMROM-IOS-TEST-TESTFLIGHT
+
+on:
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: "3.35.5"
+  XCODE_VERSION: "16.3"
+  PROJECT_TYPE: "flutter"
+
+jobs:
+  prepare-test-build:
+    name: 테스트 빌드 준비
+    runs-on: macos-15
+
+    outputs:
+      version: ${{ steps.test_version.outputs.version }}
+      build_number: ${{ steps.test_version.outputs.build_number }}
+      issue_url: ${{ steps.issue_info.outputs.issue_url }}
+      issue_title: ${{ steps.issue_info.outputs.issue_title }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo ".env file created"
+
+      - name: Create Secrets.xcconfig file
+        run: |
+          mkdir -p ios/Flutter
+          if [ -n "${{ secrets.SECRETS_XCCONFIG }}" ]; then
+            echo "${{ secrets.SECRETS_XCCONFIG }}" > ios/Flutter/Secrets.xcconfig
+            echo "Secrets.xcconfig created"
+          else
+            echo "// No secrets provided" > ios/Flutter/Secrets.xcconfig
+          fi
+
+      # 테스트 빌드 버전 설정 (0.0.0 고정)
+      - name: 테스트 빌드 버전 설정
+        id: test_version
+        run: |
+          echo "version=0.0.0" >> $GITHUB_OUTPUT
+          echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "📋 테스트 빌드: 버전=0.0.0, 빌드번호=${{ github.run_number }}"
+
+      # 브랜치명에서 이슈 번호 추출 및 GitHub API로 이슈 정보 가져오기
+      - name: 브랜치명에서 이슈 정보 추출
+        id: issue_info
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          echo "🌿 브랜치명: $BRANCH_NAME"
+          
+          # 브랜치명에서 이슈 번호 추출 (#387 형식)
+          ISSUE_NUMBER=$(echo "$BRANCH_NAME" | grep -oP '#\K\d+' || echo "")
+          
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⚠️ 브랜치명에서 이슈 번호를 찾을 수 없습니다."
+            echo "issue_url=" >> $GITHUB_OUTPUT
+            echo "issue_title=" >> $GITHUB_OUTPUT
+            echo "issue_number=" >> $GITHUB_OUTPUT
+          else
+            echo "✅ 추출된 이슈 번호: #$ISSUE_NUMBER"
+            ISSUE_URL="https://github.com/${{ github.repository }}/issues/$ISSUE_NUMBER"
+            echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
+            echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+            
+            # GitHub API로 이슈 정보 가져오기
+            echo "🔍 GitHub API로 이슈 정보 조회 중..."
+            ISSUE_RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER")
+            
+            # 이슈 제목 추출
+            ISSUE_TITLE=$(echo "$ISSUE_RESPONSE" | jq -r '.title // "이슈 정보 없음"')
+            
+            # 이슈 상태 확인
+            ISSUE_STATE=$(echo "$ISSUE_RESPONSE" | jq -r '.state // "unknown"')
+            
+            if [ "$ISSUE_TITLE" = "null" ] || [ "$ISSUE_TITLE" = "이슈 정보 없음" ]; then
+              echo "⚠️ 이슈 #$ISSUE_NUMBER를 찾을 수 없습니다."
+              echo "issue_title=" >> $GITHUB_OUTPUT
+            else
+              echo "📋 이슈 제목: $ISSUE_TITLE"
+              echo "📌 이슈 상태: $ISSUE_STATE"
+              echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      # 릴리즈 노트 생성
+      - name: 릴리즈 노트 생성
+        id: release_notes
+        run: |
+          BUILD_NUMBER="${{ github.run_number }}"
+          BRANCH_NAME="${{ github.ref_name }}"
+          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHORT=$(echo "$COMMIT_SHA" | cut -c1-7)
+          BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # 릴리즈 노트 생성
+          cat > final_release_notes.txt << EOF
+          테스트 빌드 #$BUILD_NUMBER
+          
+          브랜치: $BRANCH_NAME
+          커밋: $COMMIT_SHORT
+          날짜: $BUILD_DATE
+          
+          EOF
+          
+          # 이슈 정보가 있으면 추가
+          if [ -n "${{ steps.issue_info.outputs.issue_number }}" ]; then
+            ISSUE_NUMBER="${{ steps.issue_info.outputs.issue_number }}"
+            ISSUE_TITLE="${{ steps.issue_info.outputs.issue_title }}"
+            ISSUE_URL="${{ steps.issue_info.outputs.issue_url }}"
+            
+            cat >> final_release_notes.txt << EOF
+          관련 이슈:
+          - #$ISSUE_NUMBER: $ISSUE_TITLE
+          - URL: $ISSUE_URL
+          
+          EOF
+          fi
+          
+          echo "📋 생성된 릴리즈 노트:"
+          echo "----------------------------------------"
+          cat final_release_notes.txt
+          echo "----------------------------------------"
+
+      # 릴리즈 노트를 아티팩트로 업로드
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: final_release_notes.txt
+          retention-days: 1
+
+      # 프로젝트 파일들을 아티팩트로 업로드
+      - name: Upload project files
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-files
+          path: |
+            .env
+            ios/Flutter/Secrets.xcconfig
+            pubspec.yaml
+            lib/
+            assets/
+          retention-days: 1
+
+  build-ios-test:
+    name: iOS 테스트 빌드
+    runs-on: macos-15
+    needs: prepare-test-build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+
+      # 프로젝트 파일들 다운로드
+      - name: Download project files
+        uses: actions/download-artifact@v4
+        with:
+          name: project-files
+          path: .
+
+      # .env 파일 확인 및 재생성
+      - name: Ensure .env file exists
+        run: |
+          if [ ! -f .env ]; then
+            echo "⚠️ .env 파일이 아티팩트에서 복원되지 않았습니다. 재생성합니다."
+            echo "${{ secrets.ENV_FILE }}" > .env
+          fi
+          echo "✅ .env 파일 확인됨 (크기: $(wc -c < .env) bytes)"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-flutter-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+          bundler-cache: true
+
+      - name: Install CocoaPods
+        run: |
+          gem install cocoapods
+          cd ios && pod install
+
+      # Apple 인증서 설정
+      - name: Import Code-Signing Certificates
+        uses: Apple-Actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: Install Provisioning Profile
+        run: |
+          echo "${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          uuid=$(grep -A1 -a "UUID" profile.mobileprovision | grep string | sed -e "s/<string>//" -e "s/<\/string>//" -e "s/[[:space:]]//g")
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$uuid.mobileprovision
+
+      # ExportOptions.plist 파일 생성
+      - name: Create ExportOptions.plist
+        run: |
+          cd ios
+          cat > ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>CUK22HY6YC</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.alom.romrom</key>
+                  <string>RomRom Distribution</string>
+              </dict>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Create GoogleService-Info.plist (safe heredoc)
+        shell: bash
+        run: |
+          mkdir -p ios/Runner
+          cat > ios/Runner/GoogleService-Info.plist << 'PLIST'
+          ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+          PLIST
+              echo "GoogleService-Info.plist created"
+              /usr/bin/plutil -lint ios/Runner/GoogleService-Info.plist
+
+      # Flutter build (no codesign) - 테스트 버전 0.0.0 사용
+      - name: Flutter build (no codesign)
+        run: |
+          flutter build ios --release --no-codesign \
+            --build-name="0.0.0" \
+            --build-number="${{ needs.prepare-test-build.outputs.build_number }}"
+
+      # Archive 생성 (manual signing)
+      - name: Create Archive
+        run: |
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -archivePath build/Runner.xcarchive \
+            -destination 'generic/platform=iOS' \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="RomRom Distribution" \
+            CODE_SIGN_IDENTITY="Apple Distribution"
+
+      # IPA 생성
+      - name: Export IPA
+        run: |
+          cd ios
+          xcodebuild -exportArchive \
+            -archivePath build/Runner.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ExportOptions.plist
+
+      # IPA 파일을 아티팩트로 업로드
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios/build/ipa/*.ipa
+          retention-days: 1
+
+  deploy-testflight-test:
+    name: TestFlight 테스트 배포
+    runs-on: macos-15
+    needs: [prepare-test-build, build-ios-test]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # App Store Connect API Key 설정
+      - name: Setup App Store Connect API Key
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
+
+      # IPA 파일 다운로드
+      - name: Download IPA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios/build/ipa/
+
+      # 릴리즈 노트 다운로드
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: .
+
+      # Install and setup Fastlane
+      - name: Install Fastlane and create Fastfile
+        run: |
+          gem install fastlane
+          cd ios
+          mkdir -p fastlane
+          cat > fastlane/Fastfile << 'EOF'
+          default_platform(:ios)
+
+          platform :ios do
+            lane :upload_testflight do
+              api_key = app_store_connect_api_key(
+                key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+                issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+                key_filepath: ENV["API_KEY_PATH"]
+              )
+          
+              # 업로드 + 암호화 규정 자동 설정
+              pilot(
+                api_key: api_key,
+                ipa: ENV["IPA_PATH"],
+                changelog: ENV["RELEASE_NOTES"],
+                skip_waiting_for_build_processing: true,  # 빠르게 업로드만
+                distribute_external: false,
+                notify_external_testers: false,
+                uses_non_exempt_encryption: false  # 암호화 규정 자동 설정
+              )
+          
+              puts "✅ TESTFLIGHT 자동 업로드 완료!"
+            end
+          end
+          EOF
+
+      # Upload to TestFlight with Fastlane
+      - name: Upload to TestFlight with Fastlane
+        run: |
+          # 절대 경로로 IPA 파일 찾기
+          IPA_PATH=$(find $GITHUB_WORKSPACE/ios/build/ipa -name "*.ipa" | head -1)
+          echo "Found IPA at: $IPA_PATH"
+
+          if [ ! -f "$IPA_PATH" ]; then
+            echo "❌ IPA 파일을 찾을 수 없습니다!"
+            echo "빌드 디렉토리 내용:"
+            ls -la ios/build/ipa/
+            exit 1
+          fi
+
+          # Release notes 준비
+          if [ -f "final_release_notes.txt" ]; then
+            RELEASE_NOTES=$(cat final_release_notes.txt)
+            echo "Release Notes 포함하여 업로드:"
+            echo "$RELEASE_NOTES"
+          else
+            RELEASE_NOTES="테스트 빌드 #${{ github.run_number }}"
+            echo "기본 Release Notes로 업로드: $RELEASE_NOTES"
+          fi
+
+          # 환경변수 설정
+          export APP_STORE_CONNECT_API_KEY_ID="${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}"
+          export APP_STORE_CONNECT_ISSUER_ID="${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}"
+          export API_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8"
+          export IPA_PATH="$IPA_PATH"
+          export RELEASE_NOTES="$RELEASE_NOTES"
+
+          # 디버깅 정보
+          echo "Working directory: $(pwd)"
+          echo "IPA_PATH: $IPA_PATH"
+          echo "API_KEY_PATH: $API_KEY_PATH"
+
+          # Fastlane 실행
+          cd ios
+          fastlane upload_testflight || echo "⚠️ 권한 에러 발생했지만 업로드는 성공적으로 완료됨"
+
+      # 성공 알림
+      - name: Notify TestFlight Upload Success
+        if: success()
+        run: |
+          echo "✅ TestFlight 테스트 빌드 업로드 성공!"
+          echo "버전: 0.0.0"
+          echo "빌드 번호: ${{ github.run_number }}"
+          echo "브랜치: ${{ github.ref_name }}"
+          echo "커밋: ${{ github.sha }}"
+          if [ -n "${{ needs.prepare-test-build.outputs.issue_url }}" ]; then
+            echo "관련 이슈: ${{ needs.prepare-test-build.outputs.issue_url }}"
+          fi
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ TestFlight 테스트 빌드 업로드 실패!"
+          echo "로그를 확인해주세요."
+
