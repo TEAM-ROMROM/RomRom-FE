@@ -37,6 +37,8 @@ name: ROMROM-IOS-TEST-TESTFLIGHT
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [build-ios-app]
 
 env:
   FLUTTER_VERSION: "3.35.5"
@@ -53,15 +55,20 @@ jobs:
       build_number: ${{ steps.test_version.outputs.build_number }}
       issue_url: ${{ steps.issue_info.outputs.issue_url }}
       issue_title: ${{ steps.issue_info.outputs.issue_title }}
+      issue_number: ${{ steps.issue_info.outputs.issue_number }}
+      branch_name: ${{ steps.issue_info.outputs.branch_name }}
+      pr_number: ${{ steps.test_version.outputs.pr_number }}
+      commit_hash: ${{ steps.release_notes.outputs.commit_hash }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}
 
       - name: Pull latest changes
-        run: git pull origin ${{ github.ref_name }}
+        run: git pull origin ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
@@ -86,19 +93,42 @@ jobs:
         id: test_version
         run: |
           echo "version=0.0.0" >> $GITHUB_OUTPUT
-          echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
-          echo "📋 테스트 빌드: 버전=0.0.0, 빌드번호=${{ github.run_number }}"
+          
+          # repository_dispatch 이벤트인 경우 PR 번호를 빌드 번호로 사용
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            BUILD_NUMBER="${{ github.event.client_payload.build_number }}"
+            PR_NUMBER="${{ github.event.client_payload.pr_number }}"
+            echo "📋 repository_dispatch 이벤트 감지"
+            echo "  PR 번호: #$PR_NUMBER"
+            echo "  빌드 번호: $BUILD_NUMBER (PR 번호 사용)"
+          else
+            BUILD_NUMBER="${{ github.run_number }}"
+            PR_NUMBER=""
+            echo "📋 workflow_dispatch 이벤트 감지"
+            echo "  빌드 번호: $BUILD_NUMBER (기본값)"
+          fi
+          
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "📋 테스트 빌드: 버전=0.0.0, 빌드번호=$BUILD_NUMBER"
 
       # 브랜치명에서 이슈 번호 추출 및 GitHub API로 이슈 정보 가져오기
       - name: 브랜치명에서 이슈 정보 추출
         id: issue_info
         run: |
-          BRANCH_NAME="${{ github.ref_name }}"
+          # repository_dispatch인 경우 client_payload에서 브랜치명 가져오기
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            BRANCH_NAME="${{ github.event.client_payload.branch_name }}"
+            ISSUE_NUMBER="${{ github.event.client_payload.issue_number }}"
+          else
+            BRANCH_NAME="${{ github.ref_name }}"
+            # 브랜치명에서 이슈 번호 추출 (#387 형식) - sed 사용 (macOS/Linux 호환)
+            ISSUE_NUMBER=$(echo "$BRANCH_NAME" | sed -n 's/.*#\([0-9]*\).*/\1/p')
+          fi
+
           echo "🌿 브랜치명: $BRANCH_NAME"
-          
-          # 브랜치명에서 이슈 번호 추출 (#387 형식)
-          ISSUE_NUMBER=$(echo "$BRANCH_NAME" | grep -oP '#\K\d+' || echo "")
-          
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
           if [ -z "$ISSUE_NUMBER" ]; then
             echo "⚠️ 브랜치명에서 이슈 번호를 찾을 수 없습니다."
             echo "issue_url=" >> $GITHUB_OUTPUT
@@ -109,18 +139,18 @@ jobs:
             ISSUE_URL="https://github.com/${{ github.repository }}/issues/$ISSUE_NUMBER"
             echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
             echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
-            
+
             # GitHub API로 이슈 정보 가져오기
             echo "🔍 GitHub API로 이슈 정보 조회 중..."
             ISSUE_RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER")
-            
+
             # 이슈 제목 추출
             ISSUE_TITLE=$(echo "$ISSUE_RESPONSE" | jq -r '.title // "이슈 정보 없음"')
-            
+
             # 이슈 상태 확인
             ISSUE_STATE=$(echo "$ISSUE_RESPONSE" | jq -r '.state // "unknown"')
-            
+
             if [ "$ISSUE_TITLE" = "null" ] || [ "$ISSUE_TITLE" = "이슈 정보 없음" ]; then
               echo "⚠️ 이슈 #$ISSUE_NUMBER를 찾을 수 없습니다."
               echo "issue_title=" >> $GITHUB_OUTPUT
@@ -135,11 +165,14 @@ jobs:
       - name: 릴리즈 노트 생성
         id: release_notes
         run: |
-          BUILD_NUMBER="${{ github.run_number }}"
-          BRANCH_NAME="${{ github.ref_name }}"
+          BUILD_NUMBER="${{ steps.test_version.outputs.build_number }}"
+          BRANCH_NAME="${{ steps.issue_info.outputs.branch_name }}"
           COMMIT_SHA="${{ github.sha }}"
           COMMIT_SHORT=$(echo "$COMMIT_SHA" | cut -c1-7)
           BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+          # commit_hash output 저장
+          echo "commit_hash=$COMMIT_SHORT" >> $GITHUB_OUTPUT
           
           # 릴리즈 노트 생성
           cat > final_release_notes.txt << EOF
@@ -201,9 +234,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}
 
       - name: Pull latest changes
-        run: git pull origin ${{ github.ref_name }}
+        run: git pull origin ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
@@ -337,12 +371,27 @@ jobs:
             -exportPath build/ipa \
             -exportOptionsPlist ExportOptions.plist
 
+      # 빌드 메타데이터 파일 생성 (댓글 작성 워크플로우용)
+      - name: Create build metadata file
+        run: |
+          cat > build-metadata.json << EOF
+          {
+            "pr_number": "${{ needs.prepare-test-build.outputs.pr_number }}",
+            "build_number": "${{ needs.prepare-test-build.outputs.build_number }}",
+            "issue_number": "${{ needs.prepare-test-build.outputs.issue_number }}",
+            "branch_name": "${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}"
+          }
+          EOF
+          cat build-metadata.json
+
       # IPA 파일을 아티팩트로 업로드
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: ios/build/ipa/*.ipa
+          path: |
+            ios/build/ipa/*.ipa
+            build-metadata.json
           retention-days: 1
 
   deploy-testflight-test:
@@ -355,6 +404,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}
 
       # App Store Connect API Key 설정
       - name: Setup App Store Connect API Key
@@ -429,7 +479,7 @@ jobs:
             echo "Release Notes 포함하여 업로드:"
             echo "$RELEASE_NOTES"
           else
-            RELEASE_NOTES="테스트 빌드 #${{ github.run_number }}"
+            RELEASE_NOTES="테스트 빌드 #${{ needs.prepare-test-build.outputs.build_number }}"
             echo "기본 Release Notes로 업로드: $RELEASE_NOTES"
           fi
 
@@ -455,8 +505,11 @@ jobs:
         run: |
           echo "✅ TestFlight 테스트 빌드 업로드 성공!"
           echo "버전: 0.0.0"
-          echo "빌드 번호: ${{ github.run_number }}"
-          echo "브랜치: ${{ github.ref_name }}"
+          echo "빌드 번호: ${{ needs.prepare-test-build.outputs.build_number }}"
+          if [ -n "${{ needs.prepare-test-build.outputs.pr_number }}" ]; then
+            echo "PR 번호: ${{ needs.prepare-test-build.outputs.pr_number }}"
+          fi
+          echo "브랜치: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}"
           echo "커밋: ${{ github.sha }}"
           if [ -n "${{ needs.prepare-test-build.outputs.issue_url }}" ]; then
             echo "관련 이슈: ${{ needs.prepare-test-build.outputs.issue_url }}"
@@ -468,3 +521,96 @@ jobs:
           echo "❌ TestFlight 테스트 빌드 업로드 실패!"
           echo "로그를 확인해주세요."
 
+      # PR에 빌드 완료 댓글 작성 (repository_dispatch로 트리거된 경우)
+      - name: PR에 빌드 성공 댓글 작성
+        if: success() && github.event_name == 'repository_dispatch' && github.event.client_payload.pr_number != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
+            const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
+            const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
+            const runId = '${{ github.run_id }}';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
+            const body = `🍎 ✅ **iOS TestFlight 빌드 완료**
+
+- 앱 버전: \`0.0.0\`
+- 빌드 번호: **#${buildNumber}**
+- 브랜치: \`${branchName}\`
+- 커밋: \`${commitHash}\`
+
+📱 **TestFlight에서 테스트 앱을 다운로드할 수 있습니다.**
+
+🔗 [워크플로우 실행 로그](${runUrl})`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
+
+            console.log(`✅ PR #${prNumber}에 빌드 성공 댓글 작성 완료`);
+
+      - name: PR에 빌드 실패 댓글 작성
+        if: failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.pr_number != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
+            const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
+            const runId = '${{ github.run_id }}';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
+            const body = `🍎 ❌ **iOS TestFlight 빌드 실패**
+
+- 빌드 번호: **#${buildNumber}**
+- 브랜치: \`${branchName}\`
+
+❌ 빌드 중 오류가 발생했습니다.
+
+🔗 [워크플로우 실행 로그 확인](${runUrl})`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
+
+            console.log(`✅ PR #${prNumber}에 빌드 실패 댓글 작성 완료`);
+
+      # 이슈에 빌드 완료 댓글 작성
+      - name: 이슈에 빌드 성공 댓글 작성
+        if: success() && needs.prepare-test-build.outputs.issue_number != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = parseInt('${{ needs.prepare-test-build.outputs.issue_number }}');
+            const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
+            const runId = '${{ github.run_id }}';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
+            const body = `🍎 ✅ **iOS TestFlight 빌드 완료**
+
+- 앱 버전: \`0.0.0\`
+- 빌드 번호: **#${buildNumber}**
+- 커밋: \`${commitHash}\`
+
+📱 **TestFlight에서 테스트 앱을 다운로드할 수 있습니다.**`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: body
+            });
+
+            console.log(`✅ 이슈 #${issueNumber}에 빌드 성공 댓글 작성 완료`);
