@@ -418,14 +418,18 @@ jobs:
           echo "❌ Android 테스트 APK 빌드 실패!"
           echo "로그를 확인해주세요."
 
-      # PR에 빌드 완료 댓글 작성 (repository_dispatch로 트리거된 경우)
-      - name: PR에 빌드 성공 댓글 작성
+      # PR/ISSUE에 빌드 완료 댓글 작성 (repository_dispatch로 트리거된 경우)
+      # source_type: PR → PR에만 댓글
+      # source_type: ISSUE 또는 기타 → 트리거된 곳(pr_number)에만 댓글
+      - name: 빌드 성공 댓글 작성
         if: success() && github.event_name == 'repository_dispatch' && github.event.client_payload.pr_number != ''
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const sourceType = '${{ github.event.client_payload.source_type }}' || 'PR';
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
+            const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
             const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
@@ -443,22 +447,54 @@ jobs:
 
             🔗 [워크플로우 실행 로그](${runUrl})`;
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: body
-            });
+            // PR에서 트리거된 경우: PR에 댓글
+            if (sourceType === 'PR') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+              console.log(`✅ PR #${prNumber}에 빌드 성공 댓글 작성 완료`);
 
-            console.log(`✅ PR #${prNumber}에 빌드 성공 댓글 작성 완료`);
+              // PR과 연결된 이슈가 있고, PR 번호와 다른 경우에만 이슈에도 댓글
+              if (issueNumber && issueNumber !== '' && parseInt(issueNumber) !== prNumber) {
+                const issueBody = `🤖 ✅ **Android 테스트 APK 빌드 완료**
 
-      - name: PR에 빌드 실패 댓글 작성
+            - 앱 버전: \`0.0.0(${buildNumber})\`
+            - 커밋: \`${commitHash}\`
+
+            📦 **[아티팩트 다운로드](${artifactUrl})**`;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: issueBody
+                });
+                console.log(`✅ 이슈 #${issueNumber}에도 빌드 성공 댓글 작성 완료`);
+              }
+            }
+            // ISSUE에서 트리거된 경우 또는 기타: 트리거된 곳에만 댓글
+            else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+              console.log(`✅ ${sourceType} #${prNumber}에 빌드 성공 댓글 작성 완료`);
+            }
+
+      - name: 빌드 실패 댓글 작성
         if: failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.pr_number != ''
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const sourceType = '${{ github.event.client_payload.source_type }}' || 'PR';
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
+            const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const runId = '${{ github.run_id }}';
@@ -473,42 +509,34 @@ jobs:
 
             🔗 [워크플로우 실행 로그 확인](${runUrl})`;
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: body
-            });
+            // PR에서 트리거된 경우: PR에 댓글
+            if (sourceType === 'PR') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+              console.log(`✅ PR #${prNumber}에 빌드 실패 댓글 작성 완료`);
 
-            console.log(`✅ PR #${prNumber}에 빌드 실패 댓글 작성 완료`);
-
-      # 이슈에 빌드 완료 댓글 작성
-      - name: 이슈에 빌드 성공 댓글 작성
-        if: success() && needs.prepare-test-build.outputs.issue_number != ''
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issueNumber = parseInt('${{ needs.prepare-test-build.outputs.issue_number }}');
-            const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
-            const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
-            const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
-            const runId = '${{ github.run_id }}';
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
-            const artifactUrl = `${runUrl}#artifacts`;
-
-            const body = `🤖 ✅ **Android 테스트 APK 빌드 완료**
-
-            - 앱 버전: \`0.0.0(${buildNumber})\`
-            - 커밋: \`${commitHash}\`
-
-            📦 **[아티팩트 다운로드](${artifactUrl})**`;
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              body: body
-            });
-
-            console.log(`✅ 이슈 #${issueNumber}에 빌드 성공 댓글 작성 완료`);
+              // PR과 연결된 이슈가 있고, PR 번호와 다른 경우에만 이슈에도 댓글
+              if (issueNumber && issueNumber !== '' && parseInt(issueNumber) !== prNumber) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: body
+                });
+                console.log(`✅ 이슈 #${issueNumber}에도 빌드 실패 댓글 작성 완료`);
+              }
+            }
+            // ISSUE에서 트리거된 경우 또는 기타: 트리거된 곳에만 댓글
+            else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+              console.log(`✅ ${sourceType} #${prNumber}에 빌드 실패 댓글 작성 완료`);
+            }
