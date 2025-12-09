@@ -19,7 +19,6 @@ class CommonModal extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const CommonModal._({
-    super.key,
     required this.icon,
     required this.iconColor,
     required this.iconBackgroundColor,

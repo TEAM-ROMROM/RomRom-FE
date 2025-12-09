@@ -24,7 +24,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/chatting_button.dart';
-import 'package:romrom_fe/widgets/common/common_success_modal.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
@@ -823,16 +823,13 @@ class _ItemDetailDescriptionScreenState
                       );
 
                       if (reported == true && mounted) {
-                        await showDialog(
+                        await CommonModal.success(
                           context: context,
-                          barrierDismissible: false,
-                          builder: (_) => CommonSuccessModal(
-                            message: '신고가 접수되었습니다.',
-                            onConfirm: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).pop();
-                            },
-                          ),
+                          message: '신고가 접수되었습니다.',
+                          onConfirm: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pop();
+                          },
                         );
                       }
                     },
