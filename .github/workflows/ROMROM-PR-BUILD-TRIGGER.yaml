@@ -181,12 +181,11 @@ jobs:
 
             const body = `🚀 **앱 빌드 트리거 완료**
 
-Android와 iOS 빌드 워크플로우를 시작했습니다.
-
-- 빌드 번호: **#${prNumber}**
-- 브랜치: \`${branchName}\`
-
-⏳ 빌드가 완료되면 자동으로 결과 댓글이 작성됩니다.`;
+            Android와 iOS 빌드 워크플로우를 시작했습니다.
+            
+            - 빌드 번호: **#${prNumber}**
+            - 브랜치: \`${branchName}\`
+            ⏳ 빌드가 완료되면 자동으로 결과 댓글이 작성됩니다.`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
