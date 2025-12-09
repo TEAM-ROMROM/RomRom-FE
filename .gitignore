@@ -44,6 +44,9 @@ app.*.map.json
 /android/app/.cxx/
 lib/generated/
 
+# Android keystore properties
+android/key.properties
+
 # 환경변수 ignore
 *.env
 
@@ -99,6 +102,10 @@ Flutter/flutter_assets/
 *.p12
 *.p8
 *.mobileprovision
+
+# Google Cloud 서비스 계정 키 파일
+*-*.json
+romrom-*.json
 
 # iOS/macOS 빌드 아티팩트
 ios/Flutter/AppFrameworkInfo.plist
