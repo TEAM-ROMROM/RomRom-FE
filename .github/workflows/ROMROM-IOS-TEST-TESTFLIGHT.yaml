@@ -537,8 +537,7 @@ jobs:
 
             const body = `🍎 ✅ **iOS TestFlight 빌드 완료**
 
-            - 앱 버전: \`0.0.0\`
-            - 빌드 번호: **#${buildNumber}**
+            - 앱 버전: \`0.0.0(${buildNumber})\`
             - 브랜치: \`${branchName}\`
             - 커밋: \`${commitHash}\`
 
@@ -569,7 +568,7 @@ jobs:
 
             const body = `🍎 ❌ **iOS TestFlight 빌드 실패**
 
-            - 빌드 번호: **#${buildNumber}**
+            - 앱 버전: \`0.0.0(${buildNumber})\`
             - 브랜치: \`${branchName}\`
 
             ❌ 빌드 중 오류가 발생했습니다.
@@ -600,10 +599,9 @@ jobs:
 
             const body = `🍎 ✅ **iOS TestFlight 빌드 완료**
 
-            - 앱 버전: \`0.0.0\`
-            - 빌드 번호: **#${buildNumber}**
+            - 앱 버전: \`0.0.0(${buildNumber})\`
             - 커밋: \`${commitHash}\`
-            
+
             📱 **TestFlight에서 테스트 앱을 다운로드할 수 있습니다.**`;
 
             await github.rest.issues.createComment({
