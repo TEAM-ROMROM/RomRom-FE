@@ -1,11 +1,29 @@
 {
   "metadata": {
-    "lastUpdated": "2025-12-03T16:05:21Z",
-    "currentVersion": "1.7.12",
-    "totalReleases": 50,
+    "lastUpdated": "2025-12-09T08:38:44Z",
+    "currentVersion": "1.8.0",
+    "totalReleases": 51,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.8.0",
+      "project_type": "flutter",
+      "date": "2025-12-09",
+      "pr_number": 389,
+      "raw_summary": "Summary by CodeRabbit\n릴리스 노트\n\nChores\n\n버전 1.7.23으로 업데이트 (빌드 번호 61)\n안드로이드 및 iOS 테스트 빌드 자동화 워크플로우 추가\nQA 이슈 자동 생성 시스템 도입\nPR/이슈 댓글을 통한 빌드 트리거 시스템 구현\n\n\n\n✏️ Tip: You can customize this high-level summary in your review settings.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 1.7.23으로 업데이트 (빌드 번호 61)",
+            "안드로이드 및 iOS 테스트 빌드 자동화 워크플로우 추가",
+            "QA 이슈 자동 생성 시스템 도입",
+            "PR/이슈 댓글을 통한 빌드 트리거 시스템 구현"
+          ]
+        }
+      }
+    },
     {
       "version": "1.7.12",
       "project_type": "flutter",
