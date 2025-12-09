@@ -435,14 +435,14 @@ jobs:
 
             const body = `🤖 ✅ **Android 테스트 APK 빌드 완료**
 
-- 앱 버전: \`0.0.0\`
-- 빌드 번호: **#${buildNumber}**
-- 브랜치: \`${branchName}\`
-- 커밋: \`${commitHash}\`
+            - 앱 버전: \`0.0.0\`
+            - 빌드 번호: **#${buildNumber}**
+            - 브랜치: \`${branchName}\`
+            - 커밋: \`${commitHash}\`
 
-📦 **[아티팩트 다운로드](${artifactUrl})**
+            📦 **[아티팩트 다운로드](${artifactUrl})**
 
-🔗 [워크플로우 실행 로그](${runUrl})`;
+            🔗 [워크플로우 실행 로그](${runUrl})`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -467,12 +467,12 @@ jobs:
 
             const body = `🤖 ❌ **Android 테스트 APK 빌드 실패**
 
-- 빌드 번호: **#${buildNumber}**
-- 브랜치: \`${branchName}\`
+            - 빌드 번호: **#${buildNumber}**
+            - 브랜치: \`${branchName}\`
 
-❌ 빌드 중 오류가 발생했습니다.
+            ❌ 빌드 중 오류가 발생했습니다.
 
-🔗 [워크플로우 실행 로그 확인](${runUrl})`;
+            🔗 [워크플로우 실행 로그 확인](${runUrl})`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -500,11 +500,11 @@ jobs:
 
             const body = `🤖 ✅ **Android 테스트 APK 빌드 완료**
 
-- 앱 버전: \`0.0.0\`
-- 빌드 번호: **#${buildNumber}**
-- 커밋: \`${commitHash}\`
+            - 앱 버전: \`0.0.0\`
+            - 빌드 번호: **#${buildNumber}**
+            - 커밋: \`${commitHash}\`
 
-📦 **[아티팩트 다운로드](${artifactUrl})**`;
+            📦 **[아티팩트 다운로드](${artifactUrl})**`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
