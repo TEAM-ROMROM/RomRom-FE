@@ -12,7 +12,7 @@ import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
-import 'package:romrom_fe/widgets/common/common_success_modal.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
@@ -200,13 +200,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           );
 
                           if (reported == true && mounted) {
-                            await showDialog(
+                            await CommonModal.success(
                               context: context,
-                              barrierDismissible: false,
-                              builder: (_) => CommonSuccessModal(
-                                message: '신고가 접수되었습니다.',
-                                onConfirm: () => Navigator.of(context).pop(),
-                              ),
+                              message: '신고가 접수되었습니다.',
+                              onConfirm: () => Navigator.of(context).pop(),
                             );
                           }
                         },

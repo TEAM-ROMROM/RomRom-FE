@@ -12,7 +12,7 @@ import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
@@ -379,40 +379,37 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 title: '채팅방 나가기',
                 textColor: AppColors.itemOptionsMenuDeleteText,
                 onTap: () async {
-                  await showDialog(
+                  await CommonModal.confirm(
                     context: context,
-                    barrierDismissible: false,
-                    builder: (_) => CommonDeleteModal(
-                      description: '정말로 채팅방을 나가시겠습니까?',
-                      leftText: '취소',
-                      onLeft: () {
-                        Navigator.of(context).pop(); // 모달 닫기
-                      },
-                      rightText: '나가기',
-                      onRight: () async {
-                        try {
-                          await ChatApi().deleteChatRoom(
-                            chatRoomId: chatRoom.chatRoomId!,
-                          );
-                          if (context.mounted) {
-                            Navigator.of(context).pop(); // 모달 닫기
-                          }
-                          // 화면 닫을 때도 동일한 _leaveRoom 로직
-                          if (context.mounted) {
-                            await _leaveRoom(shouldPop: true);
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            Navigator.of(context).pop(); // 모달 닫기
-                            CommonSnackBar.show(
-                              context: context,
-                              message:
-                                  '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
-                            );
-                          }
+                    message: '정말로 채팅방을 나가시겠습니까?',
+                    cancelText: '취소',
+                    confirmText: '나가기',
+                    onCancel: () {
+                      Navigator.of(context).pop(); // 모달 닫기
+                    },
+                    onConfirm: () async {
+                      try {
+                        await ChatApi().deleteChatRoom(
+                          chatRoomId: chatRoom.chatRoomId!,
+                        );
+                        if (context.mounted) {
+                          Navigator.of(context).pop(); // 모달 닫기
                         }
-                      },
-                    ),
+                        // 화면 닫을 때도 동일한 _leaveRoom 로직
+                        if (context.mounted) {
+                          await _leaveRoom(shouldPop: true);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.of(context).pop(); // 모달 닫기
+                          CommonSnackBar.show(
+                            context: context,
+                            message:
+                                '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
+                          );
+                        }
+                      }
+                    },
                   );
                 },
               ),

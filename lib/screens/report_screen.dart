@@ -7,7 +7,7 @@ import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/enums/item_report_reason.dart';
 import 'package:romrom_fe/services/apis/report_api.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/common_fail_modal.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 신고하기 페이지
@@ -135,13 +135,10 @@ class _ReportScreenState extends State<ReportScreen> {
                   // 에러 코드 파싱
                   final messageForUser = ErrorUtils.getErrorMessage(e);
 
-                  await showDialog(
+                  await CommonModal.error(
                     context: context,
-                    barrierDismissible: false,
-                    builder: (_) => CommonFailModal(
-                      message: messageForUser,
-                      onConfirm: () => Navigator.of(context).pop(),
-                    ),
+                    message: messageForUser,
+                    onConfirm: () => Navigator.of(context).pop(),
                   );
                   return;
                 }
