@@ -64,9 +64,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                 : '위치정보 없음';
           }
 
-          // TODO: API에서 받은 좋아요 수 로드
-          // _receivedLikes = memberResponse.receivedLikes ?? 0;
-          _receivedLikes = 56; // 임시 데이터
+          _receivedLikes = memberResponse.member?.totalLikeCount ?? 0;
         });
       }
     } catch (e) {
