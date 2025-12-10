@@ -18,7 +18,7 @@ extension NavigationExtension on BuildContext {
     bool Function(Route<dynamic>)? predicate, // pushAndRemoveUntil 용
   }) {
     // iOS에서는 CupertinoPageRoute, 안드로이드에서는 MaterialPageRoute 사용
-    PageRoute<T> createRoute<T extends Object?>(
+    PageRoute<T> createRoute(
       Widget screen,
       RouteSettings? settings,
     ) {
@@ -37,19 +37,19 @@ extension NavigationExtension on BuildContext {
 
     switch (type) {
       case NavigationTypes.push:
-        return Navigator.push<T>(this, createRoute<T>(screen, routeSettings));
+        return Navigator.push<T>(this, createRoute(screen, routeSettings));
 
       case NavigationTypes.pushReplacement:
         // 이전 라우트로 결과를 줄 일이 없으면 <T, T?> 정도로 맞추면 됨
         return Navigator.pushReplacement<T, T?>(
           this,
-          createRoute<T>(screen, routeSettings),
+          createRoute(screen, routeSettings),
         );
 
       case NavigationTypes.pushAndRemoveUntil:
         return Navigator.pushAndRemoveUntil<T>(
           this,
-          createRoute<T>(screen, routeSettings),
+          createRoute(screen, routeSettings),
           predicate ?? (route) => false,
         );
     }
