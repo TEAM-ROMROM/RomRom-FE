@@ -11,7 +11,6 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/enums/item_condition.dart' as item_condtion_enum;
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
@@ -25,7 +24,6 @@ class MyLikeListScreen extends StatefulWidget {
 }
 
 class _MyLikeListScreenState extends State<MyLikeListScreen> {
-  // TODO : 샘플 데이터: 실제 데이터로 교체하세요
   final List<_LikedItem> _items = [];
 
   int _currentPage = 0; // next page to request (0-based)
@@ -141,7 +139,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
 
       final likeItem = _LikedItem(
         itemId: d.itemId ?? 'unknown_$index',
-        heroTag: 'my_like_item_${d.itemId}',
+        heroTag: 'itemImage_${d.itemId}_0',
         title: d.itemName ?? '제목 없음',
         location: locationText,
         imageUrl: (d.imageUrlList.isNotEmpty) ? d.imageUrlList.first : '',
@@ -200,21 +198,39 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                   final item = _items[index];
 
                   return GestureDetector(
-                    onTap: () {
-                      // TODO: 상세화면 이동
-                      context.navigateTo(
-                        screen: ItemDetailDescriptionScreen(
-                          itemId: item.itemId,
-                          imageSize: Size(
-                            MediaQuery.of(context).size.width,
-                            400.h,
+                    onTap: () async {
+                      final itemId = item.itemId;
+                      // 직접 Navigator.push로 결과(await)를 받도록 변경
+                      final result = await Navigator.push<dynamic>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ItemDetailDescriptionScreen(
+                            itemId: itemId,
+                            imageSize: Size(
+                              MediaQuery.of(context).size.width,
+                              400.h,
+                            ),
+                            currentImageIndex: 0,
+                            heroTag: 'itemImage_${itemId}_0',
+                            isMyItem: false,
+                            isRequestManagement: false,
                           ),
-                          currentImageIndex: 0,
-                          heroTag: 'my_like_item_${item.itemId}',
-                          isMyItem: false,
-                          isRequestManagement: false,
                         ),
                       );
+
+                      // 상세에서 itemId 반환하면 목록에서 제거
+                      if (result != null && result is String) {
+                        final String removedId = result;
+                        if (removedId.isNotEmpty && mounted) {
+                            setState(() {
+                              _items.removeWhere(
+                                (it) => it.itemId == removedId,
+                              );
+                            });
+                          }
+                          return;
+                        }
+                      
                     },
                     child: Container(
                       padding: EdgeInsets.symmetric(vertical: 8.h),
