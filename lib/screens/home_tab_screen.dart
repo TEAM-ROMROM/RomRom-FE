@@ -22,7 +22,6 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
-import 'package:romrom_fe/widgets/flip_card_spin.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
@@ -568,155 +567,72 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     showDialog(
       barrierDismissible: false,
       context: context,
+      barrierColor: Colors.transparent,
       builder: (context) {
-        return Material(
-          type: MaterialType.transparency,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: Center(
-              child: Padding(
-                padding:
-                    EdgeInsets.symmetric(horizontal: 40.0.w, vertical: 65.0.h),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(height: 5.h),
-                    SizedBox(
-                      width: 310.w,
-                      height: 496.h,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          FlipCardSpin(
-                            front: SizedBox(
-                              height: 496.h,
-                              child: ItemCard(
-                                // 실제 카드 데이터 전달
-                                itemId: cardData.itemId!,
-                                itemName: cardData.itemName!,
-                                itemCategoryLabel:
-                                    ItemCategories.fromServerName(
-                                            cardData.itemCategory!)
-                                        .label,
-                                itemCardImageUrl:
-                                    cardData.primaryImageUrl != null
-                                        ? cardData.primaryImageUrl!
-                                        : 'https://picsum.photos/400/300',
-                                onOptionSelected: (selectedOption) {
-                                  debugPrint('선택된 거래 옵션: $selectedOption');
-                                  // 선택된 거래 옵션을 리스트에 추가
-                                  setState(() {
-                                    if (!_selectedTradeOptions
-                                        .contains(selectedOption)) {
-                                      _selectedTradeOptions.add(selectedOption);
-                                    }
-                                  });
-                                },
-                              ),
-                            ),
-                            back: SizedBox(
-                              width: 310.w,
-                              height: 496.h,
-                              child: ItemCard(
-                                // 실제 카드 데이터 전달
-                                itemId: cardData.itemId!,
-                                itemName: cardData.itemName!,
-                                itemCategoryLabel:
-                                    ItemCategories.fromServerName(
-                                            cardData.itemCategory!)
-                                        .label,
-                                itemCardImageUrl:
-                                    cardData.primaryImageUrl != null
-                                        ? cardData.primaryImageUrl!
-                                        : 'https://picsum.photos/400/300',
-                                onOptionSelected: (selectedOption) {
-                                  debugPrint('선택된 거래 옵션: $selectedOption');
-                                  // 선택된 거래 옵션을 리스트에 추가
-                                  setState(() {
-                                    if (!_selectedTradeOptions
-                                        .contains(selectedOption)) {
-                                      _selectedTradeOptions.add(selectedOption);
-                                    }
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 32.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        CompletionButton(
-                          isEnabled: true,
-                          buttonText: '취소',
-                          buttonWidth: 130,
-                          buttonHeight: 44,
-                          enabledBackgroundColor:
-                              AppColors.transactionRequestDialogCancelButton,
-                          enabledOnPressed: () {
-                            // 선택된 옵션 초기화
-                            setState(() {
-                              _selectedTradeOptions.clear();
-                            });
-                            Navigator.pop(context);
-                          },
-                        ),
-                        CompletionButton(
-                          isEnabled: true,
-                          buttonText: '요청 보내기',
-                          buttonWidth: 171,
-                          buttonHeight: 44,
-                          enabledOnPressed: () async {
-                            try {
-                              final api = TradeApi();
+        return _TradeRequestDialog(
+          cardData: cardData,
+          selectedTradeOptions: _selectedTradeOptions,
+          onOptionSelected: (selectedOption) {
+            debugPrint('선택된 거래 옵션: $selectedOption');
+            setState(() {
+              if (!_selectedTradeOptions.contains(selectedOption)) {
+                _selectedTradeOptions.add(selectedOption);
+              }
+            });
+          },
+          onCancel: () {
+            setState(() {
+              _selectedTradeOptions.clear();
+            });
+            Navigator.pop(context);
+          },
+          onSendRequest: () async {
+            try {
+              final api = TradeApi();
 
-                              // 거래 요청 API 호출
-                              await api.requestTrade(TradeRequest(
-                                giveItemId: cardData.itemId!,
-                                takeItemId:
-                                    _feedItems[_currentFeedIndex].itemUuid,
-                                itemTradeOptions: _selectedTradeOptions
-                                    .map((option) => option.serverName)
-                                    .toList(),
-                              ));
-                            } catch (e) {
-                              debugPrint('거래 요청 중 오류: $e');
-                              // 에러 코드 파싱
-                              final messageForUser =
-                                  ErrorUtils.getErrorMessage(e);
+              // 거래 요청 API 호출
+              await api.requestTrade(TradeRequest(
+                giveItemId: cardData.itemId!,
+                takeItemId: _feedItems[_currentFeedIndex].itemUuid,
+                itemTradeOptions: _selectedTradeOptions
+                    .map((option) => option.serverName)
+                    .toList(),
+              ));
 
-                              await showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (_) => CommonDeleteModal(
-                                  description: messageForUser,
-                                  leftText: '확인',
-                                  onRight: () {
-                                    Navigator.of(context).pop(); // 모달 닫기
-                                  },
-                                  onLeft: () => Navigator.of(context).pop(),
-                                ),
-                              );
-                            } finally {
-                              // 선택된 옵션 초기화
-                              setState(() {
-                                _selectedTradeOptions.clear();
-                              });
+              // 성공 토스트 표시
+              if (context.mounted) {
+                CommonSnackBar.show(
+                  context: context,
+                  message: '거래 요청이 전송되었습니다.',
+                  type: SnackBarType.success,
+                );
+              }
+            } catch (e) {
+              debugPrint('거래 요청 중 오류: $e');
+              // 에러 코드 파싱
+              final messageForUser = ErrorUtils.getErrorMessage(e);
 
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
+              await showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => CommonDeleteModal(
+                  description: messageForUser,
+                  leftText: '확인',
+                  onRight: () {
+                    Navigator.of(context).pop(); // 모달 닫기
+                  },
+                  onLeft: () => Navigator.of(context).pop(),
                 ),
-              ),
-            ),
-          ),
+              );
+            } finally {
+              // 선택된 옵션 초기화
+              setState(() {
+                _selectedTradeOptions.clear();
+              });
+
+              Navigator.pop(context);
+            }
+          },
         );
       },
     );
@@ -818,6 +734,143 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// 거래 요청 다이얼로그 (우아한 등장 애니메이션 포함)
+class _TradeRequestDialog extends StatefulWidget {
+  final Item cardData;
+  final List<ItemTradeOption> selectedTradeOptions;
+  final Function(ItemTradeOption) onOptionSelected;
+  final VoidCallback onCancel;
+  final VoidCallback onSendRequest;
+
+  const _TradeRequestDialog({
+    required this.cardData,
+    required this.selectedTradeOptions,
+    required this.onOptionSelected,
+    required this.onCancel,
+    required this.onSendRequest,
+  });
+
+  @override
+  State<_TradeRequestDialog> createState() => _TradeRequestDialogState();
+}
+
+class _TradeRequestDialogState extends State<_TradeRequestDialog>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    // 애니메이션 시작
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Opacity(
+            opacity: _fadeAnimation.value,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: 30 * _fadeAnimation.value,
+                sigmaY: 30 * _fadeAnimation.value,
+              ),
+              child: Center(
+                child: Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 40.0.w,
+                      vertical: 65.0.h,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(height: 5.h),
+                        SizedBox(
+                          width: 310.w,
+                          height: 496.h,
+                          child: ItemCard(
+                            itemId: widget.cardData.itemId!,
+                            itemName: widget.cardData.itemName!,
+                            itemCategoryLabel: ItemCategories.fromServerName(
+                              widget.cardData.itemCategory!,
+                            ).label,
+                            itemCardImageUrl: widget.cardData.primaryImageUrl !=
+                                    null
+                                ? widget.cardData.primaryImageUrl!
+                                : 'https://picsum.photos/400/300',
+                            onOptionSelected: widget.onOptionSelected,
+                          ),
+                        ),
+                        SizedBox(height: 32.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            CompletionButton(
+                              isEnabled: true,
+                              buttonText: '취소',
+                              buttonWidth: 130,
+                              buttonHeight: 44,
+                              enabledBackgroundColor:
+                                  AppColors.transactionRequestDialogCancelButton,
+                              enabledOnPressed: widget.onCancel,
+                            ),
+                            CompletionButton(
+                              isEnabled: true,
+                              buttonText: '요청 보내기',
+                              buttonWidth: 171,
+                              buttonHeight: 44,
+                              enabledOnPressed: widget.onSendRequest,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
