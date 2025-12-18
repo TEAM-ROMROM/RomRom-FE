@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -142,6 +145,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
         heroTag: 'itemImage_${d.itemId}_0',
         title: d.itemName ?? '제목 없음',
         location: locationText,
+        itemStatus: d.itemStatus ?? 'unknown',
         imageUrl: (d.imageUrlList.isNotEmpty) ? d.imageUrlList.first : '',
         tags: [cond.label, ...opts.map((e) => e.label)],
         isLiked: true,
@@ -222,15 +226,12 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                       if (result != null && result is String) {
                         final String removedId = result;
                         if (removedId.isNotEmpty && mounted) {
-                            setState(() {
-                              _items.removeWhere(
-                                (it) => it.itemId == removedId,
-                              );
-                            });
-                          }
-                          return;
+                          setState(() {
+                            _items.removeWhere((it) => it.itemId == removedId);
+                          });
                         }
-                      
+                        return;
+                      }
                     },
                     child: Container(
                       padding: EdgeInsets.symmetric(vertical: 8.h),
@@ -248,27 +249,94 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                 MaterialRectArcTween(begin: begin, end: end),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8.r),
-                              child: Container(
-                                width: 70.w,
-                                height: 70.w,
-                                color: AppColors.opacity10White,
-                                child: item.imageUrl.isEmpty
-                                    ? const Icon(
-                                        Icons.photo_size_select_actual_rounded,
-                                        color: AppColors.opacity40White,
-                                      )
-                                    : Image.network(
-                                        item.imageUrl,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (ctx, child, progress) {
-                                          if (progress == null) return child;
-                                          return const Center(
-                                            child: CircularProgressIndicator(
-                                              color: AppColors.primaryYellow,
-                                            ),
-                                          );
-                                        },
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    width: 70.w,
+                                    height: 70.w,
+                                    color: AppColors.opacity10White,
+                                    child: item.imageUrl.isEmpty
+                                        ? const Icon(
+                                            Icons
+                                                .photo_size_select_actual_rounded,
+                                            color: AppColors.opacity40White,
+                                          )
+                                        : Image.network(
+                                            item.imageUrl,
+                                            fit: BoxFit.cover,
+                                            loadingBuilder:
+                                                (ctx, child, progress) {
+                                                  if (progress == null) {
+                                                    return child;
+                                                  }
+                                                  return const Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          color: AppColors
+                                                              .primaryYellow,
+                                                        ),
+                                                  );
+                                                },
+                                          ),
+                                  ),
+
+                                  /// 거래완료 오버레이 (검정 50%)
+                                  if (item.itemStatus ==
+                                      ItemStatus.exchanged.serverName)
+                                    IgnorePointer(
+                                      child: Container(
+                                        width: 70.w,
+                                        height: 70.w,
+                                        color: AppColors.opacity50Black,
                                       ),
+                                    ),
+
+                                  /// 거래완료 글라스모피즘 배지 (이미지 중앙)
+                                  if (item.itemStatus ==
+                                      ItemStatus.exchanged.serverName)
+                                    Positioned.fill(
+                                      child: Align(
+                                        alignment: Alignment.center,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            4.r,
+                                          ),
+                                          child: BackdropFilter(
+                                            filter: ImageFilter.blur(
+                                              sigmaX: 5,
+                                              sigmaY: 5,
+                                            ),
+                                            child: Container(
+                                              width: 50.w,
+                                              height: 20.h,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.opacity10White,
+                                                borderRadius:
+                                                    BorderRadius.circular(4.r),
+                                                border: Border.all(
+                                                  color:
+                                                      AppColors.textColorWhite,
+                                                  width: 1.w,
+                                                ),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                '거래 완료',
+                                                style: CustomTextStyles.p3
+                                                    .copyWith(
+                                                      fontSize: 12.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: AppColors
+                                                          .textColorWhite,
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ),
@@ -371,6 +439,7 @@ class _LikedItem {
   final String heroTag;
   final String title;
   final String location;
+  final String itemStatus;
   final List<String> tags;
   final String imageUrl;
   bool isLiked;
@@ -380,6 +449,7 @@ class _LikedItem {
     required this.heroTag,
     required this.title,
     required this.location,
+    required this.itemStatus,
     required this.tags,
     required this.imageUrl,
     required this.isLiked,
