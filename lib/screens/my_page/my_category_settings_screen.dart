@@ -9,6 +9,7 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
+/// 선호 카테고리 설정 화면
 class MyCategorySettingsScreen extends StatefulWidget {
   const MyCategorySettingsScreen({super.key});
 
@@ -41,8 +42,9 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
           for (final category in categories) {
             if (category.itemCategory != null) {
               try {
-                final itemCategory =
-                    ItemCategories.fromServerName(category.itemCategory!);
+                final itemCategory = ItemCategories.fromServerName(
+                  category.itemCategory!,
+                );
                 selectedCategories.add(itemCategory.id);
               } catch (e) {
                 debugPrint('카테고리 변환 실패: ${category.itemCategory}');
@@ -68,25 +70,26 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(
         title: '선호 카테고리 설정',
+        showBottomBorder: true,
         onBackPressed: () => Navigator.pop(context),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+              padding: EdgeInsets.only(right: 24.0.w, left: 24.0.w, top: 56.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SizedBox(height: 1.h,),
                   // 카테고리 칩 표시
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: _buildCategoryChips(context),
-                    ),
+                  SingleChildScrollView(
+                    child: _buildCategoryChips(context),
                   ),
+                  Expanded(child: Container()),
 
                   // 저장하기 버튼
                   Padding(
-                    padding: EdgeInsets.only(bottom: 48.h),
+                    padding: EdgeInsets.only(bottom: 76.h + MediaQuery.of(context).padding.bottom),
                     child: Center(
                       child: CompletionButton(
                         isEnabled: isSelectedCategories,
@@ -142,8 +145,9 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
         category.label,
         style: CustomTextStyles.p2.copyWith(
           fontSize: adjustedFontSize(context, 14.0),
-          color:
-              isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
+          color: isSelected
+              ? AppColors.textColorBlack
+              : AppColors.textColorWhite,
           wordSpacing: -0.32.w,
         ),
       ),
@@ -154,9 +158,10 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
       backgroundColor: AppColors.primaryBlack,
       shape: RoundedRectangleBorder(
         side: BorderSide(
-          color:
-              isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
-          strokeAlign: BorderSide.strokeAlignInside,
+          color: isSelected
+              ? AppColors.primaryYellow
+              : AppColors.textColorWhite,
+          strokeAlign: BorderSide.strokeAlignOutside,
           width: 1.0.w,
         ),
         borderRadius: BorderRadiusDirectional.circular(100.r),
