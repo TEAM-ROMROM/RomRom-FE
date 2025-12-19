@@ -6,7 +6,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
-import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
@@ -153,19 +153,16 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         showBottomBorder: true,
         onBackPressed: () {
           if (_isProfileEdited) {
-            showDialog(
+            CommonModal.confirm(
               context: context,
-              barrierDismissible: false,
-              builder: (_) => CommonDeleteModal(
-                description: '변경 사항이 저장되지 않았습니다.\n저장하지 않고 나가시겠습니까?',
-                leftText: '취소',
-                rightText: '나가기',
-                onRight: () {
-                  Navigator.pop(context); // 다이얼로그 닫기
-                  Navigator.pop(context); // 화면 닫기
-                },
-                onLeft: () => Navigator.of(context).pop(),
-              ),
+              message: '변경 사항이 저장되지 않았습니다.\n저장하지 않고 나가시겠습니까?',
+              confirmText: '나가기',
+              cancelText: '취소',
+              onCancel: () => Navigator.of(context).pop(),
+              onConfirm: () {
+                Navigator.pop(context); // 다이얼로그 닫기
+                Navigator.pop(context); // 화면 닫기
+              },
             );
 
             return;
