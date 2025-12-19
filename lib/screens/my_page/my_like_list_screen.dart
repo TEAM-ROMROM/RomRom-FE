@@ -389,10 +389,31 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                     ),
                                     // 좋아요 버튼 (아이콘+원)
                                     GestureDetector(
-                                      onTap: () {
-                                        setState(
-                                          () => item.isLiked = !item.isLiked,
-                                        );
+                                      onTap: () async {
+                                        final itemId = item.itemId;
+
+                                        try {
+                                          await ItemApi().postLike(
+                                            ItemRequest(itemId: itemId),
+                                          ); // 서버 호출: 좋아요 취소
+                                          setState(
+                                            () => item.isLiked = !item.isLiked,
+                                          );
+                                        } catch (e) {
+                                          // 실패 시 롤백: 아이템 복원
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  '좋아요 취소에 실패했습니다.',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                        return;
                                       },
                                       child: Container(
                                         width: 24.w,
