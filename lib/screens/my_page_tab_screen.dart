@@ -5,6 +5,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/screens/my_page/my_like_list_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
@@ -93,7 +94,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               _MenuItem(
                 label: '좋아요 목록',
                 onTap: () {
-                  // TODO: 좋아요 목록 화면으로 이동
+                  context.navigateTo(screen: const MyLikeListScreen());
                 },
               ),
               _MenuItem(

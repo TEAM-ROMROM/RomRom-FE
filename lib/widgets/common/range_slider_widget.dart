@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -31,11 +33,12 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
   late AnimationController _animationController;
   late Animation<double> _animation;
   late int _currentIndex;
+  int? _lastHapticIndex; // 마지막으로 햅틱을 준 인덱스 (중복 방지)
   double _dragStartX = 0;
   double _dragStartValue = 0;
 
   // 슬라이더 상수
-  static const double _trackHorizontalPadding = 24.0;
+  static const double _trackHorizontalPadding = 12.0;
   static const double _smallDotSize = 10.0;
   static const double _largeDotSize = 24.0;
 
@@ -43,6 +46,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
   void initState() {
     super.initState();
     _currentIndex = widget.selectedIndex;
+    _lastHapticIndex = _currentIndex;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -80,11 +84,14 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
     ));
     _animationController.forward(from: 0);
     _currentIndex = index;
+    _lastHapticIndex = index;
   }
 
   void _onPanStart(DragStartDetails details) {
     _dragStartX = details.localPosition.dx;
     _dragStartValue = _animation.value;
+    // 시작 시 현재 인덱스 기록(드래그 중 중복 햅틱 방지용)
+    _lastHapticIndex = _animation.value.round();
   }
 
   void _onPanUpdate(DragUpdateDetails details, double trackWidth) {
@@ -97,12 +104,21 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
     setState(() {
       _animation = AlwaysStoppedAnimation(newValue);
     });
+
+    // 드래그 중 분기점(정수 인덱스)을 넘을 때마다 햅틱
+    final int nearest = newValue.round().clamp(0, widget.options.length - 1);
+    if (_lastHapticIndex != nearest) {
+      _lastHapticIndex = nearest;
+      if (!kIsWeb) HapticFeedback.selectionClick();
+    }
   }
 
   void _onPanEnd(DragEndDetails details) {
     final nearestIndex = _animation.value.round().clamp(0, widget.options.length - 1);
     _animateTo(nearestIndex);
     widget.onChanged(nearestIndex);
+    // 최종 선택 시 약한 임팩트
+    if (!kIsWeb) HapticFeedback.lightImpact();
   }
 
   void _onTapUp(TapUpDetails details, double trackWidth) {
@@ -111,6 +127,8 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
     final newIndex = (tapX / segmentWidth).round().clamp(0, widget.options.length - 1);
     _animateTo(newIndex);
     widget.onChanged(newIndex);
+    // 탭으로 선택했을 때 햅틱
+    if (!kIsWeb) HapticFeedback.selectionClick();
   }
 
   @override
@@ -122,7 +140,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
         final segmentWidth = trackWidth / (widget.options.length - 1);
 
         return SizedBox(
-          height: 120.h,
+          height: 76.h,
           child: AnimatedBuilder(
             animation: _animation,
             builder: (context, child) {
@@ -133,14 +151,12 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
                   _trackHorizontalPadding.w + (currentValue * segmentWidth);
 
               return Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // 레이블 (큰 원 위 8px)
                   _buildLabel(nearestIndex, dotX),
-                  SizedBox(height: 8.h),
                   // 슬라이더 트랙
                   _buildSliderTrack(trackWidth),
-                  SizedBox(height: 8.h),
                   // 설명 텍스트 (큰 원 아래 8px)
                   _buildDescription(nearestIndex, dotX),
                 ],
@@ -197,7 +213,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
                 optionCount: widget.options.length,
                 currentValue: _animation.value,
                 primaryColor: AppColors.primaryYellow,
-                inactiveColor: AppColors.opacity30White,
+                inactiveColor: AppColors.secondaryBlack2,
                 smallDotSize: _smallDotSize.w,
                 largeDotSize: _largeDotSize.w,
               ),
@@ -218,9 +234,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
           translation: const Offset(-0.5, 0),
           child: Text(
             widget.options[nearestIndex].description,
-            style: CustomTextStyles.p2.copyWith(
-              color: AppColors.opacity60White,
-            ),
+            style: CustomTextStyles.p3,
           ),
         ),
       ),
@@ -251,73 +265,66 @@ class _RangeSliderPainter extends CustomPainter {
     final segmentWidth = size.width / (optionCount - 1);
     final centerY = size.height / 2;
 
-    // 비활성 트랙 라인 그리기
+    // 페인트들
     final inactiveTrackPaint = Paint()
       ..color = inactiveColor
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
 
-    // 활성 트랙 라인 그리기
     final activeTrackPaint = Paint()
       ..color = primaryColor
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
 
-    // 현재 값까지의 활성 트랙
-    final activeEndX = currentValue * segmentWidth;
+    // knob 위치 (선과 큰 원이 함께 움직이도록 currentValue 기반으로 계산)
+    final knobX = (currentValue.clamp(0.0, (optionCount - 1).toDouble())) * segmentWidth;
+
+    // 1) 전체 비활성 트랙 그리기
     canvas.drawLine(
       Offset(0, centerY),
-      Offset(activeEndX, centerY),
-      activeTrackPaint,
-    );
-
-    // 현�� 값 이후의 비활성 트랙
-    canvas.drawLine(
-      Offset(activeEndX, centerY),
       Offset(size.width, centerY),
       inactiveTrackPaint,
     );
 
-    // 각 분기점에 점 그리기
+    // 2) 활성 트랙: 0에서 knob 위치까지
+    canvas.drawLine(
+      Offset(0, centerY),
+      Offset(knobX, centerY),
+      activeTrackPaint,
+    );
+
+    // 3) 분기점 점들 그리기 (활성 여부는 knobX 기준)
     for (int i = 0; i < optionCount; i++) {
       final x = i * segmentWidth;
-      final isActive = i <= currentValue.round();
-      final isCurrentPosition = (currentValue - i).abs() < 0.5;
-
-      if (isCurrentPosition) {
-        // 큰 원 (현재 선택된 위치)
-        final shadowPaint = Paint()
-          ..color = Colors.black.withValues(alpha: 0.25)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
-        canvas.drawCircle(
-          Offset(x + 1, centerY + 1),
-          largeDotSize / 2,
-          shadowPaint,
-        );
-
-        final largeDotPaint = Paint()..color = primaryColor;
-        canvas.drawCircle(
-          Offset(x, centerY),
-          largeDotSize / 2,
-          largeDotPaint,
-        );
-      } else {
-        // 작은 원
-        final smallDotPaint = Paint()
-          ..color = isActive ? primaryColor : inactiveColor;
-        canvas.drawCircle(
-          Offset(x, centerY),
-          smallDotSize / 2,
-          smallDotPaint,
-        );
-      }
+      final isActive = x <= knobX + 0.0001; // knob이 지나는 지점 포함
+      final paint = Paint()..color = isActive ? primaryColor : inactiveColor;
+      canvas.drawCircle(Offset(x, centerY), smallDotSize / 2, paint);
     }
+
+    // 4) 이동 가능한 큰 원(노브) 항상 그리기 — 선과 함께 부드럽게 움직임
+    final shadowPaint = Paint()
+      ..color = AppColors.textColorBlack.withValues(alpha: 0.25)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    canvas.drawCircle(
+      Offset(knobX + 1, centerY + 1),
+      largeDotSize / 2,
+      shadowPaint,
+    );
+
+    final largeDotPaint = Paint()..color = primaryColor;
+    canvas.drawCircle(
+      Offset(knobX, centerY),
+      largeDotSize / 2,
+      largeDotPaint,
+    );
   }
 
   @override
   bool shouldRepaint(_RangeSliderPainter oldDelegate) {
     return oldDelegate.currentValue != currentValue ||
-        oldDelegate.optionCount != optionCount;
+        oldDelegate.optionCount != optionCount ||
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.inactiveColor != inactiveColor;
   }
 }
 

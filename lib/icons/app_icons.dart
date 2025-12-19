@@ -27,5 +27,4 @@ class AppIcons {
   static const IconData location = IconData(0xe824, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData navigateBefore = IconData(0xe825, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData onboardingProgressCheck = IconData(0xe826, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData romromRLogoText = IconData(0xe83d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

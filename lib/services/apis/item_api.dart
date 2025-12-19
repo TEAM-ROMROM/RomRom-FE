@@ -273,4 +273,28 @@ class ItemApi {
 
     return itemResponse;
   }
+
+  /// 좋아요 물품 목록 조회
+  /// `POST /api/item/like/get`
+  Future<ItemResponse> getLikeList(ItemRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/item/like/get';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {
+      'pageNumber': request.pageNumber.toString(),
+      'pageSize': request.pageSize.toString(),
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('좋아요 목록 조회 성공: ${itemResponse.itemPage?.content.length}개');
+      },
+    );
+
+    return itemResponse;
+  }
 }

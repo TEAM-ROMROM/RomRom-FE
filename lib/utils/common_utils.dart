@@ -5,8 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
-import 'package:romrom_fe/models/app_colors.dart';
-import '../widgets/common/common_delete_modal.dart';
+import '../widgets/common/common_modal.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
@@ -18,7 +17,7 @@ extension NavigationExtension on BuildContext {
     bool Function(Route<dynamic>)? predicate, // pushAndRemoveUntil 용
   }) {
     // iOS에서는 CupertinoPageRoute, 안드로이드에서는 MaterialPageRoute 사용
-    PageRoute<T> createRoute<T extends Object?>(
+    PageRoute<T> createRoute(
       Widget screen,
       RouteSettings? settings,
     ) {
@@ -37,19 +36,19 @@ extension NavigationExtension on BuildContext {
 
     switch (type) {
       case NavigationTypes.push:
-        return Navigator.push<T>(this, createRoute<T>(screen, routeSettings));
+        return Navigator.push<T>(this, createRoute(screen, routeSettings));
 
       case NavigationTypes.pushReplacement:
         // 이전 라우트로 결과를 줄 일이 없으면 <T, T?> 정도로 맞추면 됨
         return Navigator.pushReplacement<T, T?>(
           this,
-          createRoute<T>(screen, routeSettings),
+          createRoute(screen, routeSettings),
         );
 
       case NavigationTypes.pushAndRemoveUntil:
         return Navigator.pushAndRemoveUntil<T>(
           this,
-          createRoute<T>(screen, routeSettings),
+          createRoute(screen, routeSettings),
           predicate ?? (route) => false,
         );
     }
@@ -86,17 +85,13 @@ extension ContextExtension on BuildContext {
     String cancelText = '취소',
     String confirmText = '삭제',
   }) async {
-    return showDialog<bool>(
+    return CommonModal.confirm(
       context: this,
-      barrierDismissible: false,
-      barrierColor: AppColors.dialogBarrier,
-      builder: (context) => CommonDeleteModal(
-        description: description,
-        leftText: cancelText,
-        rightText: confirmText,
-        onLeft: () => Navigator.of(context).pop(false),
-        onRight: () => Navigator.of(context).pop(true),
-      ),
+      message: description,
+      cancelText: cancelText,
+      confirmText: confirmText,
+      onCancel: () => Navigator.of(this).pop(false),
+      onConfirm: () => Navigator.of(this).pop(true),
     );
   }
 }
