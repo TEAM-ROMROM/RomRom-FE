@@ -249,17 +249,12 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
   /// 범위에 따른 줌 레벨 반환
   int _getRangeIndex(double searchRadiusInMeters) {
     // 범위가 클수록 줌 아웃
-    switch (searchRadiusInMeters / 1000) {
-      case 2.5: // 2.5km
-        return 0;
-      case 5: // 5km
-        return 1;
-      case 7.5: // 7.5km
-        return 2;
-      case 10: // 10km
-        return 3;
-      default:
-        return 0;
-    }
+    // 미터 단위로 비교하여 부동소수점 오차 방지
+    final radiusInMeters = searchRadiusInMeters.round();
+    if (radiusInMeters <= 2500) return 0;
+    if (radiusInMeters <= 5000) return 1;
+    if (radiusInMeters <= 7500) return 2;
+    if (radiusInMeters <= 10000) return 3;
+    return 0;
   }
 }

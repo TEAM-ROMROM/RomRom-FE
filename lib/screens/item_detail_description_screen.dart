@@ -354,12 +354,12 @@ class _ItemDetailDescriptionScreenState
     }
 
     if (item == null) {
-      return const Scaffold(
+      return  Scaffold(
         backgroundColor: AppColors.primaryBlack,
         body: Center(
           child: Text(
             '물품 정보가 없습니다.',
-            style: TextStyle(color: AppColors.textColorWhite),
+            style: CustomTextStyles.h3,
           ),
         ),
       );

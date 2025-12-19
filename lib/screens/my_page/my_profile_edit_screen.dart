@@ -42,6 +42,13 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
     _loadUserInfo();
   }
 
+  @override
+  void dispose() {
+    nicknameController.dispose();
+    nicknameFocusNode.dispose();
+    super.dispose();
+  }
+
   /// 사용자 정보 로드
   Future<void> _loadUserInfo() async {
     try {

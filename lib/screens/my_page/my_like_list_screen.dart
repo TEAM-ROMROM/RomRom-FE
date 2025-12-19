@@ -15,7 +15,7 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
-import 'package:romrom_fe/enums/item_condition.dart' as item_condtion_enum;
+import 'package:romrom_fe/enums/item_condition.dart' as item_condition_enum;
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 
@@ -112,7 +112,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
       // 카테고리/상태/옵션 매핑
       ItemCondition cond = ItemCondition.newItem;
       try {
-        cond = item_condtion_enum.ItemCondition.values.firstWhere(
+        cond = item_condition_enum.ItemCondition.values.firstWhere(
           (e) => e.serverName == d.itemCondition,
         );
       } catch (_) {}

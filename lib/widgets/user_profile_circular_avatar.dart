@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/user_info.dart';
+
+const String _kDefaultProfileAsset = 'assets/images/basicProfile.svg';
 
 class UserProfileCircularAvatar extends StatefulWidget {
   final Size avatarSize;
@@ -55,12 +58,12 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
       final userInfo = UserInfo();
       await userInfo.getUserInfo(); // 사용자 정보 로딩
       setState(() {
-        _avatarUrl = userInfo.profileUrl;
+        _avatarUrl = userInfo.profileUrl ?? _kDefaultProfileAsset;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _avatarUrl = 'assets/images/basicProfile.svg';
+        _avatarUrl = _kDefaultProfileAsset;
         _isLoading = false;
       });
     }
@@ -87,7 +90,9 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
       child: ClipOval(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _avatarUrl != null && _avatarUrl!.isNotEmpty
+            : _avatarUrl != null &&
+                  _avatarUrl!.isNotEmpty &&
+                  _avatarUrl != _kDefaultProfileAsset
             ? Image.network(
                 _avatarUrl!,
                 fit: BoxFit.cover,
@@ -101,13 +106,9 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
   }
 
   Widget _buildDefaultImage() {
-    return Container(
-      color: Colors.grey[300],
-      child: Icon(
-        Icons.person,
-        size: 40, // 아이콘 크기 조정
-        color: Colors.grey[700], // 아이콘 색상
-      ),
+    return SvgPicture.asset(
+      _kDefaultProfileAsset,
+      fit: BoxFit.cover,
     );
   }
 }
