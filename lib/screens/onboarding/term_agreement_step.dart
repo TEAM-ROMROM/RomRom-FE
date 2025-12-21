@@ -235,7 +235,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
 
           // 동의하고 계속하기 버튼
           Padding(
-            padding: EdgeInsets.only(bottom: 48.h),
+            padding: EdgeInsets.only(bottom: 63.h + MediaQuery.of(context).padding.bottom),
             child: CompletionButton(
               isEnabled: _allRequiredChecked && !_isSaving,
               enabledOnPressed: _handleTermsAgreement,
@@ -308,7 +308,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
               }
             },
             child: Icon(
-              AppIcons.dotsVertical,
+              AppIcons.detailView,
               size: 18.h,
               color: AppColors.textColorWhite,
             ),
