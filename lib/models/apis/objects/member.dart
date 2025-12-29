@@ -21,6 +21,8 @@ class Member extends BaseEntity {
   final bool? isMarketingInfoAgreed;
   final double? latitude;
   final double? longitude;
+  final int? totalLikeCount;
+  final double? searchRadiusInMeters;
 
   Member({
     super.createdDate,
@@ -40,6 +42,8 @@ class Member extends BaseEntity {
     this.isMarketingInfoAgreed,
     this.latitude,
     this.longitude,
+    this.totalLikeCount,
+    this.searchRadiusInMeters,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);

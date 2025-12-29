@@ -19,7 +19,7 @@ import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/common_delete_modal.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
@@ -612,23 +612,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               // 에러 코드 파싱
               final messageForUser = ErrorUtils.getErrorMessage(e);
 
-              await showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (_) => CommonDeleteModal(
-                  description: messageForUser,
-                  leftText: '확인',
-                  onRight: () {
-                    Navigator.of(context).pop(); // 모달 닫기
-                  },
-                  onLeft: () => Navigator.of(context).pop(),
-                ),
-              );
-            } finally {
-              // 선택된 옵션 초기화
-              setState(() {
-                _selectedTradeOptions.clear();
-              });
+                              await CommonModal.error(
+                                context: context,
+                                message: messageForUser,
+                                onConfirm: () => Navigator.of(context).pop(),
+                              );
+                            } finally {
+                              // 선택된 옵션 초기화
+                              setState(() {
+                                _selectedTradeOptions.clear();
+                              });
 
               Navigator.pop(context);
             }
