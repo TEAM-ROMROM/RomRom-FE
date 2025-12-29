@@ -612,16 +612,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               // 에러 코드 파싱
               final messageForUser = ErrorUtils.getErrorMessage(e);
 
-                              await CommonModal.error(
-                                context: context,
-                                message: messageForUser,
-                                onConfirm: () => Navigator.of(context).pop(),
-                              );
-                            } finally {
-                              // 선택된 옵션 초기화
-                              setState(() {
-                                _selectedTradeOptions.clear();
-                              });
+              await CommonModal.error(
+                context: context,
+                message: messageForUser,
+                onConfirm: () => Navigator.of(context).pop(),
+              );
+            } finally {
+              // 선택된 옵션 초기화
+              setState(() {
+                _selectedTradeOptions.clear();
+              });
 
               Navigator.pop(context);
             }
