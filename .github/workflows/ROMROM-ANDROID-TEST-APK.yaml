@@ -512,6 +512,7 @@ jobs:
 
       # APK와 빌드 정보를 아티팩트로 업로드
       - name: Upload APK and build info as Artifact
+        id: upload_artifact
         uses: actions/upload-artifact@v4
         with:
           name: romrom-test-apk
@@ -561,7 +562,8 @@ jobs:
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const runId = '${{ github.run_id }}';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
-            const artifactUrl = `${runUrl}#artifacts`;
+            // upload-artifact@v4의 artifact-url output 사용 (직접 다운로드 URL)
+            const artifactUrl = '${{ steps.upload_artifact.outputs.artifact-url }}' || `${runUrl}#artifacts`;
 
             // 소요 시간 계산
             const prepDuration = '${{ steps.progress_step1.outputs.prep_duration }}' || '-';
