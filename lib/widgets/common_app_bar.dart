@@ -25,6 +25,10 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// 기본값은 true로 설정되어 있으며, false로 설정하면 하단 border가 표시되지 않음
   final bool showBottomBorder;
 
+  /// 타이틀 클릭 시 실행될 콜백
+  /// 제공되지 않을 경우 타이틀은 클릭 불가
+  final VoidCallback? onTitleTap;
+
   const CommonAppBar({
     super.key,
     required this.title,
@@ -36,6 +40,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: SizedBox.shrink(),
     ),
     this.showBottomBorder = false,
+    this.onTitleTap,
   });
 
   @override
@@ -62,10 +67,18 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         padding: EdgeInsets.zero, // 패딩 제거
       ),
       bottom: bottomWidgets,
-      title: Padding(
-        padding: EdgeInsets.zero,
-        child: Text(title, style: titleTextStyle ?? CustomTextStyles.h1),
-      ),
+      title: onTitleTap != null
+          ? GestureDetector(
+              onTap: onTitleTap,
+              child: Padding(
+                padding: EdgeInsets.zero,
+                child: Text(title, style: titleTextStyle ?? CustomTextStyles.h1),
+              ),
+            )
+          : Padding(
+              padding: EdgeInsets.zero,
+              child: Text(title, style: titleTextStyle ?? CustomTextStyles.h1),
+            ),
 
       shape: Border(
         bottom: BorderSide(

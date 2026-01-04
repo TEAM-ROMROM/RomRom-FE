@@ -23,6 +23,7 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/screens/profile/profile_screen.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -402,14 +403,27 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         // 프로필 이미지
-                        ClipOval(
-                          child: BlurWrapper(
-                            enabled: widget.showBlur,
-                            child: UserProfileCircularAvatar(
-                              avatarSize: const Size(50, 50),
-                              profileUrl: widget.item.profileUrl.isNotEmpty
-                                  ? widget.item.profileUrl
-                                  : null,
+                        GestureDetector(
+                          onTap: widget.showBlur
+                              ? null
+                              : () {
+                                  if (widget.item.authorMemberId != null) {
+                                    context.navigateTo(
+                                      screen: ProfileScreen(
+                                        memberId: widget.item.authorMemberId!,
+                                      ),
+                                    );
+                                  }
+                                },
+                          child: ClipOval(
+                            child: BlurWrapper(
+                              enabled: widget.showBlur,
+                              child: UserProfileCircularAvatar(
+                                avatarSize: const Size(50, 50),
+                                profileUrl: widget.item.profileUrl.isNotEmpty
+                                    ? widget.item.profileUrl
+                                    : null,
+                              ),
                             ),
                           ),
                         ),
