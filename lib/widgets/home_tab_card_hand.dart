@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -27,7 +26,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   // 애니메이션 컨트롤러들
   late AnimationController _fanController;
   late AnimationController _pullController;
-  AnimationController? _orbitController;
   late AnimationController _cardAbsorbController;
   late AnimationController _dropZonePulseController;
 
@@ -37,12 +35,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   late Animation<double> _cardAbsorbAnimation;
   late Animation<double> _dropZonePulseAnimation;
 
-  // 덱/제스처 상태
-  double _orbitAngle = -math.pi / 2;
-  double _orbitDragStart = 0.0;
-  double _orbitAccumulated = -math.pi / 2;
-  static const double _orbitSensitivity = 0.0045;
-
+  // 제스처 상태
   bool _panStartedOnCard = false; // 터치 시작이 카드 위
   String? _startCardId; // 터치 시작 카드
   bool _hasStartedCardDrag = false; // 수직 드래그 임계치 넘겨 카드 드래그 모드 진입
@@ -65,8 +58,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   final double _baseBottom = 50.h; // 기본 bottom 위치 (네비게이션 바 위)
   final double _deckRadius = 340.r;
   final double _deckCenterYOffset = 140.h;
-  final double _deckStepAngle = 12 * math.pi / 180;
   final double _deckMaxTilt = 8 * math.pi / 180;
+  // 카드 간 기본 각도 간격 (12도) - 카드가 적을 때 사용
+  final double _baseStepAngle = 12 * math.pi / 180;
+  // 최대 펼침 각도 (총 60도) - 카드가 많아도 이 범위 안에 들어옴
+  final double _maxSpreadAngle = 60 * math.pi / 180;
   final int _deckDepth = 8;
 
   // keys: 전역 좌표 구하려고
@@ -95,13 +91,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     super.initState();
     _initializeAnimations();
     _generateCards();
-
-    _orbitController = AnimationController.unbounded(vsync: this)
-      ..addListener(() {
-        if (!mounted) return;
-        setState(() => _orbitAngle = _orbitController?.value ?? _orbitAngle);
-      })
-      ..value = _orbitAngle;
 
     // 아이콘 애니메이션 초기화
     _iconAnimationController = AnimationController(
@@ -174,21 +163,39 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     }
   }
 
-  // 각도 제한 계산 메서드 추가
-  double _getMinOrbitAngle() {
-    if (_cards.isEmpty) return -math.pi / 2;
-    final totalCards = _cards.length;
-    final midIndex = (totalCards - 1) / 2;
-    // 맨 오른쪽 카드가 오른쪽 끝에 올 때의 각도
-    return -math.pi / 2 - (midIndex * _deckStepAngle);
+  /// 카드 드래그 관련 상태를 초기화합니다.
+  void _resetCardDragState() {
+    _pullController.reset();
+    _cardAbsorbController.reset();
+
+    _pulledCardId = null;
+    _hoveredCardId = null;
+    _pressedCardId = null;
+    _isCardPulled = false;
+    _isAbsorbing = false;
+    _hasStartedCardDrag = false;
+    _panStartedOnCard = false;
+    _startCardId = null;
+    _pullOffset = Offset.zero;
+    _dropShadowT = 0.0;
+    _wasOverDropZone = false;
+    _dropZoneCenter = null;
   }
 
-  double _getMaxOrbitAngle() {
-    if (_cards.isEmpty) return -math.pi / 2;
-    final totalCards = _cards.length;
-    final midIndex = (totalCards - 1) / 2;
-    // 맨 왼쪽 카드가 왼쪽 끝에 올 때의 각도
-    return -math.pi / 2 + (midIndex * _deckStepAngle);
+  @override
+  void didUpdateWidget(covariant HomeTabCardHand oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // 카드 목록이 변경되었는지 확인
+    final oldLength = oldWidget.cards?.length ?? 0;
+    final newLength = widget.cards?.length ?? 0;
+
+    if (oldLength != newLength || widget.cards != oldWidget.cards) {
+      // 진행 중인 카드 관련 상태 초기화
+      _resetCardDragState();
+      // 카드 목록 갱신
+      _generateCards();
+    }
   }
 
   @override
@@ -198,7 +205,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     _pullController.dispose();
     _cardAbsorbController.dispose();
     _dropZonePulseController.dispose();
-    _orbitController?.dispose();
     super.dispose();
   }
 
@@ -229,7 +235,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     return null;
   }
 
-  // 카드 위치 및 회전 계산
+  // 카드 위치 및 회전 계산 (카드팩 고정, 좌우 스와이프 비활성화)
   Map<String, dynamic> _calculateCardTransform(
     BuildContext context,
     int index,
@@ -237,7 +243,17 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   ) {
     final double midIndex = (totalCards - 1) / 2;
     final double relativeIndex = index - midIndex;
-    final double angle = (relativeIndex * _deckStepAngle) + _orbitAngle;
+    // 카드팩 고정 위치 (항상 위쪽 중앙)
+    const double fixedOrbitAngle = -math.pi / 2;
+
+    // 카드 간격 계산:
+    // - 카드가 적을 때: 기본 간격(12°) 사용
+    // - 카드가 많아서 최대 범위를 넘을 때: 간격을 줄여서 화면에 맞춤
+    final double requiredSpread = (totalCards - 1) * _baseStepAngle;
+    final double stepAngle = requiredSpread > _maxSpreadAngle
+        ? _maxSpreadAngle / (totalCards - 1)
+        : _baseStepAngle;
+    final double angle = (relativeIndex * stepAngle) + fixedOrbitAngle;
 
     final size = MediaQuery.of(context).size;
     final double centerX = size.width / 2;
@@ -403,11 +419,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     );
   }
 
-  // 전체 카드 영역에 대한 제스처 처리
+  // 전체 카드 영역에 대한 제스처 처리 (상하 드래그만 지원)
   void _handlePanStart(DragStartDetails details) {
     _panStartPosition = details.localPosition;
-    _orbitController?.stop();
-    _orbitDragStart = details.localPosition.dx;
 
     _panStartedOnCard = false;
     _startCardId = null;
@@ -418,112 +432,93 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     if (cardId != null) {
       _panStartedOnCard = true;
       _startCardId = cardId;
-      // 여기서는 선택 표시하지 않음 (수직 임계치 통과할 때 선택)
     }
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    // 드래그 변위(손가락 방향과 동일한 부호)
-    final dispX = details.localPosition.dx - _panStartPosition.dx; // → 오른쪽 +
-    final dispY = details.localPosition.dy - _panStartPosition.dy; // → 아래로 +
+    // 카드 위에서 시작한 드래그만 처리 (좌우 스와이프 비활성화)
+    if (!_panStartedOnCard || _startCardId == null) return;
 
-    // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
-    if (!_hasStartedCardDrag) {
-      final double dragDx = -details.localPosition.dx + _orbitDragStart;
-      final double targetAngle =
-          _orbitAccumulated + (-dragDx * _orbitSensitivity);
+    // 드래그 변위 계산
+    final dispX = details.localPosition.dx - _panStartPosition.dx;
+    final dispY = details.localPosition.dy - _panStartPosition.dy;
 
-      final double minAngle = _getMinOrbitAngle();
-      final double maxAngle = _getMaxOrbitAngle();
-      final double clampedAngle = targetAngle.clamp(minAngle, maxAngle);
+    // 수직 임계치 통과 시점에 '카드 드래그 모드' 진입
+    const double selectThreshold = 10.0;
+    if (!_hasStartedCardDrag && dispY.abs() > selectThreshold) {
       setState(() {
-        _orbitAngle = clampedAngle;
-        _orbitController?.value = clampedAngle;
+        _hasStartedCardDrag = true;
+        _hoveredCardId = _startCardId;
+        HapticFeedback.selectionClick();
       });
     }
 
-    // 2) 카드 드래그는 조건부
-    if (_panStartedOnCard && _startCardId != null) {
-      // 수직 임계치 통과 시점에 '카드 드래그 모드' 진입 + 선택 고정
-      const double selectThreshold = 10.0; // px
-      if (!_hasStartedCardDrag && dispY.abs() > selectThreshold) {
-        setState(() {
-          _hasStartedCardDrag = true;
-          _hoveredCardId = _startCardId; // 이때 처음으로 선택 상태 표시
-          _orbitAccumulated = _orbitAngle;
-          _orbitDragStart = details.localPosition.dx;
-          HapticFeedback.selectionClick();
-        });
-      }
+    // 카드 드래그 모드에서만 뽑기/위치 업데이트
+    if (_hasStartedCardDrag) {
+      setState(() {
+        // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -30px
+        if (_pulledCardId == null && dispY < -30) {
+          _pulledCardId = _hoveredCardId;
+          _pullOffset = Offset(dispX, dispY);
+          _pullController.forward();
+          HapticFeedback.mediumImpact();
+        } else if (_pulledCardId != null) {
+          _pullOffset = Offset(dispX, dispY);
+        }
+      });
 
-      // 카드 드래그 모드에서만 뽑기/위치 업데이트
-      if (_hasStartedCardDrag) {
-        setState(() {
-          // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -30px
-          if (_pulledCardId == null && dispY < -30) {
-            _pulledCardId = _hoveredCardId;
-            _pullOffset = Offset(dispX, dispY);
-            _pullController.forward();
-            HapticFeedback.mediumImpact();
-          } else if (_pulledCardId != null) {
-            _pullOffset = Offset(dispX, dispY);
-          }
-        });
-
-        // ⬇️ 드롭존 overlap 체크 → 그림자 강도 갱신
-        final deckBox =
-            _deckKey.currentContext?.findRenderObject() as RenderBox?;
-        final dropRect = _globalRectOf(_dropZoneKey);
-        if (deckBox != null && dropRect != null && _pulledCardId != null) {
-          // 현재 카드의 위치 계산
-          final cardIndex = _cards.indexWhere(
-            (card) => card.itemId == _pulledCardId,
+      // 드롭존 overlap 체크 → 그림자 강도 갱신
+      final deckBox =
+          _deckKey.currentContext?.findRenderObject() as RenderBox?;
+      final dropRect = _globalRectOf(_dropZoneKey);
+      if (deckBox != null && dropRect != null && _pulledCardId != null) {
+        // 현재 카드의 위치 계산
+        final cardIndex = _cards.indexWhere(
+          (card) => card.itemId == _pulledCardId,
+        );
+        if (cardIndex != -1) {
+          final transform = _calculateCardTransform(
+            context,
+            cardIndex,
+            _cards.length,
           );
-          if (cardIndex != -1) {
-            final transform = _calculateCardTransform(
-              context,
-              cardIndex,
-              _cards.length,
-            );
-            final pullValue = _pullAnimation.value;
+          final pullValue = _pullAnimation.value;
 
-            // 카드의 실제 위치 계산 (pull 효과 포함)
-            final cardLeft =
-                (transform['left'] as double) + _pullOffset.dx * pullValue;
-            final cardTop =
-                (transform['top'] as double) +
-                _pullOffset.dy * pullValue -
-                _pullLift * pullValue;
+          // 카드의 실제 위치 계산 (pull 효과 포함)
+          final cardLeft =
+              (transform['left'] as double) + _pullOffset.dx * pullValue;
+          final cardTop =
+              (transform['top'] as double) +
+              _pullOffset.dy * pullValue -
+              _pullLift * pullValue;
 
-            // 카드의 글로벌 위치
-            final cardGlobalTopLeft = deckBox.localToGlobal(
-              Offset(cardLeft, cardTop),
-            );
+          // 카드의 글로벌 위치
+          final cardGlobalTopLeft = deckBox.localToGlobal(
+            Offset(cardLeft, cardTop),
+          );
 
-            // 카드의 전체 영역 (Rect)
-            final cardRect = cardGlobalTopLeft & Size(_cardWidth, _cardHeight);
+          // 카드의 전체 영역 (Rect)
+          final cardRect = cardGlobalTopLeft & Size(_cardWidth, _cardHeight);
 
-            // 드롭존과 카드 영역이 겹치는지 체크
-            final isOver = dropRect.overlaps(cardRect);
+          // 드롭존과 카드 영역이 겹치는지 체크
+          final isOver = dropRect.overlaps(cardRect);
 
-            // 스무딩(선형 보간)
-            final target = isOver ? 1.0 : 0.0;
-            final newT = (_dropShadowT * 0.7) + (target * 0.3); // 부드럽게
+          // 스무딩(선형 보간)
+          final target = isOver ? 1.0 : 0.0;
+          final newT = (_dropShadowT * 0.7) + (target * 0.3);
 
-            if (isOver && !_wasOverDropZone) {
-              HapticFeedback.selectionClick(); // 드롭존 진입시 손맛
-            }
-            _wasOverDropZone = isOver;
-
-            setState(() => _dropShadowT = newT.clamp(0.0, 1.0));
+          if (isOver && !_wasOverDropZone) {
+            HapticFeedback.selectionClick();
           }
+          _wasOverDropZone = isOver;
+
+          setState(() => _dropShadowT = newT.clamp(0.0, 1.0));
         }
       }
     }
   }
 
   void _handlePanEnd(DragEndDetails details) {
-    final bool draggedCard = _hasStartedCardDrag;
     if (_hasStartedCardDrag) {
       if (_pulledCardId != null && _wasOverDropZone) {
         // 드롭 발생 - 드롭존에 들어갔었다면 드롭 허용
@@ -588,36 +583,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
             _pullOffset = Offset.zero;
           });
         });
-      }
-    }
-
-    if (!draggedCard) {
-      _orbitAccumulated = _orbitAngle;
-      final double horizontalVelocity = details.velocity.pixelsPerSecond.dx;
-      if (horizontalVelocity.abs() > 10) {
-        final double angularVelocity = -horizontalVelocity * _orbitSensitivity;
-
-        final double minAngle = _getMinOrbitAngle();
-        final double maxAngle = _getMaxOrbitAngle();
-
-        final simulation = FrictionSimulation(
-          0.12,
-          _orbitAngle,
-          angularVelocity,
-        );
-        
-        _orbitController?.animateWith(simulation).whenComplete(() {
-          if (!mounted) return;
-          // 최종 위치도 제한
-          final clampedValue = (_orbitController?.value ?? _orbitAngle).clamp(
-            minAngle,
-            maxAngle,
-          );
-          _orbitController?.value = clampedValue;
-          _orbitAccumulated = clampedValue;
-        });
-      } else {
-        _orbitController?.value = _orbitAngle;
       }
     }
 
