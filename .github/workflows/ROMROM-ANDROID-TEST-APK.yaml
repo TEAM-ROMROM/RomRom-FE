@@ -168,20 +168,15 @@ jobs:
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
             const startTime = Date.now();
 
-            const body = [
-              '## 🤖 Android APK 빌드 중...',
-              '',
-              '| 단계 | 상태 | 소요 시간 |',
-              '|------|------|----------|',
-              '| 🔧 준비 | ⏳ 진행 중... | - |',
-              '| 🔨 APK 빌드 | ⏸️ 대기 | - |',
-              '| 📤 업로드 | ⏸️ 대기 | - |',
-              '',
-              `📋 **[실시간 로그 보기](${runUrl})**`,
-              '',
-              '---',
-              '*🤖 이 댓글은 자동으로 업데이트됩니다.*'
-            ].join('\n');
+            const body = `## 🤖 Android APK 빌드 중...
+
+| 단계 | 상태 | 소요 시간 |
+|------|------|----------|
+| 🔧 준비 | ⏳ 진행 중... | - |
+| 🔨 APK 빌드 | ⏸️ 대기 | - |
+| 📤 업로드 | ⏸️ 대기 | - |
+
+📋 **[실시간 로그 보기](${runUrl})**`;
 
             const { data: comment } = await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -190,9 +185,9 @@ jobs:
               body: body
             });
 
-            core.setOutput('comment_id', comment.id);
-            core.setOutput('start_time', startTime);
             console.log(`✅ 진행상황 댓글 생성 완료 (ID: ${comment.id})`);
+            core.setOutput('comment_id', comment.id.toString());
+            core.setOutput('start_time', startTime.toString());
 
   build-android-test:
     name: Android 테스트 APK 빌드
@@ -327,9 +322,8 @@ jobs:
           echo "Fastlane installed"
           fastlane --version
 
-      # 진행상황 업데이트 - 준비 완료
+      # 진행상황 - 준비 완료
       - name: 진행상황 - 준비 완료
-        id: progress_step1
         if: github.event_name == 'repository_dispatch' && needs.prepare-test-build.outputs.progress_comment_id != ''
         uses: actions/github-script@v7
         with:
@@ -337,25 +331,23 @@ jobs:
           script: |
             const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
             const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
-            const now = Date.now();
-            const elapsed = Math.floor((now - startTime) / 1000);
-            const prepDuration = elapsed >= 60 ? `${Math.floor(elapsed / 60)}분 ${elapsed % 60}초` : `${elapsed}초`;
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${{ github.run_id }}`;
+            const runId = '${{ github.run_id }}';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
 
-            const body = [
-              '## 🤖 Android APK 빌드 중...',
-              '',
-              '| 단계 | 상태 | 소요 시간 |',
-              '|------|------|----------|',
-              `| 🔧 준비 | ✅ 완료 | ${prepDuration} |`,
-              '| 🔨 APK 빌드 | ⏳ 진행 중... | - |',
-              '| 📤 업로드 | ⏸️ 대기 | - |',
-              '',
-              `📋 **[실시간 로그 보기](${runUrl})**`,
-              '',
-              '---',
-              '*🤖 이 댓글은 자동으로 업데이트됩니다.*'
-            ].join('\n');
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const elapsedStr = minutes > 0 ? `${minutes}분 ${seconds}초` : `${seconds}초`;
+
+            const body = `## 🤖 Android APK 빌드 중...
+
+| 단계 | 상태 | 소요 시간 |
+|------|------|----------|
+| 🔧 준비 | ✅ 완료 | ${elapsedStr} |
+| 🔨 APK 빌드 | ⏳ 진행 중... | - |
+| 📤 업로드 | ⏸️ 대기 | - |
+
+📋 **[실시간 로그 보기](${runUrl})**`;
 
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
@@ -364,9 +356,7 @@ jobs:
               body: body
             });
 
-            core.setOutput('prep_duration', prepDuration);
-            core.setOutput('build_start', now);
-            console.log(`✅ 진행상황 업데이트: 준비 완료 (${prepDuration})`);
+            console.log(`✅ 진행상황 업데이트: 준비 완료 (${elapsedStr})`);
 
       # APK 파일명 생성
       - name: Generate APK filename
@@ -386,49 +376,6 @@ jobs:
           ls -la ../build/app/outputs/flutter-apk/ || true
           echo "APK built with Fastlane"
 
-      # 진행상황 업데이트 - APK 빌드 완료
-      - name: 진행상황 - APK 빌드 완료
-        id: progress_step2
-        if: github.event_name == 'repository_dispatch' && needs.prepare-test-build.outputs.progress_comment_id != ''
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
-            const prepDuration = '${{ steps.progress_step1.outputs.prep_duration }}' || '-';
-            const buildStart = parseInt('${{ steps.progress_step1.outputs.build_start }}') || Date.now();
-            const now = Date.now();
-            const buildElapsed = Math.floor((now - buildStart) / 1000);
-            const buildDuration = buildElapsed >= 60 ? `${Math.floor(buildElapsed / 60)}분 ${buildElapsed % 60}초` : `${buildElapsed}초`;
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${{ github.run_id }}`;
-
-            const body = [
-              '## 🤖 Android APK 빌드 중...',
-              '',
-              '| 단계 | 상태 | 소요 시간 |',
-              '|------|------|----------|',
-              `| 🔧 준비 | ✅ 완료 | ${prepDuration} |`,
-              `| 🔨 APK 빌드 | ✅ 완료 | ${buildDuration} |`,
-              '| 📤 업로드 | ⏳ 진행 중... | - |',
-              '',
-              `📋 **[실시간 로그 보기](${runUrl})**`,
-              '',
-              '---',
-              '*🤖 이 댓글은 자동으로 업데이트됩니다.*'
-            ].join('\n');
-
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: commentId,
-              body: body
-            });
-
-            core.setOutput('prep_duration', prepDuration);
-            core.setOutput('build_duration', buildDuration);
-            core.setOutput('upload_start', now);
-            console.log(`✅ 진행상황 업데이트: APK 빌드 완료 (${buildDuration})`);
-
       # APK 파일 이름 변경 및 준비
       - name: Rename and Prepare APK
         run: |
@@ -437,18 +384,54 @@ jobs:
           mv ./build/app/outputs/flutter-apk/app-release.apk ./android/app/build/outputs/apk/release/${APK_NAME}
           echo "APK renamed to ${APK_NAME}"
           ls -la ./android/app/build/outputs/apk/release/
-          
+
           # APK 파일 크기 확인
           APK_SIZE=$(stat -c%s "./android/app/build/outputs/apk/release/${APK_NAME}" 2>/dev/null || stat -f%z "./android/app/build/outputs/apk/release/${APK_NAME}" 2>/dev/null || echo "0")
           APK_SIZE_MB=$(echo "scale=2; $APK_SIZE / 1024 / 1024" | bc)
           echo "📦 APK 파일 크기: ${APK_SIZE_MB}MB"
-          
+
           # 아티팩트 용량 제한 확인 (500MB)
           if [ "$APK_SIZE" -gt 524288000 ]; then
             echo "⚠️ 경고: APK 파일 크기가 500MB를 초과합니다 (${APK_SIZE_MB}MB)"
           else
             echo "✅ APK 파일 크기가 아티팩트 제한 내입니다 (${APK_SIZE_MB}MB / 500MB)"
           fi
+
+      # 진행상황 - APK 빌드 완료
+      - name: 진행상황 - APK 빌드 완료
+        if: github.event_name == 'repository_dispatch' && needs.prepare-test-build.outputs.progress_comment_id != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
+            const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
+            const runId = '${{ github.run_id }}';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const elapsedStr = minutes > 0 ? `${minutes}분 ${seconds}초` : `${seconds}초`;
+
+            const body = `## 🤖 Android APK 빌드 중...
+
+| 단계 | 상태 | 소요 시간 |
+|------|------|----------|
+| 🔧 준비 | ✅ 완료 | - |
+| 🔨 APK 빌드 | ✅ 완료 | ${elapsedStr} |
+| 📤 업로드 | ⏳ 진행 중... | - |
+
+📋 **[실시간 로그 보기](${runUrl})**`;
+
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: commentId,
+              body: body
+            });
+
+            console.log(`✅ 진행상황 업데이트: APK 빌드 완료 (${elapsedStr})`);
 
       # 빌드 정보 파일 생성
       - name: Create build info file
@@ -485,7 +468,7 @@ jobs:
             ISSUE_NUMBER="${{ needs.prepare-test-build.outputs.issue_number }}"
             ISSUE_TITLE="${{ needs.prepare-test-build.outputs.issue_title }}"
             ISSUE_URL="${{ needs.prepare-test-build.outputs.issue_url }}"
-            
+          
             cat >> build-info.txt << EOF
           관련 이슈:
           - #$ISSUE_NUMBER: $ISSUE_TITLE
@@ -523,30 +506,7 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-      # 성공 알림
-      - name: Notify Build Success
-        if: success()
-        run: |
-          echo "✅ Android 테스트 APK 빌드 성공!"
-          echo "빌드 번호: ${{ needs.prepare-test-build.outputs.build_number }}"
-          if [ -n "${{ needs.prepare-test-build.outputs.pr_number }}" ]; then
-            echo "PR 번호: ${{ needs.prepare-test-build.outputs.pr_number }}"
-          fi
-          echo "브랜치: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}"
-          echo "커밋: ${{ needs.prepare-test-build.outputs.commit_hash }}"
-          if [ -n "${{ needs.prepare-test-build.outputs.issue_url }}" ]; then
-            echo "관련 이슈: ${{ needs.prepare-test-build.outputs.issue_url }}"
-          fi
-          echo ""
-          echo "📦 아티팩트에서 APK 파일을 다운로드할 수 있습니다."
-
-      - name: Notify on Failure
-        if: failure()
-        run: |
-          echo "❌ Android 테스트 APK 빌드 실패!"
-          echo "로그를 확인해주세요."
-
-      # 진행상황 최종 업데이트 - 성공
+      # 진행상황 - 빌드 성공 (최종)
       - name: 진행상황 - 빌드 성공 (최종)
         if: success() && github.event_name == 'repository_dispatch' && needs.prepare-test-build.outputs.progress_comment_id != ''
         uses: actions/github-script@v7
@@ -554,75 +514,59 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
-            const sourceType = '${{ github.event.client_payload.source_type }}' || 'PR';
+            const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
-            const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
-            const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
+            const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
+            const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const runId = '${{ github.run_id }}';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
             // upload-artifact@v4의 artifact-url output 사용 (직접 다운로드 URL)
             const artifactUrl = '${{ steps.upload_artifact.outputs.artifact-url }}' || `${runUrl}#artifacts`;
 
-            // 소요 시간 계산
-            const prepDuration = '${{ steps.progress_step1.outputs.prep_duration }}' || '-';
-            const buildDuration = '${{ steps.progress_step2.outputs.build_duration }}' || '-';
-            const uploadStart = parseInt('${{ steps.progress_step2.outputs.upload_start }}') || Date.now();
-            const now = Date.now();
-            const uploadElapsed = Math.floor((now - uploadStart) / 1000);
-            const uploadDuration = uploadElapsed >= 60 ? `${Math.floor(uploadElapsed / 60)}분 ${uploadElapsed % 60}초` : `${uploadElapsed}초`;
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const elapsedStr = minutes > 0 ? `${minutes}분 ${seconds}초` : `${seconds}초`;
 
-            // 총 소요 시간
-            const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
-            const totalElapsed = Math.floor((now - startTime) / 1000);
-            const totalDuration = totalElapsed >= 60 ? `${Math.floor(totalElapsed / 60)}분 ${totalElapsed % 60}초` : `${totalElapsed}초`;
+            const body = `## 🤖 ✅ Android APK 빌드 완료!
 
-            const body = [
-              '## 🤖 ✅ Android APK 빌드 완료!',
-              '',
-              '| 단계 | 상태 | 소요 시간 |',
-              '|------|------|----------|',
-              `| 🔧 준비 | ✅ 완료 | ${prepDuration} |`,
-              `| 🔨 APK 빌드 | ✅ 완료 | ${buildDuration} |`,
-              `| 📤 업로드 | ✅ 완료 | ${uploadDuration} |`,
-              '',
-              '### 📦 빌드 결과',
-              '| 항목 | 값 |',
-              '|------|-----|',
-              `| **앱 버전** | \`0.0.0(${buildNumber})\` |`,
-              `| **브랜치** | \`${branchName}\` |`,
-              `| **커밋** | \`${commitHash}\` |`,
-              `| **총 소요 시간** | ${totalDuration} |`,
-              '',
-              `📦 **[아티팩트 다운로드](${artifactUrl})**`,
-              '',
-              `🔗 [워크플로우 실행 로그](${runUrl})`,
-              '',
-              '---',
-              '*🤖 이 댓글은 앱 빌드 시스템에 의해 자동 생성되었습니다.*'
-            ].join('\n');
+| 단계 | 상태 | 소요 시간 |
+|------|------|----------|
+| 🔧 준비 | ✅ 완료 | - |
+| 🔨 APK 빌드 | ✅ 완료 | - |
+| 📤 업로드 | ✅ 완료 | ${elapsedStr} |
 
-            // 진행상황 댓글 업데이트
+### 📦 빌드 결과
+| 항목 | 값 |
+|------|-----|
+| **앱 버전** | \`0.0.0(${buildNumber})\` |
+| **브랜치** | \`${branchName}\` |
+| **커밋** | \`${commitHash}\` |
+| **총 소요 시간** | ${elapsedStr} |
+
+📦 **[아티팩트 다운로드](${artifactUrl})**
+🔗 **[워크플로우 실행 로그](${runUrl})**`;
+
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               comment_id: commentId,
               body: body
             });
-            console.log(`✅ 진행상황 댓글 최종 업데이트 완료 (성공)`);
 
-            // PR과 연결된 이슈가 있고, PR 번호와 다른 경우에만 이슈에도 결과 댓글 작성
+            console.log(`✅ 진행상황 업데이트: 빌드 성공 (총 ${elapsedStr})`);
+
+            // PR과 연결된 이슈가 있고, PR 번호와 다른 경우에만 이슈에도 댓글
             if (issueNumber && issueNumber !== '' && parseInt(issueNumber) !== prNumber) {
-              const issueBody = [
-                '## 🤖 ✅ Android APK 빌드 완료!',
-                '',
-                `- 앱 버전: \`0.0.0(${buildNumber})\``,
-                `- 커밋: \`${commitHash}\``,
-                `- 총 소요 시간: ${totalDuration}`,
-                '',
-                `📦 **[아티팩트 다운로드](${artifactUrl})**`
-              ].join('\n');
+              const issueBody = `🤖 ✅ **Android APK 빌드 완료**
+
+- 앱 버전: \`0.0.0(${buildNumber})\`
+- 커밋: \`${commitHash}\`
+
+📦 **[아티팩트 다운로드](${artifactUrl})**`;
 
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -630,10 +574,10 @@ jobs:
                 issue_number: parseInt(issueNumber),
                 body: issueBody
               });
-              console.log(`✅ 이슈 #${issueNumber}에 빌드 성공 결과 댓글 작성 완료`);
+              console.log(`✅ 이슈 #${issueNumber}에도 빌드 성공 댓글 작성 완료`);
             }
 
-      # 진행상황 최종 업데이트 - 실패
+      # 진행상황 - 빌드 실패 (최종)
       - name: 진행상황 - 빌드 실패 (최종)
         if: failure() && github.event_name == 'repository_dispatch' && needs.prepare-test-build.outputs.progress_comment_id != ''
         uses: actions/github-script@v7
@@ -641,71 +585,52 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
-            const sourceType = '${{ github.event.client_payload.source_type }}' || 'PR';
+            const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
-            const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
+            const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const runId = '${{ github.run_id }}';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
 
-            // 소요 시간 (실패 시점까지)
-            const prepDuration = '${{ steps.progress_step1.outputs.prep_duration }}' || '-';
-            const buildDuration = '${{ steps.progress_step2.outputs.build_duration }}' || '-';
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const elapsedStr = minutes > 0 ? `${minutes}분 ${seconds}초` : `${seconds}초`;
 
-            // 실패 단계 판단
-            let prepStatus = '✅ 완료';
-            let buildStatus = '✅ 완료';
-            let uploadStatus = '❌ 실패';
+            const body = `## 🤖 ❌ Android APK 빌드 실패
 
-            if (!prepDuration || prepDuration === '-' || prepDuration === '') {
-              prepStatus = '❌ 실패';
-              buildStatus = '⏸️ 대기';
-              uploadStatus = '⏸️ 대기';
-            } else if (!buildDuration || buildDuration === '-' || buildDuration === '') {
-              buildStatus = '❌ 실패';
-              uploadStatus = '⏸️ 대기';
-            }
+| 단계 | 상태 | 소요 시간 |
+|------|------|----------|
+| 🔧 준비 | ✅ 완료 | - |
+| 🔨 APK 빌드 | ❌ 실패 | ${elapsedStr} |
+| 📤 업로드 | ⏸️ 건너뜀 | - |
 
-            const body = [
-              '## 🤖 ❌ Android APK 빌드 실패',
-              '',
-              '| 단계 | 상태 | 소요 시간 |',
-              '|------|------|----------|',
-              `| 🔧 준비 | ${prepStatus} | ${prepDuration || '-'} |`,
-              `| 🔨 APK 빌드 | ${buildStatus} | ${buildDuration || '-'} |`,
-              `| 📤 업로드 | ${uploadStatus} | - |`,
-              '',
-              '### 🔍 가능한 원인',
-              '- Gradle 빌드 실패',
-              '- Flutter 컴파일 오류',
-              '- 의존성 충돌',
-              '',
-              `📋 **[빌드 로그 확인](${runUrl})**`,
-              '',
-              '---',
-              '*🤖 이 댓글은 앱 빌드 시스템에 의해 자동 생성되었습니다.*'
-            ].join('\n');
+- 앱 버전: \`0.0.0(${buildNumber})\`
+- 브랜치: \`${branchName}\`
 
-            // 진행상황 댓글 업데이트
+❌ 빌드 중 오류가 발생했습니다.
+
+🔗 **[워크플로우 실행 로그 확인](${runUrl})**`;
+
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               comment_id: commentId,
               body: body
             });
-            console.log(`✅ 진행상황 댓글 최종 업데이트 완료 (실패)`);
 
-            // PR과 연결된 이슈가 있고, PR 번호와 다른 경우에만 이슈에도 결과 댓글 작성
+            console.log(`❌ 진행상황 업데이트: 빌드 실패 (${elapsedStr})`);
+
+            // PR과 연결된 이슈가 있고, PR 번호와 다른 경우에만 이슈에도 댓글
             if (issueNumber && issueNumber !== '' && parseInt(issueNumber) !== prNumber) {
-              const issueBody = [
-                '## 🤖 ❌ Android APK 빌드 실패',
-                '',
-                `- 앱 버전: \`0.0.0(${buildNumber})\``,
-                `- 브랜치: \`${branchName}\``,
-                '',
-                `📋 **[빌드 로그 확인](${runUrl})**`
-              ].join('\n');
+              const issueBody = `🤖 ❌ **Android APK 빌드 실패**
+
+- 앱 버전: \`0.0.0(${buildNumber})\`
+
+❌ 빌드 중 오류가 발생했습니다.
+
+🔗 **[워크플로우 실행 로그 확인](${runUrl})**`;
 
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -713,5 +638,21 @@ jobs:
                 issue_number: parseInt(issueNumber),
                 body: issueBody
               });
-              console.log(`✅ 이슈 #${issueNumber}에 빌드 실패 결과 댓글 작성 완료`);
+              console.log(`❌ 이슈 #${issueNumber}에도 빌드 실패 댓글 작성 완료`);
             }
+
+      # 콘솔 알림 (workflow_dispatch용)
+      - name: Notify Build Success (Console)
+        if: success()
+        run: |
+          echo "✅ Android 테스트 APK 빌드 성공!"
+          echo "빌드 번호: ${{ needs.prepare-test-build.outputs.build_number }}"
+          echo "브랜치: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}"
+          echo "커밋: ${{ needs.prepare-test-build.outputs.commit_hash }}"
+          echo "📦 아티팩트에서 APK 파일을 다운로드할 수 있습니다."
+
+      - name: Notify on Failure (Console)
+        if: failure()
+        run: |
+          echo "❌ Android 테스트 APK 빌드 실패!"
+          echo "로그를 확인해주세요."
