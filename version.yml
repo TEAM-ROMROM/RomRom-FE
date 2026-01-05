@@ -2,11 +2,11 @@
 # 프로젝트 버전 관리 파일
 # ===================================================================
 #
-# 이 파일은 다양한 프로젝트 타입에서 버전 정보를 중앙 관리하기 위한 파일
-# GitHub Actions 워크플로우가 이 파일을 읽어 자동으로 버전을 관리
+# 이 파일은 다양한 프로젝트 타입에서 버전 정보를 중앙 관리하기 위한 파일입니다.
+# GitHub Actions 워크플로우가 이 파일을 읽어 자동으로 버전을 관리합니다.
 #
 # 사용법:
-# 1. version: "1.8.12" - 사용자에게 표시되는 버전 (의미론적 버전)
+# 1. version: "1.0.0" - 사용자에게 표시되는 버전
 # 2. version_code: 1 - Play Store/App Store 빌드 번호 (1부터 자동 증가)
 # 3. project_type: 프로젝트 타입 지정
 #
@@ -17,11 +17,17 @@
 #
 # 프로젝트 타입별 동기화 파일:
 # - spring: build.gradle (version = "x.y.z")
-# - flutter: pubspec.yaml (version: "1.8.12"
+# - flutter: pubspec.yaml (version: x.y.z+i, buildNumber 포함)
 # - react/node: package.json ("version": "x.y.z")
 # - react-native: iOS Info.plist 또는 Android build.gradle
 # - react-native-expo: app.json (expo.version)
+# - python: pyproject.toml (version = "x.y.z")
 # - basic/기타: version.yml 파일만 사용
+#
+# 연관된 워크플로우:
+# - .github/workflows/PROJECT-VERSION-CONTROL.yaml
+# - .github/workflows/PROJECT-README-VERSION-UPDATE.yaml
+# - .github/workflows/PROJECT-AUTO-CHANGELOG-CONTROL.yaml
 #
 # 주의사항:
 # - project_type은 최초 설정 후 변경하지 마세요
@@ -30,7 +36,10 @@
 
 version: "1.8.12"
 version_code: 74  # app build number
-project_type: "flutter" # spring, flutter, react, react-native, react-native-expo, node, basic
+project_type: "flutter"  # spring, flutter, react, react-native, react-native-expo, node, python, basic
 metadata:
-  last_updated: "2026-01-05 09:08:46"
-  last_updated_by: "Cassiiopeia"
+  last_updated: "2026-01-05 09:31:45"
+  last_updated_by: "template_integrator"
+  default_branch: "main"
+  integrated_from: "SUH-DEVOPS-TEMPLATE"
+  integration_date: "2026-01-05"
