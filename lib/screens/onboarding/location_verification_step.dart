@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 
 class LocationVerificationStep extends StatefulWidget {
@@ -46,7 +47,7 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
       children: [
         // 맵 영역
         Expanded(
-          flex: 341,
+          flex: 350,
           child: Stack(
             children: [
               NaverMap(
@@ -69,8 +70,9 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
                     mapControllerCompleter.complete(controller);
                   }
                   await getAddressByNaverApi(_currentPosition!);
-                  await controller
-                      .setLocationTrackingMode(NLocationTrackingMode.follow);
+                  await controller.setLocationTrackingMode(
+                    NLocationTrackingMode.follow,
+                  );
                 },
               ),
               // 현재 위치 버튼
@@ -80,33 +82,36 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
                 child: CurrentLocationButton(
                   onTap: () async {
                     final controller = await mapControllerCompleter.future;
-                    await controller
-                        .setLocationTrackingMode(NLocationTrackingMode.follow);
+                    await controller.setLocationTrackingMode(
+                      NLocationTrackingMode.follow,
+                    );
                   },
                   iconSize: 24.h,
                 ),
-              )
+              ),
             ],
           ),
         ),
 
         // 위치 정보 및 버튼 영역
         Expanded(
-          flex: 370,
+          flex: 285,
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 32.0.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 32.0.h),
+                SizedBox(height: 20.0.h),
                 Text(
                   '현재 위치가 $currentAdress 이내에 있어요',
                   style: CustomTextStyles.p2,
                 ),
-                SizedBox(height: 20.0.h),
+                SizedBox(height: 16.0.h),
                 Container(
                   padding: EdgeInsets.symmetric(
-                      horizontal: 20.0.w, vertical: 12.0.h),
+                    horizontal: 20.0.w,
+                    vertical: 12.0.h,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.locationVerificationAreaLabel,
                     borderRadius: BorderRadius.circular(100.0.r),
@@ -116,22 +121,15 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
                     style: CustomTextStyles.p2,
                   ),
                 ),
-                SizedBox(height: 113.0.h),
-                SizedBox(
-                  width: 316.w,
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      backgroundColor: AppColors.primaryYellow,
-                      foregroundColor: AppColors.textColorBlack,
-                      padding: EdgeInsets.symmetric(vertical: 20.0.h),
-                      minimumSize: Size(316.w, 0),
-                    ),
-                    onPressed: () => _onVerifyLocationPressed(),
-                    child: Text(
-                      '위치 인증하기',
-                      style: CustomTextStyles.p1.copyWith(
-                        color: Colors.black,
-                      ),
+                Expanded(child: Container()),
+                // 완료 버튼 - CategoryCompletionButton 위젯으로 변경
+                Padding(
+                  padding: EdgeInsets.only(bottom: 63.h + MediaQuery.of(context).padding.bottom),
+                  child: Center(
+                    child: CompletionButton(
+                      isEnabled: true,
+                      enabledOnPressed: () => _onVerifyLocationPressed(),
+                      buttonText: '위치 인증하기',
                     ),
                   ),
                 ),
@@ -198,8 +196,9 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
 
   // 주소 정보 로드 메서드
   Future<void> _loadAddressInfo(NLatLng position) async {
-    final addressInfo =
-        await _locationService.getAddressFromCoordinates(position);
+    final addressInfo = await _locationService.getAddressFromCoordinates(
+      position,
+    );
 
     if (addressInfo != null) {
       setState(() {

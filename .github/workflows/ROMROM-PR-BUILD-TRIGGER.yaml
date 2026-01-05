@@ -200,9 +200,12 @@ jobs:
               per_page: 100
             });
 
-            // "앱 빌드 트리거 완료" 댓글 개수 = 이전 빌드 횟수
+            // "@suh-lab" + "build" + "app" 포함 댓글 개수 = 이전 빌드 횟수
+            // (현재 요청 댓글은 아직 카운트에 포함되지 않으므로 정확히 "이전 빌드 횟수")
             const buildCount = comments.data.filter(c =>
-              c.body.includes('앱 빌드 트리거 완료')
+              c.body.includes('@suh-lab') &&
+              c.body.toLowerCase().includes('build') &&
+              c.body.toLowerCase().includes('app')
             ).length;
 
             // 빌드 번호: 소스번호 + 2자리 카운트 (38800, 38801, 38802...)
@@ -284,33 +287,11 @@ jobs:
 
             console.log('✅ iOS 빌드 워크플로우 트리거 완료');
 
-      - name: 트리거 완료 댓글 작성
+      # 트리거 완료 댓글은 제거됨 - Android/iOS 각각의 진행상황 댓글이 이 역할을 대체
+      - name: 트리거 완료 로그
         if: steps.source_info.outputs.found == 'true'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const sourceType = '${{ steps.source_info.outputs.sourceType }}';
-            const sourceNumber = '${{ steps.source_info.outputs.sourceNumber }}';
-            const branchName = '${{ steps.source_info.outputs.branchName }}';
-            const buildNumber = '${{ steps.build_number_calc.outputs.buildNumber }}';
-            const buildCount = '${{ steps.build_number_calc.outputs.buildCount }}';
-
-            const body = `🚀 **앱 빌드 트리거 완료**
-
-            Android와 iOS 빌드 워크플로우를 시작했습니다.
-
-            - 앱 버전: \`0.0.0(${buildNumber})\`
-            - PR/ISSUE: **#${sourceNumber}** (${buildCount}번째 빌드)
-            - 브랜치: \`${branchName}\`
-
-            ⏳ 빌드가 완료되면 자동으로 결과 댓글이 작성됩니다.`;
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: parseInt(sourceNumber),
-              body: body
-            });
-
-            console.log('✅ 트리거 완료 댓글 작성 완료');
+        run: |
+          echo "✅ Android 및 iOS 빌드 워크플로우 트리거 완료"
+          echo "📦 빌드 번호: ${{ steps.build_number_calc.outputs.buildNumber }}"
+          echo "🌿 브랜치: ${{ steps.source_info.outputs.branchName }}"
+          echo "📋 각 플랫폼별 진행상황 댓글이 자동으로 생성됩니다."

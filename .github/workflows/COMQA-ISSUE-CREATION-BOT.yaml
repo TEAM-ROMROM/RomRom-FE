@@ -47,7 +47,7 @@ env:
   # QA 이슈 기본 담당자 설정
   # - 'default': 댓글 작성자가 담당자로 지정됨
   # - GitHub ID (예: 'Cassiiopeia'): 해당 사용자가 담당자로 지정됨
-  DEFAULT_QA_ASSIGNEE: 'Cassiiopeia'
+  DEFAULT_QA_ASSIGNEE: 'wheemin1'
 
 jobs:
   create-qa:

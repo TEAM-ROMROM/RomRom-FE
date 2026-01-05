@@ -24,7 +24,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/chatting_button.dart';
-import 'package:romrom_fe/widgets/common/common_success_modal.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
@@ -240,14 +240,12 @@ class _ItemDetailDescriptionScreenState
       await itemApi.updateItemStatus(request);
 
       if (mounted) {
-        final successMessage = item.itemStatus == ItemStatus.available.serverName
+        final successMessage =
+            item.itemStatus == ItemStatus.available.serverName
             ? '거래 완료로 변경되었습니다'
             : '판매중으로 변경되었습니다';
 
-        CommonSnackBar.show(
-          context: context,
-          message: successMessage,
-        );
+        CommonSnackBar.show(context: context, message: successMessage);
 
         // 상태 변경 후 화면 닫기 (성공 시 true 반환)
         Navigator.of(context).pop(true);
@@ -279,10 +277,7 @@ class _ItemDetailDescriptionScreenState
       await itemApi.deleteItem(item.itemId!);
 
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '물품이 삭제되었습니다',
-        );
+        CommonSnackBar.show(context: context, message: '물품이 삭제되었습니다');
       }
     } catch (e) {
       if (mounted) {
@@ -359,10 +354,13 @@ class _ItemDetailDescriptionScreenState
     }
 
     if (item == null) {
-      return const Scaffold(
+      return  Scaffold(
         backgroundColor: AppColors.primaryBlack,
         body: Center(
-          child: Text('물품 정보가 없습니다.', style: TextStyle(color: AppColors.textColorWhite)),
+          child: Text(
+            '물품 정보가 없습니다.',
+            style: CustomTextStyles.h3,
+          ),
         ),
       );
     }
@@ -466,7 +464,8 @@ class _ItemDetailDescriptionScreenState
                     ),
 
                     IgnorePointer(
-                      ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
+                      ignoring:
+                          item?.itemStatus != ItemStatus.exchanged.serverName,
                       child: SizedBox(
                         height: widget.imageSize.height,
                         width: widget.imageSize.width,
@@ -622,7 +621,8 @@ class _ItemDetailDescriptionScreenState
                                     padding: EdgeInsets.only(left: 16.0.w),
                                     child: ChattingButton(
                                       isEnabled: true,
-                                      enabledOnPressed: _handleChatButtonPressed,
+                                      enabledOnPressed:
+                                          _handleChatButtonPressed,
                                       buttonText: '채팅하기',
                                       buttonWidth: 96,
                                       buttonHeight: 32,
@@ -798,7 +798,15 @@ class _ItemDetailDescriptionScreenState
                 : MediaQuery.of(context).padding.top),
             left: 24.w,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                // 뒤로갈 때 좋아요가 취소된 상태면 목록에 반영되도록 정보 반환
+                if (isLikedVN.value == false) {
+                  Navigator.of(context).pop(widget.itemId);
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
+
               child: Icon(
                 AppIcons.navigateBefore,
                 size: 24.sp,
@@ -823,16 +831,13 @@ class _ItemDetailDescriptionScreenState
                       );
 
                       if (reported == true && mounted) {
-                        await showDialog(
+                        await CommonModal.success(
                           context: context,
-                          barrierDismissible: false,
-                          builder: (_) => CommonSuccessModal(
-                            message: '신고가 접수되었습니다.',
-                            onConfirm: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).pop();
-                            },
-                          ),
+                          message: '신고가 접수되었습니다.',
+                          onConfirm: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pop();
+                          },
                         );
                       }
                     },
@@ -841,7 +846,8 @@ class _ItemDetailDescriptionScreenState
                     items: [
                       ContextMenuItem(
                         id: 'changeTradeStatus',
-                        title: item?.itemStatus == ItemStatus.available.serverName
+                        title:
+                            item?.itemStatus == ItemStatus.available.serverName
                             ? '거래완료로 변경'
                             : '판매중으로 변경',
                         onTap: () async {

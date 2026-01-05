@@ -30,9 +30,9 @@ class ItemPage {
   final List<Item> content;
 
   @JsonKey(name: 'page')
-  final ApiPage page;
+  final ApiPage? page;
 
-  ItemPage({required this.content, required this.page});
+  ItemPage({required this.content, this.page});
 
   factory ItemPage.fromJson(Map<String, dynamic> json) =>
       _$ItemPageFromJson(json);

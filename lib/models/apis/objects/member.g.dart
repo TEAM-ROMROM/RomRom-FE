@@ -28,6 +28,8 @@ Member _$MemberFromJson(Map<String, dynamic> json) => Member(
   isMarketingInfoAgreed: json['isMarketingInfoAgreed'] as bool?,
   latitude: (json['latitude'] as num?)?.toDouble(),
   longitude: (json['longitude'] as num?)?.toDouble(),
+  totalLikeCount: (json['totalLikeCount'] as num?)?.toInt(),
+  searchRadiusInMeters: (json['searchRadiusInMeters'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
@@ -48,4 +50,6 @@ Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
   'isMarketingInfoAgreed': instance.isMarketingInfoAgreed,
   'latitude': instance.latitude,
   'longitude': instance.longitude,
+  'totalLikeCount': instance.totalLikeCount,
+  'searchRadiusInMeters': instance.searchRadiusInMeters,
 };
