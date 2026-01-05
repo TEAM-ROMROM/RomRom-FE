@@ -13,6 +13,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/skeletons/chat_room_list_skeleton.dart';
+import 'package:romrom_fe/screens/profile/profile_screen.dart';
 
 /// 채팅 탭 화면
 class ChatTabScreen extends StatefulWidget {
@@ -287,6 +288,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                       ChatRoomListItem(
                         profileImageUrl:
                             chatRoomDetail.targetMember?.profileUrl ?? '',
+                        memberId: chatRoomDetail.targetMember?.memberId,
                         nickname: chatRoomDetail.targetMember?.nickname ?? '',
                         location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
                         timeAgo: getTimeAgo(
@@ -297,6 +299,16 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                         isNew:
                             chatRoomDetail.unreadCount != null &&
                             chatRoomDetail.unreadCount! > 0,
+                        onProfileTap: () {
+                          final targetMember = chatRoomDetail.targetMember;
+                          if (targetMember?.memberId != null) {
+                            context.navigateTo(
+                              screen: ProfileScreen(
+                                memberId: targetMember!.memberId!,
+                              ),
+                            );
+                          }
+                        },
                         onTap: () async {
                           debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
 

@@ -7,6 +7,7 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 /// 채팅방 리스트 아이템 위젯
 class ChatRoomListItem extends StatelessWidget {
   final String? profileImageUrl;
+  final String? memberId;
   final String nickname;
   final String location;
   final String timeAgo;
@@ -14,10 +15,12 @@ class ChatRoomListItem extends StatelessWidget {
   final int unreadCount;
   final bool isNew;
   final VoidCallback onTap;
+  final VoidCallback? onProfileTap;
 
   const ChatRoomListItem({
     super.key,
     this.profileImageUrl,
+    this.memberId,
     required this.nickname,
     required this.location,
     required this.timeAgo,
@@ -25,6 +28,7 @@ class ChatRoomListItem extends StatelessWidget {
     this.unreadCount = 0,
     this.isNew = false,
     required this.onTap,
+    this.onProfileTap,
   });
 
   @override
@@ -37,10 +41,13 @@ class ChatRoomListItem extends StatelessWidget {
         child: Row(
           children: [
             // 1. 프로필 이미지 (40×40, 원형)
-            UserProfileCircularAvatar(
-              avatarSize: Size(40.w, 40.h),
-              profileUrl: profileImageUrl,
-              hasBorder: true,
+            GestureDetector(
+              onTap: onProfileTap,
+              child: UserProfileCircularAvatar(
+                avatarSize: Size(40.w, 40.h),
+                profileUrl: profileImageUrl,
+                hasBorder: true,
+              ),
             ),
 
             SizedBox(width: 12.w),
