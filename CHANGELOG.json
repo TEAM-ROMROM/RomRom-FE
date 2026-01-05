@@ -1,11 +1,37 @@
 {
   "metadata": {
-    "lastUpdated": "2026-01-05T09:13:58Z",
-    "currentVersion": "1.8.12",
-    "totalReleases": 54,
+    "lastUpdated": "2026-01-05T13:41:00Z",
+    "currentVersion": "1.8.16",
+    "totalReleases": 55,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.8.16",
+      "project_type": "flutter",
+      "date": "2026-01-05",
+      "pr_number": 406,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 프로필 조회 화면 추가: 사용자 프로필을 보고 닉네임, 위치, 받은 좋아요 수 확인 가능\n  * 프로필 네비게이션 기능: 채팅, 피드, 채팅 목록에서 프로필 클릭 시 상대 프로필 화면 열기\n  * 이용약관 화면 추가: 마이페이지에서 약관 내용 확인 가능\n  * QA 요청 자동화: 댓글 명령어로 자동 이슈 생성 가능\n\n* **Chores**\n  * 앱 버전 업데이트 (v1.8.12 → v1.8.16)\n  * 새로운 라이브러리 및 서비스 통합",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "프로필 조회 화면 추가: 사용자 프로필을 보고 닉네임, 위치, 받은 좋아요 수 확인 가능",
+            "프로필 네비게이션 기능: 채팅, 피드, 채팅 목록에서 프로필 클릭 시 상대 프로필 화면 열기",
+            "이용약관 화면 추가: 마이페이지에서 약관 내용 확인 가능",
+            "QA 요청 자동화: 댓글 명령어로 자동 이슈 생성 가능"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전 업데이트 (v1.8.12 → v1.8.16)",
+            "새로운 라이브러리 및 서비스 통합"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.8.12",
       "project_type": "flutter",
