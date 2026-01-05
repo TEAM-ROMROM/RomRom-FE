@@ -112,3 +112,8 @@ ios/Flutter/AppFrameworkInfo.plist
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# ====================================================================
+# SUH-DEVOPS-TEMPLATE: Auto-added entries
+# ====================================================================
+/.report

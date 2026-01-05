@@ -1,7 +1,69 @@
 # Changelog
 
-**현재 버전:** 1.8.0  
-**마지막 업데이트:** 2025-12-09T08:38:46Z  
+**현재 버전:** 1.8.16  
+**마지막 업데이트:** 2026-01-05T13:41:00Z  
+
+---
+
+## [1.8.16] - 2026-01-05
+
+**PR:** #406  
+
+**New Features**
+- 프로필 조회 화면 추가: 사용자 프로필을 보고 닉네임, 위치, 받은 좋아요 수 확인 가능
+- 프로필 네비게이션 기능: 채팅, 피드, 채팅 목록에서 프로필 클릭 시 상대 프로필 화면 열기
+- 이용약관 화면 추가: 마이페이지에서 약관 내용 확인 가능
+- QA 요청 자동화: 댓글 명령어로 자동 이슈 생성 가능
+
+**Chores**
+- 앱 버전 업데이트 (v1.8.12 → v1.8.16)
+- 새로운 라이브러리 및 서비스 통합
+
+---
+
+## [1.8.12] - 2026-01-05
+
+**PR:** #405  
+
+**New Features**
+- 사용자의 좋아요 목록을 조회할 수 있는 새로운 화면 추가
+- 프로필 편집 기능 강화 - 이미지 선택 및 업로드 지원
+- 위치 인증 및 검색 범위 설정 기능 개선
+
+**Documentation**
+- AI 어시스턴트 커맨드 가이드 문서 추가 (plan, design, analyze, implement, test 등)
+
+**Refactor**
+- 모달 위젯 통합 - CommonModal로 일원화하여 코드 일관성 개선
+- 네비게이션 유틸리티 반환값 처리 개선
+
+**Chores**
+- 버전 업그레이드 (v1.7.12 → v1.8.12)
+- 아이콘 세트 업데이트
+- GitHub 워크플로우 자동화 개선
+
+---
+
+## [1.8.12] - 2026-01-05
+
+**PR:** #405  
+
+**New Features**
+- 사용자의 좋아요 목록을 조회할 수 있는 새로운 화면 추가
+- 프로필 편집 기능 강화 - 이미지 선택 및 업로드 지원
+- 위치 인증 및 검색 범위 설정 기능 개선
+
+**Documentation**
+- AI 어시스턴트 커맨드 가이드 문서 추가 (plan, design, analyze, implement, test 등)
+
+**Refactor**
+- 모달 위젯 통합 - CommonModal로 일원화하여 코드 일관성 개선
+- 네비게이션 유틸리티 반환값 처리 개선
+
+**Chores**
+- 버전 업그레이드 (v1.7.12 → v1.8.12)
+- 아이콘 세트 업데이트
+- GitHub 워크플로우 자동화 개선
 
 ---
 
@@ -801,11 +863,43 @@
 
 **PR:** #216  
 
+"body_html": "\nSummary by CodeRabbit\n\n신기능\n\n이슈가 열리거나 다시 열릴 때 브랜치/커밋 가이드를 자동으로 댓글로 안내합니다.\n\n\n개선 사항\n\n등록 폼의 레이블·힌트·오류 문구를 일원화하여 가독성과 일관성을 향상했습니다.\n빈 입력 시 오류 색상과 테두리로 명확한 시각 피드백을 제공합니다.\n거래 방식 선택 UX를 개선하고 카테고리 입력은 1자로 제한했습니다.\n위치·가격 안내 문구와 오류 메시지를 더 명확하게 다듬었습니다.\n\n\n버그 수정\n\n거래 방식 선택 토글이 올바르게 동작하도록 조정했습니다.\n\n\n작업\n\nTestFlight 워크플로에 .env 사용 가드 추가 및 아티팩트 정리.\n변경 로그 업데이트.\n\n\n\n",
+  "active_lock_reason": null,
+  "merged": false,
+  "mergeable": true,
+  "rebaseable": true,
+  "mergeable_state": "unstable",
+  "merged_by": null,
+  "comments": 3,
+  "review_comments": 0,
+  "maintainer_can_modify": false,
+  "commits": 9,
+  "additions": 441,
+  "deletions": 106,
+  "changed_files": 9
+}
+
 ---
 
 ## [1.1.31] - 2025-08-16
 
 **PR:** #215  
+
+"body_html": "\nSummary by CodeRabbit\n\nNew Features\n\n이슈가 열리거나 재오픈될 때 자동으로 가이드 댓글을 남기는 워크플로우 추가\n등록 폼 문구(라벨/힌트/에러)를 통합 관리하는 문구 세트 도입\n\n\nRefactor\n\n등록 폼 전반을 문구 기반으로 개편하여 제목/카테고리/설명/상태/거래방식/가격/위치 문구 일관화\nAI 가격·위치 관련 안내 및 토글 문구 개선\n\n\nStyle\n\n빈 입력 시 에러 보더/배경 표시, 인라인 검증 메시지 및 글자수 표시 개선\n오류 상태 색상 팔레트 추가로 가시성 향상\n\n\n\n",
+  "active_lock_reason": null,
+  "merged": false,
+  "mergeable": true,
+  "rebaseable": true,
+  "mergeable_state": "unstable",
+  "merged_by": null,
+  "comments": 3,
+  "review_comments": 0,
+  "maintainer_can_modify": false,
+  "commits": 6,
+  "additions": 389,
+  "deletions": 102,
+  "changed_files": 6
+}
 
 ---
 
