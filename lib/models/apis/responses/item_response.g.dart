@@ -27,7 +27,9 @@ Map<String, dynamic> _$ItemResponseToJson(ItemResponse instance) =>
 
 ItemPage _$ItemPageFromJson(Map<String, dynamic> json) => ItemPage(
   content: _itemsFromJson(json['content']),
-  page: ApiPage.fromJson(json['page'] as Map<String, dynamic>),
+  page: json['page'] == null
+      ? null
+      : ApiPage.fromJson(json['page'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ItemPageToJson(ItemPage instance) => <String, dynamic>{
