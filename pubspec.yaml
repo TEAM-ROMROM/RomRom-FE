@@ -1,16 +1,12 @@
 name: romrom_fe
 description: "ROMROM-FE"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-
-version: 1.8.12+73
-
+version: 1.8.16+77
 environment:
   sdk: ">=3.9.0 <4.0.0"
-
 dependencies:
   flutter:
     sdk: flutter
-
   # 알파벳 순으로 정렬
   animated_toggle_switch: ^0.8.5
   cupertino_icons: ^1.0.6
@@ -42,21 +38,17 @@ dependencies:
   shared_preferences: ^2.5.2
   skeletonizer: ^2.1.0+1
   stomp_dart_client: ^2.0.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
   build_runner: ^2.4.6
   json_serializable: ^6.7.1
-
 flutter:
   uses-material-design: true
-
   assets:
     - .env
     - assets/images/
     - assets/terms/
-
   fonts:
     # icons
     - family: AppIcons
@@ -83,7 +75,6 @@ flutter:
           weight: 800
         - asset: assets/fonts/pretendard/Pretendard-Black.otf
           weight: 900
-
     # fonts
     - family: NEXON-Lv2-Gothic
       fonts:

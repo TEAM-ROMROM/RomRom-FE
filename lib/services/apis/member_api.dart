@@ -155,4 +155,23 @@ class MemberApi {
       },
     );
   }
+
+  /// 타인 프로필 조회 API
+  /// `POST /api/members/get/profile`
+  Future<MemberResponse> getMemberProfile(String memberId) async {
+    const String url = '${AppUrls.baseUrl}/api/members/get/profile';
+    late MemberResponse memberResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {'memberId': memberId},
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        memberResponse = MemberResponse.fromJson(responseData);
+        debugPrint('타인 프로필 조회 성공: ${memberResponse.member?.nickname}');
+      },
+    );
+
+    return memberResponse;
+  }
 }

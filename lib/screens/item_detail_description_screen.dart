@@ -37,6 +37,7 @@ import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
+import 'package:romrom_fe/screens/profile/profile_screen.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -541,35 +542,57 @@ class _ItemDetailDescriptionScreenState
                         margin: EdgeInsets.symmetric(vertical: 16.h),
                         child: Row(
                           children: [
-                            UserProfileCircularAvatar(
-                              avatarSize: const Size(40, 40),
-                              profileUrl: item?.member?.profileUrl,
+                            GestureDetector(
+                              onTap: () {
+                                if (item?.member?.memberId != null) {
+                                  context.navigateTo(
+                                    screen: ProfileScreen(
+                                      memberId: item!.member!.memberId!,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: UserProfileCircularAvatar(
+                                avatarSize: const Size(40, 40),
+                                profileUrl: item?.member?.profileUrl,
+                              ),
                             ),
                             SizedBox(width: 10.w),
-                            Container(
-                              constraints:
-                                  !widget.isMyItem && widget.isRequestManagement
-                                  ? BoxConstraints(maxWidth: 120.w)
-                                  : null, // 최대 너비 설정
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item?.member?.nickname ?? '알 수 없음',
-                                    style: CustomTextStyles.p2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  SizedBox(height: 8.h),
-                                  Text(
-                                    memberLocationName,
-                                    style: CustomTextStyles.p3.copyWith(
-                                      color: AppColors.lightGray.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      fontWeight: FontWeight.w500,
+                            GestureDetector(
+                              onTap: () {
+                                if (item?.member?.memberId != null) {
+                                  context.navigateTo(
+                                    screen: ProfileScreen(
+                                      memberId: item!.member!.memberId!,
                                     ),
-                                  ),
-                                ],
+                                  );
+                                }
+                              },
+                              child: Container(
+                                constraints:
+                                    !widget.isMyItem && widget.isRequestManagement
+                                    ? BoxConstraints(maxWidth: 120.w)
+                                    : null, // 최대 너비 설정
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item?.member?.nickname ?? '알 수 없음',
+                                      style: CustomTextStyles.p2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 8.h),
+                                    Text(
+                                      memberLocationName,
+                                      style: CustomTextStyles.p3.copyWith(
+                                        color: AppColors.lightGray.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                             const Spacer(),

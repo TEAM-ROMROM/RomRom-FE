@@ -17,6 +17,7 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/screens/profile/profile_screen.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final String chatRoomId;
@@ -335,6 +336,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return CommonAppBar(
       title: chatRoom.getOpponentNickname(_myMemberId!),
       titleTextStyle: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600),
+      onTitleTap: () {
+        final opponent = chatRoom.getOpponent(_myMemberId!);
+        if (opponent?.memberId != null) {
+          context.navigateTo(
+            screen: ProfileScreen(
+              memberId: opponent!.memberId!,
+            ),
+          );
+        }
+      },
       showBottomBorder: true,
       bottomWidgets: PreferredSize(
         preferredSize: Size.fromHeight(20.h),
@@ -593,7 +604,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                   child: Text(
                     message.content ?? '',
-                    style: CustomTextStyles.p3.copyWith(
+                    style: CustomTextStyles.p2.copyWith(
                       color: AppColors.textColorWhite,
                       fontWeight: FontWeight.w400,
                       height: 1.2,
@@ -605,7 +616,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   Text(
                     formatMessageTime(message.createdDate),
                     style: CustomTextStyles.p3.copyWith(
-                      fontSize: 10.sp,
+                      fontSize: 12.sp,
                       color: AppColors.opacity50White,
                       fontWeight: FontWeight.w400,
                     ),
@@ -616,7 +627,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   Text(
                     formatMessageTime(message.createdDate),
                     style: CustomTextStyles.p3.copyWith(
-                      fontSize: 10.sp,
+                      fontSize: 12.sp,
                       color: AppColors.opacity50White,
                       fontWeight: FontWeight.w400,
                     ),
@@ -635,7 +646,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                   child: Text(
                     message.content ?? '',
-                    style: CustomTextStyles.p3.copyWith(
+                    style: CustomTextStyles.p2.copyWith(
                       color: AppColors.textColorBlack,
                       fontWeight: FontWeight.w400,
                       height: 1.2,
