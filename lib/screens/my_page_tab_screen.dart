@@ -12,6 +12,7 @@ import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
+import 'package:romrom_fe/screens/my_page/terms_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -131,7 +132,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               _MenuItem(
                 label: '이용 약관',
                 onTap: () {
-                  // TODO: 이용 약관 화면으로 이동
+                  context.navigateTo(screen: const TermsScreen());
                 },
               ),
               _MenuItem(
