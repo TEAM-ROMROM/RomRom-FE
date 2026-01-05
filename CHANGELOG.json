@@ -1,11 +1,49 @@
 {
   "metadata": {
-    "lastUpdated": "2026-01-05T09:13:50Z",
+    "lastUpdated": "2026-01-05T09:13:58Z",
     "currentVersion": "1.8.12",
-    "totalReleases": 53,
+    "totalReleases": 54,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.8.12",
+      "project_type": "flutter",
+      "date": "2026-01-05",
+      "pr_number": 405,
+      "raw_summary": "Summary by CodeRabbit\n\n\nNew Features\n\n사용자의 좋아요 목록을 조회할 수 있는 새로운 화면 추가\n프로필 편집 기능 강화 - 이미지 선택 및 업로드 지원\n위치 인증 및 검색 범위 설정 기능 개선\n\n\n\nDocumentation\n\nAI 어시스턴트 커맨드 가이드 문서 추가 (plan, design, analyze, implement, test 등)\n\n\n\nRefactor\n\n모달 위젯 통합 - CommonModal로 일원화하여 코드 일관성 개선\n네비게이션 유틸리티 반환값 처리 개선\n\n\n\nChores\n\n버전 업그레이드 (v1.7.12 → v1.8.12)\n아이콘 세트 업데이트\nGitHub 워크플로우 자동화 개선\n\n\n\n✏️ Tip: You can customize this high-level summary in your review settings.",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "사용자의 좋아요 목록을 조회할 수 있는 새로운 화면 추가",
+            "프로필 편집 기능 강화 - 이미지 선택 및 업로드 지원",
+            "위치 인증 및 검색 범위 설정 기능 개선"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "AI 어시스턴트 커맨드 가이드 문서 추가 (plan, design, analyze, implement, test 등)"
+          ]
+        },
+        "refactor": {
+          "title": "Refactor",
+          "items": [
+            "모달 위젯 통합 - CommonModal로 일원화하여 코드 일관성 개선",
+            "네비게이션 유틸리티 반환값 처리 개선"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업그레이드 (v1.7.12 → v1.8.12)",
+            "아이콘 세트 업데이트",
+            "GitHub 워크플로우 자동화 개선"
+          ]
+        }
+      }
+    },
     {
       "version": "1.8.12",
       "project_type": "flutter",
