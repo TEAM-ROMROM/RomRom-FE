@@ -593,7 +593,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                   child: Text(
                     message.content ?? '',
-                    style: CustomTextStyles.p3.copyWith(
+                    style: CustomTextStyles.p2.copyWith(
                       color: AppColors.textColorWhite,
                       fontWeight: FontWeight.w400,
                       height: 1.2,
@@ -605,7 +605,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   Text(
                     formatMessageTime(message.createdDate),
                     style: CustomTextStyles.p3.copyWith(
-                      fontSize: 10.sp,
+                      fontSize: 12.sp,
                       color: AppColors.opacity50White,
                       fontWeight: FontWeight.w400,
                     ),
@@ -616,7 +616,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   Text(
                     formatMessageTime(message.createdDate),
                     style: CustomTextStyles.p3.copyWith(
-                      fontSize: 10.sp,
+                      fontSize: 12.sp,
                       color: AppColors.opacity50White,
                       fontWeight: FontWeight.w400,
                     ),
@@ -635,7 +635,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                   child: Text(
                     message.content ?? '',
-                    style: CustomTextStyles.p3.copyWith(
+                    style: CustomTextStyles.p2.copyWith(
                       color: AppColors.textColorBlack,
                       fontWeight: FontWeight.w400,
                       height: 1.2,
