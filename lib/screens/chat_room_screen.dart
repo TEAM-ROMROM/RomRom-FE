@@ -695,17 +695,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               height: 40.h,
               child: TextField(
                 controller: _messageController,
-                style: CustomTextStyles.p3.copyWith(
+                style: CustomTextStyles.p2.copyWith(
                   color: AppColors.textColorWhite,
                   fontWeight: FontWeight.w400,
                 ),
                 maxLines: null,
-                cursorHeight: 14.h,
+                cursorHeight: 16.h,
                 cursorColor: AppColors.primaryYellow,
                 cursorWidth: 1.5.w,
                 decoration: InputDecoration(
                   hintText: '메세지를 입력하세요',
-                  hintStyle: CustomTextStyles.p3.copyWith(
+                  hintStyle: CustomTextStyles.p2.copyWith(
                     color: AppColors.opacity50White,
                   ),
                   filled: true,
