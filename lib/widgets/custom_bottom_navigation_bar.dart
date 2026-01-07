@@ -63,7 +63,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
               Icon(
                 icon,
                 color: isSelected
-                    ? Colors.white
+                    ? AppColors.textColorWhite
                     : AppColors.bottomNavigationDisableIcon,
                 size: 24.sp,
               ),
@@ -73,7 +73,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
                 label,
                 style: CustomTextStyles.p2.copyWith(
                   color: isSelected
-                      ? Colors.white
+                      ? AppColors.textColorWhite
                       : AppColors.bottomNavigationDisableIcon,
                 ),
                 textAlign: TextAlign.center,
