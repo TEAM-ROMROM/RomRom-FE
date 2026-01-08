@@ -130,6 +130,7 @@ class MyApp extends StatelessWidget {
         builder: (context) {
           return SafeArea(
             top: false,
+            bottom: Platform.isAndroid ,
             child: MediaQuery(
               data: MediaQuery.of(
                 context,

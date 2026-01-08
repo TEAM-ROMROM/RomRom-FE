@@ -19,8 +19,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double bottomPadding = Platform.isIOS
-        ? 65.h + MediaQuery.of(context).padding.bottom
-        : 65.h;
+        ? 52.h + MediaQuery.of(context).padding.bottom
+        : 70.h;
     return Container(
       width: MediaQuery.of(context).size.width,
       // 기본 높이 + 시스템 네비게이션 영역 패딩
