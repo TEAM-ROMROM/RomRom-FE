@@ -71,12 +71,11 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final double width = widget.avatarSize.width.w;
-    final double height = widget.avatarSize.height.h;
+    final double size = widget.avatarSize.width.w;
 
     return Container(
-      width: width,
-      height: height,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.textColorWhite,
@@ -95,7 +94,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
                   _avatarUrl != _kDefaultProfileAsset
             ? Image.network(
                 _avatarUrl!,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
                   return _buildDefaultImage();
                 },

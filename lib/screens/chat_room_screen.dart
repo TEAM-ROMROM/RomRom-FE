@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -340,9 +341,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         final opponent = chatRoom.getOpponent(_myMemberId!);
         if (opponent?.memberId != null) {
           context.navigateTo(
-            screen: ProfileScreen(
-              memberId: opponent!.memberId!,
-            ),
+            screen: ProfileScreen(memberId: opponent!.memberId!),
           );
         }
       },
@@ -663,12 +662,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 입력 바 빌더
   Widget _buildInputBar() {
+    double textFieldBottomPadding = Platform.isIOS
+        ? 8.h + MediaQuery.of(context).padding.bottom
+        : 21.h;
+
     return Container(
       padding: EdgeInsets.only(
         top: 8.w,
-        right: 8.h,
         left: 8.h,
-        bottom: MediaQuery.paddingOf(context).bottom + 8.h,
+        bottom: textFieldBottomPadding,
       ),
       child: Row(
         children: [
@@ -729,7 +731,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     horizontal: 12.w,
                     vertical: 3.h,
                   ),
-
                   // 텍스트 유무에 따라 버튼/아이콘 색상 및 활성화 상태 변경
                   suffixIcon: TextFieldTapRegion(
                     child: GestureDetector(

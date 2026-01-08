@@ -255,7 +255,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
           _hasImageBeenTouched && imageFile != null
               ? Container(
                   width: 132.w,
-                  height: 132.h,
+                  height: 132.w,
                   padding: EdgeInsets.all(48.w),
                   child: const CircularProgressIndicator(
                     color: AppColors.primaryYellow,
