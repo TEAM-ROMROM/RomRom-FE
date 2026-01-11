@@ -355,14 +355,9 @@ class _ItemDetailDescriptionScreenState
     }
 
     if (item == null) {
-      return  Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Center(
-          child: Text(
-            '물품 정보가 없습니다.',
-            style: CustomTextStyles.h3,
-          ),
-        ),
+        body: Center(child: Text('물품 정보가 없습니다.', style: CustomTextStyles.h3)),
       );
     }
 
@@ -537,7 +532,6 @@ class _ItemDetailDescriptionScreenState
                     children: [
                       /// 사용자 프사, 위치, 닉네임, 좋아요 수
                       Container(
-                        height: 40.h,
                         width: double.infinity,
                         margin: EdgeInsets.symmetric(vertical: 16.h),
                         child: Row(
@@ -570,7 +564,8 @@ class _ItemDetailDescriptionScreenState
                               },
                               child: Container(
                                 constraints:
-                                    !widget.isMyItem && widget.isRequestManagement
+                                    !widget.isMyItem &&
+                                        widget.isRequestManagement
                                     ? BoxConstraints(maxWidth: 120.w)
                                     : null, // 최대 너비 설정
                                 child: Column(
@@ -598,45 +593,31 @@ class _ItemDetailDescriptionScreenState
                             const Spacer(),
                             GestureDetector(
                               onTap: _toggleLike,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 11.w,
-                                  vertical: 4.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(100.r),
-                                  border: Border.all(
-                                    color: AppColors.opacity30White,
-                                    width: 1.w,
-                                    strokeAlign: BorderSide.strokeAlignInside,
+                              child: Column(
+                                children: [
+                                  ValueListenableBuilder<bool>(
+                                    valueListenable: isLikedVN,
+                                    builder: (_, liked, __) {
+                                      return SvgPicture.asset(
+                                        liked
+                                            ? 'assets/images/like-heart-icon.svg'
+                                            : 'assets/images/dislike-heart-icon.svg',
+                                        width: 30.w,
+                                        height: 30.h,
+                                      );
+                                    },
                                   ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    ValueListenableBuilder<bool>(
-                                      valueListenable: isLikedVN,
-                                      builder: (_, liked, __) {
-                                        return SvgPicture.asset(
-                                          liked
-                                              ? 'assets/images/like-heart-icon.svg'
-                                              : 'assets/images/dislike-heart-icon.svg',
-                                          width: 16.w,
-                                          height: 16.h,
-                                        );
-                                      },
-                                    ),
-                                    SizedBox(width: 4.w),
-                                    ValueListenableBuilder<int>(
-                                      valueListenable: likeCountVN,
-                                      builder: (_, likeCount, __) {
-                                        return Text(
-                                          likeCount.toString(),
-                                          style: CustomTextStyles.p2,
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
+                                  SizedBox(height: 2.h),
+                                  ValueListenableBuilder<int>(
+                                    valueListenable: likeCountVN,
+                                    builder: (_, likeCount, __) {
+                                      return Text(
+                                        likeCount.toString(),
+                                        style: CustomTextStyles.p2,
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                             widget.isChatAccessAllowed
