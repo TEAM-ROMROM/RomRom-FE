@@ -786,9 +786,10 @@ class _ItemDetailDescriptionScreenState
 
           /// 상단 고정 버튼들
           Positioned(
-            top: (MediaQuery.of(context).padding.top < 59
-                ? 59.h
-                : MediaQuery.of(context).padding.top),
+            // top: (MediaQuery.of(context).padding.top < 59
+            //     ? 59.h
+            //     : MediaQuery.of(context).padding.top),
+            top: MediaQuery.of(context).padding.top + 8.h,
             left: 24.w,
             child: GestureDetector(
               onTap: () async {
