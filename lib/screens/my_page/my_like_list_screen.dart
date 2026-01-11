@@ -218,6 +218,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                             heroTag: 'itemImage_${itemId}_0',
                             isMyItem: false,
                             isRequestManagement: false,
+                            isFromLikedItems: true,
                           ),
                         ),
                       );

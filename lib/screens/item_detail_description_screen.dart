@@ -23,7 +23,7 @@ import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/chatting_button.dart';
+import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
@@ -49,6 +49,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   final bool isRequestManagement;
   final String? tradeRequestHistoryId;
   final bool isChatAccessAllowed; // 채팅 접근 권한 여부
+  final bool isFromLikedItems; // 좋아요한 물품 화면에서 왔는지 여부
 
   const ItemDetailDescriptionScreen({
     super.key,
@@ -61,6 +62,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
     this.homeFeedItem,
     this.tradeRequestHistoryId, // 거래 요청 ID (채팅방 생성용)
     this.isChatAccessAllowed = false, // 채팅 접근 권한 기본값: false
+    this.isFromLikedItems = false, // 기본값: false
   });
 
   @override
@@ -620,19 +622,6 @@ class _ItemDetailDescriptionScreenState
                                 ],
                               ),
                             ),
-                            widget.isChatAccessAllowed
-                                ? Padding(
-                                    padding: EdgeInsets.only(left: 16.0.w),
-                                    child: ChattingButton(
-                                      isEnabled: true,
-                                      enabledOnPressed:
-                                          _handleChatButtonPressed,
-                                      buttonText: '채팅하기',
-                                      buttonWidth: 96,
-                                      buttonHeight: 32,
-                                    ),
-                                  )
-                                : const SizedBox(),
                           ],
                         ),
                       ),
@@ -887,6 +876,52 @@ class _ItemDetailDescriptionScreenState
                     ],
                   ),
           ),
+          widget.isChatAccessAllowed || widget.isFromLikedItems
+              ? Positioned(
+                  bottom: 0,
+                  child: Container(
+                    height: 113.h,
+                    width: MediaQuery.of(context).size.width,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: AppColors
+                            .itemDetailBottomBlackGradient, // 검정색 그라데이션
+                        stops: const [0.0, 1.0],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                )
+              : Container(), // 오버레이 그레디언트
+          widget.isChatAccessAllowed
+              ? Positioned(
+                  bottom: 49.h,
+                  left: 0,
+                  right: 0,
+                  child: CustomFloatingButton(
+                    isEnabled: true,
+                    enabledOnPressed: _handleChatButtonPressed,
+                    buttonText: '채팅하기',
+                    buttonWidth: 346,
+                    buttonHeight: 56,
+                  ),
+                )
+              : const SizedBox(),
+          widget.isFromLikedItems
+              ? Positioned(
+                  bottom: 49.h,
+                  left: 0,
+                  right: 0,
+                  child: CustomFloatingButton(
+                    isEnabled: true,
+                    enabledOnPressed: _navigateToRequestScreen,
+                    buttonText: '요청하기',
+                    buttonWidth: 346,
+                    buttonHeight: 56,
+                  ),
+                )
+              : const SizedBox(),
         ],
       ),
     );
@@ -991,5 +1026,19 @@ class _ItemDetailDescriptionScreenState
         type: SnackBarType.error,
       );
     }
+  }
+
+  void _navigateToRequestScreen() {
+    if (item == null) return;
+
+    // context.navigateTo(
+    //   screen: Screen(
+    //     itemId: item!.itemId!,
+    //     itemName: item!.itemName!,
+    //     itemPrice: item!.price!,
+    //     itemImageUrl:
+    //         imageUrls.isNotEmpty ? imageUrls[0] : null,
+    //   ),
+    // );
   }
 }
