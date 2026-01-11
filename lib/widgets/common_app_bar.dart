@@ -87,7 +87,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  /// 앱바의 기본 크기 (높이는 72.h로 고정)
+  /// 앱바의 기본 크기 (높이는 64.h로 고정)
   @override
   Size get preferredSize => Size.fromHeight(64.h);
 }

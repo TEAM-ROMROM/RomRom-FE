@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -786,9 +787,6 @@ class _ItemDetailDescriptionScreenState
 
           /// 상단 고정 버튼들
           Positioned(
-            // top: (MediaQuery.of(context).padding.top < 59
-            //     ? 59.h
-            //     : MediaQuery.of(context).padding.top),
             top: MediaQuery.of(context).padding.top + 8.h,
             left: 24.w,
             child: GestureDetector(
@@ -809,9 +807,7 @@ class _ItemDetailDescriptionScreenState
             ),
           ),
           Positioned(
-            top: (MediaQuery.of(context).padding.top < 59
-                ? 59.h
-                : MediaQuery.of(context).padding.top),
+            top: MediaQuery.of(context).padding.top + 8.h,
             right: 24.w,
             child: !widget.isMyItem
                 ? ReportMenuButton(
@@ -897,7 +893,7 @@ class _ItemDetailDescriptionScreenState
               : Container(), // 오버레이 그레디언트
           widget.isChatAccessAllowed
               ? Positioned(
-                  bottom: 49.h,
+                  bottom: Platform.isAndroid ? 28.h : 49.h,
                   left: 0,
                   right: 0,
                   child: CustomFloatingButton(
@@ -911,7 +907,7 @@ class _ItemDetailDescriptionScreenState
               : const SizedBox(),
           widget.isFromLikedItems
               ? Positioned(
-                  bottom: 49.h,
+                  bottom: Platform.isAndroid ? 28.h : 49.h,
                   left: 0,
                   right: 0,
                   child: CustomFloatingButton(
@@ -1032,6 +1028,7 @@ class _ItemDetailDescriptionScreenState
   void _navigateToRequestScreen() {
     if (item == null) return;
 
+    // TODO : 물품 요청 화면 추가
     // context.navigateTo(
     //   screen: Screen(
     //     itemId: item!.itemId!,
