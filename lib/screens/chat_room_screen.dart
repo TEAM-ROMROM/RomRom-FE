@@ -447,6 +447,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(
+          top: BorderSide(color: AppColors.opacity10White, width: 1),
           bottom: BorderSide(color: AppColors.opacity10White, width: 1),
         ),
       ),
