@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -15,6 +16,7 @@ import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
+import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -30,11 +32,15 @@ import 'package:romrom_fe/screens/profile/profile_screen.dart';
 class HomeFeedItemWidget extends StatefulWidget {
   final HomeFeedItem item;
   final bool showBlur;
+  final List<Item> myCards;
+  final void Function(String droppedCard)? onCardDrop;
 
   const HomeFeedItemWidget({
     super.key,
     required this.item,
     required this.showBlur,
+    required this.myCards,
+    required this.onCardDrop,
   });
 
   @override
@@ -97,7 +103,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     // 네비게이션바 && 상태바 높이 : 실제 사용 가능 높이 계산
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final navigationBarHeight = 100.h; // 네비게이션바 높이 (80.h)
-    final availableHeight = screenHeight -
+    final availableHeight =
+        screenHeight -
         bottomPadding -
         navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
     final registerBlurTextTopPosition = 205.h;
@@ -152,14 +159,17 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                         child: ClipRRect(
                           borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(4.r),
-                              topRight: Radius.circular(4.r),
-                              bottomRight: Radius.circular(20.r),
-                              bottomLeft: Radius.circular(20.r)),
+                            topLeft: Radius.circular(4.r),
+                            topRight: Radius.circular(4.r),
+                            bottomRight: Radius.circular(20.r),
+                            bottomLeft: Radius.circular(20.r),
+                          ),
                           child: _buildImage(
                             widget.item.imageUrls[index],
-                            Size(screenWidth,
-                                availableHeight - navigationBarHeight),
+                            Size(
+                              screenWidth,
+                              availableHeight - navigationBarHeight,
+                            ),
                           ),
                         ),
                       ),
@@ -176,9 +186,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                     Positioned.fill(
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-                        child: Container(
-                          color: AppColors.opacity10Black,
-                        ),
+                        child: Container(color: AppColors.opacity10Black),
                       ),
                     ),
 
@@ -259,7 +267,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       // 내가 작성한 게시글인지 확인
                       final isCurrentMember =
                           await MemberManager.isCurrentMember(
-                              widget.item.authorMemberId);
+                            widget.item.authorMemberId,
+                          );
                       if (isCurrentMember) {
                         if (mounted) {
                           CommonSnackBar.show(
@@ -303,11 +312,29 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                     ),
                   ),
                   SizedBox(height: 2.h),
-                  Text(
-                    _likeCount.toString(),
-                    style: CustomTextStyles.p2,
-                  ),
+                  Text(_likeCount.toString(), style: CustomTextStyles.p2),
                 ],
+              ),
+            ),
+          // 하단 고정 카드 덱 (터치 영역 분리)
+          if (!widget.showBlur)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: -140.h, // 네비게이션 바 위에 표시
+              child: HomeTabCardHand(
+                cards: widget.myCards,
+                onCardDrop: widget.onCardDrop,
+              ),
+            )
+          else
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 10.h,
+              child: SvgPicture.asset(
+                'assets/images/first-item-post-text.svg',
+                width: 145.w,
               ),
             ),
 
@@ -334,8 +361,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             widget.item.name.trim(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: CustomTextStyles.h3
-                                .copyWith(fontWeight: FontWeight.w600),
+                            style: CustomTextStyles.h3.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
 
                           SizedBox(height: 8.h),
@@ -343,13 +371,17 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           // 위치 및 날짜 정보
                           Row(
                             children: [
-                              Icon(AppIcons.location,
-                                  color: AppColors.opacity80White, size: 13.sp),
+                              Icon(
+                                AppIcons.location,
+                                color: AppColors.opacity80White,
+                                size: 13.sp,
+                              ),
                               SizedBox(width: 4.w),
                               Text(
                                 '${widget.item.location} • $formattedDate',
-                                style: CustomTextStyles.p3
-                                    .copyWith(fontWeight: FontWeight.w500),
+                                style: CustomTextStyles.p3.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
                           ),
@@ -379,8 +411,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               // 물품 가격
                               Text(
                                 "$formattedPrice원",
-                                style: CustomTextStyles.p1
-                                    .copyWith(fontWeight: FontWeight.w600),
+                                style: CustomTextStyles.p1.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
 
                               SizedBox(width: 8.w),
@@ -454,7 +487,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         TextSpan(
                           text: '내 물건을 등록',
                           style: CustomTextStyles.h1.copyWith(
-                              color: AppColors.primaryYellow, height: 1.3),
+                            color: AppColors.primaryYellow,
+                            height: 1.3,
+                          ),
                         ),
                         TextSpan(
                           text: '하고\n물건을 교환해보세요!',
@@ -463,9 +498,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       ],
                     ),
                   ),
-                  SizedBox(
-                    height: 56.h,
-                  ),
+                  SizedBox(height: 56.h),
                   SvgPicture.asset(
                     'assets/images/first-item-post-box.svg',
                     width: 133.w,
@@ -502,7 +535,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
             color: AppColors.primaryYellow,
             value: loadingProgress.expectedTotalBytes != null
                 ? loadingProgress.cumulativeBytesLoaded /
-                    (loadingProgress.expectedTotalBytes ?? 1)
+                      (loadingProgress.expectedTotalBytes ?? 1)
                 : null,
           ),
         );
@@ -513,9 +546,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
 /// 검정색 그라데이션 컨테이너
 class BlackGradientContainer extends StatelessWidget {
-  const BlackGradientContainer({
-    super.key,
-  });
+  const BlackGradientContainer({super.key});
 
   @override
   Widget build(BuildContext context) {

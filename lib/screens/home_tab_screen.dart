@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_status.dart';
@@ -22,7 +21,6 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
-import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
 
@@ -662,6 +660,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     return Stack(
       children: [
+        
         Positioned.fill(
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
@@ -700,32 +699,34 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                 return HomeFeedItemWidget(
                   item: _feedItems[index],
                   showBlur: _isBlurShown,
+                  myCards: _myCards,
+                  onCardDrop: _handleCardDrop,
                 );
               },
             ),
           ),
         ),
-        // 하단 고정 카드 덱 (터치 영역 분리)
-        if (!_isBlurShown)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: -140.h, // 네비게이션 바 위에 표시
-            child: HomeTabCardHand(
-              cards: _myCards,
-              onCardDrop: _handleCardDrop,
-            ),
-          )
-        else
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 10.h,
-            child: SvgPicture.asset(
-              'assets/images/first-item-post-text.svg',
-              width: 145.w,
-            ),
-          ),
+        // // 하단 고정 카드 덱 (터치 영역 분리)
+        // if (!_isBlurShown)
+        //   Positioned(
+        //     left: 0,
+        //     right: 0,
+        //     bottom: -140.h, // 네비게이션 바 위에 표시
+        //     child: HomeTabCardHand(
+        //       cards: _myCards,
+        //       onCardDrop: _handleCardDrop,
+        //     ),
+        //   )
+        // else
+        //   Positioned(
+        //     left: 0,
+        //     right: 0,
+        //     bottom: 10.h,
+        //     child: SvgPicture.asset(
+        //       'assets/images/first-item-post-text.svg',
+        //       width: 145.w,
+        //     ),
+        //   ),
       ],
     );
   }
