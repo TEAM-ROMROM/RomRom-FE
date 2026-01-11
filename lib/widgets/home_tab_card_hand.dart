@@ -44,7 +44,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   String? _startCardId; // 터치 시작 카드
   bool _hasStartedCardDrag = false; // 수직 드래그 임계치 넘겨 카드 드래그 모드 진입
   String? _pressedCardId; // 터치로 강조된 카드
-  Timer? _longPressTimer; // 2초 롱프레스 타이머
+  Timer? _longPressTimer; // 0.2초 롱프레스 타이머
 
   // 카드 상태
   String? _hoveredCardId;
@@ -148,13 +148,13 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   void _generateCards() {
     if (widget.cards != null && widget.cards!.isNotEmpty) {
       _allCards = widget.cards!.toList(); // 전체 카드 저장
-      
+
       // 초기 7개 카드 로드 (0번째부터 왼쪽으로 채움)
       final totalCards = _allCards.length;
       final initialCount = math.min(_initialLoadCount, totalCards);
       const startIndex = 0;
       final endIndex = initialCount;
-      
+
       _cards = _allCards.sublist(startIndex, endIndex);
       _leftLoadedCount = startIndex; // 왼쪽에는 로드할 카드 없음
       _rightLoadedCount = totalCards - endIndex;
@@ -167,32 +167,30 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   }
 
   // 왼쪽 방향으로 카드 로드
-  void _loadCardsLeft() {
-    if (_leftLoadedCount == 0) return; // 왼쪽에 더 이상 로드할 카드 없음
-    
+  bool _loadCardsLeft() {
+    if (_leftLoadedCount == 0) return false; // 왼쪽에 더 이상 로드할 카드 없음
+
     final loadCount = math.min(_loadChunkSize, _leftLoadedCount);
     final newStartIndex = _leftLoadedCount - loadCount;
     final currentEndIndex = _leftLoadedCount + _cards.length;
-    
-    setState(() {
-      _cards = _allCards.sublist(newStartIndex, currentEndIndex);
-      _leftLoadedCount = newStartIndex;
-    });
+
+    _cards = _allCards.sublist(newStartIndex, currentEndIndex);
+    _leftLoadedCount = newStartIndex;
+    return true;
   }
 
   // 오른쪽 방향으로 카드 로드
-  void _loadCardsRight() {
-    if (_rightLoadedCount == 0) return; // 오른쪽에 더 이상 로드할 카드 없음
-    
+  bool _loadCardsRight() {
+    if (_rightLoadedCount == 0) return false; // 오른쪽에 더 이상 로드할 카드 없음
+
     final loadCount = math.min(_loadChunkSize, _rightLoadedCount);
     final currentStartIndex = _leftLoadedCount;
     final currentEndIndex = _leftLoadedCount + _cards.length;
     final newEndIndex = math.min(_allCards.length, currentEndIndex + loadCount);
-    
-    setState(() {
-      _cards = _allCards.sublist(currentStartIndex, newEndIndex);
-      _rightLoadedCount = _allCards.length - newEndIndex;
-    });
+
+    _cards = _allCards.sublist(currentStartIndex, newEndIndex);
+    _rightLoadedCount = _allCards.length - newEndIndex;
+    return true;
   }
 
   // 각도 제한 계산 메서드 추가
@@ -345,7 +343,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           const double dragBaseScale = 1.15;
           const double dragScaleGain = 0.20;
           scale = dragBaseScale + (dragScaleGain * pullValue);
-           angle *= (1 - pullValue);
+          angle *= (1 - pullValue);
 
           if (_isCardPulled) {
             opacity = 1.0 - (pullValue * 0.2);
@@ -409,6 +407,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     _panStartPosition = details.localPosition;
     _orbitController?.stop();
     _orbitDragStart = details.localPosition.dx;
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
 
     _panStartedOnCard = false;
     _startCardId = null;
@@ -419,9 +419,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     if (cardId != null) {
       _panStartedOnCard = true;
       _startCardId = cardId;
-      
-      // 0.1초 롱프레스 타이머 시작
-      _longPressTimer?.cancel();
+
+      // 0.2초 롱프레스 타이머 시작
       _longPressTimer = Timer(const Duration(milliseconds: 200), () {
         if (!mounted) return;
         setState(() {
@@ -433,6 +432,20 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         HapticFeedback.selectionClick();
       });
     }
+  }
+
+  void _handlePanCancel() {
+    // 롱프레스 타이머 취소
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    if (!mounted) return;
+    setState(() {
+      _panStartedOnCard = false;
+      _startCardId = null;
+      _hasStartedCardDrag = false;
+      _pressedCardId = null;
+      _hoveredCardId = null;
+    });
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
@@ -449,19 +462,27 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       final double minAngle = _getMinOrbitAngle();
       final double maxAngle = _getMaxOrbitAngle();
       final double clampedAngle = targetAngle.clamp(minAngle, maxAngle);
-      
+
       setState(() {
         _orbitAngle = clampedAngle;
         _orbitController?.value = clampedAngle;
-        
+
         // 각도에 따라 카드 동적 로드
         // 왼쪽으로 스와이프 (음수 방향) → 오른쪽 카드 추가 로드
         if (_orbitAngle < _orbitAccumulated - 0.2 && _rightLoadedCount > 0) {
-          _loadCardsRight();
+          if (_loadCardsRight()) {
+            // 연속 로드 방지
+            _orbitAccumulated = _orbitAngle;
+            _orbitDragStart = details.localPosition.dx;
+          }
         }
         // 오른쪽으로 스와이프 (양수 방향) → 왼쪽 카드 추가 로드
         if (_orbitAngle > _orbitAccumulated + 0.2 && _leftLoadedCount > 0) {
-          _loadCardsLeft();
+          if (_loadCardsLeft()) {
+            // 연속 로드 방지
+            _orbitAccumulated = _orbitAngle;
+            _orbitDragStart = details.localPosition.dx;
+          }
         }
       });
     }
@@ -470,7 +491,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     if (_panStartedOnCard && _startCardId != null) {
       // 드래그 임계치 확인 - 만약 일정 거리 이상 이동하면 롱프레스 타이머 취소
       const double dragThreshold = 20.0; // px
-      if (_longPressTimer != null && 
+      if (_longPressTimer != null &&
           (dispX.abs() > dragThreshold || dispY.abs() > dragThreshold)) {
         _longPressTimer?.cancel();
         _longPressTimer = null;
@@ -589,7 +610,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
         // 현재 각속도로 계산해서 경계를 넘을지 미리 확인
         final double angularVelocity = -horizontalVelocity * _orbitSensitivity;
-        
+
         // 이미 경계 근처면 무시
         if ((_orbitAngle <= minAngle && angularVelocity < 0) ||
             (_orbitAngle >= maxAngle && angularVelocity > 0)) {
@@ -602,11 +623,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           _orbitAngle,
           angularVelocity,
         );
-        
+
         late VoidCallback bounceListener;
         bounceListener = () {
           final currentValue = _orbitController?.value ?? _orbitAngle;
-          
+
           // 경계 넘어가려고 하면 멈추기
           if (currentValue < minAngle || currentValue > maxAngle) {
             _orbitController?.stop();
@@ -615,7 +636,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
             _orbitController?.removeListener(bounceListener);
           }
         };
-        
+
         _orbitController?.addListener(bounceListener);
         _orbitController?.animateWith(simulation).whenComplete(() {
           if (!mounted) return;
@@ -655,6 +676,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
           onPanStart: _handlePanStart,
           onPanUpdate: _handlePanUpdate,
           onPanEnd: _handlePanEnd,
+          onPanCancel: _handlePanCancel,
           child: SizedBox(
             height: 280.h,
             child: Stack(
