@@ -110,7 +110,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
       final d = details[index];
 
       // 카테고리/상태/옵션 매핑
-      ItemCondition cond = ItemCondition.newItem;
+      ItemCondition cond = ItemCondition.sealed;
       try {
         cond = item_condition_enum.ItemCondition.values.firstWhere(
           (e) => e.serverName == d.itemCondition,
