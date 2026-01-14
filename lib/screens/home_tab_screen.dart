@@ -25,6 +25,8 @@ import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/item_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/utils/item_card_scale_utils.dart';
 
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -150,7 +152,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     debugPrint('====================================');
     debugPrint('_checkFirstMainScreen 호출됨');
     try {
-
       // 블러 표시 여부: 내 물건 개수가 0개일 때
       final bool shouldShowBlur = _myCards.isEmpty;
 
@@ -187,7 +188,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       debugPrint('  - isCoachMarkShown: ${userInfo.isCoachMarkShown}');
 
       // 코치마크 표시 여부: 첫 물건 등록 완료 && 코치마크 미표시
-      final bool shouldShowCoachMark = (userInfo.isFirstItemPosted == true) &&
+      final bool shouldShowCoachMark =
+          (userInfo.isFirstItemPosted == true) &&
           (userInfo.isCoachMarkShown != true);
 
       debugPrint('조건 체크:');
@@ -317,33 +319,30 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       builder: (context, currentPage, _) {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            _coachMarkImages.length,
-            (index) {
-              final isCurrentPage = index == currentPage;
-              return GestureDetector(
-                onTap: () {
-                  debugPrint('코치마크 이벤트: 인디케이터 탭 - 페이지 $index');
-                  _coachMarkPageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: isCurrentPage ? 12.w : 8.w,
-                  height: isCurrentPage ? 12.w : 8.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isCurrentPage
-                        ? AppColors.primaryYellow
-                        : AppColors.opacity50White,
-                  ),
+          children: List.generate(_coachMarkImages.length, (index) {
+            final isCurrentPage = index == currentPage;
+            return GestureDetector(
+              onTap: () {
+                debugPrint('코치마크 이벤트: 인디케이터 탭 - 페이지 $index');
+                _coachMarkPageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isCurrentPage ? 12.w : 8.w,
+                height: isCurrentPage ? 12.w : 8.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isCurrentPage
+                      ? AppColors.primaryYellow
+                      : AppColors.opacity50White,
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          }),
         );
       },
     );
@@ -387,15 +386,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(ItemRequest(
-        pageNumber: _currentPage,
-        pageSize: _pageSize,
-      ));
+      final response = await itemApi.getItems(
+        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize),
+      );
 
       if (!mounted) return;
 
-      final feedItems =
-          await _convertToFeedItems(response.itemPage?.content ?? []);
+      final feedItems = await _convertToFeedItems(
+        response.itemPage?.content ?? [],
+      );
 
       setState(() {
         _feedItems
@@ -430,13 +429,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     try {
       _currentPage += 1;
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(ItemRequest(
-        pageNumber: _currentPage,
-        pageSize: _pageSize,
-      ));
+      final response = await itemApi.getItems(
+        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize),
+      );
 
-      final newItems =
-          await _convertToFeedItems(response.itemPage?.content ?? []);
+      final newItems = await _convertToFeedItems(
+        response.itemPage?.content ?? [],
+      );
 
       setState(() {
         _feedItems.addAll(newItems);
@@ -467,8 +466,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       // 카테고리/상태/옵션 매핑
       ItemCondition cond = ItemCondition.newItem;
       try {
-        cond = item_cond.ItemCondition.values
-            .firstWhere((e) => e.serverName == d.itemCondition);
+        cond = item_cond.ItemCondition.values.firstWhere(
+          (e) => e.serverName == d.itemCondition,
+        );
       } catch (_) {}
 
       final opts = <ItemTradeOption>[];
@@ -476,7 +476,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         for (final s in d.itemTradeOptions!) {
           try {
             opts.add(
-                ItemTradeOption.values.firstWhere((e) => e.serverName == s));
+              ItemTradeOption.values.firstWhere((e) => e.serverName == s),
+            );
           } catch (_) {}
         }
       }
@@ -527,9 +528,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       final itemApi = ItemApi();
       final response = await itemApi.getMyItems(
         ItemRequest(
-            pageNumber: 0,
-            pageSize: 10,
-            itemStatus: ItemStatus.available.serverName),
+          pageNumber: 0,
+          pageSize: 10,
+          itemStatus: ItemStatus.available.serverName,
+        ),
       );
 
       if (!mounted) return;
@@ -557,12 +559,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     // 다이얼로그 띄우기 전에 (선택) 이미지 프리캐시
     await precacheImage(
-        NetworkImage(
-          cardData.primaryImageUrl != null
-              ? cardData.primaryImageUrl!
-              : 'https://picsum.photos/400/300',
-        ),
-        context);
+      NetworkImage(
+        cardData.primaryImageUrl != null
+            ? cardData.primaryImageUrl!
+            : 'https://picsum.photos/400/300',
+      ),
+      context,
+    );
 
     showDialog(
       barrierDismissible: false,
@@ -591,13 +594,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               final api = TradeApi();
 
               // 거래 요청 API 호출
-              await api.requestTrade(TradeRequest(
-                giveItemId: cardData.itemId!,
-                takeItemId: _feedItems[_currentFeedIndex].itemUuid,
-                itemTradeOptions: _selectedTradeOptions
-                    .map((option) => option.serverName)
-                    .toList(),
-              ));
+              await api.requestTrade(
+                TradeRequest(
+                  giveItemId: cardData.itemId!,
+                  takeItemId: _feedItems[_currentFeedIndex].itemUuid,
+                  itemTradeOptions: _selectedTradeOptions
+                      .map((option) => option.serverName)
+                      .toList(),
+                ),
+              );
 
               // 성공 토스트 표시
               if (context.mounted) {
@@ -662,7 +667,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     return Stack(
       children: [
-        
         Positioned.fill(
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
@@ -695,7 +699,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                   // 리스트 끝에 로딩 인디케이터 표시
                   return const Center(
                     child: CircularProgressIndicator(
-                        color: AppColors.primaryYellow),
+                      color: AppColors.primaryYellow,
+                    ),
                   );
                 }
                 return HomeFeedItemWidget(
@@ -734,7 +739,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 }
 
 /// 거래 요청 다이얼로그 (우아한 등장 애니메이션 포함)
-class _TradeRequestDialog extends StatefulWidget {
+class _TradeRequestDialog extends ConsumerStatefulWidget {
   final Item cardData;
   final List<ItemTradeOption> selectedTradeOptions;
   final Function(ItemTradeOption) onOptionSelected;
@@ -750,10 +755,11 @@ class _TradeRequestDialog extends StatefulWidget {
   });
 
   @override
-  State<_TradeRequestDialog> createState() => _TradeRequestDialogState();
+  ConsumerState<_TradeRequestDialog> createState() =>
+      _TradeRequestDialogState();
 }
 
-class _TradeRequestDialogState extends State<_TradeRequestDialog>
+class _TradeRequestDialogState extends ConsumerState<_TradeRequestDialog>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -762,24 +768,26 @@ class _TradeRequestDialogState extends State<_TradeRequestDialog>
   @override
   void initState() {
     super.initState();
+    // 다이얼로그가 열릴 때 이전 선택 상태 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = itemCardProvider(widget.cardData.itemId!);
+      ref.read(provider.notifier).clearOptions();
+    });
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-      ),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     // 애니메이션 시작
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -828,8 +836,8 @@ class _TradeRequestDialogState extends State<_TradeRequestDialog>
                             itemCategoryLabel: ItemCategories.fromServerName(
                               widget.cardData.itemCategory!,
                             ).label,
-                            itemCardImageUrl: widget.cardData.primaryImageUrl !=
-                                    null
+                            itemCardImageUrl:
+                                widget.cardData.primaryImageUrl != null
                                 ? widget.cardData.primaryImageUrl!
                                 : 'https://picsum.photos/400/300',
                             onOptionSelected: widget.onOptionSelected,
@@ -844,16 +852,32 @@ class _TradeRequestDialogState extends State<_TradeRequestDialog>
                               buttonText: '취소',
                               buttonWidth: 130,
                               buttonHeight: 44,
-                              enabledBackgroundColor:
-                                  AppColors.transactionRequestDialogCancelButton,
-                              enabledOnPressed: widget.onCancel,
+                              enabledBackgroundColor: AppColors
+                                  .transactionRequestDialogCancelButton,
+                              enabledOnPressed: () {
+                                // 카드의 선택된 옵션 초기화
+                                final provider = itemCardProvider(
+                                  widget.cardData.itemId!,
+                                );
+                                ref.read(provider.notifier).clearOptions();
+                                // 취소 콜백 호출
+                                widget.onCancel();
+                              },
                             ),
                             CompletionButton(
                               isEnabled: true,
                               buttonText: '요청 보내기',
                               buttonWidth: 171,
                               buttonHeight: 44,
-                              enabledOnPressed: widget.onSendRequest,
+                              enabledOnPressed: () {
+                                // 카드의 선택된 옵션 초기화
+                                final provider = itemCardProvider(
+                                  widget.cardData.itemId!,
+                                );
+                                ref.read(provider.notifier).clearOptions();
+                                // 요청 보내기 콜백 호출
+                                widget.onSendRequest();
+                              },
                             ),
                           ],
                         ),
