@@ -31,11 +31,7 @@ class HomeFeedItemWidget extends StatefulWidget {
   final HomeFeedItem item;
   final bool showBlur;
 
-  const HomeFeedItemWidget({
-    super.key,
-    required this.item,
-    required this.showBlur,
-  });
+  const HomeFeedItemWidget({super.key, required this.item, required this.showBlur});
 
   @override
   State<HomeFeedItemWidget> createState() => _HomeFeedItemWidgetState();
@@ -66,9 +62,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       }
 
       final itemApi = ItemApi();
-      final response = await itemApi.getItemDetail(
-        ItemRequest(itemId: widget.item.itemUuid),
-      );
+      final response = await itemApi.getItemDetail(ItemRequest(itemId: widget.item.itemUuid));
 
       if (mounted) {
         setState(() {
@@ -97,10 +91,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     // 네비게이션바 && 상태바 높이 : 실제 사용 가능 높이 계산
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final navigationBarHeight = 100.h; // 네비게이션바 높이 (80.h)
-    final availableHeight =
-        screenHeight -
-        bottomPadding -
-        navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
+    final availableHeight = screenHeight - bottomPadding - navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
     final registerBlurTextTopPosition = 205.h;
 
     return Container(
@@ -133,8 +124,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               itemId: widget.item.itemUuid ?? '',
                               imageSize: Size(screenWidth, screenWidth),
                               currentImageIndex: index,
-                              heroTag:
-                                  'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
+                              heroTag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                               homeFeedItem: widget.item,
                               isMyItem: false,
                               isRequestManagement: false,
@@ -149,31 +139,17 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         }
                       },
                       child: Hero(
-                        tag:
-                            'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
+                        tag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                         child: ClipRRect(
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(4.r),
-                            topRight: Radius.circular(4.r),
-                            bottomRight: Radius.circular(20.r),
-                            bottomLeft: Radius.circular(20.r),
-                          ),
-                          child: _buildImage(
-                            widget.item.imageUrls[index],
-                            Size(
-                              screenWidth,
-                              availableHeight - navigationBarHeight,
-                            ),
-                          ),
+                          borderRadius: BorderRadius.only(topLeft: Radius.circular(4.r), topRight: Radius.circular(4.r), bottomRight: Radius.circular(20.r), bottomLeft: Radius.circular(20.r)),
+                          child: _buildImage(widget.item.imageUrls[index], Size(screenWidth, availableHeight - navigationBarHeight)),
                         ),
                       ),
                     ),
                   ),
 
                   // 그라디언트 오버레이
-                  const Positioned.fill(
-                    child: IgnorePointer(child: BlackGradientContainer()),
-                  ),
+                  const Positioned.fill(child: IgnorePointer(child: BlackGradientContainer())),
 
                   // 블러 효과
                   if (widget.showBlur)
@@ -188,26 +164,13 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   if (!widget.showBlur)
                     Positioned(
                       right: 24.w,
-                      top: (MediaQuery.of(context).padding.top < 59
-                          ? 59.h
-                          : MediaQuery.of(context).padding.top),
+                      top: (MediaQuery.of(context).padding.top < 59 ? 59.h : MediaQuery.of(context).padding.top),
                       child: ReportMenuButton(
                         onReportPressed: () async {
-                          final bool? reported = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ReportScreen(
-                                itemId: widget.item.itemUuid ?? '',
-                              ),
-                            ),
-                          );
+                          final bool? reported = await Navigator.push(context, MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? '')));
 
                           if (reported == true && mounted) {
-                            await CommonModal.success(
-                              context: context,
-                              message: '신고가 접수되었습니다.',
-                              onConfirm: () => Navigator.of(context).pop(),
-                            );
+                            await CommonModal.success(context: context, message: '신고가 접수되었습니다.', onConfirm: () => Navigator.of(context).pop());
                           }
                         },
                       ),
@@ -231,12 +194,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                     width: 6.w,
                     height: 6.w,
                     margin: EdgeInsets.symmetric(horizontal: 2.w),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _currentImageIndex == index
-                          ? AppColors.primaryYellow
-                          : AppColors.opacity50White,
-                    ),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: _currentImageIndex == index ? AppColors.primaryYellow : AppColors.opacity50White),
                   ),
                 ),
               ),
@@ -252,24 +210,15 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   GestureDetector(
                     onTap: () async {
                       // 연타 방지 및 유효성 검사
-                      if (_isLiking ||
-                          widget.item.itemUuid == null ||
-                          widget.item.itemUuid!.isEmpty) {
+                      if (_isLiking || widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {
                         return;
                       }
 
                       // 내가 작성한 게시글인지 확인
-                      final isCurrentMember =
-                          await MemberManager.isCurrentMember(
-                            widget.item.authorMemberId,
-                          );
+                      final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
                       if (isCurrentMember) {
                         if (mounted) {
-                          CommonSnackBar.show(
-                            context: context,
-                            message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
-                            type: SnackBarType.info,
-                          );
+                          CommonSnackBar.show(context: context, message: '본인 게시글에는 좋아요를 누를 수 없습니다.', type: SnackBarType.info);
                         }
                         return;
                       }
@@ -277,18 +226,14 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       setState(() => _isLiking = true);
                       try {
                         final itemApi = ItemApi();
-                        final response = await itemApi.postLike(
-                          ItemRequest(itemId: widget.item.itemUuid),
-                        );
+                        final response = await itemApi.postLike(ItemRequest(itemId: widget.item.itemUuid));
                         if (!mounted) return;
                         setState(() {
                           _isLiked = response.isLiked == true;
                           if (response.item?.likeCount != null) {
                             _likeCount = response.item?.likeCount ?? _likeCount;
                           } else {
-                            _likeCount = _isLiked
-                                ? _likeCount + 1
-                                : (_likeCount > 0 ? _likeCount - 1 : 0);
+                            _likeCount = _isLiked ? _likeCount + 1 : (_likeCount > 0 ? _likeCount - 1 : 0);
                           }
                         });
                       } catch (e) {
@@ -299,18 +244,13 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         }
                       }
                     },
-                    child: SvgPicture.asset(
-                      _isLiked
-                          ? 'assets/images/like-heart-icon.svg'
-                          : 'assets/images/dislike-heart-icon.svg',
-                    ),
+                    child: SvgPicture.asset(_isLiked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg'),
                   ),
                   SizedBox(height: 2.h),
                   Text(_likeCount.toString(), style: CustomTextStyles.p2),
                 ],
               ),
             ),
-          
 
           // 하단 정보 패널
           Positioned(
@@ -335,9 +275,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             widget.item.name.trim(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: CustomTextStyles.h3.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
                           ),
 
                           SizedBox(height: 8.h),
@@ -345,18 +283,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           // 위치 및 날짜 정보
                           Row(
                             children: [
-                              Icon(
-                                AppIcons.location,
-                                color: AppColors.opacity80White,
-                                size: 13.sp,
-                              ),
+                              Icon(AppIcons.location, color: AppColors.opacity80White, size: 13.sp),
                               SizedBox(width: 4.w),
-                              Text(
-                                '${widget.item.location} • $formattedDate',
-                                style: CustomTextStyles.p3.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              Text('${widget.item.location} • $formattedDate', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500)),
                             ],
                           ),
 
@@ -365,16 +294,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           Row(
                             children: [
                               // 사용감 태그 - ItemDetail과 동일한 위젯 사용
-                              ItemDetailConditionTag(
-                                condition: widget.item.itemCondition.label,
-                              ),
+                              ItemDetailConditionTag(condition: widget.item.itemCondition.label),
                               SizedBox(width: 4.w),
                               // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
-                              ...widget.item.transactionTypes.map(
-                                (type) => ItemDetailTradeOptionTag(
-                                  option: type.label,
-                                ),
-                              ),
+                              ...widget.item.transactionTypes.map((type) => ItemDetailTradeOptionTag(option: type.label)),
                             ],
                           ),
 
@@ -383,18 +306,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           Row(
                             children: [
                               // 물품 가격
-                              Text(
-                                "$formattedPrice원",
-                                style: CustomTextStyles.p1.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              Text("$formattedPrice원", style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
 
                               SizedBox(width: 8.w),
 
-                              _useAiPrice
-                                  ? const AiBadgeWidget()
-                                  : const SizedBox(),
+                              _useAiPrice ? const AiBadgeWidget() : const SizedBox(),
                             ],
                           ),
                         ],
@@ -415,22 +331,13 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               ? null
                               : () {
                                   if (widget.item.authorMemberId != null) {
-                                    context.navigateTo(
-                                      screen: ProfileScreen(
-                                        memberId: widget.item.authorMemberId!,
-                                      ),
-                                    );
+                                    context.navigateTo(screen: ProfileScreen(memberId: widget.item.authorMemberId!));
                                   }
                                 },
                           child: ClipOval(
                             child: BlurWrapper(
                               enabled: widget.showBlur,
-                              child: UserProfileCircularAvatar(
-                                avatarSize: const Size(50, 50),
-                                profileUrl: widget.item.profileUrl.isNotEmpty
-                                    ? widget.item.profileUrl
-                                    : null,
-                              ),
+                              child: UserProfileCircularAvatar(avatarSize: const Size(50, 50), profileUrl: widget.item.profileUrl.isNotEmpty ? widget.item.profileUrl : null),
                             ),
                           ),
                         ),
@@ -460,23 +367,14 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       children: [
                         TextSpan(
                           text: '내 물건을 등록',
-                          style: CustomTextStyles.h1.copyWith(
-                            color: AppColors.primaryYellow,
-                            height: 1.3,
-                          ),
+                          style: CustomTextStyles.h1.copyWith(color: AppColors.primaryYellow, height: 1.3),
                         ),
-                        TextSpan(
-                          text: '하고\n물건을 교환해보세요!',
-                          style: CustomTextStyles.h1.copyWith(height: 1.3),
-                        ),
+                        TextSpan(text: '하고\n물건을 교환해보세요!', style: CustomTextStyles.h1.copyWith(height: 1.3)),
                       ],
                     ),
                   ),
                   SizedBox(height: 56.h),
-                  SvgPicture.asset(
-                    'assets/images/first-item-post-box.svg',
-                    width: 133.w,
-                  ),
+                  SvgPicture.asset('assets/images/first-item-post-box.svg', width: 133.w),
                 ],
               ),
             ),
@@ -507,10 +405,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
         return Center(
           child: CircularProgressIndicator(
             color: AppColors.primaryYellow,
-            value: loadingProgress.expectedTotalBytes != null
-                ? loadingProgress.cumulativeBytesLoaded /
-                      (loadingProgress.expectedTotalBytes ?? 1)
-                : null,
+            value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1) : null,
           ),
         );
       },

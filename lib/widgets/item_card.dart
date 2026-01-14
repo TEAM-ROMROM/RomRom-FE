@@ -25,11 +25,7 @@ class ItemCard extends ConsumerWidget {
     this.itemCategoryLabel = '물품 카테고리',
     this.itemName = '물품 이름',
     this.itemCardImageUrl = 'https://picsum.photos/400/300',
-    this.itemOptions = const [
-      ItemTradeOption.extraCharge,
-      ItemTradeOption.directOnly,
-      ItemTradeOption.deliveryOnly,
-    ],
+    this.itemOptions = const [ItemTradeOption.extraCharge, ItemTradeOption.directOnly, ItemTradeOption.deliveryOnly],
     this.isSmall = false,
     this.onOptionSelected, // 콜백 초기화
   });
@@ -54,41 +50,18 @@ class ItemCard extends ConsumerWidget {
             final optionRadius = cs.radius(6);
             final boxMargin = cs.margin(t: 3, b: 4, r: 4, l: 4);
 
-            final Color optionChipColor = isSmall
-                ? AppColors.textColorBlack
-                : AppColors.itemCardOptionChip;
-            final Color optionChipSelectedColor = isSmall
-                ? AppColors.textColorBlack
-                : AppColors.primaryYellow;
-            final Color optionChipTextColor = isSmall
-                ? AppColors.textColorWhite
-                : AppColors.textColorWhite;
-            final Color optionChipSelectedTextColor = isSmall
-                ? AppColors.textColorWhite
-                : AppColors.textColorBlack;
+            final Color optionChipColor = isSmall ? AppColors.textColorBlack : AppColors.itemCardOptionChip;
+            final Color optionChipSelectedColor = isSmall ? AppColors.textColorBlack : AppColors.primaryYellow;
+            final Color optionChipTextColor = isSmall ? AppColors.textColorWhite : AppColors.textColorWhite;
+            final Color optionChipSelectedTextColor = isSmall ? AppColors.textColorWhite : AppColors.textColorBlack;
 
             // 텍스트 스타일 (작은 카드에서는 축소)
             final double smallTextScale = isSmall ? 0.9 : 1.0;
-            final categoryTextStyle = CustomTextStyles.p3.copyWith(
-              fontSize: cs.fontSize(
-                CustomTextStyles.p3.fontSize! * smallTextScale,
-              ),
-              color: AppColors.itemCardText.withValues(alpha: 0.5),
-            );
+            final categoryTextStyle = CustomTextStyles.p3.copyWith(fontSize: cs.fontSize(CustomTextStyles.p3.fontSize! * smallTextScale), color: AppColors.itemCardText.withValues(alpha: 0.5));
 
-            final nameTextStyle = CustomTextStyles.p1.copyWith(
-              fontSize: cs.fontSize(
-                CustomTextStyles.p1.fontSize! * (isSmall ? 0.8 : 1.0),
-              ),
-              color: AppColors.itemCardText,
-            );
+            final nameTextStyle = CustomTextStyles.p1.copyWith(fontSize: cs.fontSize(CustomTextStyles.p1.fontSize! * (isSmall ? 0.8 : 1.0)), color: AppColors.itemCardText);
 
-            final optionTextStyle = CustomTextStyles.p3.copyWith(
-              fontSize: cs.fontSize(
-                CustomTextStyles.p3.fontSize! * smallTextScale,
-              ),
-              color: AppColors.itemCardText.withValues(alpha: 0.5),
-            );
+            final optionTextStyle = CustomTextStyles.p3.copyWith(fontSize: cs.fontSize(CustomTextStyles.p3.fontSize! * smallTextScale), color: AppColors.itemCardText.withValues(alpha: 0.5));
 
             return AspectRatio(
               aspectRatio: 310 / 496,
@@ -97,23 +70,10 @@ class ItemCard extends ConsumerWidget {
                   filter: ImageFilter.blur(sigmaX: cs.s(30), sigmaY: cs.s(30)),
                   child: Container(
                     width: constraints.maxWidth,
-                    decoration:
-                        buildBoxDecoration(
-                          AppColors.itemCardBackground,
-                          cardRadius,
-                        ).copyWith(
-                          border: Border.all(
-                            color: AppColors.itemCardBorder,
-                            width: borderWidth,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.itemCardShadow,
-                              offset: Offset(4, 4),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
+                    decoration: buildBoxDecoration(AppColors.itemCardBackground, cardRadius).copyWith(
+                      border: Border.all(color: AppColors.itemCardBorder, width: borderWidth),
+                      boxShadow: const [BoxShadow(color: AppColors.itemCardShadow, offset: Offset(4, 4), blurRadius: 10)],
+                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -123,10 +83,7 @@ class ItemCard extends ConsumerWidget {
                           child: AspectRatio(
                             aspectRatio: 31 / 35,
                             child: ClipRRect(
-                              borderRadius: BorderRadius.only(
-                                topLeft: cardRadius.topLeft,
-                                topRight: cardRadius.topRight,
-                              ),
+                              borderRadius: BorderRadius.only(topLeft: cardRadius.topLeft, topRight: cardRadius.topRight),
                               child: _buildImage(itemCardImageUrl, cs),
                             ),
                           ),
@@ -142,19 +99,9 @@ class ItemCard extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    itemCategoryLabel,
-                                    style: categoryTextStyle,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  Text(itemCategoryLabel, style: categoryTextStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
                                   cs.sizedBoxH(8),
-                                  Text(
-                                    itemName,
-                                    style: nameTextStyle,
-                                    maxLines: isSmall ? 1 : 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  Text(itemName, style: nameTextStyle, maxLines: isSmall ? 1 : 2, overflow: TextOverflow.ellipsis),
                                 ],
                               ),
                             ),
@@ -162,14 +109,8 @@ class ItemCard extends ConsumerWidget {
                             Container(
                               width: double.infinity,
                               margin: boxMargin,
-                              constraints: BoxConstraints(
-                                minHeight: cs.s(60),
-                                maxHeight: cs.s(75),
-                              ),
-                              decoration: buildBoxDecoration(
-                                Colors.white.withValues(alpha: 0.3),
-                                optionRadius,
-                              ),
+                              constraints: BoxConstraints(minHeight: cs.s(60), maxHeight: cs.s(75)),
+                              decoration: buildBoxDecoration(Colors.white.withValues(alpha: 0.3), optionRadius),
                               child: Padding(
                                 padding: optionPadding,
                                 child: Column(
@@ -188,19 +129,13 @@ class ItemCard extends ConsumerWidget {
                                                 itemId: itemId,
                                                 itemOption: option,
                                                 chipColor: optionChipColor,
-                                                chipSelectedColor:
-                                                    optionChipSelectedColor,
-                                                chipTextColor:
-                                                    optionChipTextColor,
-                                                chipSelectedTextColor:
-                                                    optionChipSelectedTextColor,
+                                                chipSelectedColor: optionChipSelectedColor,
+                                                chipTextColor: optionChipTextColor,
+                                                chipSelectedTextColor: optionChipSelectedTextColor,
                                                 externalScale: cs,
                                                 onTap: () {
-                                                  if (onOptionSelected !=
-                                                      null) {
-                                                    onOptionSelected!(
-                                                      option,
-                                                    ); // 선택된 옵션 반환
+                                                  if (onOptionSelected != null) {
+                                                    onOptionSelected!(option); // 선택된 옵션 반환
                                                   }
                                                 },
                                               ),

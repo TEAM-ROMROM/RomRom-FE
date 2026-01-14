@@ -23,8 +23,7 @@ class HomeTabCardHand extends StatefulWidget {
   State<HomeTabCardHand> createState() => _HomeTabCardHandState();
 }
 
-class _HomeTabCardHandState extends State<HomeTabCardHand>
-    with TickerProviderStateMixin {
+class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderStateMixin {
   // 애니메이션 컨트롤러들
   late AnimationController _fanController;
   late AnimationController _pullController;
@@ -105,39 +104,19 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       ..value = _orbitAngle;
 
     // 아이콘 애니메이션 초기화
-    _iconAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 700),
-      vsync: this,
-    )..repeat(reverse: true); // 반복 애니메이션 (위아래로 움직임)
+    _iconAnimationController = AnimationController(duration: const Duration(milliseconds: 700), vsync: this)..repeat(reverse: true); // 반복 애니메이션 (위아래로 움직임)
 
-    _iconAnimation = Tween<double>(begin: 0.0, end: 10.0.h).animate(
-      CurvedAnimation(
-        parent: _iconAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _iconAnimation = Tween<double>(begin: 0.0, end: 10.0.h).animate(CurvedAnimation(parent: _iconAnimationController, curve: Curves.easeInOut));
   }
 
   void _initializeAnimations() {
     // 팬 애니메이션 (카드 펼치기)
-    _fanController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _fanAnimation = CurvedAnimation(
-      parent: _fanController,
-      curve: Curves.easeOutExpo,
-    );
+    _fanController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
+    _fanAnimation = CurvedAnimation(parent: _fanController, curve: Curves.easeOutExpo);
 
     // 카드 뽑기 애니메이션
-    _pullController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _pullAnimation = CurvedAnimation(
-      parent: _pullController,
-      curve: Curves.easeOut,
-    );
+    _pullController = AnimationController(duration: const Duration(milliseconds: 150), vsync: this);
+    _pullAnimation = CurvedAnimation(parent: _pullController, curve: Curves.easeOut);
 
     // 초기 팬 애니메이션 실행
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -222,16 +201,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
   // 좌표에서 카드 찾기
   String? _findCardAtPosition(Offset localPosition) {
-    final transforms = List.generate(
-      _cards.length,
-      (index) => _calculateCardTransform(context, index, _cards.length),
-    );
+    final transforms = List.generate(_cards.length, (index) => _calculateCardTransform(context, index, _cards.length));
 
     final indexedCards = List.generate(_cards.length, (index) => index)
       ..sort((a, b) {
-        return (transforms[b]['zIndex'] as int).compareTo(
-          transforms[a]['zIndex'] as int,
-        );
+        return (transforms[b]['zIndex'] as int).compareTo(transforms[a]['zIndex'] as int);
       });
 
     for (final index in indexedCards) {
@@ -248,11 +222,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
   }
 
   // 카드 위치 및 회전 계산
-  Map<String, dynamic> _calculateCardTransform(
-    BuildContext context,
-    int index,
-    int totalCards,
-  ) {
+  Map<String, dynamic> _calculateCardTransform(BuildContext context, int index, int totalCards) {
     final double midIndex = (totalCards - 1) / 2;
     final double relativeIndex = index - midIndex;
     final double angle = (relativeIndex * _deckStepAngle) + _orbitAngle;
@@ -264,32 +234,23 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     final double cardCenterX = centerX + _deckRadius * math.cos(angle);
     final double cardCenterY = centerY + _deckRadius * math.sin(angle);
 
-    final double verticalShift =
-        _deckCenterYOffset - (_baseBottom + (_cardHeight / 2));
+    final double verticalShift = _deckCenterYOffset - (_baseBottom + (_cardHeight / 2));
     final double adjustedTop = cardCenterY - verticalShift - (_cardHeight / 2);
 
     final double tangent = angle + math.pi / 2;
     final double proximity = 1.0 - (relativeIndex.abs() / (midIndex + 1e-6));
     // 카드가 1개일 때는 tilt를 0으로 설정
     final double tilt = totalCards == 1 ? 0 : _deckMaxTilt * proximity;
-    final int zIndex =
-        ((_deckDepth * proximity) + (totalCards - relativeIndex.abs())).round();
+    final int zIndex = ((_deckDepth * proximity) + (totalCards - relativeIndex.abs())).round();
 
-    return {
-      'left': cardCenterX - (_cardWidth / 2),
-      'top': adjustedTop,
-      'angle': tangent + tilt,
-      'centerX': cardCenterX,
-      'zIndex': zIndex,
-    };
+    return {'left': cardCenterX - (_cardWidth / 2), 'top': adjustedTop, 'angle': tangent + tilt, 'centerX': cardCenterX, 'zIndex': zIndex};
   }
 
   Widget _buildCard(Item cardData, int index, int totalCards) {
     final cardId = cardData.itemId;
     final isPulled = _pulledCardId == cardId;
 
-    final isHovered =
-        _hasStartedCardDrag && _hoveredCardId == cardId && !isPulled;
+    final isHovered = _hasStartedCardDrag && _hoveredCardId == cardId && !isPulled;
 
     final transform = _calculateCardTransform(context, index, totalCards);
     final bool isPressed = _pressedCardId == cardId;
@@ -299,31 +260,15 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
-        final staggeredFanValue = (_fanAnimation.value - staggerDelay).clamp(
-          0.0,
-          1.0,
-        );
+        final staggeredFanValue = (_fanAnimation.value - staggerDelay).clamp(0.0, 1.0);
 
         final size = MediaQuery.of(context).size;
         final double fanOriginLeft = size.width / 2 - _cardWidth / 2;
-        final double fanOriginTop =
-            _deckCenterYOffset - (_cardHeight / 2) - (_baseBottom * 0.2);
+        final double fanOriginTop = _deckCenterYOffset - (_cardHeight / 2) - (_baseBottom * 0.2);
 
-        double left = lerpDouble(
-          fanOriginLeft,
-          transform['left'] as double,
-          staggeredFanValue,
-        )!;
-        double top = lerpDouble(
-          fanOriginTop,
-          transform['top'] as double,
-          staggeredFanValue,
-        )!;
-        double angle = lerpDouble(
-          0.0,
-          transform['angle'] as double,
-          staggeredFanValue,
-        )!;
+        double left = lerpDouble(fanOriginLeft, transform['left'] as double, staggeredFanValue)!;
+        double top = lerpDouble(fanOriginTop, transform['top'] as double, staggeredFanValue)!;
+        double angle = lerpDouble(0.0, transform['angle'] as double, staggeredFanValue)!;
         double scale = 1.0;
         double opacity = staggeredFanValue;
 
@@ -366,15 +311,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
               height: _cardHeight,
               decoration: BoxDecoration(
                 // 선택된 카드에 노란색 테두리 추가
-                border: (isHovered || isPulled)
-                    ? Border.all(color: AppColors.primaryYellow, width: 2)
-                    : null,
+                border: (isHovered || isPulled) ? Border.all(color: AppColors.primaryYellow, width: 2) : null,
                 borderRadius: BorderRadius.circular(4.r),
                 boxShadow: [
                   BoxShadow(
-                    color: isHovered || isPulled
-                        ? AppColors.primaryBlack.withValues(alpha: 0.3)
-                        : AppColors.opacity20Black,
+                    color: isHovered || isPulled ? AppColors.primaryBlack.withValues(alpha: 0.3) : AppColors.opacity20Black,
                     blurRadius: isHovered || isPulled ? 20 : 10,
                     spreadRadius: 0,
                     offset: Offset(0, isHovered || isPulled ? 10 : 5),
@@ -387,12 +328,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                   itemId: cardId!,
                   isSmall: true,
                   itemName: cardData.itemName ?? '아이템',
-                  itemCategoryLabel: ItemCategories.fromServerName(
-                    cardData.itemCategory!,
-                  ).label,
-                  itemCardImageUrl: cardData.primaryImageUrl != null
-                      ? cardData.primaryImageUrl!
-                      : 'https://picsum.photos/400/300',
+                  itemCategoryLabel: ItemCategories.fromServerName(cardData.itemCategory!).label,
+                  itemCardImageUrl: cardData.primaryImageUrl != null ? cardData.primaryImageUrl! : 'https://picsum.photos/400/300',
                 ),
               ),
             ),
@@ -456,8 +393,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
     if (!_hasStartedCardDrag) {
       final double dragDx = details.localPosition.dx - _orbitDragStart;
-      final double targetAngle =
-          _orbitAccumulated + (dragDx * _orbitSensitivity);
+      final double targetAngle = _orbitAccumulated + (dragDx * _orbitSensitivity);
 
       final double minAngle = _getMinOrbitAngle();
       final double maxAngle = _getMaxOrbitAngle();
@@ -491,8 +427,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     if (_panStartedOnCard && _startCardId != null) {
       // 드래그 임계치 확인 - 만약 일정 거리 이상 이동하면 롱프레스 타이머 취소
       const double dragThreshold = 20.0; // px
-      if (_longPressTimer != null &&
-          (dispX.abs() > dragThreshold || dispY.abs() > dragThreshold)) {
+      if (_longPressTimer != null && (dispX.abs() > dragThreshold || dispY.abs() > dragThreshold)) {
         _longPressTimer?.cancel();
         _longPressTimer = null;
       }
@@ -513,34 +448,21 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         });
 
         // ⬇️ 드롭존 overlap 체크 → 그림자 강도 갱신
-        final deckBox =
-            _deckKey.currentContext?.findRenderObject() as RenderBox?;
+        final deckBox = _deckKey.currentContext?.findRenderObject() as RenderBox?;
         final dropRect = _globalRectOf(_dropZoneKey);
         if (deckBox != null && dropRect != null && _pulledCardId != null) {
           // 현재 카드의 위치 계산
-          final cardIndex = _cards.indexWhere(
-            (card) => card.itemId == _pulledCardId,
-          );
+          final cardIndex = _cards.indexWhere((card) => card.itemId == _pulledCardId);
           if (cardIndex != -1) {
-            final transform = _calculateCardTransform(
-              context,
-              cardIndex,
-              _cards.length,
-            );
+            final transform = _calculateCardTransform(context, cardIndex, _cards.length);
             final pullValue = _pullAnimation.value;
 
             // 카드의 실제 위치 계산 (pull 효과 포함)
-            final cardLeft =
-                (transform['left'] as double) + _pullOffset.dx * pullValue;
-            final cardTop =
-                (transform['top'] as double) +
-                _pullOffset.dy * pullValue -
-                _pullLift * pullValue;
+            final cardLeft = (transform['left'] as double) + _pullOffset.dx * pullValue;
+            final cardTop = (transform['top'] as double) + _pullOffset.dy * pullValue - _pullLift * pullValue;
 
             // 카드의 글로벌 위치
-            final cardGlobalTopLeft = deckBox.localToGlobal(
-              Offset(cardLeft, cardTop),
-            );
+            final cardGlobalTopLeft = deckBox.localToGlobal(Offset(cardLeft, cardTop));
 
             // 카드의 전체 영역 (Rect)
             final cardRect = cardGlobalTopLeft & Size(_cardWidth, _cardHeight);
@@ -614,17 +536,12 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         final double angularVelocity = horizontalVelocity * _orbitSensitivity;
 
         // 이미 경계 근처면 무시
-        if ((_orbitAngle <= minAngle && angularVelocity < 0) ||
-            (_orbitAngle >= maxAngle && angularVelocity > 0)) {
+        if ((_orbitAngle <= minAngle && angularVelocity < 0) || (_orbitAngle >= maxAngle && angularVelocity > 0)) {
           _orbitController?.value = _orbitAngle;
           return;
         }
 
-        final simulation = FrictionSimulation(
-          0.12,
-          _orbitAngle,
-          angularVelocity,
-        );
+        final simulation = FrictionSimulation(0.12, _orbitAngle, angularVelocity);
 
         late VoidCallback bounceListener;
         bounceListener = () {
@@ -643,10 +560,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
         _orbitController?.animateWith(simulation).whenComplete(() {
           if (!mounted) return;
           _orbitController?.removeListener(bounceListener);
-          final clampedValue = (_orbitController?.value ?? _orbitAngle).clamp(
-            minAngle,
-            maxAngle,
-          );
+          final clampedValue = (_orbitController?.value ?? _orbitAngle).clamp(minAngle, maxAngle);
           _orbitController?.value = clampedValue;
           _orbitAccumulated = clampedValue;
         });
@@ -687,11 +601,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                 if (_hasStartedCardDrag)
                   Positioned(
                     top: -MediaQuery.of(context).size.height,
-                    child: Container(
-                      height: MediaQuery.of(context).size.height + 50.h,
-                      width: MediaQuery.of(context).size.width,
-                      color: AppColors.opacity30PrimaryBlack,
-                    ),
+                    child: Container(height: MediaQuery.of(context).size.height + 50.h, width: MediaQuery.of(context).size.width, color: AppColors.opacity30PrimaryBlack),
                   ),
                 // 드롭 영역 표시 (카드 뽑기 중일 때만)
                 if (_pulledCardId != null)
@@ -710,8 +620,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                             decoration: BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.cardDropZoneShadow
-                                      .withValues(alpha: 0.8 * _dropShadowT),
+                                  color: AppColors.cardDropZoneShadow.withValues(alpha: 0.8 * _dropShadowT),
                                   blurRadius: 30 * (0.5 + 0.5 * _dropShadowT),
                                   spreadRadius: 2 * _dropShadowT,
                                   offset: const Offset(0, 0),
@@ -723,19 +632,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
-                                  BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 30,
-                                      sigmaY: 30,
-                                    ),
-                                    child: const SizedBox.expand(),
-                                  ),
+                                  BackdropFilter(filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30), child: const SizedBox.expand()),
                                   Container(
                                     decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: AppColors.cardDropZoneBorder,
-                                        width: 2.w,
-                                      ),
+                                      border: Border.all(color: AppColors.cardDropZoneBorder, width: 2.w),
                                       borderRadius: BorderRadius.circular(8.r),
                                       color: AppColors.cardDropZoneBackground,
                                     ),
@@ -749,22 +649,12 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                           animation: _iconAnimation,
                           builder: (context, child) {
                             return Padding(
-                              padding: EdgeInsets.only(
-                                top: 32.0.h - _iconAnimation.value,
-                                bottom: 20.h + _iconAnimation.value,
-                              ),
-                              child: const Icon(
-                                AppIcons.cardDrag,
-                                color: AppColors.primaryYellow,
-                              ),
+                              padding: EdgeInsets.only(top: 32.0.h - _iconAnimation.value, bottom: 20.h + _iconAnimation.value),
+                              child: const Icon(AppIcons.cardDrag, color: AppColors.primaryYellow),
                             );
                           },
                         ),
-                        Text(
-                          "위로 드래그하여\n거래방식 선택하기",
-                          textAlign: TextAlign.center,
-                          style: CustomTextStyles.p2.copyWith(height: 1.4),
-                        ),
+                        Text("위로 드래그하여\n거래방식 선택하기", textAlign: TextAlign.center, style: CustomTextStyles.p2.copyWith(height: 1.4)),
                       ],
                     ),
                   ),
