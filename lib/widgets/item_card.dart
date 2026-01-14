@@ -26,8 +26,8 @@ class ItemCard extends ConsumerWidget {
     this.itemName = '물품 이름',
     this.itemCardImageUrl = 'https://picsum.photos/400/300',
     this.itemOptions = const [
-      ItemTradeOption.extraCharge,
-      ItemTradeOption.directOnly,
+      ItemTradeOption.additionalPrice,
+      ItemTradeOption.directTradeOnly,
       ItemTradeOption.deliveryOnly
     ],
     this.isSmall = false,

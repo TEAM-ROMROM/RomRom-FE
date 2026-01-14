@@ -22,6 +22,7 @@ class ChatMessage extends BaseEntity {
   final String? senderId; // UUID
   final String? recipientId; // UUID
   final String? content;
+  final List<String>? imageUrls;
   final MessageType? type;
 
   ChatMessage({
@@ -32,6 +33,7 @@ class ChatMessage extends BaseEntity {
     this.senderId,
     this.recipientId,
     this.content,
+    this.imageUrls,
     this.type,
   });
 
@@ -47,13 +49,21 @@ extension ChatMessageCopy on ChatMessage {
     String? chatMessageId,
     String? chatRoomId,
     String? senderId,
+    String? recipientId,
     String? content,
+    List<String>? imageUrls,
+    MessageType? type,
     DateTime? createdDate,
+    DateTime? updatedDate,
   }) => ChatMessage(
     chatMessageId: chatMessageId ?? this.chatMessageId,
     chatRoomId: chatRoomId ?? this.chatRoomId,
     senderId: senderId ?? this.senderId,
+    recipientId: recipientId ?? this.recipientId,
     content: content ?? this.content,
+    imageUrls: imageUrls ?? this.imageUrls,
+    type: type ?? this.type,
     createdDate: createdDate ?? this.createdDate,
+    updatedDate: updatedDate ?? this.updatedDate,
   );
 }
