@@ -1,14 +1,10 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -16,20 +12,16 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
-import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
-import 'package:romrom_fe/widgets/item_card.dart';
 
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/trade_request_screen.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -79,9 +71,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   // 내 카드 목록 (나중에 API에서 가져올 예정)
   List<Item> _myCards = [];
-
-  // 선택된 거래 옵션 저장 리스트
-  final List<ItemTradeOption> _selectedTradeOptions = [];
 
   @override
   void initState() {
@@ -465,7 +454,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       final d = details[index];
 
       // 카테고리/상태/옵션 매핑
-      ItemCondition cond = ItemCondition.newItem;
+      ItemCondition cond = ItemCondition.sealed;
       try {
         cond = item_cond.ItemCondition.values
             .firstWhere((e) => e.serverName == d.itemCondition);
@@ -551,83 +540,27 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
   }
 
-  /// 카드 드롭 핸들러 (거래 요청)
-  void _handleCardDrop(String cardId) async {
-    final cardData = _myCards.firstWhere((card) => card.itemId == cardId);
+  /// 카드 드롭 핸들러 (거래 요청) - 요청하기 화면으로 이동
+  void _handleCardDrop(String cardId) {
+    final feedItem = _feedItems[_currentFeedIndex];
 
-    // 다이얼로그 띄우기 전에 (선택) 이미지 프리캐시
-    await precacheImage(
-        NetworkImage(
-          cardData.primaryImageUrl != null
-              ? cardData.primaryImageUrl!
-              : 'https://picsum.photos/400/300',
-        ),
-        context);
+    // HomeFeedItem을 Item으로 변환
+    final targetItem = Item(
+      itemId: feedItem.itemUuid,
+      itemName: feedItem.name,
+      price: feedItem.price,
+      itemCondition: feedItem.itemCondition.serverName,
+      itemTradeOptions:
+          feedItem.transactionTypes.map((e) => e.serverName).toList(),
+    );
 
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      barrierColor: Colors.transparent,
-      builder: (context) {
-        return _TradeRequestDialog(
-          cardData: cardData,
-          selectedTradeOptions: _selectedTradeOptions,
-          onOptionSelected: (selectedOption) {
-            debugPrint('선택된 거래 옵션: $selectedOption');
-            setState(() {
-              if (!_selectedTradeOptions.contains(selectedOption)) {
-                _selectedTradeOptions.add(selectedOption);
-              }
-            });
-          },
-          onCancel: () {
-            setState(() {
-              _selectedTradeOptions.clear();
-            });
-            Navigator.pop(context);
-          },
-          onSendRequest: () async {
-            try {
-              final api = TradeApi();
-
-              // 거래 요청 API 호출
-              await api.requestTrade(TradeRequest(
-                giveItemId: cardData.itemId!,
-                takeItemId: _feedItems[_currentFeedIndex].itemUuid,
-                itemTradeOptions: _selectedTradeOptions
-                    .map((option) => option.serverName)
-                    .toList(),
-              ));
-
-              // 성공 토스트 표시
-              if (context.mounted) {
-                CommonSnackBar.show(
-                  context: context,
-                  message: '거래 요청이 전송되었습니다.',
-                  type: SnackBarType.success,
-                );
-              }
-            } catch (e) {
-              debugPrint('거래 요청 중 오류: $e');
-              // 에러 코드 파싱
-              final messageForUser = ErrorUtils.getErrorMessage(e);
-
-              await CommonModal.error(
-                context: context,
-                message: messageForUser,
-                onConfirm: () => Navigator.of(context).pop(),
-              );
-            } finally {
-              // 선택된 옵션 초기화
-              setState(() {
-                _selectedTradeOptions.clear();
-              });
-
-              Navigator.pop(context);
-            }
-          },
-        );
-      },
+    context.navigateTo(
+      screen: TradeRequestScreen(
+        targetItem: targetItem,
+        targetImageUrl:
+            feedItem.imageUrls.isNotEmpty ? feedItem.imageUrls[0] : null,
+        preSelectedCardId: cardId,
+      ),
     );
   }
 
@@ -727,143 +660,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
       ],
-    );
-  }
-}
-
-/// 거래 요청 다이얼로그 (우아한 등장 애니메이션 포함)
-class _TradeRequestDialog extends StatefulWidget {
-  final Item cardData;
-  final List<ItemTradeOption> selectedTradeOptions;
-  final Function(ItemTradeOption) onOptionSelected;
-  final VoidCallback onCancel;
-  final VoidCallback onSendRequest;
-
-  const _TradeRequestDialog({
-    required this.cardData,
-    required this.selectedTradeOptions,
-    required this.onOptionSelected,
-    required this.onCancel,
-    required this.onSendRequest,
-  });
-
-  @override
-  State<_TradeRequestDialog> createState() => _TradeRequestDialogState();
-}
-
-class _TradeRequestDialogState extends State<_TradeRequestDialog>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-      ),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
-
-    // 애니메이션 시작
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _fadeAnimation.value,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: 30 * _fadeAnimation.value,
-                sigmaY: 30 * _fadeAnimation.value,
-              ),
-              child: Center(
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 40.0.w,
-                      vertical: 65.0.h,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(height: 5.h),
-                        SizedBox(
-                          width: 310.w,
-                          height: 496.h,
-                          child: ItemCard(
-                            itemId: widget.cardData.itemId!,
-                            itemName: widget.cardData.itemName!,
-                            itemCategoryLabel: ItemCategories.fromServerName(
-                              widget.cardData.itemCategory!,
-                            ).label,
-                            itemCardImageUrl: widget.cardData.primaryImageUrl !=
-                                    null
-                                ? widget.cardData.primaryImageUrl!
-                                : 'https://picsum.photos/400/300',
-                            onOptionSelected: widget.onOptionSelected,
-                          ),
-                        ),
-                        SizedBox(height: 32.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            CompletionButton(
-                              isEnabled: true,
-                              buttonText: '취소',
-                              buttonWidth: 130,
-                              buttonHeight: 44,
-                              enabledBackgroundColor:
-                                  AppColors.transactionRequestDialogCancelButton,
-                              enabledOnPressed: widget.onCancel,
-                            ),
-                            CompletionButton(
-                              isEnabled: true,
-                              buttonText: '요청 보내기',
-                              buttonWidth: 171,
-                              buttonHeight: 44,
-                              enabledOnPressed: widget.onSendRequest,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 }

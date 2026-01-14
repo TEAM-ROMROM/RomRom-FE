@@ -40,6 +40,7 @@ import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
 import 'package:romrom_fe/screens/trade_location_detail_screen.dart';
+import 'package:romrom_fe/screens/trade_request_screen.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -1041,15 +1042,11 @@ class _ItemDetailDescriptionScreenState
   void _navigateToRequestScreen() {
     if (item == null) return;
 
-    // TODO : 물품 요청 화면 추가
-    // context.navigateTo(
-    //   screen: Screen(
-    //     itemId: item!.itemId!,
-    //     itemName: item!.itemName!,
-    //     itemPrice: item!.price!,
-    //     itemImageUrl:
-    //         imageUrls.isNotEmpty ? imageUrls[0] : null,
-    //   ),
-    // );
+    context.navigateTo(
+      screen: TradeRequestScreen(
+        targetItem: item!,
+        targetImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : null,
+      ),
+    );
   }
 }
