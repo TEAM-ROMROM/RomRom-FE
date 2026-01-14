@@ -137,6 +137,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               homeFeedItem: widget.item,
                               isMyItem: false,
                               isRequestManagement: false,
+                              isTradeRequestAllowed: true,
                             ),
                           ),
                         );
