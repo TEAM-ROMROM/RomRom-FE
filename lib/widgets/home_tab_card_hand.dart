@@ -455,9 +455,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
 
     // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
     if (!_hasStartedCardDrag) {
-      final double dragDx = -details.localPosition.dx + _orbitDragStart;
+      final double dragDx = details.localPosition.dx - _orbitDragStart;
       final double targetAngle =
-          _orbitAccumulated + (-dragDx * _orbitSensitivity);
+          _orbitAccumulated + (dragDx * _orbitSensitivity);
 
       final double minAngle = _getMinOrbitAngle();
       final double maxAngle = _getMaxOrbitAngle();
@@ -604,12 +604,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
     if (!draggedCard) {
       _orbitAccumulated = _orbitAngle;
       final double horizontalVelocity = details.velocity.pixelsPerSecond.dx;
-      if (horizontalVelocity.abs() > 10) {
+      // 속도 임계값을 낮춰서 짧은 스와이프도 감지
+      if (horizontalVelocity.abs() > 5) {
         final double minAngle = _getMinOrbitAngle();
         final double maxAngle = _getMaxOrbitAngle();
 
         // 현재 각속도로 계산해서 경계를 넘을지 미리 확인
-        final double angularVelocity = -horizontalVelocity * _orbitSensitivity;
+        // 방향을 _handlePanUpdate와 일치시킴
+        final double angularVelocity = horizontalVelocity * _orbitSensitivity;
 
         // 이미 경계 근처면 무시
         if ((_orbitAngle <= minAngle && angularVelocity < 0) ||
@@ -686,7 +688,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand>
                   Positioned(
                     top: -MediaQuery.of(context).size.height,
                     child: Container(
-                      height: MediaQuery.of(context).size.height - 30.h,
+                      height: MediaQuery.of(context).size.height + 50.h,
                       width: MediaQuery.of(context).size.width,
                       color: AppColors.opacity30PrimaryBlack,
                     ),

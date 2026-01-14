@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
-import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -16,7 +15,6 @@ import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
-import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -32,15 +30,11 @@ import 'package:romrom_fe/screens/profile/profile_screen.dart';
 class HomeFeedItemWidget extends StatefulWidget {
   final HomeFeedItem item;
   final bool showBlur;
-  final List<Item> myCards;
-  final void Function(String droppedCard)? onCardDrop;
 
   const HomeFeedItemWidget({
     super.key,
     required this.item,
     required this.showBlur,
-    required this.myCards,
-    required this.onCardDrop,
   });
 
   @override
@@ -316,27 +310,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                 ],
               ),
             ),
-          // 하단 고정 카드 덱 (터치 영역 분리)
-          if (!widget.showBlur)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: -140.h, // 네비게이션 바 위에 표시
-              child: HomeTabCardHand(
-                cards: widget.myCards,
-                onCardDrop: widget.onCardDrop,
-              ),
-            )
-          else
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 10.h,
-              child: SvgPicture.asset(
-                'assets/images/first-item-post-text.svg',
-                width: 145.w,
-              ),
-            ),
+          
 
           // 하단 정보 패널
           Positioned(
