@@ -21,6 +21,14 @@ class ItemRequest {
   double? latitude;
   bool? isAiPredictedPrice;
   String? itemStatus;
+  double? radiusInMeters;
+  int? minPrice;
+  int? maxPrice;
+  String? startDate;
+  String? endDate;
+  String? sortField;
+  String? sortDirection;
+  String? searchKeyword;
 
   ItemRequest({
     this.memberId,
@@ -39,6 +47,14 @@ class ItemRequest {
     this.latitude,
     this.isAiPredictedPrice,
     this.itemStatus,
+    this.radiusInMeters,
+    this.minPrice,
+    this.maxPrice,
+    this.startDate,
+    this.endDate,
+    this.sortField,
+    this.sortDirection,
+    this.searchKeyword,
   });
 
   factory ItemRequest.fromJson(Map<String, dynamic> json) =>

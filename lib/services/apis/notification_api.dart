@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/api_client.dart';
@@ -18,8 +20,12 @@ class NotificationApi {
   }) async {
     const String url = '${AppUrls.baseUrl}/api/notification/post/token';
 
+    // 디바이스 타입 자동 감지 (IOS 또는 ANDROID)
+    final String deviceType = Platform.isIOS ? 'IOS' : 'ANDROID';
+
     final Map<String, dynamic> fields = {
       'fcmToken': fcmToken,
+      'deviceType': deviceType,
     };
 
     await ApiClient.sendMultipartRequest(
@@ -27,7 +33,7 @@ class NotificationApi {
       fields: fields,
       isAuthRequired: true,
       onSuccess: (_) {
-        debugPrint('FCM 토큰 저장 성공');
+        debugPrint('FCM 토큰 저장 성공 (deviceType: $deviceType)');
       },
     );
   }
