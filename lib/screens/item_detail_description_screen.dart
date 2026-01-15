@@ -39,6 +39,7 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/trade_location_detail_screen.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -50,7 +51,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   final bool isRequestManagement;
   final String? tradeRequestHistoryId;
   final bool isChatAccessAllowed; // 채팅 접근 권한 여부
-  final bool isFromLikedItems; // 좋아요한 물품 화면에서 왔는지 여부
+  final bool isTradeRequestAllowed; // 거래 요청 버튼 표시 여부
 
   const ItemDetailDescriptionScreen({
     super.key,
@@ -63,7 +64,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
     this.homeFeedItem,
     this.tradeRequestHistoryId, // 거래 요청 ID (채팅방 생성용)
     this.isChatAccessAllowed = false, // 채팅 접근 권한 기본값: false
-    this.isFromLikedItems = false, // 기본값: false
+    this.isTradeRequestAllowed = false, // 거래 요청 버튼 기본값: false
   });
 
   @override
@@ -706,7 +707,7 @@ class _ItemDetailDescriptionScreenState
                       /// 거래 희망 장소
                       Container(
                         width: double.infinity,
-                        margin: EdgeInsets.only(top: 16.h, bottom: 61.h),
+                        margin: EdgeInsets.only(top: 16.h, bottom: 120.h),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -751,8 +752,8 @@ class _ItemDetailDescriptionScreenState
                                       ),
                                       zoom: 15,
                                     ),
-                                    scrollGesturesEnable: true, // 지도 이동
-                                    zoomGesturesEnable: true, // 확대/축소
+                                    scrollGesturesEnable: false,
+                                    zoomGesturesEnable: false,
                                   ),
                                   onMapReady: (controller) {
                                     if (item?.latitude != null &&
@@ -768,6 +769,18 @@ class _ItemDetailDescriptionScreenState
                                             "assets/images/location-pin-icon.png",
                                           ),
                                           size: NSize(33.w, 47.h),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  // 지도 탭 시 거래 희망 장소 상세 페이지로 이동
+                                  onMapTapped: (point, latLng) {
+                                    if (item?.latitude != null &&
+                                        item?.longitude != null) {
+                                      context.navigateTo(
+                                        screen: TradeLocationDetailScreen(
+                                          latitude: item!.latitude!,
+                                          longitude: item!.longitude!,
                                         ),
                                       );
                                     }
@@ -873,7 +886,7 @@ class _ItemDetailDescriptionScreenState
                     ],
                   ),
           ),
-          widget.isChatAccessAllowed || widget.isFromLikedItems
+          widget.isChatAccessAllowed || widget.isTradeRequestAllowed
               ? Positioned(
                   bottom: 0,
                   child: Container(
@@ -905,7 +918,7 @@ class _ItemDetailDescriptionScreenState
                   ),
                 )
               : const SizedBox(),
-          widget.isFromLikedItems
+          widget.isTradeRequestAllowed
               ? Positioned(
                   bottom: Platform.isAndroid ? 28.h : 49.h,
                   left: 0,
