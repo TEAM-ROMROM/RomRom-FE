@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -107,9 +108,8 @@ class TradeRequestTargetPreview extends StatelessWidget {
 
   /// 태그 위젯 빌드
   Widget _buildTag(String tag) {
-    // 거래방식 태그인지 확인 (직거래만, 택배만)
-    final isTradeOption =
-        tag == '직거래만' || tag == '택배만' || tag == '추가금' || tag == '직거래' || tag == '택배';
+  // 거래방식 태그인지 확인 (ItemTradeOption enum에 존재하는 값만)
+  final isTradeOption = ItemTradeOption.values.any((option) => option.label == tag);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),

@@ -1,6 +1,6 @@
 enum ItemTradeOption {
-  additionalPrice(label: '추가금', serverName: 'ADDITIONAL_PRICE'),
-  directTradeOnly(label: '직거래만', serverName: 'DIRECT_TRADE_ONLY'),
+  additionalPrice(label: '추가금', serverName: 'EXTRA_CHARGE'),
+  directTradeOnly(label: '직거래만', serverName: 'DIRECT_ONLY'),
   deliveryOnly(label: '택배만', serverName: 'DELIVERY_ONLY');
 
   final String label;
