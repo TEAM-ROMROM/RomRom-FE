@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
@@ -102,6 +103,12 @@ class _TradeLocationDetailScreenState extends State<TradeLocationDetailScreen> {
                       ),
                     ),
                   );
+                }
+                else{
+                  // 위치 정보를 가져오지 못한 경우 토스트 메시지 표시
+                  if(context.mounted){
+                    CommonSnackBar.show(context: context, message: '현재 위치를 가져올 수 없습니다.',type: SnackBarType.info);
+                  }
                 }
               },
               iconSize: 24.h,
