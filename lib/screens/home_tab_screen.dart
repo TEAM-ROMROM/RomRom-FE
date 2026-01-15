@@ -28,8 +28,7 @@ class HomeTabScreen extends StatefulWidget {
   const HomeTabScreen({super.key});
 
   // HomeTabScreen의 상태에 접근하기 위한 GlobalKey
-  static final GlobalKey<State<HomeTabScreen>> globalKey =
-      GlobalKey<State<HomeTabScreen>>();
+  static final GlobalKey<State<HomeTabScreen>> globalKey = GlobalKey<State<HomeTabScreen>>();
 
   @override
   State<HomeTabScreen> createState() => _HomeTabScreenState();
@@ -139,7 +138,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     debugPrint('====================================');
     debugPrint('_checkFirstMainScreen 호출됨');
     try {
-
       // 블러 표시 여부: 내 물건 개수가 0개일 때
       final bool shouldShowBlur = _myCards.isEmpty;
 
@@ -176,8 +174,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       debugPrint('  - isCoachMarkShown: ${userInfo.isCoachMarkShown}');
 
       // 코치마크 표시 여부: 첫 물건 등록 완료 && 코치마크 미표시
-      final bool shouldShowCoachMark = (userInfo.isFirstItemPosted == true) &&
-          (userInfo.isCoachMarkShown != true);
+      final bool shouldShowCoachMark = (userInfo.isFirstItemPosted == true) && (userInfo.isCoachMarkShown != true);
 
       debugPrint('조건 체크:');
       debugPrint('  - shouldShowCoachMark: $shouldShowCoachMark');
@@ -223,9 +220,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 코치마크 오버레이 표시 (성능/메모리/오류 처리 최적화)
   void _showCoachMarkOverlay() {
     _removeCoachMarkOverlay(); // 기존 오버레이 정리
-    _overlayEntry = OverlayEntry(
-      builder: (context) => _buildCoachMarkOverlay(),
-    );
+    _overlayEntry = OverlayEntry(builder: (context) => _buildCoachMarkOverlay());
     if (mounted && _overlayEntry != null) {
       try {
         Overlay.of(context).insert(_overlayEntry!);
@@ -272,11 +267,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           onTap: () {
             if (index < _coachMarkImages.length - 1) {
               debugPrint('코치마크 이벤트: 이미지 탭 - 다음 페이지 ${index + 1}');
-              _coachMarkPageController.animateToPage(
-                index + 1,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
+              _coachMarkPageController.animateToPage(index + 1, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
             } else {
               debugPrint('코치마크 이벤트: 마지막 이미지 탭 - 코치마크 닫기');
               _closeCoachMark();
@@ -288,10 +279,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             errorBuilder: (context, error, stackTrace) {
               debugPrint('오류: 이미지 로드 실패 - ${_coachMarkImages[index]} - $error');
               return Center(
-                child: Text(
-                  '이미지 로드 실패: ${_coachMarkImages[index]}',
-                  style: const TextStyle(color: AppColors.textColorWhite),
-                ),
+                child: Text('이미지 로드 실패: ${_coachMarkImages[index]}', style: const TextStyle(color: AppColors.textColorWhite)),
               );
             },
           ),
@@ -306,33 +294,21 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       builder: (context, currentPage, _) {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            _coachMarkImages.length,
-            (index) {
-              final isCurrentPage = index == currentPage;
-              return GestureDetector(
-                onTap: () {
-                  debugPrint('코치마크 이벤트: 인디케이터 탭 - 페이지 $index');
-                  _coachMarkPageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: isCurrentPage ? 12.w : 8.w,
-                  height: isCurrentPage ? 12.w : 8.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isCurrentPage
-                        ? AppColors.primaryYellow
-                        : AppColors.opacity50White,
-                  ),
-                ),
-              );
-            },
-          ),
+          children: List.generate(_coachMarkImages.length, (index) {
+            final isCurrentPage = index == currentPage;
+            return GestureDetector(
+              onTap: () {
+                debugPrint('코치마크 이벤트: 인디케이터 탭 - 페이지 $index');
+                _coachMarkPageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isCurrentPage ? 12.w : 8.w,
+                height: isCurrentPage ? 12.w : 8.w,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: isCurrentPage ? AppColors.primaryYellow : AppColors.opacity50White),
+              ),
+            );
+          }),
         );
       },
     );
@@ -344,10 +320,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       children: [
         TextButton(
           onPressed: _closeCoachMark,
-          child: const Text(
-            '닫기',
-            style: TextStyle(color: Colors.white, fontSize: 14),
-          ),
+          child: const Text('닫기', style: TextStyle(color: Colors.white, fontSize: 14)),
         ),
       ],
     );
@@ -376,15 +349,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(ItemRequest(
-        pageNumber: _currentPage,
-        pageSize: _pageSize,
-      ));
+      final response = await itemApi.getItems(ItemRequest(pageNumber: _currentPage, pageSize: _pageSize));
 
       if (!mounted) return;
 
-      final feedItems =
-          await _convertToFeedItems(response.itemPage?.content ?? []);
+      final feedItems = await _convertToFeedItems(response.itemPage?.content ?? []);
 
       setState(() {
         _feedItems
@@ -400,11 +369,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       });
 
       if (!mounted) return;
-      CommonSnackBar.show(
-        context: context,
-        message: '피드 로딩 실패: $e',
-        type: SnackBarType.error,
-      );
+      CommonSnackBar.show(context: context, message: '피드 로딩 실패: $e', type: SnackBarType.error);
     }
   }
 
@@ -419,13 +384,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     try {
       _currentPage += 1;
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(ItemRequest(
-        pageNumber: _currentPage,
-        pageSize: _pageSize,
-      ));
+      final response = await itemApi.getItems(ItemRequest(pageNumber: _currentPage, pageSize: _pageSize));
 
-      final newItems =
-          await _convertToFeedItems(response.itemPage?.content ?? []);
+      final newItems = await _convertToFeedItems(response.itemPage?.content ?? []);
 
       setState(() {
         _feedItems.addAll(newItems);
@@ -437,11 +398,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _isLoadingMore = false;
       });
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '추가 피드 로딩 실패: $e',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '추가 피드 로딩 실패: $e', type: SnackBarType.error);
       }
     }
   }
@@ -456,16 +413,14 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       // 카테고리/상태/옵션 매핑
       ItemCondition cond = ItemCondition.sealed;
       try {
-        cond = item_cond.ItemCondition.values
-            .firstWhere((e) => e.serverName == d.itemCondition);
+        cond = item_cond.ItemCondition.values.firstWhere((e) => e.serverName == d.itemCondition);
       } catch (_) {}
 
       final opts = <ItemTradeOption>[];
       if (d.itemTradeOptions != null) {
         for (final s in d.itemTradeOptions!) {
           try {
-            opts.add(
-                ItemTradeOption.values.firstWhere((e) => e.serverName == s));
+            opts.add(ItemTradeOption.values.firstWhere((e) => e.serverName == s));
           } catch (_) {}
         }
       }
@@ -473,12 +428,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       // 위치 정보 변환
       String locationText = '미지정';
       if (d.latitude != null && d.longitude != null) {
-        final address = await LocationService().getAddressFromCoordinates(
-          NLatLng(d.latitude!, d.longitude!),
-        );
+        final address = await LocationService().getAddressFromCoordinates(NLatLng(d.latitude!, d.longitude!));
         if (address != null) {
-          locationText =
-              '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+          locationText = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
         }
       }
 
@@ -488,13 +440,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         name: d.itemName ?? ' ',
         price: d.price ?? 0,
         location: locationText,
-        date: d.createdDate is DateTime
-            ? d.createdDate as DateTime
-            : DateTime.now(),
+        date: d.createdDate is DateTime ? d.createdDate as DateTime : DateTime.now(),
         itemCondition: cond,
         transactionTypes: opts,
-        profileUrl:
-            d.member?.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
+        profileUrl: d.member?.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
         likeCount: d.likeCount ?? 0,
         imageUrls: d.imageUrlList, // List<String>
         description: d.itemDescription ?? '',
@@ -514,12 +463,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   Future<void> _loadMyCards() async {
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getMyItems(
-        ItemRequest(
-            pageNumber: 0,
-            pageSize: 10,
-            itemStatus: ItemStatus.available.serverName),
-      );
+      final response = await itemApi.getMyItems(ItemRequest(pageNumber: 0, pageSize: 10, itemStatus: ItemStatus.available.serverName));
 
       if (!mounted) return;
 
@@ -567,9 +511,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryYellow),
-      );
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
     }
 
     // 피드 아이템이 없을 때 메시지 표시
@@ -582,10 +524,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadInitialItems,
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.black,
-                backgroundColor: AppColors.primaryYellow,
-              ),
+              style: ElevatedButton.styleFrom(foregroundColor: Colors.black, backgroundColor: AppColors.primaryYellow),
               child: const Text('새로고침'),
             ),
           ],
@@ -598,10 +537,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         Positioned.fill(
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
-              if (!_isLoadingMore &&
-                  _hasMoreItems &&
-                  scrollInfo.metrics.pixels ==
-                      scrollInfo.metrics.maxScrollExtent) {
+              if (!_isLoadingMore && _hasMoreItems && scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
                 _loadMoreItems();
               }
               return false;
@@ -610,9 +546,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               scrollDirection: Axis.vertical,
               controller: _pageController,
               // 블러가 활성화된 경우 스와이프(스크롤) 동작을 비활성화해 첫 화면 고정
-              physics: _isBlurShown
-                  ? const NeverScrollableScrollPhysics()
-                  : const PageScrollPhysics(),
+              physics: _isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
               itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
@@ -625,39 +559,28 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               itemBuilder: (context, index) {
                 if (index >= _feedItems.length) {
                   // 리스트 끝에 로딩 인디케이터 표시
-                  return const Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.primaryYellow),
-                  );
+                  return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
                 }
-                return HomeFeedItemWidget(
-                  item: _feedItems[index],
-                  showBlur: _isBlurShown,
-                );
+                return HomeFeedItemWidget(item: _feedItems[index], showBlur: _isBlurShown);
               },
             ),
           ),
         ),
+
         // 하단 고정 카드 덱 (터치 영역 분리)
         if (!_isBlurShown)
           Positioned(
             left: 0,
             right: 0,
             bottom: -140.h, // 네비게이션 바 위에 표시
-            child: HomeTabCardHand(
-              cards: _myCards,
-              onCardDrop: _handleCardDrop,
-            ),
+            child: HomeTabCardHand(cards: _myCards, onCardDrop: _handleCardDrop),
           )
         else
           Positioned(
             left: 0,
             right: 0,
             bottom: 10.h,
-            child: SvgPicture.asset(
-              'assets/images/first-item-post-text.svg',
-              width: 145.w,
-            ),
+            child: SvgPicture.asset('assets/images/first-item-post-text.svg', width: 145.w),
           ),
       ],
     );
