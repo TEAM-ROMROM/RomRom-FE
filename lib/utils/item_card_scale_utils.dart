@@ -98,6 +98,15 @@ class ItemCardNotifier extends StateNotifier<AsyncValue<ItemCardState>> {
       ));
     });
   }
+
+  // 선택된 옵션 초기화
+  void clearOptions() {
+    state.whenData((currentState) {
+      state = AsyncValue.data(currentState.copyWith(
+        selectedOptions: const [],
+      ));
+    });
+  }
 }
 
 /// 카드별 Provider: cardId별로 독립적인 상태 관리 가능
