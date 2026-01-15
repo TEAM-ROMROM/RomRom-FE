@@ -796,11 +796,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   children: [
                     GestureDetector(
                       behavior: HitTestBehavior.opaque, // 빈 공간도 터치 가능
-                      onTap: () {
-                        TradeApi()
+                      onTap: () async {
+                        await TradeApi()
                             .getDetailedTradeRequest(request)
-                            .then((detailedRequest) {
-                              if (mounted) return;
+                            .then((detailedRequest) {                              
                               setState(() {
                                 // isNew 상태 갱신
                                 final targetIndex = _receivedRequests
@@ -836,7 +835,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                                 'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
                             isMyItem: false,
                             isRequestManagement: true,
-                            tradeRequestHistoryId: request.tradeRequestHistoryId,
+                            tradeRequestHistoryId:
+                                request.tradeRequestHistoryId,
                             isChatAccessAllowed: true, // 받은요청 = 채팅 가능
                           ),
                         );

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/firebase_options.dart';
+import 'package:romrom_fe/models/app_colors.dart';
 
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
@@ -39,17 +40,17 @@ void main() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await FirebaseService().verifyFirebase();  
+  await FirebaseService().verifyFirebase();
   FirebaseMessaging.onMessage.listen((RemoteMessage? message) {});
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // firestore 초기화
-  await FirebaseService().setupPushNotifications(); // 알림 권한 요청 설정  
+  await FirebaseService().setupPushNotifications(); // 알림 권한 요청 설정
 
   // 시스템 오버레이 색상 설정
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarColor: AppColors.primaryBlack,
       statusBarColor: Colors.transparent,
     ),
   );
@@ -129,7 +130,7 @@ class MyApp extends StatelessWidget {
         builder: (context) {
           return SafeArea(
             top: false,
-            bottom: !isGestureMode,
+            bottom: Platform.isAndroid ,
             child: MediaQuery(
               data: MediaQuery.of(
                 context,

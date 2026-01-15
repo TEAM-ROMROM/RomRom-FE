@@ -25,7 +25,7 @@ class ItemCard extends ConsumerWidget {
     this.itemCategoryLabel = '물품 카테고리',
     this.itemName = '물품 이름',
     this.itemCardImageUrl = 'https://picsum.photos/400/300',
-    this.itemOptions = const [ItemTradeOption.extraCharge, ItemTradeOption.directOnly, ItemTradeOption.deliveryOnly],
+    this.itemOptions = const [ItemTradeOption.additionalPrice, ItemTradeOption.directTradeOnly, ItemTradeOption.deliveryOnly],
     this.isSmall = false,
     this.onOptionSelected, // 콜백 초기화
   });

@@ -236,9 +236,9 @@ jobs:
           SMB_PASSWORD: ${{ secrets.WEB_SMB_PASSWORD }}
         run: |
           SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
-          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
-          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
-          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
+          SMB_PORT=44445
+          SMB_SHARE="web"
+          SMB_PATH="/romrom/downloads"
           echo "Uploading APK file ${{ env.APK_NAME }} to SMB..."
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "mkdir $SMB_PATH; cd $SMB_PATH; put ${{ env.APK_FILE }} ${{ env.APK_NAME }}"
           echo "APK uploaded to SMB"
@@ -261,9 +261,9 @@ jobs:
             --arg full_commit_hash "$FULL_COMMIT_HASH" \
             '{apk_name: $apk_name, file_size: $file_size, build_date: $build_date, commit_link: $commit_link, full_commit_hash: $full_commit_hash}')
           SMB_SERVER=${{ secrets.WEB_SMB_SERVER }}
-          SMB_PORT=${{ secrets.WEB_SMB_PORT }}
-          SMB_SHARE=${{ secrets.WEB_SMB_SHARE_ROOT_DIR }}
-          SMB_PATH=${{ secrets.WEB_SMB_PATH }}
+          SMB_PORT=44445
+          SMB_SHARE="web"
+          SMB_PATH="/romrom/downloads"
           smbclient "//$SMB_SERVER/$SMB_SHARE" -p "$SMB_PORT" -U "$SMB_USERNAME%$SMB_PASSWORD" -m SMB3 -d 10 -c "cd $SMB_PATH; get romrom-cicd-history.json" || echo '{"files": []}' > romrom-cicd-history.json
           echo "Downloaded or initialized romrom-cicd-history.json"
           cat romrom-cicd-history.json

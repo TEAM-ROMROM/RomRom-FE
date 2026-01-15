@@ -26,6 +26,14 @@ ItemRequest _$ItemRequestFromJson(Map<String, dynamic> json) => ItemRequest(
   latitude: (json['latitude'] as num?)?.toDouble(),
   isAiPredictedPrice: json['isAiPredictedPrice'] as bool?,
   itemStatus: json['itemStatus'] as String?,
+  radiusInMeters: (json['radiusInMeters'] as num?)?.toDouble(),
+  minPrice: (json['minPrice'] as num?)?.toInt(),
+  maxPrice: (json['maxPrice'] as num?)?.toInt(),
+  startDate: json['startDate'] as String?,
+  endDate: json['endDate'] as String?,
+  sortField: json['sortField'] as String?,
+  sortDirection: json['sortDirection'] as String?,
+  searchKeyword: json['searchKeyword'] as String?,
 );
 
 Map<String, dynamic> _$ItemRequestToJson(ItemRequest instance) =>
@@ -45,4 +53,12 @@ Map<String, dynamic> _$ItemRequestToJson(ItemRequest instance) =>
       'latitude': instance.latitude,
       'isAiPredictedPrice': instance.isAiPredictedPrice,
       'itemStatus': instance.itemStatus,
+      'radiusInMeters': instance.radiusInMeters,
+      'minPrice': instance.minPrice,
+      'maxPrice': instance.maxPrice,
+      'startDate': instance.startDate,
+      'endDate': instance.endDate,
+      'sortField': instance.sortField,
+      'sortDirection': instance.sortDirection,
+      'searchKeyword': instance.searchKeyword,
     };

@@ -18,6 +18,9 @@ ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
   senderId: json['senderId'] as String?,
   recipientId: json['recipientId'] as String?,
   content: json['content'] as String?,
+  imageUrls: (json['imageUrls'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
   type: $enumDecodeNullable(_$MessageTypeEnumMap, json['type']),
 );
 
@@ -30,6 +33,7 @@ Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) =>
       'senderId': instance.senderId,
       'recipientId': instance.recipientId,
       'content': instance.content,
+      'imageUrls': instance.imageUrls,
       'type': _$MessageTypeEnumMap[instance.type],
     };
 
