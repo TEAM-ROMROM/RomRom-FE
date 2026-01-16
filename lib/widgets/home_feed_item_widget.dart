@@ -173,14 +173,18 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           // 알림 아이콘 버튼
                           GestureDetector(
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('알림 기능 준비 중입니다')),
+                              CommonSnackBar.show(
+                                context: context,
+                                message: '알림 기능 준비 중입니다.',
+                                type: SnackBarType.info,
                               );
                             },
+                            behavior: HitTestBehavior.opaque,
                             child: SvgPicture.asset(
                               'assets/images/notification.svg',
                               width: 30.w,
                               height: 30.h,
+                              semanticsLabel: '알림',
                             ),
                           ),
                           SizedBox(width: 10.w),
