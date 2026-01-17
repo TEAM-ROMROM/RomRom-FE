@@ -52,6 +52,8 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        // Enable core library desugaring for libraries that require newer Java APIs
+        coreLibraryDesugaringEnabled true
     }
 
     lint {
@@ -102,4 +104,7 @@ flutter {
 
 dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
+    // Required for core library desugaring (e.g., flutter_local_notifications)
+    // Use 2.1.4 or above as required by newer dependencies
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
 }
