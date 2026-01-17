@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 
@@ -54,7 +54,7 @@ class FirebaseService {
                 'High Importance Notifications',
                 importance: Importance.max,
                 priority: Priority.high,
-                color: Color(0xFF1D1E27),
+                color: AppColors.primaryBlack,
                 colorized: true,
               ),
             ),
@@ -83,7 +83,7 @@ class FirebaseService {
       // FCM 토큰 발급
       final token = await messaging.getToken();
       if (token != null) {
-        debugPrint('[FCM] 토큰 발급 성공: $token');
+        debugPrint('[FCM] 토큰 발급 성공');
         return token;
       } else {
         debugPrint('[FCM] 토큰 발급 실패');
@@ -108,33 +108,34 @@ class FirebaseService {
         });
   }
 
+  static bool _tokenRefreshListenerSet = false;
   /// FCM 토큰 발급 및 백엔드 저장
   /// 온보딩 완료 시 호출
   Future<void> handleFcmToken() async {
     try {
       final notificationApi = NotificationApi();
-
       // 1. FCM 토큰 발급
       final fcmToken = await getFcmToken();
       if (fcmToken == null) {
         debugPrint('[FCM] FCM 토큰 발급 실패');
         return;
       }
-
       // 2. 백엔드에 FCM 토큰 저장
       await notificationApi.saveFcmToken(fcmToken: fcmToken);
       debugPrint('[FCM] FCM 토큰 저장 완료');
-
       // 3. 토큰 갱신 감지 설정
       setupTokenRefreshListener(notificationApi);
     } catch (e) {
       debugPrint('[FCM] FCM 토큰 발급/저장 중 오류: $e');
     }
   }
-
   /// FCM 토큰 갱신 감지 및 자동 저장
   void setupTokenRefreshListener(NotificationApi notificationApi) {
+    if (_tokenRefreshListenerSet) return;
+    
+    _tokenRefreshListenerSet = true;
     debugPrint('[FCM] 토큰 셋업 : 토큰 갱신 리스너 설정 시작');
+    
     onTokenRefresh(
       onTokenRefreshed: (String newToken) async {
         try {
