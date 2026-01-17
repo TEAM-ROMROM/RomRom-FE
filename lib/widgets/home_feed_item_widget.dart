@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -166,7 +165,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   if (!widget.showBlur)
                     Positioned(
                       right: 16.w,
-                      top: max(67.h, MediaQuery.of(context).padding.top + 8.h),
+                      top: MediaQuery.of(context).padding.top + 8.h,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
