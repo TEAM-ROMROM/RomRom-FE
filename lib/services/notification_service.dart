@@ -6,7 +6,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterL
 Future<void> initNotificationPlugin() async {
   const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_push_notification');
 
-  const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+  const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid, iOS: DarwinInitializationSettings(requestProvidesAppNotificationSettings: true));
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }
