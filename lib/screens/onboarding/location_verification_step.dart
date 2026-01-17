@@ -97,7 +97,7 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
         Expanded(
           flex: 285,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32.0.w),
+            padding: EdgeInsets.symmetric(horizontal: 24.0.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [

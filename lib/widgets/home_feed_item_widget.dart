@@ -161,19 +161,43 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       ),
                     ),
 
-                  /// 더보기 아이콘 버튼
+                  /// 알림 아이콘 및 더보기 메뉴 버튼
                   if (!widget.showBlur)
                     Positioned(
-                      right: 24.w,
-                      top: (MediaQuery.of(context).padding.top < 59 ? 59.h : MediaQuery.of(context).padding.top),
-                      child: ReportMenuButton(
-                        onReportPressed: () async {
-                          final bool? reported = await Navigator.push(context, MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? '')));
+                      right: 16.w,
+                      top: MediaQuery.of(context).padding.top + 8.h,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 알림 아이콘 버튼
+                          GestureDetector(
+                            onTap: () {
+                              CommonSnackBar.show(
+                                context: context,
+                                message: '알림 기능 준비 중입니다.',
+                                type: SnackBarType.info,
+                              );
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: SvgPicture.asset(
+                              'assets/images/notification.svg',
+                              width: 30.w,
+                              height: 30.h,
+                              semanticsLabel: '알림',
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          // 더보기 메뉴 버튼
+                          ReportMenuButton(
+                            onReportPressed: () async {
+                              final bool? reported = await Navigator.push(context, MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? '')));
 
-                          if (reported == true && mounted) {
-                            await CommonModal.success(context: context, message: '신고가 접수되었습니다.', onConfirm: () => Navigator.of(context).pop());
-                          }
-                        },
+                              if (reported == true && mounted) {
+                                await CommonModal.success(context: context, message: '신고가 접수되었습니다.', onConfirm: () => Navigator.of(context).pop());
+                              }
+                            },
+                          ),
+                        ],
                       ),
                     ),
                 ],

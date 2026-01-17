@@ -103,7 +103,7 @@ class _LoginButtonState extends State<LoginButton> {
               await handleLogin(context);
             },
       child: Container(
-        width: 316.w,
+        width: double.infinity,
         height: 56.h,
         margin: EdgeInsets.only(bottom: 12.h),
         decoration: BoxDecoration(
