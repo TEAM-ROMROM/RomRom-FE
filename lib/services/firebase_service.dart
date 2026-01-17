@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:romrom_fe/services/notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
@@ -48,7 +49,14 @@ class FirebaseService {
             notification.title,
             notification.body,
             const NotificationDetails(
-              android: AndroidNotificationDetails('high_importance_channel', 'High Importance Notifications', importance: Importance.max, priority: Priority.high),
+              android: AndroidNotificationDetails(
+                'high_importance_channel',
+                'High Importance Notifications',
+                importance: Importance.max,
+                priority: Priority.high,
+                color: Color(0xFF1D1E27),
+                colorized: true,
+              ),
             ),
           );
         }

@@ -24,6 +24,14 @@
         android:label="롬롬"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_push_notification" />
+        <meta-data
+        android:name="com.google.firebase.messaging.default_notification_color"
+        android:resource="@color/ic_push_notification_color" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
