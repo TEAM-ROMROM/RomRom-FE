@@ -6,6 +6,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
+import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
@@ -63,6 +64,9 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                       isCoachMarkShown: false, // 명시적으로 false 설정
                     );
                     debugPrint('온보딩 완료: isItemCategorySaved=true, isCoachMarkShown=false로 설정됨');
+                    
+                    // FCM 토큰 발급 및 저장
+                    await FirebaseService().handleFcmToken();
                     
                     widget.onComplete();
                     await RomAuthApi().fetchAndSaveMemberInfo();
