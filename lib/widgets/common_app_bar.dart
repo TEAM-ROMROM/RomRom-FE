@@ -64,7 +64,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
             () => Navigator.of(
               context,
             ).pop(), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
-        padding: EdgeInsets.zero, // 패딩 제거
+        padding: EdgeInsets.only(bottom: 8.h), // 패딩 제거
       ),
       bottom: bottomWidgets,
       title: onTitleTap != null
@@ -79,7 +79,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             )
           : Padding(
-              padding: EdgeInsets.zero,
+              padding:EdgeInsets.only(bottom: 8.h),
               child: Text(title, style: titleTextStyle ?? CustomTextStyles.h2),
             ),
 
