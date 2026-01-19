@@ -94,12 +94,14 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             _buildMenuSection([
               _MenuItem(
                 label: '좋아요 목록',
+                icon: AppIcons.profilelikecount,
                 onTap: () {
                   context.navigateTo(screen: const MyLikeListScreen());
                 },
               ),
               _MenuItem(
                 label: '내 위치인증',
+                icon: AppIcons.location,
                 onTap: () {
                   context.navigateTo(
                     screen: const MyLocationVerificationScreen(),
@@ -108,18 +110,21 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               ),
               _MenuItem(
                 label: '선호 카테고리 설정',
+                icon: AppIcons.preferCategory,
                 onTap: () {
                   context.navigateTo(screen: const MyCategorySettingsScreen());
                 },
               ),
               _MenuItem(
                 label: '탐색 범위 설정',
+                icon: AppIcons.target,
                 onTap: () {
                   context.navigateTo(screen: const SearchRangeSettingScreen());
                 },
               ),
               _MenuItem(
                 label: '차단 관리',
+                icon: AppIcons.slashCircle,
                 onTap: () {
                   // TODO: 차단 관리 화면으로 이동
                 },
@@ -131,6 +136,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             _buildMenuSection([
               _MenuItem(
                 label: '이용 약관',
+                icon: AppIcons.infoCircle,
                 onTap: () {
                   context.navigateTo(screen: const TermsScreen());
                 },
@@ -245,6 +251,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         children: items.map((item) {
           return _buildMenuItem(
             label: item.label,
+            icon: item.icon,
             onTap: item.onTap,
             isDestructive: item.isDestructive,
           );
@@ -256,6 +263,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   /// 메뉴 아이템 위젯
   Widget _buildMenuItem({
     required String label,
+    IconData? icon,
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
@@ -264,9 +272,18 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
       borderRadius: BorderRadius.circular(10.r),
       child: Container(
         height: 54.h,
-        padding: EdgeInsets.only(left: 24.w, right: 18.w),
+        padding: EdgeInsets.only(left: 16.w, right: 18.w),
         child: Row(
           children: [
+            if (icon != null)
+              Padding(
+                padding:  EdgeInsets.only(right: 16.0.w),
+                child: Icon(
+                icon,
+                size: 18.sp,
+                color: AppColors.textColorWhite,
+                ),
+              ),
             Expanded(
               child: Text(
                 label,
@@ -368,11 +385,13 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 /// 메뉴 아이템 데이터 클래스
 class _MenuItem {
   final String label;
+  final IconData? icon;
   final VoidCallback onTap;
   final bool isDestructive;
 
   _MenuItem({
     required this.label,
+    this.icon,
     required this.onTap,
     this.isDestructive = false,
   });
