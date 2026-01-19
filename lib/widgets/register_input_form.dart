@@ -660,7 +660,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                     selectedCategory == null
                                 ? AppColors.errorBorder
                                 : AppColors.opacity30White,
-                            width: 1.5.h,
+                            width: 1.5.w,
                           ),
                         ),
                         child: Row(
