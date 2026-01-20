@@ -18,6 +18,9 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// 앱바 오른쪽에 표시될 추가 액션 위젯 목록
   final List<Widget>? actions;
 
+  /// 제목 위젯
+  final Widget titleWidgets;
+
   /// 앱바 하단부분에 표시될 위젯 목록
   final PreferredSize bottomWidgets;
 
@@ -35,10 +38,8 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleTextStyle,
     this.onBackPressed,
     this.actions,
-    this.bottomWidgets = const PreferredSize(
-      preferredSize: Size.fromHeight(0),
-      child: SizedBox.shrink(),
-    ),
+    this.titleWidgets = const SizedBox.shrink(),
+    this.bottomWidgets = const PreferredSize(preferredSize: Size.fromHeight(0), child: SizedBox.shrink()),
     this.showBottomBorder = false,
     this.onTitleTap,
   });
@@ -59,27 +60,14 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           size: 24.h,
           color: AppColors.textColorWhite,
         ),
-        onPressed:
-            onBackPressed ??
-            () => Navigator.of(
-              context,
-            ).pop(), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
+        onPressed: onBackPressed ?? () => Navigator.of(context).pop(), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
         padding: EdgeInsets.only(bottom: 8.h),
       ),
       bottom: bottomWidgets,
       title: onTitleTap != null
-          ? GestureDetector(
-              onTap: onTitleTap,
-              child: Padding(
-                padding: EdgeInsets.zero,
-                child: Text(
-                  title,
-                  style: titleTextStyle ?? CustomTextStyles.h2,
-                ),
-              ),
-            )
+          ? titleWidgets
           : Padding(
-              padding:EdgeInsets.only(bottom: 8.h),
+              padding: EdgeInsets.only(bottom: 8.h),
               child: Text(title, style: titleTextStyle ?? CustomTextStyles.h2),
             ),
 
