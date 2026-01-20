@@ -161,7 +161,7 @@ class _RomRomContextMenuState extends State<RomRomContextMenu>
       onTap: _showMenu,
       child: widget.customTrigger ??
           Icon(
-            AppIcons.dotsVertical,
+            AppIcons.dotsVerticalDefault,
             size: 30.sp,
             color: AppColors.textColorWhite,
           ),
