@@ -14,9 +14,13 @@ class AppIcons {
   static const IconData dotsVerticalSmall = IconData(0xe805, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData myPage = IconData(0xe806, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData register = IconData(0xe807, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData exit = IconData(0xe808, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData flag = IconData(0xe809, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData image = IconData(0xe80a, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData home = IconData(0xe80b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData currentLocation = IconData(0xe80c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData chat = IconData(0xe80d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData trashCan = IconData(0xe80e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrowUpward = IconData(0xe813, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData camera = IconData(0xe815, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData edit = IconData(0xe816, fontFamily: _kFontFam, fontPackage: _kFontPkg);
@@ -27,6 +31,8 @@ class AppIcons {
   static const IconData infoCircle = IconData(0xe81b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData setting = IconData(0xe81c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData exchange = IconData(0xe81d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData bell = IconData(0xe81e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData bellOff = IconData(0xe81f, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData cancel = IconData(0xe820, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData detailView = IconData(0xe821, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData dotsVerticalDefault = IconData(0xe822, fontFamily: _kFontFam, fontPackage: _kFontPkg);
