@@ -451,12 +451,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         : chatRoom.tradeRequestHistory?.giveItem;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(
           top: BorderSide(color: AppColors.opacity10White, width: 1),
-          bottom: BorderSide(color: AppColors.opacity10White, width: 1),
+          // bottom: BorderSide(color: AppColors.opacity10White, width: 1),
         ),
       ),
       child: Row(
@@ -490,7 +490,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
