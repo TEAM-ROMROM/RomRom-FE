@@ -21,6 +21,12 @@ class AppIcons {
   static const IconData camera = IconData(0xe815, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData edit = IconData(0xe816, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData profilelikecount = IconData(0xe817, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData preferCategory = IconData(0xe818, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData target = IconData(0xe819, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData slashCircle = IconData(0xe81a, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData infoCircle = IconData(0xe81b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData setting = IconData(0xe81c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData exchange = IconData(0xe81d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData cancel = IconData(0xe820, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData detailView = IconData(0xe821, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData itemRegisterHeart = IconData(0xe823, fontFamily: _kFontFam, fontPackage: _kFontPkg);
