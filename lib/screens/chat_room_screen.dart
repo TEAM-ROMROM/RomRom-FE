@@ -382,7 +382,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
       actions: [
         Padding(
-          padding: EdgeInsets.only(right: 16.0.w),
+          padding: EdgeInsets.only(right: 16.0.w, bottom: 8.h),
           child: RomRomContextMenu(
             items: [
               ContextMenuItem(
