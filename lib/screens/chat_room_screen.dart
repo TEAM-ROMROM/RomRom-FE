@@ -33,7 +33,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final ChatWebSocketService _wsService = ChatWebSocketService();
   final TextEditingController _messageController = TextEditingController();
   bool _hasText = false;
-  double _inputFieldHeight = 40.0;
+  double _inputFieldHeight = 40.0.h;
 
   final ScrollController _scrollController = ScrollController();
 
@@ -367,7 +367,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         }
       },
       showBottomBorder: true,
-      titleWidgts: Padding(
+      titleWidgets: Padding(
         padding:  EdgeInsets.only(top: 8.0.h),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -737,7 +737,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
           Expanded(
             child: SizedBox(
-              height: 40.h <= _inputFieldHeight && _inputFieldHeight <= 120.h
+              height: 40.h <= _inputFieldHeight && _inputFieldHeight <= 70.h
                   ? _inputFieldHeight
                   : 40.h,
               child: TextField(

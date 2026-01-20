@@ -19,7 +19,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
 
   /// 제목 위젯
-  final Widget titleWidgts;
+  final Widget titleWidgets;
 
   /// 앱바 하단부분에 표시될 위젯 목록
   final PreferredSize bottomWidgets;
@@ -38,7 +38,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleTextStyle,
     this.onBackPressed,
     this.actions,
-    this.titleWidgts = const SizedBox.shrink(),
+    this.titleWidgets = const SizedBox.shrink(),
     this.bottomWidgets = const PreferredSize(preferredSize: Size.fromHeight(0), child: SizedBox.shrink()),
     this.showBottomBorder = false,
     this.onTitleTap,
@@ -65,7 +65,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       bottom: bottomWidgets,
       title: onTitleTap != null
-          ? titleWidgts
+          ? titleWidgets
           : Padding(
               padding: EdgeInsets.only(bottom: 8.h),
               child: Text(title, style: titleTextStyle ?? CustomTextStyles.h2),
