@@ -678,7 +678,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return Container(
       padding: EdgeInsets.only(
         top: 8.w,
-        left: 8.h,
+        left: 16.h,
         bottom: textFieldBottomPadding,
       ),
       child: Row(
@@ -686,15 +686,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           Padding(
             padding: EdgeInsets.only(right: 8.0.w),
             child: SizedBox(
-              width: 32.w,
-              height: 32.w,
+              width: 40.w,
+              height: 40.w,
               child: IconButton(
                 constraints: BoxConstraints(minWidth: 32.w, minHeight: 32.w),
                 icon: const Icon(
                   AppIcons.addItemPlus,
                   color: AppColors.textColorWhite,
                 ),
-                iconSize: 16.w,
+                iconSize: 20.sp,
                 padding: EdgeInsets.zero,
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.all(
@@ -782,7 +782,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 16.w),
         ],
       ),
     );
