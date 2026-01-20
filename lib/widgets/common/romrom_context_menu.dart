@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 class ContextMenuItem {
   final String id;
   final String title;
+  final IconData? contextIcon;
   final IconData? icon;
   final Color? textColor;
   final VoidCallback onTap;
@@ -17,6 +18,7 @@ class ContextMenuItem {
     required this.id,
     required this.title,
     required this.onTap,
+    this.contextIcon = AppIcons.dotsVerticalDefault,
     this.icon,
     this.textColor,
     this.showDividerAfter = false,
@@ -161,7 +163,7 @@ class _RomRomContextMenuState extends State<RomRomContextMenu>
       onTap: _showMenu,
       child: widget.customTrigger ??
           Icon(
-            AppIcons.dotsVertical,
+            widget.items.first.contextIcon,
             size: 30.sp,
             color: AppColors.textColorWhite,
           ),

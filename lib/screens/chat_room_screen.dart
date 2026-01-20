@@ -336,7 +336,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   CommonAppBar _buildAppBar() {
     return CommonAppBar(
       title: chatRoom.getOpponentNickname(_myMemberId!),
-      titleTextStyle: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600),
       onTitleTap: () {
         final opponent = chatRoom.getOpponent(_myMemberId!);
         if (opponent?.memberId != null) {
@@ -346,35 +345,44 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         }
       },
       showBottomBorder: true,
-      bottomWidgets: PreferredSize(
-        preferredSize: Size.fromHeight(20.h),
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 16.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 8.w,
-                height: 8.w,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.chatInactiveStatus,
-                ),
+      titleWidgts: Padding(
+        padding:  EdgeInsets.only(top: 8.0.h),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              chatRoom.getOpponentNickname(_myMemberId!),
+              style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top:8.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 8.w,
+                    height: 8.w,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.chatInactiveStatus,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    getLastActivityTime(chatRoom),
+                    style: CustomTextStyles.p2.copyWith(
+                      color: AppColors.opacity50White,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 8.w),
-              Text(
-                getLastActivityTime(chatRoom),
-                style: CustomTextStyles.p3.copyWith(
-                  color: AppColors.opacity50White,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       actions: [
         Padding(
-          padding: EdgeInsets.only(right: 24.0.w),
+          padding: EdgeInsets.only(right: 16.0.w),
           child: RomRomContextMenu(
             items: [
               ContextMenuItem(
