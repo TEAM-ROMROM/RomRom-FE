@@ -81,8 +81,23 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
           children: [
             // 헤더: "마이페이지"
             Padding(
-              padding: EdgeInsets.only(top: 32.h, bottom: 16.h),
-              child: Text('마이페이지', style: CustomTextStyles.h1),
+              padding: EdgeInsets.only(top: 29.h, bottom: 13.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('마이페이지', style: CustomTextStyles.h1),
+                  GestureDetector(
+                    onTap: () {
+                      // TODO: 설정 화면으로 이동
+                    },
+                    child: Icon( 
+                      AppIcons.setting,
+                      size: 30.sp,
+                      color: AppColors.textColorWhite,
+                    ),
+                  ),
+                ],
+              ),
             ),
 
             // 닉네임 박스
@@ -247,7 +262,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         borderRadius: BorderRadius.circular(10.r),
       ),
       child: Wrap(
-        runSpacing: 8.w,
+        runSpacing: 0.w,
         children: items.map((item) {
           return _buildMenuItem(
             label: item.label,
@@ -271,7 +286,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10.r),
       child: Container(
-        height: 54.h,
+        height: 60.h,
         padding: EdgeInsets.only(left: 16.w, right: 18.w),
         child: Row(
           children: [
@@ -288,7 +303,6 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               child: Text(
                 label,
                 style: CustomTextStyles.p2.copyWith(
-                  fontWeight: FontWeight.w400,
                   color: isDestructive
                       ? AppColors.warningRed
                       : AppColors.textColorWhite,
