@@ -11,11 +11,13 @@ class TradeResponse {
   final TradeRequestHistory? tradeRequestHistory;
   final PagedTradeRequestHistory? tradeRequestHistoryPage;
   final PagedItem? itemPage;
+  final bool? tradeRequestHistoryExists; // 거래 요청 이력 존재 여부  
 
   TradeResponse({
     this.tradeRequestHistory,
     this.tradeRequestHistoryPage,
     this.itemPage,
+    this.tradeRequestHistoryExists
   });
 
   factory TradeResponse.fromJson(Map<String, dynamic> json) =>

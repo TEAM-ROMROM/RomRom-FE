@@ -21,6 +21,7 @@ TradeResponse _$TradeResponseFromJson(Map<String, dynamic> json) =>
       itemPage: json['itemPage'] == null
           ? null
           : PagedItem.fromJson(json['itemPage'] as Map<String, dynamic>),
+      tradeRequestHistoryExists: json['tradeRequestHistoryExists'] as bool?,
     );
 
 Map<String, dynamic> _$TradeResponseToJson(TradeResponse instance) =>
@@ -28,6 +29,7 @@ Map<String, dynamic> _$TradeResponseToJson(TradeResponse instance) =>
       'tradeRequestHistory': instance.tradeRequestHistory?.toJson(),
       'tradeRequestHistoryPage': instance.tradeRequestHistoryPage?.toJson(),
       'itemPage': instance.itemPage?.toJson(),
+      'tradeRequestHistoryExists': instance.tradeRequestHistoryExists,
     };
 
 TradeRequestHistory _$TradeRequestHistoryFromJson(Map<String, dynamic> json) =>
