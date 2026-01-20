@@ -33,6 +33,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final ChatWebSocketService _wsService = ChatWebSocketService();
   final TextEditingController _messageController = TextEditingController();
   bool _hasText = false;
+  double _inputFieldHeight = 40.0;
 
   final ScrollController _scrollController = ScrollController();
 
@@ -80,6 +81,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final has = _messageController.text.trim().isNotEmpty;
     if (_hasText != has && mounted) {
       setState(() => _hasText = has);
+    }
+
+    // 동적 높이 계산
+    if (mounted) {
+      _updateInputFieldHeight();
+    }
+  }
+
+  void _updateInputFieldHeight() {
+    // 텍스트의 줄 수 계산
+    final text = _messageController.text;
+    final lineCount = '\n'.allMatches(text).length + 1;
+
+    // 각 줄마다 대략 14.h 높이 추가 (최소 40.h, 최대 70.h)
+    double newHeight = 40.h + ((lineCount - 1) * 14.h);
+    newHeight = newHeight.clamp(40.h, 70.h);
+
+    if (_inputFieldHeight != newHeight && mounted) {
+      setState(() {
+        _inputFieldHeight = newHeight;
+      });
     }
   }
 
@@ -563,7 +585,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return ListView.builder(
       reverse: true,
       controller: _scrollController,
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final message = _messages[index];
@@ -682,6 +704,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         bottom: textFieldBottomPadding,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
             padding: EdgeInsets.only(right: 8.0.w),
@@ -714,14 +737,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
           Expanded(
             child: SizedBox(
-              height: 40.h,
+              height: 40.h <= _inputFieldHeight && _inputFieldHeight <= 120.h
+                  ? _inputFieldHeight
+                  : 40.h,
               child: TextField(
                 controller: _messageController,
                 style: CustomTextStyles.p2.copyWith(
                   color: AppColors.textColorWhite,
                   fontWeight: FontWeight.w400,
+                  height: 1.2
                 ),
-                maxLines: null,
+                minLines: 1,
+                maxLines: 5,
                 cursorHeight: 16.h,
                 cursorColor: AppColors.primaryYellow,
                 cursorWidth: 1.5.w,
@@ -738,7 +765,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12.w,
-                    vertical: 3.h,
+                    vertical: 8.h,
                   ),
                   // 텍스트 유무에 따라 버튼/아이콘 색상 및 활성화 상태 변경
                   suffixIcon: TextFieldTapRegion(
