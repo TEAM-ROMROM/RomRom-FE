@@ -98,7 +98,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
           Positioned(
             left: 0,
             right: 0,
-            top: statusBarHeight + toolbarHeight + lerpDouble(16, 0, t)!,
+            top: statusBarHeight + toolbarHeight + lerpDouble(10, 0, t)!,
             height: toggleHeight,
             child: Material(
               color: Colors.transparent,
