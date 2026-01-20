@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -32,6 +33,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final ChatWebSocketService _wsService = ChatWebSocketService();
   final TextEditingController _messageController = TextEditingController();
   bool _hasText = false;
+  double _inputFieldHeight = 40.0.h;
 
   final ScrollController _scrollController = ScrollController();
 
@@ -79,6 +81,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final has = _messageController.text.trim().isNotEmpty;
     if (_hasText != has && mounted) {
       setState(() => _hasText = has);
+    }
+
+    // 동적 높이 계산
+    if (mounted) {
+      _updateInputFieldHeight();
+    }
+  }
+
+  void _updateInputFieldHeight() {
+    // 텍스트의 줄 수 계산
+    final text = _messageController.text;
+    final lineCount = '\n'.allMatches(text).length + 1;
+
+    // 각 줄마다 대략 14.h 높이 추가 (최소 40.h, 최대 70.h)
+    double newHeight = 40.h + ((lineCount - 1) * 14.h);
+    newHeight = newHeight.clamp(40.h, 70.h);
+
+    if (_inputFieldHeight != newHeight && mounted) {
+      setState(() {
+        _inputFieldHeight = newHeight;
+      });
     }
   }
 
@@ -335,47 +358,53 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   CommonAppBar _buildAppBar() {
     return CommonAppBar(
       title: chatRoom.getOpponentNickname(_myMemberId!),
-      titleTextStyle: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600),
       onTitleTap: () {
         final opponent = chatRoom.getOpponent(_myMemberId!);
         if (opponent?.memberId != null) {
           context.navigateTo(
-            screen: ProfileScreen(
-              memberId: opponent!.memberId!,
-            ),
+            screen: ProfileScreen(memberId: opponent!.memberId!),
           );
         }
       },
       showBottomBorder: true,
-      bottomWidgets: PreferredSize(
-        preferredSize: Size.fromHeight(20.h),
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 16.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 8.w,
-                height: 8.w,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.chatInactiveStatus,
-                ),
+      titleWidgets: Padding(
+        padding:  EdgeInsets.only(top: 8.0.h),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              chatRoom.getOpponentNickname(_myMemberId!),
+              style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top:8.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 8.w,
+                    height: 8.w,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.chatInactiveStatus,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    getLastActivityTime(chatRoom),
+                    style: CustomTextStyles.p2.copyWith(
+                      color: AppColors.opacity50White,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 8.w),
-              Text(
-                getLastActivityTime(chatRoom),
-                style: CustomTextStyles.p3.copyWith(
-                  color: AppColors.opacity50White,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       actions: [
         Padding(
-          padding: EdgeInsets.only(right: 24.0.w),
+          padding: EdgeInsets.only(right: 16.0.w, bottom: 8.h),
           child: RomRomContextMenu(
             items: [
               ContextMenuItem(
@@ -444,11 +473,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         : chatRoom.tradeRequestHistory?.giveItem;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(
-          bottom: BorderSide(color: AppColors.opacity10White, width: 1),
+          top: BorderSide(color: AppColors.opacity10White, width: 1),
+          // bottom: BorderSide(color: AppColors.opacity10White, width: 1),
         ),
       ),
       child: Row(
@@ -482,7 +512,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,7 +585,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return ListView.builder(
       reverse: true,
       controller: _scrollController,
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final message = _messages[index];
@@ -663,27 +693,31 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 입력 바 빌더
   Widget _buildInputBar() {
+    double textFieldBottomPadding = Platform.isIOS
+        ? 8.h + MediaQuery.of(context).padding.bottom
+        : 21.h;
+
     return Container(
       padding: EdgeInsets.only(
         top: 8.w,
-        right: 8.h,
-        left: 8.h,
-        bottom: MediaQuery.paddingOf(context).bottom + 8.h,
+        left: 16.h,
+        bottom: textFieldBottomPadding,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
             padding: EdgeInsets.only(right: 8.0.w),
             child: SizedBox(
-              width: 32.w,
-              height: 32.w,
+              width: 40.w,
+              height: 40.w,
               child: IconButton(
                 constraints: BoxConstraints(minWidth: 32.w, minHeight: 32.w),
                 icon: const Icon(
                   AppIcons.addItemPlus,
                   color: AppColors.textColorWhite,
                 ),
-                iconSize: 16.w,
+                iconSize: 20.sp,
                 padding: EdgeInsets.zero,
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.all(
@@ -703,20 +737,24 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
           Expanded(
             child: SizedBox(
-              height: 40.h,
+              height: 40.h <= _inputFieldHeight && _inputFieldHeight <= 70.h
+                  ? _inputFieldHeight
+                  : 40.h,
               child: TextField(
                 controller: _messageController,
-                style: CustomTextStyles.p3.copyWith(
+                style: CustomTextStyles.p2.copyWith(
                   color: AppColors.textColorWhite,
                   fontWeight: FontWeight.w400,
+                  height: 1.2
                 ),
-                maxLines: null,
-                cursorHeight: 14.h,
+                minLines: 1,
+                maxLines: 5,
+                cursorHeight: 16.h,
                 cursorColor: AppColors.primaryYellow,
                 cursorWidth: 1.5.w,
                 decoration: InputDecoration(
                   hintText: '메세지를 입력하세요',
-                  hintStyle: CustomTextStyles.p3.copyWith(
+                  hintStyle: CustomTextStyles.p2.copyWith(
                     color: AppColors.opacity50White,
                   ),
                   filled: true,
@@ -727,9 +765,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12.w,
-                    vertical: 3.h,
+                    vertical: 8.h,
                   ),
-
                   // 텍스트 유무에 따라 버튼/아이콘 색상 및 활성화 상태 변경
                   suffixIcon: TextFieldTapRegion(
                     child: GestureDetector(
@@ -772,7 +809,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 16.w),
         ],
       ),
     );

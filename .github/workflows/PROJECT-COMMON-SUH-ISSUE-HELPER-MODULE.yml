@@ -27,13 +27,10 @@
 # ===================================================
 
 name: PROJECT-COMMON-SUH-ISSUE-HELPER-MODULE
+
 on:
-  # 비활성화: 수동 트리거로 변경
-  workflow_dispatch:
-  # issues:
-  #   types: [opened, reopened]
-#  issues:
-#    types: [opened, edited]
+  issues:
+    types: [opened, edited]
 
 permissions:
   issues: write

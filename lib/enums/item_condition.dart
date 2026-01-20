@@ -1,7 +1,7 @@
 /// 물품의 사용 상태
 enum ItemCondition {
-  newItem(label: '미개봉', serverName: 'SEALED'),
-  lightlyUsed(label: '사용감 적음', serverName: 'SLIGHTLY_USED'),
+  sealed(label: '미개봉', serverName: 'SEALED'),
+  slightlyUsed(label: '사용감 적음', serverName: 'SLIGHTLY_USED'),
   moderatelyUsed(label: '사용감 적당함', serverName: 'MODERATELY_USED'),
   heavilyUsed(label: '사용감 많음', serverName: 'HEAVILY_USED');
 

@@ -114,11 +114,17 @@ class AppColors {
       Color(0xFFD2D2D2); // 물품 사진 삭제 버튼 배경색
 
   // 물품 상세 화면
+  // 물품 사진오버레이 그레디언트
   static List<Color> itemDetailBlackGradient = [
     Colors.black.withValues(alpha: 0.2),
     Colors.black.withValues(alpha: 0.0),
     Colors.black.withValues(alpha: 0.0),
     Colors.black.withValues(alpha: 0.3),
+  ];
+  // 하단 오버레이 그레디언트
+  static List<Color> itemDetailBottomBlackGradient = [
+    AppColors.primaryBlack.withValues(alpha: 0.0),
+    AppColors.primaryBlack.withValues(alpha: 1.0),
   ];
 
   // ai 그라데이션

@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
-class ChattingButton extends StatelessWidget {
+class CustomFloatingButton extends StatelessWidget {
   final bool isEnabled; // 버튼 활성화
   final VoidCallback? enabledOnPressed; // 활성화 상태일 때 눌렀을 때 실행 함수
   final VoidCallback? disabledOnPressed; // 비활성화 상태일 때 눌렀을 때 실행 함수
@@ -18,7 +18,7 @@ class ChattingButton extends StatelessWidget {
   final double buttonWidth;
   final double buttonHeight;
 
-  const ChattingButton({
+  const CustomFloatingButton({
     super.key,
     required this.isEnabled,
     this.enabledOnPressed,
@@ -46,9 +46,8 @@ class ChattingButton extends StatelessWidget {
         : disabledTextColor ?? AppColors.textColorBlack.withValues(alpha: 0.7);
 
     // 버튼 문구  결정
-    final TextStyle buttonTextStyle = CustomTextStyles.p2.copyWith(
+    final TextStyle buttonTextStyle = CustomTextStyles.p1.copyWith(
       color: textColor,
-      fontWeight: FontWeight.w600,
     );
 
     return Center(
@@ -63,7 +62,7 @@ class ChattingButton extends StatelessWidget {
             backgroundColor: backgroundColor,
             minimumSize: Size(buttonWidth.w, 0),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4.r)),
+                borderRadius: BorderRadius.circular(10.r)),
           ), // 최소 너비 설정, 높이 자동
           child: Text(
             buttonText,

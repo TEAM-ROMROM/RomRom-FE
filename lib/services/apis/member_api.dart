@@ -174,4 +174,73 @@ class MemberApi {
 
     return memberResponse;
   }
+
+  /// 차단 회원 목록 조회 API
+  /// `POST /api/members/block/get`
+  Future<MemberResponse> getBlockedMembers() async {
+    const String url = '${AppUrls.baseUrl}/api/members/block/get';
+    late MemberResponse memberResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        memberResponse = MemberResponse.fromJson(responseData);
+        debugPrint('차단 회원 목록 조회 성공');
+      },
+    );
+
+    return memberResponse;
+  }
+
+  /// 회원 차단 API
+  /// `POST /api/members/block/post`
+  Future<void> blockMember(String blockTargetMemberId) async {
+    const String url = '${AppUrls.baseUrl}/api/members/block/post';
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {'blockTargetMemberId': blockTargetMemberId},
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('회원 차단 성공: $blockTargetMemberId');
+      },
+    );
+  }
+
+  /// 회원 차단 해제 API
+  /// `POST /api/members/block/delete`
+  Future<void> unblockMember(String blockTargetMemberId) async {
+    const String url = '${AppUrls.baseUrl}/api/members/block/delete';
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {'blockTargetMemberId': blockTargetMemberId},
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('회원 차단 해제 성공: $blockTargetMemberId');
+      },
+    );
+  }
+
+  /// 알림 수신 동의 업데이트 API
+  /// `POST /api/members/notification/update`
+  Future<MemberResponse> updateNotificationAgreement({
+    required bool isNotificationAgreed,
+  }) async {
+    const String url = '${AppUrls.baseUrl}/api/members/notification/update';
+    late MemberResponse memberResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {'isNotificationAgreed': isNotificationAgreed.toString()},
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        memberResponse = MemberResponse.fromJson(responseData);
+        debugPrint('알림 수신 동의 업데이트 성공: $isNotificationAgreed');
+      },
+    );
+
+    return memberResponse;
+  }
 }

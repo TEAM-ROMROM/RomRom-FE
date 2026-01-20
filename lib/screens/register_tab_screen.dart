@@ -468,10 +468,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
             child: SizedBox(
               width: 30.w,
               height: 30.h,
-              child: RomRomContextMenu(
+              child: RomRomContextMenu(                
                 items: [
                   ContextMenuItem(
                     id: 'changeTradeStatus',
+                    contextIcon: AppIcons.dotsVerticalSmall,
                     title: _currentTabStatus == MyItemToggleStatus.selling
                         ? '거래완료로 변경'
                         : '판매중으로 변경',
@@ -480,12 +481,14 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ),
                   ContextMenuItem(
                     id: 'edit',
+                    contextIcon: AppIcons.dotsVerticalSmall,
                     title: '수정',
                     onTap: () => _navigateToEditItem(item),
                     showDividerAfter: true,
                   ),
                   ContextMenuItem(
                     id: 'delete',
+                    contextIcon: AppIcons.dotsVerticalSmall,
                     title: '삭제',
                     textColor: AppColors.itemOptionsMenuDeleteText,
                     onTap: () => _showDeleteConfirmDialog(item),

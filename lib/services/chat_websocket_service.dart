@@ -228,15 +228,10 @@ class ChatWebSocketService {
       throw Exception('STOMP not connected');
     }
 
-    final now = DateTime.now()
-        .toUtc()
-        .millisecondsSinceEpoch; // epoch ms (UTC 권장)
-
     final payload = jsonEncode({
       'chatRoomId': chatRoomId,
       'content': content,
       'type': type.toString().split('.').last.toUpperCase(),
-      'clientSentAt': now,
     });
 
     debugPrint('[WebSocket] Sending message to /app/chat.send');

@@ -428,6 +428,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     else
                       Column(
                         children: [
+                          SizedBox(height: 6.h,),
                           SvgPicture.asset(
                               'assets/images/item-register-photo.svg'),
                           SizedBox(height: 4.h),
@@ -645,7 +646,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       },
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 16.w, vertical: 16.h),
+                            horizontal: 16.w, vertical: 14.h),
                         decoration: BoxDecoration(
                           color:
                               (_hasCategoryBeenTouched || _forceValidateAll) &&
@@ -672,14 +673,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                   color: selectedCategory != null
                                       ? AppColors.textColorWhite
                                       : AppColors.opacity40White,
-                                  height: 1.4,
                                 ),
                               ),
-                            ),
-                            Icon(
-                              AppIcons.detailView,
-                              color: AppColors.textColorWhite,
-                              size: 18.w,
                             ),
                           ],
                         ),
