@@ -15,14 +15,13 @@ class ItemDetailTradeOptionTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 8.w,
-        vertical: 6.h,
-      ),
+      height: 23.h,
+      width: 62.w, 
       decoration: BoxDecoration(
-        color: const Color(0xFFCACDFF),
+        color:AppColors.transactionTagBackground,
         borderRadius: BorderRadius.circular(100.r),
       ),
+      alignment: Alignment.center,
       child: Text(
         option,
         style: CustomTextStyles.p3.copyWith(

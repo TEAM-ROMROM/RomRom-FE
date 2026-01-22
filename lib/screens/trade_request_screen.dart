@@ -20,6 +20,7 @@ import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
 import 'package:romrom_fe/widgets/trade_request_target_preview.dart';
+import 'package:romrom_fe/widgets/trade_request_trade_option_selector.dart';
 
 /// 요청하기 화면
 /// 내 물품 카드 선택 후 거래방식을 선택하여 요청을 전송하는 화면
@@ -221,12 +222,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
             child: Container(
               width: double.infinity,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment(0, -1),
-                  end: Alignment(0, 1),
-                  stops: [0.0, 0.5, 1.0],
-                  colors: AppColors.tradeReqeustBackgroundGradient,
-                ),
+                gradient: LinearGradient(begin: Alignment(0, -1), end: Alignment(0, 1), stops: [0.0, 0.5, 1.0], colors: AppColors.tradeReqeustBackgroundGradient),
               ),
             ),
           ),
@@ -289,22 +285,22 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
   /// 거래방식 선택 및 요청
   Widget _buildTradeRequestStep() {
-    return Column(
-      children: [
-        // 교환 대상 물품 미리보기
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
-          child: TradeRequestTargetPreview(imageUrl: widget.targetImageUrl, itemName: widget.targetItem.itemName ?? '물품', tags: _getTargetItemTags()),
-        ),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+      child: Column(
+        children: [
+          // 교환 대상 물품 미리보기
+          TradeRequestTargetPreview(imageUrl: widget.targetImageUrl, itemName: widget.targetItem.itemName ?? '물품', tags: _getTargetItemTags()),
 
-        Expanded(
-          child: !_hasSelectedCard
-              ?
-                // 카드 선택 상태: 내 물품 카드 PageView로 선택 가능
-                Column(
-                  children: [
-                    Expanded(
-                      child: PageView.builder(
+          // 내 물품 카드 영역
+          Padding(
+            padding: EdgeInsetsGeometry.only(top: 32.h),
+            child: !_hasSelectedCard
+                ?
+                  // 카드 선택 상태: 내 물품 카드 PageView로 선택 가능
+                  Column(
+                    children: [
+                      PageView.builder(
                         controller: _pageController,
                         itemCount: _myItemCards.length,
                         onPageChanged: (index) {
@@ -314,51 +310,37 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                           return RequestManagementItemCardWidget(card: _myItemCards[index], isActive: index == _selectedCardIndex);
                         },
                       ),
-                    ),
 
-                    // 페이지 인디케이터
-                    Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      child: _buildPageIndicator(),
-                    ),
-                  ],
-                )
-              :
-                // 카드 선택 완료: 선택한 내 물품 카드만 표시
-                Expanded(
-                  child: Center(child: RequestManagementItemCardWidget(card: _myItemCards[_selectedCardIndex], isActive: true)),
-                ),
-        ),
-
-        // 거래방식 선택 섹션
-        Container(
-          width: double.infinity,
-          margin: EdgeInsets.symmetric(horizontal: 24.w),
-          padding: EdgeInsets.all(16.w),
-          decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('거래방식 선택', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity80White)),
-              SizedBox(height: 12.h),
-              Wrap(
-                spacing: 8.w,
-                runSpacing: 8.h,
-                children: ItemTradeOption.values.map((option) {
-                  final isSelected = _selectedTradeOptions.contains(option);
-                  return _buildTradeOptionChip(option, isSelected);
-                }).toList(),
-              ),
-            ],
+                      // 페이지 인디케이터
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
+                        child: _buildPageIndicator(),
+                      ),
+                    ],
+                  )
+                :
+                  // 카드 선택 완료: 선택한 내 물품 카드만 표시
+                  Center(child: RequestManagementItemCardWidget(card: _myItemCards[_selectedCardIndex], isActive: true)),
           ),
-        ),
 
-        SizedBox(height: 16.h),
+          SizedBox(height: _hasSelectedCard ? 31.h :   23.h),
 
-        // 하단 버튼 (취소, 요청하기)
-        Padding(
-          padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 49.h),
-          child: Row(
+          // 거래방식 선택 섹션
+          TradeRequestTradeOptionSelector(
+            selectedOptions: _selectedTradeOptions,
+            onChanged: (next) {
+              setState(() {
+                _selectedTradeOptions
+                  ..clear()
+                  ..addAll(next);
+              });
+            },
+          ),
+
+          SizedBox(height: _hasSelectedCard ? 24.h :   16.h),
+
+          // 하단 버튼 (취소, 요청하기)
+          Row(
             children: [
               // 취소 버튼
               Expanded(
@@ -368,17 +350,17 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     style: TextButton.styleFrom(
-                      backgroundColor: AppColors.transactionRequestDialogCancelButton,
+                      backgroundColor: AppColors.secondaryBlack1,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
                     ),
-                    child: Text('취소', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
+                    child: Text('취소', style: CustomTextStyles.p1),
                   ),
                 ),
               ),
-              SizedBox(width: 12.w),
+              SizedBox(width: 7.w),
               // 요청하기 버튼
               Expanded(
-                flex: 2,
+                flex: 1,
                 child: SizedBox(
                   height: 56.h,
                   child: TextButton(
@@ -399,8 +381,8 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -415,29 +397,6 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           height: 8.w,
           margin: EdgeInsets.symmetric(horizontal: 4.w),
           decoration: BoxDecoration(shape: BoxShape.circle, color: index == _selectedCardIndex ? AppColors.primaryYellow : AppColors.opacity30White),
-        ),
-      ),
-    );
-  }
-
-  /// 거래방식 칩 빌드
-  Widget _buildTradeOptionChip(ItemTradeOption option, bool isSelected) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (isSelected) {
-            _selectedTradeOptions.remove(option);
-          } else {
-            _selectedTradeOptions.add(option);
-          }
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-        decoration: BoxDecoration(color: isSelected ? AppColors.primaryYellow : AppColors.secondaryBlack2, borderRadius: BorderRadius.circular(100.r)),
-        child: Text(
-          option.label,
-          style: CustomTextStyles.p3.copyWith(color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite, fontWeight: FontWeight.w500),
         ),
       ),
     );

@@ -39,6 +39,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
               border: Border.all(
                 color: AppColors.opacity60White,
                 width: 4.w,
+                strokeAlign: BorderSide.strokeAlignOutside
               ),
               color: AppColors.opacity80White,
               boxShadow: [

@@ -19,8 +19,12 @@ class ItemDetailConditionTag extends StatelessWidget {
         horizontal: 8.w,
         vertical: 6.h,
       ),
+      constraints: BoxConstraints(
+        minWidth: 62.w,
+        minHeight: 23.h,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1C4),
+        color: AppColors.conditionTagBackground,
         borderRadius: BorderRadius.circular(100.r),
       ),
       child: Text(
