@@ -20,9 +20,8 @@ import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
 import 'package:romrom_fe/widgets/trade_request_target_preview.dart';
 
-/// 요청하기 화면 (2단계)
-/// 1단계: 내 물품 카드 선택
-/// 2단계: 거래방식 선택 및 요청 전송
+/// 요청하기 화면
+/// 내 물품 카드 선택 후 거래방식을 선택하여 요청을 전송하는 화면
 class TradeRequestScreen extends StatefulWidget {
   /// 교환 대상 물품 (상대방 물품)
   final Item targetItem;
@@ -34,20 +33,15 @@ class TradeRequestScreen extends StatefulWidget {
   /// 이 값이 있으면 해당 카드를 자동 선택하고 2단계로 시작
   final String? preSelectedCardId;
 
-  const TradeRequestScreen({
-    super.key,
-    required this.targetItem,
-    this.targetImageUrl,
-    this.preSelectedCardId,
-  });
+  const TradeRequestScreen({super.key, required this.targetItem, this.targetImageUrl, this.preSelectedCardId});
 
   @override
   State<TradeRequestScreen> createState() => _TradeRequestScreenState();
 }
 
 class _TradeRequestScreenState extends State<TradeRequestScreen> {
-  /// 현재 단계 (1: 카드 선택, 2: 거래방식 선택)
-  int _currentStep = 1;
+  /// 선택된 카드가 있는지 여부에 따라 초기값 설정
+  bool _hasSelectedCard = false;
 
   /// 내 물품 목록
   List<Item> _myItems = [];
@@ -73,10 +67,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(
-      initialPage: 0,
-      viewportFraction: 0.6,
-    );
+    _pageController = PageController(initialPage: 0, viewportFraction: 0.6);
     _loadMyItems();
   }
 
@@ -92,13 +83,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getMyItems(
-        ItemRequest(
-          pageNumber: 0,
-          pageSize: 20,
-          itemStatus: ItemStatus.available.serverName,
-        ),
-      );
+      final response = await itemApi.getMyItems(ItemRequest(pageNumber: 0, pageSize: 20, itemStatus: ItemStatus.available.serverName));
 
       if (!mounted) return;
 
@@ -111,15 +96,13 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
         _isLoading = false;
       });
 
-      // preSelectedCardId가 있으면 해당 카드 찾아서 선택 후 2단계로 이동
+      // preSelectedCardId가 있으면 해당 카드 찾아서 선택 후 _hasSelectedCard를 true로 설정
       if (widget.preSelectedCardId != null && items.isNotEmpty) {
-        final preSelectedIndex = items.indexWhere(
-          (item) => item.itemId == widget.preSelectedCardId,
-        );
+        final preSelectedIndex = items.indexWhere((item) => item.itemId == widget.preSelectedCardId);
         if (preSelectedIndex >= 0) {
           setState(() {
             _selectedCardIndex = preSelectedIndex;
-            _currentStep = 2;
+            _hasSelectedCard = true;
           });
           // PageController 위치도 업데이트
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -135,11 +118,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
       setState(() => _isLoading = false);
 
-      CommonSnackBar.show(
-        context: context,
-        message: '물품 목록을 불러오는데 실패했습니다.',
-        type: SnackBarType.error,
-      );
+      CommonSnackBar.show(context: context, message: '물품 목록을 불러오는데 실패했습니다.', type: SnackBarType.error);
     }
   }
 
@@ -168,11 +147,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
   /// 거래 요청 API 호출
   Future<void> _submitTradeRequest() async {
     if (_selectedTradeOptions.isEmpty) {
-      CommonSnackBar.show(
-        context: context,
-        message: '거래방식을 선택해주세요.',
-        type: SnackBarType.info,
-      );
+      CommonSnackBar.show(context: context, message: '거래방식을 선택해주세요.', type: SnackBarType.info);
       return;
     }
 
@@ -180,21 +155,12 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
     try {
       await TradeApi().requestTrade(
-        TradeRequest(
-          takeItemId: widget.targetItem.itemId,
-          giveItemId: _myItems[_selectedCardIndex].itemId,
-          itemTradeOptions:
-              _selectedTradeOptions.map((o) => o.serverName).toList(),
-        ),
+        TradeRequest(takeItemId: widget.targetItem.itemId, giveItemId: _myItems[_selectedCardIndex].itemId, itemTradeOptions: _selectedTradeOptions.map((o) => o.serverName).toList()),
       );
 
       if (!mounted) return;
 
-      CommonSnackBar.show(
-        context: context,
-        message: '거래 요청이 전송되었습니다.',
-        type: SnackBarType.success,
-      );
+      CommonSnackBar.show(context: context, message: '거래 요청이 전송되었습니다.', type: SnackBarType.success);
 
       Navigator.pop(context, true);
     } catch (e) {
@@ -203,11 +169,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
       final errorMessage = ErrorUtils.getErrorMessage(e);
 
-      await CommonModal.error(
-        context: context,
-        message: errorMessage,
-        onConfirm: () => Navigator.of(context).pop(),
-      );
+      await CommonModal.error(context: context, message: errorMessage, onConfirm: () => Navigator.of(context).pop());
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -222,8 +184,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
     // 물품 상태 태그
     if (widget.targetItem.itemCondition != null) {
       try {
-        final condition =
-            ItemCondition.fromServerName(widget.targetItem.itemCondition!);
+        final condition = ItemCondition.fromServerName(widget.targetItem.itemCondition!);
         tags.add(condition.label);
       } catch (_) {}
     }
@@ -251,29 +212,17 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.textColorWhite),
           onPressed: () {
-            if (_currentStep == 2 && widget.preSelectedCardId == null) {
-              // 2단계에서 뒤로가기 시 1단계로 이동 (preSelectedCard가 없는 경우에만)
-              setState(() => _currentStep = 1);
-            } else {
-              Navigator.pop(context);
-            }
+            Navigator.pop(context);
           },
         ),
-        title: Text(
-          '요청하기',
-          style: CustomTextStyles.h3,
-        ),
+        title: Text('요청하기', style: CustomTextStyles.h3),
         centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryYellow),
-            )
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
           : _myItemCards.isEmpty
-              ? _buildEmptyState()
-              : _currentStep == 1
-                  ? _buildStep1()
-                  : _buildStep2(),
+          ? _buildEmptyState()
+          : _buildTradeRequestStep(),
     );
   }
 
@@ -285,123 +234,64 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inventory_2_outlined,
-              size: 64.sp,
-              color: AppColors.opacity50White,
-            ),
+            Icon(Icons.inventory_2_outlined, size: 64.sp, color: AppColors.opacity50White),
             SizedBox(height: 16.h),
-            Text(
-              '등록된 물품이 없습니다',
-              style: CustomTextStyles.h3.copyWith(
-                color: AppColors.opacity80White,
-              ),
-            ),
+            Text('등록된 물품이 없습니다', style: CustomTextStyles.h3.copyWith(color: AppColors.opacity80White)),
             SizedBox(height: 8.h),
             Text(
               '교환 요청을 하려면 먼저\n물품을 등록해주세요.',
-              style: CustomTextStyles.p2.copyWith(
-                color: AppColors.opacity50White,
-              ),
+              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24.h),
-            CustomFloatingButton(
-              isEnabled: true,
-              enabledOnPressed: () => Navigator.pop(context),
-              buttonText: '돌아가기',
-              buttonWidth: 120,
-              buttonHeight: 44,
-            ),
+            CustomFloatingButton(isEnabled: true, enabledOnPressed: () => Navigator.pop(context), buttonText: '돌아가기', buttonWidth: 120, buttonHeight: 44),
           ],
         ),
       ),
     );
   }
 
-  /// 1단계: 내 카드 선택
-  Widget _buildStep1() {
+  /// 거래방식 선택 및 요청
+  Widget _buildTradeRequestStep() {
     return Column(
       children: [
         // 교환 대상 물품 미리보기
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
-          child: TradeRequestTargetPreview(
-            imageUrl: widget.targetImageUrl,
-            itemName: widget.targetItem.itemName ?? '물품',
-            tags: _getTargetItemTags(),
-          ),
+          child: TradeRequestTargetPreview(imageUrl: widget.targetImageUrl, itemName: widget.targetItem.itemName ?? '물품', tags: _getTargetItemTags()),
         ),
 
-        // 내 물품 카드 PageView
         Expanded(
-          child: Column(
-            children: [
-              SizedBox(height: 24.h),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _myItemCards.length,
-                  onPageChanged: (index) {
-                    setState(() => _selectedCardIndex = index);
-                  },
-                  itemBuilder: (context, index) {
-                    return RequestManagementItemCardWidget(
-                      card: _myItemCards[index],
-                      isActive: index == _selectedCardIndex,
-                    );
-                  },
+          child: !_hasSelectedCard
+              ?
+                // 카드 선택 상태: 내 물품 카드 PageView로 선택 가능
+                Column(
+                  children: [
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _myItemCards.length,
+                        onPageChanged: (index) {
+                          setState(() => _selectedCardIndex = index);
+                        },
+                        itemBuilder: (context, index) {
+                          return RequestManagementItemCardWidget(card: _myItemCards[index], isActive: index == _selectedCardIndex);
+                        },
+                      ),
+                    ),
+
+                    // 페이지 인디케이터
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                      child: _buildPageIndicator(),
+                    ),
+                  ],
+                )
+              :
+                // 카드 선택 완료: 선택한 내 물품 카드만 표시
+                Expanded(
+                  child: Center(child: RequestManagementItemCardWidget(card: _myItemCards[_selectedCardIndex], isActive: true)),
                 ),
-              ),
-
-              // 페이지 인디케이터
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.h),
-                child: _buildPageIndicator(),
-              ),
-            ],
-          ),
-        ),
-
-        // 하단 "다음" 버튼
-        Padding(
-          padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 49.h),
-          child: CustomFloatingButton(
-            isEnabled: true,
-            enabledOnPressed: () {
-              setState(() => _currentStep = 2);
-            },
-            buttonText: '다음',
-            buttonWidth: 346,
-            buttonHeight: 56,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 2단계: 거래방식 선택 및 요청
-  Widget _buildStep2() {
-    return Column(
-      children: [
-        // 교환 대상 물품 미리보기
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
-          child: TradeRequestTargetPreview(
-            imageUrl: widget.targetImageUrl,
-            itemName: widget.targetItem.itemName ?? '물품',
-            tags: _getTargetItemTags(),
-          ),
-        ),
-
-        // 선택한 내 물품 카드 (1개만)
-        Expanded(
-          child: Center(
-            child: RequestManagementItemCardWidget(
-              card: _myItemCards[_selectedCardIndex],
-              isActive: true,
-            ),
-          ),
         ),
 
         // 거래방식 선택 섹션
@@ -409,19 +299,11 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           width: double.infinity,
           margin: EdgeInsets.symmetric(horizontal: 24.w),
           padding: EdgeInsets.all(16.w),
-          decoration: BoxDecoration(
-            color: AppColors.secondaryBlack1,
-            borderRadius: BorderRadius.circular(10.r),
-          ),
+          decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '거래방식 선택',
-                style: CustomTextStyles.p2.copyWith(
-                  color: AppColors.opacity80White,
-                ),
-              ),
+              Text('거래방식 선택', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity80White)),
               SizedBox(height: 12.h),
               Wrap(
                 spacing: 8.w,
@@ -450,18 +332,10 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     style: TextButton.styleFrom(
-                      backgroundColor:
-                          AppColors.transactionRequestDialogCancelButton,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
+                      backgroundColor: AppColors.transactionRequestDialogCancelButton,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
                     ),
-                    child: Text(
-                      '취소',
-                      style: CustomTextStyles.p1.copyWith(
-                        color: AppColors.textColorBlack,
-                      ),
-                    ),
+                    child: Text('취소', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
                   ),
                 ),
               ),
@@ -474,28 +348,16 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                   child: TextButton(
                     onPressed: _isSubmitting ? null : _submitTradeRequest,
                     style: TextButton.styleFrom(
-                      backgroundColor: _isSubmitting
-                          ? AppColors.primaryYellow.withValues(alpha: 0.5)
-                          : AppColors.primaryYellow,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
+                      backgroundColor: _isSubmitting ? AppColors.primaryYellow.withValues(alpha: 0.5) : AppColors.primaryYellow,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
                     ),
                     child: _isSubmitting
                         ? SizedBox(
                             width: 24.w,
                             height: 24.h,
-                            child: const CircularProgressIndicator(
-                              color: AppColors.textColorBlack,
-                              strokeWidth: 2,
-                            ),
+                            child: const CircularProgressIndicator(color: AppColors.textColorBlack, strokeWidth: 2),
                           )
-                        : Text(
-                            '요청하기',
-                            style: CustomTextStyles.p1.copyWith(
-                              color: AppColors.textColorBlack,
-                            ),
-                          ),
+                        : Text('요청하기', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
                   ),
                 ),
               ),
@@ -516,12 +378,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           width: 8.w,
           height: 8.w,
           margin: EdgeInsets.symmetric(horizontal: 4.w),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: index == _selectedCardIndex
-                ? AppColors.primaryYellow
-                : AppColors.opacity30White,
-          ),
+          decoration: BoxDecoration(shape: BoxShape.circle, color: index == _selectedCardIndex ? AppColors.primaryYellow : AppColors.opacity30White),
         ),
       ),
     );
@@ -541,16 +398,10 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
       },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryYellow : AppColors.secondaryBlack2,
-          borderRadius: BorderRadius.circular(100.r),
-        ),
+        decoration: BoxDecoration(color: isSelected ? AppColors.primaryYellow : AppColors.secondaryBlack2, borderRadius: BorderRadius.circular(100.r)),
         child: Text(
           option.label,
-          style: CustomTextStyles.p3.copyWith(
-            color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
-            fontWeight: FontWeight.w500,
-          ),
+          style: CustomTextStyles.p3.copyWith(color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite, fontWeight: FontWeight.w500),
         ),
       ),
     );
