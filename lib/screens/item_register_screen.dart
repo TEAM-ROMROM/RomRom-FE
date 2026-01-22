@@ -28,7 +28,7 @@ class _ItemRegisterScreenState extends State<ItemRegisterScreen> {
           showBottomBorder: true,
         ),
         body: SingleChildScrollView(
-            padding: EdgeInsets.only(top: 24.h, bottom: 24.h, left: 24.w),
+            padding: EdgeInsets.only(top: 16.h, bottom: 24.h, left: 24.w),
             child: const RegisterInputForm(
               isEditMode: false, // false면 등록화면
             )),

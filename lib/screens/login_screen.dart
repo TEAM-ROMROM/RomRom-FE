@@ -46,10 +46,13 @@ class LoginScreen extends StatelessWidget {
             ),
             SizedBox(height: 174.0.h), // 간격 추가
             // 로그인 버튼 그룹
-            AuthButtonGroup(
-              buttons: loginPlatforms
-                  .map((platform) => LoginButton(platform: platform))
-                  .toList(),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+              child: AuthButtonGroup(
+                buttons: loginPlatforms
+                    .map((platform) => LoginButton(platform: platform))
+                    .toList(),
+              ),
             ),
           ],
         ),

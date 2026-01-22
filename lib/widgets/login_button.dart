@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
+import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
@@ -74,6 +75,8 @@ class _LoginButtonState extends State<LoginButton> {
           );
         } else {
           await RomAuthApi().fetchAndSaveMemberInfo();
+          // 기존 회원 로그인: FCM 토큰 저장
+          await FirebaseService().handleFcmToken();
           nextScreen = MainScreen(key: MainScreen.globalKey);
         }
 
@@ -100,7 +103,7 @@ class _LoginButtonState extends State<LoginButton> {
               await handleLogin(context);
             },
       child: Container(
-        width: 316.w,
+        width: double.infinity,
         height: 56.h,
         margin: EdgeInsets.only(bottom: 12.h),
         decoration: BoxDecoration(

@@ -477,7 +477,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
           Text(
             value,
             style: CustomTextStyles.p2.copyWith(
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
               color: AppColors.opacity60White,
             ),
           ),
@@ -495,7 +495,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         color: AppColors.secondaryBlack1,
         borderRadius: BorderRadius.circular(10.r),
       ),
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

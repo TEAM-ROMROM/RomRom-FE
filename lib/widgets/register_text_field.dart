@@ -181,45 +181,48 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                     }
                   }
 
-                  return TextField(
-                    controller: widget.controller,
-                    focusNode: _focusNode,
-                    maxLength: widget.maxLength,
-                    maxLines: widget.maxLines,
-                    keyboardType: widget.keyboardType,
-                    readOnly: widget.readOnly,
-                    onTap: widget.onTap,
-                    style: CustomTextStyles.p2
-                        .copyWith(color: AppColors.textColorWhite, height: 1.4),
-                    cursorColor: AppColors.textColorWhite,
-                    decoration: InputDecoration(
-                      hintText: widget.phrase.hintText,
-                      filled: true,
-                      fillColor: shouldShowError
-                          ? AppColors.errorContainer
-                          : AppColors.opacity10White,
-                      border: shouldShowError ? errorBorder : inputBorder,
-                      enabledBorder:
-                          shouldShowError ? errorBorder : inputBorder,
-                      focusedBorder:
-                          shouldShowError ? errorBorder : inputBorder,
-                      hintStyle: CustomTextStyles.p2
-                          .copyWith(color: AppColors.opacity40White),
-                      counterText: '',
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16.w, vertical: 16.h),
-                      suffixIcon: widget.suffixIcon,
-                      errorBorder: errorBorder,
-                      prefix: widget.prefixText.isNotEmpty
-                          ? Padding(
-                              padding: EdgeInsets.only(right: 8.0.w),
-                              child: Text(
-                                widget.prefixText,
-                                style: CustomTextStyles.p2
-                                    .copyWith(color: AppColors.textColorWhite),
-                              ),
-                            )
-                          : null,
+                  return SizedBox(
+                    height: 46.h,
+                    child: TextField(
+                      controller: widget.controller,
+                      focusNode: _focusNode,
+                      maxLength: widget.maxLength,
+                      maxLines: widget.maxLines,
+                      keyboardType: widget.keyboardType,
+                      readOnly: widget.readOnly,
+                      onTap: widget.onTap,
+                      style: CustomTextStyles.p2
+                          .copyWith(color: AppColors.textColorWhite, height: 1.4),
+                      cursorColor: AppColors.textColorWhite,
+                      decoration: InputDecoration(
+                        hintText: widget.phrase.hintText,
+                        filled: true,
+                        fillColor: shouldShowError
+                            ? AppColors.errorContainer
+                            : AppColors.opacity10White,
+                        border: shouldShowError ? errorBorder : inputBorder,
+                        enabledBorder:
+                            shouldShowError ? errorBorder : inputBorder,
+                        focusedBorder:
+                            shouldShowError ? errorBorder : inputBorder,
+                        hintStyle: CustomTextStyles.p2
+                            .copyWith(color: AppColors.opacity40White),
+                        counterText: '',
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16.w, vertical: 14.h),
+                        suffixIcon: widget.suffixIcon,
+                        errorBorder: errorBorder,
+                        prefix: widget.prefixText.isNotEmpty
+                            ? Padding(
+                                padding: EdgeInsets.only(right: 8.0.w),
+                                child: Text(
+                                  widget.prefixText,
+                                  style: CustomTextStyles.p2
+                                      .copyWith(color: AppColors.textColorWhite),
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
                   );
                 },

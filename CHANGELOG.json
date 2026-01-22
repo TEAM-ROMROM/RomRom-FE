@@ -1,11 +1,56 @@
 {
   "metadata": {
-    "lastUpdated": "2026-01-05T13:41:00Z",
-    "currentVersion": "1.8.16",
-    "totalReleases": 55,
+    "lastUpdated": "2026-01-22T06:23:24Z",
+    "currentVersion": "1.8.45",
+    "totalReleases": 57,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.8.45",
+      "project_type": "flutter",
+      "date": "2026-01-22",
+      "pr_number": 447,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **Chores**\n  * 애플리케이션 버전을 v1.8.45로 업데이트했습니다.\n  * 빌드 도구 및 워크플로우 환경 설정을 최신화했습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "애플리케이션 버전을 v1.8.45로 업데이트했습니다.",
+            "빌드 도구 및 워크플로우 환경 설정을 최신화했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.8.44",
+      "project_type": "flutter",
+      "date": "2026-01-20",
+      "pr_number": 444,
+      "raw_summary": "## Summary by CodeRabbit\n\n* **New Features**\n  * 푸시 알림 및 로컬 알림 기능 추가\n  * 거래 요청 플로우 개선 및 새 화면 추가\n  * 회원 차단 및 알림 동의 관리 기능\n  * 거래 위치 상세 정보 화면 추가\n\n* **Improvements**\n  * 채팅 화면 UI 개선 (동적 입력 필드 높이)\n  * 프로필 메뉴에 아이콘 추가\n  * 안드로이드 및 iOS 개발 환경 최적화\n  * 적응형 런처 아이콘 지원",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "푸시 알림 및 로컬 알림 기능 추가",
+            "거래 요청 플로우 개선 및 새 화면 추가",
+            "회원 차단 및 알림 동의 관리 기능",
+            "거래 위치 상세 정보 화면 추가"
+          ]
+        },
+        "improvements": {
+          "title": "Improvements",
+          "items": [
+            "채팅 화면 UI 개선 (동적 입력 필드 높이)",
+            "프로필 메뉴에 아이콘 추가",
+            "안드로이드 및 iOS 개발 환경 최적화",
+            "적응형 런처 아이콘 지원"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.8.16",
       "project_type": "flutter",
