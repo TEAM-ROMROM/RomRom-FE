@@ -57,11 +57,11 @@ class ItemCard extends ConsumerWidget {
 
             // 텍스트 스타일 (작은 카드에서는 축소)
             final double smallTextScale = isSmall ? 0.9 : 1.0;
-            final categoryTextStyle = CustomTextStyles.p3.copyWith(fontSize: cs.fontSize(CustomTextStyles.p3.fontSize! * smallTextScale), color: AppColors.itemCardText.withValues(alpha: 0.5));
+            final categoryTextStyle = CustomTextStyles.p3.copyWith(fontSize: cs.fontSize(CustomTextStyles.p3.fontSize! * smallTextScale), color: AppColors.itemCardNameText.withValues(alpha: 0.5));
 
-            final nameTextStyle = CustomTextStyles.p1.copyWith(fontSize: cs.fontSize(CustomTextStyles.p1.fontSize! * (isSmall ? 0.8 : 1.0)), color: AppColors.itemCardText);
+            final nameTextStyle = CustomTextStyles.p1.copyWith(fontSize: cs.fontSize(CustomTextStyles.p1.fontSize! * (isSmall ? 0.8 : 1.0)), color: AppColors.itemCardNameText);
 
-            final optionTextStyle = CustomTextStyles.p3.copyWith(fontSize: cs.fontSize(CustomTextStyles.p3.fontSize! * smallTextScale), color: AppColors.itemCardText.withValues(alpha: 0.5));
+            final optionTextStyle = CustomTextStyles.p3.copyWith(fontSize: cs.fontSize(CustomTextStyles.p3.fontSize! * smallTextScale), color: AppColors.itemCardNameText.withValues(alpha: 0.5));
 
             return AspectRatio(
               aspectRatio: 310 / 496,

@@ -16,7 +16,7 @@ class ItemDetailTradeOptionTag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 23.h,
-      width: 62.w, 
+      width: 50.w, 
       decoration: BoxDecoration(
         color:AppColors.transactionTagBackground,
         borderRadius: BorderRadius.circular(100.r),

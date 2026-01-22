@@ -20,7 +20,7 @@ class ItemDetailConditionTag extends StatelessWidget {
         vertical: 6.h,
       ),
       constraints: BoxConstraints(
-        minWidth: 62.w,
+        minWidth: 50.w,
         minHeight: 23.h,
       ),
       decoration: BoxDecoration(

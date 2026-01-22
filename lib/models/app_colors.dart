@@ -54,7 +54,10 @@ class AppColors {
       const Color(0xFFFFFFFF).withValues(alpha: 0.6); // 물품 카드 테두리 색상
   static const Color itemCardShadow =
       Color(0x26000000); // 물품 카드 그림자 색상 , 검정색, opacity 15%
-  static const Color itemCardText = Color(0xFF131419); // 물품 카드 텍스트 색상
+  static const Color itemCardNameText = Color(0xFF131419); // 물품 카드 텍스트 색상
+  static const Color itemCardCategoryText = Color(0x80131419); // 물품 카드 카테고리 텍스트 색상
+  static const Color itemCardPriceText = Color(0xFF1D1E27); // 물품 카드 가격 텍스트 색상
+  static const Color itemCardLikeText = Color(0x991D1E27); // 물품 카드 좋아요 텍스트 색상
   static const Color itemCardOptionChip = Color(0xFFD2D2D2); // 물품 카드 요청 옵션 칩 색상
 
   // Item 내부 태그

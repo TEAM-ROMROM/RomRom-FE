@@ -35,6 +35,7 @@ class TradeRequestTargetPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(10.r),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 물품 이미지 썸네일
           ClipRRect(
@@ -67,6 +68,7 @@ class TradeRequestTargetPreview extends StatelessWidget {
                 // 태그들
                 Wrap(
                   spacing: 4.w,
+                  runSpacing: 4.h,
                   children: tags.map((tag) =>ItemCondition.values.any((option) => option.label == tag) ? ItemDetailConditionTag(condition: tag,) :ItemDetailTradeOptionTag(option: tag)).toList()
                 ),
               ],

@@ -69,7 +69,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 0, viewportFraction: 0.6);
+    _pageController = PageController(initialPage: 0, viewportFraction: 227.w / 345.w);
     _loadMyItems();
   }
 
@@ -235,11 +235,8 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
                 Expanded(
                   child: _isLoading
-                      ? Center(
-                          child: SizedBox(
-                            height: 200.h,
-                            child: const CircularProgressIndicator(color: AppColors.primaryYellow),
-                          ),
+                      ? const Center(
+                          child: CircularProgressIndicator(color: AppColors.primaryYellow),
                         )
                       : _myItemCards.isEmpty
                       ? _buildEmptyState()
@@ -294,26 +291,32 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
           // 내 물품 카드 영역
           Padding(
-            padding: EdgeInsetsGeometry.only(top: 32.h),
-            child: !_hasSelectedCard
+            padding: EdgeInsets.only(top: 32.h),
+            child:  !_hasSelectedCard
                 ?
                   // 카드 선택 상태: 내 물품 카드 PageView로 선택 가능
                   Column(
                     children: [
-                      PageView.builder(
-                        controller: _pageController,
-                        itemCount: _myItemCards.length,
-                        onPageChanged: (index) {
-                          setState(() => _selectedCardIndex = index);
-                        },
-                        itemBuilder: (context, index) {
-                          return RequestManagementItemCardWidget(card: _myItemCards[index], isActive: index == _selectedCardIndex);
-                        },
+                      SizedBox(
+                        height: 334.h,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: _myItemCards.length,
+                          onPageChanged: (index) {
+                            setState(() => _selectedCardIndex = index);
+                          },
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding:  EdgeInsets.symmetric(vertical: 4.0.h, horizontal: 4.w),
+                              child: RequestManagementItemCardWidget(card: _myItemCards[index], isActive: index == _selectedCardIndex),
+                            );
+                          },
+                        ),
                       ),
-
+                  
                       // 페이지 인디케이터
                       Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
+                        padding: EdgeInsets.only(top: 24.h),
                         child: _buildPageIndicator(),
                       ),
                     ],
