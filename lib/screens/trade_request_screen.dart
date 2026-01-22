@@ -206,7 +206,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
   /// AppBar 높이만큼 상단 여백 추가
   Widget _buildAppBarSpacing() {
-    return SizedBox(height: MediaQuery.of(context).padding.top + kToolbarHeight);
+    return Container(height: MediaQuery.of(context).padding.top + kToolbarHeight, constraints: BoxConstraints(minHeight: 115.h),);
   }
 
   @override
