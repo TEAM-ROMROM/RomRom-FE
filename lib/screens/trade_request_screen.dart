@@ -17,6 +17,7 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
+import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
 import 'package:romrom_fe/widgets/trade_request_target_preview.dart';
 
@@ -202,51 +203,86 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
     return tags;
   }
 
+  /// AppBar 높이만큼 상단 여백 추가
+  Widget _buildAppBarSpacing() {
+    return SizedBox(height: MediaQuery.of(context).padding.top + kToolbarHeight);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryBlack,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textColorWhite),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: Text('요청하기', style: CustomTextStyles.h3),
-        centerTitle: true,
+      resizeToAvoidBottomInset: false,
+      extendBodyBehindAppBar: true,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      appBar: const CommonAppBar(title: '요청하기'),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment(0, -1),
+                  end: Alignment(0, 1),
+                  stops: [0.0, 0.5, 1.0],
+                  colors: AppColors.tradeReqeustBackgroundGradient,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: double.infinity,
+            width: double.infinity,
+            child: Column(
+              children: [
+                _buildAppBarSpacing(),
+
+                Expanded(
+                  child: _isLoading
+                      ? Center(
+                          child: SizedBox(
+                            height: 200.h,
+                            child: const CircularProgressIndicator(color: AppColors.primaryYellow),
+                          ),
+                        )
+                      : _myItemCards.isEmpty
+                      ? _buildEmptyState()
+                      : _buildTradeRequestStep(),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
-          : _myItemCards.isEmpty
-          ? _buildEmptyState()
-          : _buildTradeRequestStep(),
     );
   }
 
   /// 빈 상태 UI (내 물품이 없을 때)
   Widget _buildEmptyState() {
     return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inventory_2_outlined, size: 64.sp, color: AppColors.opacity50White),
-            SizedBox(height: 16.h),
-            Text('등록된 물품이 없습니다', style: CustomTextStyles.h3.copyWith(color: AppColors.opacity80White)),
-            SizedBox(height: 8.h),
-            Text(
-              '교환 요청을 하려면 먼저\n물품을 등록해주세요.',
-              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
-              textAlign: TextAlign.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.inventory_2_outlined, size: 64.sp, color: AppColors.opacity50White),
+                SizedBox(height: 16.h),
+                Text('등록된 물품이 없습니다', style: CustomTextStyles.h2.copyWith(color: AppColors.opacity80White)),
+                SizedBox(height: 8.h),
+                Text(
+                  '교환 요청을 하려면 먼저\n물품을 등록해주세요.',
+                  style: CustomTextStyles.p1.copyWith(color: AppColors.opacity50White, height: 1.2),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 24.h),
+                CustomFloatingButton(isEnabled: true, enabledOnPressed: () => Navigator.pop(context), buttonText: '돌아가기', buttonWidth: 120, buttonHeight: 44),
+              ],
             ),
-            SizedBox(height: 24.h),
-            CustomFloatingButton(isEnabled: true, enabledOnPressed: () => Navigator.pop(context), buttonText: '돌아가기', buttonWidth: 120, buttonHeight: 44),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -257,7 +293,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
       children: [
         // 교환 대상 물품 미리보기
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
           child: TradeRequestTargetPreview(imageUrl: widget.targetImageUrl, itemName: widget.targetItem.itemName ?? '물품', tags: _getTargetItemTags()),
         ),
 
