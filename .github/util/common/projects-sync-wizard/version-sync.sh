@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================
-# version.json → testflight-wizard.html 동기화 스크립트
+# version.json → projects-sync-wizard.html 동기화 스크립트
 # 사용법: ./version-sync.sh
 # ============================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VERSION_FILE="$SCRIPT_DIR/version.json"
-INDEX_FILE="$SCRIPT_DIR/testflight-wizard.html"
+INDEX_FILE="$SCRIPT_DIR/projects-sync-wizard.html"
 
 # 파일 존재 확인
 if [ ! -f "$VERSION_FILE" ]; then
@@ -15,7 +15,7 @@ if [ ! -f "$VERSION_FILE" ]; then
 fi
 
 if [ ! -f "$INDEX_FILE" ]; then
-    echo "❌ testflight-wizard.html 파일을 찾을 수 없습니다: $INDEX_FILE"
+    echo "❌ projects-sync-wizard.html 파일을 찾을 수 없습니다: $INDEX_FILE"
     exit 1
 fi
 
@@ -24,14 +24,6 @@ CURRENT_VERSION=$(grep '"version"' "$VERSION_FILE" | head -1 | sed 's/.*: *"\([^
 echo "📦 동기화할 버전: v$CURRENT_VERSION"
 
 # Python을 사용해 안전하게 교체
-python3 << 'PYTHON_SCRIPT'
-import re
-import sys
-
-script_dir = sys.argv[0] if len(sys.argv) > 0 else '.'
-# 실제 경로는 쉘에서 전달
-PYTHON_SCRIPT
-
 python3 - "$VERSION_FILE" "$INDEX_FILE" << 'EOF'
 import sys
 import re
@@ -43,7 +35,7 @@ index_file = sys.argv[2]
 with open(version_file, 'r', encoding='utf-8') as f:
     version_content = f.read()
 
-# index.html 읽기
+# projects-sync-wizard.html 읽기
 with open(index_file, 'r', encoding='utf-8') as f:
     index_content = f.read()
 
@@ -58,5 +50,5 @@ with open(index_file, 'w', encoding='utf-8') as f:
     f.write(new_content)
 
 print("✅ 버전 정보 동기화 완료!")
-print("   - version.json → testflight-wizard.html")
+print("   - version.json → projects-sync-wizard.html")
 EOF
