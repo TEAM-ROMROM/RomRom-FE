@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/enums/item_trade_option.dart';
-
+import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
+import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 
 /// 요청하기 화면 상단에 표시되는 교환 대상 물품 미리보기 카드
 class TradeRequestTargetPreview extends StatelessWidget {
@@ -28,23 +29,23 @@ class TradeRequestTargetPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
+        color: AppColors.primaryBlack,
         borderRadius: BorderRadius.circular(10.r),
       ),
       child: Row(
         children: [
           // 물품 이미지 썸네일
           ClipRRect(
-            borderRadius: BorderRadius.circular(8.r),
+            borderRadius: BorderRadius.circular(10.r),
             child: SizedBox(
-              width: 60.w,
-              height: 60.w,
+              width: 48.w,
+              height: 48.w,
               child: _buildImage(),
             ),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 16.w),
 
           // 물품 정보
           Expanded(
@@ -55,19 +56,18 @@ class TradeRequestTargetPreview extends StatelessWidget {
                 // 물품 이름
                 Text(
                   itemName,
-                  style: CustomTextStyles.p2.copyWith(
+                  style: CustomTextStyles.p1.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 8.h),
+                SizedBox(height: 10.h),
 
                 // 태그들
                 Wrap(
-                  spacing: 6.w,
-                  runSpacing: 4.h,
-                  children: tags.map((tag) => _buildTag(tag)).toList(),
+                  spacing: 4.w,
+                  children: tags.map((tag) =>ItemCondition.values.any((option) => option.label == tag) ? ItemDetailConditionTag(condition: tag,) :ItemDetailTradeOptionTag(option: tag)).toList()
                 ),
               ],
             ),
@@ -103,30 +103,6 @@ class TradeRequestTargetPreview extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  /// 태그 위젯 빌드
-  Widget _buildTag(String tag) {
-  // 거래방식 태그인지 확인 (ItemTradeOption enum에 존재하는 값만)
-  final isTradeOption = ItemTradeOption.values.any((option) => option.label == tag);
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: isTradeOption
-            ? AppColors.transactionTagBackground
-            : AppColors.conditionTagBackground,
-        borderRadius: BorderRadius.circular(4.r),
-      ),
-      child: Text(
-        tag,
-        style: CustomTextStyles.p3.copyWith(
-          color: AppColors.textColorBlack,
-          fontWeight: FontWeight.w500,
-          fontSize: 10.sp,
-        ),
-      ),
     );
   }
 }

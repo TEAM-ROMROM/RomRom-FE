@@ -15,7 +15,6 @@ class ItemDetailTradeOptionTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(right: 4.w),
       padding: EdgeInsets.symmetric(
         horizontal: 8.w,
         vertical: 6.h,

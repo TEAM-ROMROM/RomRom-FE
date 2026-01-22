@@ -671,13 +671,17 @@ class _ItemDetailDescriptionScreenState
                                       item!.itemCondition!,
                                     ).label,
                                   ),
-                                SizedBox(width: 8.w),
+                                SizedBox(width: 4.w),
                                 if (item?.itemTradeOptions?.isNotEmpty == true)
-                                  ...item!.itemTradeOptions!.map(
+                                Wrap(
+                                  spacing: 4.w,
+                                  children: [...item!.itemTradeOptions!.map(
                                     (option) => ItemDetailTradeOptionTag(
                                       option: _getTradeOptionName(option),
+                                      ),
                                     ),
-                                  ),
+                                  ],
+                                ),
                               ],
                             ),
                             SizedBox(height: 16.h),
