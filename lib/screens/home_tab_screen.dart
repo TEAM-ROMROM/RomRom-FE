@@ -9,7 +9,9 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/services/apis/trade_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -485,7 +487,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// 카드 드롭 핸들러 (거래 요청) - 요청하기 화면으로 이동
-  void _handleCardDrop(String cardId) {
+  void _handleCardDrop(String cardId) async {
     final feedItem = _feedItems[_currentFeedIndex];
 
     // HomeFeedItem을 Item으로 변환
@@ -498,14 +500,45 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           feedItem.transactionTypes.map((e) => e.serverName).toList(),
     );
 
-    context.navigateTo(
-      screen: TradeRequestScreen(
-        targetItem: targetItem,
-        targetImageUrl:
-            feedItem.imageUrls.isNotEmpty ? feedItem.imageUrls[0] : null,
-        preSelectedCardId: cardId,
-      ),
-    );
+    try {
+      // 거래 요청 존재 여부 확인
+      final tradeApi = TradeApi();
+      final exists = await tradeApi.checkTradeRequestExistence(
+        TradeRequest(
+          takeItemId: feedItem.itemUuid,
+          giveItemId: cardId,
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (exists) {
+        // 거래 요청이 이미 존재하면 토스트바 표시
+        CommonSnackBar.show(
+          context: context,
+          message: '이미 거래 요청이 존재합니다.',
+          type: SnackBarType.error,
+        );
+      } else {
+        // 거래 요청이 없으면 요청 화면으로 이동
+        context.navigateTo(
+          screen: TradeRequestScreen(
+            targetItem: targetItem,
+            targetImageUrl:
+                feedItem.imageUrls.isNotEmpty ? feedItem.imageUrls[0] : null,
+            preSelectedCardId: cardId,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('거래 요청 확인 오류: $e');
+      CommonSnackBar.show(
+        context: context,
+        message: '거래 요청 확인에 실패했습니다.',
+        type: SnackBarType.error,
+      );
+    }
   }
 
   @override

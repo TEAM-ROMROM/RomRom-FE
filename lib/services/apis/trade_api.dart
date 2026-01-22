@@ -217,4 +217,35 @@ class TradeApi {
       throw Exception('거래 완료로 변경 실패: ${response.statusCode}');
     }
   }
+
+  /// 거래 요청 존재 여부 반환 API
+  /// `POST /api/trade/check`
+  Future<bool> checkTradeRequestExistence(TradeRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/trade/check';
+    late TradeResponse tradeResponse;
+
+    final Map<String, dynamic> fields = {
+      'takeItemId': request.takeItemId,
+      'giveItemId': request.giveItemId,
+    };
+
+    http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        // 여기서는 호출되지 않음 - 아래에서 직접 처리
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      tradeResponse = TradeResponse.fromJson(responseData);
+      debugPrint('거래 요청 존재 여부 조회 성공');
+    } else {
+      throw Exception('거래 요청 존재 여부 조회 실패: ${response.statusCode}');
+    }
+
+    return tradeResponse.tradeRequestHistoryExists ?? false;
+  }
 }
