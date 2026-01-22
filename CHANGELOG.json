@@ -1,11 +1,28 @@
 {
   "metadata": {
-    "lastUpdated": "2026-01-20T15:52:55Z",
-    "currentVersion": "1.8.44",
-    "totalReleases": 56,
+    "lastUpdated": "2026-01-22T06:23:24Z",
+    "currentVersion": "1.8.45",
+    "totalReleases": 57,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.8.45",
+      "project_type": "flutter",
+      "date": "2026-01-22",
+      "pr_number": 447,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **Chores**\n  * 애플리케이션 버전을 v1.8.45로 업데이트했습니다.\n  * 빌드 도구 및 워크플로우 환경 설정을 최신화했습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "애플리케이션 버전을 v1.8.45로 업데이트했습니다.",
+            "빌드 도구 및 워크플로우 환경 설정을 최신화했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.8.44",
       "project_type": "flutter",
