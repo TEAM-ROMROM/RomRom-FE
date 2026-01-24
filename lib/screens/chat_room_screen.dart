@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/context_menu_enums.dart';
+import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
@@ -16,6 +18,7 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
@@ -409,13 +412,24 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             items: [
               ContextMenuItem(
                 id: 'report',
+                icon: AppIcons.flag,
                 title: '신고하기',
                 onTap: () async {
                   // TODO : 신고하기 화면으로 이동
                 },
               ),
               ContextMenuItem(
+                id: 'block',
+                icon: AppIcons.slashCircle,
+                title: '차단하기',
+                textColor: AppColors.itemOptionsMenuDeleteText,
+                onTap: () async {
+                  // TODO : 차단하기 기능 구현
+                },
+              ),
+              ContextMenuItem(
                 id: 'leave_chat_room',
+                icon: AppIcons.exit,
                 title: '채팅방 나가기',
                 textColor: AppColors.itemOptionsMenuDeleteText,
                 onTap: () async {
@@ -501,15 +515,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
               );
             },
-            child: ClipRRect(
+            child: CachedImage(
+              imageUrl: targetItem?.itemImages?.first.imageUrl ?? '',
+              width: 48.w,
+              height: 48.w,
               borderRadius: BorderRadius.circular(8.r),
-              child: Image.network(
-                targetItem?.itemImages?.first.imageUrl ?? '',
-                width: 48.w,
-                height: 48.w,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const ErrorImagePlaceholder(),
-              ),
+              errorWidget: const ErrorImagePlaceholder(),
             ),
           ),
           SizedBox(width: 16.w),
@@ -556,15 +567,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
               );
             },
-            child: ClipRRect(
+            child: CachedImage(
+              imageUrl: myItem?.itemImages?.first.imageUrl ?? '',
+              width: 48.w,
+              height: 48.w,
               borderRadius: BorderRadius.circular(8.r),
-              child: Image.network(
-                myItem?.itemImages?.first.imageUrl ?? '',
-                width: 48.w,
-                height: 48.h,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
+              errorWidget: const SizedBox.shrink(),
             ),
           ),
         ],
@@ -711,27 +719,31 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             child: SizedBox(
               width: 40.w,
               height: 40.w,
-              child: IconButton(
-                constraints: BoxConstraints(minWidth: 32.w, minHeight: 32.w),
-                icon: const Icon(
-                  AppIcons.addItemPlus,
-                  color: AppColors.textColorWhite,
-                ),
-                iconSize: 20.sp,
-                padding: EdgeInsets.zero,
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(
-                    AppColors.secondaryBlack1,
+              child: RomRomContextMenu(
+                position: ContextMenuPosition.above,
+                customTrigger: Container(
+                  width: 40.w,
+                  height: 40.w,
+                  decoration: const BoxDecoration(
+                    color: AppColors.secondaryBlack1,
+                    shape: BoxShape.circle,
                   ),
-                  shape: WidgetStateProperty.all(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(100.r),
-                    ),
+                  child: Icon(
+                    AppIcons.addItemPlus,
+                    color: AppColors.textColorWhite,
+                    size: 20.sp,
                   ),
                 ),
-                onPressed: () {
-                  // TODO: 이미지 전송 기능
-                },
+                items: [
+                  ContextMenuItem(
+                    id: 'select_photo',
+                    icon: AppIcons.image,
+                    title: '사진 선택하기',
+                    onTap: () {
+                      // TODO: 이미지 선택 및 전송 기능
+                    },
+                  ),
+                ],
               ),
             ),
           ),

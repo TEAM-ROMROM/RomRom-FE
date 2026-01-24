@@ -1,18 +1,9 @@
 // lib/models/apis/objects/chat_message.dart
 import 'package:json_annotation/json_annotation.dart';
+import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 
 part 'chat_message.g.dart';
-
-/// 채팅 메시지 타입 (백엔드 MessageType Enum)
-enum MessageType {
-  @JsonValue('TEXT')
-  text,
-  @JsonValue('IMAGE')
-  image,
-  @JsonValue('SYSTEM')
-  system,
-}
 
 /// 채팅 메시지 모델 (MongoDB)
 @JsonSerializable()

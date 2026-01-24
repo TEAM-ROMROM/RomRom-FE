@@ -6,6 +6,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/utils/item_card_scale_utils.dart';
 import 'package:romrom_fe/widgets/item_card_option_chip.dart';
 
@@ -171,16 +172,10 @@ class ItemCard extends ConsumerWidget {
       return placeholder;
     }
 
-    final String finalUrl = url.trim();
-
-    return Image.network(
-      finalUrl,
+    return CachedImage(
+      imageUrl: url.trim(),
       fit: BoxFit.cover,
-      height: double.infinity,
-      errorBuilder: (context, error, stackTrace) {
-        debugPrint('ItemCard 이미지 로드 실패: $finalUrl, error: $error');
-        return placeholder;
-      },
+      errorWidget: placeholder,
     );
   }
 }

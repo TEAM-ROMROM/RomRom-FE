@@ -3,11 +3,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
@@ -219,6 +221,7 @@ class SentRequestItemCard extends StatelessWidget {
         items: [
           ContextMenuItem(
             id: 'edit',
+            icon: AppIcons.edit,
             title: '수정',
             onTap: () {
               // 수정 액션
@@ -227,6 +230,7 @@ class SentRequestItemCard extends StatelessWidget {
           ),
           ContextMenuItem(
             id: 'cancel',
+            icon: AppIcons.cancel,
             title: '요청 취소',
             onTap: () {
               // 요청 취소 액션
@@ -271,26 +275,10 @@ class SentRequestItemCard extends StatelessWidget {
       return const ErrorImagePlaceholder();
     }
 
-    return Image.network(
-      imageUrl,
+    return CachedImage(
+      imageUrl: imageUrl,
       fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (context, error, stackTrace) {
-        return const ErrorImagePlaceholder();
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: AppColors.opacity20White,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primaryYellow,
-              strokeWidth: 2,
-            ),
-          ),
-        );
-      },
+      errorWidget: const ErrorImagePlaceholder(),
     );
   }
 

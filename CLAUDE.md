@@ -12,6 +12,7 @@ Flutter 기반 중고거래 플랫폼 RomRom의 프론트엔드 프로젝트입�
 - **파일명 규칙**: 위젯 파일명에 불필요한 `_widget` 접미사 사용 금지
 - **모바일 전용 프로젝트**: iOS/Android 전용으로 웹 호환성 고려 불필요
 - **화면 이동 시 팀 공통 확장 메서드 사용**: iOS 스와이프 제스처 지원을 위해 `context.navigateTo()` 사용 필수
+- **Enum은 반드시 별도 파일로 분리**: 모든 enum은 `lib/enums/` 폴더에 개별 파일로 관리 (위젯/모델 파일 내 enum 정의 금지)
 
 ### 텍스트 스타일 사용 예시
 ```dart
@@ -76,6 +77,7 @@ source ~/.zshrc && flutter analyze
 ```
 
 ## 프로젝트 구조
+- `/lib/enums/` - 모든 enum 정의 (enum은 반드시 이 폴더에 개별 파일로 관리)
 - `/lib/models/` - 데이터 모델 및 상수 정의
   - `app_colors.dart` - 모든 색상 상수
   - `app_theme.dart` - 테마 및 텍스트 스타일

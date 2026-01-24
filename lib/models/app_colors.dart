@@ -171,4 +171,7 @@ class AppColors {
   static const Color chatUnreadBadge = Color(0xFFFF3E3E); // 읽지 않은 메시지 뱃지
   static const Color chatActiveStatus = Color(0xFF30CF00); // 활성 상태 색상 (초록색)
   static const Color chatInactiveStatus = Color(0xFFFF3E3E); // 비활성 상태 색상 (빨간색)
+
+  // 알림 화면
+  static const Color notificationLikeHeart = Color(0xFFFF6B6B); // 좋아요 알림 하트 색상
 }

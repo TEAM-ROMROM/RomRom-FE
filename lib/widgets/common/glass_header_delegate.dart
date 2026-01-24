@@ -12,8 +12,10 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double statusBarHeight; // MediaQuery.of(context).padding.top 전달 필요
   final double toolbarHeight; // 예: 58.h
   final double toggleHeight; // 예: 70.h
-  final double expandedExtra; // 큰 제목/여백 등 “펼침 전용” 추가 높이
+  final double expandedExtra; // 큰 제목/여백 등 "펼침 전용" 추가 높이
   final bool enableBlur;
+  final Widget? leadingWidget; // 좌측 위젯 (뒤로가기 버튼 등)
+  final Widget? trailingWidget; // 우측 위젯 (설정 버튼 등)
 
   GlassHeaderDelegate({
     required this.toggle,
@@ -23,6 +25,8 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.toggleHeight,
     this.expandedExtra = 32.0,
     this.enableBlur = true,
+    this.leadingWidget,
+    this.trailingWidget,
   }) : assert(statusBarHeight >= 0 && toolbarHeight >= 0 && toggleHeight >= 0);
 
   // 토글을 포함해서 최소 높이를 정의 → 토글이 항상 보임
@@ -59,7 +63,23 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // 3) 큰 제목(펼침에서만 보이고 스크롤되면 사라짐)
+          // 3) 좌측 위젯 (뒤로가기 버튼 등)
+          if (leadingWidget != null)
+            Positioned(
+              left: 16.w,
+              top: statusBarHeight + 12.h,
+              child: leadingWidget!,
+            ),
+
+          // 4) 우측 위젯 (설정 버튼 등)
+          if (trailingWidget != null)
+            Positioned(
+              right: 16.w,
+              top: statusBarHeight + 12.h,
+              child: trailingWidget!,
+            ),
+
+          // 5) 큰 제목(펼침에서만 보이고 스크롤되면 사라짐)
           Positioned(
             left: 24,
             right: 24,
@@ -70,7 +90,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // 4) 작은 제목(툴바 타이틀 역할) — 스크롤될수록 나타남
+          // 6) 작은 제목(툴바 타이틀 역할) — 스크롤될수록 나타남
           Positioned(
             left: 0,
             right: 0,
@@ -94,7 +114,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // 5) 토글: 항상 보이는 영역(최소 높이에 포함시켰기 때문에 사라지지 않음)
+          // 7) 토글: 항상 보이는 영역(최소 높이에 포함시켰기 때문에 사라지지 않음)
           Positioned(
             left: 0,
             right: 0,
@@ -106,7 +126,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // 6) 하단 라인(살짝)
+          // 8) 하단 라인(살짝)
           Positioned(
             left: 0,
             right: 0,
@@ -133,7 +153,9 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
         toolbarHeight != oldDelegate.toolbarHeight ||
         toggleHeight != oldDelegate.toggleHeight ||
         expandedExtra != oldDelegate.expandedExtra ||
-        enableBlur != oldDelegate.enableBlur;
+        enableBlur != oldDelegate.enableBlur ||
+        leadingWidget != oldDelegate.leadingWidget ||
+        trailingWidget != oldDelegate.trailingWidget;
   }
 }
 
