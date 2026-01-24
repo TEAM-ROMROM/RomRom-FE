@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Git Worktree Manager v1.0.1
+Git Worktree Manager v1.0.2
 
 Git worktree를 자동으로 생성하고 관리하는 스크립트입니다.
 브랜치가 없으면 자동으로 생성하고, 브랜치명의 특수문자를 안전하게 처리합니다.
@@ -27,7 +27,7 @@ from typing import Dict, Optional, Tuple
 # 상수 정의
 # ===================================================================
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 # 폴더명에서 제거할 특수문자 (파일시스템에서 안전하지 않은 문자)
 SPECIAL_CHARS_PATTERN = r'[#/\\:*?"<>|]'
@@ -186,23 +186,57 @@ def get_worktree_list() -> Dict[str, str]:
     return worktrees
 
 
+def prune_worktrees() -> bool:
+    """
+    유효하지 않은 worktree 정리 (git worktree prune)
+
+    Returns:
+        bool: 성공 여부
+    """
+    success, _, stderr = run_git_command(['worktree', 'prune'], check=False)
+    if not success:
+        print_warning(f"Worktree prune 실패: {stderr}")
+    return success
+
+
 def is_worktree_exists(worktree_path: Path) -> bool:
     """
     특정 경로에 worktree가 이미 존재하는지 확인
-    
+
+    Git worktree 목록과 실제 디렉토리 존재 여부를 모두 확인합니다.
+    prunable 상태의 worktree는 자동으로 정리합니다.
+
     Args:
         worktree_path: 확인할 worktree 경로
-        
+
     Returns:
-        bool: worktree가 존재하면 True
+        bool: worktree가 유효하게 존재하면 True
     """
+    # 먼저 prunable worktree 정리
+    prune_worktrees()
+
     worktrees = get_worktree_list()
-    worktree_path_str = str(worktree_path.resolve())
-    
+    worktree_path_resolved = worktree_path.resolve()
+
     for path in worktrees.keys():
-        if Path(path).resolve() == Path(worktree_path_str):
+        if Path(path).resolve() == worktree_path_resolved:
+            # Git 목록에 있으면 실제 디렉토리도 존재하는지 확인
+            if Path(path).exists():
+                return True
+            else:
+                # 디렉토리가 없으면 다시 prune 실행
+                print_warning(f"Worktree 경로가 존재하지 않아 정리합니다: {path}")
+                prune_worktrees()
+                return False
+
+    # 디렉토리만 존재하고 Git에 등록되지 않은 경우도 확인
+    if worktree_path_resolved.exists():
+        # .git 파일이 있는지 확인 (worktree의 특징)
+        git_file = worktree_path_resolved / '.git'
+        if git_file.exists():
+            print_warning(f"디렉토리가 존재하지만 Git에 등록되지 않음: {worktree_path}")
             return True
-    
+
     return False
 
 
@@ -261,7 +295,7 @@ def normalize_branch_name(branch_name: str) -> str:
     """
     브랜치명을 폴더명으로 안전하게 변환
     
-    특수문자 (#, /, \\, :, *, ?, ", <, >, |)를 _ 로 변환하고,
+    특수문자 (#, /, \\\\, :, *, ?, ", <, >, |)를 _ 로 변환하고,
     연속된 _를 하나로 통합하며, 앞뒤 _를 제거합니다.
     
     Args:
