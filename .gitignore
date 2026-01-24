@@ -132,3 +132,4 @@ windows/flutter/generated_plugins.cmake
 # SUH-DEVOPS-TEMPLATE: Auto-added entries
 # ====================================================================
 /.report
+/.run/
