@@ -412,24 +412,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             items: [
               ContextMenuItem(
                 id: 'report',
-                icon: AppIcons.flag,
+                svgAssetPath: 'assets/images/report.svg',
                 title: '신고하기',
                 onTap: () async {
                   // TODO : 신고하기 화면으로 이동
                 },
+                showDividerAfter: true,
               ),
               ContextMenuItem(
                 id: 'block',
-                icon: AppIcons.slashCircle,
+                svgAssetPath: 'assets/images/slashCircleRed.svg',
                 title: '차단하기',
                 textColor: AppColors.itemOptionsMenuDeleteText,
                 onTap: () async {
                   // TODO : 차단하기 기능 구현
                 },
+                showDividerAfter: true,
               ),
               ContextMenuItem(
                 id: 'leave_chat_room',
-                icon: AppIcons.exit,
+                svgAssetPath: 'assets/images/chatOutRed.svg',
                 title: '채팅방 나가기',
                 textColor: AppColors.itemOptionsMenuDeleteText,
                 onTap: () async {
@@ -737,7 +739,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 items: [
                   ContextMenuItem(
                     id: 'select_photo',
-                    icon: AppIcons.image,
+                    svgAssetPath: 'assets/images/imageGray.svg',
                     title: '사진 선택하기',
                     onTap: () {
                       // TODO: 이미지 선택 및 전송 기능

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 
 /// 신고하기 메뉴 버튼 (우측 상단 점 3개 아이콘)
@@ -18,7 +17,7 @@ class ReportMenuButton extends StatelessWidget {
         items: [
           ContextMenuItem(
             id: 'report',
-            icon: AppIcons.flag,
+            svgAssetPath: 'assets/images/report.svg',
             title: '신고하기',
             onTap: () {
               if (onReportPressed != null) onReportPressed!();

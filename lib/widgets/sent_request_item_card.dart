@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
@@ -112,12 +111,22 @@ class SentRequestItemCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.only(
-                topLeft: isLeft ? Radius.circular(10.r) : Radius.zero,
-                topRight: isLeft ? Radius.zero : Radius.circular(10.r),
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: isLeft ? Radius.circular(10.r) : Radius.zero,
+                  topRight: isLeft ? Radius.zero : Radius.circular(10.r),
+                ),
+                child: imageUrl.isEmpty
+                    ? const ErrorImagePlaceholder()
+                    : CachedImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorWidget: const ErrorImagePlaceholder(),
+                      ),
               ),
-              child: _buildImage(imageUrl),
             ),
             if (!isLeft) _buildProfileImage(),
           ],
@@ -125,6 +134,7 @@ class SentRequestItemCard extends StatelessWidget {
       ),
     );
   }
+
 
   /// 중앙 교환 아이콘
   Widget _buildCenterExchangeIcon() {
@@ -221,16 +231,17 @@ class SentRequestItemCard extends StatelessWidget {
         items: [
           ContextMenuItem(
             id: 'edit',
-            icon: AppIcons.edit,
+            svgAssetPath: 'assets/images/editGray.svg',
             title: '수정',
             onTap: () {
               // 수정 액션
               onEditTap?.call();
             },
+            showDividerAfter: true,
           ),
           ContextMenuItem(
             id: 'cancel',
-            icon: AppIcons.cancel,
+            svgAssetPath: 'assets/images/trashRed.svg',
             title: '요청 취소',
             onTap: () {
               // 요청 취소 액션

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -11,6 +12,7 @@ class ContextMenuItem {
   final String title;
   final IconData? contextIcon;
   final IconData? icon;
+  final String? svgAssetPath;
   final Color? textColor;
   final VoidCallback onTap;
   final bool showDividerAfter;
@@ -21,6 +23,7 @@ class ContextMenuItem {
     required this.onTap,
     this.contextIcon = AppIcons.dotsVerticalDefault,
     this.icon,
+    this.svgAssetPath,
     this.textColor,
     this.showDividerAfter = false,
   });
@@ -375,7 +378,15 @@ class _MenuOverlay extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Row(
               children: [
-                if (item.icon != null) ...[
+                // SVG 아이콘 우선, 없으면 IconData 사용
+                if (item.svgAssetPath != null) ...[
+                  SvgPicture.asset(
+                    item.svgAssetPath!,
+                    width: 20.sp,
+                    height: 20.sp,
+                  ),
+                  SizedBox(width: 8.w),
+                ] else if (item.icon != null) ...[
                   Icon(
                     item.icon,
                     size: 20.sp,
@@ -396,14 +407,15 @@ class _MenuOverlay extends StatelessWidget {
         ),
       );
 
+      // 디바이더: 왼쪽 16px, 오른쪽 26px 패딩
       if (item.showDividerAfter && i < items.length - 1) {
         widgets.add(
           Divider(
-            color: AppColors.opacity10White,
+            color: AppColors.secondaryBlack1,
             thickness: 1.h,
             height: 1.h,
-            indent: menuPadding.left,
-            endIndent: menuPadding.right,
+            indent: 16.w,
+            endIndent: 26.w,
           ),
         );
       }

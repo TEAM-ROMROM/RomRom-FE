@@ -185,15 +185,16 @@ class NotificationItemWidget extends StatelessWidget {
             items: [
               ContextMenuItem(
                 id: 'mute',
-                icon: AppIcons.bellOff,
+                svgAssetPath: 'assets/images/alertOff.svg',
                 title: '알림 끄기',
                 onTap: () {
                   if (onMuteTap != null) onMuteTap!();
                 },
+                showDividerAfter: true,
               ),
               ContextMenuItem(
                 id: 'delete',
-                icon: AppIcons.trashCan,
+                svgAssetPath: 'assets/images/trashRed.svg',
                 title: '삭제',
                 textColor: AppColors.itemOptionsMenuDeleteText,
                 onTap: () {

@@ -851,7 +851,7 @@ class _ItemDetailDescriptionScreenState
                     items: [
                       ContextMenuItem(
                         id: 'changeTradeStatus',
-                        icon: AppIcons.exchange,
+                        svgAssetPath: 'assets/images/changeGray.svg',
                         title:
                             item?.itemStatus == ItemStatus.available.serverName
                             ? '거래완료로 변경'
@@ -859,10 +859,11 @@ class _ItemDetailDescriptionScreenState
                         onTap: () async {
                           await _toggleItemStatus(item!);
                         },
+                        showDividerAfter: true,
                       ),
                       ContextMenuItem(
                         id: 'edit',
-                        icon: AppIcons.edit,
+                        svgAssetPath: 'assets/images/editGray.svg',
                         title: '수정',
                         onTap: () {
                           context.navigateTo(
@@ -874,10 +875,11 @@ class _ItemDetailDescriptionScreenState
                             ),
                           );
                         },
+                        showDividerAfter: true,
                       ),
                       ContextMenuItem(
                         id: 'delete',
-                        icon: AppIcons.trashCan,
+                        svgAssetPath: 'assets/images/trashRed.svg',
                         title: '삭제',
                         textColor: AppColors.itemOptionsMenuDeleteText,
                         onTap: () async {
