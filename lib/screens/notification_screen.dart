@@ -273,20 +273,24 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 0.h, 24.w, 0),
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: notifications.length,
-        separatorBuilder: (_, __) => SizedBox(height: 24.h),
-        itemBuilder: (context, index) {
-          final notification = notifications[index];
-          return NotificationItemWidget(
-            data: notification,
-            onMuteTap: () => _onMuteNotification(notification.id),
-            onDeleteTap: () => _onDeleteNotification(notification.id),
-          );
-        },
+      padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 0),
+      child: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        child: ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: notifications.length,
+          separatorBuilder: (_, __) => SizedBox(height: 24.h),
+          itemBuilder: (context, index) {
+            final notification = notifications[index];
+            return NotificationItemWidget(
+              data: notification,
+              onMuteTap: () => _onMuteNotification(notification.id),
+              onDeleteTap: () => _onDeleteNotification(notification.id),
+            );
+          },
+        ),
       ),
     );
   }

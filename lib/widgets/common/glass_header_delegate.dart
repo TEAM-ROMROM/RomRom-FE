@@ -66,29 +66,32 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
           ),
 
           // 3) 좌측 위젯 (뒤로가기 버튼 등)
+          // centerTitle이면 toolbarHeight 영역 중앙에 배치
           if (leadingWidget != null)
             Positioned(
               left: 16.w,
-              top: statusBarHeight + 12.h,
-              child: leadingWidget!,
+              top: statusBarHeight,
+              height: toolbarHeight,
+              child: Center(child: leadingWidget!),
             ),
 
           // 4) 우측 위젯 (설정 버튼 등)
+          // centerTitle이면 toolbarHeight 영역 중앙에 배치
           if (trailingWidget != null)
             Positioned(
               right: 16.w,
-              top: statusBarHeight + 12.h,
-              child: trailingWidget!,
+              top: statusBarHeight,
+              height: toolbarHeight,
+              child: Center(child: trailingWidget!),
             ),
 
           // 5) 큰 제목(펼침에서만 보이고 스크롤되면 사라짐)
-          // centerTitle이 true면 아이콘과 동일선상에 배치 (항상 보임)
+          // centerTitle이 true면 toolbarHeight 영역 중앙에 배치 (항상 보임)
           Positioned(
             left: 24,
             right: 24,
-            top: centerTitle
-                ? statusBarHeight + 12.h // 아이콘과 동일선상
-                : statusBarHeight + 32, // 기존 왼쪽 정렬 화면
+            top: centerTitle ? statusBarHeight : statusBarHeight + 32,
+            height: centerTitle ? toolbarHeight : null,
             child: Opacity(
               opacity: centerTitle ? 1.0 : (1.0 - t), // centerTitle이면 항상 보임
               child: centerTitle
@@ -123,10 +126,13 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
           ),
 
           // 7) 토글: 항상 보이는 영역(최소 높이에 포함시켰기 때문에 사라지지 않음)
+          // centerTitle이면 펼침 효과(+10px) 제거하여 토글-콘텐츠 간격 최소화
           Positioned(
             left: 0,
             right: 0,
-            top: statusBarHeight + toolbarHeight + lerpDouble(10, 0, t)!,
+            top: statusBarHeight +
+                toolbarHeight +
+                (centerTitle ? 0.0 : lerpDouble(10, 0, t)!),
             height: toggleHeight,
             child: Material(
               color: Colors.transparent,
