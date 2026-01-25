@@ -1,7 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
-import 'package:romrom_fe/models/app_colors.dart';
-
 /// 알림 카테고리 enum
 enum NotificationCategory {
   exchangeRequest, // 교환 요청
@@ -25,29 +21,17 @@ extension NotificationCategoryExtension on NotificationCategory {
     }
   }
 
-  IconData get icon {
+  /// 알림 카테고리별 SVG 아이콘 경로
+  String get svgAssetPath {
     switch (this) {
       case NotificationCategory.exchangeRequest:
-        return AppIcons.exchange;
+        return 'assets/images/exchangeYellowCircle.svg';
       case NotificationCategory.like:
-        return AppIcons.itemRegisterHeart;
+        return 'assets/images/notificationLike.svg';
       case NotificationCategory.chat:
-        return AppIcons.chat;
+        return 'assets/images/notificationChat.svg';
       case NotificationCategory.announcement:
-        return AppIcons.bell;
-    }
-  }
-
-  Color get iconColor {
-    switch (this) {
-      case NotificationCategory.exchangeRequest:
-        return AppColors.primaryYellow;
-      case NotificationCategory.like:
-        return AppColors.notificationLikeHeart;
-      case NotificationCategory.chat:
-        return AppColors.primaryYellow;
-      case NotificationCategory.announcement:
-        return AppColors.primaryYellow;
+        return 'assets/images/notificationAnnouncement.svg';
     }
   }
 }

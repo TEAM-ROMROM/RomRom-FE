@@ -200,13 +200,15 @@ class _NotificationScreenState extends State<NotificationScreen>
                       onRightTap: () => _onToggleChanged(true),
                       leftText: '활동 및 채팅',
                       rightText: '롬롬 소식',
+                      bottomPadding: 0, // 토글 아래 패딩 제거
                     ),
                     headerTitle: '알림',
                     statusBarHeight: MediaQuery.of(context).padding.top,
                     toolbarHeight: 58.h,
-                    toggleHeight: 70.h,
-                    expandedExtra: 32.h,
+                    toggleHeight: 46.h, // 실제 토글 높이 (bottom padding 제거)
+                    expandedExtra: 0.h, // 토글-알림목록 간격 제거
                     enableBlur: _isScrolled,
+                    centerTitle: true, // 타이틀 중앙 정렬
                     leadingWidget: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Icon(
@@ -215,12 +217,15 @@ class _NotificationScreenState extends State<NotificationScreen>
                         color: AppColors.textColorWhite,
                       ),
                     ),
-                    trailingWidget: GestureDetector(
-                      onTap: _onSettingsTap,
-                      child: Icon(
-                        AppIcons.setting,
-                        size: 24.sp,
-                        color: AppColors.textColorWhite,
+                    trailingWidget: Padding(
+                      padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
+                      child: GestureDetector(
+                        onTap: _onSettingsTap,
+                        child: Icon(
+                          AppIcons.setting,
+                          size: 30.sp,
+                          color: AppColors.textColorWhite,
+                        ),
                       ),
                     ),
                   ),
@@ -268,26 +273,20 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
-      child: Column(
-        children: List.generate(notifications.length, (index) {
+      padding: EdgeInsets.fromLTRB(24.w, 0.h, 24.w, 0),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: notifications.length,
+        separatorBuilder: (_, __) => SizedBox(height: 24.h),
+        itemBuilder: (context, index) {
           final notification = notifications[index];
-          return Column(
-            children: [
-              NotificationItemWidget(
-                data: notification,
-                onMuteTap: () => _onMuteNotification(notification.id),
-                onDeleteTap: () => _onDeleteNotification(notification.id),
-              ),
-              if (index < notifications.length - 1)
-                Divider(
-                  thickness: 1,
-                  color: AppColors.opacity10White,
-                  height: 1.h,
-                ),
-            ],
+          return NotificationItemWidget(
+            data: notification,
+            onMuteTap: () => _onMuteNotification(notification.id),
+            onDeleteTap: () => _onDeleteNotification(notification.id),
           );
-        }),
+        },
       ),
     );
   }
