@@ -273,7 +273,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 0),
+      padding: EdgeInsets.fromLTRB(24.w, 37.h, 24.w, 0),
       child: MediaQuery.removePadding(
         context: context,
         removeTop: true,
