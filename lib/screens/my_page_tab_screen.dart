@@ -139,7 +139,8 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               ),
               _MenuItem(
                 label: '차단 관리',
-                icon: AppIcons.slashCircle,
+                // FIXME: AppIcons.slashCircle이 AppIcons.ttf에 없어서 임시로 Icons.block 사용
+                icon: Icons.block,
                 onTap: () {
                   // TODO: 차단 관리 화면으로 이동
                 },
