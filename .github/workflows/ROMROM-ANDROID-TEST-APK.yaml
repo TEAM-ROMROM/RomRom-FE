@@ -203,9 +203,6 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}
 
-      - name: Pull latest changes
-        run: git pull origin ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}
-
       # Debug Keystore 설정
       - name: Setup Debug Keystore
         run: |
