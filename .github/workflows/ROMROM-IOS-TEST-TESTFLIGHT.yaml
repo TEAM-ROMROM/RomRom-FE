@@ -70,6 +70,9 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}
 
+      - name: Pull latest changes
+        run: git pull origin ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}
+
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
 
@@ -344,6 +347,9 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}
 
+      - name: Pull latest changes
+        run: git pull origin ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}
+
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
 
@@ -450,7 +456,7 @@ jobs:
       # Flutter build (no codesign) - 테스트 버전 0.0.0 사용
       - name: Flutter build (no codesign)
         run: |
-          flutter build ios --release --no-codesign \
+          flutter build ios --release --no-codesign --no-tree-shake-icons \
             --build-name="0.0.0" \
             --build-number="${{ needs.prepare-test-build.outputs.build_number }}"
 
