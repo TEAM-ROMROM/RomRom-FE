@@ -67,9 +67,9 @@ env:
   ENABLE_PR_AUTO_CLOSE: false  # PR 닫기 시 작업 완료 처리
 
   # Status 관리 옵션
-  STATUS_PRIORITY: '["작업 완료","취소","피드백","확인 대기","작업 중","작업 전"]'  # Status Label 우선순위 (JSON 배열)
-  DONE_STATUS: "작업 완료"      # Issue/PR 닫기 시 설정할 Status
-  DEFAULT_STATUS: "작업 전"     # Issue 생성 시 기본 Status (선택적, actions/add-to-project가 자동 설정)
+  STATUS_PRIORITY: '["작업완료","취소","피드백","담당자확인","작업중","작업전"]'  # Status Label 우선순위 (JSON 배열)
+  DONE_STATUS: "작업완료"      # Issue/PR 닫기 시 설정할 Status
+  DEFAULT_STATUS: "작업전"     # Issue 생성 시 기본 Status (선택적, actions/add-to-project가 자동 설정)
 
 permissions:
   issues: write
