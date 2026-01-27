@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
@@ -110,12 +111,22 @@ class SentRequestItemCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.only(
-                topLeft: isLeft ? Radius.circular(10.r) : Radius.zero,
-                topRight: isLeft ? Radius.zero : Radius.circular(10.r),
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: isLeft ? Radius.circular(10.r) : Radius.zero,
+                  topRight: isLeft ? Radius.zero : Radius.circular(10.r),
+                ),
+                child: imageUrl.isEmpty
+                    ? const ErrorImagePlaceholder()
+                    : CachedImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorWidget: const ErrorImagePlaceholder(),
+                      ),
               ),
-              child: _buildImage(imageUrl),
             ),
             if (!isLeft) _buildProfileImage(),
           ],
@@ -123,6 +134,7 @@ class SentRequestItemCard extends StatelessWidget {
       ),
     );
   }
+
 
   /// 중앙 교환 아이콘
   Widget _buildCenterExchangeIcon() {
@@ -219,14 +231,17 @@ class SentRequestItemCard extends StatelessWidget {
         items: [
           ContextMenuItem(
             id: 'edit',
+            svgAssetPath: 'assets/images/editGray.svg',
             title: '수정',
             onTap: () {
               // 수정 액션
               onEditTap?.call();
             },
+            showDividerAfter: true,
           ),
           ContextMenuItem(
             id: 'cancel',
+            svgAssetPath: 'assets/images/trashRed.svg',
             title: '요청 취소',
             onTap: () {
               // 요청 취소 액션
@@ -271,26 +286,10 @@ class SentRequestItemCard extends StatelessWidget {
       return const ErrorImagePlaceholder();
     }
 
-    return Image.network(
-      imageUrl,
+    return CachedImage(
+      imageUrl: imageUrl,
       fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (context, error, stackTrace) {
-        return const ErrorImagePlaceholder();
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: AppColors.opacity20White,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primaryYellow,
-              strokeWidth: 2,
-            ),
-          ),
-        );
-      },
+      errorWidget: const ErrorImagePlaceholder(),
     );
   }
 

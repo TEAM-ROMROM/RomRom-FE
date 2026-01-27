@@ -9,6 +9,7 @@ import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dar
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 요청 목록 아이템 카드 위젯
@@ -156,10 +157,10 @@ class RequestListItemCardWidget extends StatelessWidget {
                     children: [
                       // 메뉴 아이콘
                       RomRomContextMenu(
-                        menuBackgroundColor: AppColors.secondaryBlack2,
                         items: [
                           ContextMenuItem(
                             id: 'delete',
+                            svgAssetPath: 'assets/images/trashRed.svg',
                             title: '삭제',
                             textColor: AppColors.itemOptionsMenuDeleteText,
                             onTap: onMenuTap,
@@ -186,26 +187,10 @@ class RequestListItemCardWidget extends StatelessWidget {
       return const ErrorImagePlaceholder();
     }
 
-    return Image.network(
-      imageUrl,
+    return CachedImage(
+      imageUrl: imageUrl,
       fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (context, error, stackTrace) {
-        return const ErrorImagePlaceholder();
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: AppColors.opacity20White,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primaryYellow,
-              strokeWidth: 2,
-            ),
-          ),
-        );
-      },
+      errorWidget: const ErrorImagePlaceholder(),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photo_viewer/photo_viewer.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/services/location_service.dart';
@@ -850,6 +851,7 @@ class _ItemDetailDescriptionScreenState
                     items: [
                       ContextMenuItem(
                         id: 'changeTradeStatus',
+                        svgAssetPath: 'assets/images/changeGray.svg',
                         title:
                             item?.itemStatus == ItemStatus.available.serverName
                             ? '거래완료로 변경'
@@ -857,9 +859,11 @@ class _ItemDetailDescriptionScreenState
                         onTap: () async {
                           await _toggleItemStatus(item!);
                         },
+                        showDividerAfter: true,
                       ),
                       ContextMenuItem(
                         id: 'edit',
+                        svgAssetPath: 'assets/images/editGray.svg',
                         title: '수정',
                         onTap: () {
                           context.navigateTo(
@@ -871,9 +875,11 @@ class _ItemDetailDescriptionScreenState
                             ),
                           );
                         },
+                        showDividerAfter: true,
                       ),
                       ContextMenuItem(
                         id: 'delete',
+                        svgAssetPath: 'assets/images/trashRed.svg',
                         title: '삭제',
                         textColor: AppColors.itemOptionsMenuDeleteText,
                         onTap: () async {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -10,6 +12,7 @@ class ContextMenuItem {
   final String title;
   final IconData? contextIcon;
   final IconData? icon;
+  final String? svgAssetPath;
   final Color? textColor;
   final VoidCallback onTap;
   final bool showDividerAfter;
@@ -20,14 +23,11 @@ class ContextMenuItem {
     required this.onTap,
     this.contextIcon = AppIcons.dotsVerticalDefault,
     this.icon,
+    this.svgAssetPath,
     this.textColor,
     this.showDividerAfter = false,
   });
 }
-
-enum ContextMenuPosition { auto, above, below, left, right }
-
-enum ContextMenuAnimation { scale, fade, slideDown, cornerExpand }
 
 class RomRomContextMenu extends StatefulWidget {
   final List<ContextMenuItem> items;
@@ -50,10 +50,10 @@ class RomRomContextMenu extends StatefulWidget {
     this.position = ContextMenuPosition.auto,
     this.onItemSelected,
     this.menuWidth,
-    this.menuPadding = const EdgeInsets.symmetric(horizontal: 12),
+    this.menuPadding = const EdgeInsets.only(left: 16, top: 16, bottom: 16),
     this.menuBorderRadius,
     this.menuBackgroundColor,
-    this.itemHeight = 46,
+    this.itemHeight = 52,
     this.enableHapticFeedback = true,
   });
 
@@ -120,9 +120,9 @@ class _RomRomContextMenuState extends State<RomRomContextMenu>
         triggerSize: triggerSize,
         menuWidth: widget.menuWidth ?? 146.w,
         menuPadding: widget.menuPadding,
-        menuBorderRadius: widget.menuBorderRadius ?? BorderRadius.circular(4.r),
+        menuBorderRadius: widget.menuBorderRadius ?? BorderRadius.circular(10.r),
         menuBackgroundColor:
-            widget.menuBackgroundColor ?? AppColors.secondaryBlack1,
+            widget.menuBackgroundColor ?? AppColors.primaryBlack,
         itemHeight: widget.itemHeight.h,
         onItemSelected: (id) {
           _closeMenu();
@@ -326,11 +326,15 @@ class _MenuOverlay extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: menuBackgroundColor,
                         borderRadius: menuBorderRadius,
+                        border: Border.all(
+                          color: AppColors.secondaryBlack1,
+                          width: 0.5,
+                        ),
                         boxShadow: const [
                           BoxShadow(
-                            color: AppColors.opacity20Black,
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
+                            color: AppColors.opacity50Black,
+                            blurRadius: 20,
+                            offset: Offset(0, 5),
                           ),
                         ],
                       ),
@@ -374,10 +378,18 @@ class _MenuOverlay extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Row(
               children: [
-                if (item.icon != null) ...[
+                // SVG 아이콘 우선, 없으면 IconData 사용
+                if (item.svgAssetPath != null) ...[
+                  SvgPicture.asset(
+                    item.svgAssetPath!,
+                    width: 20.sp,
+                    height: 20.sp,
+                  ),
+                  SizedBox(width: 8.w),
+                ] else if (item.icon != null) ...[
                   Icon(
                     item.icon,
-                    size: 18.sp,
+                    size: 20.sp,
                     color: item.textColor ?? AppColors.textColorWhite,
                   ),
                   SizedBox(width: 8.w),
@@ -395,14 +407,15 @@ class _MenuOverlay extends StatelessWidget {
         ),
       );
 
+      // 디바이더: 왼쪽 16px, 오른쪽 26px 패딩
       if (item.showDividerAfter && i < items.length - 1) {
         widgets.add(
           Divider(
-            color: AppColors.opacity10White,
+            color: AppColors.secondaryBlack1,
             thickness: 1.h,
             height: 1.h,
-            indent: menuPadding.left,
-            endIndent: menuPadding.right,
+            indent: 16.w,
+            endIndent: 26.w,
           ),
         );
       }

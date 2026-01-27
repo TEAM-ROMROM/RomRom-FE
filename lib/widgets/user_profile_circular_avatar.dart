@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 const String _kDefaultProfileAsset = 'assets/images/basicProfile.svg';
 
@@ -92,12 +93,10 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
             : _avatarUrl != null &&
                   _avatarUrl!.isNotEmpty &&
                   _avatarUrl != _kDefaultProfileAsset
-            ? Image.network(
-                _avatarUrl!,
+            ? CachedImage(
+                imageUrl: _avatarUrl!,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildDefaultImage();
-                },
+                errorWidget: _buildDefaultImage(),
               )
             : _buildDefaultImage(),
       ),
