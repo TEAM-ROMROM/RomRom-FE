@@ -76,6 +76,14 @@ permissions:
   pull-requests: write
   contents: read
 
+# ===================================================================
+# Concurrency 설정: 동일 Issue/PR에 대해 하나의 워크플로우만 실행
+# labeled + unlabeled 이벤트가 동시에 발생할 때 Race Condition 방지
+# ===================================================================
+concurrency:
+  group: label-sync-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   # ===================================================================
   # Job 1: Issue/PR 생성 시 프로젝트에 자동 추가
@@ -120,6 +128,8 @@ jobs:
       - name: 현재 Issue의 모든 Label 조회
         id: get-labels
         uses: actions/github-script@v7
+        env:
+          STATUS_PRIORITY: ${{ env.STATUS_PRIORITY }}
         with:
           github-token: ${{ secrets._GITHUB_PAT_TOKEN }}
           script: |
@@ -127,6 +137,36 @@ jobs:
             console.log('📋 Label 조회 시작');
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
+            const statusPriority = JSON.parse(process.env.STATUS_PRIORITY || '[]');
+            const action = context.payload.action;
+
+            // ===== labeled 이벤트: 추가된 라벨이 Status 라벨이면 바로 반환 =====
+            // API 조회 없이 payload에서 직접 라벨 정보를 사용하여 Race Condition 방지
+            if (action === 'labeled') {
+              const addedLabel = context.payload.label.name;
+              console.log(`📌 labeled 이벤트 감지: "${addedLabel}" 추가됨`);
+
+              if (statusPriority.includes(addedLabel)) {
+                console.log(`✅ 추가된 라벨이 Status 라벨입니다. API 조회 없이 사용`);
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                return [addedLabel];
+              }
+              console.log(`ℹ️ 추가된 라벨이 Status 라벨이 아닙니다. API 조회 진행`);
+            }
+
+            // ===== unlabeled 이벤트: 제거된 라벨이 Status 라벨이 아니면 건너뜀 =====
+            if (action === 'unlabeled') {
+              const removedLabel = context.payload.label.name;
+              console.log(`📌 unlabeled 이벤트 감지: "${removedLabel}" 제거됨`);
+
+              if (!statusPriority.includes(removedLabel)) {
+                console.log(`ℹ️ 제거된 라벨이 Status 라벨이 아닙니다. 건너뜀`);
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                return [];
+              }
+            }
+
+            // ===== API로 현재 라벨 조회 (unlabeled 또는 비-Status 라벨인 경우) =====
             const issue = await github.rest.issues.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
