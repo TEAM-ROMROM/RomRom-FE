@@ -218,7 +218,7 @@ class NotificationItemWidget extends StatelessWidget {
       imageUrl: data.imageUrl!,
       width: 48.w,
       height: 48.w,
-      borderRadius: BorderRadius.circular(8.r),
+      borderRadius: BorderRadius.circular(4.r),
     );
   }
 }
