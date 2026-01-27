@@ -672,13 +672,19 @@ class _ItemDetailDescriptionScreenState
                                       item!.itemCondition!,
                                     ).label,
                                   ),
-                                SizedBox(width: 8.w),
+                                SizedBox(width: 4.w),
                                 if (item?.itemTradeOptions?.isNotEmpty == true)
-                                  ...item!.itemTradeOptions!.map(
-                                    (option) => ItemDetailTradeOptionTag(
-                                      option: _getTradeOptionName(option),
-                                    ),
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 4.w,
+                                    children: [...item!.itemTradeOptions!.map(
+                                      (option) => ItemDetailTradeOptionTag(
+                                        option: _getTradeOptionName(option),
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                ),
                               ],
                             ),
                             SizedBox(height: 16.h),
@@ -851,7 +857,7 @@ class _ItemDetailDescriptionScreenState
                     items: [
                       ContextMenuItem(
                         id: 'changeTradeStatus',
-                        svgAssetPath: 'assets/images/changeGray.svg',
+                        icon: AppIcons.change,
                         title:
                             item?.itemStatus == ItemStatus.available.serverName
                             ? '거래완료로 변경'
@@ -863,7 +869,7 @@ class _ItemDetailDescriptionScreenState
                       ),
                       ContextMenuItem(
                         id: 'edit',
-                        svgAssetPath: 'assets/images/editGray.svg',
+                        icon: AppIcons.edit,
                         title: '수정',
                         onTap: () {
                           context.navigateTo(
@@ -879,9 +885,10 @@ class _ItemDetailDescriptionScreenState
                       ),
                       ContextMenuItem(
                         id: 'delete',
-                        svgAssetPath: 'assets/images/trashRed.svg',
+                        icon: AppIcons.trash,
+                        iconColor: AppColors.itemOptionsMenuRedIcon,
                         title: '삭제',
-                        textColor: AppColors.itemOptionsMenuDeleteText,
+                        textColor: AppColors.itemOptionsMenuRedText,
                         onTap: () async {
                           await _deleteItem(item!);
 

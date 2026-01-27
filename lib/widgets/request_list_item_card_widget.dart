@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
@@ -160,9 +161,10 @@ class RequestListItemCardWidget extends StatelessWidget {
                         items: [
                           ContextMenuItem(
                             id: 'delete',
-                            svgAssetPath: 'assets/images/trashRed.svg',
+                            icon: AppIcons.trash,
+                            iconColor: AppColors.itemOptionsMenuRedIcon,
                             title: '삭제',
-                            textColor: AppColors.itemOptionsMenuDeleteText,
+                            textColor: AppColors.itemOptionsMenuRedText,
                             onTap: onMenuTap,
                           ),
                         ],

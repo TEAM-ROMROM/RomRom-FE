@@ -180,11 +180,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               );
                             },
                             behavior: HitTestBehavior.opaque,
-                            child: SvgPicture.asset(
-                              'assets/images/notification.svg',
-                              width: 30.w,
-                              height: 30.h,
-                              semanticsLabel: '알림',
+                            child: Icon(
+                              AppIcons.alert,
+                              size: 30.sp,
+                              color: AppColors.textColorWhite,
                             ),
                           ),
                           SizedBox(width: 10.w),
@@ -323,7 +322,14 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               ItemDetailConditionTag(condition: widget.item.itemCondition.label),
                               SizedBox(width: 4.w),
                               // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
-                              ...widget.item.transactionTypes.map((type) => ItemDetailTradeOptionTag(option: type.label)),
+                              Wrap(
+                                spacing: 4.w,
+                                children: widget.item.transactionTypes
+                                    .map(
+                                      (type) => ItemDetailTradeOptionTag(option: type.label),
+                                    )
+                                    .toList(),
+                              ),
                             ],
                           ),
 

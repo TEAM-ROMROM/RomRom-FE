@@ -412,7 +412,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             items: [
               ContextMenuItem(
                 id: 'report',
-                svgAssetPath: 'assets/images/report.svg',
+                icon: AppIcons.report,
                 title: '신고하기',
                 onTap: () async {
                   // TODO : 신고하기 화면으로 이동
@@ -421,9 +421,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
               ContextMenuItem(
                 id: 'block',
-                svgAssetPath: 'assets/images/slashCircleRed.svg',
+                icon: AppIcons.slashCircle,
+                iconColor: AppColors.itemOptionsMenuRedIcon,
                 title: '차단하기',
-                textColor: AppColors.itemOptionsMenuDeleteText,
+                textColor: AppColors.itemOptionsMenuRedText,
                 onTap: () async {
                   // TODO : 차단하기 기능 구현
                 },
@@ -431,9 +432,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
               ContextMenuItem(
                 id: 'leave_chat_room',
-                svgAssetPath: 'assets/images/chatOutRed.svg',
+                icon: AppIcons.chatOut,
+                iconColor: AppColors.itemOptionsMenuRedIcon,
                 title: '채팅방 나가기',
-                textColor: AppColors.itemOptionsMenuDeleteText,
+                textColor: AppColors.itemOptionsMenuRedText,
                 onTap: () async {
                   await CommonModal.confirm(
                     context: context,
@@ -739,7 +741,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 items: [
                   ContextMenuItem(
                     id: 'select_photo',
-                    svgAssetPath: 'assets/images/imageGray.svg',
+                    icon: AppIcons.chatImage,
+                    iconColor: AppColors.opacity60White,
                     title: '사진 선택하기',
                     onTap: () {
                       // TODO: 이미지 선택 및 전송 기능

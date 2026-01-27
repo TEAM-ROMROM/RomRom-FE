@@ -2,7 +2,6 @@ import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
@@ -431,8 +430,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       Column(
                         children: [
                           SizedBox(height: 6.h,),
-                          SvgPicture.asset(
-                              'assets/images/item-register-photo.svg'),
+                          Icon(
+                            AppIcons.itmeRegisterImage,
+                            color: AppColors.opacity60White,
+                            size: 24.sp,
+                          ),
                           SizedBox(height: 4.h),
                           Text('$imageCount/10',
                               style: CustomTextStyles.p3

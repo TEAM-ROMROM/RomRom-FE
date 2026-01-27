@@ -54,7 +54,10 @@ class AppColors {
       const Color(0xFFFFFFFF).withValues(alpha: 0.6); // 물품 카드 테두리 색상
   static const Color itemCardShadow =
       Color(0x26000000); // 물품 카드 그림자 색상 , 검정색, opacity 15%
-  static const Color itemCardText = Color(0xFF131419); // 물품 카드 텍스트 색상
+  static const Color itemCardNameText = Color(0xFF131419); // 물품 카드 텍스트 색상
+  static const Color itemCardCategoryText = Color(0x80131419); // 물품 카드 카테고리 텍스트 색상
+  static const Color itemCardPriceText = Color(0xFF1D1E27); // 물품 카드 가격 텍스트 색상
+  static const Color itemCardLikeText = Color(0x991D1E27); // 물품 카드 좋아요 텍스트 색상
   static const Color itemCardOptionChip = Color(0xFFD2D2D2); // 물품 카드 요청 옵션 칩 색상
 
   // Item 내부 태그
@@ -68,7 +71,7 @@ class AppColors {
   static const Color imagePlaceholderBackground = Color(0xFFD9D9D9); // 연한 회색
 
   // AI 태그 및 버튼
-  static const Color aiTagBackground = Color(0xFF121A1A); // 어두운 배경
+  static const Color aiTagBackground = Color(0x4DCF7DFF); // 어두운 보라색 배경
   static const Color aiButtonGlow = Color(0xFF7B00FF); // 보라색 광택 효과
 
   // 온보딩 프로그레스 헤더
@@ -89,7 +92,9 @@ class AppColors {
   static const Color transparent = Color(0x00000000);
 
   // 아이템 옵션 메뉴
-  static const Color itemOptionsMenuDeleteText = Color(0xFFFF5656); // 삭제 텍스트 색상
+  static const Color itemOptionsMenuRedText = Color(0xFFFF5656); // 삭제 텍스트 색상
+  static const Color itemOptionsMenuRedIcon =
+      Color(0xFF993333); // 삭제 아이콘 색상
 
   // 경고 다이얼로그
   static const Color warningRed = Color(0xFFFF5656); // 경고 아이콘 및 버튼 색상
@@ -164,6 +169,13 @@ class AppColors {
   // 요청 관리 화면
   static const Color tradeStatusIsChatting = Color(0x80FFC300); // 채팅 중 색상
   static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
+
+  // 거래 요청 화면 - 배경 그라데이션
+  static const List<Color> tradeRequestBackgroundGradient = [
+    AppColors.primaryBlack,
+    Colors.black, // 검정
+    AppColors.primaryBlack,
+  ];
 
   // 채팅 화면
   static const Color chatLocationTimeMessage =
