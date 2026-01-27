@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -139,7 +140,8 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               ),
               _MenuItem(
                 label: '차단 관리',
-                icon: AppIcons.slashCircle,
+                // FIXME: AppIcons.slashCircle이 AppIcons.ttf에 없어서 임시로 Icons.block 사용
+                icon: Icons.block,
                 onTap: () {
                   // TODO: 차단 관리 화면으로 이동
                 },

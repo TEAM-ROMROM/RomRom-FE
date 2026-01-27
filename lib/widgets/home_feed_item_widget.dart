@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -14,6 +15,7 @@ import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
+import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
@@ -21,6 +23,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
@@ -172,10 +175,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           // 알림 아이콘 버튼
                           GestureDetector(
                             onTap: () {
-                              CommonSnackBar.show(
-                                context: context,
-                                message: '알림 기능 준비 중입니다.',
-                                type: SnackBarType.info,
+                              context.navigateTo(
+                                screen: const NotificationScreen(),
                               );
                             },
                             behavior: HitTestBehavior.opaque,
@@ -423,24 +424,12 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
     if (url.isEmpty || !url.startsWith('http')) return placeholder;
 
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
+    return CachedImage(
+      imageUrl: url,
       width: size.width,
       height: size.height,
-      errorBuilder: (context, error, stackTrace) {
-        debugPrint('HomeFeed 이미지 로드 실패: $url, error: $error');
-        return placeholder;
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(
-          child: CircularProgressIndicator(
-            color: AppColors.primaryYellow,
-            value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1) : null,
-          ),
-        );
-      },
+      fit: BoxFit.cover,
+      errorWidget: placeholder,
     );
   }
 }

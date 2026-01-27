@@ -1,0 +1,38 @@
+# Flutter 프로젝트 Line Ending 설정
+# 기본적으로 모든 텍스트 파일은 자동으로 처리
+* text=auto
+
+# 명시적으로 텍스트 파일로 지정
+*.dart text
+*.yaml text
+*.yml text
+*.json text
+*.md text
+*.txt text
+*.xml text
+*.gradle text
+*.properties text
+*.swift text
+*.h text
+*.m text
+*.cc text
+*.cpp text
+*.cmake text
+
+# 바이너리 파일
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.jar binary
+*.so binary
+*.dylib binary
+*.dll binary
+
+# Flutter 자동 생성 파일은 바이너리로 처리 (diff 제외)
+**/generated_plugin_registrant.* binary
+**/generated_plugins.* binary
+**/GeneratedPluginRegistrant.* binary

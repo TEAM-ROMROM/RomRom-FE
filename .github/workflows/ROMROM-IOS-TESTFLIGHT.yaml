@@ -303,7 +303,7 @@ jobs:
       # Flutter build (no codesign) to generate Xcode project artifacts
       - name: Flutter build (no codesign)
         run: |
-          flutter build ios --release --no-codesign \
+          flutter build ios --release --no-codesign --no-tree-shake-icons \
             --build-name="${{ needs.prepare-build.outputs.version }}" \
             --build-number="${{ needs.prepare-build.outputs.build_number }}"
 

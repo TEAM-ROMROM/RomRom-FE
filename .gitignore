@@ -113,7 +113,23 @@ ios/Flutter/AppFrameworkInfo.plist
 # Claude Code local settings
 .claude/settings.local.json
 
+# Flutter 플랫폼별 자동 생성 파일 (Windows/Linux/macOS)
+**/generated_plugin_registrant.cc
+**/generated_plugin_registrant.h
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.swift
+**/GeneratedPluginRegistrant.m
+**/GeneratedPluginRegistrant.java
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+macos/Flutter/GeneratedPluginRegistrant.swift
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
 # ====================================================================
 # SUH-DEVOPS-TEMPLATE: Auto-added entries
 # ====================================================================
 /.report
+/.run/

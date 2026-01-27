@@ -18,6 +18,7 @@ import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/enums/item_condition.dart' as item_condition_enum;
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 class MyLikeListScreen extends StatefulWidget {
   const MyLikeListScreen({super.key});
@@ -262,22 +263,9 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                                 .photo_size_select_actual_rounded,
                                             color: AppColors.opacity40White,
                                           )
-                                        : Image.network(
-                                            item.imageUrl,
+                                        : CachedImage(
+                                            imageUrl: item.imageUrl,
                                             fit: BoxFit.cover,
-                                            loadingBuilder:
-                                                (ctx, child, progress) {
-                                                  if (progress == null) {
-                                                    return child;
-                                                  }
-                                                  return const Center(
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          color: AppColors
-                                                              .primaryYellow,
-                                                        ),
-                                                  );
-                                                },
                                           ),
                                   ),
 

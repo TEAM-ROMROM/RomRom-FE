@@ -1,7 +1,7 @@
 name: romrom_fe
 description: "ROMROM-FE"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.8.46+107
+version: 1.8.61+122
 environment:
   sdk: ">=3.9.0 <4.0.0"
 dependencies:
@@ -39,6 +39,7 @@ dependencies:
   shared_preferences: ^2.5.2
   skeletonizer: ^2.1.0+1
   stomp_dart_client: ^2.0.0
+  cached_network_image: ^3.4.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

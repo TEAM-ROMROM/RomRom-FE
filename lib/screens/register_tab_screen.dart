@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -13,6 +14,7 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -468,11 +470,12 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
             child: SizedBox(
               width: 30.w,
               height: 30.h,
-              child: RomRomContextMenu(                
+              child: RomRomContextMenu(
                 items: [
                   ContextMenuItem(
                     id: 'changeTradeStatus',
                     contextIcon: AppIcons.dotsVerticalSmall,
+                    svgAssetPath: 'assets/images/changeGray.svg',
                     title: _currentTabStatus == MyItemToggleStatus.selling
                         ? '거래완료로 변경'
                         : '판매중으로 변경',
@@ -482,6 +485,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ContextMenuItem(
                     id: 'edit',
                     contextIcon: AppIcons.dotsVerticalSmall,
+                    svgAssetPath: 'assets/images/editGray.svg',
                     title: '수정',
                     onTap: () => _navigateToEditItem(item),
                     showDividerAfter: true,
@@ -489,6 +493,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ContextMenuItem(
                     id: 'delete',
                     contextIcon: AppIcons.dotsVerticalSmall,
+                    svgAssetPath: 'assets/images/trashRed.svg',
                     title: '삭제',
                     textColor: AppColors.itemOptionsMenuDeleteText,
                     onTap: () => _showDeleteConfirmDialog(item),
@@ -631,27 +636,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       return const ErrorImagePlaceholder();
     }
 
-    return Image.network(
-      imageUrl.trim(),
+    return CachedImage(
+      imageUrl: imageUrl.trim(),
       fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (context, error, stackTrace) {
-        debugPrint('RegisterTab 이미지 로드 실패: $imageUrl, error: $error');
-        return const ErrorImagePlaceholder();
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: AppColors.opacity20White,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primaryYellow,
-              strokeWidth: 2,
-            ),
-          ),
-        );
-      },
+      errorWidget: const ErrorImagePlaceholder(),
     );
   }
 

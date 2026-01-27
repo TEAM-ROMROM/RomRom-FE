@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
