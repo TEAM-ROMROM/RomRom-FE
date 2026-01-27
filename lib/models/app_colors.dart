@@ -92,7 +92,9 @@ class AppColors {
   static const Color transparent = Color(0x00000000);
 
   // 아이템 옵션 메뉴
-  static const Color itemOptionsMenuDeleteText = Color(0xFFFF5656); // 삭제 텍스트 색상
+  static const Color itemOptionsMenuRedText = Color(0xFFFF5656); // 삭제 텍스트 색상
+  static const Color itemOptionsMenuRedIcon =
+      Color(0xFF993333); // 삭제 아이콘 색상
 
   // 경고 다이얼로그
   static const Color warningRed = Color(0xFFFF5656); // 경고 아이콘 및 버튼 색상

@@ -180,11 +180,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               );
                             },
                             behavior: HitTestBehavior.opaque,
-                            child: SvgPicture.asset(
-                              'assets/images/notification.svg',
-                              width: 30.w,
-                              height: 30.h,
-                              semanticsLabel: '알림',
+                            child: Icon(
+                              AppIcons.alert,
+                              size: 30.sp,
+                              color: AppColors.textColorWhite,
                             ),
                           ),
                           SizedBox(width: 10.w),

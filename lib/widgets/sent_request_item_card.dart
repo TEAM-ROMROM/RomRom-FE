@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
@@ -147,10 +147,10 @@ class SentRequestItemCard extends StatelessWidget {
           color: AppColors.secondaryBlack1,
         ),
         child: Center(
-          child: SvgPicture.asset(
-            'assets/images/exchangeYellowCircle.svg',
-            width: 20.w,
-            height: 20.h,
+          child: Icon(
+            AppIcons.change,
+            size: 20.w,
+            color: AppColors.primaryYellow,
           ),
         ),
       ),
@@ -231,7 +231,7 @@ class SentRequestItemCard extends StatelessWidget {
         items: [
           ContextMenuItem(
             id: 'edit',
-            svgAssetPath: 'assets/images/editGray.svg',
+            icon: AppIcons.edit,
             title: '수정',
             onTap: () {
               // 수정 액션
@@ -241,7 +241,8 @@ class SentRequestItemCard extends StatelessWidget {
           ),
           ContextMenuItem(
             id: 'cancel',
-            svgAssetPath: 'assets/images/trashRed.svg',
+            icon: AppIcons.trash,
+            iconColor: AppColors.itemOptionsMenuRedIcon,
             title: '요청 취소',
             onTap: () {
               // 요청 취소 액션

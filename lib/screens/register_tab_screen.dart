@@ -475,7 +475,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ContextMenuItem(
                     id: 'changeTradeStatus',
                     contextIcon: AppIcons.dotsVerticalSmall,
-                    svgAssetPath: 'assets/images/changeGray.svg',
+                    icon: AppIcons.change,
                     title: _currentTabStatus == MyItemToggleStatus.selling
                         ? '거래완료로 변경'
                         : '판매중으로 변경',
@@ -485,7 +485,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ContextMenuItem(
                     id: 'edit',
                     contextIcon: AppIcons.dotsVerticalSmall,
-                    svgAssetPath: 'assets/images/editGray.svg',
+                    icon: AppIcons.edit,
                     title: '수정',
                     onTap: () => _navigateToEditItem(item),
                     showDividerAfter: true,
@@ -493,9 +493,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ContextMenuItem(
                     id: 'delete',
                     contextIcon: AppIcons.dotsVerticalSmall,
-                    svgAssetPath: 'assets/images/trashRed.svg',
+                    icon: AppIcons.trash,
+                    iconColor: AppColors.itemOptionsMenuRedIcon,
                     title: '삭제',
-                    textColor: AppColors.itemOptionsMenuDeleteText,
+                    textColor: AppColors.itemOptionsMenuRedText,
                     onTap: () => _showDeleteConfirmDialog(item),
                   ),
                 ],
