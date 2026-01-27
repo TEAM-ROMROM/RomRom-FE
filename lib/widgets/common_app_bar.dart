@@ -65,7 +65,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       bottom: bottomWidgets,
       title: onTitleTap != null
-          ? titleWidgets
+          ? GestureDetector(onTap: onTitleTap, child: titleWidgets)
           : Padding(
               padding: EdgeInsets.only(bottom: 8.h),
               child: Text(title, style: titleTextStyle ?? CustomTextStyles.h2),
