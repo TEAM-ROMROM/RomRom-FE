@@ -18,7 +18,7 @@ class AiBadgeWidget extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4.r),
-          color: const Color(0x4DCF7DFF), // AI 배지 배경색
+          color:AppColors.aiTagBackground, // AI 태그 배경색
         ),
         child: ShaderMask(
           shaderCallback: (Rect bounds) {

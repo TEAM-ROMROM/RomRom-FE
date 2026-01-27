@@ -223,7 +223,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
             child: Container(
               width: double.infinity,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(begin: Alignment(0, -1), end: Alignment(0, 1), stops: [0.0, 0.5, 1.0], colors: AppColors.tradeReqeustBackgroundGradient),
+                gradient: LinearGradient(begin: Alignment(0, -1), end: Alignment(0, 1), stops: [0.0, 0.5, 1.0], colors: AppColors.tradeRequestBackgroundGradient),
               ),
             ),
           ),

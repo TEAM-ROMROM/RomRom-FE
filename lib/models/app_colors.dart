@@ -71,7 +71,7 @@ class AppColors {
   static const Color imagePlaceholderBackground = Color(0xFFD9D9D9); // 연한 회색
 
   // AI 태그 및 버튼
-  static const Color aiTagBackground = Color(0xFF121A1A); // 어두운 배경
+  static const Color aiTagBackground = Color(0x4DCF7DFF); // 어두운 보라색 배경
   static const Color aiButtonGlow = Color(0xFF7B00FF); // 보라색 광택 효과
 
   // 온보딩 프로그레스 헤더
@@ -171,7 +171,7 @@ class AppColors {
   static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
 
   // 거래 요청 화면 - 배경 그라데이션
-  static const List<Color> tradeReqeustBackgroundGradient = [
+  static const List<Color> tradeRequestBackgroundGradient = [
     AppColors.primaryBlack,
     Colors.black, // 검정
     AppColors.primaryBlack,

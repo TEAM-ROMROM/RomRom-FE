@@ -674,14 +674,16 @@ class _ItemDetailDescriptionScreenState
                                   ),
                                 SizedBox(width: 4.w),
                                 if (item?.itemTradeOptions?.isNotEmpty == true)
-                                Wrap(
-                                  spacing: 4.w,
-                                  children: [...item!.itemTradeOptions!.map(
-                                    (option) => ItemDetailTradeOptionTag(
-                                      option: _getTradeOptionName(option),
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 4.w,
+                                    children: [...item!.itemTradeOptions!.map(
+                                      (option) => ItemDetailTradeOptionTag(
+                                        option: _getTradeOptionName(option),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
