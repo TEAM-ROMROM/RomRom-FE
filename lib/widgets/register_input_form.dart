@@ -4,6 +4,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_text_field_phrase.dart';
@@ -27,6 +28,7 @@ import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 /// 물품 등록 입력 폼 위젯
 /// 물품 등록 화면에서 사용되는 입력 폼 위젯
@@ -470,14 +472,12 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                               AppColors.textColorWhite),
                                     ),
                                   )
-                                : Image.network(
-                                    url,
+                                : CachedImage(
+                                    imageUrl: url,
                                     width: 80.w,
                                     height: 80.h,
                                     fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
+                                    errorWidget: Container(
                                       color: Colors.grey,
                                       child: const Icon(Icons.broken_image,
                                           color: Colors.white),

@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 /// 요청하기 화면 상단에 표시되는 교환 대상 물품 미리보기 카드
 class TradeRequestTargetPreview extends StatelessWidget {
@@ -83,26 +84,10 @@ class TradeRequestTargetPreview extends StatelessWidget {
       return const ErrorImagePlaceholder();
     }
 
-    return Image.network(
-      imageUrl!,
+    return CachedImage(
+      imageUrl: imageUrl!,
       fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (context, error, stackTrace) {
-        return const ErrorImagePlaceholder();
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: AppColors.opacity20White,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primaryYellow,
-              strokeWidth: 2,
-            ),
-          ),
-        );
-      },
+      errorWidget: const ErrorImagePlaceholder(),
     );
   }
 

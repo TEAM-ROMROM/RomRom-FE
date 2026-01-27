@@ -17,6 +17,7 @@ class ReportMenuButton extends StatelessWidget {
         items: [
           ContextMenuItem(
             id: 'report',
+            svgAssetPath: 'assets/images/report.svg',
             title: '신고하기',
             onTap: () {
               if (onReportPressed != null) onReportPressed!();

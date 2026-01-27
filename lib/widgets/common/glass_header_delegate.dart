@@ -12,8 +12,11 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double statusBarHeight; // MediaQuery.of(context).padding.top 전달 필요
   final double toolbarHeight; // 예: 58.h
   final double toggleHeight; // 예: 70.h
-  final double expandedExtra; // 큰 제목/여백 등 “펼침 전용” 추가 높이
+  final double expandedExtra; // 큰 제목/여백 등 "펼침 전용" 추가 높이
   final bool enableBlur;
+  final Widget? leadingWidget; // 좌측 위젯 (뒤로가기 버튼 등)
+  final Widget? trailingWidget; // 우측 위젯 (설정 버튼 등)
+  final bool centerTitle; // 큰 제목 중앙 정렬 여부
 
   GlassHeaderDelegate({
     required this.toggle,
@@ -23,6 +26,9 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.toggleHeight,
     this.expandedExtra = 32.0,
     this.enableBlur = true,
+    this.leadingWidget,
+    this.trailingWidget,
+    this.centerTitle = false,
   }) : assert(statusBarHeight >= 0 && toolbarHeight >= 0 && toggleHeight >= 0);
 
   // 토글을 포함해서 최소 높이를 정의 → 토글이 항상 보임
@@ -59,18 +65,43 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // 3) 큰 제목(펼침에서만 보이고 스크롤되면 사라짐)
+          // 3) 좌측 위젯 (뒤로가기 버튼 등)
+          // centerTitle이면 toolbarHeight 영역 중앙에 배치
+          if (leadingWidget != null)
+            Positioned(
+              left: 16.w,
+              top: statusBarHeight,
+              height: toolbarHeight,
+              child: Center(child: leadingWidget!),
+            ),
+
+          // 4) 우측 위젯 (설정 버튼 등)
+          // centerTitle이면 toolbarHeight 영역 중앙에 배치
+          if (trailingWidget != null)
+            Positioned(
+              right: 16.w,
+              top: statusBarHeight,
+              height: toolbarHeight,
+              child: Center(child: trailingWidget!),
+            ),
+
+          // 5) 큰 제목(펼침에서만 보이고 스크롤되면 사라짐)
+          // centerTitle이 true면 toolbarHeight 영역 중앙에 배치 (항상 보임)
           Positioned(
             left: 24,
             right: 24,
-            top: statusBarHeight + 32,
+            top: centerTitle ? statusBarHeight : statusBarHeight + 32,
+            height: centerTitle ? toolbarHeight : null,
             child: Opacity(
-              opacity: 1.0 - t,
-              child: Text(headerTitle, style: CustomTextStyles.h2),
+              opacity: centerTitle ? 1.0 : (1.0 - t), // centerTitle이면 항상 보임
+              child: centerTitle
+                  ? Center(child: Text(headerTitle, style: CustomTextStyles.h2))
+                  : Text(headerTitle, style: CustomTextStyles.h2),
             ),
           ),
 
-          // 4) 작은 제목(툴바 타이틀 역할) — 스크롤될수록 나타남
+          // 6) 작은 제목(툴바 타이틀 역할) — 스크롤될수록 나타남
+          // centerTitle이면 큰 제목이 항상 보이므로 작은 제목은 숨김
           Positioned(
             left: 0,
             right: 0,
@@ -80,7 +111,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
               ignoring: true,
               child: Center(
                 child: Opacity(
-                  opacity: t,
+                  opacity: centerTitle ? 0.0 : t,
                   child: Padding(
                     padding: const EdgeInsets.only(top: 16, bottom: 24),
                     child: Text(
@@ -94,11 +125,14 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // 5) 토글: 항상 보이는 영역(최소 높이에 포함시켰기 때문에 사라지지 않음)
+          // 7) 토글: 항상 보이는 영역(최소 높이에 포함시켰기 때문에 사라지지 않음)
+          // centerTitle이면 펼침 효과(+10px) 제거하여 토글-콘텐츠 간격 최소화
           Positioned(
             left: 0,
             right: 0,
-            top: statusBarHeight + toolbarHeight + lerpDouble(10, 0, t)!,
+            top: statusBarHeight +
+                toolbarHeight +
+                (centerTitle ? 0.0 : lerpDouble(10, 0, t)!),
             height: toggleHeight,
             child: Material(
               color: Colors.transparent,
@@ -106,7 +140,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // 6) 하단 라인(살짝)
+          // 8) 하단 라인(살짝)
           Positioned(
             left: 0,
             right: 0,
@@ -133,7 +167,10 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
         toolbarHeight != oldDelegate.toolbarHeight ||
         toggleHeight != oldDelegate.toggleHeight ||
         expandedExtra != oldDelegate.expandedExtra ||
-        enableBlur != oldDelegate.enableBlur;
+        enableBlur != oldDelegate.enableBlur ||
+        leadingWidget != oldDelegate.leadingWidget ||
+        trailingWidget != oldDelegate.trailingWidget ||
+        centerTitle != oldDelegate.centerTitle;
   }
 }
 
@@ -148,9 +185,10 @@ class GlassHeaderToggleBuilder {
     required VoidCallback onRightTap,
     required String leftText,
     required String rightText,
+    double? bottomPadding, // null이면 기본값 24.h 사용
   }) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
+      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, bottomPadding ?? 24.h),
       child: Container(
         width: 345.w,
         height: 46.h,
