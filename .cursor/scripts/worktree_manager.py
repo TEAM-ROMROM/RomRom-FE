@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Git Worktree Manager v1.0.3
+Git Worktree Manager v1.0.4
 
 Git worktree를 자동으로 생성하고 관리하는 스크립트입니다.
 브랜치가 없으면 자동으로 생성하고, 브랜치명의 특수문자를 안전하게 처리합니다.
@@ -8,17 +8,17 @@ Git worktree를 자동으로 생성하고 관리하는 스크립트입니다.
 사용법:
     macOS/Linux:
         python worktree_manager.py <branch_name>
-    
+
     Windows (환경 변수 방식, 권장):
         $env:GIT_BRANCH_NAME = "브랜치명"
         $env:PYTHONIOENCODING = "utf-8"
-        python worktree_manager.py
+        python -X utf8 worktree_manager.py
 
 예시:
     python worktree_manager.py "20260120_#163_Github_Projects_에_대한_템플릿_개발_필요"
 
 Author: Cursor AI Assistant
-Version: 1.0.3
+Version: 1.0.4
 """
 
 import os
@@ -26,15 +26,27 @@ import sys
 import subprocess
 import re
 import platform
+import io
 from pathlib import Path
 from typing import Dict, Optional, Tuple
+
+# Windows 인코딩 문제 해결 - stdout/stderr를 UTF-8로 래핑
+if platform.system() == 'Windows':
+    try:
+        # stdout/stderr가 버퍼를 가지고 있는 경우에만 래핑
+        if hasattr(sys.stdout, 'buffer'):
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        if hasattr(sys.stderr, 'buffer'):
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    except Exception:
+        pass  # 래핑 실패 시 무시
 
 
 # ===================================================================
 # 상수 정의
 # ===================================================================
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 # Windows 환경 감지
 IS_WINDOWS = platform.system() == 'Windows'

@@ -42,15 +42,19 @@ Git worktree를 자동으로 생성하는 커맨드입니다.
    - 파일명: `init_worktree_temp_{timestamp}.py`
    - 브랜치명을 코드에 직접 포함 (인코딩 문제 해결)
    - worktree 생성 로직 포함
-   - 설정 파일 복사 로직 포함
-5. Python 스크립트 실행
+5. **Python 스크립트 실행** (Windows에서는 `-X utf8` 플래그 필수):
+   ```bash
+   python -X utf8 init_worktree_temp_{timestamp}.py
+   ```
 6. 임시 파일 삭제
 7. 결과 출력
+8. 에이전트가 `.gitignore` 분석 후 민감 파일 복사
 
 **중요**:
 - **브랜치명 처리**: `#` 문자는 Git 브랜치명에서 제거됩니다 (문제 방지)
 - **인코딩 문제 해결**: Python 스크립트 파일에 브랜치명을 직접 포함시켜 Windows PowerShell 인코딩 문제 회피
-- **설정 파일 자동 복사**: worktree 생성 후 자동으로 설정 파일 복사
+- **Windows UTF-8 모드**: Python 실행 시 `-X utf8` 플래그 사용 필수
+- **설정 파일 자동 복사**: worktree 생성 후 에이전트가 동적으로 파일 복사
 - **플랫폼 독립성**: Windows/macOS/Linux 모두 동일한 방식으로 처리
 
 **실행 예시**:
@@ -58,6 +62,9 @@ Git worktree를 자동으로 생성하는 커맨드입니다.
 # Windows PowerShell
 cd d:\0-suh\project\RomRom-FE
 git config --global core.longpaths true
+
+# Python UTF-8 모드로 실행 (Windows 한글 인코딩 문제 해결)
+python -X utf8 init_worktree_temp.py
 
 # 브랜치명: 20260116_#432_UX_개선_및_페이지_디자인_수정
 # → Git 브랜치: 20260116_432_UX_개선_및_페이지_디자인_수정
