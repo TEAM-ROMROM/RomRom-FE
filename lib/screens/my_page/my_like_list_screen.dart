@@ -404,27 +404,13 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                         }
                                         return;
                                       },
-                                      child: Container(
-                                        width: 24.w,
-                                        height: 24.w,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primaryBlack,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: item.isLiked
-                                                ? Colors.transparent
-                                                : AppColors.opacity10White,
-                                            width: 1.w,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            item.isLiked
-                                                ? AppIcons.itemRegisterHeart
-                                                : AppIcons.profilelikecount,
-                                            color: AppColors.textColorWhite,
-                                            size: 24.sp,
-                                          ),
+                                      child: Center(
+                                        child: Icon(
+                                          item.isLiked
+                                              ? AppIcons.itemRegisterHeart
+                                              : AppIcons.profilelikecount,
+                                          color: AppColors.textColorWhite,
+                                          size: 24.sp,
                                         ),
                                       ),
                                     ),
