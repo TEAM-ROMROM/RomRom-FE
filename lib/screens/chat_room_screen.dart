@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/enums/message_type.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
@@ -11,6 +12,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -426,7 +428,39 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 title: '차단하기',
                 textColor: AppColors.itemOptionsMenuRedText,
                 onTap: () async {
-                  // TODO : 차단하기 기능 구현
+                  await CommonModal.confirm(
+                    context: context,
+                    message: '상대방을 차단하시겠습니까?\n차단한 사용자는 설정에서 확인할 수 있습니다.',
+                    cancelText: '취소',
+                    confirmText: '차단',
+                    onCancel: () {
+                      Navigator.of(context).pop(); // 모달 닫기
+                    },
+                    onConfirm: () async {
+                      try {
+                        await MemberApi().blockMember(
+                          chatRoom.getOpponent(_myMemberId!)!.memberId!,
+                        );
+                        if (context.mounted) {
+                          Navigator.of(context).pop(); // 모달 닫기
+                        }
+                        // 화면 닫을 때도 동일한 _leaveRoom 로직
+                        if (context.mounted) {
+                          await _leaveRoom(shouldPop: true);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.of(context).pop(); // 모달 닫기
+                          CommonSnackBar.show(
+                            context: context,
+                            type: SnackBarType.error,
+                            message:
+                                '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
+                          );
+                        }
+                      }
+                    },
+                  );
                 },
                 showDividerAfter: true,
               ),
