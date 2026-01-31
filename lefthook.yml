@@ -1,0 +1,15 @@
+# lefthook - Git Hook 관리 도구
+# 설치: brew install lefthook (macOS) / scoop install lefthook (Windows) / npm install -g lefthook
+# 활성화: lefthook install
+
+pre-commit:
+  parallel: true
+  commands:
+    format-check:
+      glob: "*.dart"
+      run: dart format --line-length=120 --set-exit-if-changed {staged_files}
+
+pre-push:
+  commands:
+    analyze:
+      run: flutter analyze
