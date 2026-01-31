@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -43,6 +45,9 @@ class RomRomContextMenu extends StatefulWidget {
   final Color? menuBackgroundColor;
   final double itemHeight;
   final bool enableHapticFeedback;
+  final double triggerRotationDegreesOnOpen;
+
+  /// 0이면 회전 없음, 45면 45도 회전
 
   const RomRomContextMenu({
     super.key,
@@ -57,6 +62,7 @@ class RomRomContextMenu extends StatefulWidget {
     this.menuBackgroundColor,
     this.itemHeight = 52,
     this.enableHapticFeedback = true,
+    this.triggerRotationDegreesOnOpen = 0,
   });
 
   @override
@@ -150,15 +156,21 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    final triggerChild = widget.customTrigger ?? Icon(widget.items.first.contextIcon, size: 30.sp, color: AppColors.textColorWhite);
+
     return GestureDetector(
       key: _triggerKey,
       onTap: _showMenu,
-      child: widget.customTrigger ??
-          Icon(
-            widget.items.first.contextIcon,
-            size: 30.sp,
-            color: AppColors.textColorWhite,
-          ),
+      child: widget.triggerRotationDegreesOnOpen == 0
+          ? triggerChild
+          : AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                final radians = (widget.triggerRotationDegreesOnOpen * _animationController.value) * (math.pi / 180.0);
+                return Transform.rotate(angle: radians, child: child);
+              },
+              child: triggerChild,
+            ),
     );
   }
 }

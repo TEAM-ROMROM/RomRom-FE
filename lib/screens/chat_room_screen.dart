@@ -69,10 +69,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (_isLeaving) return; // 중복 방지
     _isLeaving = true;
     try {
-      await ChatApi().updateChatRoomReadCursor(
-        chatRoomId: widget.chatRoomId,
-        isEntered: false,
-      );
+      await ChatApi().updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: false);
     } catch (_) {
       // 실패해도 화면은 닫는다. 필요하면 로깅만
       debugPrint('채팅방 나가기 처리 실패');
@@ -129,11 +126,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
       // 3. 과거 메시지 조회 (REST API)
       final chatApi = ChatApi();
-      final response = await chatApi.getChatMessages(
-        chatRoomId: widget.chatRoomId,
-        pageNumber: 0,
-        pageSize: 50,
-      );
+      final response = await chatApi.getChatMessages(chatRoomId: widget.chatRoomId, pageNumber: 0, pageSize: 50);
 
       if (!mounted) return;
 
@@ -143,73 +136,62 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       });
 
       // 4. 실시간 메시지 구독 (WebSocket)
-      _messageSubscription = _wsService
-          .subscribeToChatRoom(widget.chatRoomId)
-          .listen((newMessage) {
-            if (!mounted) return;
+      _messageSubscription = _wsService.subscribeToChatRoom(widget.chatRoomId).listen((newMessage) {
+        if (!mounted) return;
 
-            setState(() {
-              // 중복 서버 ID 체크
-              final newId = newMessage.chatMessageId;
-              final isDup =
-                  (newId != null) &&
-                  _messages.any(
-                    (m) => m.chatMessageId != null && m.chatMessageId == newId,
-                  );
-              if (isDup) {
-                debugPrint('중복 메시지 수신 무시: chatMessageId=$newId');
-                return;
-              }
+        setState(() {
+          // 중복 서버 ID 체크
+          final newId = newMessage.chatMessageId;
+          final isDup = (newId != null) && _messages.any((m) => m.chatMessageId != null && m.chatMessageId == newId);
+          if (isDup) {
+            debugPrint('중복 메시지 수신 무시: chatMessageId=$newId');
+            return;
+          }
 
-              // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
-              String? matchedLocalId;
-              _pendingLocalMessages.forEach((localId, localMsg) {
-                if (matchedLocalId != null) return;
-                if (localMsg.senderId != _myMemberId) return;
-                if ((localMsg.content ?? '') != (newMessage.content ?? ''))
-                  // ignore: curly_braces_in_flow_control_structures
-                  return;
-                final localDt = localMsg.createdDate ?? DateTime.now();
-                final serverDt = newMessage.createdDate ?? DateTime.now();
-                if (serverDt.difference(localDt).inSeconds.abs() <= 10) {
-                  matchedLocalId = localId;
-                }
-              });
-
-              if (matchedLocalId != null) {
-                final localMsg = _pendingLocalMessages.remove(matchedLocalId)!;
-                final idx = _messages.indexWhere(
-                  (m) => m.chatMessageId == localMsg.chatMessageId,
-                );
-
-                // 🔧 createdDate 보정
-                final fixedServer = ChatMessage(
-                  chatRoomId: newMessage.chatRoomId ?? localMsg.chatRoomId,
-                  chatMessageId: newMessage.chatMessageId,
-                  senderId: newMessage.senderId,
-                  content: newMessage.content,
-                  createdDate: newMessage.createdDate,
-                );
-
-                if (idx != -1) {
-                  _messages[idx] = fixedServer;
-                } else {
-                  _messages.insert(0, fixedServer);
-                }
-              } else {
-                _messages.insert(0, newMessage);
-              }
-            });
-
-            _scrollToBottom();
+          // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
+          String? matchedLocalId;
+          _pendingLocalMessages.forEach((localId, localMsg) {
+            if (matchedLocalId != null) return;
+            if (localMsg.senderId != _myMemberId) return;
+            if ((localMsg.content ?? '') != (newMessage.content ?? '')) {
+              return;
+            }
+            final localDt = localMsg.createdDate ?? DateTime.now();
+            final serverDt = newMessage.createdDate ?? DateTime.now();
+            if (serverDt.difference(localDt).inSeconds.abs() <= 10) {
+              matchedLocalId = localId;
+            }
           });
+
+          if (matchedLocalId != null) {
+            final localMsg = _pendingLocalMessages.remove(matchedLocalId)!;
+            final idx = _messages.indexWhere((m) => m.chatMessageId == localMsg.chatMessageId);
+
+            // 🔧 createdDate 보정
+            final fixedServer = ChatMessage(
+              chatRoomId: newMessage.chatRoomId ?? localMsg.chatRoomId,
+              chatMessageId: newMessage.chatMessageId,
+              senderId: newMessage.senderId,
+              content: newMessage.content,
+              createdDate: newMessage.createdDate,
+            );
+
+            if (idx != -1) {
+              _messages[idx] = fixedServer;
+            } else {
+              _messages.insert(0, fixedServer);
+            }
+          } else {
+            _messages.insert(0, newMessage);
+          }
+        });
+
+        _scrollToBottom();
+      });
 
       setState(() => _isLoading = false);
       _scrollToBottom();
-      chatApi.updateChatRoomReadCursor(
-        chatRoomId: widget.chatRoomId,
-        isEntered: true,
-      ); // 입장 처리
+      chatApi.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true); // 입장 처리
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;
@@ -228,13 +210,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     // 1) 로컬에 즉시 추가(낙관적 업데이트) 및 pending에 등록
     final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
-    final localMsg = ChatMessage(
-      chatRoomId: widget.chatRoomId,
-      chatMessageId: localId,
-      senderId: _myMemberId,
-      content: content,
-      createdDate: DateTime.now(),
-    );
+    final localMsg = ChatMessage(chatRoomId: widget.chatRoomId, chatMessageId: localId, senderId: _myMemberId, content: content, createdDate: DateTime.now());
     setState(() {
       _messages.insert(0, localMsg);
       _pendingLocalMessages[localId] = localMsg;
@@ -242,11 +218,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _scrollToBottom();
 
     // 2) 서버로 전송 (가능하면 clientMessageId 전송하도록 서비스 확장 권장)
-    _wsService.sendMessage(
-      chatRoomId: widget.chatRoomId,
-      content: content,
-      type: MessageType.text,
-    );
+    _wsService.sendMessage(chatRoomId: widget.chatRoomId, content: content, type: MessageType.text);
 
     _messageController.clear();
   }
@@ -255,11 +227,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            0.0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
+          _scrollController.animateTo(0.0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
         }
       });
     }
@@ -283,9 +251,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primaryYellow),
-        ),
+        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
       );
     }
 
@@ -295,10 +261,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         appBar: AppBar(
           backgroundColor: AppColors.primaryBlack,
           leading: IconButton(
-            icon: const Icon(
-              AppIcons.navigateBefore,
-              color: AppColors.textColorWhite,
-            ),
+            icon: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
             onPressed: () => Navigator.of(context).pop(true),
           ),
         ),
@@ -308,23 +271,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             children: [
               Text(
                 _errorMessage,
-                style: CustomTextStyles.p1.copyWith(
-                  color: AppColors.textColorWhite,
-                ),
+                style: CustomTextStyles.p1.copyWith(color: AppColors.textColorWhite),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadInitialData,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryYellow,
-                ),
-                child: Text(
-                  '다시 시도',
-                  style: CustomTextStyles.p2.copyWith(
-                    color: AppColors.primaryBlack,
-                  ),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryYellow),
+                child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
               ),
             ],
           ),
@@ -366,41 +320,28 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       onTitleTap: () {
         final opponent = chatRoom.getOpponent(_myMemberId!);
         if (opponent?.memberId != null) {
-          context.navigateTo(
-            screen: ProfileScreen(memberId: opponent!.memberId!),
-          );
+          context.navigateTo(screen: ProfileScreen(memberId: opponent!.memberId!));
         }
       },
       showBottomBorder: true,
       titleWidgets: Padding(
-        padding:  EdgeInsets.only(top: 8.0.h),
+        padding: EdgeInsets.only(top: 8.0.h),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              chatRoom.getOpponentNickname(_myMemberId!),
-              style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
-            ),
+            Text(chatRoom.getOpponentNickname(_myMemberId!), style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600)),
             Padding(
-              padding: EdgeInsets.only(top:8.h),
+              padding: EdgeInsets.only(top: 8.h),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
                     width: 8.w,
                     height: 8.w,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.chatInactiveStatus,
-                    ),
+                    decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.chatInactiveStatus),
                   ),
                   SizedBox(width: 8.w),
-                  Text(
-                    getLastActivityTime(chatRoom),
-                    style: CustomTextStyles.p2.copyWith(
-                      color: AppColors.opacity50White,
-                    ),
-                  ),
+                  Text(getLastActivityTime(chatRoom), style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White)),
                 ],
               ),
             ),
@@ -481,9 +422,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     },
                     onConfirm: () async {
                       try {
-                        await ChatApi().deleteChatRoom(
-                          chatRoomId: chatRoom.chatRoomId!,
-                        );
+                        await ChatApi().deleteChatRoom(chatRoomId: chatRoom.chatRoomId!);
                         if (context.mounted) {
                           Navigator.of(context).pop(); // 모달 닫기
                         }
@@ -494,11 +433,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       } catch (e) {
                         if (context.mounted) {
                           Navigator.of(context).pop(); // 모달 닫기
-                          CommonSnackBar.show(
-                            context: context,
-                            message:
-                                '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
-                          );
+                          CommonSnackBar.show(context: context, message: '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}');
                         }
                       }
                     },
@@ -515,14 +450,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // 거래 정보 카드 빌더
   Widget _buildTradeInfoCard() {
     // 내 아이템과 상대방 아이템 구분
-    final targetItem =
-        chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId
-        ? chatRoom.tradeRequestHistory?.giveItem
-        : chatRoom.tradeRequestHistory?.takeItem;
-    final myItem =
-        chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId
-        ? chatRoom.tradeRequestHistory?.takeItem
-        : chatRoom.tradeRequestHistory?.giveItem;
+    final targetItem = chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId ? chatRoom.tradeRequestHistory?.giveItem : chatRoom.tradeRequestHistory?.takeItem;
+    final myItem = chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId ? chatRoom.tradeRequestHistory?.takeItem : chatRoom.tradeRequestHistory?.giveItem;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -553,13 +482,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
               );
             },
-            child: CachedImage(
-              imageUrl: targetItem?.itemImages?.first.imageUrl ?? '',
-              width: 48.w,
-              height: 48.w,
-              borderRadius: BorderRadius.circular(8.r),
-              errorWidget: const ErrorImagePlaceholder(),
-            ),
+            child: CachedImage(imageUrl: targetItem?.itemImages?.first.imageUrl ?? '', width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(8.r), errorWidget: const ErrorImagePlaceholder()),
           ),
           SizedBox(width: 16.w),
           Expanded(
@@ -568,18 +491,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               children: [
                 Text(
                   targetItem?.itemName ?? '제목 없음',
-                  style: CustomTextStyles.p1.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 10.h),
                 Text(
                   '${formatPrice(targetItem?.price ?? 0)}원',
-                  style: CustomTextStyles.p1.copyWith(
-                    color: AppColors.opacity60White,
-                  ),
+                  style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -605,13 +524,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
               );
             },
-            child: CachedImage(
-              imageUrl: myItem?.itemImages?.first.imageUrl ?? '',
-              width: 48.w,
-              height: 48.w,
-              borderRadius: BorderRadius.circular(8.r),
-              errorWidget: const SizedBox.shrink(),
-            ),
+            child: CachedImage(imageUrl: myItem?.itemImages?.first.imageUrl ?? '', width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(8.r), errorWidget: const SizedBox.shrink()),
           ),
         ],
       ),
@@ -621,10 +534,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Widget _buildMessageList() {
     if (_messages.isEmpty) {
       return Center(
-        child: Text(
-          '메시지를 입력해보세요',
-          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
-        ),
+        child: Text('메시지를 입력해보세요', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White)),
       );
     }
 
@@ -638,11 +548,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         final isMine = message.senderId == _myMemberId;
 
         // 메시지 간격: 같은 사람이 연속으로 보낸 메시지면 8, 아니면 24
-        final double topGap =
-            (index < _messages.length - 1 &&
-                _messages[index].senderId == _messages[index + 1].senderId)
-            ? 8.h
-            : 24.h;
+        final double topGap = (index < _messages.length - 1 && _messages[index].senderId == _messages[index + 1].senderId) ? 8.h : 24.h;
 
         // 같은 사람 연속 메시지일 때는 같은 '분'에 속한 메시지들 중
         // 가장 마지막(=가장 최신) 메시지에만 시간 표시
@@ -654,79 +560,46 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 // 발신자가 바뀌면 시간 표시
                 _messages[index].senderId != _messages[index - 1].senderId ||
                     // 같은 발신자라도 이전(더 최신) 메시지와 분 단위가 다르면 표시
-                    !isSameMinute(
-                      _messages[index].createdDate,
-                      _messages[index - 1].createdDate,
-                    )));
+                    !isSameMinute(_messages[index].createdDate, _messages[index - 1].createdDate)));
 
         return Padding(
           padding: EdgeInsets.only(top: topGap),
           child: Row(
-            mainAxisAlignment: isMine
-                ? MainAxisAlignment.end
-                : MainAxisAlignment.start, // isMine에 따라 정렬 방향 변경
+            mainAxisAlignment: isMine ? MainAxisAlignment.end : MainAxisAlignment.start, // isMine에 따라 정렬 방향 변경
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (!isMine) ...[
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 8.h,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   constraints: BoxConstraints(maxWidth: 264.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryBlack1,
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
+                  decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
                   child: Text(
                     message.content ?? '',
-                    style: CustomTextStyles.p2.copyWith(
-                      color: AppColors.textColorWhite,
-                      fontWeight: FontWeight.w400,
-                      height: 1.2,
-                    ),
+                    style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w400, height: 1.2),
                   ),
                 ),
                 if (showTime) ...[
                   SizedBox(width: 8.w),
                   Text(
                     formatMessageTime(message.createdDate),
-                    style: CustomTextStyles.p3.copyWith(
-                      fontSize: 12.sp,
-                      color: AppColors.opacity50White,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: CustomTextStyles.p3.copyWith(fontSize: 12.sp, color: AppColors.opacity50White, fontWeight: FontWeight.w400),
                   ),
                 ],
               ] else ...[
                 if (showTime) ...[
                   Text(
                     formatMessageTime(message.createdDate),
-                    style: CustomTextStyles.p3.copyWith(
-                      fontSize: 12.sp,
-                      color: AppColors.opacity50White,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: CustomTextStyles.p3.copyWith(fontSize: 12.sp, color: AppColors.opacity50White, fontWeight: FontWeight.w400),
                   ),
                   SizedBox(width: 8.w),
                 ],
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 8.h,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   constraints: BoxConstraints(maxWidth: 240.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryYellow,
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
+                  decoration: BoxDecoration(color: AppColors.primaryYellow, borderRadius: BorderRadius.circular(10.r)),
                   child: Text(
                     message.content ?? '',
-                    style: CustomTextStyles.p2.copyWith(
-                      color: AppColors.textColorBlack,
-                      fontWeight: FontWeight.w400,
-                      height: 1.2,
-                    ),
+                    style: CustomTextStyles.p2.copyWith(color: AppColors.textColorBlack, fontWeight: FontWeight.w400, height: 1.2),
                   ),
                 ),
               ],
@@ -739,16 +612,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 입력 바 빌더
   Widget _buildInputBar() {
-    double textFieldBottomPadding = Platform.isIOS
-        ? 8.h + MediaQuery.of(context).padding.bottom
-        : 21.h;
+    double textFieldBottomPadding = Platform.isIOS ? 8.h + MediaQuery.of(context).padding.bottom : 21.h;
 
     return Container(
-      padding: EdgeInsets.only(
-        top: 8.w,
-        left: 16.h,
-        bottom: textFieldBottomPadding,
-      ),
+      padding: EdgeInsets.only(top: 8.w, left: 16.h, bottom: textFieldBottomPadding),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -759,18 +626,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               height: 40.w,
               child: RomRomContextMenu(
                 position: ContextMenuPosition.above,
+                triggerRotationDegreesOnOpen: 45,
                 customTrigger: Container(
                   width: 40.w,
                   height: 40.w,
-                  decoration: const BoxDecoration(
-                    color: AppColors.secondaryBlack1,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    AppIcons.addItemPlus,
-                    color: AppColors.textColorWhite,
-                    size: 20.sp,
-                  ),
+                  decoration: const BoxDecoration(color: AppColors.secondaryBlack1, shape: BoxShape.circle),
+                  child: Icon(AppIcons.addItemPlus, color: AppColors.textColorWhite, size: 20.sp),
                 ),
                 items: [
                   ContextMenuItem(
@@ -788,16 +649,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
           Expanded(
             child: SizedBox(
-              height: 40.h <= _inputFieldHeight && _inputFieldHeight <= 70.h
-                  ? _inputFieldHeight
-                  : 40.h,
+              height: 40.h <= _inputFieldHeight && _inputFieldHeight <= 70.h ? _inputFieldHeight : 40.h,
               child: TextField(
                 controller: _messageController,
-                style: CustomTextStyles.p2.copyWith(
-                  color: AppColors.textColorWhite,
-                  fontWeight: FontWeight.w400,
-                  height: 1.2
-                ),
+                style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w400, height: 1.2),
                 minLines: 1,
                 maxLines: 5,
                 cursorHeight: 16.h,
@@ -805,19 +660,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 cursorWidth: 1.5.w,
                 decoration: InputDecoration(
                   hintText: '메세지를 입력하세요',
-                  hintStyle: CustomTextStyles.p2.copyWith(
-                    color: AppColors.opacity50White,
-                  ),
+                  hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
                   filled: true,
                   fillColor: AppColors.opacity10White,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(100.r),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 8.h,
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(100.r), borderSide: BorderSide.none),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   // 텍스트 유무에 따라 버튼/아이콘 색상 및 활성화 상태 변경
                   suffixIcon: TextFieldTapRegion(
                     child: GestureDetector(
@@ -831,30 +678,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         margin: EdgeInsets.all(4.w),
                         width: 40.w,
                         height: 40.w,
-                        decoration: BoxDecoration(
-                          color: !_hasText
-                              ? AppColors.secondaryBlack2
-                              : AppColors.primaryYellow,
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: BoxDecoration(color: !_hasText ? AppColors.secondaryBlack2 : AppColors.primaryYellow, shape: BoxShape.circle),
                         child: Center(
-                          child: Icon(
-                            AppIcons.arrowUpward,
-                            color: !_hasText
-                                ? AppColors.secondaryBlack1
-                                : AppColors.primaryBlack,
-                            size: 32.w,
-                          ),
+                          child: Icon(AppIcons.arrowUpward, color: !_hasText ? AppColors.secondaryBlack1 : AppColors.primaryBlack, size: 32.w),
                         ),
                       ),
                     ),
                   ),
-                  suffixIconConstraints: BoxConstraints(
-                    minWidth: 40.w,
-                    minHeight: 40.w,
-                    maxWidth: 40.w,
-                    maxHeight: 40.w,
-                  ),
+                  suffixIconConstraints: BoxConstraints(minWidth: 40.w, minHeight: 40.w, maxWidth: 40.w, maxHeight: 40.w),
                 ),
                 onSubmitted: (_) => _sendMessage(),
               ),
