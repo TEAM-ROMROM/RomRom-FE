@@ -28,8 +28,7 @@ class MemberLocation extends BaseEntity {
     this.ri,
   });
 
-  factory MemberLocation.fromJson(Map<String, dynamic> json) =>
-      _$MemberLocationFromJson(json);
+  factory MemberLocation.fromJson(Map<String, dynamic> json) => _$MemberLocationFromJson(json);
 
   @override
   Map<String, dynamic> toJson() => _$MemberLocationToJson(this);

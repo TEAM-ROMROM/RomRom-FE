@@ -270,7 +270,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           onTap: () {
             if (index < _coachMarkImages.length - 1) {
               debugPrint('코치마크 이벤트: 이미지 탭 - 다음 페이지 ${index + 1}');
-              _coachMarkPageController.animateToPage(index + 1, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+              _coachMarkPageController.animateToPage(
+                index + 1,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
             } else {
               debugPrint('코치마크 이벤트: 마지막 이미지 탭 - 코치마크 닫기');
               _closeCoachMark();
@@ -282,7 +286,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             errorBuilder: (context, error, stackTrace) {
               debugPrint('오류: 이미지 로드 실패 - ${_coachMarkImages[index]} - $error');
               return Center(
-                child: Text('이미지 로드 실패: ${_coachMarkImages[index]}', style: const TextStyle(color: AppColors.textColorWhite)),
+                child: Text(
+                  '이미지 로드 실패: ${_coachMarkImages[index]}',
+                  style: const TextStyle(color: AppColors.textColorWhite),
+                ),
               );
             },
           ),
@@ -302,13 +309,20 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             return GestureDetector(
               onTap: () {
                 debugPrint('코치마크 이벤트: 인디케이터 탭 - 페이지 $index');
-                _coachMarkPageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                _coachMarkPageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
               },
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 width: isCurrentPage ? 12.w : 8.w,
                 height: isCurrentPage ? 12.w : 8.w,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: isCurrentPage ? AppColors.primaryYellow : AppColors.opacity50White),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isCurrentPage ? AppColors.primaryYellow : AppColors.opacity50White,
+                ),
               ),
             );
           }),
@@ -466,7 +480,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   Future<void> _loadMyCards() async {
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getMyItems(ItemRequest(pageNumber: 0, pageSize: 10, itemStatus: ItemStatus.available.serverName));
+      final response = await itemApi.getMyItems(
+        ItemRequest(pageNumber: 0, pageSize: 10, itemStatus: ItemStatus.available.serverName),
+      );
 
       if (!mounted) return;
 
@@ -497,36 +513,27 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       itemName: feedItem.name,
       price: feedItem.price,
       itemCondition: feedItem.itemCondition.serverName,
-      itemTradeOptions:
-          feedItem.transactionTypes.map((e) => e.serverName).toList(),
+      itemTradeOptions: feedItem.transactionTypes.map((e) => e.serverName).toList(),
     );
 
     try {
       // 거래 요청 존재 여부 확인
       final tradeApi = TradeApi();
       final exists = await tradeApi.checkTradeRequestExistence(
-        TradeRequest(
-          takeItemId: feedItem.itemUuid,
-          giveItemId: cardId,
-        ),
+        TradeRequest(takeItemId: feedItem.itemUuid, giveItemId: cardId),
       );
 
       if (!mounted) return;
 
       if (exists) {
         // 거래 요청이 이미 존재하면 토스트바 표시
-        CommonSnackBar.show(
-          context: context,
-          message: '이미 거래 요청이 존재합니다.',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '이미 거래 요청이 존재합니다.', type: SnackBarType.error);
       } else {
         // 거래 요청이 없으면 요청 화면으로 이동
         context.navigateTo(
           screen: TradeRequestScreen(
             targetItem: targetItem,
-            targetImageUrl:
-                feedItem.imageUrls.isNotEmpty ? feedItem.imageUrls[0] : null,
+            targetImageUrl: feedItem.imageUrls.isNotEmpty ? feedItem.imageUrls[0] : null,
             preSelectedCardId: cardId,
           ),
         );
@@ -534,11 +541,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     } catch (e) {
       if (!mounted) return;
       debugPrint('거래 요청 확인 오류: $e');
-      CommonSnackBar.show(
-        context: context,
-        message: '거래 요청 확인에 실패했습니다.',
-        type: SnackBarType.error,
-      );
+      CommonSnackBar.show(context: context, message: '거래 요청 확인에 실패했습니다.', type: SnackBarType.error);
     }
   }
 

@@ -22,11 +22,10 @@ class ChatRoomDetailDto {
     this.lastMessageContent,
     this.lastMessageTime,
     this.unreadCount,
-    this.chatRoomType
+    this.chatRoomType,
   });
 
-  factory ChatRoomDetailDto.fromJson(Map<String, dynamic> json) =>
-      _$ChatRoomDetailDtoFromJson(json);
+  factory ChatRoomDetailDto.fromJson(Map<String, dynamic> json) => _$ChatRoomDetailDtoFromJson(json);
 
   Map<String, dynamic> toJson() => _$ChatRoomDetailDtoToJson(this);
 

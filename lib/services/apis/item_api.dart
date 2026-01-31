@@ -52,9 +52,7 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint(
-          '물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}',
-        );
+        debugPrint('물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}');
       },
     );
 
@@ -120,9 +118,7 @@ class ItemApi {
       isAuthRequired: true,
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
-        debugPrint(
-          '물품 상세 조회 성공: ${itemResponse.item?.latitude}, ${itemResponse.item?.longitude}',
-        );
+        debugPrint('물품 상세 조회 성공: ${itemResponse.item?.latitude}, ${itemResponse.item?.longitude}');
       },
     );
 
@@ -256,10 +252,7 @@ class ItemApi {
     const String url = '${AppUrls.baseUrl}/api/item/status/update';
     late ItemResponse itemResponse;
 
-    final Map<String, dynamic> fields = {
-      'itemId': request.itemId,
-      'itemStatus': request.itemStatus,
-    };
+    final Map<String, dynamic> fields = {'itemId': request.itemId, 'itemStatus': request.itemStatus};
 
     await ApiClient.sendMultipartRequest(
       url: url,

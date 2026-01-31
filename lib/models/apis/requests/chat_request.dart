@@ -20,7 +20,6 @@ class ChatRoomRequest {
     this.pageSize = 20,
   });
 
-  factory ChatRoomRequest.fromJson(Map<String, dynamic> json) =>
-      _$ChatRoomRequestFromJson(json);
+  factory ChatRoomRequest.fromJson(Map<String, dynamic> json) => _$ChatRoomRequestFromJson(json);
   Map<String, dynamic> toJson() => _$ChatRoomRequestToJson(this);
 }

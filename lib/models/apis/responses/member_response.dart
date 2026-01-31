@@ -13,24 +13,16 @@ class MemberResponse {
   @JsonKey(fromJson: _memberItemCategoriesFromJson, toJson: _memberItemCategoriesToJson)
   final List<MemberItemCategory>? memberItemCategories;
 
-  MemberResponse({
-    this.member,
-    this.memberLocation,
-    this.memberItemCategories,
-  });
+  MemberResponse({this.member, this.memberLocation, this.memberItemCategories});
 
-  factory MemberResponse.fromJson(Map<String, dynamic> json) =>
-      _$MemberResponseFromJson(json);
+  factory MemberResponse.fromJson(Map<String, dynamic> json) => _$MemberResponseFromJson(json);
   Map<String, dynamic> toJson() => _$MemberResponseToJson(this);
 }
 
 // ----- 안전 파서 -----
 List<MemberItemCategory> _memberItemCategoriesFromJson(Object? value) {
   if (value is List) {
-    return value
-        .whereType<Map<String, dynamic>>()
-        .map(MemberItemCategory.fromJson)
-        .toList();
+    return value.whereType<Map<String, dynamic>>().map(MemberItemCategory.fromJson).toList();
   }
   return const <MemberItemCategory>[];
 }

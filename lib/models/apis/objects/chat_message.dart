@@ -28,8 +28,7 @@ class ChatMessage extends BaseEntity {
     this.type,
   });
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) =>
-      _$ChatMessageFromJson(json);
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => _$ChatMessageFromJson(json);
   @override
   Map<String, dynamic> toJson() => _$ChatMessageToJson(this);
 }

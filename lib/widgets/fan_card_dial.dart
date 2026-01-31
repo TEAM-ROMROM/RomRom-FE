@@ -32,12 +32,7 @@ class _FanCardDialState extends State<FanCardDial> {
     List<Map<String, dynamic>> cards = [];
     for (int i = 0; i < 6; i++) {
       String id = UniqueKey().toString();
-      cards.add({
-        "color": Colors.primaries[i % Colors.primaries.length],
-        "id": id,
-        "width": 85.0,
-        "height": 135.0,
-      });
+      cards.add({"color": Colors.primaries[i % Colors.primaries.length], "id": id, "width": 85.0, "height": 135.0});
     }
     setState(() {
       rawCards = cards;
@@ -92,8 +87,7 @@ class _FanCardDialState extends State<FanCardDial> {
     return positionedCards
         .asMap()
         .entries
-        .map((entry) => _buildFanCard(
-            entry, midIndex, baseXOffset, baseYOffset, rotationCenter, cardGap))
+        .map((entry) => _buildFanCard(entry, midIndex, baseXOffset, baseYOffset, rotationCenter, cardGap))
         .toList()
         .reversed
         .toList();
@@ -112,12 +106,13 @@ class _FanCardDialState extends State<FanCardDial> {
   ///
   /// 반환값은 애니메이션과 회전 효과가 적용된 카드 위젯입니다.
   Widget _buildFanCard(
-      MapEntry<int, Map<String, dynamic>> entry,
-      int midIndex,
-      double baseXOffset,
-      double baseYOffset,
-      double rotationCenter,
-      double cardGap) {
+    MapEntry<int, Map<String, dynamic>> entry,
+    int midIndex,
+    double baseXOffset,
+    double baseYOffset,
+    double rotationCenter,
+    double cardGap,
+  ) {
     int index = entry.key;
     var card = entry.value;
     String id = card["card"]?["id"] ?? "unknown";
@@ -155,10 +150,7 @@ class _FanCardDialState extends State<FanCardDial> {
         },
         child: Transform.rotate(
           angle: cardAngleRadians,
-          child: MyCustomCard(
-            color: card["card"]["color"],
-            label: 'Card ${id.substring(0, 4)}',
-          ),
+          child: MyCustomCard(color: card["card"]["color"], label: 'Card ${id.substring(0, 4)}'),
         ),
       ),
     );
@@ -196,13 +188,11 @@ class _FanCardDialState extends State<FanCardDial> {
     double x = (card["coords"]?["x"] ?? 0).toDouble();
     double y = (card["coords"]?["y"] ?? 0).toDouble();
     double extraGap = cardGap;
-    double rotatedX = baseXOffset +
-        (x - rotationCenter + (index - midIndex) * extraGap) *
-            cos(angleOffset) -
+    double rotatedX =
+        baseXOffset +
+        (x - rotationCenter + (index - midIndex) * extraGap) * cos(angleOffset) -
         (y - rotationCenter) * sin(angleOffset);
-    double rotatedY = baseYOffset +
-        (x - rotationCenter) * sin(angleOffset) +
-        (y - rotationCenter) * cos(angleOffset);
+    double rotatedY = baseYOffset + (x - rotationCenter) * sin(angleOffset) + (y - rotationCenter) * cos(angleOffset);
     return Offset(rotatedX, rotatedY);
   }
 
@@ -235,9 +225,7 @@ class _FanCardDialState extends State<FanCardDial> {
               child: SizedBox(
                 width: MediaQuery.of(context).size.width,
                 height: 300,
-                child: Stack(
-                  children: buildFanCardWidgets(),
-                ),
+                child: Stack(children: buildFanCardWidgets()),
               ),
             ),
           ],
@@ -257,11 +245,7 @@ class MyCustomCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 85.w,
-      child: const ItemCard(
-        itemCategoryLabel: '스포츠/레저',
-        itemName: '윌슨 블레이드 V9',
-        itemId: 'demoCard1',
-      ),
+      child: const ItemCard(itemCategoryLabel: '스포츠/레저', itemName: '윌슨 블레이드 V9', itemId: 'demoCard1'),
     );
   }
 }

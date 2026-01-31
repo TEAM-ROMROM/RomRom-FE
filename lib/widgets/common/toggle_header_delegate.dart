@@ -7,10 +7,7 @@ class ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   final double height;
 
-  ToggleHeaderDelegate({
-    required this.child, 
-    this.height = 70,
-  });
+  ToggleHeaderDelegate({required this.child, this.height = 70});
 
   @override
   double get minExtent => height.h;
@@ -20,10 +17,7 @@ class ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppColors.primaryBlack,
-      child: child,
-    );
+    return Container(color: AppColors.primaryBlack, child: child);
   }
 
   @override

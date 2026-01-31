@@ -31,8 +31,7 @@ class FlipCardSpin extends StatefulWidget {
   State<FlipCardSpin> createState() => _FlipCardSpinState();
 }
 
-class _FlipCardSpinState extends State<FlipCardSpin>
-    with SingleTickerProviderStateMixin {
+class _FlipCardSpinState extends State<FlipCardSpin> with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   late final Animation<double> _spin; // 0.0 ~ turns
 
@@ -40,9 +39,7 @@ class _FlipCardSpinState extends State<FlipCardSpin>
   void initState() {
     super.initState();
     assert(
-      (widget.fastPortion + widget.slowPortion + widget.settlePortion)
-              .toStringAsFixed(3) ==
-          1.000.toStringAsFixed(3),
+      (widget.fastPortion + widget.slowPortion + widget.settlePortion).toStringAsFixed(3) == 1.000.toStringAsFixed(3),
       'Portions must sum to 1.0',
     );
 
@@ -55,8 +52,7 @@ class _FlipCardSpinState extends State<FlipCardSpin>
     _spin = TweenSequence<double>([
       // 1) 빠르게 쭉
       TweenSequenceItem(
-        tween: Tween(begin: t0, end: t1)
-            .chain(CurveTween(curve: Curves.fastOutSlowIn)), // 빠른 구간은 선형
+        tween: Tween(begin: t0, end: t1).chain(CurveTween(curve: Curves.fastOutSlowIn)), // 빠른 구간은 선형
         weight: (widget.fastPortion * 1000),
       ),
     ]).animate(_c);
