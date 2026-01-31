@@ -464,7 +464,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     _cardController = PageController(
       initialPage: initialPage,
       keepPage: false, // 이전 위치 자동 복원 방지
-      viewportFraction: 0.6, // 화면에 보이는 카드의 비율
+      viewportFraction: 227.w / 393.w, // 화면에 보이는 카드의 비율
     );
   }
 
