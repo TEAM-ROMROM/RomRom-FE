@@ -200,8 +200,6 @@ class MemberApi {
     );
   }
 
-  
-
   /// 회원 차단 해제 API
   /// `POST /api/members/block/delete`
   Future<void> unblockMember(String blockTargetMemberId) async {
@@ -219,8 +217,7 @@ class MemberApi {
 
   /// 알림 수신 동의 업데이트 API
   /// `POST /api/members/notification/update`
-  Future<MemberResponse> updateNotificationAgreement({required bool 
-  isNotificationAgreed}) async {
+  Future<MemberResponse> updateNotificationAgreement({required bool isNotificationAgreed}) async {
     const String url = '${AppUrls.baseUrl}/api/members/notification/update';
     late MemberResponse memberResponse;
 
