@@ -80,7 +80,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     // 카드 컨트롤러 초기화
     _cardController = PageController(
       initialPage: 0,
-      viewportFraction: 0.6, // 화면에 보이는 카드의 비율
+      viewportFraction: 227.w / 393.w,
     );
 
     // 토글 애니메이션 컨트롤러 초기화
@@ -611,7 +611,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return SizedBox(
-      height: 326.h,
+      height: 334.h,
       child: PageView.builder(
         controller: _cardController,
         onPageChanged: _onCardPageChanged,
@@ -632,9 +632,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 ),
               );
             },
-            child: RequestManagementItemCardWidget(
-              card: _itemCards[index],
-              isActive: index == _currentCardIndex,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.h),
+              child: RequestManagementItemCardWidget(
+                card: _itemCards[index],
+                isActive: index == _currentCardIndex,
+              ),
             ),
           );
         },
@@ -800,7 +803,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                       onTap: () async {
                         await TradeApi()
                             .getDetailedTradeRequest(request)
-                            .then((detailedRequest) {                              
+                            .then((detailedRequest) {
                               setState(() {
                                 // isNew 상태 갱신
                                 final targetIndex = _receivedRequests
