@@ -433,7 +433,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           Icon(
                             AppIcons.itmeRegisterImage,
                             color: AppColors.opacity60White,
-                            size: 24.sp,
+                            size: 18.sp,
                           ),
                           SizedBox(height: 4.h),
                           Text('$imageCount/10',

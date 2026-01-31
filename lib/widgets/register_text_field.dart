@@ -182,7 +182,6 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   }
 
                   return SizedBox(
-                    height: 46.h,
                     child: TextField(
                       controller: widget.controller,
                       focusNode: _focusNode,
