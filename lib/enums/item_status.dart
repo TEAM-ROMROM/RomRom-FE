@@ -18,14 +18,12 @@ enum ItemStatus {
   final String label;
   final String serverName;
 
-  const ItemStatus(
-      {required this.id, required this.label, required this.serverName});
+  const ItemStatus({required this.id, required this.label, required this.serverName});
 
   /// serverName으로부터 ItemStatus를 찾는 헬퍼 메서드
   static ItemStatus? fromServerName(String serverName) {
     try {
-      return ItemStatus.values
-          .firstWhere((status) => status.serverName == serverName);
+      return ItemStatus.values.firstWhere((status) => status.serverName == serverName);
     } catch (e) {
       return null;
     }

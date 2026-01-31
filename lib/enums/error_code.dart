@@ -47,9 +47,6 @@ enum ErrorCode {
 
   static ErrorCode fromCode(String? code) {
     if (code == null) return ErrorCode.unknown;
-    return ErrorCode.values.firstWhere(
-      (e) => e.code == code,
-      orElse: () => ErrorCode.unknown,
-    );
+    return ErrorCode.values.firstWhere((e) => e.code == code, orElse: () => ErrorCode.unknown);
   }
-} 
+}

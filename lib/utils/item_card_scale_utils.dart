@@ -14,8 +14,7 @@ class ItemCardScale {
   double fontSize(double value) => value * scale;
 
   // 수평/수직 padding을 scale 비율로 계산
-  EdgeInsets padding(double h, double v) =>
-      EdgeInsets.symmetric(horizontal: s(h), vertical: s(v));
+  EdgeInsets padding(double h, double v) => EdgeInsets.symmetric(horizontal: s(h), vertical: s(v));
 
   // margin을 scale 비율로 계산
   EdgeInsets margin({double l = 0, double t = 0, double r = 0, double b = 0}) =>
@@ -46,20 +45,11 @@ class ItemCardState {
   final ItemCardScale scale; // 크기 비율 정보
   final List<String> selectedOptions; // 선택된 옵션 목록
 
-  ItemCardState({
-    required this.scale,
-    this.selectedOptions = const [],
-  });
+  ItemCardState({required this.scale, this.selectedOptions = const []});
 
   // state 복사 후 일부 속성만 업데이트
-  ItemCardState copyWith({
-    ItemCardScale? scale,
-    List<String>? selectedOptions,
-  }) {
-    return ItemCardState(
-      scale: scale ?? this.scale,
-      selectedOptions: selectedOptions ?? this.selectedOptions,
-    );
+  ItemCardState copyWith({ItemCardScale? scale, List<String>? selectedOptions}) {
+    return ItemCardState(scale: scale ?? this.scale, selectedOptions: selectedOptions ?? this.selectedOptions);
   }
 }
 
@@ -78,9 +68,7 @@ class ItemCardNotifier extends StateNotifier<AsyncValue<ItemCardState>> {
   // baseWidth 대비 currentWidth로 scale 계산 후 상태 업데이트
   void setScale(double baseWidth, double currentWidth) {
     state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(
-        scale: ItemCardScale(currentWidth / baseWidth),
-      ));
+      state = AsyncValue.data(currentState.copyWith(scale: ItemCardScale(currentWidth / baseWidth)));
     });
   }
 
@@ -93,24 +81,19 @@ class ItemCardNotifier extends StateNotifier<AsyncValue<ItemCardState>> {
       } else {
         currentOptions.add(option);
       }
-      state = AsyncValue.data(currentState.copyWith(
-        selectedOptions: currentOptions,
-      ));
+      state = AsyncValue.data(currentState.copyWith(selectedOptions: currentOptions));
     });
   }
 
   // 선택된 옵션 초기화
   void clearOptions() {
     state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(
-        selectedOptions: const [],
-      ));
+      state = AsyncValue.data(currentState.copyWith(selectedOptions: const []));
     });
   }
 }
 
 /// 카드별 Provider: cardId별로 독립적인 상태 관리 가능
-final itemCardProvider = StateNotifierProvider.family<ItemCardNotifier,
-    AsyncValue<ItemCardState>, String>(
+final itemCardProvider = StateNotifierProvider.family<ItemCardNotifier, AsyncValue<ItemCardState>, String>(
   (ref, itemId) => ItemCardNotifier(),
 );

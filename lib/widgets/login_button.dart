@@ -18,10 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// 로그인 버튼
 class LoginButton extends StatefulWidget {
-  const LoginButton({
-    super.key,
-    required this.platform,
-  });
+  const LoginButton({super.key, required this.platform});
 
   final LoginPlatforms platform;
 
@@ -61,7 +58,6 @@ class _LoginButtonState extends State<LoginButton> {
         if (userInfo.isFirstLogin == true) {
           await prefs.setBool('isFirstMainScreen', true);
           await prefs.setBool('dontShowCoachMark', false);
-          
         } else {
           if (!prefs.containsKey('isFirstMainScreen')) {
             await prefs.setBool('isFirstMainScreen', false);
@@ -70,9 +66,7 @@ class _LoginButtonState extends State<LoginButton> {
 
         Widget nextScreen;
         if (userInfo.needsOnboarding) {
-          nextScreen = OnboardingFlowScreen(
-            initialStep: userInfo.nextOnboardingStep,
-          );
+          nextScreen = OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
         } else {
           await RomAuthApi().fetchAndSaveMemberInfo();
           // 기존 회원 로그인: FCM 토큰 저장
@@ -81,10 +75,7 @@ class _LoginButtonState extends State<LoginButton> {
         }
 
         if (context.mounted) {
-          context.navigateTo(
-            screen: nextScreen,
-            type: NavigationTypes.pushReplacement,
-          );
+          context.navigateTo(screen: nextScreen, type: NavigationTypes.pushReplacement);
         }
       }
     } catch (e) {
@@ -106,10 +97,7 @@ class _LoginButtonState extends State<LoginButton> {
         width: double.infinity,
         height: 56.h,
         margin: EdgeInsets.only(bottom: 12.h),
-        decoration: BoxDecoration(
-          color: widget.platform.backgroundColor,
-          borderRadius: BorderRadius.circular(10.r),
-        ),
+        decoration: BoxDecoration(color: widget.platform.backgroundColor, borderRadius: BorderRadius.circular(10.r)),
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -119,19 +107,13 @@ class _LoginButtonState extends State<LoginButton> {
                 widget.platform.iconPath,
                 width: 22.h,
                 height: 22.h,
-                placeholderBuilder: (context) => Icon(
-                  Icons.error,
-                  size: 24.sp,
-                  color: Colors.red,
-                ),
+                placeholderBuilder: (context) => Icon(Icons.error, size: 24.sp, color: Colors.red),
               ),
             ),
             Center(
               child: Text(
                 widget.platform.displayText,
-                style: CustomTextStyles.p2.copyWith(
-                    color: AppColors.textColorBlack,
-                    fontWeight: FontWeight.w700),
+                style: CustomTextStyles.p2.copyWith(color: AppColors.textColorBlack, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -143,10 +125,7 @@ class _LoginButtonState extends State<LoginButton> {
 
 /// 테스트용 로그아웃 버튼
 class LogoutButton extends StatelessWidget {
-  LogoutButton({
-    super.key,
-    required this.platform,
-  });
+  LogoutButton({super.key, required this.platform});
 
   final LoginPlatforms platform;
   final KakaoAuthService kakaoAuthService = KakaoAuthService();

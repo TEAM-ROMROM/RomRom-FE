@@ -9,10 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 class RequestManagementTradeOptionTag extends StatelessWidget {
   final ItemTradeOption option;
 
-  const RequestManagementTradeOptionTag({
-    super.key,
-    required this.option,
-  });
+  const RequestManagementTradeOptionTag({super.key, required this.option});
 
   @override
   Widget build(BuildContext context) {
@@ -20,17 +17,9 @@ class RequestManagementTradeOptionTag extends StatelessWidget {
       width: 62.w,
       height: 23.h,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(100.r),
-        color: AppColors.secondaryBlack2,
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(100.r), color: AppColors.secondaryBlack2),
       padding: EdgeInsets.fromLTRB(18.w, 6.h, 18.w, 7.h),
-      child: Text(
-        option.label,
-        style: CustomTextStyles.p3.copyWith(
-          fontSize: 10.sp,
-        ),
-      ),
+      child: Text(option.label, style: CustomTextStyles.p3.copyWith(fontSize: 10.sp)),
     );
   }
 }

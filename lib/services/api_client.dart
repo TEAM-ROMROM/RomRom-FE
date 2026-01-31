@@ -90,9 +90,7 @@ class ApiClient {
             }
             return response;
           } else {
-            throw Exception(
-              'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}',
-            );
+            throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
           }
         } else {
           throw Exception('토큰 갱신 실패: 재로그인 필요');
@@ -149,19 +147,12 @@ class ApiClient {
         if (isRefreshed) {
           accessToken = await _tokenManager.getAccessToken();
 
-          response = await _executeHttpRequest(
-            url: url,
-            method: method,
-            accessToken: accessToken,
-            body: body,
-          );
+          response = await _executeHttpRequest(url: url, method: method, accessToken: accessToken, body: body);
 
           if (response.statusCode >= 200 && response.statusCode < 300) {
             return response;
           } else {
-            throw Exception(
-              'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}',
-            );
+            throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
           }
         } else {
           throw Exception('토큰 갱신 실패: 재로그인 필요');
@@ -306,11 +297,7 @@ class ApiClient {
       const String url = '${AppUrls.baseUrl}/api/auth/reissue';
 
       // 토큰 갱신
-      var response = await _executeMultipartRequest(
-        url: url,
-        method: 'POST',
-        fields: {'refreshToken': refreshToken},
-      );
+      var response = await _executeMultipartRequest(url: url, method: 'POST', fields: {'refreshToken': refreshToken});
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);

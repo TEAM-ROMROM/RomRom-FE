@@ -81,7 +81,11 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
     super.initState();
     _animationController = AnimationController(duration: const Duration(milliseconds: 250), vsync: this);
 
-    final curve = CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+    final curve = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
 
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(curve);
   }
@@ -156,7 +160,8 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final triggerChild = widget.customTrigger ?? Icon(widget.items.first.contextIcon, size: 30.sp, color: AppColors.textColorWhite);
+    final triggerChild =
+        widget.customTrigger ?? Icon(widget.items.first.contextIcon, size: 30.sp, color: AppColors.textColorWhite);
 
     return GestureDetector(
       key: _triggerKey,
@@ -315,7 +320,9 @@ class _MenuOverlay extends StatelessWidget {
                         color: menuBackgroundColor,
                         borderRadius: menuBorderRadius,
                         border: Border.all(color: AppColors.secondaryBlack1, width: 0.5),
-                        boxShadow: const [BoxShadow(color: AppColors.opacity50Black, blurRadius: 20, offset: Offset(0, 5))],
+                        boxShadow: const [
+                          BoxShadow(color: AppColors.opacity50Black, blurRadius: 20, offset: Offset(0, 5)),
+                        ],
                       ),
                       child: ClipRRect(
                         borderRadius: menuBorderRadius,
@@ -364,7 +371,10 @@ class _MenuOverlay extends StatelessWidget {
                 ],
                 Text(
                   item.title,
-                  style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600, color: item.textColor ?? AppColors.textColorWhite),
+                  style: CustomTextStyles.p2.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: item.textColor ?? AppColors.textColorWhite,
+                  ),
                 ),
               ],
             ),
@@ -374,7 +384,9 @@ class _MenuOverlay extends StatelessWidget {
 
       // 디바이더: 왼쪽 16px, 오른쪽 26px 패딩
       if (item.showDividerAfter && i < items.length - 1) {
-        widgets.add(Divider(color: AppColors.secondaryBlack1, thickness: 1.h, height: 1.h, indent: 16.w, endIndent: 26.w));
+        widgets.add(
+          Divider(color: AppColors.secondaryBlack1, thickness: 1.h, height: 1.h, indent: 16.w, endIndent: 26.w),
+        );
       }
     }
 

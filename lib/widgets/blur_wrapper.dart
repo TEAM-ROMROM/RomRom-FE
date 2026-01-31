@@ -8,12 +8,7 @@ class BlurWrapper extends StatelessWidget {
   final double sigma; // 블러 강도
   final Widget child;
 
-  const BlurWrapper({
-    super.key,
-    required this.enabled,
-    this.sigma = 8,
-    required this.child,
-  });
+  const BlurWrapper({super.key, required this.enabled, this.sigma = 8, required this.child});
 
   @override
   Widget build(BuildContext context) {

@@ -7,16 +7,10 @@ part of 'item.dart';
 // **************************************************************************
 
 Item _$ItemFromJson(Map<String, dynamic> json) => Item(
-  createdDate: json['createdDate'] == null
-      ? null
-      : DateTime.parse(json['createdDate'] as String),
-  updatedDate: json['updatedDate'] == null
-      ? null
-      : DateTime.parse(json['updatedDate'] as String),
+  createdDate: json['createdDate'] == null ? null : DateTime.parse(json['createdDate'] as String),
+  updatedDate: json['updatedDate'] == null ? null : DateTime.parse(json['updatedDate'] as String),
   itemId: json['itemId'] as String?,
-  member: json['member'] == null
-      ? null
-      : Member.fromJson(json['member'] as Map<String, dynamic>),
+  member: json['member'] == null ? null : Member.fromJson(json['member'] as Map<String, dynamic>),
   itemImages: (json['itemImages'] as List<dynamic>?)
       ?.map((e) => ItemImage.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -25,9 +19,7 @@ Item _$ItemFromJson(Map<String, dynamic> json) => Item(
   itemCategory: json['itemCategory'] as String?,
   itemCondition: json['itemCondition'] as String?,
   itemStatus: json['itemStatus'] as String?,
-  itemTradeOptions: (json['itemTradeOptions'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
+  itemTradeOptions: (json['itemTradeOptions'] as List<dynamic>?)?.map((e) => e as String).toList(),
   likeCount: (json['likeCount'] as num?)?.toInt(),
   price: (json['price'] as num?)?.toInt(),
   longitude: (json['longitude'] as num?)?.toDouble(),

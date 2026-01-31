@@ -15,27 +15,19 @@ class RegisterTabSkeletonSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int childCount =
-        (itemCount * 2) - 1; // item, divider, item, divider ...
+    final int childCount = (itemCount * 2) - 1; // item, divider, item, divider ...
 
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            if (index.isOdd) {
-              // 구분선
-              return Divider(
-                thickness: 1.5,
-                color: AppColors.opacity10White,
-                height: 32.h,
-              );
-            }
-            final tileIndex = index ~/ 2;
-            return _SkeletonTile(index: tileIndex);
-          },
-          childCount: childCount,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          if (index.isOdd) {
+            // 구분선
+            return Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h);
+          }
+          final tileIndex = index ~/ 2;
+          return _SkeletonTile(index: tileIndex);
+        }, childCount: childCount),
       ),
     );
   }
@@ -51,10 +43,7 @@ class _SkeletonTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Skeletonizer(
       enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: AppColors.opacity10White,
-        highlightColor: AppColors.opacity30White,
-      ),
+      effect: const ShimmerEffect(baseColor: AppColors.opacity10White, highlightColor: AppColors.opacity30White),
       textBoneBorderRadius: const TextBoneBorderRadius.fromHeightFactor(.3),
       ignoreContainers: true,
       child: SizedBox(
@@ -67,10 +56,7 @@ class _SkeletonTile extends StatelessWidget {
               child: Container(
                 width: 90.w,
                 height: 90.h,
-                decoration: BoxDecoration(
-                  color: AppColors.opacity20White,
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
+                decoration: BoxDecoration(color: AppColors.opacity20White, borderRadius: BorderRadius.circular(4.r)),
               ),
             ),
             SizedBox(width: 16.h),
@@ -82,42 +68,21 @@ class _SkeletonTile extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Skeleton.leaf(
-                    child: Text(
-                      '물건 제목 $index',
-                      style: CustomTextStyles.p1
-                          .copyWith(fontWeight: FontWeight.w500),
-                    ),
+                    child: Text('물건 제목 $index', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
                   ),
                   SizedBox(height: 6.h),
                   Skeleton.leaf(
-                    child: Text(
-                      '$index시간 전',
-                      style: CustomTextStyles.p2
-                          .copyWith(color: AppColors.opacity60White),
-                    ),
+                    child: Text('$index시간 전', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
                   ),
                   SizedBox(height: 12.h),
-                  Skeleton.leaf(
-                    child: Text(
-                      '${formatPrice(10000)}원',
-                      style: CustomTextStyles.p1,
-                    ),
-                  ),
+                  Skeleton.leaf(child: Text('${formatPrice(10000)}원', style: CustomTextStyles.p1)),
                   SizedBox(height: 10.h),
                   Skeleton.leaf(
                     child: Row(
                       children: [
-                        Icon(
-                          AppIcons.itemRegisterHeart,
-                          size: 14.sp,
-                          color: AppColors.opacity60White,
-                        ),
+                        Icon(AppIcons.itemRegisterHeart, size: 14.sp, color: AppColors.opacity60White),
                         SizedBox(width: 4.w),
-                        Text(
-                          '5',
-                          style: CustomTextStyles.p2
-                              .copyWith(color: AppColors.opacity60White),
-                        ),
+                        Text('5', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
                       ],
                     ),
                   ),

@@ -8,12 +8,7 @@ class CategoryHeader extends StatelessWidget {
   final String headLine;
   final String subHeadLine;
 
-  const CategoryHeader({
-    super.key,
-    this.betweenGap = 12.0,
-    required this.headLine,
-    required this.subHeadLine,
-  });
+  const CategoryHeader({super.key, this.betweenGap = 12.0, required this.headLine, required this.subHeadLine});
 
   @override
   Widget build(BuildContext context) {

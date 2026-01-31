@@ -57,7 +57,6 @@ class ItemRequest {
     this.searchKeyword,
   });
 
-  factory ItemRequest.fromJson(Map<String, dynamic> json) =>
-      _$ItemRequestFromJson(json);
+  factory ItemRequest.fromJson(Map<String, dynamic> json) => _$ItemRequestFromJson(json);
   Map<String, dynamic> toJson() => _$ItemRequestToJson(this);
 }

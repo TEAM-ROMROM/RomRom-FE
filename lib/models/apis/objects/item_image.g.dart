@@ -7,12 +7,8 @@ part of 'item_image.dart';
 // **************************************************************************
 
 ItemImage _$ItemImageFromJson(Map<String, dynamic> json) => ItemImage(
-  createdDate: json['createdDate'] == null
-      ? null
-      : DateTime.parse(json['createdDate'] as String),
-  updatedDate: json['updatedDate'] == null
-      ? null
-      : DateTime.parse(json['updatedDate'] as String),
+  createdDate: json['createdDate'] == null ? null : DateTime.parse(json['createdDate'] as String),
+  updatedDate: json['updatedDate'] == null ? null : DateTime.parse(json['updatedDate'] as String),
   itemImageId: json['itemImageId'] as String?,
   filePath: json['filePath'] as String?,
   imageUrl: json['imageUrl'] as String?,

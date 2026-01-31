@@ -7,38 +7,27 @@ part of 'chat_message.dart';
 // **************************************************************************
 
 ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
-  createdDate: json['createdDate'] == null
-      ? null
-      : DateTime.parse(json['createdDate'] as String),
-  updatedDate: json['updatedDate'] == null
-      ? null
-      : DateTime.parse(json['updatedDate'] as String),
+  createdDate: json['createdDate'] == null ? null : DateTime.parse(json['createdDate'] as String),
+  updatedDate: json['updatedDate'] == null ? null : DateTime.parse(json['updatedDate'] as String),
   chatMessageId: json['chatMessageId'] as String?,
   chatRoomId: json['chatRoomId'] as String?,
   senderId: json['senderId'] as String?,
   recipientId: json['recipientId'] as String?,
   content: json['content'] as String?,
-  imageUrls: (json['imageUrls'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
+  imageUrls: (json['imageUrls'] as List<dynamic>?)?.map((e) => e as String).toList(),
   type: $enumDecodeNullable(_$MessageTypeEnumMap, json['type']),
 );
 
-Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) =>
-    <String, dynamic>{
-      'createdDate': instance.createdDate?.toIso8601String(),
-      'updatedDate': instance.updatedDate?.toIso8601String(),
-      'chatMessageId': instance.chatMessageId,
-      'chatRoomId': instance.chatRoomId,
-      'senderId': instance.senderId,
-      'recipientId': instance.recipientId,
-      'content': instance.content,
-      'imageUrls': instance.imageUrls,
-      'type': _$MessageTypeEnumMap[instance.type],
-    };
-
-const _$MessageTypeEnumMap = {
-  MessageType.text: 'TEXT',
-  MessageType.image: 'IMAGE',
-  MessageType.system: 'SYSTEM',
+Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) => <String, dynamic>{
+  'createdDate': instance.createdDate?.toIso8601String(),
+  'updatedDate': instance.updatedDate?.toIso8601String(),
+  'chatMessageId': instance.chatMessageId,
+  'chatRoomId': instance.chatRoomId,
+  'senderId': instance.senderId,
+  'recipientId': instance.recipientId,
+  'content': instance.content,
+  'imageUrls': instance.imageUrls,
+  'type': _$MessageTypeEnumMap[instance.type],
 };
+
+const _$MessageTypeEnumMap = {MessageType.text: 'TEXT', MessageType.image: 'IMAGE', MessageType.system: 'SYSTEM'};

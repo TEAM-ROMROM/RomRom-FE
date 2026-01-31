@@ -19,11 +19,11 @@ class GoogleAuthService {
   Future<void> getGoogleUserInfo(GoogleSignInAccount googleUser) async {
     try {
       debugPrint(
-          '사용자 정보 요청 성공: 닉네임: ${googleUser.displayName}, 이메일: ${googleUser.email}, 프로필 이미지: ${googleUser.photoUrl}');
+        '사용자 정보 요청 성공: 닉네임: ${googleUser.displayName}, 이메일: ${googleUser.email}, 프로필 이미지: ${googleUser.photoUrl}',
+      );
 
       // 사용자 정보 저장
-      await UserInfo().saveUserInfo(
-          '${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
+      await UserInfo().saveUserInfo('${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
       // 로그인 플랫폼(Google) 저장
       LoginPlatformManager().saveLoginPlatform(LoginPlatforms.google.platformName);
     } catch (error) {
@@ -41,8 +41,7 @@ class GoogleAuthService {
         return false; // 사용자가 로그인 취소 시 false 반환
       }
 
-      final GoogleSignInAuthentication googleSignInAuthentication =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleSignInAuthentication = await googleUser.authentication;
 
       // 구글 OAuth2 토큰 받음
       final String googleAccessToken = googleSignInAuthentication.accessToken!;
