@@ -18,7 +18,8 @@ class ItemRegisterLocationScreen extends StatefulWidget {
   final void Function(LocationAddress)? onLocationSelected;
   final VoidCallback? onClose;
   final LocationAddress? initialLocation; // 이전에 선택한 위치
-  const ItemRegisterLocationScreen({super.key, this.onLocationSelected, this.onClose, this.initialLocation});
+  const ItemRegisterLocationScreen({super.key, 
+  this.onLocationSelected, this.onClose, this.initialLocation});
 
   @override
   State<ItemRegisterLocationScreen> createState() => _ItemRegisterLocationScreenState();
