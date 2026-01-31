@@ -73,7 +73,28 @@ source ~/.zshrc &&
 
 **코드 변경 후 마지막에 꼭 실행**:
 ```bash
+# 1. 코드 포매팅 (line-length 120 기준)
+source ~/.zshrc && dart format --line-length=120 .
+
+# 2. 린트 분석
 source ~/.zshrc && flutter analyze
+```
+
+### 코드 포매팅 규칙
+- **line-length**: 120 (팀 표준)
+- **포매팅 도구**: `dart format` (Prettier와 동등한 공식 포매터)
+- **코드 수정 후 반드시 포맷 적용**: 모든 dart 파일 변경 시 `dart format` 실행 필수
+- **CI에서 자동 체크**: PR 시 포맷 미준수 코드는 자동 실패
+
+```bash
+# 전체 프로젝트 포맷 적용
+source ~/.zshrc && dart format --line-length=120 .
+
+# 특정 파일만 포맷 적용
+source ~/.zshrc && dart format --line-length=120 lib/screens/example_screen.dart
+
+# 포맷 체크만 (변경 없이 확인)
+source ~/.zshrc && dart format --line-length=120 --set-exit-if-changed .
 ```
 
 ## 프로젝트 구조
@@ -85,6 +106,57 @@ source ~/.zshrc && flutter analyze
   - `/common/` - 공통 위젯
 - `/lib/screens/` - 화면 구성 파일
 - `/prompts/` - 개발 가이드라인 문서
+
+## Pre-commit Hook (lefthook)
+
+### lefthook이란?
+Git Hook 관리 도구로, 커밋/푸시할 때 자동으로 포맷 체크와 린트 분석을 실행합니다.
+
+### 설치 방법 (1회)
+
+**macOS:**
+```bash
+brew install lefthook
+```
+
+**Windows:**
+```bash
+# Scoop (권장)
+scoop install lefthook
+
+# 또는 Chocolatey
+choco install lefthook
+
+# 또는 npm
+npm install -g lefthook
+```
+
+**프로젝트에서 활성화:**
+```bash
+cd RomRom-FE
+lefthook install
+```
+
+### 작동 방식
+| 시점 | 자동 실행 | 실패 시 |
+|------|----------|---------|
+| 커밋 시 | 포맷 체크 | 커밋 차단 |
+| 푸시 시 | 린트 분석 | 푸시 차단 |
+
+### 수동 실행 스크립트
+```bash
+# 포맷 적용
+bash tool/format.sh
+
+# 포맷 체크만
+bash tool/format_check.sh
+
+# 린트 체크만
+bash tool/lint_check.sh
+
+# 전체 체크 (포맷 + 린트)
+bash tool/full_check.sh
+```
 
 ## 주요 참고 파일
 - `prompts/코드_스타일_가이드라인.md` - 필수 참고

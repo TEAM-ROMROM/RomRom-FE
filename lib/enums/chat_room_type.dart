@@ -28,9 +28,6 @@ extension ChatRoomTypeExtension on ChatRoomType {
   }
 
   static ChatRoomType fromServerName(String name) {
-    return ChatRoomType.values.firstWhere(
-      (e) => e.serverName == name,
-      orElse: () => ChatRoomType.requested,
-    );
+    return ChatRoomType.values.firstWhere((e) => e.serverName == name, orElse: () => ChatRoomType.requested);
   }
 }

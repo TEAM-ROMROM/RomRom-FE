@@ -14,14 +14,9 @@ class ChatRoomResponse {
   final PagedChatMessage? messages; // 메시지 페이지
   final PagedChatRoomDetail? chatRoomDetailDtoPage; // 채팅방 목록 페이지 (detail dto)
 
-  ChatRoomResponse({
-    this.chatRoom,
-    this.messages,
-    this.chatRoomDetailDtoPage,
-  });
+  ChatRoomResponse({this.chatRoom, this.messages, this.chatRoomDetailDtoPage});
 
-  factory ChatRoomResponse.fromJson(Map<String, dynamic> json) =>
-      _$ChatRoomResponseFromJson(json);
+  factory ChatRoomResponse.fromJson(Map<String, dynamic> json) => _$ChatRoomResponseFromJson(json);
   Map<String, dynamic> toJson() => _$ChatRoomResponseToJson(this);
 }
 
@@ -34,13 +29,9 @@ class PagedChatMessage {
   @JsonKey(name: 'page')
   final ApiPage? page;
 
-  PagedChatMessage({
-    required this.content,
-    this.page,
-  });
+  PagedChatMessage({required this.content, this.page});
 
-  factory PagedChatMessage.fromJson(Map<String, dynamic> json) =>
-      _$PagedChatMessageFromJson(json);
+  factory PagedChatMessage.fromJson(Map<String, dynamic> json) => _$PagedChatMessageFromJson(json);
   Map<String, dynamic> toJson() => _$PagedChatMessageToJson(this);
 }
 
@@ -53,13 +44,9 @@ class PagedChatRoomDetail {
   @JsonKey(name: 'page')
   final ApiPage? page;
 
-  PagedChatRoomDetail({
-    required this.content,
-    this.page,
-  });
+  PagedChatRoomDetail({required this.content, this.page});
 
-  factory PagedChatRoomDetail.fromJson(Map<String, dynamic> json) =>
-      _$PagedChatRoomDetailFromJson(json);
+  factory PagedChatRoomDetail.fromJson(Map<String, dynamic> json) => _$PagedChatRoomDetailFromJson(json);
   Map<String, dynamic> toJson() => _$PagedChatRoomDetailToJson(this);
 }
 

@@ -10,11 +10,8 @@ import 'package:romrom_fe/widgets/onboarding_title_header.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
   final int initialStep;
-  
-  const OnboardingFlowScreen({
-    super.key,
-    this.initialStep = 1,
-  });
+
+  const OnboardingFlowScreen({super.key, this.initialStep = 1});
 
   @override
   State<OnboardingFlowScreen> createState() => _OnboardingFlowScreenState();
@@ -91,17 +88,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           SizedBox(height: MediaQuery.of(context).padding.top),
 
           // 프로그레스 헤더 (고정)
-          OnboardingProgressHeader(
-            currentStep: _currentStep,
-            totalSteps: _totalSteps,
-            onBackPressed: _goToPrevPage,
-          ),
+          OnboardingProgressHeader(currentStep: _currentStep, totalSteps: _totalSteps, onBackPressed: _goToPrevPage),
 
           // 타이틀 헤더 (고정)
-          OnboardingTitleHeader(
-            title: currentStepInfo.title,
-            subtitle: currentStepInfo.subtitle,
-          ),
+          OnboardingTitleHeader(title: currentStepInfo.title, subtitle: currentStepInfo.subtitle),
 
           // PageView 본문 전환
           Expanded(

@@ -18,11 +18,16 @@ class AiBadgeWidget extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4.r),
-          color:AppColors.aiTagBackground, // AI 태그 배경색
+          color: AppColors.aiTagBackground, // AI 태그 배경색
         ),
         child: ShaderMask(
           shaderCallback: (Rect bounds) {
-            return const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.70, 1.0], begin: Alignment.centerLeft, end: Alignment.centerRight).createShader(bounds);
+            return const LinearGradient(
+              colors: AppColors.aiGradient,
+              stops: [0.0, 0.35, 0.70, 1.0],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ).createShader(bounds);
           },
           child: Text(
             'AI',

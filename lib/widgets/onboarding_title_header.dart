@@ -12,11 +12,7 @@ class OnboardingTitleHeader extends StatelessWidget {
   /// 부제목
   final String subtitle;
 
-  const OnboardingTitleHeader({
-    super.key,
-    required this.title,
-    required this.subtitle,
-  });
+  const OnboardingTitleHeader({super.key, required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -27,16 +23,10 @@ class OnboardingTitleHeader extends StatelessWidget {
         children: [
           SizedBox(height: 20.h),
           // 메인 제목
-          Text(
-            title,
-            style: CustomTextStyles.h1,
-          ),
+          Text(title, style: CustomTextStyles.h1),
           SizedBox(height: 12.h),
           // 부제목
-          Text(
-            subtitle,
-            style: CustomTextStyles.p2,
-          ),
+          Text(subtitle, style: CustomTextStyles.p2),
           SizedBox(height: 32.h),
         ],
       ),

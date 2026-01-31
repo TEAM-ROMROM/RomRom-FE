@@ -47,9 +47,7 @@ class ImageApi {
   Future<void> deleteImages(List<String> imageUrls) async {
     const String url = '${AppUrls.baseUrl}/api/image/delete';
 
-    final Map<String, dynamic> fields = {
-      'imageUrls': imageUrls.join(','),
-    };
+    final Map<String, dynamic> fields = {'imageUrls': imageUrls.join(',')};
 
     await ApiClient.sendMultipartRequest(
       url: url,

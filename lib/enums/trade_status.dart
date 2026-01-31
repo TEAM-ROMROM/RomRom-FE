@@ -13,8 +13,7 @@ enum TradeStatus {
   static TradeStatus fromServerName(String name) {
     return TradeStatus.values.firstWhere(
       (e) => e.serverName == name,
-      orElse: () =>
-          throw ArgumentError('No ItemTradeOption with serverName $name'),
+      orElse: () => throw ArgumentError('No ItemTradeOption with serverName $name'),
     );
   }
 }

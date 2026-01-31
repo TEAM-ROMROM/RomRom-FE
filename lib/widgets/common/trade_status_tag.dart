@@ -7,10 +7,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 class TradeStatusTagWidget extends StatelessWidget {
   final TradeStatus status;
 
-  const TradeStatusTagWidget({
-    super.key,
-    required this.status,
-  });
+  const TradeStatusTagWidget({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +21,9 @@ class TradeStatusTagWidget extends StatelessWidget {
             height: 23.h,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4.r),
-              color: isChatting
-                  ? AppColors.tradeStatusIsChatting
-                  : AppColors.tradeStatusIsCompleted,
+              color: isChatting ? AppColors.tradeStatusIsChatting : AppColors.tradeStatusIsCompleted,
             ),
-            child: Text(
-              isChatting ? '채팅 중' : '거래완료',
-              style: CustomTextStyles.p3.copyWith(fontSize: 10.sp),
-            ),
+            child: Text(isChatting ? '채팅 중' : '거래완료', style: CustomTextStyles.p3.copyWith(fontSize: 10.sp)),
           );
   }
 }

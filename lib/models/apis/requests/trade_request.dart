@@ -28,7 +28,6 @@ class TradeRequest {
     this.member = member;
   }
 
-  factory TradeRequest.fromJson(Map<String, dynamic> json) =>
-      _$TradeRequestFromJson(json);
+  factory TradeRequest.fromJson(Map<String, dynamic> json) => _$TradeRequestFromJson(json);
   Map<String, dynamic> toJson() => _$TradeRequestToJson(this);
 }

@@ -50,9 +50,10 @@ class CommonSnackBar {
       vsync: tickerProvider,
     );
 
-    final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: animationController, curve: Curves.easeInOut),
-    );
+    final fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: animationController, curve: Curves.easeInOut));
 
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -75,19 +76,13 @@ class CommonSnackBar {
                       borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16.w,
-                        vertical: 16.h,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                       child: Row(
                         children: [
                           Container(
                             margin: EdgeInsets.only(right: 16.w),
-                            decoration:  BoxDecoration(
-                              color:_getIconBackgroundColor(type),
-                              shape: BoxShape.circle
-                            ),
-                            child: Icon(_getIconData(type), color: AppColors.textColorWhite,size: 16,),
+                            decoration: BoxDecoration(color: _getIconBackgroundColor(type), shape: BoxShape.circle),
+                            child: Icon(_getIconData(type), color: AppColors.textColorWhite, size: 16),
                           ),
                           Expanded(
                             child: Text(

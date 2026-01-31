@@ -17,10 +17,7 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 class ProfileScreen extends StatefulWidget {
   final String memberId;
 
-  const ProfileScreen({
-    super.key,
-    required this.memberId,
-  });
+  const ProfileScreen({super.key, required this.memberId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -67,11 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
           _hasError = true;
         });
-        CommonSnackBar.show(
-          context: context,
-          message: '프로필을 불러오는데 실패했습니다',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '프로필을 불러오는데 실패했습니다', type: SnackBarType.error);
       }
     }
   }
@@ -91,8 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final siGunGu = location.siGunGu ?? '';
           final eupMyoenDong = location.eupMyoenDong ?? '';
           final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
-          _location =
-              combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
+          _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
         }
       });
     }
@@ -114,17 +106,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final siGunGu = location.siGunGu ?? '';
           final eupMyoenDong = location.eupMyoenDong ?? '';
           final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
-          _location =
-              combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
+          _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
         }
       });
     }
   }
 
   Future<void> _navigateToEditScreen() async {
-    final result = await context.navigateTo(
-      screen: const MyProfileEditScreen(),
-    );
+    final result = await context.navigateTo(screen: const MyProfileEditScreen());
 
     // 수정 후 돌아왔을 때 정보 새로고침
     if (result == true && mounted) {
@@ -140,35 +129,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primaryYellow),
-        ),
+        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
       );
     }
 
     if (_hasError) {
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        appBar: const CommonAppBar(
-          title: '프로필',
-          showBottomBorder: true,
-        ),
+        appBar: const CommonAppBar(title: '프로필', showBottomBorder: true),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 48.sp,
-                color: AppColors.opacity60White,
-              ),
+              Icon(Icons.error_outline, size: 48.sp, color: AppColors.opacity60White),
               SizedBox(height: 16.h),
-              Text(
-                '프로필을 불러올 수 없습니다',
-                style: CustomTextStyles.p1.copyWith(
-                  color: AppColors.opacity60White,
-                ),
-              ),
+              Text('프로필을 불러올 수 없습니다', style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White)),
             ],
           ),
         ),
@@ -177,10 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: const CommonAppBar(
-        title: '프로필',
-        showBottomBorder: true,
-      ),
+      appBar: const CommonAppBar(title: '프로필', showBottomBorder: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -207,10 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildLikesSection(),
 
               // 내 프로필인 경우 수정 버튼
-              if (_isMyProfile) ...[
-                SizedBox(height: 40.h),
-                _buildEditButton(),
-              ],
+              if (_isMyProfile) ...[SizedBox(height: 40.h), _buildEditButton()],
             ],
           ),
         ),
@@ -229,11 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// 닉네임 섹션
   Widget _buildNicknameSection() {
-    return Text(
-      _nickname,
-      style: CustomTextStyles.h2,
-      textAlign: TextAlign.center,
-    );
+    return Text(_nickname, style: CustomTextStyles.h2, textAlign: TextAlign.center);
   }
 
   /// 정보 섹션 (위치)
@@ -241,24 +206,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       width: double.infinity,
       height: 54.h,
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400),
-          ),
+          Text(label, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
           Text(
             value,
-            style: CustomTextStyles.p2.copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppColors.opacity60White,
-            ),
+            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w500, color: AppColors.opacity60White),
           ),
         ],
       ),
@@ -270,32 +226,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       width: double.infinity,
       height: 54.h,
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '받은 좋아요 수',
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400),
-          ),
+          Text('받은 좋아요 수', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
           Row(
             children: [
-              Icon(
-                AppIcons.profilelikecount,
-                size: 16.sp,
-                color: AppColors.opacity60White,
-              ),
+              Icon(AppIcons.profilelikecount, size: 16.sp, color: AppColors.opacity60White),
               SizedBox(width: 4.w),
               Text(
                 '$_totalLikeCount',
-                style: CustomTextStyles.p2.copyWith(
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.opacity60White,
-                ),
+                style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
                 textAlign: TextAlign.right,
               ),
             ],
@@ -312,17 +255,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         width: double.infinity,
         height: 48.h,
-        decoration: BoxDecoration(
-          color: AppColors.primaryYellow,
-          borderRadius: BorderRadius.circular(10.r),
-        ),
+        decoration: BoxDecoration(color: AppColors.primaryYellow, borderRadius: BorderRadius.circular(10.r)),
         alignment: Alignment.center,
         child: Text(
           '프로필 수정',
-          style: CustomTextStyles.p1.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.primaryBlack,
-          ),
+          style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
         ),
       ),
     );

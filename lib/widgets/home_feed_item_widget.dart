@@ -145,8 +145,16 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       child: Hero(
                         tag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                         child: ClipRRect(
-                          borderRadius: BorderRadius.only(topLeft: Radius.circular(4.r), topRight: Radius.circular(4.r), bottomRight: Radius.circular(20.r), bottomLeft: Radius.circular(20.r)),
-                          child: _buildImage(widget.item.imageUrls[index], Size(screenWidth, availableHeight - navigationBarHeight)),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(4.r),
+                            topRight: Radius.circular(4.r),
+                            bottomRight: Radius.circular(20.r),
+                            bottomLeft: Radius.circular(20.r),
+                          ),
+                          child: _buildImage(
+                            widget.item.imageUrls[index],
+                            Size(screenWidth, availableHeight - navigationBarHeight),
+                          ),
                         ),
                       ),
                     ),
@@ -175,25 +183,28 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           // 알림 아이콘 버튼
                           GestureDetector(
                             onTap: () {
-                              context.navigateTo(
-                                screen: const NotificationScreen(),
-                              );
+                              context.navigateTo(screen: const NotificationScreen());
                             },
                             behavior: HitTestBehavior.opaque,
-                            child: Icon(
-                              AppIcons.alert,
-                              size: 30.sp,
-                              color: AppColors.textColorWhite,
-                            ),
+                            child: Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
                           ),
                           SizedBox(width: 10.w),
                           // 더보기 메뉴 버튼
                           ReportMenuButton(
                             onReportPressed: () async {
-                              final bool? reported = await Navigator.push(context, MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? '')));
+                              final bool? reported = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? ''),
+                                ),
+                              );
 
                               if (reported == true && mounted) {
-                                await CommonModal.success(context: context, message: '신고가 접수되었습니다.', onConfirm: () => Navigator.of(context).pop());
+                                await CommonModal.success(
+                                  context: context,
+                                  message: '신고가 접수되었습니다.',
+                                  onConfirm: () => Navigator.of(context).pop(),
+                                );
                               }
                             },
                           ),
@@ -219,7 +230,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                     width: 6.w,
                     height: 6.w,
                     margin: EdgeInsets.symmetric(horizontal: 2.w),
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: _currentImageIndex == index ? AppColors.primaryYellow : AppColors.opacity50White),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentImageIndex == index ? AppColors.primaryYellow : AppColors.opacity50White,
+                    ),
                   ),
                 ),
               ),
@@ -243,7 +257,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
                       if (isCurrentMember) {
                         if (mounted) {
-                          CommonSnackBar.show(context: context, message: '본인 게시글에는 좋아요를 누를 수 없습니다.', type: SnackBarType.info);
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
+                            type: SnackBarType.info,
+                          );
                         }
                         return;
                       }
@@ -269,7 +287,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         }
                       }
                     },
-                    child: SvgPicture.asset(_isLiked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg'),
+                    child: SvgPicture.asset(
+                      _isLiked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg',
+                    ),
                   ),
                   SizedBox(height: 2.h),
                   Text(_likeCount.toString(), style: CustomTextStyles.p2),
@@ -310,7 +330,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             children: [
                               Icon(AppIcons.location, color: AppColors.opacity80White, size: 13.sp),
                               SizedBox(width: 4.w),
-                              Text('${widget.item.location} • $formattedDate', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500)),
+                              Text(
+                                '${widget.item.location} • $formattedDate',
+                                style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
+                              ),
                             ],
                           ),
 
@@ -325,9 +348,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               Wrap(
                                 spacing: 4.w,
                                 children: widget.item.transactionTypes
-                                    .map(
-                                      (type) => ItemDetailTradeOptionTag(option: type.label),
-                                    )
+                                    .map((type) => ItemDetailTradeOptionTag(option: type.label))
                                     .toList(),
                               ),
                             ],
@@ -338,7 +359,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           Row(
                             children: [
                               // 물품 가격
-                              Text("$formattedPrice원", style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
+                              Text(
+                                "$formattedPrice원",
+                                style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600),
+                              ),
 
                               SizedBox(width: 8.w),
 
@@ -369,7 +393,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           child: ClipOval(
                             child: BlurWrapper(
                               enabled: widget.showBlur,
-                              child: UserProfileCircularAvatar(avatarSize: const Size(50, 50), profileUrl: widget.item.profileUrl.isNotEmpty ? widget.item.profileUrl : null),
+                              child: UserProfileCircularAvatar(
+                                avatarSize: const Size(50, 50),
+                                profileUrl: widget.item.profileUrl.isNotEmpty ? widget.item.profileUrl : null,
+                              ),
                             ),
                           ),
                         ),
