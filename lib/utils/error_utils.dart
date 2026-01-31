@@ -11,8 +11,7 @@ class ErrorUtils {
       final String errorStr = error.toString();
       final match = RegExp(r'\{.*\}').firstMatch(errorStr);
       if (match != null) {
-        final Map<String, dynamic> json =
-            Map<String, dynamic>.from(jsonDecode(match.group(0)!));
+        final Map<String, dynamic> json = Map<String, dynamic>.from(jsonDecode(match.group(0)!));
         final code = json['errorCode'] as String?;
         final mapped = ErrorCode.fromCode(code);
         return mapped.koMessage;
@@ -20,4 +19,4 @@ class ErrorUtils {
     } catch (_) {}
     return ErrorCode.unknown.koMessage;
   }
-} 
+}

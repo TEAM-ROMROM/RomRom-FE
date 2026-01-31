@@ -7,13 +7,13 @@ import 'package:romrom_fe/models/app_theme.dart';
 class ScrollableHeader extends StatelessWidget {
   /// 헤더 제목
   final String title;
-  
+
   /// 헤더 확장 높이 (기본값: 88)
   final double expandedHeight;
-  
+
   /// 헤더 축소 높이 (기본값: 58)
   final double toolbarHeight;
-  
+
   /// 스크롤 여부 또는 스크롤된 상태
   final bool isScrolled;
 
@@ -40,10 +40,7 @@ class ScrollableHeader extends StatelessWidget {
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: isScrolled ? 1.0 : 0.0,
-          child: Text(
-            title,
-            style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
-          ),
+          child: Text(title, style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600)),
         ),
       ),
       centerTitle: true,
@@ -57,10 +54,7 @@ class ScrollableHeader extends StatelessWidget {
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 200),
                 opacity: isScrolled ? 0.0 : 1.0,
-                child: Text(
-                  title,
-                  style: CustomTextStyles.h1,
-                ),
+                child: Text(title, style: CustomTextStyles.h1),
               ),
             ),
           ),

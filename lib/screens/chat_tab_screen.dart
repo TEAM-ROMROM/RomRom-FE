@@ -23,8 +23,7 @@ class ChatTabScreen extends StatefulWidget {
   State<ChatTabScreen> createState() => _ChatTabScreenState();
 }
 
-class _ChatTabScreenState extends State<ChatTabScreen>
-    with TickerProviderStateMixin {
+class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ChatApi _chatApi = ChatApi();
   final ChatWebSocketService _wsService = ChatWebSocketService();
@@ -101,11 +100,9 @@ class _ChatTabScreenState extends State<ChatTabScreen>
       // 이미 구독 중이면 스킵
       if (_roomSubscriptions.containsKey(room.chatRoomId)) continue;
 
-      final subscription = _wsService
-          .subscribeToChatRoom(room.chatRoomId!)
-          .listen((message) {
-            _onMessageReceived(message);
-          });
+      final subscription = _wsService.subscribeToChatRoom(room.chatRoomId!).listen((message) {
+        _onMessageReceived(message);
+      });
 
       _roomSubscriptions[room.chatRoomId!] = subscription;
     }
@@ -116,9 +113,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
     if (!mounted || message.chatRoomId == null) return;
 
     final roomId = message.chatRoomId!;
-    final roomIndex = _chatRoomsDetail.indexWhere(
-      (room) => room.chatRoomId == roomId,
-    );
+    final roomIndex = _chatRoomsDetail.indexWhere((room) => room.chatRoomId == roomId);
 
     if (roomIndex == -1) {
       // 채팅방이 목록에 없으면 무시 (또는 새로고침)
@@ -182,27 +177,21 @@ class _ChatTabScreenState extends State<ChatTabScreen>
     });
 
     try {
-      final pagedChatRoomsDetail = await _chatApi.getChatRooms(
-        pageNumber: _currentPage,
-        pageSize: _pageSize,
-      );
+      final pagedChatRoomsDetail = await _chatApi.getChatRooms(pageNumber: _currentPage, pageSize: _pageSize);
 
       setState(() {
         if (isRefresh) {
           // 새로고침 시 기존 구독 모두 해제
-          final previousSubscriptions = Map<String, StreamSubscription<ChatMessage>>.from(
-            _roomSubscriptions,
-          );
+          final previousSubscriptions = Map<String, StreamSubscription<ChatMessage>>.from(_roomSubscriptions);
           _roomSubscriptions.clear();
-          for(final entry in previousSubscriptions.entries) {
+          for (final entry in previousSubscriptions.entries) {
             entry.value.cancel();
             _wsService.unsubscribeFromChatRoom(entry.key);
           }
         }
 
         _chatRoomsDetail.addAll(pagedChatRoomsDetail.content);
-        _hasMore =
-            _currentPage < (pagedChatRoomsDetail.page?.totalPages ?? 1) - 1;
+        _hasMore = _currentPage < (pagedChatRoomsDetail.page?.totalPages ?? 1) - 1;
         _currentPage++;
         _isLoading = false;
       });
@@ -219,8 +208,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
 
   /// 무한 스크롤 리스너
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _loadChatRooms();
     }
   }
@@ -231,13 +219,9 @@ class _ChatTabScreenState extends State<ChatTabScreen>
       case 0: // 전체
         return _chatRoomsDetail;
       case 1: // 보낸 요청 (내가 tradeSender)
-        return _chatRoomsDetail
-            .where((room) => room.chatRoomType == ChatRoomType.requested)
-            .toList();
+        return _chatRoomsDetail.where((room) => room.chatRoomType == ChatRoomType.requested).toList();
       case 2: // 받은 요청 (내가 tradeReceiver)
-        return _chatRoomsDetail
-            .where((room) => room.chatRoomType == ChatRoomType.received)
-            .toList();
+        return _chatRoomsDetail.where((room) => room.chatRoomType == ChatRoomType.received).toList();
       default:
         return _chatRoomsDetail;
     }
@@ -274,8 +258,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
             ),
 
             // 초기 로딩: 스켈레톤 표시
-            if (_isLoading && _chatRoomsDetail.isEmpty)
-              const ChatRoomListSkeletonSliver(itemCount: 5),
+            if (_isLoading && _chatRoomsDetail.isEmpty) const ChatRoomListSkeletonSliver(itemCount: 5),
 
             // 데이터 있을 때: 채팅방 리스트
             if (_chatRoomsDetail.isNotEmpty)
@@ -286,27 +269,18 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                   return Column(
                     children: [
                       ChatRoomListItem(
-                        profileImageUrl:
-                            chatRoomDetail.targetMember?.profileUrl ?? '',
+                        profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
                         memberId: chatRoomDetail.targetMember?.memberId,
                         nickname: chatRoomDetail.targetMember?.nickname ?? '',
                         location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
-                        timeAgo: getTimeAgo(
-                          chatRoomDetail.lastMessageTime ?? DateTime.now(),
-                        ),
+                        timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
                         messagePreview: chatRoomDetail.lastMessageContent ?? '',
                         unreadCount: chatRoomDetail.unreadCount ?? 0,
-                        isNew:
-                            chatRoomDetail.unreadCount != null &&
-                            chatRoomDetail.unreadCount! > 0,
+                        isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
                         onProfileTap: () {
                           final targetMember = chatRoomDetail.targetMember;
                           if (targetMember?.memberId != null) {
-                            context.navigateTo(
-                              screen: ProfileScreen(
-                                memberId: targetMember!.memberId!,
-                              ),
-                            );
+                            context.navigateTo(screen: ProfileScreen(memberId: targetMember!.memberId!));
                           }
                         },
                         onTap: () async {
@@ -314,9 +288,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
 
                           // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
                           final roomId = chatRoomDetail.chatRoomId!;
-                          final roomIndex = _chatRoomsDetail.indexWhere(
-                            (r) => r.chatRoomId == roomId,
-                          );
+                          final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
 
                           if (roomIndex != -1) {
                             setState(() {
@@ -324,8 +296,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                               _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
                                 chatRoomId: room.chatRoomId,
                                 targetMember: room.targetMember,
-                                targetMemberEupMyeonDong:
-                                    room.targetMemberEupMyeonDong,
+                                targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
                                 lastMessageContent: room.lastMessageContent,
                                 lastMessageTime: room.lastMessageTime,
                                 unreadCount: 0, // 읽음 처리
@@ -334,13 +305,9 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                             });
                           }
 
-                          final refreshed = await Navigator.of(context)
-                              .push<bool>(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      ChatRoomScreen(chatRoomId: roomId),
-                                ),
-                              );
+                          final refreshed = await Navigator.of(
+                            context,
+                          ).push<bool>(MaterialPageRoute(builder: (_) => ChatRoomScreen(chatRoomId: roomId)));
 
                           // 엄격히 true일 때만 새로고침
                           if (refreshed == true) {
@@ -360,11 +327,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 20.h),
                   child: const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
+                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
                 ),
               ),

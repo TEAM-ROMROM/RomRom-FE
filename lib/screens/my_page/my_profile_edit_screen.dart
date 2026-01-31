@@ -67,9 +67,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
             final siGunGu = location.siGunGu ?? '';
             final eupMyoenDong = location.eupMyoenDong ?? '';
             final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
-            _location = combinedLocation.isNotEmpty
-                ? combinedLocation
-                : '위치정보 없음';
+            _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
           }
 
           _receivedLikes = memberResponse.member?.totalLikeCount ?? 0;
@@ -88,9 +86,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         _showProfileSaveButton = true;
       });
 
-      final XFile? picked = await _picker.pickImage(
-        source: ImageSource.gallery,
-      );
+      final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
 
       // 사용자가 취소했거나 선택 없음
       if (picked == null) {
@@ -121,11 +117,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         }
       } catch (e) {
         if (context.mounted) {
-          CommonSnackBar.show(
-            context: context,
-            message: '이미지 업로드에 실패했습니다: $e',
-            type: SnackBarType.error,
-          );
+          CommonSnackBar.show(context: context, message: '이미지 업로드에 실패했습니다: $e', type: SnackBarType.error);
         }
       } finally {
         if (mounted) {
@@ -136,11 +128,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '이미지 선택에 실패했습니다: $e',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
       }
     }
   }
@@ -258,15 +246,9 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                   width: 132.w,
                   height: 132.w,
                   padding: EdgeInsets.all(48.w),
-                  child: const CircularProgressIndicator(
-                    color: AppColors.primaryYellow,
-                  ),
+                  child: const CircularProgressIndicator(color: AppColors.primaryYellow),
                 )
-              : UserProfileCircularAvatar(
-                  avatarSize: Size(132.w, 132.h),
-                  profileUrl: imageUrl,
-                  hasBorder: true,
-                ),
+              : UserProfileCircularAvatar(avatarSize: Size(132.w, 132.h), profileUrl: imageUrl, hasBorder: true),
 
           // 카메라 아이콘 (우하단)
           Positioned(
@@ -275,16 +257,9 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
             child: Container(
               width: 24.w,
               height: 24.h,
-              decoration: const BoxDecoration(
-                color: AppColors.secondaryBlack2,
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(color: AppColors.secondaryBlack2, shape: BoxShape.circle),
               child: Center(
-                child: Icon(
-                  AppIcons.camera,
-                  size: 16.sp,
-                  color: AppColors.textColorWhite,
-                ),
+                child: Icon(AppIcons.camera, size: 16.sp, color: AppColors.textColorWhite),
               ),
             ),
           ),
@@ -311,8 +286,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
     final double textW = _measureTextWidth(context, viewText, style); // 실제 폭
     final double gap = 8.w; // 8px(스케일 반영)
     final double iconW = 24.w; // 아이콘 컨테이너 폭
-    final double iconOffsetX =
-        (textW + iconW) / 2 + gap; // “텍스트 중심”에서 오른쪽으로 이동할 양
+    final double iconOffsetX = (textW + iconW) / 2 + gap; // “텍스트 중심”에서 오른쪽으로 이동할 양
 
     return Stack(
       alignment: Alignment.center,
@@ -328,10 +302,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: 244.w,
-                          maxHeight: 28.h,
-                        ),
+                        constraints: BoxConstraints(maxWidth: 244.w, maxHeight: 28.h),
                         child: TextField(
                           controller: nicknameController,
                           focusNode: nicknameFocusNode,
@@ -342,28 +313,14 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             enabledBorder: _nickname.isEmpty
-                                ? const UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: AppColors.errorBorder,
-                                    ),
-                                  )
+                                ? const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.errorBorder))
                                 : InputBorder.none,
                             focusedBorder: _nickname.isEmpty
-                                ? const UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: AppColors.errorBorder,
-                                    ),
-                                  )
-                                : const UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: AppColors.secondaryBlack2,
-                                    ),
-                                  ),
+                                ? const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.errorBorder))
+                                : const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.secondaryBlack2)),
                             isDense: true,
                             hintText: '닉네임을 입력하세요',
-                            hintStyle: style.copyWith(
-                              color: AppColors.opacity30White,
-                            ),
+                            hintStyle: style.copyWith(color: AppColors.opacity30White),
                             contentPadding: const EdgeInsets.all(8),
 
                             suffix: GestureDetector(
@@ -382,19 +339,13 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
-                                  child: Icon(
-                                    AppIcons.cancel,
-                                    size: 11.sp,
-                                    color: AppColors.textColorWhite,
-                                  ),
+                                  child: Icon(AppIcons.cancel, size: 11.sp, color: AppColors.textColorWhite),
                                 ),
                               ),
                             ),
                           ),
-                          onTap: () =>
-                              setState(() => _showProfileSaveButton = true),
-                          onTapOutside: (_) =>
-                              setState(() => nicknameFocusNode.unfocus()),
+                          onTap: () => setState(() => _showProfileSaveButton = true),
+                          onTapOutside: (_) => setState(() => nicknameFocusNode.unfocus()),
                           onChanged: (_) => setState(() {
                             _nickname = nicknameController.text;
                             _isProfileEdited = true;
@@ -404,12 +355,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                       if (_nickname.isEmpty)
                         Padding(
                           padding: EdgeInsets.only(top: 4.h),
-                          child: Text(
-                            '닉네임을 입력해주세요',
-                            style: CustomTextStyles.p3.copyWith(
-                              color: AppColors.errorBorder,
-                            ),
-                          ),
+                          child: Text('닉네임을 입력해주세요', style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder)),
                         ),
                     ],
                   )
@@ -440,16 +386,9 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
               child: Container(
                 width: 24.w,
                 height: 24.h,
-                decoration: const BoxDecoration(
-                  color: AppColors.secondaryBlack2,
-                  shape: BoxShape.circle,
-                ),
+                decoration: const BoxDecoration(color: AppColors.secondaryBlack2, shape: BoxShape.circle),
                 child: Center(
-                  child: Icon(
-                    AppIcons.edit,
-                    size: 16.sp,
-                    color: AppColors.textColorWhite,
-                  ),
+                  child: Icon(AppIcons.edit, size: 16.sp, color: AppColors.textColorWhite),
                 ),
               ),
             ),
@@ -463,24 +402,15 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
     return Container(
       width: double.infinity,
       height: 54.h,
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400),
-          ),
+          Text(label, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
           Text(
             value,
-            style: CustomTextStyles.p2.copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppColors.opacity60White,
-            ),
+            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w500, color: AppColors.opacity60White),
           ),
         ],
       ),
@@ -492,32 +422,19 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
     return Container(
       width: double.infinity,
       height: 54.h,
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '받은 좋아요 수',
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400),
-          ),
+          Text('받은 좋아요 수', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
           Row(
             children: [
-              Icon(
-                AppIcons.profilelikecount,
-                size: 16.sp,
-                color: AppColors.opacity60White,
-              ),
+              Icon(AppIcons.profilelikecount, size: 16.sp, color: AppColors.opacity60White),
               SizedBox(width: 4.w),
               Text(
                 '$_receivedLikes',
-                style: CustomTextStyles.p2.copyWith(
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.opacity60White,
-                ),
+                style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
                 textAlign: TextAlign.right,
               ),
             ],

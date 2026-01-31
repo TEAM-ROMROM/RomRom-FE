@@ -57,7 +57,6 @@ class ChatRoomListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
                   Row(
                     children: [
                       // 첫 줄: 닉네임
@@ -72,7 +71,7 @@ class ChatRoomListItem extends StatelessWidget {
                       ),
 
                       SizedBox(width: 8.h),
-                      
+
                       // 둘째 줄: 장소 • 시간
                       // 장소
                       Text(
@@ -115,9 +114,7 @@ class ChatRoomListItem extends StatelessWidget {
                       Flexible(
                         child: Text(
                           messagePreview,
-                          style: CustomTextStyles.p2.copyWith(
-                            color: AppColors.chatLocationTimeMessage,
-                          ),
+                          style: CustomTextStyles.p2.copyWith(color: AppColors.chatLocationTimeMessage),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -128,18 +125,12 @@ class ChatRoomListItem extends StatelessWidget {
                         Container(
                           width: 16.w,
                           height: 16.h,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.chatUnreadBadge,
-                          ),
+                          decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.chatUnreadBadge),
                           alignment: Alignment.center,
                           child: Text(
                             // 99 초과 시 '99+' 표시
                             unreadCount > 99 ? '99+' : '$unreadCount',
-                            style: CustomTextStyles.p3.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: CustomTextStyles.p3.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],

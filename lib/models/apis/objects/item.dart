@@ -8,9 +8,7 @@ import 'package:romrom_fe/services/location_service.dart';
 
 part 'item.g.dart';
 
-@JsonSerializable(
-  explicitToJson: true,
-)
+@JsonSerializable(explicitToJson: true)
 class Item extends BaseEntity {
   final String? itemId;
   final Member? member;
@@ -56,11 +54,8 @@ class Item extends BaseEntity {
 }
 
 extension ItemImageX on Item {
-  List<String> get imageUrlList =>
-      itemImages?.map((e) => e.imageUrl).whereType<String>().toList() ??
-      const [];
-  String? get primaryImageUrl =>
-      imageUrlList.isNotEmpty ? imageUrlList.first : null;
+  List<String> get imageUrlList => itemImages?.map((e) => e.imageUrl).whereType<String>().toList() ?? const [];
+  String? get primaryImageUrl => imageUrlList.isNotEmpty ? imageUrlList.first : null;
 }
 
 extension ItemAddressResolver on Item {
@@ -71,11 +66,8 @@ extension ItemAddressResolver on Item {
       return address!;
     }
     try {
-      final addr = await LocationService()
-          .getAddressFromCoordinates(NLatLng(latitude!, longitude!));
-      address = (addr == null)
-          ? fallback
-          : '${addr.siDo} ${addr.siGunGu} ${addr.eupMyoenDong}'.trim();
+      final addr = await LocationService().getAddressFromCoordinates(NLatLng(latitude!, longitude!));
+      address = (addr == null) ? fallback : '${addr.siDo} ${addr.siGunGu} ${addr.eupMyoenDong}'.trim();
       if (address!.isEmpty) address = fallback;
       return address!;
     } catch (_) {

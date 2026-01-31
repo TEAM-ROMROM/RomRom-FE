@@ -34,8 +34,7 @@ class ToggleSelector extends StatefulWidget {
   State<ToggleSelector> createState() => _ToggleSelectorState();
 }
 
-class _ToggleSelectorState extends State<ToggleSelector>
-    with SingleTickerProviderStateMixin {
+class _ToggleSelectorState extends State<ToggleSelector> with SingleTickerProviderStateMixin {
   late AnimationController _toggleAnimationController;
   late Animation<double> _toggleAnimation;
 
@@ -44,18 +43,12 @@ class _ToggleSelectorState extends State<ToggleSelector>
     super.initState();
 
     // 토글 애니메이션 초기화
-    _toggleAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
+    _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
 
     _toggleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _toggleAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
 
     // 초기 상태 설정
     if (widget.isRightSelected) {
@@ -92,10 +85,7 @@ class _ToggleSelectorState extends State<ToggleSelector>
       child: Container(
         width: 345.w,
         height: 46.h,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.r),
-          color: AppColors.secondaryBlack1,
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
         child: Stack(
           children: [
             // 애니메이션 선택된 배경
@@ -103,16 +93,12 @@ class _ToggleSelectorState extends State<ToggleSelector>
               animation: _toggleAnimation,
               builder: (context, child) {
                 return Positioned(
-                  left: 2.w +
-                      (_toggleAnimation.value * 171.w), // 2px + 170px + 1px gap
+                  left: 2.w + (_toggleAnimation.value * 171.w), // 2px + 170px + 1px gap
                   top: 2.h,
                   child: Container(
                     width: 170.w,
                     height: 42.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.r),
-                      color: AppColors.primaryBlack,
-                    ),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(8.r), color: AppColors.primaryBlack),
                   ),
                 );
               },
@@ -130,9 +116,7 @@ class _ToggleSelectorState extends State<ToggleSelector>
                       child: Text(
                         widget.leftText,
                         style: CustomTextStyles.p1.copyWith(
-                          color: !widget.isRightSelected
-                              ? AppColors.textColorWhite
-                              : AppColors.opacity60White,
+                          color: !widget.isRightSelected ? AppColors.textColorWhite : AppColors.opacity60White,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -149,9 +133,7 @@ class _ToggleSelectorState extends State<ToggleSelector>
                       child: Text(
                         widget.rightText,
                         style: CustomTextStyles.p1.copyWith(
-                          color: widget.isRightSelected
-                              ? AppColors.textColorWhite
-                              : AppColors.opacity60White,
+                          color: widget.isRightSelected ? AppColors.textColorWhite : AppColors.opacity60White,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

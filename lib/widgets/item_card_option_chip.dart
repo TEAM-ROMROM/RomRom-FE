@@ -75,8 +75,7 @@ class ItemCardOptionChip extends ConsumerWidget {
         width: 72,
         height: 29,
         alignment: Alignment.center,
-        decoration: buildBoxDecoration(
-            AppColors.itemCardOptionChip, BorderRadius.circular(100)),
+        decoration: buildBoxDecoration(AppColors.itemCardOptionChip, BorderRadius.circular(100)),
         child: const CircularProgressIndicator(strokeWidth: 2),
       ),
       error: (err, stack) => Container(

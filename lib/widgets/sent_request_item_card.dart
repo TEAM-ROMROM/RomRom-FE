@@ -43,10 +43,7 @@ class SentRequestItemCard extends StatelessWidget {
     return Container(
       width: 361.w,
       height: 191.h,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.r),
-        color: AppColors.secondaryBlack1,
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
       child: Column(
         children: [
           _buildTopImageSection(), // 상단 이미지 영역
@@ -135,23 +132,15 @@ class SentRequestItemCard extends StatelessWidget {
     );
   }
 
-
   /// 중앙 교환 아이콘
   Widget _buildCenterExchangeIcon() {
     return Center(
       child: Container(
         width: 32.w,
         height: 32.h,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.secondaryBlack1,
-        ),
+        decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.secondaryBlack1),
         child: Center(
-          child: Icon(
-            AppIcons.change,
-            size: 20.w,
-            color: AppColors.primaryYellow,
-          ),
+          child: Icon(AppIcons.change, size: 20.w, color: AppColors.primaryYellow),
         ),
       ),
     );
@@ -161,10 +150,7 @@ class SentRequestItemCard extends StatelessWidget {
   Widget _buildTitle() {
     return Text(
       title,
-      style: CustomTextStyles.p2.copyWith(
-        color: AppColors.textColorWhite,
-        fontWeight: FontWeight.w500,
-      ),
+      style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w500),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -174,24 +160,15 @@ class SentRequestItemCard extends StatelessWidget {
   Widget _buildLocationAndTime() {
     return Row(
       children: [
-        Text(
-          location,
-          style: _buildSubTextStyle(),
-        ),
+        Text(location, style: _buildSubTextStyle()),
         SizedBox(width: 2.w),
         Container(
           width: 2.w,
           height: 2.h,
-          decoration: const BoxDecoration(
-            color: AppColors.opacity60White,
-            shape: BoxShape.circle,
-          ),
+          decoration: const BoxDecoration(color: AppColors.opacity60White, shape: BoxShape.circle),
         ),
         SizedBox(width: 2.w),
-        Text(
-          getTimeAgo(createdDate),
-          style: _buildSubTextStyle(),
-        ),
+        Text(getTimeAgo(createdDate), style: _buildSubTextStyle()),
       ],
     );
   }
@@ -215,9 +192,7 @@ class SentRequestItemCard extends StatelessWidget {
             ),
           ),
         ),
-        if (tradeStatus == TradeStatus.chatting) ...[
-          TradeStatusTagWidget(status: tradeStatus!),
-        ],
+        if (tradeStatus == TradeStatus.chatting) ...[TradeStatusTagWidget(status: tradeStatus!)],
       ],
     );
   }
@@ -251,11 +226,7 @@ class SentRequestItemCard extends StatelessWidget {
             textColor: AppColors.warningRed,
           ),
         ],
-        customTrigger: Icon(
-          Icons.more_vert,
-          size: 24.w,
-          color: AppColors.textColorWhite,
-        ),
+        customTrigger: Icon(Icons.more_vert, size: 24.w, color: AppColors.textColorWhite),
       ),
     );
   }
@@ -270,13 +241,9 @@ class SentRequestItemCard extends StatelessWidget {
         height: 24.h,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(
-            color: AppColors.textColorWhite,
-          ),
+          border: Border.all(color: AppColors.textColorWhite),
         ),
-        child: ClipOval(
-          child: _buildImage(otherUserProfileUrl),
-        ),
+        child: ClipOval(child: _buildImage(otherUserProfileUrl)),
       ),
     );
   }
@@ -287,18 +254,11 @@ class SentRequestItemCard extends StatelessWidget {
       return const ErrorImagePlaceholder();
     }
 
-    return CachedImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      errorWidget: const ErrorImagePlaceholder(),
-    );
+    return CachedImage(imageUrl: imageUrl, fit: BoxFit.cover, errorWidget: const ErrorImagePlaceholder());
   }
 
   /// 공통 서브 텍스트 스타일
   TextStyle _buildSubTextStyle() {
-    return CustomTextStyles.p3.copyWith(
-      color: AppColors.opacity60White,
-      fontWeight: FontWeight.w500,
-    );
+    return CustomTextStyles.p3.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w500);
   }
 }

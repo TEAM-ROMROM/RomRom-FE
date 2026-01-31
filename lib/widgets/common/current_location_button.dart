@@ -15,12 +15,7 @@ class CurrentLocationButton extends StatelessWidget {
   /// 외부 마진
   final EdgeInsetsGeometry? margin;
 
-  const CurrentLocationButton({
-    super.key,
-    this.onTap,
-    this.iconSize = 24.0,
-    this.margin,
-  });
+  const CurrentLocationButton({super.key, this.onTap, this.iconSize = 24.0, this.margin});
 
   @override
   Widget build(BuildContext context) {
@@ -36,14 +31,12 @@ class CurrentLocationButton extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color:
-                AppColors.currentLocationButtonShadow.withValues(alpha: 0.25),
+            color: AppColors.currentLocationButtonShadow.withValues(alpha: 0.25),
             blurRadius: 2.0,
             offset: const Offset(0, 0),
           ),
           BoxShadow(
-            color:
-                AppColors.currentLocationButtonShadow.withValues(alpha: 0.25),
+            color: AppColors.currentLocationButtonShadow.withValues(alpha: 0.25),
             blurRadius: 2.0,
             offset: const Offset(0, 2),
           ),
@@ -52,10 +45,7 @@ class CurrentLocationButton extends StatelessWidget {
       child: IconButton(
         onPressed: onTap,
         iconSize: iconSize,
-        icon: const Icon(
-          AppIcons.currentLocation,
-          color: AppColors.currentLocationButtonIcon,
-        ),
+        icon: const Icon(AppIcons.currentLocation, color: AppColors.currentLocationButtonIcon),
       ),
     );
   }

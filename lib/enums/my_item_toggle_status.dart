@@ -7,17 +7,12 @@ enum MyItemToggleStatus {
   final String label;
   final String serverName;
 
-  const MyItemToggleStatus({
-    required this.id,
-    required this.label,
-    required this.serverName,
-  });
+  const MyItemToggleStatus({required this.id, required this.label, required this.serverName});
 
   /// 서버 이름으로부터 enum 값으로 변환
   static MyItemToggleStatus? fromServerName(String serverName) {
     try {
-      return MyItemToggleStatus.values
-          .firstWhere((status) => status.serverName == serverName);
+      return MyItemToggleStatus.values.firstWhere((status) => status.serverName == serverName);
     } catch (e) {
       return null;
     }

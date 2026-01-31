@@ -22,4 +22,4 @@ enum ItemReportReason {
   final String serverName;
 
   const ItemReportReason({required this.id, required this.label, required this.serverName});
-} 
+}

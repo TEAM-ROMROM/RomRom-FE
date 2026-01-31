@@ -12,10 +12,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 /// : 미개봉, 사용감 적음, 사용감 적당함, 사용감 많음
 class HomeFeedConditionTag extends StatelessWidget {
   final ItemCondition condition;
-  const HomeFeedConditionTag({
-    super.key,
-    required this.condition,
-  });
+  const HomeFeedConditionTag({super.key, required this.condition});
 
   @override
   Widget build(BuildContext context) {
@@ -26,14 +23,10 @@ class HomeFeedConditionTag extends StatelessWidget {
       ),
       alignment: Alignment.center,
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        color: AppColors.conditionTagBackground,
-        borderRadius: BorderRadius.circular(100.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.conditionTagBackground, borderRadius: BorderRadius.circular(100.r)),
       child: Text(
         condition.label,
-        style:
-            CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
+        style: CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
       ),
     );
   }
@@ -43,10 +36,7 @@ class HomeFeedConditionTag extends StatelessWidget {
 /// : 직거래, 택배, 추가금
 class HomeFeedTransactionTypeTag extends StatelessWidget {
   final ItemTradeOption type;
-  const HomeFeedTransactionTypeTag({
-    super.key,
-    required this.type,
-  });
+  const HomeFeedTransactionTypeTag({super.key, required this.type});
 
   @override
   Widget build(BuildContext context) {
@@ -55,14 +45,10 @@ class HomeFeedTransactionTypeTag extends StatelessWidget {
       height: 24.h,
       alignment: Alignment.center,
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        color: AppColors.transactionTagBackground,
-        borderRadius: BorderRadius.circular(100.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.transactionTagBackground, borderRadius: BorderRadius.circular(100.r)),
       child: Text(
         type.label,
-        style:
-            CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
+        style: CustomTextStyles.p3.copyWith(fontSize: 10.sp, color: Colors.black),
       ),
     );
   }
@@ -71,19 +57,14 @@ class HomeFeedTransactionTypeTag extends StatelessWidget {
 /// 활성화된 AI 분석 버튼
 class HomeFeedAiTag extends StatelessWidget {
   final bool isActive; // 활성화 상태를 나타내는 플래그
-  const HomeFeedAiTag({
-    super.key,
-    this.isActive = false,
-  });
+  const HomeFeedAiTag({super.key, this.isActive = false});
 
   @override
   Widget build(BuildContext context) {
     // border
     final gradientBorder = GradientBoxBorder(
       gradient: LinearGradient(
-        colors: AppColors.aiGradient
-            .map((color) => color.withValues(alpha: isActive ? 1.0 : 0.4))
-            .toList(),
+        colors: AppColors.aiGradient.map((color) => color.withValues(alpha: isActive ? 1.0 : 0.4)).toList(),
         stops: const [0.0, 0.35, 0.70, 1.0],
       ),
       width: 1.w,
@@ -92,15 +73,13 @@ class HomeFeedAiTag extends StatelessWidget {
     // 그림자
     final boxShadows = [
       BoxShadow(
-        color: AppColors.aiButtonGlow
-            .withValues(alpha: isActive ? 0.7 : 0.3), // 첫 번째 그림자 투명도 조절
+        color: AppColors.aiButtonGlow.withValues(alpha: isActive ? 0.7 : 0.3), // 첫 번째 그림자 투명도 조절
         offset: const Offset(0, 0),
         blurRadius: 10.r,
         spreadRadius: 0.r,
       ),
       BoxShadow(
-        color: Colors.white
-            .withValues(alpha: isActive ? 1.0 : 0.3), // 두 번째 그림자 투명도 조절
+        color: Colors.white.withValues(alpha: isActive ? 1.0 : 0.3), // 두 번째 그림자 투명도 조절
         offset: const Offset(0, -1),
         blurRadius: 4.r,
         spreadRadius: 0.r,
@@ -117,10 +96,7 @@ class HomeFeedAiTag extends StatelessWidget {
         border: gradientBorder,
         boxShadow: boxShadows,
       ),
-      child: Text(
-        'AI 분석',
-        style: CustomTextStyles.p3.copyWith(fontSize: 10.sp),
-      ),
+      child: Text('AI 분석', style: CustomTextStyles.p3.copyWith(fontSize: 10.sp)),
     );
   }
 }

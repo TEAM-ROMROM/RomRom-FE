@@ -12,15 +12,9 @@ class ItemResponse {
   final bool? isLiked;
   final bool? isFirstItemPosted;
 
-  ItemResponse({
-    this.item,
-    this.itemPage,
-    this.isLiked,
-    this.isFirstItemPosted,
-  });
+  ItemResponse({this.item, this.itemPage, this.isLiked, this.isFirstItemPosted});
 
-  factory ItemResponse.fromJson(Map<String, dynamic> json) =>
-      _$ItemResponseFromJson(json);
+  factory ItemResponse.fromJson(Map<String, dynamic> json) => _$ItemResponseFromJson(json);
   Map<String, dynamic> toJson() => _$ItemResponseToJson(this);
 }
 
@@ -34,8 +28,7 @@ class ItemPage {
 
   ItemPage({required this.content, this.page});
 
-  factory ItemPage.fromJson(Map<String, dynamic> json) =>
-      _$ItemPageFromJson(json);
+  factory ItemPage.fromJson(Map<String, dynamic> json) => _$ItemPageFromJson(json);
   Map<String, dynamic> toJson() => _$ItemPageToJson(this);
 }
 

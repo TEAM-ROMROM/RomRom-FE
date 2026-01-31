@@ -15,18 +15,13 @@ class NotificationApi {
 
   /// FCM 토큰 저장 API
   /// `POST /api/notification/post/token`
-  Future<void> saveFcmToken({
-    required String fcmToken,
-  }) async {
+  Future<void> saveFcmToken({required String fcmToken}) async {
     const String url = '${AppUrls.baseUrl}/api/notification/post/token';
 
     // 디바이스 타입 자동 감지 (IOS 또는 ANDROID)
     final String deviceType = Platform.isIOS ? 'IOS' : 'ANDROID';
 
-    final Map<String, dynamic> fields = {
-      'fcmToken': fcmToken,
-      'deviceType': deviceType,
-    };
+    final Map<String, dynamic> fields = {'fcmToken': fcmToken, 'deviceType': deviceType};
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -67,18 +62,10 @@ class NotificationApi {
 
   /// 전체 사용자에게 푸시 전송 API
   /// `POST /api/notification/send/all`
-  Future<void> sendToAll({
-    required String title,
-    required String body,
-    Map<String, String>? data,
-  }) async {
+  Future<void> sendToAll({required String title, required String body, Map<String, String>? data}) async {
     const String url = '${AppUrls.baseUrl}/api/notification/send/all';
 
-    final Map<String, dynamic> fields = {
-      'title': title,
-      'body': body,
-      if (data != null) 'data': data.toString(),
-    };
+    final Map<String, dynamic> fields = {'title': title, 'body': body, if (data != null) 'data': data.toString()};
 
     await ApiClient.sendMultipartRequest(
       url: url,

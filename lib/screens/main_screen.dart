@@ -11,8 +11,7 @@ class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   // MainScreen의 상태에 접근하기 위한 GlobalKey
-  static final GlobalKey<State<MainScreen>> globalKey =
-      GlobalKey<State<MainScreen>>();
+  static final GlobalKey<State<MainScreen>> globalKey = GlobalKey<State<MainScreen>>();
 
   @override
   State<MainScreen> createState() => _MainScreenState();

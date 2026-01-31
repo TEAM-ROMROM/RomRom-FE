@@ -34,9 +34,15 @@ class RequestManagementItemCardWidget extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10.r),
-              border: Border.all(color: AppColors.opacity60White, width: 4.w, strokeAlign: BorderSide.strokeAlignOutside),
+              border: Border.all(
+                color: AppColors.opacity60White,
+                width: 4.w,
+                strokeAlign: BorderSide.strokeAlignOutside,
+              ),
               color: AppColors.opacity80White,
-              boxShadow: [BoxShadow(color: AppColors.opacity15Black, blurRadius: 10.r, spreadRadius: 0, offset: Offset(4.w, 4.h))],
+              boxShadow: [
+                BoxShadow(color: AppColors.opacity15Black, blurRadius: 10.r, spreadRadius: 0, offset: Offset(4.w, 4.h)),
+              ],
               backgroundBlendMode: BlendMode.srcOver,
             ),
             child: Column(
@@ -66,7 +72,11 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                         // 제목
                         Text(
                           card.title,
-                          style: CustomTextStyles.p3.copyWith(color: AppColors.itemCardNameText, fontFamily: FontFamily.nexonLv2Gothic.fontName, fontWeight: FontWeight.w700),
+                          style: CustomTextStyles.p3.copyWith(
+                            color: AppColors.itemCardNameText,
+                            fontFamily: FontFamily.nexonLv2Gothic.fontName,
+                            fontWeight: FontWeight.w700,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -82,7 +92,10 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                               padding: EdgeInsets.only(top: 12.0.h),
                               child: Text(
                                 '${formatPrice(card.price)}원',
-                                style: CustomTextStyles.p2.copyWith(color: AppColors.itemCardPriceText, fontWeight: FontWeight.w600),
+                                style: CustomTextStyles.p2.copyWith(
+                                  color: AppColors.itemCardPriceText,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
 
@@ -128,10 +141,6 @@ class RequestManagementItemCardWidget extends StatelessWidget {
       return const ErrorImagePlaceholder();
     }
 
-    return CachedImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      errorWidget: const ErrorImagePlaceholder(),
-    );
+    return CachedImage(imageUrl: imageUrl, fit: BoxFit.cover, errorWidget: const ErrorImagePlaceholder());
   }
 }
