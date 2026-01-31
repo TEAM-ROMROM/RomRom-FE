@@ -76,10 +76,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     _scrollController.addListener(_scrollListener);
 
     // 카드 컨트롤러 초기화
-    _cardController = PageController(
-      initialPage: 0,
-      viewportFraction: 0.6, // 화면에 보이는 카드의 비율
-    );
+    _cardController = PageController(initialPage: 0, viewportFraction: 227.w / 393.w);
 
     // 토글 애니메이션 컨트롤러 초기화
     _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
@@ -412,7 +409,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     _cardController = PageController(
       initialPage: initialPage,
       keepPage: false, // 이전 위치 자동 복원 방지
-      viewportFraction: 0.6, // 화면에 보이는 카드의 비율
+      viewportFraction: 227.w / 393.w, // 화면에 보이는 카드의 비율
     );
   }
 
@@ -540,7 +537,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return SizedBox(
-      height: 326.h,
+      height: 334.h,
       child: PageView.builder(
         controller: _cardController,
         onPageChanged: _onCardPageChanged,
@@ -560,7 +557,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 ),
               );
             },
-            child: RequestManagementItemCardWidget(card: _itemCards[index], isActive: index == _currentCardIndex),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.h),
+              child: RequestManagementItemCardWidget(card: _itemCards[index], isActive: index == _currentCardIndex),
+            ),
           );
         },
       ),
