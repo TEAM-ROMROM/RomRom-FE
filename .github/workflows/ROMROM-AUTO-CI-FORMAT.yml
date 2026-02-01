@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# 같은 브랜치에서 중복 실행 방지 (새 푸시 시 이전 CI 취소)
+concurrency:
+  group: format-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   format-and-analyze:
     runs-on: ubuntu-latest
@@ -16,6 +21,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -34,6 +40,16 @@ jobs:
           flutter pub get
           echo "Dependencies installed"
 
+      - name: Create .env file
+        run: |
+          if [ -n "${{ secrets.ENV_FILE }}" ]; then
+            echo "${{ secrets.ENV_FILE }}" > .env
+            echo ".env created from secret"
+          else
+            touch .env
+            echo ".env dummy created (no secret found)"
+          fi
+
       - name: Format code
         run: |
           echo "Formatting code..."
@@ -45,15 +61,31 @@ jobs:
         run: |
           git diff --exit-code || echo "has_changes=true" >> $GITHUB_OUTPUT
 
-      - name: Commit formatted code
+      - name: Commit and push formatted code
         if: steps.git-check.outputs.has_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "코드 포매팅 처리 히스토리 관리 : refactor : auto format code https://github.com/TEAM-ROMROM/RomRom-FE/issues/473 [skip ci]"
-          git push
-          echo "Auto-formatted code committed"
+
+          # 안전한 push with retry (conflict 방지)
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          MAX_RETRIES=3
+          for i in $(seq 1 $MAX_RETRIES); do
+            if git push; then
+              echo "Push successful"
+              break
+            fi
+
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "Push failed after $MAX_RETRIES attempts, skipping (will be handled in next CI run)"
+              exit 0
+            fi
+
+            echo "Push failed, pulling and retrying ($i/$MAX_RETRIES)..."
+            git pull --rebase origin "$BRANCH"
+          done
 
       - name: Analyze
         run: |
