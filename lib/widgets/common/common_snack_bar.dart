@@ -47,8 +47,8 @@ class CommonSnackBar {
     }
   }
 
-  /// 토스트 제거
-  static Future<void> _removeToast(_ToastEntry toast) async {
+  /// 토스트 리소스 정리 (비동기 - 애니메이션 포함)
+  static Future<void> _removeToastWithAnimation(_ToastEntry toast) async {
     try {
       await toast.animationController.reverse();
       toast.overlayEntry.remove();
@@ -64,6 +64,16 @@ class CommonSnackBar {
     }
   }
 
+  /// 토스트 즉시 제거 (동기 - 레이스 컨디션 방지)
+  static void _removeToastImmediately(_ToastEntry toast) {
+    _activeToasts.remove(toast);
+    try {
+      toast.overlayEntry.remove();
+      toast.dispose();
+    } catch (_) {}
+    _updateAllPositions();
+  }
+
   static void show({
     required BuildContext context,
     required String message,
@@ -74,10 +84,10 @@ class CommonSnackBar {
     late OverlayEntry overlayEntry;
     late AnimationController animationController;
 
-    // 최대 개수 초과 시 가장 오래된 토스트 제거
+    // 최대 개수 초과 시 가장 오래된 토스트 즉시 제거 (동기적으로 처리하여 레이스 컨디션 방지)
     if (_activeToasts.length >= _maxToasts) {
       final oldestToast = _activeToasts.first;
-      _removeToast(oldestToast);
+      _removeToastImmediately(oldestToast);
     }
 
     // AnimationController를 위한 TickerProvider 생성
@@ -114,7 +124,7 @@ class CommonSnackBar {
             builder: (context, child) => Opacity(
               opacity: fadeAnimation.value,
               child: Material(
-                color: Colors.transparent,
+                color: AppColors.transparent,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8.r),
                   child: BackdropFilter(
@@ -129,8 +139,8 @@ class CommonSnackBar {
                         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 19.h),
                         child: Row(
                           children: [
-                            Container(
-                              margin: EdgeInsets.only(right: 16.w),
+                            Padding(
+                              padding: EdgeInsets.only(right: 16.w),
                               child: _buildIcon(type),
                             ),
                             Expanded(
@@ -177,7 +187,7 @@ class CommonSnackBar {
     // duration 후에 fade out 후 제거
     Future.delayed(duration, () async {
       if (_activeToasts.contains(toastEntry)) {
-        await _removeToast(toastEntry);
+        await _removeToastWithAnimation(toastEntry);
       }
     });
   }
