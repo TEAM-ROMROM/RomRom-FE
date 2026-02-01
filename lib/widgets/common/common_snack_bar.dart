@@ -43,7 +43,28 @@ class CommonSnackBar {
     for (int i = 0; i < _activeToasts.length; i++) {
       final toast = _activeToasts[i];
       toast.bottomPosition.value = currentBottom;
-      currentBottom += _estimatedToastHeight + _toastSpacing;
+
+      // 측정된 높이 사용, 측정 전이면 기본값 사용
+      final height = toast.measuredHeight > 0 ? toast.measuredHeight : _estimatedToastHeight;
+      currentBottom += height + _toastSpacing;
+    }
+  }
+
+  /// 토스트의 실제 높이를 측정하고 위치 업데이트
+  static void _measureAndUpdateHeight(_ToastEntry toast) {
+    // 안전 체크: 토스트가 아직 활성 상태인지 확인
+    if (!_activeToasts.contains(toast)) return;
+
+    final RenderBox? renderBox = toast.toastKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox != null && renderBox.hasSize) {
+      final newHeight = renderBox.size.height;
+
+      // 높이가 1px 이상 변경된 경우에만 업데이트 (무한 루프 방지)
+      if ((newHeight - toast.measuredHeight).abs() > 1.0) {
+        toast.measuredHeight = newHeight;
+        _updateAllPositions();
+      }
     }
   }
 
@@ -110,6 +131,9 @@ class CommonSnackBar {
     // 고유 ID 생성
     final toastId = DateTime.now().millisecondsSinceEpoch.toString();
 
+    // 높이 측정용 GlobalKey 생성
+    final toastKey = GlobalKey();
+
     overlayEntry = OverlayEntry(
       builder: (context) => ValueListenableBuilder<double>(
         valueListenable: bottomPosition,
@@ -126,6 +150,7 @@ class CommonSnackBar {
               child: Material(
                 color: AppColors.transparent,
                 child: ClipRRect(
+                  key: toastKey,
                   borderRadius: BorderRadius.circular(8.r),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
@@ -172,6 +197,7 @@ class CommonSnackBar {
       animationController: animationController,
       tickerProvider: tickerProvider,
       bottomPosition: bottomPosition,
+      toastKey: toastKey,
     );
 
     _activeToasts.add(toastEntry);
@@ -183,6 +209,11 @@ class CommonSnackBar {
 
     // Fade in 애니메이션 시작
     animationController.forward();
+
+    // 프레임 완료 후 높이 측정
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measureAndUpdateHeight(toastEntry);
+    });
 
     // duration 후에 fade out 후 제거
     Future.delayed(duration, () async {
@@ -200,6 +231,8 @@ class _ToastEntry {
   final AnimationController animationController;
   final _OverlayTickerProvider tickerProvider;
   final ValueNotifier<double> bottomPosition;
+  final GlobalKey toastKey;
+  double measuredHeight = 58.0;
 
   _ToastEntry({
     required this.id,
@@ -207,6 +240,7 @@ class _ToastEntry {
     required this.animationController,
     required this.tickerProvider,
     required this.bottomPosition,
+    required this.toastKey,
   });
 
   void dispose() {
