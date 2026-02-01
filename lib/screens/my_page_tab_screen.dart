@@ -14,6 +14,7 @@ import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/screens/my_page/terms_screen.dart';
+import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -132,10 +133,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               ),
               _MenuItem(
                 label: '차단 관리',
-                // FIXME: AppIcons.slashCircle이 AppIcons.ttf에 없어서 임시로 Icons.block 사용
-                icon: Icons.block,
+                icon: AppIcons.slashCircle,
                 onTap: () {
-                  // TODO: 차단 관리 화면으로 이동
+                  context.navigateTo(screen: const BlockManagementScreen());
                 },
               ),
             ]),
