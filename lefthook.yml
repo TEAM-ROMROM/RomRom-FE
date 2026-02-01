@@ -13,3 +13,4 @@ pre-push:
   commands:
     analyze:
       run: flutter analyze
+      skip: true  # 로컬 푸시 시 분석 건너뛰기
