@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -171,50 +172,48 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         child: Container(color: AppColors.opacity10Black),
                       ),
                     ),
-
-                  /// 알림 아이콘 및 더보기 메뉴 버튼
-                  if (!widget.showBlur)
-                    Positioned(
-                      right: 16.w,
-                      top: MediaQuery.of(context).padding.top + 8.h,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // 알림 아이콘 버튼
-                          GestureDetector(
-                            onTap: () {
-                              context.navigateTo(screen: const NotificationScreen());
-                            },
-                            behavior: HitTestBehavior.opaque,
-                            child: Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
-                          ),
-                          SizedBox(width: 10.w),
-                          // 더보기 메뉴 버튼
-                          ReportMenuButton(
-                            onReportPressed: () async {
-                              final bool? reported = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? ''),
-                                ),
-                              );
-
-                              if (reported == true && mounted) {
-                                await CommonModal.success(
-                                  context: context,
-                                  message: '신고가 접수되었습니다.',
-                                  onConfirm: () => Navigator.of(context).pop(),
-                                );
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
                 ],
               );
             },
           ),
+
+          // 알림 아이콘 및 더보기 메뉴 버튼 (독립적으로 고정)
+          if (!widget.showBlur)
+            Positioned(
+              right: 16.w,
+              top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 알림 아이콘 버튼
+                  GestureDetector(
+                    onTap: () {
+                      context.navigateTo(screen: const NotificationScreen());
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
+                  ),
+                  SizedBox(width: 10.w),
+                  // 더보기 메뉴 버튼
+                  ReportMenuButton(
+                    onReportPressed: () async {
+                      final bool? reported = await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? '')),
+                      );
+
+                      if (reported == true && mounted) {
+                        await CommonModal.success(
+                          context: context,
+                          message: '신고가 접수되었습니다.',
+                          onConfirm: () => Navigator.of(context).pop(),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
 
           // 이미지 인디케이터 (하단 점)
           if (!widget.showBlur)
