@@ -3,31 +3,64 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 class CommonSnackBar {
-  static IconData _getIconData(SnackBarType type) {
+  // 다중 토스트 관리 상수
+  static const int _maxToasts = 3;
+  static const double _baseBottom = 120;
+  static const double _toastSpacing = 12;
+  static const double _estimatedToastHeight = 58;
+
+  // 활성 토스트 목록
+  static final List<_ToastEntry> _activeToasts = [];
+
+  /// 타입별 SVG 아이콘 경로 반환
+  static String _getIconAssetPath(SnackBarType type) {
     switch (type) {
       case SnackBarType.success:
-        return AppIcons.onboardingProgressCheck;
+        return 'assets/images/toast_success.svg';
       case SnackBarType.info:
-        return AppIcons.information;
+        return 'assets/images/toast_info.svg';
       case SnackBarType.error:
-        return AppIcons.warning;
+        return 'assets/images/toast_error.svg';
     }
   }
 
-  static Color _getIconBackgroundColor(SnackBarType type) {
-    switch (type) {
-      case SnackBarType.success:
-        return AppColors.toastSuccessBackground;
-      case SnackBarType.info:
-        return AppColors.toastInfoBackground;
-      case SnackBarType.error:
-        return AppColors.toastErrorBackground;
+  /// 아이콘 위젯 빌드 (SVG 사용)
+  /// - 모든 타입: 20x20 SVG 아이콘
+  static Widget _buildIcon(SnackBarType type) {
+    return SvgPicture.asset(_getIconAssetPath(type), width: 20, height: 20);
+  }
+
+  /// 모든 활성 토스트의 위치 업데이트
+  static void _updateAllPositions() {
+    double currentBottom = _baseBottom;
+
+    for (int i = 0; i < _activeToasts.length; i++) {
+      final toast = _activeToasts[i];
+      toast.bottomPosition.value = currentBottom;
+      currentBottom += _estimatedToastHeight + _toastSpacing;
+    }
+  }
+
+  /// 토스트 제거
+  static Future<void> _removeToast(_ToastEntry toast) async {
+    try {
+      await toast.animationController.reverse();
+      toast.overlayEntry.remove();
+      _activeToasts.remove(toast);
+      toast.dispose();
+      _updateAllPositions();
+    } catch (e) {
+      _activeToasts.remove(toast);
+      try {
+        toast.dispose();
+      } catch (_) {}
+      _updateAllPositions();
     }
   }
 
@@ -40,6 +73,12 @@ class CommonSnackBar {
     final overlay = Overlay.of(context);
     late OverlayEntry overlayEntry;
     late AnimationController animationController;
+
+    // 최대 개수 초과 시 가장 오래된 토스트 제거
+    if (_activeToasts.length >= _maxToasts) {
+      final oldestToast = _activeToasts.first;
+      _removeToast(oldestToast);
+    }
 
     // AnimationController를 위한 TickerProvider 생성
     final tickerProvider = _OverlayTickerProvider();
@@ -55,45 +94,56 @@ class CommonSnackBar {
       end: 1.0,
     ).animate(CurvedAnimation(parent: animationController, curve: Curves.easeInOut));
 
+    // 위치를 위한 ValueNotifier
+    final bottomPosition = ValueNotifier<double>(_baseBottom);
+
+    // 고유 ID 생성
+    final toastId = DateTime.now().millisecondsSinceEpoch.toString();
+
     overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        bottom: 120.h,
-        left: 24.w,
-        right: 24.w,
-        child: AnimatedBuilder(
-          animation: fadeAnimation,
-          builder: (context, child) => Opacity(
-            opacity: fadeAnimation.value,
-            child: Material(
-              color: Colors.transparent,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.r),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40), // 블러 강도
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.opacity30White,
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-                      child: Row(
-                        children: [
-                          Container(
-                            margin: EdgeInsets.only(right: 16.w),
-                            decoration: BoxDecoration(color: _getIconBackgroundColor(type), shape: BoxShape.circle),
-                            child: Icon(_getIconData(type), color: AppColors.textColorWhite, size: 16),
-                          ),
-                          Expanded(
-                            child: Text(
-                              message.trim(),
-                              style: CustomTextStyles.p2.copyWith(height: 1.4),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: true,
+      builder: (context) => ValueListenableBuilder<double>(
+        valueListenable: bottomPosition,
+        builder: (context, bottom, child) => AnimatedPositioned(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          bottom: bottom.h,
+          left: 24.w,
+          right: 24.w,
+          child: AnimatedBuilder(
+            animation: fadeAnimation,
+            builder: (context, child) => Opacity(
+              opacity: fadeAnimation.value,
+              child: Material(
+                color: Colors.transparent,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Container(
+                      constraints: BoxConstraints(minHeight: 58.h),
+                      decoration: BoxDecoration(
+                        color: AppColors.toastBackground,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 19.h),
+                        child: Row(
+                          children: [
+                            Container(
+                              margin: EdgeInsets.only(right: 16.w),
+                              child: _buildIcon(type),
                             ),
-                          ),
-                        ],
+                            Expanded(
+                              child: Text(
+                                message.trim(),
+                                style: CustomTextStyles.p2.copyWith(height: 1.4),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: true,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -105,6 +155,20 @@ class CommonSnackBar {
       ),
     );
 
+    // 토스트 엔트리 생성 및 목록에 추가
+    final toastEntry = _ToastEntry(
+      id: toastId,
+      overlayEntry: overlayEntry,
+      animationController: animationController,
+      tickerProvider: tickerProvider,
+      bottomPosition: bottomPosition,
+    );
+
+    _activeToasts.add(toastEntry);
+
+    // 모든 토스트 위치 업데이트
+    _updateAllPositions();
+
     overlay.insert(overlayEntry);
 
     // Fade in 애니메이션 시작
@@ -112,23 +176,37 @@ class CommonSnackBar {
 
     // duration 후에 fade out 후 제거
     Future.delayed(duration, () async {
-      try {
-        await animationController.reverse();
-        overlayEntry.remove();
-        animationController.dispose();
-        tickerProvider.dispose();
-      } catch (e) {
-        // overlayEntry가 이미 제거된 경우 무시
-        try {
-          animationController.dispose();
-          tickerProvider.dispose();
-        } catch (_) {}
+      if (_activeToasts.contains(toastEntry)) {
+        await _removeToast(toastEntry);
       }
     });
   }
 }
 
-// TickerProvider를 위한 헬퍼 클래스
+/// 활성 토스트 엔트리 관리 클래스
+class _ToastEntry {
+  final String id;
+  final OverlayEntry overlayEntry;
+  final AnimationController animationController;
+  final _OverlayTickerProvider tickerProvider;
+  final ValueNotifier<double> bottomPosition;
+
+  _ToastEntry({
+    required this.id,
+    required this.overlayEntry,
+    required this.animationController,
+    required this.tickerProvider,
+    required this.bottomPosition,
+  });
+
+  void dispose() {
+    animationController.dispose();
+    tickerProvider.dispose();
+    bottomPosition.dispose();
+  }
+}
+
+/// TickerProvider를 위한 헬퍼 클래스
 class _OverlayTickerProvider implements TickerProvider {
   Ticker? _ticker;
 
