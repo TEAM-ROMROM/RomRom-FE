@@ -1,0 +1,72 @@
+name: ROMROM-AUTO-CI-FORMAT
+
+on:
+  pull_request:
+  push:
+    branches: ["main", "develop", "deploy"]
+
+permissions:
+  contents: write
+
+jobs:
+  format-and-analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.9"
+          cache: true
+
+      - name: Show Flutter version
+        run: |
+          echo "Flutter Version:"
+          flutter --version
+
+      - name: Install dependencies
+        run: |
+          echo "Installing dependencies..."
+          flutter pub get
+          echo "Dependencies installed"
+
+      - name: Format code
+        run: |
+          echo "Formatting code..."
+          dart format --line-length=120 .
+          echo "Format complete"
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code || echo "has_changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit formatted code
+        if: steps.git-check.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "코드 포매팅 처리 히스토리 관리 : refactor : auto format code https://github.com/TEAM-ROMROM/RomRom-FE/issues/473 [skip ci]"
+          git push
+          echo "Auto-formatted code committed"
+
+      - name: Analyze
+        run: |
+          echo "Running Flutter analyze..."
+          flutter analyze
+          echo "Analyze passed"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "================================"
+          echo "CI Summary"
+          echo "================================"
+          echo "Branch: ${{ github.head_ref || github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "================================"

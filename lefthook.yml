@@ -1,6 +1,9 @@
 # lefthook - Git Hook 관리 도구
 # 설치: brew install lefthook (macOS) / scoop install lefthook (Windows) / npm install -g lefthook
 # 활성화: lefthook install
+#
+# 참고: flutter analyze는 GitHub Actions에서 PR 시 자동 실행됨
+# 로컬에서는 커밋 시 포맷 체크만 수행
 
 pre-commit:
   parallel: true
@@ -8,8 +11,3 @@ pre-commit:
     format-check:
       glob: "*.dart"
       run: dart format --line-length=120 --set-exit-if-changed {staged_files}
-
-pre-push:
-  commands:
-    analyze:
-      run: flutter analyze
