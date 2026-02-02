@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -17,13 +19,18 @@ import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
+import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/notification_screen.dart';
+import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
 
 /// 홈 탭 화면
@@ -603,6 +610,43 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
         ),
+
+        // 알림 아이콘 및 메뉴 버튼
+        if (!_isBlurShown)
+          Positioned(
+            right: 16.w,
+            top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    context.navigateTo(screen: const NotificationScreen());
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
+                ),
+                SizedBox(width: 10.w),
+                ReportMenuButton(
+                  onReportPressed: () async {
+                    if (_feedItems.isEmpty) return;
+                    final currentItem = _feedItems[_currentFeedIndex];
+                    final bool? reported = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ReportScreen(itemId: currentItem.itemUuid ?? '')),
+                    );
+                    if (reported == true && mounted) {
+                      await CommonModal.success(
+                        context: context,
+                        message: '신고가 접수되었습니다.',
+                        onConfirm: () => Navigator.of(context).pop(),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
 
         // 하단 고정 카드 덱 (터치 영역 분리)
         if (!_isBlurShown)
