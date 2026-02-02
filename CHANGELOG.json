@@ -1,11 +1,33 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-02T13:21:45Z",
-    "currentVersion": "1.8.73",
-    "totalReleases": 58,
+    "lastUpdated": "2026-02-02T13:38:04Z",
+    "currentVersion": "1.8.74",
+    "totalReleases": 59,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.8.74",
+      "project_type": "flutter",
+      "date": "2026-02-02",
+      "pr_number": 483,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 개선 사항\n\n* 항목 등록 시 최대 개수 제한 기능 추가 및 오류 처리 강화\n* 검색 범위 설정 저장 시 사용자 피드백 개선으로 더 나은 경험 제공\n* 전반적인 안정성 개선 및 오류 처리 최적화",
+      "parsed_changes": {
+        "항목_등록_시_최대_개수_제한_기능_추가_및_오류_처리_강화": {
+          "title": "항목 등록 시 최대 개수 제한 기능 추가 및 오류 처리 강화",
+          "items": []
+        },
+        "검색_범위_설정_저장_시_사용자_피드백_개선으로_더_나은_경험_제공": {
+          "title": "검색 범위 설정 저장 시 사용자 피드백 개선으로 더 나은 경험 제공",
+          "items": []
+        },
+        "전반적인_안정성_개선_및_오류_처리_최적화": {
+          "title": "전반적인 안정성 개선 및 오류 처리 최적화",
+          "items": []
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.8.73",
       "project_type": "flutter",
