@@ -487,6 +487,27 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                   child: InkWell(
                     borderRadius: BorderRadius.circular(100.r),
                     onTap: () async {
+                      // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
+                      try {
+                        final countResponse = await ItemApi().getMyItems(
+                          ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
+                        );
+                        final totalCount = countResponse.itemPage?.page?.totalElements ?? 0;
+
+                        if (totalCount >= 10) {
+                          if (mounted) {
+                            CommonSnackBar.show(
+                              context: context,
+                              message: '물품은 최대 10개까지 등록할 수 있습니다. 거래 완료 후 다시 시도해주세요.',
+                              type: SnackBarType.warning,
+                            );
+                          }
+                          return;
+                        }
+                      } catch (e) {
+                        debugPrint('물품 개수 확인 실패: $e');
+                      }
+
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
