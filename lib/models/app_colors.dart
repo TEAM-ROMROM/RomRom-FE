@@ -86,6 +86,7 @@ class AppColors {
   static const Color dialogBarrier = Color(0x80000000); // 50% 불투명도 검정 (다이얼로그 배경)
 
   // toast 배경 색상
+  static final Color toastBackground = secondaryBlack2.withValues(alpha: 0.8); // 토스트 컨테이너 배경색 (80% 불투명도)
   static const Color toastSuccessBackground = Color(0xFF30CF00); // 성공 및 확인 토스트 아이콘 배경색
   static const Color toastErrorBackground = Color(0xFFFF5656); // 오류 토스트 아이콘 배경색
   static const Color toastInfoBackground = Color(0xFF4C4E54); // 정보 토스트 아이콘 배경색

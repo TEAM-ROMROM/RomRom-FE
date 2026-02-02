@@ -644,7 +644,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   /// 물품 상태 토글
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.info);
+      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
       return;
     }
 
@@ -680,7 +680,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   /// 물품 삭제
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.info);
+      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
       return;
     }
 

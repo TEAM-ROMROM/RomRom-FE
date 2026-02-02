@@ -162,3 +162,25 @@ bash tool/full_check.sh
 - `prompts/코드_스타일_가이드라인.md` - 필수 참고
 - `lib/models/app_theme.dart` - 텍스트 스타일 정의
 - `lib/models/app_colors.dart` - 색상 상수 정의
+
+## Claude 자동 처리 규칙
+
+### 코드 수정 후 필수 실행 (자동)
+모든 코드 수정 작업 완료 후, Claude는 반드시 다음 순서로 실행합니다:
+
+1. **코드 포매팅**
+   ```bash
+   source ~/.zshrc && dart format --line-length=120 .
+   ```
+
+2. **린트 분석**
+   ```bash
+   source ~/.zshrc && flutter analyze
+   ```
+
+3. **에러 발생 시**: 에러 수정 후 1-2번 재실행
+
+### lefthook 통과 보장
+- 위 단계를 모두 통과해야 작업 완료로 간주
+- `flutter analyze`에서 에러 발생 시 반드시 수정
+- 작업 완료 전 lefthook이 통과되는지 확인 필수

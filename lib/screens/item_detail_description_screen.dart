@@ -215,7 +215,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   /// 물품 상태 토글 (판매중 ↔ 거래완료)
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.info);
+      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
       return;
     }
 
@@ -252,7 +252,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   /// 물품 삭제
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.info);
+      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
       return;
     }
 
@@ -862,7 +862,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     final isCurrentMember = await MemberManager.isCurrentMember(item?.member?.memberId);
     if (isCurrentMember) {
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '본인 게시글에는 좋아요를 누를 수 없습니다.', type: SnackBarType.info);
+        CommonSnackBar.show(context: context, message: '본인 게시글에는 좋아요를 누를 수 없습니다.', type: SnackBarType.error);
       }
       return;
     }
