@@ -156,11 +156,8 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
   Future<void> _saveSearchRadius(int index) async {
     try {
       final radiusInMeters = defaultSearchRangeOptions[index].distanceKm * 1000;
-      final isSuccess = await MemberApi().saveSearchRadius(radiusInMeters);
-
-      if (mounted && isSuccess) {
-        CommonSnackBar.show(context: context, message: '탐색 범위가 저장되었습니다', type: SnackBarType.success);
-      }
+      await MemberApi().saveSearchRadius(radiusInMeters);
+      // 성공 시 토스트 표시 제거 - 슬라이더 이동 자체가 시각적 피드백
     } catch (e) {
       debugPrint('탐색 범위 저장 실패: $e');
       if (mounted) {
