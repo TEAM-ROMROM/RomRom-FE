@@ -119,7 +119,13 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
       child: ListView.separated(
         physics: const BouncingScrollPhysics(),
         itemCount: _blockedMembers.length,
-        separatorBuilder: (_, __) => const Divider(color: AppColors.opacity10White, thickness: 1),
+        separatorBuilder: (_, __) => Column(
+          children: [
+            SizedBox(height: 16.h), // 아이템 사이 간격
+            const Divider(color: AppColors.opacity10White, thickness: 1),
+            SizedBox(height: 16.h), // Divider 아래도 간격까지 원하면 유지
+          ],
+        ),
         itemBuilder: (context, index) {
           final member = _blockedMembers[index];
           return _buildBlockedMemberItem(member);
@@ -151,13 +157,12 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
         }
       },
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8.h),
         color: AppColors.transparent,
         child: Row(
           children: [
             // 프로필 이미지 (50x50px)
-            UserProfileCircularAvatar(avatarSize: Size(50.w, 50.h), profileUrl: member.profileUrl, hasBorder: false),
-            SizedBox(width: 6.w), // Figma: 이미지 오른쪽 6px
+            UserProfileCircularAvatar(avatarSize: Size(50.w, 50.h), profileUrl: member.profileUrl, hasBorder: true),
+            SizedBox(width: 16.w), // Figma: 이미지 오른쪽 16px
             // 닉네임 및 위치
             Expanded(
               child: Column(
