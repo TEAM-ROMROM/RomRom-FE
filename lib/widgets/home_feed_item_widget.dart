@@ -9,13 +9,9 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
-import 'package:romrom_fe/widgets/common/common_modal.dart';
-import 'package:romrom_fe/widgets/common/report_menu_button.dart';
-import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
@@ -169,46 +165,6 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
                         child: Container(color: AppColors.opacity10Black),
-                      ),
-                    ),
-
-                  /// 알림 아이콘 및 더보기 메뉴 버튼
-                  if (!widget.showBlur)
-                    Positioned(
-                      right: 16.w,
-                      top: MediaQuery.of(context).padding.top + 8.h,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // 알림 아이콘 버튼
-                          GestureDetector(
-                            onTap: () {
-                              context.navigateTo(screen: const NotificationScreen());
-                            },
-                            behavior: HitTestBehavior.opaque,
-                            child: Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
-                          ),
-                          SizedBox(width: 10.w),
-                          // 더보기 메뉴 버튼
-                          ReportMenuButton(
-                            onReportPressed: () async {
-                              final bool? reported = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? ''),
-                                ),
-                              );
-
-                              if (reported == true && mounted) {
-                                await CommonModal.success(
-                                  context: context,
-                                  message: '신고가 접수되었습니다.',
-                                  onConfirm: () => Navigator.of(context).pop(),
-                                );
-                              }
-                            },
-                          ),
-                        ],
                       ),
                     ),
                 ],

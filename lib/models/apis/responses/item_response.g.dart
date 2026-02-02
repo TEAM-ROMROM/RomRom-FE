@@ -23,9 +23,13 @@ Map<String, dynamic> _$ItemResponseToJson(ItemResponse instance) => <String, dyn
 ItemPage _$ItemPageFromJson(Map<String, dynamic> json) => ItemPage(
   content: _itemsFromJson(json['content']),
   page: json['page'] == null ? null : ApiPage.fromJson(json['page'] as Map<String, dynamic>),
+  totalElements: (json['totalElements'] as num?)?.toInt(),
+  totalPages: (json['totalPages'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ItemPageToJson(ItemPage instance) => <String, dynamic>{
   'content': _itemsToJson(instance.content),
   'page': instance.page,
+  'totalElements': instance.totalElements,
+  'totalPages': instance.totalPages,
 };
