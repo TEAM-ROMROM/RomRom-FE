@@ -3,17 +3,15 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
-import 'package:romrom_fe/widgets/common/common_modal.dart';
-import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
@@ -21,6 +19,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
@@ -142,8 +141,16 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       child: Hero(
                         tag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                         child: ClipRRect(
-                          borderRadius: BorderRadius.only(topLeft: Radius.circular(4.r), topRight: Radius.circular(4.r), bottomRight: Radius.circular(20.r), bottomLeft: Radius.circular(20.r)),
-                          child: _buildImage(widget.item.imageUrls[index], Size(screenWidth, availableHeight - navigationBarHeight)),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(4.r),
+                            topRight: Radius.circular(4.r),
+                            bottomRight: Radius.circular(20.r),
+                            bottomLeft: Radius.circular(20.r),
+                          ),
+                          child: _buildImage(
+                            widget.item.imageUrls[index],
+                            Size(screenWidth, availableHeight - navigationBarHeight),
+                          ),
                         ),
                       ),
                     ),
@@ -158,46 +165,6 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
                         child: Container(color: AppColors.opacity10Black),
-                      ),
-                    ),
-
-                  /// 알림 아이콘 및 더보기 메뉴 버튼
-                  if (!widget.showBlur)
-                    Positioned(
-                      right: 16.w,
-                      top: MediaQuery.of(context).padding.top + 8.h,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // 알림 아이콘 버튼
-                          GestureDetector(
-                            onTap: () {
-                              CommonSnackBar.show(
-                                context: context,
-                                message: '알림 기능 준비 중입니다.',
-                                type: SnackBarType.info,
-                              );
-                            },
-                            behavior: HitTestBehavior.opaque,
-                            child: SvgPicture.asset(
-                              'assets/images/notification.svg',
-                              width: 30.w,
-                              height: 30.h,
-                              semanticsLabel: '알림',
-                            ),
-                          ),
-                          SizedBox(width: 10.w),
-                          // 더보기 메뉴 버튼
-                          ReportMenuButton(
-                            onReportPressed: () async {
-                              final bool? reported = await Navigator.push(context, MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.item.itemUuid ?? '')));
-
-                              if (reported == true && mounted) {
-                                await CommonModal.success(context: context, message: '신고가 접수되었습니다.', onConfirm: () => Navigator.of(context).pop());
-                              }
-                            },
-                          ),
-                        ],
                       ),
                     ),
                 ],
@@ -219,7 +186,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                     width: 6.w,
                     height: 6.w,
                     margin: EdgeInsets.symmetric(horizontal: 2.w),
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: _currentImageIndex == index ? AppColors.primaryYellow : AppColors.opacity50White),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentImageIndex == index ? AppColors.primaryYellow : AppColors.opacity50White,
+                    ),
                   ),
                 ),
               ),
@@ -243,7 +213,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
                       if (isCurrentMember) {
                         if (mounted) {
-                          CommonSnackBar.show(context: context, message: '본인 게시글에는 좋아요를 누를 수 없습니다.', type: SnackBarType.info);
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
+                            type: SnackBarType.error,
+                          );
                         }
                         return;
                       }
@@ -269,7 +243,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                         }
                       }
                     },
-                    child: SvgPicture.asset(_isLiked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg'),
+                    child: SvgPicture.asset(
+                      _isLiked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg',
+                    ),
                   ),
                   SizedBox(height: 2.h),
                   Text(_likeCount.toString(), style: CustomTextStyles.p2),
@@ -310,7 +286,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             children: [
                               Icon(AppIcons.location, color: AppColors.opacity80White, size: 13.sp),
                               SizedBox(width: 4.w),
-                              Text('${widget.item.location} • $formattedDate', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500)),
+                              Text(
+                                '${widget.item.location} • $formattedDate',
+                                style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
+                              ),
                             ],
                           ),
 
@@ -322,7 +301,12 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               ItemDetailConditionTag(condition: widget.item.itemCondition.label),
                               SizedBox(width: 4.w),
                               // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
-                              ...widget.item.transactionTypes.map((type) => ItemDetailTradeOptionTag(option: type.label)),
+                              Wrap(
+                                spacing: 4.w,
+                                children: widget.item.transactionTypes
+                                    .map((type) => ItemDetailTradeOptionTag(option: type.label))
+                                    .toList(),
+                              ),
                             ],
                           ),
 
@@ -331,7 +315,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           Row(
                             children: [
                               // 물품 가격
-                              Text("$formattedPrice원", style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
+                              Text(
+                                "$formattedPrice원",
+                                style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600),
+                              ),
 
                               SizedBox(width: 8.w),
 
@@ -362,7 +349,10 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           child: ClipOval(
                             child: BlurWrapper(
                               enabled: widget.showBlur,
-                              child: UserProfileCircularAvatar(avatarSize: const Size(50, 50), profileUrl: widget.item.profileUrl.isNotEmpty ? widget.item.profileUrl : null),
+                              child: UserProfileCircularAvatar(
+                                avatarSize: const Size(50, 50),
+                                profileUrl: widget.item.profileUrl.isNotEmpty ? widget.item.profileUrl : null,
+                              ),
                             ),
                           ),
                         ),
@@ -416,24 +406,12 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
     if (url.isEmpty || !url.startsWith('http')) return placeholder;
 
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
+    return CachedImage(
+      imageUrl: url,
       width: size.width,
       height: size.height,
-      errorBuilder: (context, error, stackTrace) {
-        debugPrint('HomeFeed 이미지 로드 실패: $url, error: $error');
-        return placeholder;
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(
-          child: CircularProgressIndicator(
-            color: AppColors.primaryYellow,
-            value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1) : null,
-          ),
-        );
-      },
+      fit: BoxFit.cover,
+      errorWidget: placeholder,
     );
   }
 }

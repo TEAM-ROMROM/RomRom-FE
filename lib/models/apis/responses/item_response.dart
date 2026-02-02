@@ -12,15 +12,9 @@ class ItemResponse {
   final bool? isLiked;
   final bool? isFirstItemPosted;
 
-  ItemResponse({
-    this.item,
-    this.itemPage,
-    this.isLiked,
-    this.isFirstItemPosted,
-  });
+  ItemResponse({this.item, this.itemPage, this.isLiked, this.isFirstItemPosted});
 
-  factory ItemResponse.fromJson(Map<String, dynamic> json) =>
-      _$ItemResponseFromJson(json);
+  factory ItemResponse.fromJson(Map<String, dynamic> json) => _$ItemResponseFromJson(json);
   Map<String, dynamic> toJson() => _$ItemResponseToJson(this);
 }
 
@@ -32,10 +26,13 @@ class ItemPage {
   @JsonKey(name: 'page')
   final ApiPage? page;
 
-  ItemPage({required this.content, this.page});
+  // 최상위 레벨 페이지네이션 필드 (Spring Data Page 응답 구조)
+  final int? totalElements;
+  final int? totalPages;
 
-  factory ItemPage.fromJson(Map<String, dynamic> json) =>
-      _$ItemPageFromJson(json);
+  ItemPage({required this.content, this.page, this.totalElements, this.totalPages});
+
+  factory ItemPage.fromJson(Map<String, dynamic> json) => _$ItemPageFromJson(json);
   Map<String, dynamic> toJson() => _$ItemPageToJson(this);
 }
 

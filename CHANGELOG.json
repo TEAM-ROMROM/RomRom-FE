@@ -1,11 +1,27 @@
 {
   "metadata": {
-    "lastUpdated": "2026-01-22T06:23:24Z",
-    "currentVersion": "1.8.45",
-    "totalReleases": 57,
+    "lastUpdated": "2026-02-02T13:21:45Z",
+    "currentVersion": "1.8.73",
+    "totalReleases": 58,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.8.73",
+      "project_type": "flutter",
+      "date": "2026-02-02",
+      "pr_number": 480,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **Chores**\n  * 너무많은 변경사항 호호호 💩💩",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "너무많은 변경사항 호호호 💩💩"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.8.45",
       "project_type": "flutter",

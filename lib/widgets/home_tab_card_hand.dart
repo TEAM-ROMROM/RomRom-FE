@@ -104,9 +104,13 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
       ..value = _orbitAngle;
 
     // 아이콘 애니메이션 초기화
-    _iconAnimationController = AnimationController(duration: const Duration(milliseconds: 700), vsync: this)..repeat(reverse: true); // 반복 애니메이션 (위아래로 움직임)
+    _iconAnimationController = AnimationController(duration: const Duration(milliseconds: 700), vsync: this)
+      ..repeat(reverse: true); // 반복 애니메이션 (위아래로 움직임)
 
-    _iconAnimation = Tween<double>(begin: 0.0, end: 10.0.h).animate(CurvedAnimation(parent: _iconAnimationController, curve: Curves.easeInOut));
+    _iconAnimation = Tween<double>(
+      begin: 0.0,
+      end: 10.0.h,
+    ).animate(CurvedAnimation(parent: _iconAnimationController, curve: Curves.easeInOut));
   }
 
   void _initializeAnimations() {
@@ -243,7 +247,13 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     final double tilt = totalCards == 1 ? 0 : _deckMaxTilt * proximity;
     final int zIndex = ((_deckDepth * proximity) + (totalCards - relativeIndex.abs())).round();
 
-    return {'left': cardCenterX - (_cardWidth / 2), 'top': adjustedTop, 'angle': tangent + tilt, 'centerX': cardCenterX, 'zIndex': zIndex};
+    return {
+      'left': cardCenterX - (_cardWidth / 2),
+      'top': adjustedTop,
+      'angle': tangent + tilt,
+      'centerX': cardCenterX,
+      'zIndex': zIndex,
+    };
   }
 
   Widget _buildCard(Item cardData, int index, int totalCards) {
@@ -315,7 +325,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                 borderRadius: BorderRadius.circular(4.r),
                 boxShadow: [
                   BoxShadow(
-                    color: isHovered || isPulled ? AppColors.primaryBlack.withValues(alpha: 0.3) : AppColors.opacity20Black,
+                    color: isHovered || isPulled
+                        ? AppColors.primaryBlack.withValues(alpha: 0.3)
+                        : AppColors.opacity20Black,
                     blurRadius: isHovered || isPulled ? 20 : 10,
                     spreadRadius: 0,
                     offset: Offset(0, isHovered || isPulled ? 10 : 5),
@@ -329,7 +341,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                   isSmall: true,
                   itemName: cardData.itemName ?? '아이템',
                   itemCategoryLabel: ItemCategories.fromServerName(cardData.itemCategory!).label,
-                  itemCardImageUrl: cardData.primaryImageUrl != null ? cardData.primaryImageUrl! : 'https://picsum.photos/400/300',
+                  itemCardImageUrl: cardData.primaryImageUrl != null
+                      ? cardData.primaryImageUrl!
+                      : 'https://picsum.photos/400/300',
                 ),
               ),
             ),
@@ -601,7 +615,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                 if (_hasStartedCardDrag)
                   Positioned(
                     top: -MediaQuery.of(context).size.height,
-                    child: Container(height: MediaQuery.of(context).size.height + 50.h, width: MediaQuery.of(context).size.width, color: AppColors.opacity30PrimaryBlack),
+                    child: Container(
+                      height: MediaQuery.of(context).size.height + 50.h,
+                      width: MediaQuery.of(context).size.width,
+                      color: AppColors.opacity30PrimaryBlack,
+                    ),
                   ),
                 // 드롭 영역 표시 (카드 뽑기 중일 때만)
                 if (_pulledCardId != null)
@@ -632,7 +650,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
-                                  BackdropFilter(filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30), child: const SizedBox.expand()),
+                                  BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                                    child: const SizedBox.expand(),
+                                  ),
                                   Container(
                                     decoration: BoxDecoration(
                                       border: Border.all(color: AppColors.cardDropZoneBorder, width: 2.w),
@@ -649,12 +670,19 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                           animation: _iconAnimation,
                           builder: (context, child) {
                             return Padding(
-                              padding: EdgeInsets.only(top: 32.0.h - _iconAnimation.value, bottom: 20.h + _iconAnimation.value),
+                              padding: EdgeInsets.only(
+                                top: 32.0.h - _iconAnimation.value,
+                                bottom: 20.h + _iconAnimation.value,
+                              ),
                               child: const Icon(AppIcons.cardDrag, color: AppColors.primaryYellow),
                             );
                           },
                         ),
-                        Text("위로 드래그하여\n거래방식 선택하기", textAlign: TextAlign.center, style: CustomTextStyles.p2.copyWith(height: 1.4)),
+                        Text(
+                          "위로 드래그하여\n거래방식 선택하기",
+                          textAlign: TextAlign.center,
+                          style: CustomTextStyles.p2.copyWith(height: 1.4),
+                        ),
                       ],
                     ),
                   ),

@@ -11,15 +11,16 @@ class TradeResponse {
   final TradeRequestHistory? tradeRequestHistory;
   final PagedTradeRequestHistory? tradeRequestHistoryPage;
   final PagedItem? itemPage;
+  final bool? tradeRequestHistoryExists; // 거래 요청 이력 존재 여부
 
   TradeResponse({
     this.tradeRequestHistory,
     this.tradeRequestHistoryPage,
     this.itemPage,
+    this.tradeRequestHistoryExists,
   });
 
-  factory TradeResponse.fromJson(Map<String, dynamic> json) =>
-      _$TradeResponseFromJson(json);
+  factory TradeResponse.fromJson(Map<String, dynamic> json) => _$TradeResponseFromJson(json);
   Map<String, dynamic> toJson() => _$TradeResponseToJson(this);
 }
 
@@ -50,8 +51,7 @@ class TradeRequestHistory extends BaseEntity {
     super.updatedDate,
   });
 
-  factory TradeRequestHistory.fromJson(Map<String, dynamic> json) =>
-      _$TradeRequestHistoryFromJson(json);
+  factory TradeRequestHistory.fromJson(Map<String, dynamic> json) => _$TradeRequestHistoryFromJson(json);
   @override
   Map<String, dynamic> toJson() => _$TradeRequestHistoryToJson(this);
 }
@@ -67,8 +67,7 @@ class PagedTradeRequestHistory {
 
   PagedTradeRequestHistory({required this.content, required this.page});
 
-  factory PagedTradeRequestHistory.fromJson(Map<String, dynamic> json) =>
-      _$PagedTradeRequestHistoryFromJson(json);
+  factory PagedTradeRequestHistory.fromJson(Map<String, dynamic> json) => _$PagedTradeRequestHistoryFromJson(json);
   Map<String, dynamic> toJson() => _$PagedTradeRequestHistoryToJson(this);
 }
 
@@ -83,8 +82,7 @@ class PagedItem {
 
   PagedItem({required this.content, required this.page});
 
-  factory PagedItem.fromJson(Map<String, dynamic> json) =>
-      _$PagedItemFromJson(json);
+  factory PagedItem.fromJson(Map<String, dynamic> json) => _$PagedItemFromJson(json);
   Map<String, dynamic> toJson() => _$PagedItemToJson(this);
 }
 
@@ -116,8 +114,7 @@ List<TradeRequestHistory> _tradeHistoryListFromJson(Object? value) {
   return const <TradeRequestHistory>[];
 }
 
-Object _tradeHistoryListToJson(List<TradeRequestHistory> list) =>
-    list.map((e) => e.toJson()).toList();
+Object _tradeHistoryListToJson(List<TradeRequestHistory> list) => list.map((e) => e.toJson()).toList();
 
 List<Item> _itemsFromJson(Object? value) {
   if (value is List) {

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 const String _kDefaultProfileAsset = 'assets/images/basicProfile.svg';
 
@@ -11,16 +12,10 @@ class UserProfileCircularAvatar extends StatefulWidget {
   final String? profileUrl;
   final bool hasBorder;
 
-  const UserProfileCircularAvatar({
-    super.key,
-    required this.avatarSize,
-    this.profileUrl,
-    this.hasBorder = false,
-  });
+  const UserProfileCircularAvatar({super.key, required this.avatarSize, this.profileUrl, this.hasBorder = false});
 
   @override
-  State<UserProfileCircularAvatar> createState() =>
-      _UserProfileCircularAvatarState();
+  State<UserProfileCircularAvatar> createState() => _UserProfileCircularAvatarState();
 }
 
 class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
@@ -89,25 +84,14 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
       child: ClipOval(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _avatarUrl != null &&
-                  _avatarUrl!.isNotEmpty &&
-                  _avatarUrl != _kDefaultProfileAsset
-            ? Image.network(
-                _avatarUrl!,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildDefaultImage();
-                },
-              )
+            : _avatarUrl != null && _avatarUrl!.isNotEmpty && _avatarUrl != _kDefaultProfileAsset
+            ? CachedImage(imageUrl: _avatarUrl!, fit: BoxFit.contain, errorWidget: _buildDefaultImage())
             : _buildDefaultImage(),
       ),
     );
   }
 
   Widget _buildDefaultImage() {
-    return SvgPicture.asset(
-      _kDefaultProfileAsset,
-      fit: BoxFit.cover,
-    );
+    return SvgPicture.asset(_kDefaultProfileAsset, fit: BoxFit.cover);
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -13,11 +14,7 @@ class ItemModificationScreen extends StatefulWidget {
   final VoidCallback? onClose;
   final String? itemId;
 
-  const ItemModificationScreen({
-    super.key,
-    required this.itemId,
-    this.onClose,
-  });
+  const ItemModificationScreen({super.key, required this.itemId, this.onClose});
 
   @override
   State<ItemModificationScreen> createState() => _ItemModificationScreenState();
@@ -47,11 +44,7 @@ class _ItemModificationScreenState extends State<ItemModificationScreen> {
         setState(() {
           _isLoading = false;
         });
-        CommonSnackBar.show(
-          context: context,
-          message: '내 물품 상세 정보 로드 실패: $e',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '내 물품 상세 정보 로드 실패: $e', type: SnackBarType.error);
       }
     }
   }
@@ -77,16 +70,14 @@ class _ItemModificationScreenState extends State<ItemModificationScreen> {
           showBottomBorder: true,
         ),
         body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                color: AppColors.primaryYellow,
-              ))
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
             : SingleChildScrollView(
                 padding: EdgeInsets.only(top: 24.h, bottom: 24.h, left: 24.w),
                 child: RegisterInputForm(
                   isEditMode: true, // true면 수정화면
                   item: _myItem, // 수정 모드에서 사용
-                )),
+                ),
+              ),
       ),
     );
   }

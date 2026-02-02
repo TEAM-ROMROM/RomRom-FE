@@ -1,4 +1,1 @@
-enum TokenKeys {
-  accessToken,
-  refreshToken;
-}
+enum TokenKeys { accessToken, refreshToken }

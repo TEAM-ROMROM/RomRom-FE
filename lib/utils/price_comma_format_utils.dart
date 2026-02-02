@@ -19,20 +19,14 @@ class PriceCommaFormatter extends TextInputFormatter {
   }
 
   @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     // 커서 위치 이전 숫자 개수
-    final selectionIndex =
-        newValue.selection.baseOffset.clamp(0, newValue.text.length);
+    final selectionIndex = newValue.selection.baseOffset.clamp(0, newValue.text.length);
     final left = newValue.text.substring(0, selectionIndex);
-    final digitsBeforeCursor =
-        left.split('').where((c) => _digitsOnly.hasMatch(c)).length;
+    final digitsBeforeCursor = left.split('').where((c) => _digitsOnly.hasMatch(c)).length;
 
     // 숫자만 추출
-    var digits =
-        newValue.text.split('').where((c) => _digitsOnly.hasMatch(c)).join();
+    var digits = newValue.text.split('').where((c) => _digitsOnly.hasMatch(c)).join();
 
     // 앞자리 0 처리
     if (digits.length > 1 && digits.startsWith('0')) {

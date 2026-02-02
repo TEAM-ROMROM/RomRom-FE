@@ -5,6 +5,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photo_viewer/photo_viewer.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/services/location_service.dart';
@@ -69,12 +70,10 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   });
 
   @override
-  State<ItemDetailDescriptionScreen> createState() =>
-      _ItemDetailDescriptionScreenState();
+  State<ItemDetailDescriptionScreen> createState() => _ItemDetailDescriptionScreenState();
 }
 
-class _ItemDetailDescriptionScreenState
-    extends State<ItemDetailDescriptionScreen> {
+class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScreen> {
   late PageController pageController;
   late final ValueNotifier<int> currentIndexVN;
   late final ValueNotifier<bool> isLikedVN;
@@ -135,10 +134,7 @@ class _ItemDetailDescriptionScreenState
 
         // 회원 좌표를 주소로 변환
         if (item?.member?.latitude != null && item?.member?.longitude != null) {
-          _getMemberAddressFromCoordinates(
-            item!.member!.latitude!,
-            item!.member!.longitude!,
-          );
+          _getMemberAddressFromCoordinates(item!.member!.latitude!, item!.member!.longitude!);
         }
 
         isLoading = false;
@@ -158,9 +154,7 @@ class _ItemDetailDescriptionScreenState
   Future<void> _getAddressFromCoordinates(double lat, double lng) async {
     try {
       final locationService = LocationService();
-      final address = await locationService.getAddressFromCoordinates(
-        NLatLng(lat, lng),
-      );
+      final address = await locationService.getAddressFromCoordinates(NLatLng(lat, lng));
 
       if (address != null) {
         setState(() {
@@ -182,9 +176,7 @@ class _ItemDetailDescriptionScreenState
   Future<void> _getMemberAddressFromCoordinates(double lat, double lng) async {
     try {
       final locationService = LocationService();
-      final address = await locationService.getAddressFromCoordinates(
-        NLatLng(lat, lng),
-      );
+      final address = await locationService.getAddressFromCoordinates(NLatLng(lat, lng));
 
       if (address != null) {
         setState(() {
@@ -223,11 +215,7 @@ class _ItemDetailDescriptionScreenState
   /// 물품 상태 토글 (판매중 ↔ 거래완료)
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(
-        context: context,
-        message: '물품 ID가 없습니다',
-        type: SnackBarType.info,
-      );
+      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
       return;
     }
 
@@ -238,18 +226,12 @@ class _ItemDetailDescriptionScreenState
           ? ItemStatus.exchanged.serverName
           : ItemStatus.available.serverName;
 
-      final request = ItemRequest(
-        itemId: item.itemId,
-        itemStatus: targetStatus,
-      );
+      final request = ItemRequest(itemId: item.itemId, itemStatus: targetStatus);
 
       await itemApi.updateItemStatus(request);
 
       if (mounted) {
-        final successMessage =
-            item.itemStatus == ItemStatus.available.serverName
-            ? '거래 완료로 변경되었습니다'
-            : '판매중으로 변경되었습니다';
+        final successMessage = item.itemStatus == ItemStatus.available.serverName ? '거래 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
 
         CommonSnackBar.show(context: context, message: successMessage);
 
@@ -270,11 +252,7 @@ class _ItemDetailDescriptionScreenState
   /// 물품 삭제
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(
-        context: context,
-        message: '물품 ID가 없습니다',
-        type: SnackBarType.info,
-      );
+      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
       return;
     }
 
@@ -310,9 +288,7 @@ class _ItemDetailDescriptionScreenState
     if (isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primaryYellow),
-        ),
+        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
       );
     }
 
@@ -322,10 +298,7 @@ class _ItemDetailDescriptionScreenState
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(
-              AppIcons.navigateBefore,
-              color: AppColors.textColorWhite,
-            ),
+            icon: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -335,23 +308,14 @@ class _ItemDetailDescriptionScreenState
             children: [
               Text(
                 errorMessage,
-                style: CustomTextStyles.p1.copyWith(
-                  color: AppColors.textColorWhite,
-                ),
+                style: CustomTextStyles.p1.copyWith(color: AppColors.textColorWhite),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.h),
               ElevatedButton(
                 onPressed: _loadItemDetail,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryYellow,
-                ),
-                child: Text(
-                  '다시 시도',
-                  style: CustomTextStyles.p2.copyWith(
-                    color: AppColors.primaryBlack,
-                  ),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryYellow),
+                child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
               ),
             ],
           ),
@@ -382,22 +346,17 @@ class _ItemDetailDescriptionScreenState
                       height: widget.imageSize.height,
                       width: widget.imageSize.width,
                       child: PageView.builder(
-                        itemCount: imageUrls.isNotEmpty
-                            ? imageUrls.length
-                            : 1, // ← 최소 1페이지
+                        itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1, // ← 최소 1페이지
                         controller: pageController,
                         onPageChanged: (i) => currentIndexVN.value = i,
                         itemBuilder: (context, i) {
                           final hasImages = imageUrls.isNotEmpty;
                           final safeIndex = hasImages ? i : 0;
-                          final String heroBaseId =
-                              'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
+                          final String heroBaseId = 'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
 
                           return PhotoViewerMultipleImage(
                             // 이미지가 없으면 더미 URL을 넘겨서 로딩 실패 → errorWidget 호출
-                            imageUrls: hasImages
-                                ? imageUrls
-                                : const ['__NO_IMAGE__'],
+                            imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
                             index: safeIndex,
                             id: heroBaseId + safeIndex.toString(),
                             onPageChanged: (idx) {
@@ -405,9 +364,7 @@ class _ItemDetailDescriptionScreenState
                               if (pageController.hasClients) {
                                 final now = pageController.page?.round();
                                 if (now != idx) {
-                                  pageController.jumpToPage(
-                                    idx,
-                                  ); // 닫기 전에 목적지 미리 맞추기
+                                  pageController.jumpToPage(idx); // 닫기 전에 목적지 미리 맞추기
                                 }
                               }
                             },
@@ -417,19 +374,13 @@ class _ItemDetailDescriptionScreenState
                               child: SizedBox(
                                 width: 32,
                                 height: 32,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  color: AppColors.primaryYellow,
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
                               ),
                             ),
 
                             // 이미지 없음/로딩 실패 시
-                            errorWidget: (ctx, url, err) => Center(
-                              child: ErrorImagePlaceholder(
-                                size: widget.imageSize,
-                              ),
-                            ),
+                            errorWidget: (ctx, url, err) =>
+                                Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
                           );
                         },
                       ),
@@ -453,9 +404,7 @@ class _ItemDetailDescriptionScreenState
                                 margin: EdgeInsets.symmetric(horizontal: 4.w),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: current == index
-                                      ? AppColors.primaryYellow
-                                      : AppColors.opacity50White,
+                                  color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
                                 ),
                               ),
                             ),
@@ -465,16 +414,14 @@ class _ItemDetailDescriptionScreenState
                     ),
 
                     IgnorePointer(
-                      ignoring:
-                          item?.itemStatus != ItemStatus.exchanged.serverName,
+                      ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
                       child: SizedBox(
                         height: widget.imageSize.height,
                         width: widget.imageSize.width,
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: AppColors
-                                  .itemDetailBlackGradient, // 검정색 그라데이션
+                              colors: AppColors.itemDetailBlackGradient, // 검정색 그라데이션
                               stops: const [0.0, 0.15, 0.60, 1.0],
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
@@ -509,10 +456,7 @@ class _ItemDetailDescriptionScreenState
                                 decoration: BoxDecoration(
                                   color: AppColors.opacity10White,
                                   borderRadius: BorderRadius.circular(4.r),
-                                  border: Border.all(
-                                    color: AppColors.textColorWhite,
-                                    width: 1.w,
-                                  ),
+                                  border: Border.all(color: AppColors.textColorWhite, width: 1.w),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -544,11 +488,7 @@ class _ItemDetailDescriptionScreenState
                             GestureDetector(
                               onTap: () {
                                 if (item?.member?.memberId != null) {
-                                  context.navigateTo(
-                                    screen: ProfileScreen(
-                                      memberId: item!.member!.memberId!,
-                                    ),
-                                  );
+                                  context.navigateTo(screen: ProfileScreen(memberId: item!.member!.memberId!));
                                 }
                               },
                               child: UserProfileCircularAvatar(
@@ -560,17 +500,11 @@ class _ItemDetailDescriptionScreenState
                             GestureDetector(
                               onTap: () {
                                 if (item?.member?.memberId != null) {
-                                  context.navigateTo(
-                                    screen: ProfileScreen(
-                                      memberId: item!.member!.memberId!,
-                                    ),
-                                  );
+                                  context.navigateTo(screen: ProfileScreen(memberId: item!.member!.memberId!));
                                 }
                               },
                               child: Container(
-                                constraints:
-                                    !widget.isMyItem &&
-                                        widget.isRequestManagement
+                                constraints: !widget.isMyItem && widget.isRequestManagement
                                     ? BoxConstraints(maxWidth: 120.w)
                                     : null, // 최대 너비 설정
                                 child: Column(
@@ -585,9 +519,7 @@ class _ItemDetailDescriptionScreenState
                                     Text(
                                       memberLocationName,
                                       style: CustomTextStyles.p3.copyWith(
-                                        color: AppColors.lightGray.withValues(
-                                          alpha: 0.7,
-                                        ),
+                                        color: AppColors.lightGray.withValues(alpha: 0.7),
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -616,10 +548,7 @@ class _ItemDetailDescriptionScreenState
                                   ValueListenableBuilder<int>(
                                     valueListenable: likeCountVN,
                                     builder: (_, likeCount, __) {
-                                      return Text(
-                                        likeCount.toString(),
-                                        style: CustomTextStyles.p2,
-                                      );
+                                      return Text(likeCount.toString(), style: CustomTextStyles.p2);
                                     },
                                   ),
                                 ],
@@ -640,8 +569,7 @@ class _ItemDetailDescriptionScreenState
                           children: [
                             RichText(
                               text: TextSpan(
-                                text:
-                                    '${_getCategoryName(item?.itemCategory)} · ',
+                                text: '${_getCategoryName(item?.itemCategory)} · ',
                                 style: CustomTextStyles.p3.copyWith(
                                   color: AppColors.opacity50White,
                                   fontWeight: FontWeight.w400,
@@ -658,24 +586,24 @@ class _ItemDetailDescriptionScreenState
                               ),
                             ),
                             SizedBox(height: 10.h),
-                            Text(
-                              item?.itemName ?? '제목 없음',
-                              style: CustomTextStyles.h3,
-                            ),
+                            Text(item?.itemName ?? '제목 없음', style: CustomTextStyles.h3),
                             SizedBox(height: 16.h),
                             Row(
                               children: [
                                 if (item?.itemCondition != null)
                                   ItemDetailConditionTag(
-                                    condition: ItemCondition.fromServerName(
-                                      item!.itemCondition!,
-                                    ).label,
+                                    condition: ItemCondition.fromServerName(item!.itemCondition!).label,
                                   ),
-                                SizedBox(width: 8.w),
+                                SizedBox(width: 4.w),
                                 if (item?.itemTradeOptions?.isNotEmpty == true)
-                                  ...item!.itemTradeOptions!.map(
-                                    (option) => ItemDetailTradeOptionTag(
-                                      option: _getTradeOptionName(option),
+                                  Expanded(
+                                    child: Wrap(
+                                      spacing: 4.w,
+                                      children: [
+                                        ...item!.itemTradeOptions!.map(
+                                          (option) => ItemDetailTradeOptionTag(option: _getTradeOptionName(option)),
+                                        ),
+                                      ],
                                     ),
                                   ),
                               ],
@@ -685,13 +613,10 @@ class _ItemDetailDescriptionScreenState
                               children: [
                                 Text(
                                   '$formattedPrice원',
-                                  style: CustomTextStyles.h3.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 SizedBox(width: 8.w),
-                                if (item?.isAiPredictedPrice == true)
-                                  const AiBadgeWidget(),
+                                if (item?.isAiPredictedPrice == true) const AiBadgeWidget(),
                               ],
                             ),
                             SizedBox(height: 24.h),
@@ -714,26 +639,14 @@ class _ItemDetailDescriptionScreenState
                           children: [
                             Text(
                               '거래희망장소',
-                              style: CustomTextStyles.p2.copyWith(
-                                fontWeight: FontWeight.w600,
-                                height: 1.4,
-                              ),
+                              style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600, height: 1.4),
                             ),
                             SizedBox(height: 8.h),
                             Row(
                               children: [
-                                Icon(
-                                  AppIcons.location,
-                                  size: 13.sp,
-                                  color: AppColors.opacity80White,
-                                ),
+                                Icon(AppIcons.location, size: 13.sp, color: AppColors.opacity80White),
                                 SizedBox(width: 4.w),
-                                Text(
-                                  locationName,
-                                  style: CustomTextStyles.p2.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                                Text(locationName, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600)),
                               ],
                             ),
                             SizedBox(height: 16.h),
@@ -747,25 +660,18 @@ class _ItemDetailDescriptionScreenState
                                   forceGesture: true,
                                   options: NaverMapViewOptions(
                                     initialCameraPosition: NCameraPosition(
-                                      target: NLatLng(
-                                        item?.latitude ?? 37.5666,
-                                        item?.longitude ?? 126.9784,
-                                      ),
+                                      target: NLatLng(item?.latitude ?? 37.5666, item?.longitude ?? 126.9784),
                                       zoom: 15,
                                     ),
                                     scrollGesturesEnable: false,
                                     zoomGesturesEnable: false,
                                   ),
                                   onMapReady: (controller) {
-                                    if (item?.latitude != null &&
-                                        item?.longitude != null) {
+                                    if (item?.latitude != null && item?.longitude != null) {
                                       controller.addOverlay(
                                         NMarker(
                                           id: 'item_location',
-                                          position: NLatLng(
-                                            item!.latitude!,
-                                            item!.longitude!,
-                                          ),
+                                          position: NLatLng(item!.latitude!, item!.longitude!),
                                           icon: const NOverlayImage.fromAssetImage(
                                             "assets/images/location-pin-icon.png",
                                           ),
@@ -776,8 +682,7 @@ class _ItemDetailDescriptionScreenState
                                   },
                                   // 지도 탭 시 거래 희망 장소 상세 페이지로 이동
                                   onMapTapped: (point, latLng) {
-                                    if (item?.latitude != null &&
-                                        item?.longitude != null) {
+                                    if (item?.latitude != null && item?.longitude != null) {
                                       context.navigateTo(
                                         screen: TradeLocationDetailScreen(
                                           latitude: item!.latitude!,
@@ -813,11 +718,7 @@ class _ItemDetailDescriptionScreenState
                 }
               },
 
-              child: Icon(
-                AppIcons.navigateBefore,
-                size: 24.sp,
-                color: AppColors.textColorWhite,
-              ),
+              child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
             ),
           ),
           Positioned(
@@ -828,10 +729,7 @@ class _ItemDetailDescriptionScreenState
                     onReportPressed: () async {
                       final bool? reported = await Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ReportScreen(itemId: widget.itemId),
-                        ),
+                        MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.itemId)),
                       );
 
                       if (reported == true && mounted) {
@@ -850,16 +748,16 @@ class _ItemDetailDescriptionScreenState
                     items: [
                       ContextMenuItem(
                         id: 'changeTradeStatus',
-                        title:
-                            item?.itemStatus == ItemStatus.available.serverName
-                            ? '거래완료로 변경'
-                            : '판매중으로 변경',
+                        icon: AppIcons.change,
+                        title: item?.itemStatus == ItemStatus.available.serverName ? '거래완료로 변경' : '판매중으로 변경',
                         onTap: () async {
                           await _toggleItemStatus(item!);
                         },
+                        showDividerAfter: true,
                       ),
                       ContextMenuItem(
                         id: 'edit',
+                        icon: AppIcons.edit,
                         title: '수정',
                         onTap: () {
                           context.navigateTo(
@@ -871,11 +769,14 @@ class _ItemDetailDescriptionScreenState
                             ),
                           );
                         },
+                        showDividerAfter: true,
                       ),
                       ContextMenuItem(
                         id: 'delete',
+                        icon: AppIcons.trash,
+                        iconColor: AppColors.itemOptionsMenuRedIcon,
                         title: '삭제',
-                        textColor: AppColors.itemOptionsMenuDeleteText,
+                        textColor: AppColors.itemOptionsMenuRedText,
                         onTap: () async {
                           await _deleteItem(item!);
 
@@ -895,8 +796,7 @@ class _ItemDetailDescriptionScreenState
                     width: MediaQuery.of(context).size.width,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: AppColors
-                            .itemDetailBottomBlackGradient, // 검정색 그라데이션
+                        colors: AppColors.itemDetailBottomBlackGradient, // 검정색 그라데이션
                         stops: const [0.0, 1.0],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -959,16 +859,10 @@ class _ItemDetailDescriptionScreenState
     if (_likeInFlight) return;
 
     // 내가 작성한 게시글인지 확인
-    final isCurrentMember = await MemberManager.isCurrentMember(
-      item?.member?.memberId,
-    );
+    final isCurrentMember = await MemberManager.isCurrentMember(item?.member?.memberId);
     if (isCurrentMember) {
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
-          type: SnackBarType.info,
-        );
+        CommonSnackBar.show(context: context, message: '본인 게시글에는 좋아요를 누를 수 없습니다.', type: SnackBarType.error);
       }
       return;
     }
@@ -979,9 +873,7 @@ class _ItemDetailDescriptionScreenState
 
     // 1) 빠른 UI 업데이트
     isLikedVN.value = !prevLiked;
-    likeCountVN.value = prevLiked
-        ? (prevCount > 0 ? prevCount - 1 : 0)
-        : (prevCount + 1);
+    likeCountVN.value = prevLiked ? (prevCount > 0 ? prevCount - 1 : 0) : (prevCount + 1);
 
     try {
       final itemApi = ItemApi();
@@ -1005,11 +897,7 @@ class _ItemDetailDescriptionScreenState
   /// 채팅하기 버튼 핸들러
   Future<void> _handleChatButtonPressed() async {
     if (item == null || widget.tradeRequestHistoryId == null) {
-      CommonSnackBar.show(
-        context: context,
-        message: '채팅방을 생성할 수 없습니다',
-        type: SnackBarType.error,
-      );
+      CommonSnackBar.show(context: context, message: '채팅방을 생성할 수 없습니다', type: SnackBarType.error);
       return;
     }
 
@@ -1024,9 +912,7 @@ class _ItemDetailDescriptionScreenState
       if (!mounted) return;
 
       // 2. 채팅방 화면으로 이동
-      context.navigateTo(
-        screen: ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!),
-      );
+      context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!));
     } catch (e) {
       debugPrint('채팅방 생성 실패: $e');
       if (!mounted) return;
@@ -1043,10 +929,7 @@ class _ItemDetailDescriptionScreenState
     if (item == null) return;
 
     context.navigateTo(
-      screen: TradeRequestScreen(
-        targetItem: item!,
-        targetImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : null,
-      ),
+      screen: TradeRequestScreen(targetItem: item!, targetImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : null),
     );
   }
 }

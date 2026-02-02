@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/location_service.dart';
@@ -18,15 +19,10 @@ class TradeLocationDetailScreen extends StatefulWidget {
   /// 거래 희망 위치 경도
   final double longitude;
 
-  const TradeLocationDetailScreen({
-    super.key,
-    required this.latitude,
-    required this.longitude,
-  });
+  const TradeLocationDetailScreen({super.key, required this.latitude, required this.longitude});
 
   @override
-  State<TradeLocationDetailScreen> createState() =>
-      _TradeLocationDetailScreenState();
+  State<TradeLocationDetailScreen> createState() => _TradeLocationDetailScreenState();
 }
 
 class _TradeLocationDetailScreenState extends State<TradeLocationDetailScreen> {
@@ -37,23 +33,16 @@ class _TradeLocationDetailScreenState extends State<TradeLocationDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: const CommonAppBar(
-        title: '거래 희망 장소',
-      ),
+      appBar: const CommonAppBar(title: '거래 희망 장소'),
       body: Stack(
         children: [
           // 전체 화면 네이버 지도
           Positioned.fill(
             child: NaverMap(
               options: NaverMapViewOptions(
-                initialCameraPosition: NCameraPosition(
-                  target: NLatLng(widget.latitude, widget.longitude),
-                  zoom: 15,
-                ),
+                initialCameraPosition: NCameraPosition(target: NLatLng(widget.latitude, widget.longitude), zoom: 15),
                 logoAlign: NLogoAlign.leftBottom,
-                logoMargin: NEdgeInsets.fromEdgeInsets(
-                  EdgeInsets.only(left: 24.w, bottom: 80.h),
-                ),
+                logoMargin: NEdgeInsets.fromEdgeInsets(EdgeInsets.only(left: 24.w, bottom: 80.h)),
                 indoorEnable: true,
                 locationButtonEnable: false,
               ),
@@ -62,17 +51,14 @@ class _TradeLocationDetailScreenState extends State<TradeLocationDetailScreen> {
                   _mapControllerCompleter.complete(controller);
 
                   // 현재 위치 추적 활성화 (파란색 점 표시)
-                  await controller
-                      .setLocationTrackingMode(NLocationTrackingMode.noFollow);
+                  await controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
 
                   // 거래 희망 위치 마커 추가
                   await controller.addOverlay(
                     NMarker(
                       id: 'trade_location',
                       position: NLatLng(widget.latitude, widget.longitude),
-                      icon: const NOverlayImage.fromAssetImage(
-                        "assets/images/location-pin-icon.png",
-                      ),
+                      icon: const NOverlayImage.fromAssetImage("assets/images/location-pin-icon.png"),
                       size: NSize(33.w, 47.h),
                     ),
                   );
@@ -91,23 +77,16 @@ class _TradeLocationDetailScreenState extends State<TradeLocationDetailScreen> {
                 // 현재 위치 가져오기
                 final position = await _locationService.getCurrentPosition();
                 if (position != null) {
-                  final newPosition =
-                      _locationService.positionToLatLng(position);
+                  final newPosition = _locationService.positionToLatLng(position);
 
                   // 지도를 현재 위치로 이동
                   await controller.updateCamera(
-                    NCameraUpdate.fromCameraPosition(
-                      NCameraPosition(
-                        target: newPosition,
-                        zoom: 15,
-                      ),
-                    ),
+                    NCameraUpdate.fromCameraPosition(NCameraPosition(target: newPosition, zoom: 15)),
                   );
-                }
-                else{
+                } else {
                   // 위치 정보를 가져오지 못한 경우 토스트 메시지 표시
-                  if(context.mounted){
-                    CommonSnackBar.show(context: context, message: '현재 위치를 가져올 수 없습니다.',type: SnackBarType.info);
+                  if (context.mounted) {
+                    CommonSnackBar.show(context: context, message: '현재 위치를 가져올 수 없습니다.', type: SnackBarType.info);
                   }
                 }
               },
@@ -125,10 +104,7 @@ class _TradeLocationDetailScreenState extends State<TradeLocationDetailScreen> {
                 // 거래 희망 위치로 카메라 이동
                 await controller.updateCamera(
                   NCameraUpdate.fromCameraPosition(
-                    NCameraPosition(
-                      target: NLatLng(widget.latitude, widget.longitude),
-                      zoom: 15,
-                    ),
+                    NCameraPosition(target: NLatLng(widget.latitude, widget.longitude), zoom: 15),
                   ),
                 );
               },
@@ -147,10 +123,7 @@ class _TradeLocationButton extends StatelessWidget {
   final VoidCallback? onTap;
   final double iconSize;
 
-  const _TradeLocationButton({
-    this.onTap,
-    this.iconSize = 24.0,
-  });
+  const _TradeLocationButton({this.onTap, this.iconSize = 24.0});
 
   @override
   Widget build(BuildContext context) {
@@ -165,14 +138,12 @@ class _TradeLocationButton extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color:
-                AppColors.currentLocationButtonShadow.withValues(alpha: 0.25),
+            color: AppColors.currentLocationButtonShadow.withValues(alpha: 0.25),
             blurRadius: 2.0,
             offset: const Offset(0, 0),
           ),
           BoxShadow(
-            color:
-                AppColors.currentLocationButtonShadow.withValues(alpha: 0.25),
+            color: AppColors.currentLocationButtonShadow.withValues(alpha: 0.25),
             blurRadius: 2.0,
             offset: const Offset(0, 2),
           ),
@@ -181,10 +152,7 @@ class _TradeLocationButton extends StatelessWidget {
       child: IconButton(
         onPressed: onTap,
         iconSize: iconSize,
-        icon: const Icon(
-          AppIcons.location,
-          color: AppColors.currentLocationButtonIcon,
-        ),
+        icon: const Icon(AppIcons.location, color: AppColors.currentLocationButtonIcon),
       ),
     );
   }

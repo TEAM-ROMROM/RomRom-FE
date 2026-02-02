@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -35,11 +36,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
         children: [
           SizedBox(height: 1.h),
           // 카테고리 칩 표시
-          Expanded(
-            child: SingleChildScrollView(
-              child: _buildCategoryChips(context),
-            ),
-          ),
+          Expanded(child: SingleChildScrollView(child: _buildCategoryChips(context))),
 
           // 완료 버튼 - CategoryCompletionButton 위젯으로 변경
           Padding(
@@ -50,7 +47,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                 enabledOnPressed: () async {
                   try {
                     await memberApi.savePreferredCategories(selectedCategories);
-                    
+
                     // 온보딩 완료 시 코치마크 미표시 상태로 초기화
                     final userInfo = UserInfo();
                     await userInfo.getUserInfo();
@@ -64,20 +61,16 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                       isCoachMarkShown: false, // 명시적으로 false 설정
                     );
                     debugPrint('온보딩 완료: isItemCategorySaved=true, isCoachMarkShown=false로 설정됨');
-                    
+
                     // FCM 토큰 발급 및 저장
                     await FirebaseService().handleFcmToken();
-                    
+
                     widget.onComplete();
                     await RomAuthApi().fetchAndSaveMemberInfo();
                   } catch (e) {
                     debugPrint("Error: $e");
                     if (context.mounted) {
-                      CommonSnackBar.show(
-                        context: context,
-                        message: '카테고리 저장에 실패했습니다: $e',
-                        type: SnackBarType.error,
-                      );
+                      CommonSnackBar.show(context: context, message: '카테고리 저장에 실패했습니다: $e', type: SnackBarType.error);
                     }
                   }
                 },
@@ -94,9 +87,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
     return Wrap(
       spacing: 8.0.w,
       runSpacing: 12.0.h,
-      children: ItemCategories.values
-          .map((category) => _buildCategoryChip(context, category))
-          .toList(),
+      children: ItemCategories.values.map((category) => _buildCategoryChip(context, category)).toList(),
     );
   }
 
@@ -108,8 +99,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
         category.label,
         style: CustomTextStyles.p2.copyWith(
           fontSize: adjustedFontSize(context, 14.0),
-          color:
-              isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
+          color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
           wordSpacing: -0.32.w,
         ),
       ),
@@ -120,8 +110,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
       backgroundColor: AppColors.primaryBlack,
       shape: RoundedRectangleBorder(
         side: BorderSide(
-          color:
-              isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
+          color: isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
           strokeAlign: BorderSide.strokeAlignOutside,
           width: 1.0.w,
         ),
@@ -130,8 +119,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
       checkmarkColor: Colors.transparent,
       showCheckmark: false,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      onSelected: (bool selected) =>
-          _toggleCategorySelection(category.id, selected),
+      onSelected: (bool selected) => _toggleCategorySelection(category.id, selected),
     );
   }
 

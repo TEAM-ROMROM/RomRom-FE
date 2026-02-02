@@ -9,13 +9,13 @@ part 'naver_address_response.g.dart';
 class NaverAddressResponse {
   /// API 호출 상태 정보
   final Status status;
+
   /// 검색 결과 목록
   final List<Result> results;
 
   NaverAddressResponse({required this.status, required this.results});
 
-  factory NaverAddressResponse.fromJson(Map<String, dynamic> json) =>
-      _$NaverAddressResponseFromJson(json);
+  factory NaverAddressResponse.fromJson(Map<String, dynamic> json) => _$NaverAddressResponseFromJson(json);
   Map<String, dynamic> toJson() => _$NaverAddressResponseToJson(this);
 }
 
@@ -24,8 +24,10 @@ class NaverAddressResponse {
 class Status {
   /// 응답 코드 (0: 정상)
   final int code;
+
   /// 응답 상태명 (ok: 정상)
   final String name;
+
   /// 응답 메시지
   final String message;
 
@@ -40,10 +42,13 @@ class Status {
 class Result {
   /// 검색 결과 명칭
   final String name;
+
   /// 코드 정보 (행정동/법정동 코드)
   final Code code;
+
   /// 지역 정보 (행정구역 정보)
   final Region region;
+
   /// 지번/도로명 주소 상세 정보 (검색 결과에 따라 없을 수 있음)
   final Land? land;
 
@@ -58,8 +63,10 @@ class Result {
 class Code {
   /// 코드 ID
   final String id;
+
   /// 코드 타입 (법정동 코드: L, 행정동 코드: A)
   final String type;
+
   /// 매핑 ID
   final String mappingId;
 
@@ -74,22 +81,20 @@ class Code {
 class Region {
   /// 국가 정보
   final Area area0;
+
   /// 시/도 정보
   final Area area1;
+
   /// 시/군/구 정보
   final Area area2;
+
   /// 읍/면/동 정보
   final Area area3;
+
   /// 리 정보
   final Area area4;
 
-  Region({
-    required this.area0,
-    required this.area1,
-    required this.area2,
-    required this.area3,
-    required this.area4,
-  });
+  Region({required this.area0, required this.area1, required this.area2, required this.area3, required this.area4});
 
   factory Region.fromJson(Map<String, dynamic> json) => _$RegionFromJson(json);
   Map<String, dynamic> toJson() => _$RegionToJson(this);
@@ -100,8 +105,10 @@ class Region {
 class Area {
   /// 행정구역 이름
   final String name;
+
   /// 행정구역 좌표 정보
   final Coords coords;
+
   /// 행정구역 별칭 (있는 경우만)
   final String? alias;
 
@@ -115,7 +122,7 @@ class Area {
 /// 좌표 정보
 class Coords {
   /// 중심점 좌표
-  final NaverCenter center; 
+  final NaverCenter center;
 
   Coords({required this.center});
 
@@ -125,11 +132,13 @@ class Coords {
 
 @JsonSerializable()
 /// 중심점 좌표 정보
-class NaverCenter { 
+class NaverCenter {
   /// 좌표계 (EPSG:4326 - WGS84 경위도 좌표계)
   final String crs;
+
   /// 경도 (longitude)
   final double x;
+
   /// 위도 (latitude)
   final double y;
 
@@ -144,22 +153,31 @@ class NaverCenter {
 class Land {
   /// 주소 타입 (1: 지번 주소, 2: 도로명 주소)
   final String? type;
+
   /// 지번 주소일 경우 번지, 도로명 주소일 경우 건물 번호
   final String? number1;
+
   /// 지번 주소일 경우 부번지, 도로명 주소일 경우 건물 번호 뒷자리
   final String? number2;
+
   /// 추가 정보 0 (도로명 주소인 경우 도로명)
   final Addition? addition0;
+
   /// 추가 정보 1 (행정동 정보)
   final Addition? addition1;
+
   /// 추가 정보 2 (공동 주택 정보 등)
   final Addition? addition2;
+
   /// 추가 정보 3
   final Addition? addition3;
+
   /// 추가 정보 4
   final Addition? addition4;
+
   /// 명칭
   final String? name;
+
   /// 좌표 정보
   final Coords? coords;
 
@@ -188,8 +206,9 @@ class Addition {
   /// 'adminDong': 행정동
   /// 'buildingName': 건물명
   /// 'jibunAddress': 지번 주소
-  /// 'roadName': 도로명 
+  /// 'roadName': 도로명
   final String type;
+
   /// 추가 정보 값
   final String value;
 

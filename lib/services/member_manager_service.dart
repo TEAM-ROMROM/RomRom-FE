@@ -142,7 +142,6 @@ class MemberManagerService {
     }
   }
 
-
   /// 로그인 시 회원 정보 저장 (로그인 플로우에서 호출)
   Future<void> saveMemberInfo(Member member) async {
     // UserInfo에 저장
@@ -214,7 +213,7 @@ class MemberManagerService {
 /// TokenManager와 동일한 패턴으로 구현
 class MemberManager {
   static final MemberManagerService _service = MemberManagerService();
-  
+
   /// 현재 회원 정보 가져오기
   static Future<Member?> getCurrentMember({bool forceRefresh = false}) async {
     return await _service.getCurrentMember(forceRefresh: forceRefresh);

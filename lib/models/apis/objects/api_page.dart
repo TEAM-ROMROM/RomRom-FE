@@ -10,14 +10,8 @@ class ApiPage {
   final int totalElements;
   final int totalPages;
 
-  const ApiPage({
-    required this.size,
-    required this.number,
-    required this.totalElements,
-    required this.totalPages,
-  });
+  const ApiPage({required this.size, required this.number, required this.totalElements, required this.totalPages});
 
-  factory ApiPage.fromJson(Map<String, dynamic> json) =>
-      _$ApiPageFromJson(json);
+  factory ApiPage.fromJson(Map<String, dynamic> json) => _$ApiPageFromJson(json);
   Map<String, dynamic> toJson() => _$ApiPageToJson(this);
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/term_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -39,9 +40,8 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
   final MemberApi _memberApi = MemberApi();
 
   // 필수 약관만 체크하는 getter
-  bool get _allRequiredChecked => TermsType.values
-      .where((term) => term.isRequired)
-      .every((term) => _termsChecked[term] == true);
+  bool get _allRequiredChecked =>
+      TermsType.values.where((term) => term.isRequired).every((term) => _termsChecked[term] == true);
 
   // 모든 약관이 체크되었는지 확인하는 getter
   bool get _allTermsChecked => _termsChecked.values.every((checked) => checked);
@@ -81,9 +81,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
       final isMarketingAgreed = _termsChecked[TermsType.marketing] ?? false;
 
       // 약관 동의 정보 전송
-      final isSuccess = await _memberApi.saveTermsAgreement(
-        isMarketingInfoAgreed: isMarketingAgreed,
-      );
+      final isSuccess = await _memberApi.saveTermsAgreement(isMarketingInfoAgreed: isMarketingAgreed);
 
       if (isSuccess) {
         // 사용자 정보 업데이트
@@ -96,21 +94,13 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
       } else {
         // 실패 시
         if (mounted) {
-          CommonSnackBar.show(
-            context: context,
-            message: '약관 동의 저장에 실패했습니다. 다시 시도해주세요.',
-            type: SnackBarType.error,
-          );
+          CommonSnackBar.show(context: context, message: '약관 동의 저장에 실패했습니다. 다시 시도해주세요.', type: SnackBarType.error);
         }
       }
     } catch (e) {
       debugPrint('약관 동의 처리 실패: $e');
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '오류가 발생했습니다. 다시 시도해주세요.',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '오류가 발생했습니다. 다시 시도해주세요.', type: SnackBarType.error);
       }
     } finally {
       if (mounted) {
@@ -124,11 +114,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primaryYellow,
-        ),
-      );
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
     }
 
     return Padding(
@@ -137,7 +123,6 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: 40.h), // 상단 공간
-
           // 약관 전체 동의
           GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -165,34 +150,19 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
                     },
                     activeColor: AppColors.primaryYellow,
                     checkColor: AppColors.primaryBlack,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4.r),
-                    ),
-                    side: BorderSide(
-                      color: AppColors.primaryYellow,
-                      width: 1.w,
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),
+                    side: BorderSide(color: AppColors.primaryYellow, width: 1.w),
                   ),
                 ),
                 SizedBox(width: 12.w),
-                Text(
-                  '약관 전체 동의',
-                  style: CustomTextStyles.h3.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                )
+                Text('약관 전체 동의', style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w500)),
               ],
             ),
           ),
 
           SizedBox(height: 16.h), // 약관 전체 동의와 다음 항목 사이 공간
-
           // 구분선
-          Container(
-            width: 345.w,
-            height: 1.h,
-            color: AppColors.textColorWhite.withValues(alpha: 0.2),
-          ),
+          Container(width: 345.w, height: 1.h, color: AppColors.textColorWhite.withValues(alpha: 0.2)),
 
           SizedBox(height: 24.h),
 
@@ -270,13 +240,8 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
               },
               activeColor: AppColors.primaryYellow,
               checkColor: AppColors.primaryBlack,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4.r),
-              ),
-              side: BorderSide(
-                color: AppColors.primaryYellow,
-                width: 1.w,
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),
+              side: BorderSide(color: AppColors.primaryYellow, width: 1.w),
             ),
           ),
           SizedBox(width: 12.w),
@@ -289,11 +254,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
           ),
           SizedBox(width: 9.w),
           Expanded(
-            child: Text(
-              term.title,
-              style: CustomTextStyles.h3,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(term.title, style: CustomTextStyles.h3, overflow: TextOverflow.ellipsis),
           ),
 
           // 상세 보기 버튼
@@ -307,11 +268,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
                 );
               }
             },
-            child: Icon(
-              AppIcons.detailView,
-              size: 18.h,
-              color: AppColors.textColorWhite,
-            ),
+            child: Icon(AppIcons.detailView, size: 18.h, color: AppColors.textColorWhite),
           ),
         ],
       ),

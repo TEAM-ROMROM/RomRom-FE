@@ -3,12 +3,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 요청 목록 아이템 카드 위젯
@@ -47,13 +49,8 @@ class RequestListItemCardWidget extends StatelessWidget {
             child: Container(
               width: 70.w,
               height: 70.h,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4.r),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4.r),
-                child: _buildImage(imageUrl),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(4.r)),
+              child: ClipRRect(borderRadius: BorderRadius.circular(4.r), child: _buildImage(imageUrl)),
             ),
           ),
           // 정보 영역
@@ -71,27 +68,17 @@ class RequestListItemCardWidget extends StatelessWidget {
                         children: [
                           // 제목 (7자 제한)
                           Text(
-                            title.length > 8
-                                ? '${title.substring(0, 8)}...'
-                                : title,
-                            style: CustomTextStyles.p1.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
+                            title.length > 8 ? '${title.substring(0, 8)}...' : title,
+                            style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
                           ),
                           if (isNew) ...[
                             SizedBox(width: 8.w),
-                            SvgPicture.asset(
-                              'assets/images/redNew.svg',
-                              width: 16.w,
-                              height: 16.h,
-                            ),
+                            SvgPicture.asset('assets/images/redNew.svg', width: 16.w, height: 16.h),
                           ],
                         ],
                       ),
 
-                      SizedBox(
-                        height: 8.h,
-                      ),
+                      SizedBox(height: 8.h),
 
                       Row(
                         children: [
@@ -108,10 +95,7 @@ class RequestListItemCardWidget extends StatelessWidget {
                           Container(
                             width: 2.w,
                             height: 2.h,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.opacity60White,
-                            ),
+                            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.opacity60White),
                           ),
                           SizedBox(width: 4.w),
                           // 시간
@@ -125,9 +109,7 @@ class RequestListItemCardWidget extends StatelessWidget {
                         ],
                       ),
 
-                      SizedBox(
-                        height: 11.h,
-                      ),
+                      SizedBox(height: 11.h),
 
                       // 거래 옵션 태그들 (줄바꿈 방지)
                       Expanded(
@@ -138,8 +120,7 @@ class RequestListItemCardWidget extends StatelessWidget {
                                 .map(
                                   (option) => Padding(
                                     padding: EdgeInsets.only(right: 4.w),
-                                    child: RequestManagementTradeOptionTag(
-                                        option: option),
+                                    child: RequestManagementTradeOptionTag(option: option),
                                   ),
                                 )
                                 .toList(),
@@ -156,12 +137,13 @@ class RequestListItemCardWidget extends StatelessWidget {
                     children: [
                       // 메뉴 아이콘
                       RomRomContextMenu(
-                        menuBackgroundColor: AppColors.secondaryBlack2,
                         items: [
                           ContextMenuItem(
                             id: 'delete',
+                            icon: AppIcons.trash,
+                            iconColor: AppColors.itemOptionsMenuRedIcon,
                             title: '삭제',
-                            textColor: AppColors.itemOptionsMenuDeleteText,
+                            textColor: AppColors.itemOptionsMenuRedText,
                             onTap: onMenuTap,
                           ),
                         ],
@@ -186,26 +168,6 @@ class RequestListItemCardWidget extends StatelessWidget {
       return const ErrorImagePlaceholder();
     }
 
-    return Image.network(
-      imageUrl,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (context, error, stackTrace) {
-        return const ErrorImagePlaceholder();
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: AppColors.opacity20White,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primaryYellow,
-              strokeWidth: 2,
-            ),
-          ),
-        );
-      },
-    );
+    return CachedImage(imageUrl: imageUrl, fit: BoxFit.cover, errorWidget: const ErrorImagePlaceholder());
   }
 }

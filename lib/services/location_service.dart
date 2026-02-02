@@ -47,8 +47,7 @@ class LocationService {
     const String output = "json";
 
     try {
-      final requestUrl =
-          "$naverReverseGeoCodeApiUrl?coords=$coords&orders=$orders&output=$output";
+      final requestUrl = "$naverReverseGeoCodeApiUrl?coords=$coords&orders=$orders&output=$output";
 
       final response = await http.get(
         Uri.parse(requestUrl),
@@ -59,8 +58,7 @@ class LocationService {
       );
 
       if (response.statusCode == 200) {
-        final NaverAddressResponse addressData =
-        NaverAddressResponse.fromJson(json.decode(response.body));
+        final NaverAddressResponse addressData = NaverAddressResponse.fromJson(json.decode(response.body));
 
         if (addressData.results.isNotEmpty) {
           final region = addressData.results[0].region;
