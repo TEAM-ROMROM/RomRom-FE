@@ -12,6 +12,23 @@ class MemberApi {
 
   MemberApi._internal();
 
+  /// 하트비트 API (온라인 상태 갱신)
+  /// `POST /api/members/heartbeat`
+  Future<bool> heartbeat() async {
+    const String url = '${AppUrls.baseUrl}/api/members/heartbeat';
+    bool isSuccess = false;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('하트비트 전송 성공');
+        isSuccess = true;
+      },
+    );
+    return isSuccess;
+  }
+
   /// 이용약관 동의 API
   /// `POST /api/members/terms`
   Future<bool> saveTermsAgreement({required bool isMarketingInfoAgreed}) async {
@@ -187,8 +204,9 @@ class MemberApi {
 
   /// 회원 차단 API
   /// `POST /api/members/block/post`
-  Future<void> blockMember(String blockTargetMemberId) async {
+  Future<bool> blockMember(String blockTargetMemberId) async {
     const String url = '${AppUrls.baseUrl}/api/members/block/post';
+    bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -196,14 +214,17 @@ class MemberApi {
       isAuthRequired: true,
       onSuccess: (_) {
         debugPrint('회원 차단 성공: $blockTargetMemberId');
+        isSuccess = true;
       },
     );
+    return isSuccess;
   }
 
   /// 회원 차단 해제 API
   /// `POST /api/members/block/delete`
-  Future<void> unblockMember(String blockTargetMemberId) async {
+  Future<bool> unblockMember(String blockTargetMemberId) async {
     const String url = '${AppUrls.baseUrl}/api/members/block/delete';
+    bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -211,8 +232,10 @@ class MemberApi {
       isAuthRequired: true,
       onSuccess: (_) {
         debugPrint('회원 차단 해제 성공: $blockTargetMemberId');
+        isSuccess = true;
       },
     );
+    return isSuccess;
   }
 
   /// 알림 수신 동의 업데이트 API

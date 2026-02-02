@@ -25,6 +25,12 @@ class Member extends BaseEntity {
   final int? totalLikeCount;
   final double? searchRadiusInMeters;
 
+  /// 해당 회원이 차단된 상태인지 여부 (타인 프로필 조회 시)
+  final bool? isBlocked;
+
+  /// 위치 주소 문자열 (예: "서울특별시 광진구 화양동")
+  final String? locationAddress;
+
   Member({
     super.createdDate,
     super.updatedDate,
@@ -46,6 +52,8 @@ class Member extends BaseEntity {
     this.longitude,
     this.totalLikeCount,
     this.searchRadiusInMeters,
+    this.isBlocked,
+    this.locationAddress,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);
