@@ -10,4 +10,4 @@ pre-commit:
   commands:
     format-check:
       glob: "*.dart"
-      run: dart format --line-length=120 --set-exit-if-changed {staged_files}
+      run: dart format --line-length=120 --set-exit-if-changed {staged_files} 
