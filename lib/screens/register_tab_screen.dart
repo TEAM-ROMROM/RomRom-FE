@@ -47,6 +47,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   int _currentPage = 0;
   final int _pageSize = 20;
 
+  // 물품 등록 제한
+  static const int _maxAvailableItemCount = 10;
+
   // 토글 상태
   MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.selling;
   late AnimationController _toggleAnimationController;
@@ -495,11 +498,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                         final totalCount =
                             countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
 
-                        if (totalCount >= 10) {
+                        if (totalCount >= _maxAvailableItemCount) {
                           if (mounted) {
                             CommonSnackBar.show(
                               context: context,
-                              message: '물품은 최대 10개까지 등록할 수 있습니다.',
+                              message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
                               type: SnackBarType.error,
                             );
                           }
@@ -507,6 +510,14 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                         }
                       } catch (e) {
                         debugPrint('물품 개수 확인 실패: $e');
+                        if (mounted) {
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
+                            type: SnackBarType.error,
+                          );
+                        }
+                        return;
                       }
 
                       final result = await Navigator.push(
