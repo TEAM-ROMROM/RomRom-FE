@@ -26,7 +26,11 @@ class ItemPage {
   @JsonKey(name: 'page')
   final ApiPage? page;
 
-  ItemPage({required this.content, this.page});
+  // 최상위 레벨 페이지네이션 필드 (Spring Data Page 응답 구조)
+  final int? totalElements;
+  final int? totalPages;
+
+  ItemPage({required this.content, this.page, this.totalElements, this.totalPages});
 
   factory ItemPage.fromJson(Map<String, dynamic> json) => _$ItemPageFromJson(json);
   Map<String, dynamic> toJson() => _$ItemPageToJson(this);

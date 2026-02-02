@@ -631,9 +631,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                   onReportPressed: () async {
                     if (_feedItems.isEmpty) return;
                     final currentItem = _feedItems[_currentFeedIndex];
-                    final bool? reported = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ReportScreen(itemId: currentItem.itemUuid ?? '')),
+                    final bool? reported = await context.navigateTo(
+                      screen: ReportScreen(itemId: currentItem.itemUuid ?? ''),
                     );
                     if (reported == true && mounted) {
                       await CommonModal.success(
