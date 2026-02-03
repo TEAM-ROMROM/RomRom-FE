@@ -421,7 +421,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
     final placeholder = ErrorImagePlaceholder(size: size);
 
-    if (url.isEmpty || !url.startsWith('http')) return placeholder;
+    // if (url.isEmpty || !url.startsWith('http')) return placeholder;
 
     return CachedImage(
       imageUrl: url,

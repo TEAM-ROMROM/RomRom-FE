@@ -31,23 +31,22 @@ Map<String, dynamic> _$ChatRoomResponseToJson(ChatRoomResponse instance) =>
 PagedChatMessage _$PagedChatMessageFromJson(Map<String, dynamic> json) =>
     PagedChatMessage(
       content: _chatMessageListFromJson(json['content']),
-      page: json['page'] == null
-          ? null
-          : ApiPage.fromJson(json['page'] as Map<String, dynamic>),
+      page: _pageableFromJson(json['page'] as Map<String, dynamic>?),
+      last: json['last'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$PagedChatMessageToJson(PagedChatMessage instance) =>
     <String, dynamic>{
       'content': _chatMessageListToJson(instance.content),
       'page': instance.page?.toJson(),
+      'last': instance.last,
     };
 
 PagedChatRoomDetail _$PagedChatRoomDetailFromJson(Map<String, dynamic> json) =>
     PagedChatRoomDetail(
       content: _chatRoomDetailListFromJson(json['content']),
-      page: json['page'] == null
-          ? null
-          : ApiPage.fromJson(json['page'] as Map<String, dynamic>),
+      page: _pageableFromJson(json['page'] as Map<String, dynamic>?),
+      last: json['last'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$PagedChatRoomDetailToJson(
@@ -55,4 +54,5 @@ Map<String, dynamic> _$PagedChatRoomDetailToJson(
 ) => <String, dynamic>{
   'content': _chatRoomDetailListToJson(instance.content),
   'page': instance.page?.toJson(),
+  'last': instance.last,
 };

@@ -43,7 +43,8 @@ class _ChatTabScreenState extends State<ChatTabScreen>
   bool _isLoading = false;
   bool _hasMore = true;
   int _currentPage = 0;
-  final int _pageSize = 20;
+  // Slice 기반 페이지네이션: 한 번에 8개씩 요청
+  final int _pageSize = 8;
 
   // WebSocket 구독 관리
   final Map<String, StreamSubscription<ChatMessage>> _roomSubscriptions = {};
@@ -177,7 +178,7 @@ class _ChatTabScreenState extends State<ChatTabScreen>
       if (isRefresh) {
         _currentPage = 0;
         _chatRoomsDetail.clear();
-        _hasMore = true;
+          _hasMore = true;
       }
     });
 
@@ -201,9 +202,13 @@ class _ChatTabScreenState extends State<ChatTabScreen>
         }
 
         _chatRoomsDetail.addAll(pagedChatRoomsDetail.content);
-        _hasMore =
-            _currentPage < (pagedChatRoomsDetail.page?.totalPages ?? 1) - 1;
-        _currentPage++;
+
+        // Slice: last == true면 더 이상 요청하지 않음
+        _hasMore = !(pagedChatRoomsDetail.last);
+
+        if (_hasMore) {
+          _currentPage++;
+        }
         _isLoading = false;
       });
 

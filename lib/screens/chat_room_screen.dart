@@ -19,11 +19,11 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final String chatRoomId;
@@ -482,7 +482,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
               );
             },
-            child: CachedImage(imageUrl: targetItem?.itemImages?.first.imageUrl ?? '', width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(8.r), errorWidget: const ErrorImagePlaceholder()),
+            child: CachedImage(  imageUrl: targetItem?.primaryImageUrl ?? '', width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(8.r), errorWidget: const SizedBox.shrink()),
           ),
           SizedBox(width: 16.w),
           Expanded(
@@ -524,7 +524,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
               );
             },
-            child: CachedImage(imageUrl: myItem?.itemImages?.first.imageUrl ?? '', width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(8.r), errorWidget: const SizedBox.shrink()),
+            child: CachedImage(  imageUrl: myItem?.primaryImageUrl ?? '', width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(8.r), errorWidget: const SizedBox.shrink()),
           ),
         ],
       ),

@@ -1,6 +1,6 @@
 // lib/services/apis/chat_api.dart
 import 'package:flutter/material.dart';
-import 'package:romrom_fe/models/apis/objects/api_page.dart';
+import 'package:romrom_fe/models/apis/objects/api_pageable.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
@@ -52,7 +52,7 @@ class ChatApi {
   /// POST /api/chat/rooms/get
   Future<PagedChatRoomDetail> getChatRooms({
     int pageNumber = 0,
-    int pageSize = 20,
+    int pageSize = 8,
   }) async {
     const String url = '${AppUrls.baseUrl}/api/chat/rooms/get';
     late PagedChatRoomDetail pagedChatRooms;
@@ -72,7 +72,7 @@ class ChatApi {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
 
-      // 백엔드 응답 구조: { "chatRooms": { "content": [...], "totalPages": 5 } }
+      // 백엔드 응답 구조: { "chatRoomDetailDtoPage": { "content": [...], \"last\": false, ... } }
       final chatRoomsData = responseData['chatRoomDetailDtoPage'];
 
       if (chatRoomsData != null) {
@@ -81,14 +81,15 @@ class ChatApi {
             .map((e) => ChatRoomDetailDto.fromJson(e as Map<String, dynamic>))
             .toList();
 
+        final isLast = chatRoomsData['last'] as bool? ?? true;
+
         pagedChatRooms = PagedChatRoomDetail(
           content: content,
-          page: ApiPage(
-            size: chatRoomsData['size'] ?? pageSize,
-            number: chatRoomsData['number'] ?? pageNumber,
-            totalElements: chatRoomsData['totalElements'] ?? 0,
-            totalPages: chatRoomsData['totalPages'] ?? 1,
+          page: ApiPageable(
+            size: (chatRoomsData['size'] as num?)?.toInt() ?? pageSize,
+            number: (chatRoomsData['number'] as num?)?.toInt() ?? pageNumber,
           ),
+          last: isLast,
         );
 
         debugPrint('채팅방 목록 조회 성공: ${pagedChatRooms.content.length}개');
@@ -96,12 +97,11 @@ class ChatApi {
         // chatRooms 필드가 없는 경우 빈 목록 반환
         pagedChatRooms = PagedChatRoomDetail(
           content: [],
-          page: ApiPage(
+          page: ApiPageable(
             size: pageSize,
             number: pageNumber,
-            totalElements: 0,
-            totalPages: 0,
           ),
+          last: true,
         );
         debugPrint('채팅방 목록이 비어있습니다');
       }

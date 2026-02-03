@@ -20,7 +20,7 @@ class ErrorImagePlaceholder extends StatelessWidget {
       child: const Icon(
         AppIcons.warning,
         color: AppColors.textColorWhite,
-        size: 64,
+        // size: 64,
       ),
     );
 

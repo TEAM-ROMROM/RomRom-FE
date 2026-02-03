@@ -14,6 +14,7 @@ class ChatRoomDetailDto {
   final DateTime? lastMessageTime;
   final int? unreadCount;
   final ChatRoomType? chatRoomType;
+  final bool? blocked;
 
   ChatRoomDetailDto({
     this.chatRoomId,
@@ -22,7 +23,8 @@ class ChatRoomDetailDto {
     this.lastMessageContent,
     this.lastMessageTime,
     this.unreadCount,
-    this.chatRoomType
+    this.chatRoomType,
+    this.blocked,
   });
 
   factory ChatRoomDetailDto.fromJson(Map<String, dynamic> json) =>

@@ -22,6 +22,7 @@ ChatRoomDetailDto _$ChatRoomDetailDtoFromJson(Map<String, dynamic> json) =>
         _$ChatRoomTypeEnumMap,
         json['chatRoomType'],
       ),
+      blocked: json['blocked'] as bool?,
     );
 
 Map<String, dynamic> _$ChatRoomDetailDtoToJson(
@@ -34,6 +35,7 @@ Map<String, dynamic> _$ChatRoomDetailDtoToJson(
   'lastMessageTime': ChatRoomDetailDto._toIsoString(instance.lastMessageTime),
   'unreadCount': instance.unreadCount,
   'chatRoomType': _$ChatRoomTypeEnumMap[instance.chatRoomType],
+  'blocked': instance.blocked,
 };
 
 const _$ChatRoomTypeEnumMap = {
