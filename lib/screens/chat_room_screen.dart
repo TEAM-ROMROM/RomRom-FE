@@ -393,7 +393,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       try {
                         await MemberApi().blockMember(chatRoom.getOpponent(_myMemberId!)!.memberId!);
                         if (context.mounted) {
-                          Navigator.of(context).pop(); // 모달 닫기
+                          Navigator.of(context).pop(true); // 모달 닫기
                         }
                         // 화면 닫을 때도 동일한 _leaveRoom 로직
                         if (context.mounted) {
@@ -405,7 +405,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           CommonSnackBar.show(
                             context: context,
                             type: SnackBarType.error,
-                            message: '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
+                            message: '회원 차단 실패: ${ErrorUtils.getErrorMessage(e)}',
                           );
                         }
                       }
@@ -433,7 +433,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       try {
                         await ChatApi().deleteChatRoom(chatRoomId: chatRoom.chatRoomId!);
                         if (context.mounted) {
-                          Navigator.of(context).pop(); // 모달 닫기
+                          Navigator.of(context).pop(true); // 모달 닫기
                         }
                         // 화면 닫을 때도 동일한 _leaveRoom 로직
                         if (context.mounted) {

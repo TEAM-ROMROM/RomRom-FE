@@ -88,7 +88,7 @@ class ChatApi {
         // chatRooms 필드가 없는 경우 빈 목록 반환
         pagedChatRooms = PagedChatRoomDetail(
           content: [],
-          page: ApiPage(size: pageSize, number: pageNumber, totalElements: 0, totalPages: 0),
+          page: ApiPageable(size: pageSize, number: pageNumber),
         );
         debugPrint('채팅방 목록이 비어있습니다');
       }
