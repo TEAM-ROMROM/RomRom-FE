@@ -571,7 +571,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         : chatRoom.tradeRequestHistory?.giveItem;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      padding: EdgeInsets.only(top: 8.h, bottom: 16.h, left: 16.w, right: 16.w),
       decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(bottom: BorderSide(color: AppColors.opacity10White, width: 1)),
