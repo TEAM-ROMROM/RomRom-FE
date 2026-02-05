@@ -77,9 +77,7 @@ class CachedImage extends StatelessWidget {
       width: width,
       height: height,
       color: AppColors.secondaryBlack1,
-      child: Center(
-        child: Icon(AppIcons.itmeRegisterImage, size: 20.sp, color: AppColors.opacity40White),
-      ),
+      child: const Center(child: Icon(AppIcons.itmeRegisterImage, color: AppColors.opacity40White)),
     );
   }
 }

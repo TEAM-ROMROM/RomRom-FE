@@ -1,6 +1,6 @@
 // lib/models/apis/responses/chat_response.dart
 import 'package:json_annotation/json_annotation.dart';
-import 'package:romrom_fe/models/apis/objects/api_page.dart';
+import 'package:romrom_fe/models/apis/objects/api_pageable.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
@@ -26,10 +26,14 @@ class PagedChatMessage {
   @JsonKey(fromJson: _chatMessageListFromJson, toJson: _chatMessageListToJson)
   final List<ChatMessage> content;
 
-  @JsonKey(name: 'page')
-  final ApiPage? page;
+  @JsonKey(name: 'pageable')
+  final ApiPageable? pageable;
 
-  PagedChatMessage({required this.content, this.page});
+  /// 백엔드 Slice 응답의 마지막 페이지 여부
+  @JsonKey(includeFromJson: true)
+  final bool last;
+
+  PagedChatMessage({required this.content, this.pageable, this.last = true});
 
   factory PagedChatMessage.fromJson(Map<String, dynamic> json) => _$PagedChatMessageFromJson(json);
   Map<String, dynamic> toJson() => _$PagedChatMessageToJson(this);
@@ -41,10 +45,14 @@ class PagedChatRoomDetail {
   @JsonKey(fromJson: _chatRoomDetailListFromJson, toJson: _chatRoomDetailListToJson)
   final List<ChatRoomDetailDto> content;
 
-  @JsonKey(name: 'page')
-  final ApiPage? page;
+  @JsonKey(name: 'pageable')
+  final ApiPageable? pageable;
 
-  PagedChatRoomDetail({required this.content, this.page});
+  /// 백엔드 Slice 응답의 마지막 페이지 여부
+  @JsonKey(includeFromJson: true)
+  final bool last;
+
+  PagedChatRoomDetail({required this.content, this.pageable, this.last = true});
 
   factory PagedChatRoomDetail.fromJson(Map<String, dynamic> json) => _$PagedChatRoomDetailFromJson(json);
   Map<String, dynamic> toJson() => _$PagedChatRoomDetailToJson(this);
