@@ -202,10 +202,12 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
       if (isRefresh) {
         final previous = Map<String, StreamSubscription<ChatMessage>>.from(_roomSubscriptions);
         _roomSubscriptions.clear();
-        for (final e in previous.entries) {
-          e.value.cancel();
-          _wsService.unsubscribeFromChatRoom(e.key);
-        }
+        await Future.wait(
+          previous.entries.map((e) async {
+            await e.value.cancel();
+            _wsService.unsubscribeFromChatRoom(e.key);
+          }),
+        );
       }
 
       // initial/refresh면 스크롤 가능해질 때까지 프리패치
