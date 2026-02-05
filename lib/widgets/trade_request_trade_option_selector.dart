@@ -66,10 +66,16 @@ class _TradeOptionChip extends StatelessWidget {
         width: 80.w,
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: isSelected ? AppColors.primaryYellow : AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(100.r)),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryYellow : AppColors.secondaryBlack1,
+          borderRadius: BorderRadius.circular(100.r),
+        ),
         child: Text(
           option.label,
-          style: CustomTextStyles.p2.copyWith(color: isSelected ? AppColors.primaryBlack : AppColors.textColorWhite, letterSpacing: -0.32.sp),
+          style: CustomTextStyles.p2.copyWith(
+            color: isSelected ? AppColors.primaryBlack : AppColors.textColorWhite,
+            letterSpacing: -0.32.sp,
+          ),
         ),
       ),
     );

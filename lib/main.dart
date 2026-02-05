@@ -36,8 +36,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initialize(); // 초기화 실행
 
-  
-
   // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
@@ -46,7 +44,7 @@ void main() async {
   await initNotificationPlugin();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true,  // 배너/알림창 보이기
+    alert: true, // 배너/알림창 보이기
     badge: true,
     sound: true,
   );
@@ -61,10 +59,7 @@ void main() async {
 
   // 시스템 오버레이 색상 설정
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      systemNavigationBarColor: AppColors.primaryBlack,
-      statusBarColor: Colors.transparent,
-    ),
+    const SystemUiOverlayStyle(systemNavigationBarColor: AppColors.primaryBlack, statusBarColor: Colors.transparent),
   );
 
   // 안드로이드에서 제스처 모드인지 확인
@@ -136,11 +131,7 @@ class MyApp extends StatelessWidget {
   final Widget initialScreen;
   final bool isGestureMode;
 
-  const MyApp({
-    super.key,
-    required this.initialScreen,
-    required this.isGestureMode,
-  });
+  const MyApp({super.key, required this.initialScreen, required this.isGestureMode});
 
   @override
   Widget build(BuildContext context) {
@@ -152,16 +143,10 @@ class MyApp extends StatelessWidget {
         builder: (context) {
           return SafeArea(
             top: false,
-            bottom: Platform.isAndroid ,
+            bottom: Platform.isAndroid,
             child: MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: const TextScaler.linear(1.0)),
-              child: MaterialApp(
-                title: 'RomRom',
-                theme: AppTheme.defaultTheme,
-                home: initialScreen,
-              ),
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+              child: MaterialApp(title: 'RomRom', theme: AppTheme.defaultTheme, home: initialScreen),
             ),
           );
         },

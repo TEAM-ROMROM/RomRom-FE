@@ -17,20 +17,11 @@ extension NavigationExtension on BuildContext {
     bool Function(Route<dynamic>)? predicate, // pushAndRemoveUntil 용
   }) {
     // iOS에서는 CupertinoPageRoute, 안드로이드에서는 MaterialPageRoute 사용
-    PageRoute<T> createRoute(
-      Widget screen,
-      RouteSettings? settings,
-    ) {
+    PageRoute<T> createRoute(Widget screen, RouteSettings? settings) {
       if (Platform.isIOS) {
-        return CupertinoPageRoute<T>(
-          builder: (context) => screen,
-          settings: settings,
-        );
+        return CupertinoPageRoute<T>(builder: (context) => screen, settings: settings);
       } else {
-        return MaterialPageRoute<T>(
-          builder: (context) => screen,
-          settings: settings,
-        );
+        return MaterialPageRoute<T>(builder: (context) => screen, settings: settings);
       }
     }
 
@@ -40,17 +31,10 @@ extension NavigationExtension on BuildContext {
 
       case NavigationTypes.pushReplacement:
         // 이전 라우트로 결과를 줄 일이 없으면 <T, T?> 정도로 맞추면 됨
-        return Navigator.pushReplacement<T, T?>(
-          this,
-          createRoute(screen, routeSettings),
-        );
+        return Navigator.pushReplacement<T, T?>(this, createRoute(screen, routeSettings));
 
       case NavigationTypes.pushAndRemoveUntil:
-        return Navigator.pushAndRemoveUntil<T>(
-          this,
-          createRoute(screen, routeSettings),
-          predicate ?? (route) => false,
-        );
+        return Navigator.pushAndRemoveUntil<T>(this, createRoute(screen, routeSettings), predicate ?? (route) => false);
     }
   }
 }
@@ -135,11 +119,7 @@ bool isSameMinute(DateTime? a, DateTime? b) {
   if (a == null || b == null) return false;
   final la = a.isUtc ? a.toLocal() : a;
   final lb = b.isUtc ? b.toLocal() : b;
-  return la.year == lb.year &&
-      la.month == lb.month &&
-      la.day == lb.day &&
-      la.hour == lb.hour &&
-      la.minute == lb.minute;
+  return la.year == lb.year && la.month == lb.month && la.day == lb.day && la.hour == lb.hour && la.minute == lb.minute;
 }
 
 String formatMessageTime(DateTime? dt) {

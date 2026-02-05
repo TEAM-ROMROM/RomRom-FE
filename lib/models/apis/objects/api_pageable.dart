@@ -13,13 +13,9 @@ class ApiPageable {
   /// 0-based 페이지(슬라이스) 인덱스
   final int number;
 
-  const ApiPageable({
-    required this.size,
-    required this.number,
-  });
+  const ApiPageable({required this.size, required this.number});
 
-  factory ApiPageable.fromJson(Map<String, dynamic> json) =>
-      _$ApiPageableFromJson(json);
+  factory ApiPageable.fromJson(Map<String, dynamic> json) => _$ApiPageableFromJson(json);
 
   Map<String, dynamic> toJson() => _$ApiPageableToJson(this);
 }

@@ -1,3 +1,15 @@
 {
-    "cmake.sourceDirectory": "/Users/cassiiopeia/Desktop/Programming/Java/RomRom-FE/linux"
+    "cmake.sourceDirectory": "/Users/cassiiopeia/Desktop/Programming/Java/RomRom-FE/linux",
+    "dart.flutterSdkPath": ".fvm/flutter_sdk",
+    "editor.formatOnSave": true,
+    "dart.lineLength": 120,
+    "[dart]": {
+        "editor.defaultFormatter": "Dart-Code.dart-code"
+    },
+    "search.exclude": {
+        "**/.fvm": true
+    },
+    "files.watcherExclude": {
+        "**/.fvm": true
+    }
 }

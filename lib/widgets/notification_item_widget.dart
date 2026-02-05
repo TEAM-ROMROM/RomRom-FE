@@ -36,13 +36,7 @@ class NotificationItemWidget extends StatelessWidget {
   final VoidCallback? onDeleteTap;
   final VoidCallback? onTap;
 
-  const NotificationItemWidget({
-    super.key,
-    required this.data,
-    this.onMuteTap,
-    this.onDeleteTap,
-    this.onTap,
-  });
+  const NotificationItemWidget({super.key, required this.data, this.onMuteTap, this.onDeleteTap, this.onTap});
 
   /// 시간 포맷팅
   String _formatTime(DateTime time) {
@@ -135,16 +129,9 @@ class NotificationItemWidget extends StatelessWidget {
     return Container(
       width: 20.w,
       height: 20.w,
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(4.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(4.r)),
       child: Center(
-        child: SvgPicture.asset(
-          data.category.svgAssetPath,
-          width: 16.w,
-          height: 16.w,
-        ),
+        child: SvgPicture.asset(data.category.svgAssetPath, width: 16.w, height: 16.w),
       ),
     );
   }
@@ -161,10 +148,7 @@ class NotificationItemWidget extends StatelessWidget {
             // 시간
             Text(
               _formatTime(data.time),
-              style: CustomTextStyles.p3.copyWith(
-                fontWeight: FontWeight.w400,
-                color: AppColors.opacity40White,
-              ),
+              style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity40White),
             ),
             SizedBox(width: 8.w),
 
@@ -173,11 +157,7 @@ class NotificationItemWidget extends StatelessWidget {
               width: 24.w,
               height: 24.h,
               child: RomRomContextMenu(
-                customTrigger: Icon(
-                  AppIcons.dotsVerticalSmall,
-                  size: 20.sp,
-                  color: AppColors.opacity60White,
-                ),
+                customTrigger: Icon(AppIcons.dotsVerticalSmall, size: 20.sp, color: AppColors.opacity60White),
                 items: [
                   ContextMenuItem(
                     id: 'mute',
@@ -205,21 +185,13 @@ class NotificationItemWidget extends StatelessWidget {
         ),
 
         // 썸네일 이미지 (있는 경우) - 메뉴 아래 4px
-        if (data.imageUrl != null) ...[
-          SizedBox(height: 4.h),
-          _buildThumbnail(),
-        ],
+        if (data.imageUrl != null) ...[SizedBox(height: 4.h), _buildThumbnail()],
       ],
     );
   }
 
   /// 썸네일 이미지
   Widget _buildThumbnail() {
-    return CachedImage(
-      imageUrl: data.imageUrl!,
-      width: 48.w,
-      height: 48.w,
-      borderRadius: BorderRadius.circular(4.r),
-    );
+    return CachedImage(imageUrl: data.imageUrl!, width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(4.r));
   }
 }

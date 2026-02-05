@@ -7,12 +7,8 @@ part of 'member.dart';
 // **************************************************************************
 
 Member _$MemberFromJson(Map<String, dynamic> json) => Member(
-  createdDate: json['createdDate'] == null
-      ? null
-      : DateTime.parse(json['createdDate'] as String),
-  updatedDate: json['updatedDate'] == null
-      ? null
-      : DateTime.parse(json['updatedDate'] as String),
+  createdDate: json['createdDate'] == null ? null : DateTime.parse(json['createdDate'] as String),
+  updatedDate: json['updatedDate'] == null ? null : DateTime.parse(json['updatedDate'] as String),
   memberId: json['memberId'] as String?,
   email: json['email'] as String?,
   nickname: json['nickname'] as String?,
@@ -31,6 +27,8 @@ Member _$MemberFromJson(Map<String, dynamic> json) => Member(
   longitude: (json['longitude'] as num?)?.toDouble(),
   totalLikeCount: (json['totalLikeCount'] as num?)?.toInt(),
   searchRadiusInMeters: (json['searchRadiusInMeters'] as num?)?.toDouble(),
+  isBlocked: json['isBlocked'] as bool?,
+  locationAddress: json['locationAddress'] as String?,
 );
 
 Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
@@ -54,4 +52,6 @@ Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
   'longitude': instance.longitude,
   'totalLikeCount': instance.totalLikeCount,
   'searchRadiusInMeters': instance.searchRadiusInMeters,
+  'isBlocked': instance.isBlocked,
+  'locationAddress': instance.locationAddress,
 };

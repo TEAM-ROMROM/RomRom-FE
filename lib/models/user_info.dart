@@ -37,8 +37,7 @@ class UserInfo {
   static const Object _unset = Object();
 
   /// 값이 있으면 저장, null이면 키 제거 (String)
-  static Future<void> _setOrRemove(
-      SharedPreferences prefs, String key, String? value) async {
+  static Future<void> _setOrRemove(SharedPreferences prefs, String key, String? value) async {
     if (value != null && value.isNotEmpty) {
       await prefs.setString(key, value);
     } else {
@@ -47,8 +46,7 @@ class UserInfo {
   }
 
   /// 값이 있으면 저장, null이면 키 제거 (double)
-  static Future<void> _setOrRemoveDouble(
-      SharedPreferences prefs, String key, double? value) async {
+  static Future<void> _setOrRemoveDouble(SharedPreferences prefs, String key, double? value) async {
     if (value != null) {
       await prefs.setDouble(key, value);
     } else {
@@ -132,13 +130,8 @@ class UserInfo {
   }
 
   /// 기본 사용자 정보 저장 (소셜 로그인용)
-  Future<void> saveUserInfo(
-      String? name, String? email, String? profileImageUrl) async {
-    await saveMemberInfo(
-      nickname: name,
-      email: email,
-      profileUrl: profileImageUrl,
-    );
+  Future<void> saveUserInfo(String? name, String? email, String? profileImageUrl) async {
+    await saveMemberInfo(nickname: name, email: email, profileUrl: profileImageUrl);
   }
 
   /// 온보딩 및 약관 동의 상태 저장
@@ -233,9 +226,7 @@ class UserInfo {
 
   /// 온보딩이 필요한지 확인
   bool get needsOnboarding {
-    return isRequiredTermsAgreed != true ||
-        isMemberLocationSaved != true ||
-        isItemCategorySaved != true;
+    return isRequiredTermsAgreed != true || isMemberLocationSaved != true || isItemCategorySaved != true;
   }
 
   /// 다음 온보딩 단계 결정

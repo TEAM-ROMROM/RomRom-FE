@@ -16,8 +16,7 @@ class ChatRoomResponse {
 
   ChatRoomResponse({this.chatRoom, this.messages, this.chatRoomDetailDtoPage});
 
-  factory ChatRoomResponse.fromJson(Map<String, dynamic> json) =>
-      _$ChatRoomResponseFromJson(json);
+  factory ChatRoomResponse.fromJson(Map<String, dynamic> json) => _$ChatRoomResponseFromJson(json);
   Map<String, dynamic> toJson() => _$ChatRoomResponseToJson(this);
 }
 
@@ -36,18 +35,14 @@ class PagedChatMessage {
 
   PagedChatMessage({required this.content, this.page, this.last = true});
 
-  factory PagedChatMessage.fromJson(Map<String, dynamic> json) =>
-      _$PagedChatMessageFromJson(json);
+  factory PagedChatMessage.fromJson(Map<String, dynamic> json) => _$PagedChatMessageFromJson(json);
   Map<String, dynamic> toJson() => _$PagedChatMessageToJson(this);
 }
 
 /// Paged<ChatRoomDetailDto>
 @JsonSerializable(explicitToJson: true)
 class PagedChatRoomDetail {
-  @JsonKey(
-    fromJson: _chatRoomDetailListFromJson,
-    toJson: _chatRoomDetailListToJson,
-  )
+  @JsonKey(fromJson: _chatRoomDetailListFromJson, toJson: _chatRoomDetailListToJson)
   final List<ChatRoomDetailDto> content;
 
   @JsonKey(fromJson: _pageableFromJson)
@@ -59,8 +54,7 @@ class PagedChatRoomDetail {
 
   PagedChatRoomDetail({required this.content, this.page, this.last = true});
 
-  factory PagedChatRoomDetail.fromJson(Map<String, dynamic> json) =>
-      _$PagedChatRoomDetailFromJson(json);
+  factory PagedChatRoomDetail.fromJson(Map<String, dynamic> json) => _$PagedChatRoomDetailFromJson(json);
   Map<String, dynamic> toJson() => _$PagedChatRoomDetailToJson(this);
 }
 
@@ -96,13 +90,9 @@ ApiPageable? _pageableFromJson(Map<String, dynamic>? json) {
   final pageable = json['pageable'] as Map<String, dynamic>?;
   final content = json['content'] as List?;
 
-  final size = (json['size'] as num?)?.toInt() ??
-      (pageable?['pageSize'] as num?)?.toInt() ??
-      (content?.length ?? 0);
+  final size = (json['size'] as num?)?.toInt() ?? (pageable?['pageSize'] as num?)?.toInt() ?? (content?.length ?? 0);
 
-  final number = (json['number'] as num?)?.toInt() ??
-      (pageable?['pageNumber'] as num?)?.toInt() ??
-      0;
+  final number = (json['number'] as num?)?.toInt() ?? (pageable?['pageNumber'] as num?)?.toInt() ?? 0;
 
   return ApiPageable(size: size, number: number);
 }

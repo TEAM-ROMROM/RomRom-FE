@@ -210,7 +210,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     // 1) 로컬에 즉시 추가(낙관적 업데이트) 및 pending에 등록
     final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
-    final localMsg = ChatMessage(chatRoomId: widget.chatRoomId, chatMessageId: localId, senderId: _myMemberId, content: content, createdDate: DateTime.now());
+    final localMsg = ChatMessage(
+      chatRoomId: widget.chatRoomId,
+      chatMessageId: localId,
+      senderId: _myMemberId,
+      content: content,
+      createdDate: DateTime.now(),
+    );
     setState(() {
       _messages.insert(0, localMsg);
       _pendingLocalMessages[localId] = localMsg;
@@ -329,7 +335,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(chatRoom.getOpponentNickname(_myMemberId!), style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              chatRoom.getOpponentNickname(_myMemberId!),
+              style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
+            ),
             Padding(
               padding: EdgeInsets.only(top: 8.h),
               child: Row(
@@ -341,7 +350,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.chatInactiveStatus),
                   ),
                   SizedBox(width: 8.w),
-                  Text(getLastActivityTime(chatRoom), style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White)),
+                  Text(
+                    getLastActivityTime(chatRoom),
+                    style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
+                  ),
                 ],
               ),
             ),
@@ -379,9 +391,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     },
                     onConfirm: () async {
                       try {
-                        await MemberApi().blockMember(
-                          chatRoom.getOpponent(_myMemberId!)!.memberId!,
-                        );
+                        await MemberApi().blockMember(chatRoom.getOpponent(_myMemberId!)!.memberId!);
                         if (context.mounted) {
                           Navigator.of(context).pop(); // 모달 닫기
                         }
@@ -395,8 +405,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           CommonSnackBar.show(
                             context: context,
                             type: SnackBarType.error,
-                            message:
-                                '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
+                            message: '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
                           );
                         }
                       }
@@ -433,7 +442,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       } catch (e) {
                         if (context.mounted) {
                           Navigator.of(context).pop(); // 모달 닫기
-                          CommonSnackBar.show(context: context, message: '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}');
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}',
+                          );
                         }
                       }
                     },
@@ -450,8 +462,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // 거래 정보 카드 빌더
   Widget _buildTradeInfoCard() {
     // 내 아이템과 상대방 아이템 구분
-    final targetItem = chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId ? chatRoom.tradeRequestHistory?.giveItem : chatRoom.tradeRequestHistory?.takeItem;
-    final myItem = chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId ? chatRoom.tradeRequestHistory?.takeItem : chatRoom.tradeRequestHistory?.giveItem;
+    final targetItem = chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId
+        ? chatRoom.tradeRequestHistory?.giveItem
+        : chatRoom.tradeRequestHistory?.takeItem;
+    final myItem = chatRoom.tradeRequestHistory?.takeItem.member?.memberId == _myMemberId
+        ? chatRoom.tradeRequestHistory?.takeItem
+        : chatRoom.tradeRequestHistory?.giveItem;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -482,7 +498,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
               );
             },
-            child: CachedImage(  imageUrl: targetItem?.primaryImageUrl ?? '', width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(8.r), errorWidget: const SizedBox.shrink()),
+            child: CachedImage(
+              imageUrl: targetItem?.primaryImageUrl ?? '',
+              width: 48.w,
+              height: 48.w,
+              borderRadius: BorderRadius.circular(8.r),
+              errorWidget: const SizedBox.shrink(),
+            ),
           ),
           SizedBox(width: 16.w),
           Expanded(
@@ -524,7 +546,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
               );
             },
-            child: CachedImage(  imageUrl: myItem?.primaryImageUrl ?? '', width: 48.w, height: 48.w, borderRadius: BorderRadius.circular(8.r), errorWidget: const SizedBox.shrink()),
+            child: CachedImage(
+              imageUrl: myItem?.itemImages?.first.imageUrl ?? '',
+              width: 48.w,
+              height: 48.w,
+              borderRadius: BorderRadius.circular(8.r),
+              errorWidget: const SizedBox.shrink(),
+            ),
           ),
         ],
       ),
@@ -548,7 +576,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         final isMine = message.senderId == _myMemberId;
 
         // 메시지 간격: 같은 사람이 연속으로 보낸 메시지면 8, 아니면 24
-        final double topGap = (index < _messages.length - 1 && _messages[index].senderId == _messages[index + 1].senderId) ? 8.h : 24.h;
+        final double topGap =
+            (index < _messages.length - 1 && _messages[index].senderId == _messages[index + 1].senderId) ? 8.h : 24.h;
 
         // 같은 사람 연속 메시지일 때는 같은 '분'에 속한 메시지들 중
         // 가장 마지막(=가장 최신) 메시지에만 시간 표시
@@ -572,24 +601,39 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   constraints: BoxConstraints(maxWidth: 264.w),
-                  decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryBlack1,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
                   child: Text(
                     message.content ?? '',
-                    style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w400, height: 1.2),
+                    style: CustomTextStyles.p2.copyWith(
+                      color: AppColors.textColorWhite,
+                      fontWeight: FontWeight.w400,
+                      height: 1.2,
+                    ),
                   ),
                 ),
                 if (showTime) ...[
                   SizedBox(width: 8.w),
                   Text(
                     formatMessageTime(message.createdDate),
-                    style: CustomTextStyles.p3.copyWith(fontSize: 12.sp, color: AppColors.opacity50White, fontWeight: FontWeight.w400),
+                    style: CustomTextStyles.p3.copyWith(
+                      fontSize: 12.sp,
+                      color: AppColors.opacity50White,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ],
               ] else ...[
                 if (showTime) ...[
                   Text(
                     formatMessageTime(message.createdDate),
-                    style: CustomTextStyles.p3.copyWith(fontSize: 12.sp, color: AppColors.opacity50White, fontWeight: FontWeight.w400),
+                    style: CustomTextStyles.p3.copyWith(
+                      fontSize: 12.sp,
+                      color: AppColors.opacity50White,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                   SizedBox(width: 8.w),
                 ],
@@ -599,7 +643,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   decoration: BoxDecoration(color: AppColors.primaryYellow, borderRadius: BorderRadius.circular(10.r)),
                   child: Text(
                     message.content ?? '',
-                    style: CustomTextStyles.p2.copyWith(color: AppColors.textColorBlack, fontWeight: FontWeight.w400, height: 1.2),
+                    style: CustomTextStyles.p2.copyWith(
+                      color: AppColors.textColorBlack,
+                      fontWeight: FontWeight.w400,
+                      height: 1.2,
+                    ),
                   ),
                 ),
               ],
@@ -652,7 +700,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               height: 40.h <= _inputFieldHeight && _inputFieldHeight <= 70.h ? _inputFieldHeight : 40.h,
               child: TextField(
                 controller: _messageController,
-                style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w400, height: 1.2),
+                style: CustomTextStyles.p2.copyWith(
+                  color: AppColors.textColorWhite,
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                ),
                 minLines: 1,
                 maxLines: 5,
                 cursorHeight: 16.h,
@@ -678,14 +730,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         margin: EdgeInsets.all(4.w),
                         width: 40.w,
                         height: 40.w,
-                        decoration: BoxDecoration(color: !_hasText ? AppColors.secondaryBlack2 : AppColors.primaryYellow, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                          color: !_hasText ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
+                          shape: BoxShape.circle,
+                        ),
                         child: Center(
-                          child: Icon(AppIcons.arrowUpward, color: !_hasText ? AppColors.secondaryBlack1 : AppColors.primaryBlack, size: 32.w),
+                          child: Icon(
+                            AppIcons.arrowUpward,
+                            color: !_hasText ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
+                            size: 32.w,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  suffixIconConstraints: BoxConstraints(minWidth: 40.w, minHeight: 40.w, maxWidth: 40.w, maxHeight: 40.w),
+                  suffixIconConstraints: BoxConstraints(
+                    minWidth: 40.w,
+                    minHeight: 40.w,
+                    maxWidth: 40.w,
+                    maxHeight: 40.w,
+                  ),
                 ),
                 onSubmitted: (_) => _sendMessage(),
               ),

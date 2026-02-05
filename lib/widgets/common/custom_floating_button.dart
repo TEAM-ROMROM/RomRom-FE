@@ -37,8 +37,7 @@ class CustomFloatingButton extends StatelessWidget {
     // 버튼 배경 색 결정
     final Color backgroundColor = isEnabled
         ? enabledBackgroundColor ?? AppColors.primaryYellow
-        : disabledBackgroundColor ??
-            AppColors.primaryYellow.withValues(alpha: 0.3);
+        : disabledBackgroundColor ?? AppColors.primaryYellow.withValues(alpha: 0.3);
 
     // 버튼 문구 색 결정
     final Color textColor = isEnabled
@@ -46,23 +45,18 @@ class CustomFloatingButton extends StatelessWidget {
         : disabledTextColor ?? AppColors.textColorBlack.withValues(alpha: 0.7);
 
     // 버튼 문구  결정
-    final TextStyle buttonTextStyle = CustomTextStyles.p1.copyWith(
-      color: textColor,
-    );
+    final TextStyle buttonTextStyle = CustomTextStyles.p1.copyWith(color: textColor);
 
     return Center(
       child: SizedBox(
         width: buttonWidth.w,
         height: buttonHeight.h,
         child: TextButton(
-          onPressed: isEnabled
-              ? enabledOnPressed
-              : disabledOnPressed, // 활성화와 비활성화 일 때 onPressed 별로 처리
+          onPressed: isEnabled ? enabledOnPressed : disabledOnPressed, // 활성화와 비활성화 일 때 onPressed 별로 처리
           style: TextButton.styleFrom(
             backgroundColor: backgroundColor,
             minimumSize: Size(buttonWidth.w, 0),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.r)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
           ), // 최소 너비 설정, 높이 자동
           child: Text(
             buttonText,

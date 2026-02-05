@@ -24,6 +24,12 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    # 코드 품질 강화 규칙
+    require_trailing_commas: true        # trailing comma 강제 - 포맷팅 일관성
+    prefer_const_constructors: true      # const 생성자 권장 - 성능 최적화
+    prefer_const_declarations: true      # const 선언 권장 - 메모리 효율성
+    sized_box_for_whitespace: true       # 공백에 SizedBox 사용 - 불필요한 Container 방지
+    avoid_unnecessary_containers: true   # 불필요한 Container 금지 - 위젯 트리 최적화
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 # Additional information about this file can be found at

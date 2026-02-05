@@ -34,10 +34,7 @@ class CachedImage extends StatelessWidget {
     if (imageUrl.trim().isEmpty) {
       final fallback = errorWidget ?? _buildDefaultError();
       if (borderRadius != null) {
-        return ClipRRect(
-          borderRadius: borderRadius!,
-          child: fallback,
-        );
+        return ClipRRect(borderRadius: borderRadius!, child: fallback);
       }
       return fallback;
     }
@@ -47,17 +44,12 @@ class CachedImage extends StatelessWidget {
       width: width,
       height: height,
       fit: fit,
-      placeholder: (context, url) =>
-          placeholder ?? _buildDefaultPlaceholder(),
-      errorWidget: (context, url, error) =>
-          errorWidget ?? _buildDefaultError(),
+      placeholder: (context, url) => placeholder ?? _buildDefaultPlaceholder(),
+      errorWidget: (context, url, error) => errorWidget ?? _buildDefaultError(),
     );
 
     if (borderRadius != null) {
-      return ClipRRect(
-        borderRadius: borderRadius!,
-        child: image,
-      );
+      return ClipRRect(borderRadius: borderRadius!, child: image);
     }
 
     return image;
@@ -73,10 +65,7 @@ class CachedImage extends StatelessWidget {
         child: SizedBox(
           width: 20.w,
           height: 20.w,
-          child: const CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AppColors.opacity40White,
-          ),
+          child: const CircularProgressIndicator(strokeWidth: 2, color: AppColors.opacity40White),
         ),
       ),
     );
@@ -88,13 +77,7 @@ class CachedImage extends StatelessWidget {
       width: width,
       height: height,
       color: AppColors.secondaryBlack1,
-      child: const Center(
-        child: Icon(
-          AppIcons.itmeRegisterImage,
-          // size: 20.sp,
-          color: AppColors.opacity40White,
-        ),
-      ),
+      child: const Center(child: Icon(AppIcons.itmeRegisterImage, color: AppColors.opacity40White)),
     );
   }
 }

@@ -17,11 +17,7 @@ class ErrorImagePlaceholder extends StatelessWidget {
       height: size?.height,
       color: AppColors.imagePlaceholderBackground,
       alignment: Alignment.center,
-      child: const Icon(
-        AppIcons.warning,
-        color: AppColors.textColorWhite,
-        // size: 64,
-      ),
+      child: const Icon(AppIcons.warning, color: AppColors.textColorWhite, size: 64),
     );
 
     if (borderRadius != null) {
@@ -30,4 +26,4 @@ class ErrorImagePlaceholder extends StatelessWidget {
 
     return content;
   }
-} 
+}

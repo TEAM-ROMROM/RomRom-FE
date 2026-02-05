@@ -1,6 +1,6 @@
 # Flutter 프로젝트 Line Ending 설정
 # 기본적으로 모든 텍스트 파일은 자동으로 처리
-* text=auto
+* text=auto eol=lf
 
 # 명시적으로 텍스트 파일로 지정
 *.dart text

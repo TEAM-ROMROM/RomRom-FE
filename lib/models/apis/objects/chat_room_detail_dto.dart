@@ -27,8 +27,7 @@ class ChatRoomDetailDto {
     this.blocked,
   });
 
-  factory ChatRoomDetailDto.fromJson(Map<String, dynamic> json) =>
-      _$ChatRoomDetailDtoFromJson(json);
+  factory ChatRoomDetailDto.fromJson(Map<String, dynamic> json) => _$ChatRoomDetailDtoFromJson(json);
 
   Map<String, dynamic> toJson() => _$ChatRoomDetailDtoToJson(this);
 

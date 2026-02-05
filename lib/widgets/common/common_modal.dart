@@ -113,9 +113,7 @@ class CommonModal extends StatelessWidget {
     final bool isTwoButton = cancelText != null && onCancel != null;
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.r),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       elevation: 0,
       backgroundColor: AppColors.secondaryBlack1,
       insetPadding: EdgeInsets.symmetric(horizontal: 40.w),
@@ -125,13 +123,7 @@ class CommonModal extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.secondaryBlack1,
           borderRadius: BorderRadius.circular(8.r),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.opacity15Black,
-              blurRadius: 10,
-              offset: Offset(2, 2),
-            ),
-          ],
+          boxShadow: const [BoxShadow(color: AppColors.opacity15Black, blurRadius: 10, offset: Offset(2, 2))],
         ),
         child: Padding(
           padding: EdgeInsets.all(24.0.w),
@@ -142,16 +134,9 @@ class CommonModal extends StatelessWidget {
                 child: Container(
                   width: 40.w,
                   height: 40.h,
-                  decoration: BoxDecoration(
-                    color: iconBackgroundColor,
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: iconBackgroundColor, shape: BoxShape.circle),
                   alignment: Alignment.center,
-                  child: Icon(
-                    icon,
-                    size: 40.sp,
-                    color: iconColor,
-                  ),
+                  child: Icon(icon, size: 40.sp, color: iconColor),
                 ),
               ),
               SizedBox(height: 16.h),
@@ -183,17 +168,12 @@ class CommonModal extends StatelessWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: confirmButtonColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.r),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
         ),
         onPressed: onConfirm,
         child: Text(
           confirmText,
-          style: CustomTextStyles.p1.copyWith(
-            color: confirmTextColor,
-            fontWeight: FontWeight.w700,
-          ),
+          style: CustomTextStyles.p1.copyWith(color: confirmTextColor, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -212,17 +192,11 @@ class CommonModal extends StatelessWidget {
             onPressed: onCancel,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.opacity30PrimaryBlack,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.r),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
               elevation: 0,
               padding: EdgeInsets.zero,
             ),
-            child: Text(
-              cancelText!,
-              style: CustomTextStyles.p1,
-              textAlign: TextAlign.center,
-            ),
+            child: Text(cancelText!, style: CustomTextStyles.p1, textAlign: TextAlign.center),
           ),
         ),
         SizedBox(width: 8.w),
@@ -234,17 +208,11 @@ class CommonModal extends StatelessWidget {
             onPressed: onConfirm,
             style: ElevatedButton.styleFrom(
               backgroundColor: confirmButtonColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.r),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
               elevation: 0,
               padding: EdgeInsets.zero,
             ),
-            child: Text(
-              confirmText,
-              style: CustomTextStyles.p1,
-              textAlign: TextAlign.center,
-            ),
+            child: Text(confirmText, style: CustomTextStyles.p1, textAlign: TextAlign.center),
           ),
         ),
       ],

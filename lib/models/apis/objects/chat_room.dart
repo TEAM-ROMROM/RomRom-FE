@@ -23,8 +23,7 @@ class ChatRoom extends BaseEntity {
     this.tradeRequestHistory,
   });
 
-  factory ChatRoom.fromJson(Map<String, dynamic> json) =>
-      _$ChatRoomFromJson(json);
+  factory ChatRoom.fromJson(Map<String, dynamic> json) => _$ChatRoomFromJson(json);
   @override
   Map<String, dynamic> toJson() => _$ChatRoomToJson(this);
 

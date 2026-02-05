@@ -8,12 +8,7 @@ class CategoryChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const CategoryChip({
-    super.key,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const CategoryChip({super.key, required this.label, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +17,7 @@ class CategoryChip extends StatelessWidget {
         label,
         style: CustomTextStyles.p2.copyWith(
           fontSize: 14.0.w,
-          color:
-              isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
+          color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
           wordSpacing: -0.32.w,
         ),
       ),
@@ -32,9 +26,7 @@ class CategoryChip extends StatelessWidget {
       selected: isSelected,
       selectedColor: AppColors.primaryYellow,
       backgroundColor: AppColors.primaryBlack,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadiusDirectional.circular(100.r),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadiusDirectional.circular(100.r)),
       side: BorderSide(
         color: isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
         strokeAlign: BorderSide.strokeAlignOutside,

@@ -17,19 +17,13 @@ class RangeSliderWidget extends StatefulWidget {
   /// 범위 옵션 목록
   final List<RangeOption> options;
 
-  const RangeSliderWidget({
-    super.key,
-    required this.selectedIndex,
-    required this.onChanged,
-    required this.options,
-  });
+  const RangeSliderWidget({super.key, required this.selectedIndex, required this.onChanged, required this.options});
 
   @override
   State<RangeSliderWidget> createState() => _RangeSliderWidgetState();
 }
 
-class _RangeSliderWidgetState extends State<RangeSliderWidget>
-    with SingleTickerProviderStateMixin {
+class _RangeSliderWidgetState extends State<RangeSliderWidget> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
   late int _currentIndex;
@@ -47,17 +41,11 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
     super.initState();
     _currentIndex = widget.selectedIndex;
     _lastHapticIndex = _currentIndex;
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
+    _animationController = AnimationController(duration: const Duration(milliseconds: 200), vsync: this);
     _animation = Tween<double>(
       begin: _currentIndex.toDouble(),
       end: _currentIndex.toDouble(),
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -78,10 +66,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
     _animation = Tween<double>(
       begin: _animation.value,
       end: index.toDouble(),
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
     _animationController.forward(from: 0);
     _currentIndex = index;
     _lastHapticIndex = index;
@@ -98,8 +83,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
     final segmentWidth = trackWidth / (widget.options.length - 1);
     final dragDelta = details.localPosition.dx - _dragStartX;
     final valueDelta = dragDelta / segmentWidth;
-    final newValue =
-        (_dragStartValue + valueDelta).clamp(0.0, (widget.options.length - 1).toDouble());
+    final newValue = (_dragStartValue + valueDelta).clamp(0.0, (widget.options.length - 1).toDouble());
 
     setState(() {
       _animation = AlwaysStoppedAnimation(newValue);
@@ -135,8 +119,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final trackWidth =
-            constraints.maxWidth - (_trackHorizontalPadding.w * 2);
+        final trackWidth = constraints.maxWidth - (_trackHorizontalPadding.w * 2);
         final segmentWidth = trackWidth / (widget.options.length - 1);
 
         return SizedBox(
@@ -145,10 +128,8 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
             animation: _animation,
             builder: (context, child) {
               final currentValue = _animation.value;
-              final nearestIndex =
-                  currentValue.round().clamp(0, widget.options.length - 1);
-              final dotX =
-                  _trackHorizontalPadding.w + (currentValue * segmentWidth);
+              final nearestIndex = currentValue.round().clamp(0, widget.options.length - 1);
+              final dotX = _trackHorizontalPadding.w + (currentValue * segmentWidth);
 
               return Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -178,15 +159,10 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
           translation: const Offset(-0.5, 0),
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100.r),
-              color: AppColors.opacity10White,
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(100.r), color: AppColors.opacity10White),
             child: Text(
               widget.options[nearestIndex].label,
-              style: CustomTextStyles.p2.copyWith(
-                color: AppColors.opacity60White,
-              ),
+              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
             ),
           ),
         ),
@@ -232,10 +208,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget>
         offset: Offset(dotX, 0),
         child: FractionalTranslation(
           translation: const Offset(-0.5, 0),
-          child: Text(
-            widget.options[nearestIndex].description,
-            style: CustomTextStyles.p3,
-          ),
+          child: Text(widget.options[nearestIndex].description, style: CustomTextStyles.p3),
         ),
       ),
     );
@@ -280,18 +253,10 @@ class _RangeSliderPainter extends CustomPainter {
     final knobX = (currentValue.clamp(0.0, (optionCount - 1).toDouble())) * segmentWidth;
 
     // 1) 전체 비활성 트랙 그리기
-    canvas.drawLine(
-      Offset(0, centerY),
-      Offset(size.width, centerY),
-      inactiveTrackPaint,
-    );
+    canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), inactiveTrackPaint);
 
     // 2) 활성 트랙: 0에서 knob 위치까지
-    canvas.drawLine(
-      Offset(0, centerY),
-      Offset(knobX, centerY),
-      activeTrackPaint,
-    );
+    canvas.drawLine(Offset(0, centerY), Offset(knobX, centerY), activeTrackPaint);
 
     // 3) 분기점 점들 그리기 (활성 여부는 knobX 기준)
     for (int i = 0; i < optionCount; i++) {
@@ -305,18 +270,10 @@ class _RangeSliderPainter extends CustomPainter {
     final shadowPaint = Paint()
       ..color = AppColors.textColorBlack.withValues(alpha: 0.25)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
-    canvas.drawCircle(
-      Offset(knobX + 1, centerY + 1),
-      largeDotSize / 2,
-      shadowPaint,
-    );
+    canvas.drawCircle(Offset(knobX + 1, centerY + 1), largeDotSize / 2, shadowPaint);
 
     final largeDotPaint = Paint()..color = primaryColor;
-    canvas.drawCircle(
-      Offset(knobX, centerY),
-      largeDotSize / 2,
-      largeDotPaint,
-    );
+    canvas.drawCircle(Offset(knobX, centerY), largeDotSize / 2, largeDotPaint);
   }
 
   @override
@@ -339,33 +296,13 @@ class RangeOption {
   /// 실제 거리 값 (km)
   final double distanceKm;
 
-  const RangeOption({
-    required this.label,
-    required this.description,
-    required this.distanceKm,
-  });
+  const RangeOption({required this.label, required this.description, required this.distanceKm});
 }
 
 /// 기본 탐색 범위 옵션
 const List<RangeOption> defaultSearchRangeOptions = [
-  RangeOption(
-    label: '2.5km 이내',
-    description: '가까운 동네',
-    distanceKm: 2.5,
-  ),
-  RangeOption(
-    label: '5km 이내',
-    description: '조금 가까운 동네',
-    distanceKm: 5.0,
-  ),
-  RangeOption(
-    label: '7.5km 이내',
-    description: '조금 먼 동네',
-    distanceKm: 7.5,
-  ),
-  RangeOption(
-    label: '10km 이내',
-    description: '먼 동네',
-    distanceKm: 10.0,
-  ),
+  RangeOption(label: '2.5km 이내', description: '가까운 동네', distanceKm: 2.5),
+  RangeOption(label: '5km 이내', description: '조금 가까운 동네', distanceKm: 5.0),
+  RangeOption(label: '7.5km 이내', description: '조금 먼 동네', distanceKm: 7.5),
+  RangeOption(label: '10km 이내', description: '먼 동네', distanceKm: 10.0),
 ];

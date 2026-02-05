@@ -4,9 +4,14 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 Future<void> initNotificationPlugin() async {
-  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@drawable/ic_push_notification');
+  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings(
+    '@drawable/ic_push_notification',
+  );
 
-  const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid, iOS: DarwinInitializationSettings(requestProvidesAppNotificationSettings: true));
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: DarwinInitializationSettings(requestProvidesAppNotificationSettings: true),
+  );
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }

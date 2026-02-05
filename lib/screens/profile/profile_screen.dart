@@ -9,6 +9,7 @@ import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -17,10 +18,7 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 class ProfileScreen extends StatefulWidget {
   final String memberId;
 
-  const ProfileScreen({
-    super.key,
-    required this.memberId,
-  });
+  const ProfileScreen({super.key, required this.memberId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -30,6 +28,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   bool _isMyProfile = false;
+  bool _isBlockedUser = false;
+  bool _blockStatusChanged = false;
 
   String _nickname = '';
   String _profileUrl = '';
@@ -67,11 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
           _hasError = true;
         });
-        CommonSnackBar.show(
-          context: context,
-          message: '프로필을 불러오는데 실패했습니다',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '프로필을 불러오는데 실패했습니다', type: SnackBarType.error);
       }
     }
   }
@@ -91,8 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final siGunGu = location.siGunGu ?? '';
           final eupMyoenDong = location.eupMyoenDong ?? '';
           final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
-          _location =
-              combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
+          _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
         }
       });
     }
@@ -108,23 +103,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _nickname = memberResponse.member?.nickname ?? '닉네임';
         _profileUrl = memberResponse.member?.profileUrl ?? '';
         _totalLikeCount = memberResponse.member?.totalLikeCount ?? 0;
+        _isBlockedUser = memberResponse.member?.isBlocked ?? false;
 
-        final location = memberResponse.memberLocation;
-        if (location != null) {
-          final siGunGu = location.siGunGu ?? '';
-          final eupMyoenDong = location.eupMyoenDong ?? '';
-          final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
-          _location =
-              combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
-        }
+        // 백엔드에서 locationAddress 필드로 직접 반환
+        _location = memberResponse.member?.locationAddress ?? '위치정보 없음';
       });
     }
   }
 
   Future<void> _navigateToEditScreen() async {
-    final result = await context.navigateTo(
-      screen: const MyProfileEditScreen(),
-    );
+    final result = await context.navigateTo(screen: const MyProfileEditScreen());
 
     // 수정 후 돌아왔을 때 정보 새로고침
     if (result == true && mounted) {
@@ -135,83 +123,113 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  /// 차단/차단해제 토글 처리
+  Future<void> _handleBlockToggle() async {
+    final memberApi = MemberApi();
+    bool success;
+
+    if (_isBlockedUser) {
+      success = await memberApi.unblockMember(widget.memberId);
+      if (success && mounted) {
+        CommonSnackBar.show(context: context, message: '차단이 해제되었습니다', type: SnackBarType.success);
+      }
+    } else {
+      success = await memberApi.blockMember(widget.memberId);
+      if (success && mounted) {
+        CommonSnackBar.show(context: context, message: '사용자를 차단했습니다', type: SnackBarType.success);
+      }
+    }
+
+    if (success && mounted) {
+      setState(() => _isBlockedUser = !_isBlockedUser);
+      _blockStatusChanged = true;
+    }
+  }
+
+  /// 뒤로가기 처리 - 차단 상태 변경 시 결과 반환
+  void _handleBackPressed() {
+    if (_blockStatusChanged) {
+      Navigator.pop(context, {'memberId': widget.memberId, 'isBlocked': _isBlockedUser});
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  /// 신고하기 처리
+  void _handleReport() {
+    // TODO: 신고 기능 구현 (API 확인 필요)
+    CommonSnackBar.show(context: context, message: '신고 기능은 준비 중입니다', type: SnackBarType.info);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primaryYellow),
-        ),
+        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
       );
     }
 
     if (_hasError) {
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        appBar: const CommonAppBar(
-          title: '프로필',
-          showBottomBorder: true,
-        ),
+        appBar: CommonAppBar(title: '프로필', showBottomBorder: true, onBackPressed: () => _handleBackPressed()),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 48.sp,
-                color: AppColors.opacity60White,
-              ),
+              Icon(Icons.error_outline, size: 48.sp, color: AppColors.opacity60White),
               SizedBox(height: 16.h),
-              Text(
-                '프로필을 불러올 수 없습니다',
-                style: CustomTextStyles.p1.copyWith(
-                  color: AppColors.opacity60White,
-                ),
-              ),
+              Text('프로필을 불러올 수 없습니다', style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White)),
             ],
           ),
         ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
-      appBar: const CommonAppBar(
-        title: '프로필',
-        showBottomBorder: true,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
-          child: Column(
-            children: [
-              SizedBox(height: 56.h),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBackPressed();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        appBar: CommonAppBar(
+          title: '프로필',
+          showBottomBorder: true,
+          actions: _isMyProfile ? null : [_buildProfileMenu()],
+          onBackPressed: () => _handleBackPressed(),
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: Column(
+              children: [
+                SizedBox(height: 56.h),
 
-              // 프로필 이미지
-              _buildProfileImageSection(),
+                // 프로필 이미지
+                _buildProfileImageSection(),
 
-              SizedBox(height: 24.h),
+                SizedBox(height: 24.h),
 
-              // 닉네임
-              _buildNicknameSection(),
+                // 닉네임
+                _buildNicknameSection(),
 
-              SizedBox(height: 50.h),
+                SizedBox(height: 50.h),
 
-              // 위치 섹션
-              _buildInfoSection(label: '위치', value: _location),
+                // 위치 섹션
+                _buildInfoSection(label: '위치', value: _location),
 
-              SizedBox(height: 16.h),
+                SizedBox(height: 16.h),
 
-              // 받은 좋아요 수 섹션
-              _buildLikesSection(),
+                // 받은 좋아요 수 섹션
+                _buildLikesSection(),
 
-              // 내 프로필인 경우 수정 버튼
-              if (_isMyProfile) ...[
-                SizedBox(height: 40.h),
-                _buildEditButton(),
+                // 내 프로필인 경우 수정 버튼
+                if (_isMyProfile) ...[SizedBox(height: 40.h), _buildEditButton()],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -229,11 +247,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// 닉네임 섹션
   Widget _buildNicknameSection() {
-    return Text(
-      _nickname,
-      style: CustomTextStyles.h2,
-      textAlign: TextAlign.center,
-    );
+    return Text(_nickname, style: CustomTextStyles.h2, textAlign: TextAlign.center);
   }
 
   /// 정보 섹션 (위치)
@@ -241,24 +255,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       width: double.infinity,
       height: 54.h,
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400),
-          ),
+          Text(label, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
           Text(
             value,
-            style: CustomTextStyles.p2.copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppColors.opacity60White,
-            ),
+            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w500, color: AppColors.opacity60White),
           ),
         ],
       ),
@@ -270,32 +275,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       width: double.infinity,
       height: 54.h,
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '받은 좋아요 수',
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400),
-          ),
+          Text('받은 좋아요 수', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
           Row(
             children: [
-              Icon(
-                AppIcons.profilelikecount,
-                size: 16.sp,
-                color: AppColors.opacity60White,
-              ),
+              Icon(AppIcons.profilelikecount, size: 16.sp, color: AppColors.opacity60White),
               SizedBox(width: 4.w),
               Text(
                 '$_totalLikeCount',
-                style: CustomTextStyles.p2.copyWith(
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.opacity60White,
-                ),
+                style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
                 textAlign: TextAlign.right,
               ),
             ],
@@ -312,18 +304,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         width: double.infinity,
         height: 48.h,
-        decoration: BoxDecoration(
-          color: AppColors.primaryYellow,
-          borderRadius: BorderRadius.circular(10.r),
-        ),
+        decoration: BoxDecoration(color: AppColors.primaryYellow, borderRadius: BorderRadius.circular(10.r)),
         alignment: Alignment.center,
         child: Text(
           '프로필 수정',
-          style: CustomTextStyles.p1.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.primaryBlack,
-          ),
+          style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
         ),
+      ),
+    );
+  }
+
+  /// 프로필 메뉴 (타인 프로필인 경우 - 신고/차단)
+  Widget _buildProfileMenu() {
+    return Padding(
+      padding: EdgeInsets.only(right: 16.w, bottom: 8.h),
+      child: RomRomContextMenu(
+        items: [
+          ContextMenuItem(
+            id: 'report',
+            title: '신고하기',
+            icon: AppIcons.report,
+            iconColor: AppColors.opacity60White,
+            onTap: _handleReport,
+            showDividerAfter: true,
+          ),
+          ContextMenuItem(
+            id: 'block',
+            title: _isBlockedUser ? '차단 해제하기' : '차단하기',
+            icon: AppIcons.slashCircle,
+            iconColor: _isBlockedUser ? AppColors.opacity60White : AppColors.warningRed,
+            textColor: _isBlockedUser ? AppColors.textColorWhite : AppColors.warningRed,
+            onTap: _handleBlockToggle,
+          ),
+        ],
       ),
     );
   }

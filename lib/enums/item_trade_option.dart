@@ -11,8 +11,7 @@ enum ItemTradeOption {
   static ItemTradeOption fromServerName(String name) {
     return ItemTradeOption.values.firstWhere(
       (e) => e.serverName == name,
-      orElse: () =>
-          throw ArgumentError('No ItemTradeOption with serverName $name'),
+      orElse: () => throw ArgumentError('No ItemTradeOption with serverName $name'),
     );
   }
 }

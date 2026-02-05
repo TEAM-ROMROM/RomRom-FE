@@ -109,6 +109,7 @@ class FirebaseService {
   }
 
   static bool _tokenRefreshListenerSet = false;
+
   /// FCM 토큰 발급 및 백엔드 저장
   /// 온보딩 완료 시 호출
   Future<void> handleFcmToken() async {
@@ -129,13 +130,14 @@ class FirebaseService {
       debugPrint('[FCM] FCM 토큰 발급/저장 중 오류: $e');
     }
   }
+
   /// FCM 토큰 갱신 감지 및 자동 저장
   void setupTokenRefreshListener(NotificationApi notificationApi) {
     if (_tokenRefreshListenerSet) return;
-    
+
     _tokenRefreshListenerSet = true;
     debugPrint('[FCM] 토큰 셋업 : 토큰 갱신 리스너 설정 시작');
-    
+
     onTokenRefresh(
       onTokenRefreshed: (String newToken) async {
         try {
