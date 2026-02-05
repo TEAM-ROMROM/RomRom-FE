@@ -1,21 +1,50 @@
-// lib/models/apis/objects/api_pageable.dart
-
 import 'package:json_annotation/json_annotation.dart';
 
 part 'api_pageable.g.dart';
 
-/// Slice/Pageable 메타데이터용 공용 모델
-@JsonSerializable()
+int _intFromJson(Object? v) => (v as num?)?.toInt() ?? 0;
+bool _boolFromJson(Object? v) => (v as bool?) ?? false;
+
+@JsonSerializable(explicitToJson: true)
 class ApiPageable {
-  /// 한 페이지(슬라이스)의 요소 개수
-  final int size;
+  @JsonKey(fromJson: _intFromJson)
+  final int pageNumber;
 
-  /// 0-based 페이지(슬라이스) 인덱스
-  final int number;
+  @JsonKey(fromJson: _intFromJson)
+  final int pageSize;
 
-  const ApiPageable({required this.size, required this.number});
+  @JsonKey(fromJson: _intFromJson)
+  final int offset;
+
+  @JsonKey(fromJson: _boolFromJson)
+  final bool paged;
+
+  @JsonKey(fromJson: _boolFromJson)
+  final bool unpaged;
+
+  final ApiSort? sort; // sort 모델이 있으면 유지
+
+  const ApiPageable({
+    this.pageNumber = 0,
+    this.pageSize = 0,
+    this.offset = 0,
+    this.paged = false,
+    this.unpaged = false,
+    this.sort,
+  });
 
   factory ApiPageable.fromJson(Map<String, dynamic> json) => _$ApiPageableFromJson(json);
-
   Map<String, dynamic> toJson() => _$ApiPageableToJson(this);
+}
+
+@JsonSerializable()
+class ApiSort {
+  final bool? empty;
+  final bool? sorted;
+  final bool? unsorted;
+
+  const ApiSort({this.empty, this.sorted, this.unsorted});
+
+  factory ApiSort.fromJson(Map<String, dynamic> json) => _$ApiSortFromJson(json);
+  Map<String, dynamic> toJson() => _$ApiSortToJson(this);
 }

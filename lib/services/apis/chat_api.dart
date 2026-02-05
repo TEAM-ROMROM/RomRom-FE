@@ -77,8 +77,8 @@ class ChatApi {
         pagedChatRooms = PagedChatRoomDetail(
           content: content,
           pageable: ApiPageable(
-            size: (chatRoomsData['size'] as num?)?.toInt() ?? pageSize,
-            number: (chatRoomsData['number'] as num?)?.toInt() ?? pageNumber,
+            pageSize: (chatRoomsData['size'] as num?)?.toInt() ?? pageSize,
+            pageNumber: (chatRoomsData['number'] as num?)?.toInt() ?? pageNumber,
           ),
           last: isLast,
         );
@@ -88,7 +88,7 @@ class ChatApi {
         // chatRooms 필드가 없는 경우 빈 목록 반환
         pagedChatRooms = PagedChatRoomDetail(
           content: [],
-          pageable: ApiPageable(size: pageSize, number: pageNumber),
+          pageable: ApiPageable(pageSize: pageSize, pageNumber: pageNumber),
         );
         debugPrint('채팅방 목록이 비어있습니다');
       }
@@ -136,9 +136,13 @@ class ChatApi {
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      chatRoomResponse = ChatRoomResponse.fromJson(responseData);
-      debugPrint('채팅 메시지 조회 성공: ${chatRoomResponse.messages?.content.length ?? 0}개');
+      try {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        chatRoomResponse = ChatRoomResponse.fromJson(responseData);
+        debugPrint('채팅 메시지 조회 성공: ${chatRoomResponse.messages?.content.length ?? 0}개');
+      } catch (e, stackTrace) {
+        throw Exception('채팅 메시지 파싱 실패: $e $stackTrace');
+      }
     } else {
       throw Exception('채팅 메시지 조회 실패: ${response.statusCode}');
     }
