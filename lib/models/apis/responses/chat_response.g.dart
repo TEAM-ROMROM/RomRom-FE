@@ -22,24 +22,24 @@ Map<String, dynamic> _$ChatRoomResponseToJson(ChatRoomResponse instance) => <Str
 
 PagedChatMessage _$PagedChatMessageFromJson(Map<String, dynamic> json) => PagedChatMessage(
   content: _chatMessageListFromJson(json['content']),
-  page: _pageableFromJson(json['page'] as Map<String, dynamic>?),
+  pageable: json['pageable'] == null ? null : ApiPageable.fromJson(json['pageable'] as Map<String, dynamic>),
   last: json['last'] as bool? ?? true,
 );
 
 Map<String, dynamic> _$PagedChatMessageToJson(PagedChatMessage instance) => <String, dynamic>{
   'content': _chatMessageListToJson(instance.content),
-  'page': instance.page?.toJson(),
+  'pageable': instance.pageable?.toJson(),
   'last': instance.last,
 };
 
 PagedChatRoomDetail _$PagedChatRoomDetailFromJson(Map<String, dynamic> json) => PagedChatRoomDetail(
   content: _chatRoomDetailListFromJson(json['content']),
-  page: _pageableFromJson(json['page'] as Map<String, dynamic>?),
+  pageable: json['pageable'] == null ? null : ApiPageable.fromJson(json['pageable'] as Map<String, dynamic>),
   last: json['last'] as bool? ?? true,
 );
 
 Map<String, dynamic> _$PagedChatRoomDetailToJson(PagedChatRoomDetail instance) => <String, dynamic>{
   'content': _chatRoomDetailListToJson(instance.content),
-  'page': instance.page?.toJson(),
+  'pageable': instance.pageable?.toJson(),
   'last': instance.last,
 };

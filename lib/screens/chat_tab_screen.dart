@@ -53,7 +53,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
   bool _hasMore = true;
   int _currentPage = 0;
   // Slice 기반 페이지네이션: 한 번에 10개씩 요청
-  final int _pageSize = 5;
+  final int _pageSize = 10;
 
   int _autoPrefetchCount = 0;
   static const int _autoPrefetchMax = 5;

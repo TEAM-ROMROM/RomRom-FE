@@ -390,8 +390,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       Navigator.of(context).pop(); // 모달 닫기
                     },
                     onConfirm: () async {
+                      final opponentId = chatRoom.getOpponent(_myMemberId!)?.memberId;
+                      if (opponentId == null) {
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                          CommonSnackBar.show(
+                            context: context,
+                            type: SnackBarType.error,
+                            message: '상대방 정보를 찾을 수 없습니다.',
+                          );
+                        }
+                        return;
+                      }
                       try {
-                        await MemberApi().blockMember(chatRoom.getOpponent(_myMemberId!)!.memberId!);
+                        await MemberApi().blockMember(opponentId);
                         if (context.mounted) {
                           Navigator.of(context).pop(true); // 모달 닫기
                         }

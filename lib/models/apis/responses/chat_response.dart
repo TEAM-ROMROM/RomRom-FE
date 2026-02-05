@@ -26,14 +26,14 @@ class PagedChatMessage {
   @JsonKey(fromJson: _chatMessageListFromJson, toJson: _chatMessageListToJson)
   final List<ChatMessage> content;
 
-  @JsonKey(fromJson: _pageableFromJson)
-  final ApiPageable? page;
+  @JsonKey(name: 'pageable')
+  final ApiPageable? pageable;
 
   /// 백엔드 Slice 응답의 마지막 페이지 여부
   @JsonKey(includeFromJson: true)
   final bool last;
 
-  PagedChatMessage({required this.content, this.page, this.last = true});
+  PagedChatMessage({required this.content, this.pageable, this.last = true});
 
   factory PagedChatMessage.fromJson(Map<String, dynamic> json) => _$PagedChatMessageFromJson(json);
   Map<String, dynamic> toJson() => _$PagedChatMessageToJson(this);
@@ -45,14 +45,14 @@ class PagedChatRoomDetail {
   @JsonKey(fromJson: _chatRoomDetailListFromJson, toJson: _chatRoomDetailListToJson)
   final List<ChatRoomDetailDto> content;
 
-  @JsonKey(fromJson: _pageableFromJson)
-  final ApiPageable? page;
+  @JsonKey(name: 'pageable')
+  final ApiPageable? pageable;
 
   /// 백엔드 Slice 응답의 마지막 페이지 여부
   @JsonKey(includeFromJson: true)
   final bool last;
 
-  PagedChatRoomDetail({required this.content, this.page, this.last = true});
+  PagedChatRoomDetail({required this.content, this.pageable, this.last = true});
 
   factory PagedChatRoomDetail.fromJson(Map<String, dynamic> json) => _$PagedChatRoomDetailFromJson(json);
   Map<String, dynamic> toJson() => _$PagedChatRoomDetailToJson(this);
@@ -80,19 +80,4 @@ List<ChatRoomDetailDto> _chatRoomDetailListFromJson(Object? value) {
 
 List<Object?> _chatRoomDetailListToJson(List<ChatRoomDetailDto> chatRooms) {
   return chatRooms.map((e) => e.toJson()).toList();
-}
-
-/// Spring Slice/Page 구조를 프론트 공용 `ApiPageable`로 매핑
-ApiPageable? _pageableFromJson(Map<String, dynamic>? json) {
-  if (json == null) return null;
-
-  // Spring Slice 구조에서 size, number, pageable 등을 파싱
-  final pageable = json['pageable'] as Map<String, dynamic>?;
-  final content = json['content'] as List?;
-
-  final size = (json['size'] as num?)?.toInt() ?? (pageable?['pageSize'] as num?)?.toInt() ?? (content?.length ?? 0);
-
-  final number = (json['number'] as num?)?.toInt() ?? (pageable?['pageNumber'] as num?)?.toInt() ?? 0;
-
-  return ApiPageable(size: size, number: number);
 }
