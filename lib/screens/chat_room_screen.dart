@@ -19,6 +19,7 @@ import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/chat_image_bubble.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
@@ -172,13 +173,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             final localMsg = _pendingLocalMessages.remove(matchedLocalId)!;
             final idx = _messages.indexWhere((m) => m.chatMessageId == localMsg.chatMessageId);
 
-            // 🔧 createdDate 보정
+            // createdDate 보정
             final fixedServer = ChatMessage(
               chatRoomId: newMessage.chatRoomId ?? localMsg.chatRoomId,
               chatMessageId: newMessage.chatMessageId,
-              senderId: newMessage.senderId,
-              content: newMessage.content,
-              createdDate: newMessage.createdDate,
+              senderId: newMessage.senderId ?? localMsg.senderId,
+
+              // content도 서버가 빈 문자열로 주면 로컬 유지하는 게 안전
+              content: (newMessage.content != null && newMessage.content!.trim().isNotEmpty)
+                  ? newMessage.content
+                  : localMsg.content,
+
+              createdDate: newMessage.createdDate ?? localMsg.createdDate,
+              type: newMessage.type ?? localMsg.type,
+              imageUrls: (newMessage.imageUrls != null && newMessage.imageUrls!.isNotEmpty)
+                  ? newMessage.imageUrls
+                  : localMsg.imageUrls,
             );
 
             if (idx != -1) {
@@ -404,6 +414,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         if (opponent?.memberId != null) {
           context.navigateTo(screen: ProfileScreen(memberId: opponent!.memberId!));
         }
+      },
+      onBackPressed: () {
+        _leaveRoom(shouldPop: true);
       },
       showBottomBorder: true,
       titleWidgets: Padding(
@@ -709,32 +722,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   SizedBox(width: 8.w),
                 ],
                 message.type == MessageType.image
-                    ? Container(
-                        width: 264.w,
-                        height: 264.h,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.r),
-                          color: AppColors.opacity10White,
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: PhotoViewerMultipleImage(
-                          imageUrls: message.imageUrls ?? [],
-                          index: 0,
-                          id: 'chat_image_${message.chatMessageId ?? ''}',
-                          onPageChanged: (_) {},
-                          placeholder: (ctx, url) => const SizedBox.expand(
-                            child: Center(
-                              child: SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
-                              ),
-                            ),
-                          ),
-                          errorWidget: (ctx, url, err) =>
-                              const SizedBox.expand(child: Center(child: ErrorImagePlaceholder())),
-                        ),
-                      )
+                    ? chatImageBubble(context, message)
                     : Container(
                         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                         constraints: BoxConstraints(maxWidth: 264.w, maxHeight: 264.h),
