@@ -144,21 +144,24 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
     );
   }
 
+  /// 신고 사유 선택/해제 토글
+  void _toggleReason(MemberReportReason reason) {
+    setState(() {
+      if (_selectedReasons.contains(reason)) {
+        _selectedReasons.remove(reason);
+      } else {
+        _selectedReasons.add(reason);
+      }
+    });
+  }
+
   /// 신고 사유 행
   Widget _buildReasonRow(MemberReportReason reason) {
     return Padding(
       padding: EdgeInsets.only(bottom: 24.h),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () {
-          setState(() {
-            if (_selectedReasons.contains(reason)) {
-              _selectedReasons.remove(reason);
-            } else {
-              _selectedReasons.add(reason);
-            }
-          });
-        },
+        onTap: () => _toggleReason(reason),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -167,15 +170,7 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
               height: 20.w,
               child: Checkbox(
                 value: _selectedReasons.contains(reason),
-                onChanged: (value) {
-                  setState(() {
-                    if (value == true) {
-                      _selectedReasons.add(reason);
-                    } else {
-                      _selectedReasons.remove(reason);
-                    }
-                  });
-                },
+                onChanged: (_) => _toggleReason(reason),
                 activeColor: AppColors.primaryYellow,
                 checkColor: AppColors.primaryBlack,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),
