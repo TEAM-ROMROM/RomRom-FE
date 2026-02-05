@@ -22,11 +22,12 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_image_bubble.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final String chatRoomId;
@@ -470,7 +471,47 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 title: '차단하기',
                 textColor: AppColors.itemOptionsMenuRedText,
                 onTap: () async {
-                  // TODO : 차단하기 기능 구현
+                  await CommonModal.confirm(
+                    context: context,
+                    message: '상대방을 차단하시겠습니까?\n차단한 사용자는 설정에서 확인할 수 있습니다.',
+                    cancelText: '취소',
+                    confirmText: '차단',
+                    onCancel: () {
+                      Navigator.of(context).pop(); // 모달 닫기
+                    },
+                    onConfirm: () async {
+                      final opponentId = chatRoom.getOpponent(_myMemberId!)?.memberId;
+                      if (opponentId == null) {
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                          CommonSnackBar.show(
+                            context: context,
+                            type: SnackBarType.error,
+                            message: '상대방 정보를 찾을 수 없습니다.',
+                          );
+                        }
+                        return;
+                      }
+                      try {
+                        if (context.mounted) {
+                          Navigator.of(context).pop(true); // 모달 닫기
+                        }
+                        // 화면 닫을 때도 동일한 _leaveRoom 로직
+                        if (context.mounted) {
+                          await _leaveRoom(shouldPop: true);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.of(context).pop(); // 모달 닫기
+                          CommonSnackBar.show(
+                            context: context,
+                            type: SnackBarType.error,
+                            message: '회원 차단 실패: ${ErrorUtils.getErrorMessage(e)}',
+                          );
+                        }
+                      }
+                    },
+                  );
                 },
                 showDividerAfter: true,
               ),
@@ -493,7 +534,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       try {
                         await ChatApi().deleteChatRoom(chatRoomId: chatRoom.chatRoomId!);
                         if (context.mounted) {
-                          Navigator.of(context).pop(); // 모달 닫기
+                          Navigator.of(context).pop(true); // 모달 닫기
                         }
                         // 화면 닫을 때도 동일한 _leaveRoom 로직
                         if (context.mounted) {
@@ -556,11 +597,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               );
             },
             child: CachedImage(
-              imageUrl: targetItem?.itemImages?.first.imageUrl ?? '',
+              imageUrl: targetItem?.primaryImageUrl ?? '',
               width: 48.w,
               height: 48.w,
               borderRadius: BorderRadius.circular(8.r),
-              errorWidget: const ErrorImagePlaceholder(),
+              errorWidget: const SizedBox.shrink(),
             ),
           ),
           SizedBox(width: 16.w),
