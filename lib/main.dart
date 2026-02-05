@@ -34,6 +34,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   await initialize(); // 초기화 실행
 
   // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
