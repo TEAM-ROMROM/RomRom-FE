@@ -6,6 +6,8 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/notification_settings_screen.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
@@ -147,11 +149,7 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   /// 설정 화면으로 이동
   void _onSettingsTap() {
-    CommonSnackBar.show(
-      context: context,
-      message: '설정 기능 준비 중입니다.',
-      type: SnackBarType.info,
-    );
+    context.navigateTo(screen: const NotificationSettingsScreen());
   }
 
   /// 알림 끄기
