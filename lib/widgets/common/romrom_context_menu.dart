@@ -347,7 +347,7 @@ class _MenuOverlay extends StatelessWidget {
       final item = items[i];
 
       widgets.add(
-        InkWell(
+        GestureDetector(
           onTap: () {
             if (enableHapticFeedback) {
               HapticFeedback.selectionClick();
