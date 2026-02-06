@@ -140,8 +140,8 @@ class ChatApi {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         chatRoomResponse = ChatRoomResponse.fromJson(responseData);
         debugPrint('채팅 메시지 조회 성공: ${chatRoomResponse.messages?.content.length ?? 0}개');
-      } catch (e, stackTrace) {
-        throw Exception('채팅 메시지 파싱 실패: $e $stackTrace');
+      } catch (e) {
+        throw Exception('채팅 메시지 파싱 실패: $e');
       }
     } else {
       throw Exception('채팅 메시지 조회 실패: ${response.statusCode}');

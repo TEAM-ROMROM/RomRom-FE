@@ -206,6 +206,9 @@ class ChatWebSocketService {
     MessageType type = MessageType.text,
     List<String>? imageUrls,
   }) {
+    if (type == MessageType.image && (imageUrls == null || imageUrls.isEmpty)) {
+      throw Exception('imageUrls is required for image messages');
+    }
     if (!_isConnected || _stompClient == null) {
       debugPrint('[WebSocket] Cannot send message: Not connected');
       throw Exception('STOMP not connected');

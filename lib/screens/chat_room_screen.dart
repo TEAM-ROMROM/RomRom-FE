@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:photo_viewer/photo_viewer.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
@@ -23,7 +22,6 @@ import 'package:romrom_fe/widgets/chat_image_bubble.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
-import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
@@ -250,6 +248,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   /// imageMessage: 사진과 함께 전송할 텍스트 메시지 (선택사항)
   Future<void> _sendImage({required List<String> imageUrls, String? imageMessage}) async {
     if (imageUrls.isEmpty) return;
+    if (!mounted) return;
 
     // 1) 로컬에 즉시 추가(낙관적 업데이트) 및 pending에 등록
     final content = imageMessage ?? '사진을 보냈습니다.';
@@ -291,8 +290,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-  // 이미지 선택 및 전송
-  Future<void> onPickImage() async {
+  /// 이미지 선택 후 전송
+  Future<void> _onPickImage() async {
     try {
       final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
 
@@ -304,6 +303,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       try {
         // 1) 선택된 이미지를 서버에 업로드
         final uploadedImageUrls = await ImageApi().uploadImages([picked]);
+        if (!mounted) return;
 
         // imageUrls가 비어있는 경우 처리 필요
         if (uploadedImageUrls.isEmpty) {
@@ -697,32 +697,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             children: [
               if (!isMine) ...[
                 message.type == MessageType.image
-                    ? Container(
-                        width: 264.w,
-                        height: 264.h,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.r),
-                          color: AppColors.opacity10White,
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: PhotoViewerMultipleImage(
-                          imageUrls: message.imageUrls ?? [],
-                          index: 0,
-                          id: 'chat_image_${message.chatMessageId ?? ''}',
-                          onPageChanged: (_) {},
-                          placeholder: (ctx, url) => const SizedBox.expand(
-                            child: Center(
-                              child: SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
-                              ),
-                            ),
-                          ),
-                          errorWidget: (ctx, url, err) =>
-                              const SizedBox.expand(child: Center(child: ErrorImagePlaceholder())),
-                        ),
-                      )
+                    ? chatImageBubble(context, message)
                     : Container(
                         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                         constraints: BoxConstraints(maxWidth: 264.w),
@@ -818,7 +793,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     iconColor: AppColors.opacity60White,
                     title: '사진 선택하기',
                     onTap: () {
-                      onPickImage();
+                      _onPickImage();
                     },
                   ),
                 ],

@@ -38,7 +38,7 @@ Widget chatImageBubble(BuildContext context, ChatMessage message) {
     child: Hero(
       tag: heroTag(0),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         borderRadius: BorderRadius.circular(10.r),
         clipBehavior: Clip.antiAlias,
         child: Container(
