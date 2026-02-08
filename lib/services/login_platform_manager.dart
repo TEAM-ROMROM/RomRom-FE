@@ -8,14 +8,13 @@ class LoginPlatformManager {
 
   /// 로그인 플랫폼 저장
   Future<void> saveLoginPlatform(String platform) async {
-    await _storage.write(
-        key:  StorageKeys.loginPlatform.key ,value: platform);
+    await _storage.write(key: StorageKeys.loginPlatform.key, value: platform);
     debugPrint('로그인 플랫폼 저장 성공 : $platform');
   }
 
   /// 로그인 플랫폼 가져오기
   Future<String?> getLoginPlatform() async {
-    return await _storage.read(key: StorageKeys.loginPlatform.key );
+    return await _storage.read(key: StorageKeys.loginPlatform.key);
   }
 
   /// 로그인 플랫폼 삭제

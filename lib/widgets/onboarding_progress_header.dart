@@ -17,20 +17,13 @@ class OnboardingProgressHeader extends StatefulWidget {
   /// 뒤로가기 버튼 클릭 시 실행될 콜백
   final VoidCallback? onBackPressed;
 
-  const OnboardingProgressHeader({
-    super.key,
-    required this.currentStep,
-    required this.totalSteps,
-    this.onBackPressed,
-  });
+  const OnboardingProgressHeader({super.key, required this.currentStep, required this.totalSteps, this.onBackPressed});
 
   @override
-  State<OnboardingProgressHeader> createState() =>
-      _OnboardingProgressHeaderState();
+  State<OnboardingProgressHeader> createState() => _OnboardingProgressHeaderState();
 }
 
-class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
-    with SingleTickerProviderStateMixin {
+class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _progressAnimation;
 
@@ -44,19 +37,13 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
     if (_previousStep < 1) _previousStep = 1;
 
     // 애니메이션 컨트롤러 설정 (0.5초 지속)
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
+    _animationController = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
 
     // 프로그레스 애니메이션 설정
     _progressAnimation = Tween<double>(
       begin: _previousStep / widget.totalSteps,
       end: widget.currentStep / widget.totalSteps,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
 
     // 위젯 생성 시 자동으로 애니메이션 시작
     _animationController.forward();
@@ -74,10 +61,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
       _progressAnimation = Tween<double>(
         begin: _previousStep / widget.totalSteps,
         end: widget.currentStep / widget.totalSteps,
-      ).animate(CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ));
+      ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
 
       // 애니메이션 재시작
       _animationController.reset();
@@ -101,11 +85,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
           // 뒤로가기 버튼
           GestureDetector(
             onTap: widget.onBackPressed ?? () => Navigator.of(context).pop(),
-            child: Icon(
-              AppIcons.navigateBefore,
-              size: 24.h,
-              color: AppColors.textColorWhite,
-            ),
+            child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
           ),
           SizedBox(width: 81.w),
           // 애니메이션 프로그레스 표시기
@@ -113,10 +93,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
             child: AnimatedBuilder(
               animation: _animationController,
               builder: (context, child) {
-                return Row(
-                  children: _buildProgressIndicators(
-                      _progressAnimation.value * widget.totalSteps),
-                );
+                return Row(children: _buildProgressIndicators(_progressAnimation.value * widget.totalSteps));
               },
             ),
           ),
@@ -132,9 +109,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
 
     for (int i = 1; i <= widget.totalSteps; i++) {
       // 각 단계 원형 인디케이터 추가 (애니메이션 적용)
-      indicators.add(
-        _buildStepIndicator(i, animatedStep),
-      );
+      indicators.add(_buildStepIndicator(i, animatedStep));
 
       // 마지막 단계가 아니면 연결선 추가
       if (i < widget.totalSteps) {
@@ -153,10 +128,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
             child: Stack(
               children: [
                 // 비활성화 선 (배경)
-                Container(
-                  height: 1.h,
-                  color: AppColors.onboardingProgressInactiveLine,
-                ),
+                Container(height: 1.h, color: AppColors.onboardingProgressInactiveLine),
                 // 활성화 선 (애니메이션)
                 Container(
                   height: 1.h,
@@ -180,17 +152,10 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
       return Container(
         width: 24.w,
         height: 24.h,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.primaryYellow,
-        ),
+        decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primaryYellow),
         child: Padding(
           padding: EdgeInsets.all(6.w),
-          child: Icon(
-            AppIcons.onboardingProgressCheck,
-            size: 9.sp,
-            color: AppColors.textColorBlack,
-          ),
+          child: Icon(AppIcons.onboardingProgressCheck, size: 9.sp, color: AppColors.textColorBlack),
         ),
       );
     }
@@ -203,18 +168,10 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: AppColors.primaryBlack,
-          border: Border.all(
-            color: AppColors.primaryYellow,
-            width: 1.0,
-          ),
+          border: Border.all(color: AppColors.primaryYellow, width: 1.0),
         ),
         child: Center(
-          child: Text(
-            '$step',
-            style: CustomTextStyles.p3.copyWith(
-              color: AppColors.textColorWhite,
-            ),
-          ),
+          child: Text('$step', style: CustomTextStyles.p3.copyWith(color: AppColors.textColorWhite)),
         ),
       );
     }
@@ -226,18 +183,10 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader>
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.onboardingProgressStepPendingBg,
-        border: Border.all(
-          color: AppColors.onboardingProgressStepPendingBorder,
-          width: 1.0,
-        ),
+        border: Border.all(color: AppColors.onboardingProgressStepPendingBorder, width: 1.0),
       ),
       child: Center(
-        child: Text(
-          '$step',
-          style: CustomTextStyles.p3.copyWith(
-            color: AppColors.onboardingProgressStepPendingText,
-          ),
-        ),
+        child: Text('$step', style: CustomTextStyles.p3.copyWith(color: AppColors.onboardingProgressStepPendingText)),
       ),
     );
   }

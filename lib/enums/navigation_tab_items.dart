@@ -15,15 +15,9 @@ enum NavigationTabItems {
   final String title;
   final IconData iconData;
 
-  const NavigationTabItems({
-    required this.title,
-    required this.iconData
-  });
+  const NavigationTabItems({required this.title, required this.iconData});
 
   static NavigationTabItems fromIndex(int index) {
-    return values.firstWhere(
-          (tab) => tab.index == index,
-      orElse: () => home,
-    );
+    return values.firstWhere((tab) => tab.index == index, orElse: () => home);
   }
 }

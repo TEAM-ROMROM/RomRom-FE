@@ -10,30 +10,33 @@ class AiBadgeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 20.w,
-      height: 20.h,
-      padding: EdgeInsets.symmetric(horizontal: 4.5.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4.r),
-        color: const Color(0x4DCF7DFF), // AI 배지 배경색
-      ),
-      child: ShaderMask(
-        shaderCallback: (Rect bounds) {
-          return const LinearGradient(
-            colors: AppColors.aiGradient,
-            stops: [0.0, 0.35, 0.70, 1.0],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ).createShader(bounds);
-        },
-        child: Text(
-          'AI',
-          style: CustomTextStyles.p3.copyWith(
-            letterSpacing: -0.5.sp,
-            color: AppColors.textColorWhite, // ShaderMask가 적용되기 위한 기본 색상
+    return Padding(
+      padding: EdgeInsets.only(top: 9.0.h),
+      child: Container(
+        width: 21.w,
+        height: 20.h,
+        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4.r),
+          color: AppColors.aiTagBackground, // AI 태그 배경색
+        ),
+        child: ShaderMask(
+          shaderCallback: (Rect bounds) {
+            return const LinearGradient(
+              colors: AppColors.aiGradient,
+              stops: [0.0, 0.35, 0.70, 1.0],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ).createShader(bounds);
+          },
+          child: Text(
+            'AI',
+            style: CustomTextStyles.p3.copyWith(
+              letterSpacing: -0.5.sp,
+              color: AppColors.textColorWhite, // ShaderMask가 적용되기 위한 기본 색상
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
         ),
       ),
     );

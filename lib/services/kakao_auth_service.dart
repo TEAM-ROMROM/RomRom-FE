@@ -21,13 +21,15 @@ class KakaoAuthService {
       User user = await UserApi.instance.me();
 
       debugPrint(
-          '사용자 정보 요청 성공: 이메일: ${user.kakaoAccount?.email}, 닉네임: ${user.kakaoAccount?.profile?.nickname}, 프로필 이미지: ${user.kakaoAccount?.profile?.profileImageUrl}');
+        '사용자 정보 요청 성공: 이메일: ${user.kakaoAccount?.email}, 닉네임: ${user.kakaoAccount?.profile?.nickname}, 프로필 이미지: ${user.kakaoAccount?.profile?.profileImageUrl}',
+      );
 
       // 사용자 정보 저장
       await UserInfo().saveUserInfo(
-          '${user.kakaoAccount?.profile?.nickname}',
-          '${user.kakaoAccount?.email}',
-          '${user.kakaoAccount?.profile?.profileImageUrl}');
+        '${user.kakaoAccount?.profile?.nickname}',
+        '${user.kakaoAccount?.email}',
+        '${user.kakaoAccount?.profile?.profileImageUrl}',
+      );
       // 로그인 플랫폼 저장
       LoginPlatformManager().saveLoginPlatform(LoginPlatforms.kakao.platformName);
     } catch (error) {

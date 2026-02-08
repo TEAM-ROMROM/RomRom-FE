@@ -28,10 +28,7 @@ class AuthService {
 
       // 로그인 화면으로 이동
       if (context.mounted) {
-        context.navigateTo(
-          screen: const LoginScreen(),
-          type: NavigationTypes.pushAndRemoveUntil,
-        );
+        context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
       }
     }
   }

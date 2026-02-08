@@ -9,10 +9,7 @@ import 'package:romrom_fe/models/term_contents.dart';
 class TermDetailScreen extends StatelessWidget {
   final TermContents termsContent;
 
-  const TermDetailScreen({
-    super.key,
-    required this.termsContent,
-  });
+  const TermDetailScreen({super.key, required this.termsContent});
 
   @override
   Widget build(BuildContext context) {
@@ -29,20 +26,13 @@ class TermDetailScreen extends StatelessWidget {
               // 뒤로가기 버튼
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: Icon(
-                  AppIcons.navigateBefore,
-                  size: 24.h,
-                  color: AppColors.textColorWhite,
-                ),
+                child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
               ),
 
               SizedBox(height: 36.h),
 
               // 제목
-              Text(
-                termsContent.title,
-                style: CustomTextStyles.h1,
-              ),
+              Text(termsContent.title, style: CustomTextStyles.h1),
 
               SizedBox(height: 66.h),
 

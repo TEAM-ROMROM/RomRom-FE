@@ -7,23 +7,15 @@ import 'package:romrom_fe/models/app_theme.dart';
 class ItemDetailTradeOptionTag extends StatelessWidget {
   final String option;
 
-  const ItemDetailTradeOptionTag({
-    super.key,
-    required this.option,
-  });
+  const ItemDetailTradeOptionTag({super.key, required this.option});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(right: 4.w),
-      padding: EdgeInsets.symmetric(
-        horizontal: 8.w,
-        vertical: 6.h,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFCACDFF),
-        borderRadius: BorderRadius.circular(100.r),
-      ),
+      height: 23.h,
+      width: 50.w,
+      decoration: BoxDecoration(color: AppColors.transactionTagBackground, borderRadius: BorderRadius.circular(100.r)),
+      alignment: Alignment.center,
       child: Text(
         option,
         style: CustomTextStyles.p3.copyWith(

@@ -1,7 +1,7 @@
 enum ItemTradeOption {
   additionalPrice(label: '추가금', serverName: 'EXTRA_CHARGE'),
-  directTradeOnly(label: '직거래만', serverName: 'DIRECT_ONLY'),
-  deliveryOnly(label: '택배만', serverName: 'DELIVERY_ONLY');
+  directTradeOnly(label: '직거래', serverName: 'DIRECT_ONLY'),
+  deliveryOnly(label: '택배', serverName: 'DELIVERY_ONLY');
 
   final String label;
   final String serverName;
@@ -11,8 +11,7 @@ enum ItemTradeOption {
   static ItemTradeOption fromServerName(String name) {
     return ItemTradeOption.values.firstWhere(
       (e) => e.serverName == name,
-      orElse: () =>
-          throw ArgumentError('No ItemTradeOption with serverName $name'),
+      orElse: () => throw ArgumentError('No ItemTradeOption with serverName $name'),
     );
   }
 }

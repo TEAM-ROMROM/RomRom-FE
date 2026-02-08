@@ -7,22 +7,14 @@ import 'package:romrom_fe/models/app_theme.dart';
 class ItemDetailConditionTag extends StatelessWidget {
   final String condition;
 
-  const ItemDetailConditionTag({
-    super.key,
-    required this.condition,
-  });
+  const ItemDetailConditionTag({super.key, required this.condition});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 8.w,
-        vertical: 6.h,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF1C4),
-        borderRadius: BorderRadius.circular(100.r),
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+      constraints: BoxConstraints(minWidth: 50.w, minHeight: 23.h),
+      decoration: BoxDecoration(color: AppColors.conditionTagBackground, borderRadius: BorderRadius.circular(100.r)),
       child: Text(
         condition,
         style: CustomTextStyles.p3.copyWith(

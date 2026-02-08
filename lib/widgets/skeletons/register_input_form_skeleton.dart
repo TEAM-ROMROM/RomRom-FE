@@ -12,10 +12,7 @@ class RegisterInputFormSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Skeletonizer(
       enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: AppColors.opacity10White,
-        highlightColor: AppColors.opacity30White,
-      ),
+      effect: const ShimmerEffect(baseColor: AppColors.opacity10White, highlightColor: AppColors.opacity30White),
       child: Padding(
         padding: EdgeInsets.only(right: 24.w),
         child: Column(
@@ -67,11 +64,7 @@ class SkeletonRectanglar extends StatelessWidget {
   final double width;
   final double height;
 
-  const SkeletonRectanglar({
-    super.key,
-    this.width = 80,
-    this.height = 80,
-  });
+  const SkeletonRectanglar({super.key, this.width = 80, this.height = 80});
 
   @override
   Widget build(BuildContext context) {
@@ -82,14 +75,9 @@ class SkeletonRectanglar extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.opacity20White,
           borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(
-            color: AppColors.opacity30White,
-            width: 1.5.w,
-          ),
+          border: Border.all(color: AppColors.opacity30White, width: 1.5.w),
         ),
-        margin: EdgeInsets.only(
-          bottom: 24.h,
-        ),
+        margin: EdgeInsets.only(bottom: 24.h),
       ),
     );
   }

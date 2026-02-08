@@ -7,8 +7,7 @@ enum ItemCategories {
   watches(id: 5, label: '시계', serverName: 'WATCHES'),
   jewelry(id: 6, label: '주얼리', serverName: 'JEWELRY'),
   fashionAccessories(id: 7, label: '패션 액세서리', serverName: 'FASHION_ACCESSORIES'),
-  electronics(
-      id: 8, label: '전자기기/스마트기기', serverName: 'ELECTRONICS_SMART_DEVICES'),
+  electronics(id: 8, label: '전자기기/스마트기기', serverName: 'ELECTRONICS_SMART_DEVICES'),
   largeAppliances(id: 9, label: '대형가전', serverName: 'LARGE_APPLIANCES'),
   smallAppliances(id: 10, label: '소형가전', serverName: 'SMALL_APPLIANCES'),
   sportsLeisure(id: 11, label: '스포츠/레저', serverName: 'SPORTS_LEISURE'),
@@ -17,8 +16,7 @@ enum ItemCategories {
   kidult(id: 14, label: '키덜트', serverName: 'KIDULT'),
   artCollection(id: 15, label: '예술/희귀/수집품', serverName: 'ART_RARE_COLLECTIBLES'),
   musicInstruments(id: 16, label: '음반/악기', serverName: 'MUSIC_INSTRUMENTS'),
-  booksTicketsStationery(
-      id: 17, label: '도서/티켓/문구', serverName: 'BOOKS_TICKETS_STATIONERY'),
+  booksTicketsStationery(id: 17, label: '도서/티켓/문구', serverName: 'BOOKS_TICKETS_STATIONERY'),
   beauty(id: 18, label: '뷰티/미용', serverName: 'BEAUTY'),
   furnitureInterior(id: 19, label: '가구/인테리어', serverName: 'FURNITURE_INTERIOR'),
   homeKitchen(id: 20, label: '생활/주방용품', serverName: 'LIFE_KITCHEN'),
@@ -33,8 +31,7 @@ enum ItemCategories {
   final String label;
   final String serverName;
 
-  const ItemCategories(
-      {required this.id, required this.label, required this.serverName});
+  const ItemCategories({required this.id, required this.label, required this.serverName});
 
   static ItemCategories fromServerName(String serverName) {
     return ItemCategories.values.firstWhere(

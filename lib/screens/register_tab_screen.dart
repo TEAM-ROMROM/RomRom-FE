@@ -33,8 +33,7 @@ class RegisterTabScreen extends StatefulWidget {
   State<RegisterTabScreen> createState() => _RegisterTabScreenState();
 }
 
-class _RegisterTabScreenState extends State<RegisterTabScreen>
-    with TickerProviderStateMixin {
+class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false; //
   bool _isScrolling = false;
@@ -48,6 +47,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   int _currentPage = 0;
   final int _pageSize = 20;
 
+  // 물품 등록 제한
+  static const int _maxAvailableItemCount = 10;
+
   // 토글 상태
   MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.selling;
   late AnimationController _toggleAnimationController;
@@ -58,16 +60,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     super.initState();
 
     // 토글 애니메이션 초기화
-    _toggleAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _toggleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _toggleAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _toggleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
 
     _loadMyItems();
     _scrollController.addListener(_scrollListener);
@@ -84,9 +81,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   /// 내 물품 목록 로드 (초기 로딩)
   Future<void> _loadMyItems({bool isRefresh = false}) async {
-    debugPrint(
-      '_loadMyItems 호출됨: isRefresh=$isRefresh, _isLoading=$_isLoading',
-    );
+    debugPrint('_loadMyItems 호출됨: isRefresh=$isRefresh, _isLoading=$_isLoading');
 
     // 초기 로딩이 아닌 경우에만 중복 호출 방지
     if (!isRefresh && _isLoading && _myItems.isNotEmpty) {
@@ -217,8 +212,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   void _scrollListener() {
     // 무한 스크롤 처리
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _loadMoreItems();
     }
 
@@ -251,9 +245,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: AppColors.transparent,
-      ),
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: AppColors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.primaryBlack,
         extendBodyBehindAppBar: true,
@@ -276,18 +268,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                         headerTitle: '나의 등록된 물건',
                         toggle: GlassHeaderToggleBuilder.buildDefaultToggle(
                           animation: _toggleAnimation,
-                          isRightSelected:
-                              _currentTabStatus == MyItemToggleStatus.completed,
-                          onLeftTap: () =>
-                              _onToggleChanged(MyItemToggleStatus.selling),
-                          onRightTap: () =>
-                              _onToggleChanged(MyItemToggleStatus.completed),
+                          isRightSelected: _currentTabStatus == MyItemToggleStatus.completed,
+                          onLeftTap: () => _onToggleChanged(MyItemToggleStatus.selling),
+                          onRightTap: () => _onToggleChanged(MyItemToggleStatus.completed),
                           leftText: '판매 중',
                           rightText: '거래 완료',
                         ),
-                        statusBarHeight: MediaQuery.of(
-                          context,
-                        ).padding.top, // ★ 꼭 전달
+                        statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
                         toolbarHeight: 58.h,
                         toggleHeight: 70.h,
                         expandedExtra: 32.h, // 큰 제목/여백
@@ -337,11 +324,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           if (index.isOdd) {
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-              child: Divider(
-                thickness: 1.5,
-                color: AppColors.opacity10White,
-                height: 32.h,
-              ),
+              child: Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h),
             );
           }
           final item = filteredItems[index ~/ 2];
@@ -368,10 +351,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     return Center(
       child: Text(
         '등록된 물건이 없어요.',
-        style: CustomTextStyles.p1.copyWith(
-          color: AppColors.opacity40White,
-          fontWeight: FontWeight.w500,
-        ),
+        style: CustomTextStyles.p1.copyWith(color: AppColors.opacity40White, fontWeight: FontWeight.w500),
         textAlign: TextAlign.center,
       ),
     );
@@ -379,13 +359,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   /// 실제 데이터 아이템 타일
   Widget _buildItemTile(Item item, int index) {
-    final imageUrl = item.primaryImageUrl != null
-        ? item.primaryImageUrl!
-        : 'https://picsum.photos/400/300';
+    final imageUrl = item.primaryImageUrl != null ? item.primaryImageUrl! : 'https://picsum.photos/400/300';
 
-    final uploadTime = item.createdDate != null
-        ? getTimeAgo(item.createdDate!)
-        : 'Unknown';
+    final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : 'Unknown';
 
     return SizedBox(
       height: 90.h,
@@ -404,10 +380,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     width: 90.w,
                     height: 90.h,
                     child: item.itemId != null
-                        ? Hero(
-                            tag: 'itemImage_${item.itemId}_0',
-                            child: _buildImage(imageUrl),
-                          )
+                        ? Hero(tag: 'itemImage_${item.itemId}_0', child: _buildImage(imageUrl))
                         : _buildImage(imageUrl),
                   ),
                 ),
@@ -421,37 +394,21 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                     children: [
                       Text(
                         item.itemName ?? '물품명 없음',
-                        style: CustomTextStyles.p1.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 6.h),
-                      Text(
-                        uploadTime,
-                        style: CustomTextStyles.p2.copyWith(
-                          color: AppColors.opacity60White,
-                        ),
-                      ),
+                      Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
                       SizedBox(height: 12.h),
-                      Text(
-                        '${formatPrice(item.price ?? 0)}원',
-                        style: CustomTextStyles.p1,
-                      ),
+                      Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
                       SizedBox(height: 10.h),
                       Row(
                         children: [
-                          Icon(
-                            AppIcons.itemRegisterHeart,
-                            size: 14.sp,
-                            color: AppColors.opacity60White,
-                          ),
+                          Icon(AppIcons.itemRegisterHeart, size: 14.sp, color: AppColors.opacity60White),
                           SizedBox(width: 4.w),
                           Text(
                             '${item.likeCount ?? 0}',
-                            style: CustomTextStyles.p2.copyWith(
-                              color: AppColors.opacity60White,
-                            ),
+                            style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
                           ),
                         ],
                       ),
@@ -475,17 +432,15 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ContextMenuItem(
                     id: 'changeTradeStatus',
                     contextIcon: AppIcons.dotsVerticalSmall,
-                    svgAssetPath: 'assets/images/changeGray.svg',
-                    title: _currentTabStatus == MyItemToggleStatus.selling
-                        ? '거래완료로 변경'
-                        : '판매중으로 변경',
+                    icon: AppIcons.change,
+                    title: _currentTabStatus == MyItemToggleStatus.selling ? '거래완료로 변경' : '판매중으로 변경',
                     onTap: () => _showChangeStatusConfirmDialog(item),
                     showDividerAfter: true,
                   ),
                   ContextMenuItem(
                     id: 'edit',
                     contextIcon: AppIcons.dotsVerticalSmall,
-                    svgAssetPath: 'assets/images/editGray.svg',
+                    icon: AppIcons.edit,
                     title: '수정',
                     onTap: () => _navigateToEditItem(item),
                     showDividerAfter: true,
@@ -493,9 +448,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                   ContextMenuItem(
                     id: 'delete',
                     contextIcon: AppIcons.dotsVerticalSmall,
-                    svgAssetPath: 'assets/images/trashRed.svg',
+                    icon: AppIcons.trash,
+                    iconColor: AppColors.itemOptionsMenuRedIcon,
                     title: '삭제',
-                    textColor: AppColors.itemOptionsMenuDeleteText,
+                    textColor: AppColors.itemOptionsMenuRedText,
                     onTap: () => _showDeleteConfirmDialog(item),
                   ),
                 ],
@@ -527,19 +483,43 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                 decoration: BoxDecoration(
                   color: AppColors.primaryYellow,
                   borderRadius: BorderRadius.circular(100.r),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.opacity20Black,
-                      blurRadius: 4,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
+                  boxShadow: const [BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4))],
                 ),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(100.r),
                     onTap: () async {
+                      // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
+                      try {
+                        final countResponse = await ItemApi().getMyItems(
+                          ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
+                        );
+                        final totalCount =
+                            countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
+
+                        if (totalCount >= _maxAvailableItemCount) {
+                          if (mounted) {
+                            CommonSnackBar.show(
+                              context: context,
+                              message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
+                              type: SnackBarType.error,
+                            );
+                          }
+                          return;
+                        }
+                      } catch (e) {
+                        debugPrint('물품 개수 확인 실패: $e');
+                        if (mounted) {
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
+                            type: SnackBarType.error,
+                          );
+                        }
+                        return;
+                      }
+
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -555,9 +535,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                       debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
                       debugPrint('result type: ${result.runtimeType}');
                       if (result is Map<String, dynamic>) {
-                        debugPrint(
-                          '  - isFirstItemPosted: ${result['isFirstItemPosted']}',
-                        );
+                        debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
                         debugPrint('  - itemId: ${result['itemId']}');
                       }
                       debugPrint('====================================');
@@ -570,9 +548,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                           result['isFirstItemPosted'] == true &&
                           result['itemId'] != null) {
                         debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
-                        _navigateToHomeAndShowDetail(
-                          result['itemId'] as String,
-                        );
+                        _navigateToHomeAndShowDetail(result['itemId'] as String);
                       } else {
                         debugPrint(
                           '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
@@ -580,18 +556,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
                       }
                     },
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 18.w,
-                        vertical: 15.h,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 15.h),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            AppIcons.addItemPlus,
-                            size: 16.sp,
-                            color: AppColors.primaryBlack,
-                          ),
+                          Icon(AppIcons.addItemPlus, size: 16.sp, color: AppColors.primaryBlack),
                           SizedBox(width: 8.w),
                           Text(
                             '등록하기',
@@ -636,11 +605,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       return const ErrorImagePlaceholder();
     }
 
-    return CachedImage(
-      imageUrl: imageUrl.trim(),
-      fit: BoxFit.cover,
-      errorWidget: const ErrorImagePlaceholder(),
-    );
+    return CachedImage(imageUrl: imageUrl.trim(), fit: BoxFit.cover, errorWidget: const ErrorImagePlaceholder());
   }
 
   /// 물품 상세 화면으로 이동
@@ -693,11 +658,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
     final title = isToCompleted ? '거래 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
     final description = isToCompleted ? '거래완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
 
-    final result = await context.showDeleteDialog(
-      title: title,
-      description: description,
-      confirmText: '확인',
-    );
+    final result = await context.showDeleteDialog(title: title, description: description, confirmText: '확인');
 
     if (result == true) {
       await _toggleItemStatus(item);
@@ -706,10 +667,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
 
   /// 삭제 확인 대화상자
   Future<void> _showDeleteConfirmDialog(Item item) async {
-    final result = await context.showDeleteDialog(
-      title: '물품을 삭제하시겠습니까?',
-      description: '삭제된 물품은 복구할 수 없습니다.',
-    );
+    final result = await context.showDeleteDialog(title: '물품을 삭제하시겠습니까?', description: '삭제된 물품은 복구할 수 없습니다.');
 
     if (result == true) {
       await _deleteItem(item);
@@ -719,11 +677,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   /// 물품 상태 토글
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(
-        context: context,
-        message: '물품 ID가 없습니다',
-        type: SnackBarType.info,
-      );
+      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
       return;
     }
 
@@ -733,10 +687,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
           ? ItemStatus.exchanged.serverName
           : ItemStatus.available.serverName;
 
-      final request = ItemRequest(
-        itemId: item.itemId,
-        itemStatus: targetStatus,
-      );
+      final request = ItemRequest(itemId: item.itemId, itemStatus: targetStatus);
 
       await itemApi.updateItemStatus(request);
 
@@ -744,9 +695,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
       _loadMyItems(isRefresh: true);
 
       if (mounted) {
-        final successMessage = _currentTabStatus == MyItemToggleStatus.selling
-            ? '거래 완료로 변경되었습니다'
-            : '판매중으로 변경되었습니다';
+        final successMessage = _currentTabStatus == MyItemToggleStatus.selling ? '거래 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
 
         CommonSnackBar.show(context: context, message: successMessage);
       }
@@ -764,11 +713,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen>
   /// 물품 삭제
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(
-        context: context,
-        message: '물품 ID가 없습니다',
-        type: SnackBarType.info,
-      );
+      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
       return;
     }
 

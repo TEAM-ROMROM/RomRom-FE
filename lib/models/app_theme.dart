@@ -72,4 +72,13 @@ class CustomTextStyles {
     letterSpacing: 0.sp,
     color: AppColors.textColorWhite,
   );
+
+  /// p4 : 10px, regular
+  static TextStyle p4 = TextStyle(
+    fontWeight: FontWeight.w400,
+    fontSize: 10.sp,
+    height: 1,
+    letterSpacing: 0.sp,
+    color: AppColors.textColorWhite,
+  );
 }

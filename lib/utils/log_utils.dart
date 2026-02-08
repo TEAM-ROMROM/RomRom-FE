@@ -10,4 +10,3 @@ void responsePrinter(String url, Map<String, dynamic>? response) {
     }
   }
 }
-

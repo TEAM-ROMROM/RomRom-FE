@@ -13,17 +13,14 @@ class ChatRoomListSkeletonSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          return Column(
-            children: [
-              const _SkeletonChatRoomItem(),
-              SizedBox(height: 8.h),
-            ],
-          );
-        },
-        childCount: itemCount,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        return Column(
+          children: [
+            const _SkeletonChatRoomItem(),
+            SizedBox(height: 8.h),
+          ],
+        );
+      }, childCount: itemCount),
     );
   }
 }
@@ -36,10 +33,7 @@ class _SkeletonChatRoomItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Skeletonizer(
       enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: AppColors.opacity10White,
-        highlightColor: AppColors.opacity30White,
-      ),
+      effect: const ShimmerEffect(baseColor: AppColors.opacity10White, highlightColor: AppColors.opacity30White),
       textBoneBorderRadius: const TextBoneBorderRadius.fromHeightFactor(.3),
       ignoreContainers: true,
       child: Container(
@@ -51,10 +45,7 @@ class _SkeletonChatRoomItem extends StatelessWidget {
               child: Container(
                 width: 40.w,
                 height: 40.h,
-                decoration: const BoxDecoration(
-                  color: AppColors.opacity20White,
-                  shape: BoxShape.circle,
-                ),
+                decoration: const BoxDecoration(color: AppColors.opacity20White, shape: BoxShape.circle),
               ),
             ),
             SizedBox(width: 12.w),
@@ -115,9 +106,7 @@ class _SkeletonChatRoomItem extends StatelessWidget {
                   Skeleton.leaf(
                     child: Text(
                       '채팅 메시지 미리보기입니다',
-                      style: CustomTextStyles.p2.copyWith(
-                        color: AppColors.chatLocationTimeMessage,
-                      ),
+                      style: CustomTextStyles.p2.copyWith(color: AppColors.chatLocationTimeMessage),
                     ),
                   ),
                 ],

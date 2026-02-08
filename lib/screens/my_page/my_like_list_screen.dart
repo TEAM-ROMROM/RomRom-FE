@@ -72,9 +72,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
     try {
       final pageToRequest = reset ? 0 : _currentPage;
       final itemApi = ItemApi();
-      final itemResponse = await itemApi.getLikeList(
-        ItemRequest(pageNumber: pageToRequest, pageSize: _pageSize),
-      );
+      final itemResponse = await itemApi.getLikeList(ItemRequest(pageNumber: pageToRequest, pageSize: _pageSize));
 
       final serverItems = itemResponse.itemPage?.content ?? [];
       final likeItems = await _convertToLikeItems(serverItems);
@@ -113,18 +111,14 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
       // 카테고리/상태/옵션 매핑
       ItemCondition cond = ItemCondition.sealed;
       try {
-        cond = item_condition_enum.ItemCondition.values.firstWhere(
-          (e) => e.serverName == d.itemCondition,
-        );
+        cond = item_condition_enum.ItemCondition.values.firstWhere((e) => e.serverName == d.itemCondition);
       } catch (_) {}
 
       final opts = <ItemTradeOption>[];
       if (d.itemTradeOptions != null) {
         for (final s in d.itemTradeOptions!) {
           try {
-            opts.add(
-              ItemTradeOption.values.firstWhere((e) => e.serverName == s),
-            );
+            opts.add(ItemTradeOption.values.firstWhere((e) => e.serverName == s));
           } catch (_) {}
         }
       }
@@ -132,12 +126,9 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
       // 위치 정보 변환
       String locationText = '미지정';
       if (d.latitude != null && d.longitude != null) {
-        final address = await LocationService().getAddressFromCoordinates(
-          NLatLng(d.latitude!, d.longitude!),
-        );
+        final address = await LocationService().getAddressFromCoordinates(NLatLng(d.latitude!, d.longitude!));
         if (address != null) {
-          locationText =
-              '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+          locationText = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
         }
       }
 
@@ -162,28 +153,16 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: CommonAppBar(
-        title: '좋아요 목록',
-
-        showBottomBorder: true,
-        onBackPressed: () => Navigator.pop(context),
-      ),
+      appBar: CommonAppBar(title: '좋아요 목록', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: _items.isEmpty && _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.primaryYellow,
-                ),
-              )
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
             : ListView.separated(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 itemCount: _items.length + (_hasMoreItems ? 1 : 0),
-                separatorBuilder: (_, __) => const Divider(
-                  color: AppColors.opacity10White,
-                  thickness: 1.5,
-                ),
+                separatorBuilder: (_, __) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
                 itemBuilder: (context, index) {
                   // 마지막 인덱스 = 로딩 인디케이터 셀
                   if (_hasMoreItems && index == _items.length) {
@@ -193,9 +172,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                         child: SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            color: AppColors.primaryYellow,
-                          ),
+                          child: CircularProgressIndicator(color: AppColors.primaryYellow),
                         ),
                       ),
                     );
@@ -211,10 +188,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                         MaterialPageRoute(
                           builder: (_) => ItemDetailDescriptionScreen(
                             itemId: itemId,
-                            imageSize: Size(
-                              MediaQuery.of(context).size.width,
-                              400.h,
-                            ),
+                            imageSize: Size(MediaQuery.of(context).size.width, 400.h),
                             currentImageIndex: 0,
                             heroTag: 'itemImage_${itemId}_0',
                             isMyItem: false,
@@ -237,9 +211,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                     },
                     child: Container(
                       padding: EdgeInsets.symmetric(vertical: 8.h),
-                      decoration: const BoxDecoration(
-                        color: AppColors.transparent,
-                      ),
+                      decoration: const BoxDecoration(color: AppColors.transparent),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -247,8 +219,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                           Hero(
                             tag: item.heroTag,
                             transitionOnUserGestures: true,
-                            createRectTween: (begin, end) =>
-                                MaterialRectArcTween(begin: begin, end: end),
+                            createRectTween: (begin, end) => MaterialRectArcTween(begin: begin, end: end),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8.r),
                               child: Stack(
@@ -259,66 +230,43 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                     color: AppColors.opacity10White,
                                     child: item.imageUrl.isEmpty
                                         ? const Icon(
-                                            Icons
-                                                .photo_size_select_actual_rounded,
+                                            Icons.photo_size_select_actual_rounded,
                                             color: AppColors.opacity40White,
                                           )
-                                        : CachedImage(
-                                            imageUrl: item.imageUrl,
-                                            fit: BoxFit.cover,
-                                          ),
+                                        : CachedImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
                                   ),
 
                                   /// 거래완료 오버레이 (검정 50%)
-                                  if (item.itemStatus ==
-                                      ItemStatus.exchanged.serverName)
+                                  if (item.itemStatus == ItemStatus.exchanged.serverName)
                                     IgnorePointer(
-                                      child: Container(
-                                        width: 70.w,
-                                        height: 70.w,
-                                        color: AppColors.opacity50Black,
-                                      ),
+                                      child: Container(width: 70.w, height: 70.w, color: AppColors.opacity50Black),
                                     ),
 
                                   /// 거래완료 글라스모피즘 배지 (이미지 중앙)
-                                  if (item.itemStatus ==
-                                      ItemStatus.exchanged.serverName)
+                                  if (item.itemStatus == ItemStatus.exchanged.serverName)
                                     Positioned.fill(
                                       child: Align(
                                         alignment: Alignment.center,
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            4.r,
-                                          ),
+                                          borderRadius: BorderRadius.circular(4.r),
                                           child: BackdropFilter(
-                                            filter: ImageFilter.blur(
-                                              sigmaX: 5,
-                                              sigmaY: 5,
-                                            ),
+                                            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                                             child: Container(
                                               width: 50.w,
                                               height: 20.h,
                                               decoration: BoxDecoration(
                                                 color: AppColors.opacity10White,
-                                                borderRadius:
-                                                    BorderRadius.circular(4.r),
-                                                border: Border.all(
-                                                  color:
-                                                      AppColors.textColorWhite,
-                                                  width: 1.w,
-                                                ),
+                                                borderRadius: BorderRadius.circular(4.r),
+                                                border: Border.all(color: AppColors.textColorWhite, width: 1.w),
                                               ),
                                               alignment: Alignment.center,
                                               child: Text(
                                                 '거래 완료',
-                                                style: CustomTextStyles.p3
-                                                    .copyWith(
-                                                      fontSize: 12.sp,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: AppColors
-                                                          .textColorWhite,
-                                                    ),
+                                                style: CustomTextStyles.p3.copyWith(
+                                                  fontSize: 12.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.textColorWhite,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -337,9 +285,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                               children: [
                                 Text(
                                   item.title,
-                                  style: CustomTextStyles.p1.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -353,8 +299,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                 ),
                                 SizedBox(height: 11.h),
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Wrap(
                                       spacing: 8.w,
@@ -363,17 +308,9 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                         // tags 배열을 (condition, options...) 구조로 가정
                                         if (item.tags.isNotEmpty)
                                           // 첫 번째는 condition
-                                          ItemDetailConditionTag(
-                                            condition: item.tags.first,
-                                          ),
+                                          ItemDetailConditionTag(condition: item.tags.first),
                                         // 나머지는 trade option들
-                                        ...item.tags
-                                            .skip(1)
-                                            .map(
-                                              (opt) => ItemDetailTradeOptionTag(
-                                                option: opt,
-                                              ),
-                                            ),
+                                        ...item.tags.skip(1).map((opt) => ItemDetailTradeOptionTag(option: opt)),
                                       ],
                                     ),
                                     // 좋아요 버튼 (아이콘+원)
@@ -382,49 +319,23 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                         final itemId = item.itemId;
 
                                         try {
-                                          await ItemApi().postLike(
-                                            ItemRequest(itemId: itemId),
-                                          ); // 서버 호출: 좋아요 취소
-                                          setState(
-                                            () => item.isLiked = !item.isLiked,
-                                          );
+                                          await ItemApi().postLike(ItemRequest(itemId: itemId)); // 서버 호출: 좋아요 취소
+                                          setState(() => item.isLiked = !item.isLiked);
                                         } catch (e) {
                                           // 실패 시 롤백: 아이템 복원
                                           if (mounted) {
                                             ScaffoldMessenger.of(
                                               context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  '좋아요 취소에 실패했습니다.',
-                                                ),
-                                              ),
-                                            );
+                                            ).showSnackBar(const SnackBar(content: Text('좋아요 취소에 실패했습니다.')));
                                           }
                                         }
                                         return;
                                       },
-                                      child: Container(
-                                        width: 24.w,
-                                        height: 24.w,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primaryBlack,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: item.isLiked
-                                                ? Colors.transparent
-                                                : AppColors.opacity10White,
-                                            width: 1.w,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            item.isLiked
-                                                ? AppIcons.itemRegisterHeart
-                                                : AppIcons.profilelikecount,
-                                            color: AppColors.textColorWhite,
-                                            size: 24.sp,
-                                          ),
+                                      child: Center(
+                                        child: Icon(
+                                          item.isLiked ? AppIcons.itemRegisterHeart : AppIcons.profilelikecount,
+                                          color: AppColors.textColorWhite,
+                                          size: 24.sp,
                                         ),
                                       ),
                                     ),

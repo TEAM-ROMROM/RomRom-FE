@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -13,6 +15,7 @@ class ContextMenuItem {
   final IconData? contextIcon;
   final IconData? icon;
   final String? svgAssetPath;
+  final Color? iconColor;
   final Color? textColor;
   final VoidCallback onTap;
   final bool showDividerAfter;
@@ -24,6 +27,7 @@ class ContextMenuItem {
     this.contextIcon = AppIcons.dotsVerticalDefault,
     this.icon,
     this.svgAssetPath,
+    this.iconColor = AppColors.opacity60White,
     this.textColor,
     this.showDividerAfter = false,
   });
@@ -41,6 +45,9 @@ class RomRomContextMenu extends StatefulWidget {
   final Color? menuBackgroundColor;
   final double itemHeight;
   final bool enableHapticFeedback;
+  final double triggerRotationDegreesOnOpen;
+
+  /// 0이면 회전 없음, 45면 45도 회전
 
   const RomRomContextMenu({
     super.key,
@@ -55,14 +62,14 @@ class RomRomContextMenu extends StatefulWidget {
     this.menuBackgroundColor,
     this.itemHeight = 52,
     this.enableHapticFeedback = true,
+    this.triggerRotationDegreesOnOpen = 0,
   });
 
   @override
   State<RomRomContextMenu> createState() => _RomRomContextMenuState();
 }
 
-class _RomRomContextMenuState extends State<RomRomContextMenu>
-    with SingleTickerProviderStateMixin {
+class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTickerProviderStateMixin {
   OverlayEntry? _overlayEntry;
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -72,10 +79,7 @@ class _RomRomContextMenuState extends State<RomRomContextMenu>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
+    _animationController = AnimationController(duration: const Duration(milliseconds: 250), vsync: this);
 
     final curve = CurvedAnimation(
       parent: _animationController,
@@ -103,8 +107,7 @@ class _RomRomContextMenuState extends State<RomRomContextMenu>
       HapticFeedback.lightImpact();
     }
 
-    final RenderBox? renderBox =
-        _triggerKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox = _triggerKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final triggerSize = renderBox.size;
@@ -118,11 +121,10 @@ class _RomRomContextMenuState extends State<RomRomContextMenu>
         position: widget.position,
         triggerPosition: triggerPosition,
         triggerSize: triggerSize,
-        menuWidth: widget.menuWidth ?? 146.w,
+        menuWidth: widget.menuWidth ?? 200.w,
         menuPadding: widget.menuPadding,
         menuBorderRadius: widget.menuBorderRadius ?? BorderRadius.circular(10.r),
-        menuBackgroundColor:
-            widget.menuBackgroundColor ?? AppColors.primaryBlack,
+        menuBackgroundColor: widget.menuBackgroundColor ?? AppColors.primaryBlack,
         itemHeight: widget.itemHeight.h,
         onItemSelected: (id) {
           _closeMenu();
@@ -158,15 +160,22 @@ class _RomRomContextMenuState extends State<RomRomContextMenu>
 
   @override
   Widget build(BuildContext context) {
+    final triggerChild =
+        widget.customTrigger ?? Icon(widget.items.first.contextIcon, size: 30.sp, color: AppColors.textColorWhite);
+
     return GestureDetector(
       key: _triggerKey,
       onTap: _showMenu,
-      child: widget.customTrigger ??
-          Icon(
-            widget.items.first.contextIcon,
-            size: 30.sp,
-            color: AppColors.textColorWhite,
-          ),
+      child: widget.triggerRotationDegreesOnOpen == 0
+          ? triggerChild
+          : AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                final radians = (widget.triggerRotationDegreesOnOpen * _animationController.value) * (math.pi / 180.0);
+                return Transform.rotate(angle: radians, child: child);
+              },
+              child: triggerChild,
+            ),
     );
   }
 }
@@ -254,26 +263,13 @@ class _MenuOverlay extends StatelessWidget {
   Widget _buildAnimatedMenu(Widget child, Offset menuPosition) {
     switch (animationType) {
       case ContextMenuAnimation.scale:
-        return Transform.scale(
-          scale: animation.value,
-          alignment: Alignment.topCenter,
-          child: child,
-        );
+        return Transform.scale(scale: animation.value, alignment: Alignment.topCenter, child: child);
       case ContextMenuAnimation.fade:
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
+        return FadeTransition(opacity: animation, child: child);
       case ContextMenuAnimation.slideDown:
         return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, -0.2),
-            end: Offset.zero,
-          ).animate(animation),
-          child: FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
+          position: Tween<Offset>(begin: const Offset(0, -0.2), end: Offset.zero).animate(animation),
+          child: FadeTransition(opacity: animation, child: child),
         );
       case ContextMenuAnimation.cornerExpand:
         return AnimatedBuilder(
@@ -282,10 +278,7 @@ class _MenuOverlay extends StatelessWidget {
             return Transform.scale(
               scale: 0.85 + (animation.value * 0.15),
               alignment: Alignment.topCenter,
-              child: FadeTransition(
-                opacity: animation,
-                child: child,
-              ),
+              child: FadeTransition(opacity: animation, child: child),
             );
           },
           child: child,
@@ -326,24 +319,14 @@ class _MenuOverlay extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: menuBackgroundColor,
                         borderRadius: menuBorderRadius,
-                        border: Border.all(
-                          color: AppColors.secondaryBlack1,
-                          width: 0.5,
-                        ),
+                        border: Border.all(color: AppColors.secondaryBlack1, width: 0.5),
                         boxShadow: const [
-                          BoxShadow(
-                            color: AppColors.opacity50Black,
-                            blurRadius: 20,
-                            offset: Offset(0, 5),
-                          ),
+                          BoxShadow(color: AppColors.opacity50Black, blurRadius: 20, offset: Offset(0, 5)),
                         ],
                       ),
                       child: ClipRRect(
                         borderRadius: menuBorderRadius,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: _buildMenuItems(),
-                        ),
+                        child: Column(mainAxisSize: MainAxisSize.min, children: _buildMenuItems()),
                       ),
                     ),
                   ),
@@ -380,18 +363,10 @@ class _MenuOverlay extends StatelessWidget {
               children: [
                 // SVG 아이콘 우선, 없으면 IconData 사용
                 if (item.svgAssetPath != null) ...[
-                  SvgPicture.asset(
-                    item.svgAssetPath!,
-                    width: 20.sp,
-                    height: 20.sp,
-                  ),
+                  SvgPicture.asset(item.svgAssetPath!, width: 20.sp, height: 20.sp),
                   SizedBox(width: 8.w),
                 ] else if (item.icon != null) ...[
-                  Icon(
-                    item.icon,
-                    size: 20.sp,
-                    color: item.textColor ?? AppColors.textColorWhite,
-                  ),
+                  Icon(item.icon, size: 20.sp, color: item.iconColor ?? AppColors.opacity60White),
                   SizedBox(width: 8.w),
                 ],
                 Text(
@@ -410,13 +385,7 @@ class _MenuOverlay extends StatelessWidget {
       // 디바이더: 왼쪽 16px, 오른쪽 26px 패딩
       if (item.showDividerAfter && i < items.length - 1) {
         widgets.add(
-          Divider(
-            color: AppColors.secondaryBlack1,
-            thickness: 1.h,
-            height: 1.h,
-            indent: 16.w,
-            endIndent: 26.w,
-          ),
+          Divider(color: AppColors.secondaryBlack1, thickness: 1.h, height: 1.h, indent: 16.w, endIndent: 26.w),
         );
       }
     }

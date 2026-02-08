@@ -1,33 +1,55 @@
 # -*- coding: utf-8 -*-
 """
-Git Worktree Manager v1.0.2
+Git Worktree Manager v1.0.4
 
 Git worktree를 자동으로 생성하고 관리하는 스크립트입니다.
 브랜치가 없으면 자동으로 생성하고, 브랜치명의 특수문자를 안전하게 처리합니다.
 
 사용법:
-    python worktree_manager.py <branch_name>
+    macOS/Linux:
+        python worktree_manager.py <branch_name>
+
+    Windows (환경 변수 방식, 권장):
+        $env:GIT_BRANCH_NAME = "브랜치명"
+        $env:PYTHONIOENCODING = "utf-8"
+        python -X utf8 worktree_manager.py
 
 예시:
     python worktree_manager.py "20260120_#163_Github_Projects_에_대한_템플릿_개발_필요"
 
 Author: Cursor AI Assistant
-Version: 1.0.1
+Version: 1.0.4
 """
 
 import os
 import sys
 import subprocess
 import re
+import platform
+import io
 from pathlib import Path
 from typing import Dict, Optional, Tuple
+
+# Windows 인코딩 문제 해결 - stdout/stderr를 UTF-8로 래핑
+if platform.system() == 'Windows':
+    try:
+        # stdout/stderr가 버퍼를 가지고 있는 경우에만 래핑
+        if hasattr(sys.stdout, 'buffer'):
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        if hasattr(sys.stderr, 'buffer'):
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    except Exception:
+        pass  # 래핑 실패 시 무시
 
 
 # ===================================================================
 # 상수 정의
 # ===================================================================
 
-VERSION = "1.0.2"
+VERSION = "1.0.4"
+
+# Windows 환경 감지
+IS_WINDOWS = platform.system() == 'Windows'
 
 # 폴더명에서 제거할 특수문자 (파일시스템에서 안전하지 않은 문자)
 SPECIAL_CHARS_PATTERN = r'[#/\\:*?"<>|]'
@@ -40,6 +62,59 @@ WORKTREE_ROOT_NAME = None  # get_worktree_root()에서 동적으로 설정
 # ===================================================================
 # 유틸리티 함수
 # ===================================================================
+
+def get_branch_name() -> str:
+    """
+    브랜치명을 안전하게 받기 (Windows 인코딩 문제 해결)
+
+    Windows 환경에서 PowerShell → Python 스크립트로 한글 브랜치명을 전달할 때
+    인코딩 문제가 발생하므로, 환경 변수나 파일에서 읽는 방식을 우선 사용합니다.
+
+    Returns:
+        str: 브랜치명 (비어있을 수 있음)
+    """
+    if IS_WINDOWS:
+        # 방법 1: 환경 변수에서 읽기 (가장 간단하고 안전)
+        branch_name_raw = os.environ.get('GIT_BRANCH_NAME', '')
+        if branch_name_raw:
+            try:
+                branch_name = branch_name_raw.strip()
+                if branch_name:
+                    return branch_name
+            except Exception:
+                pass
+
+        # 방법 2: 임시 파일에서 읽기
+        temp_file = os.environ.get('BRANCH_NAME_FILE', '')
+        if temp_file and os.path.exists(temp_file):
+            try:
+                encodings = ['utf-8', 'utf-8-sig', 'cp949', 'euc-kr']
+                for encoding in encodings:
+                    try:
+                        with open(temp_file, 'r', encoding=encoding) as f:
+                            branch_name = f.read().strip()
+                            if branch_name:
+                                return branch_name
+                    except (UnicodeDecodeError, UnicodeError):
+                        continue
+            except Exception:
+                pass
+
+        # 방법 3: stdin에서 읽기 시도
+        if not sys.stdin.isatty():
+            try:
+                branch_name = sys.stdin.read().strip()
+                if branch_name:
+                    return branch_name
+            except Exception:
+                pass
+
+    # 기본: sys.argv에서 받기
+    if len(sys.argv) >= 2:
+        return sys.argv[1].strip()
+
+    return ''
+
 
 def print_header():
     """헤더 출력"""
@@ -102,6 +177,33 @@ def run_git_command(args: list, check: bool = True) -> Tuple[bool, str, str]:
         return False, e.stdout.strip() if e.stdout else "", e.stderr.strip() if e.stderr else ""
     except Exception as e:
         return False, "", str(e)
+
+
+def check_and_enable_longpaths() -> bool:
+    """
+    Windows에서 Git 긴 경로 지원 확인 및 활성화
+
+    Returns:
+        bool: 긴 경로 지원이 활성화되어 있으면 True
+    """
+    if not IS_WINDOWS:
+        return True
+
+    # 현재 설정 확인
+    success, stdout, _ = run_git_command(['config', '--global', 'core.longpaths'], check=False)
+    if success and stdout.strip().lower() == 'true':
+        return True
+
+    # 긴 경로 지원 활성화
+    print_info("Windows 긴 경로 지원을 활성화합니다...")
+    success, _, stderr = run_git_command(['config', '--global', 'core.longpaths', 'true'], check=False)
+    if success:
+        print_success("긴 경로 지원이 활성화되었습니다.")
+        return True
+    else:
+        print_warning(f"긴 경로 지원 활성화 실패: {stderr}")
+        print_warning("수동으로 실행하세요: git config --global core.longpaths true")
+        return False
 
 
 def is_git_repository() -> bool:
@@ -391,36 +493,46 @@ def ensure_directory(path: Path) -> bool:
 def main() -> int:
     """
     메인 워크플로우
-    
+
     Returns:
         int: Exit code (0: 성공, 1: 실패)
     """
     print_header()
-    
-    # 1. 인자 확인
-    if len(sys.argv) < 2:
+
+    # 1. 브랜치명 받기 (Windows 환경 대응)
+    branch_name = get_branch_name()
+
+    if not branch_name:
         print_error("브랜치명이 제공되지 않았습니다.")
         print()
         print("사용법:")
-        print(f"  python {sys.argv[0]} <branch_name>")
+        if IS_WINDOWS:
+            print("  Windows 환경:")
+            print("    방법 1: 환경 변수 사용")
+            print(f'      $env:GIT_BRANCH_NAME = "브랜치명"')
+            print(f"      python -X utf8 {sys.argv[0]}")
+            print()
+            print("    방법 2: 인자로 전달")
+            print(f'      python -X utf8 {sys.argv[0]} "브랜치명"')
+        else:
+            print(f"  python {sys.argv[0]} <branch_name>")
         print()
         print("예시:")
         print(f'  python {sys.argv[0]} "20260120_#163_Github_Projects_에_대한_템플릿_개발_필요"')
         return 1
-    
-    branch_name = sys.argv[1].strip()
-    
-    if not branch_name:
-        print_error("브랜치명이 비어있습니다.")
-        return 1
-    
+
     print_step("📋", f"입력된 브랜치: {branch_name}")
     
     # 2. Git 저장소 확인
     if not is_git_repository():
         print_error("현재 디렉토리가 Git 저장소가 아닙니다.")
         return 1
-    
+
+    # 2-1. Windows 긴 경로 지원 확인 및 활성화
+    if IS_WINDOWS:
+        check_and_enable_longpaths()
+        print()
+
     # 3. 브랜치명 정규화
     folder_name = normalize_branch_name(branch_name)
     print_step("📁", f"폴더명: {folder_name}")
