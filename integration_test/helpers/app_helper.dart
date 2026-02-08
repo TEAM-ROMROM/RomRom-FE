@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:patrol/patrol.dart';
@@ -39,6 +40,9 @@ class TestApp extends StatelessWidget {
 
 /// 테스트 앱 초기화 및 실행
 Future<void> initAndRunTestApp(PatrolIntegrationTester $) async {
+  // .env 로드 (테스트 계정 정보 등)
+  await dotenv.load(fileName: ".env");
+
   // 기본 앱 초기화 (Kakao SDK 등)
   try {
     await initialize();

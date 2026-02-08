@@ -137,7 +137,5 @@ windows/flutter/generated_plugins.cmake
 # ====================================================================
 # Patrol E2E 테스트 관련
 # ====================================================================
-# 테스트 계정 정보 (민감 정보)
-integration_test/helpers/test_credentials.dart
 # Patrol 테스트 마법사 히스토리 (개인 설정)
 .patrol_history.json
