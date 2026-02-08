@@ -9,7 +9,6 @@ import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/utils/navigation_extensions.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
