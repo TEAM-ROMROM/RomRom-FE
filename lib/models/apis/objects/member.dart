@@ -20,6 +20,10 @@ class Member extends BaseEntity {
   final bool? isRequiredTermsAgreed;
   final bool? isMarketingInfoAgreed;
   final bool? isNotificationAgreed;
+  final bool? isActivityNotificationAgreed;
+  final bool? isChatNotificationAgreed;
+  final bool? isContentNotificationAgreed;
+  final bool? isTradeNotificationAgreed;
   final double? latitude;
   final double? longitude;
   final int? totalLikeCount;
@@ -48,6 +52,10 @@ class Member extends BaseEntity {
     this.isRequiredTermsAgreed,
     this.isMarketingInfoAgreed,
     this.isNotificationAgreed,
+    this.isActivityNotificationAgreed,
+    this.isChatNotificationAgreed,
+    this.isContentNotificationAgreed,
+    this.isTradeNotificationAgreed,
     this.latitude,
     this.longitude,
     this.totalLikeCount,

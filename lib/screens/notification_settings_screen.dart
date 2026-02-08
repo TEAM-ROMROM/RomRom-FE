@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/notification_setting_type.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
@@ -15,38 +17,73 @@ class NotificationSettingsScreen extends StatefulWidget {
 }
 
 class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
-  // 각 설정 상태 (모든 초기값 ON - API 연동 시 서버 값으로 대체)
-  bool _isMarketingEnabled = true; // ON
-  bool _isActivityEnabled = true; // ON
-  bool _isChatEnabled = true; // ON
-  bool _isContentEnabled = true; // ON
-  bool _isTransactionEnabled = true; // ON
+  final MemberApi _memberApi = MemberApi();
+
+  // 각 설정 상태
+  bool _isMarketingEnabled = false;
+  bool _isActivityEnabled = false;
+  bool _isChatEnabled = false;
+  bool _isContentEnabled = false;
+  bool _isTransactionEnabled = false;
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSettings();
+  }
+
+  /// 서버에서 현재 알림 설정 값 로딩
+  Future<void> _loadNotificationSettings() async {
+    try {
+      final response = await _memberApi.getMemberInfo();
+      final Member? member = response.member;
+      if (member != null && mounted) {
+        setState(() {
+          _isMarketingEnabled = member.isMarketingInfoAgreed ?? false;
+          _isActivityEnabled = member.isActivityNotificationAgreed ?? false;
+          _isChatEnabled = member.isChatNotificationAgreed ?? false;
+          _isContentEnabled = member.isContentNotificationAgreed ?? false;
+          _isTransactionEnabled = member.isTradeNotificationAgreed ?? false;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('알림 설정 로딩 실패: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(title: '설정', onBackPressed: () => Navigator.pop(context)),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 24.h),
-          child: Column(
-            children: [
-              // 상단 그룹 (마케팅, 활동, 채팅, 콘텐츠)
-              _buildSettingsGroup([
-                NotificationSettingType.marketing,
-                NotificationSettingType.activity,
-                NotificationSettingType.chat,
-                NotificationSettingType.content,
-              ]),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 24.h),
+                child: Column(
+                  children: [
+                    // 상단 그룹 (마케팅, 활동, 채팅, 콘텐츠)
+                    _buildSettingsGroup([
+                      NotificationSettingType.marketing,
+                      NotificationSettingType.activity,
+                      NotificationSettingType.chat,
+                      NotificationSettingType.content,
+                    ]),
 
-              SizedBox(height: 16.h), // 그룹 간 간격
-              // 하단 그룹 (거래)
-              _buildSettingsGroup([NotificationSettingType.transaction]),
-            ],
-          ),
-        ),
-      ),
+                    SizedBox(height: 16.h), // 그룹 간 간격
+                    // 하단 그룹 (거래)
+                    _buildSettingsGroup([NotificationSettingType.transaction]),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
@@ -113,7 +150,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     }
   }
 
-  /// 설정 값 변경 핸들러
+  /// 설정 값 변경 핸들러 (즉시 API 호출)
   void _onSettingChanged(NotificationSettingType type, bool newValue) {
     setState(() {
       switch (type) {
@@ -135,8 +172,43 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       }
     });
 
-    // 상태만 변경 (저장 없음)
-    debugPrint('알림 설정 변경: ${type.title} = $newValue');
-    // TODO: API 연동 시 서버로 전송
+    _updateNotificationSetting(type, newValue);
+  }
+
+  /// 서버에 알림 설정 업데이트
+  Future<void> _updateNotificationSetting(NotificationSettingType type, bool value) async {
+    try {
+      await _memberApi.updateNotificationSetting(
+        isMarketingInfoAgreed: type == NotificationSettingType.marketing ? value : null,
+        isActivityNotificationAgreed: type == NotificationSettingType.activity ? value : null,
+        isChatNotificationAgreed: type == NotificationSettingType.chat ? value : null,
+        isContentNotificationAgreed: type == NotificationSettingType.content ? value : null,
+        isTradeNotificationAgreed: type == NotificationSettingType.transaction ? value : null,
+      );
+    } catch (e) {
+      debugPrint('알림 설정 업데이트 실패: $e');
+      // 실패 시 토글 원복
+      if (mounted) {
+        setState(() {
+          switch (type) {
+            case NotificationSettingType.marketing:
+              _isMarketingEnabled = !value;
+              break;
+            case NotificationSettingType.activity:
+              _isActivityEnabled = !value;
+              break;
+            case NotificationSettingType.chat:
+              _isChatEnabled = !value;
+              break;
+            case NotificationSettingType.content:
+              _isContentEnabled = !value;
+              break;
+            case NotificationSettingType.transaction:
+              _isTransactionEnabled = !value;
+              break;
+          }
+        });
+      }
+    }
   }
 }
