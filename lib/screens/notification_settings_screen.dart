@@ -26,10 +26,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: CommonAppBar(title: '설정', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
+      appBar: CommonAppBar(title: '설정', onBackPressed: () => Navigator.pop(context)),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(24.w, 56.h, 24.w, 24.h),
+          padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 24.h),
           child: Column(
             children: [
               // 상단 그룹 (마케팅, 활동, 채팅, 콘텐츠)
@@ -53,16 +53,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   /// 설정 그룹 박스 빌더
   Widget _buildSettingsGroup(List<NotificationSettingType> settingTypes) {
     return Container(
-      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(12.r)),
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-        itemCount: settingTypes.length,
-        separatorBuilder: (_, __) => Divider(height: 24.h, color: AppColors.opacity30White),
-        itemBuilder: (context, index) {
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
+      child: Column(
+        children: List.generate(settingTypes.length, (index) {
           return _buildSettingRow(settingTypes[index]);
-        },
+        }),
       ),
     );
   }
@@ -71,33 +66,34 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   Widget _buildSettingRow(NotificationSettingType type) {
     final bool value = _getSettingValue(type);
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 좌측: 타이틀 + 서브텍스트
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                type.title,
-                style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w600),
+    return SizedBox(
+      height: 74.h,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // 좌측: 타이틀 + 서브텍스트
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(type.title, style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite)),
+                  SizedBox(height: 8.h),
+                  Text(
+                    type.description,
+                    style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w500),
+                  ),
+                ],
               ),
-              SizedBox(height: 4.h),
-              Text(
-                type.description,
-                style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White, letterSpacing: -0.5.sp),
-              ),
-            ],
-          ),
+            ),
+
+            // 우측: 토글 스위치
+            CompletedToggleSwitch(value: value, onChanged: (newValue) => _onSettingChanged(type, newValue)),
+          ],
         ),
-
-        SizedBox(width: 16.w),
-
-        // 우측: 토글 스위치
-        CompletedToggleSwitch(value: value, onChanged: (newValue) => _onSettingChanged(type, newValue)),
-      ],
+      ),
     );
   }
 
