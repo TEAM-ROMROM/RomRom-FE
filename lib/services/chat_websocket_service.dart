@@ -200,20 +200,37 @@ class ChatWebSocketService {
   }
 
   /// 메시지 전송
-  void sendMessage({required String chatRoomId, required String content, MessageType type = MessageType.text}) {
+  void sendMessage({
+    required String chatRoomId,
+    required String content,
+    MessageType type = MessageType.text,
+    List<String>? imageUrls,
+  }) {
+    if (type == MessageType.image && (imageUrls == null || imageUrls.isEmpty)) {
+      throw Exception('imageUrls is required for image messages');
+    }
     if (!_isConnected || _stompClient == null) {
       debugPrint('[WebSocket] Cannot send message: Not connected');
       throw Exception('STOMP not connected');
     }
 
-    final payload = jsonEncode({
+    final Map<String, dynamic> payload = {
       'chatRoomId': chatRoomId,
       'content': content,
       'type': type.toString().split('.').last.toUpperCase(),
-    });
+    };
 
-    debugPrint('[WebSocket] Sending message to /app/chat.send');
-    _stompClient!.send(destination: '/app/chat.send', body: payload, headers: {'content-type': 'application/json'});
+    // IMAGE 타입인 경우 imageUrls 추가
+    if (type == MessageType.image && imageUrls != null) {
+      payload['imageUrls'] = imageUrls;
+    }
+
+    debugPrint('[WebSocket] Sending message to /app/chat.send\n$payload');
+    _stompClient!.send(
+      destination: '/app/chat.send',
+      body: jsonEncode(payload),
+      headers: {'content-type': 'application/json'},
+    );
   }
 
   /// 채팅방 구독 해제
