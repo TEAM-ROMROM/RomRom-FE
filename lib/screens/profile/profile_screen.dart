@@ -5,9 +5,11 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -156,9 +158,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// 신고하기 처리
-  void _handleReport() {
-    // TODO: 신고 기능 구현 (API 확인 필요)
-    CommonSnackBar.show(context: context, message: '신고 기능은 준비 중입니다', type: SnackBarType.info);
+  Future<void> _handleReport() async {
+    final bool? reported = await context.navigateTo(screen: MemberReportScreen(memberId: widget.memberId));
+
+    if (reported == true && mounted) {
+      await CommonModal.success(
+        context: context,
+        message: '신고가 접수되었습니다.',
+        onConfirm: () => Navigator.of(context).pop(),
+      );
+    }
   }
 
   @override
