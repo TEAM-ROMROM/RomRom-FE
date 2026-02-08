@@ -4,7 +4,7 @@ Git worktree를 자동으로 생성하는 커맨드입니다.
 
 브랜치명을 입력받아 자동으로:
 1. 브랜치명에서 `#` 문자 제거 (Git 브랜치명으로 사용)
-2. 브랜치가 없으면 생성 (현재 브랜치에서 분기)
+2. 브랜치가 없으면 리모트(origin) 확인 → 있으면 tracking 브랜치로 가져오기, 없으면 현재 브랜치에서 새로 생성
 3. 브랜치명의 특수문자를 `_`로 변환하여 폴더명 생성
 4. `{프로젝트명}-Worktree` 폴더에 worktree 생성 (예: `RomRom-FE-Worktree`)
 5. 설정 파일 자동 복사 (Firebase, iOS, Android 키 등)
@@ -38,9 +38,9 @@ Git worktree를 자동으로 생성하는 커맨드입니다.
 1. 프로젝트 루트로 이동
 2. Git 긴 경로 지원 활성화: `git config --global core.longpaths true` (최초 1회만 실행)
 3. 임시 Python 스크립트 파일 생성:
-   - 파일명: `init_worktree_temp_{timestamp}.py`
-   - 브랜치명을 코드에 직접 포함 (인코딩 문제 해결, `#` 문자 유지)
-   - worktree 생성 로직 포함
+  - 파일명: `init_worktree_temp_{timestamp}.py`
+  - 브랜치명을 코드에 직접 포함 (인코딩 문제 해결, `#` 문자 유지)
+  - worktree 생성 로직 포함
 4. **Python 스크립트 실행** (Windows에서는 `-X utf8` 플래그 필수):
    ```bash
    python -X utf8 init_worktree_temp_{timestamp}.py
@@ -94,18 +94,18 @@ exit_code = worktree_manager.main()
 
 # worktree 경로를 환경변수로 설정 (에이전트가 파일 복사에 사용)
 if exit_code == 0:
-    import subprocess
-    result = subprocess.run(['git', 'worktree', 'list', '--porcelain'],
+  import subprocess
+  result = subprocess.run(['git', 'worktree', 'list', '--porcelain'],
                           capture_output=True, text=True, encoding='utf-8')
-    lines = result.stdout.split('\n')
-    worktree_path = None
-    for i, line in enumerate(lines):
-        if line.startswith(f'branch refs/heads/{branch_name}'):
-            worktree_path = lines[i-1].replace('worktree ', '')
-            break
+  lines = result.stdout.split('\n')
+  worktree_path = None
+  for i, line in enumerate(lines):
+    if line.startswith(f'branch refs/heads/{branch_name}'):
+      worktree_path = lines[i-1].replace('worktree ', '')
+      break
 
-    if worktree_path:
-        print(f'📍 WORKTREE_PATH={worktree_path}')
+  if worktree_path:
+    print(f'📍 WORKTREE_PATH={worktree_path}')
 
 sys.exit(exit_code)
 ```
