@@ -1,11 +1,5 @@
 /// 알림 설정 타입
-enum NotificationSettingType {
-  marketing,
-  activity,
-  chat,
-  content,
-  transaction,
-}
+enum NotificationSettingType { marketing, activity, chat, content, transaction }
 
 /// 알림 설정 타입 확장
 extension NotificationSettingTypeExtension on NotificationSettingType {

@@ -11,12 +11,10 @@ class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() =>
-      _NotificationSettingsScreenState();
+  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState
-    extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
   // 각 설정 상태 (모든 초기값 ON - API 연동 시 서버 값으로 대체)
   bool _isMarketingEnabled = true; // ON
   bool _isActivityEnabled = true; // ON
@@ -28,11 +26,7 @@ class _NotificationSettingsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: CommonAppBar(
-        title: '설정',
-        showBottomBorder: true,
-        onBackPressed: () => Navigator.pop(context),
-      ),
+      appBar: CommonAppBar(title: '설정', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.fromLTRB(24.w, 56.h, 24.w, 24.h),
@@ -47,11 +41,8 @@ class _NotificationSettingsScreenState
               ]),
 
               SizedBox(height: 16.h), // 그룹 간 간격
-
               // 하단 그룹 (거래)
-              _buildSettingsGroup([
-                NotificationSettingType.transaction,
-              ]),
+              _buildSettingsGroup([NotificationSettingType.transaction]),
             ],
           ),
         ),
@@ -62,19 +53,13 @@ class _NotificationSettingsScreenState
   /// 설정 그룹 박스 빌더
   Widget _buildSettingsGroup(List<NotificationSettingType> settingTypes) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.secondaryBlack1,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(12.r)),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
         itemCount: settingTypes.length,
-        separatorBuilder: (_, __) => Divider(
-          height: 24.h,
-          color: AppColors.opacity30White,
-        ),
+        separatorBuilder: (_, __) => Divider(height: 24.h, color: AppColors.opacity30White),
         itemBuilder: (context, index) {
           return _buildSettingRow(settingTypes[index]);
         },
@@ -97,18 +82,12 @@ class _NotificationSettingsScreenState
             children: [
               Text(
                 type.title,
-                style: CustomTextStyles.p2.copyWith(
-                  color: AppColors.textColorWhite,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w600),
               ),
               SizedBox(height: 4.h),
               Text(
                 type.description,
-                style: CustomTextStyles.p3.copyWith(
-                  color: AppColors.opacity60White,
-                  letterSpacing: -0.5.sp,
-                ),
+                style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White, letterSpacing: -0.5.sp),
               ),
             ],
           ),
@@ -117,10 +96,7 @@ class _NotificationSettingsScreenState
         SizedBox(width: 16.w),
 
         // 우측: 토글 스위치
-        CompletedToggleSwitch(
-          value: value,
-          onChanged: (newValue) => _onSettingChanged(type, newValue),
-        ),
+        CompletedToggleSwitch(value: value, onChanged: (newValue) => _onSettingChanged(type, newValue)),
       ],
     );
   }
