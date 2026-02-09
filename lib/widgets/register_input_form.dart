@@ -454,8 +454,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                       height: 80.h,
                                       fit: BoxFit.cover,
                                       errorWidget: Container(
-                                        color: Colors.grey,
-                                        child: const Icon(Icons.broken_image, color: Colors.white),
+                                        color: AppColors.opacity40White,
+                                        child: const Icon(Icons.broken_image, color: AppColors.textColorWhite),
                                       ),
                                     ),
                             ),
@@ -750,7 +750,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 // AI 추천 가격 안내
                 Container(
                   height: 58.h,
-                  margin: EdgeInsets.only(bottom: 24.w),
+                  margin: EdgeInsets.only(bottom: 24.h),
                   padding: EdgeInsets.only(left: 12.w, right: 23.w),
                   decoration: BoxDecoration(
                     color: AppColors.aiSuggestionContainerBackground,
@@ -837,12 +837,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                   message: 'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요',
                                   type: SnackBarType.info,
                                 );
-                                // ScaffoldMessenger.of(context).showSnackBar(
-                                //   const SnackBar(
-                                //     content: Text(
-                                //         'AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
-                                //   ),
-                                // );
                               }
                               return;
                             }, // 비활성화
@@ -879,7 +873,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 ),
 
                 // 거래 희망 위치 필드
-                SizedBox(height: 24.w),
+                SizedBox(height: 24.h),
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.location.label,
                   field: RegisterCustomTextField(
@@ -1019,13 +1013,15 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           );
                         }
                       }
-                      setState(() {
-                        _isLoading = false;
-                      });
+                      if (mounted) {
+                        setState(() {
+                          _isLoading = false;
+                        });
+                      }
                     },
                   ),
                 ),
-                SizedBox(height: 24.w),
+                SizedBox(height: 24.h),
               ],
             ),
           ),
