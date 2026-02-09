@@ -82,6 +82,9 @@ android {
             KAKAO_NATIVE_APP_KEY : dotenv['KAKAO_NATIVE_APP_KEY'] ?: ""
         ]
         multiDexEnabled true
+
+        // Patrol E2E 테스트 설정
+        testInstrumentationRunner "pl.leancode.patrol.PatrolJUnitRunner"
     }
     signingConfigs {
         release {
@@ -107,4 +110,9 @@ dependencies {
     // Required for core library desugaring (e.g., flutter_local_notifications)
     // Use 2.1.4 or above as required by newer dependencies
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+
+    // Patrol E2E 테스트 의존성
+    androidTestImplementation "androidx.test:runner:1.5.1"
+    androidTestImplementation "androidx.test:rules:1.2.0"
+    androidTestUtil "androidx.test:orchestrator:1.4.2"
 }

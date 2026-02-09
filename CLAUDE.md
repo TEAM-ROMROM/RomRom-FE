@@ -163,6 +163,14 @@ bash tool/full_check.sh
 - `lib/models/app_theme.dart` - 텍스트 스타일 정의
 - `lib/models/app_colors.dart` - 색상 상수 정의
 
+## Git 커밋 규칙
+
+### 절대 자동 커밋 금지
+- **Claude는 절대로 사용자 허락 없이 `git commit`을 실행하지 않는다**
+- 코드 수정 후 반드시 사용자가 diff를 확인할 수 있도록 대기한다
+- 커밋은 사용자가 명시적으로 "커밋해줘"라고 요청했을 때만 수행한다
+- `git add`도 사용자 확인 후 진행한다
+
 ## Claude 자동 처리 규칙
 
 ### 코드 수정 후 필수 실행 (자동)

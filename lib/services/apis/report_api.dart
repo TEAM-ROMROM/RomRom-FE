@@ -31,4 +31,29 @@ class ReportApi {
       },
     );
   }
+
+  /// 회원 신고 API
+  /// POST /api/report/member/post
+  Future<void> reportMember({
+    required String memberId,
+    required Set<int> memberReportReasons,
+    String? extraComment,
+  }) async {
+    const String url = '${AppUrls.baseUrl}/api/report/member/post';
+
+    final Map<String, dynamic> fields = {
+      'memberId': memberId,
+      'memberReportReasons': memberReportReasons.join(','),
+      if (extraComment != null && extraComment.isNotEmpty) 'extraComment': extraComment,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('회원 신고 성공');
+      },
+    );
+  }
 }
