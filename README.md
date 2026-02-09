@@ -6,6 +6,7 @@
 <!-- AUTO-VERSION-SECTION: DO NOT EDIT MANUALLY -->
 <!-- 수정하지마세요 자동으로 동기화 됩니다 -->
 <!-- AUTO-VERSION-SECTION: DO NOT EDIT MANUALLY -->
+<!-- 수정하지마세요 자동으로 동기화 됩니다 -->
 ## 최신 버전 : v1.9.3 (2026-02-09)
 
 [전체 업데이트 내역 보기](CHANGELOG.md)
