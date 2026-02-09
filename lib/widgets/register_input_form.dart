@@ -72,6 +72,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   final TextEditingController priceController = TextEditingController(text: '0');
   final TextEditingController locationController = TextEditingController();
 
+  // 포커스 체인 (상단→하단 자동 이동)
+  final FocusNode _titleFocusNode = FocusNode();
+  final FocusNode _descriptionFocusNode = FocusNode();
+  final FocusNode _priceFocusNode = FocusNode();
+
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
   List<XFile> imageFiles = []; // 선택된 이미지 저장
@@ -300,9 +305,17 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   bool _isInitLoading = true;
   bool _isLoading = false;
 
+  void _onFormValueChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+    titleController.addListener(_onFormValueChanged);
+    descriptionController.addListener(_onFormValueChanged);
+    priceController.addListener(_onFormValueChanged);
+    locationController.addListener(_onFormValueChanged);
     _initControllers().then((_) {
       if (mounted) {
         setState(() {
@@ -314,6 +327,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   @override
   void dispose() {
+    titleController.removeListener(_onFormValueChanged);
+    descriptionController.removeListener(_onFormValueChanged);
+    priceController.removeListener(_onFormValueChanged);
+    locationController.removeListener(_onFormValueChanged);
+    _titleFocusNode.dispose();
+    _descriptionFocusNode.dispose();
+    _priceFocusNode.dispose();
     titleController.dispose();
     descriptionController.dispose();
     priceController.dispose();
@@ -355,386 +375,430 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       return const RegisterInputFormSkeleton();
     }
 
-    return Column(
-      children: [
-        // 이미지 업로드
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            GestureDetector(
-              onTap: onPickImage,
-              child: Container(
-                width: 80.w,
-                height: 80.h,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(color: AppColors.opacity40White, width: 1.5.w),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_loadingImageIndices.contains(imageFiles.length - 1))
-                      SizedBox(
-                        width: 24.w,
-                        height: 24.h,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.w,
-                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
-                        ),
-                      )
-                    else
-                      Column(
-                        children: [
-                          SizedBox(height: 6.h),
-                          Icon(AppIcons.itmeRegisterImage, color: AppColors.opacity60White, size: 24.sp),
-                          SizedBox(height: 4.h),
-                          Text('$imageCount/10', style: CustomTextStyles.p3.copyWith(color: AppColors.opacity40White)),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: SizedBox(
-                height: 88.h,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: imageUrls.length,
-                  separatorBuilder: (_, __) => SizedBox(width: 8.w),
-                  padding: EdgeInsets.only(top: 8.h),
-                  itemBuilder: (context, index) {
-                    final url = imageUrls[index];
-                    return SizedBox(
-                      height: 88.h,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8.r),
-                            child: _loadingImageIndices.contains(index)
-                                ? SizedBox(
-                                    width: 24.w,
-                                    height: 24.h,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.w,
-                                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
-                                    ),
-                                  )
-                                : CachedImage(
-                                    imageUrl: url,
-                                    width: 80.w,
-                                    height: 80.h,
-                                    fit: BoxFit.cover,
-                                    errorWidget: Container(
-                                      color: Colors.grey,
-                                      child: const Icon(Icons.broken_image, color: Colors.white),
-                                    ),
-                                  ),
-                          ),
-                          Positioned(
-                            top: -8.h,
-                            right: -8.w,
-                            child: GestureDetector(
-                              onTap: () async {
-                                await onDeleteImage(index);
-                              },
-                              child: Container(
-                                width: 24.w,
-                                height: 24.h,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.itemPictureRemoveButtonBackground,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.zero,
-                                  child: Icon(AppIcons.cancel, color: AppColors.primaryBlack, size: 16.sp),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-        // 이미지 에러 메시지
-        if (_hasImageBeenTouched && imageFiles.isEmpty)
-          Padding(
-            padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
-            child: Row(
-              children: [
-                Text('상품 사진을 최소 1장 이상 등록해주세요', style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder)),
-              ],
-            ),
-          ),
-        Padding(
-          padding: EdgeInsets.only(right: 24.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          // 이미지 업로드
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              SizedBox(height: 24.h),
-
-              // 제목 필드
-              RegisterCustomLabeledField(
-                label: ItemTextFieldPhrase.title.label,
-                field: RegisterCustomTextField(
-                  phrase: ItemTextFieldPhrase.title,
-                  maxLength: 20,
-                  controller: titleController,
-                  forceValidate: _forceValidateAll,
+              GestureDetector(
+                onTap: onPickImage,
+                child: Container(
+                  width: 80.w,
+                  height: 80.h,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(color: AppColors.opacity40White, width: 1.5.w),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_loadingImageIndices.contains(imageFiles.length - 1))
+                        SizedBox(
+                          width: 24.w,
+                          height: 24.h,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.w,
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
+                          ),
+                        )
+                      else
+                        Column(
+                          children: [
+                            SizedBox(height: 6.h),
+                            Icon(AppIcons.itmeRegisterImage, color: AppColors.opacity60White, size: 18.sp),
+                            SizedBox(height: 4.h),
+                            Text(
+                              '$imageCount/10',
+                              style: CustomTextStyles.p3.copyWith(color: AppColors.opacity40White),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
-
-              // 카테고리 필드
-              RegisterCustomLabeledField(
-                label: ItemTextFieldPhrase.category.label,
-                field: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () async {
-                        setState(() {
-                          _hasCategoryBeenTouched = true;
-                        });
-                        const categories = ItemCategories.values;
-                        ItemCategories? tempSelected = selectedCategory;
-                        await showModalBottomSheet<void>(
-                          context: context,
-                          backgroundColor: AppColors.primaryBlack,
-                          barrierColor: AppColors.opacity80Black,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                          ),
-                          isScrollControlled: true,
-                          builder: (context) {
-                            return StatefulBuilder(
-                              builder: (context, setInnerState) {
-                                return SizedBox(
-                                  height: 502.h,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 14.0.h),
-                                          child: Container(
-                                            width: 50.w,
-                                            height: 4.h,
-                                            decoration: BoxDecoration(
-                                              color: AppColors.opacity50White,
-                                              borderRadius: BorderRadius.circular(5.r),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.only(left: 26.w),
-                                        child: Text(
-                                          ItemTextFieldPhrase.category.label,
-                                          style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w700),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: Padding(
-                                          padding: EdgeInsets.only(right: 26.w, left: 26.w, top: 24.h),
-                                          child: Wrap(
-                                            spacing: 8.0.w,
-                                            runSpacing: 12.0.h,
-                                            children: categories.map((category) {
-                                              final isSelected = tempSelected == category;
-                                              return CategoryChip(
-                                                label: category.label,
-                                                isSelected: isSelected,
-                                                onTap: () {
-                                                  setInnerState(() {
-                                                    tempSelected = category;
-                                                  });
-                                                  Navigator.pop(context);
-                                                },
-                                              );
-                                            }).toList(),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        );
-                        setState(() {
-                          selectedCategory = tempSelected;
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-                        decoration: BoxDecoration(
-                          color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
-                              ? AppColors.errorContainer
-                              : AppColors.opacity10White,
-                          borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(
-                            color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
-                                ? AppColors.errorBorder
-                                : AppColors.opacity30White,
-                            width: 1.5.w,
-                          ),
-                        ),
-                        child: Row(
+              SizedBox(width: 8.w),
+              Expanded(
+                child: SizedBox(
+                  height: 88.h,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: imageUrls.length,
+                    separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                    padding: EdgeInsets.only(top: 8.h),
+                    itemBuilder: (context, index) {
+                      final url = imageUrls[index];
+                      return SizedBox(
+                        height: 88.h,
+                        child: Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            Expanded(
-                              child: Text(
-                                selectedCategory?.label ?? ItemTextFieldPhrase.category.hintText,
-                                style: CustomTextStyles.p2.copyWith(
-                                  color: selectedCategory != null ? AppColors.textColorWhite : AppColors.opacity40White,
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8.r),
+                              child: _loadingImageIndices.contains(index)
+                                  ? SizedBox(
+                                      width: 24.w,
+                                      height: 24.h,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.w,
+                                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
+                                      ),
+                                    )
+                                  : CachedImage(
+                                      imageUrl: url,
+                                      width: 80.w,
+                                      height: 80.h,
+                                      fit: BoxFit.cover,
+                                      errorWidget: Container(
+                                        color: AppColors.opacity40White,
+                                        child: const Icon(Icons.broken_image, color: AppColors.textColorWhite),
+                                      ),
+                                    ),
+                            ),
+                            Positioned(
+                              top: -8.h,
+                              right: -8.w,
+                              child: GestureDetector(
+                                onTap: () async {
+                                  await onDeleteImage(index);
+                                },
+                                child: Container(
+                                  width: 24.w,
+                                  height: 24.h,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.itemPictureRemoveButtonBackground,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.zero,
+                                    child: Icon(AppIcons.cancel, color: AppColors.primaryBlack, size: 16.sp),
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                    if ((_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null)
-                      Padding(
-                        padding: EdgeInsets.only(top: 8.0.h),
-                        child: Text(
-                          ItemTextFieldPhrase.category.errorText,
-                          style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // 이미지 에러 메시지
+          if (_hasImageBeenTouched && imageFiles.isEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
+              child: Row(
+                children: [
+                  Text('상품 사진을 최소 1장 이상 등록해주세요', style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder)),
+                ],
+              ),
+            ),
+          Padding(
+            padding: EdgeInsets.only(right: 24.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 24.h),
+
+                // 제목 필드
+                RegisterCustomLabeledField(
+                  label: ItemTextFieldPhrase.title.label,
+                  field: RegisterCustomTextField(
+                    phrase: ItemTextFieldPhrase.title,
+                    maxLength: 20,
+                    controller: titleController,
+                    forceValidate: _forceValidateAll,
+                    focusNode: _titleFocusNode,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) => _descriptionFocusNode.requestFocus(),
+                  ),
+                ),
+
+                // 카테고리 필드
+                RegisterCustomLabeledField(
+                  label: ItemTextFieldPhrase.category.label,
+                  field: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          setState(() {
+                            _hasCategoryBeenTouched = true;
+                          });
+                          const categories = ItemCategories.values;
+                          ItemCategories? tempSelected = selectedCategory;
+                          await showModalBottomSheet<void>(
+                            context: context,
+                            backgroundColor: AppColors.primaryBlack,
+                            barrierColor: AppColors.opacity80Black,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                            ),
+                            isScrollControlled: true,
+                            builder: (context) {
+                              return StatefulBuilder(
+                                builder: (context, setInnerState) {
+                                  return SizedBox(
+                                    height: 502.h,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Center(
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 14.0.h),
+                                            child: Container(
+                                              width: 50.w,
+                                              height: 4.h,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.opacity50White,
+                                                borderRadius: BorderRadius.circular(5.r),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: EdgeInsets.only(left: 26.w),
+                                          child: Text(
+                                            ItemTextFieldPhrase.category.label,
+                                            style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w700),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: Padding(
+                                            padding: EdgeInsets.only(right: 26.w, left: 26.w, top: 24.h),
+                                            child: Wrap(
+                                              spacing: 8.0.w,
+                                              runSpacing: 12.0.h,
+                                              children: categories.map((category) {
+                                                final isSelected = tempSelected == category;
+                                                return CategoryChip(
+                                                  label: category.label,
+                                                  isSelected: isSelected,
+                                                  onTap: () {
+                                                    setInnerState(() {
+                                                      tempSelected = category;
+                                                    });
+                                                    Navigator.pop(context);
+                                                  },
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          );
+                          setState(() {
+                            selectedCategory = tempSelected;
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                          decoration: BoxDecoration(
+                            color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
+                                ? AppColors.errorContainer
+                                : AppColors.opacity10White,
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: Border.all(
+                              color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
+                                  ? AppColors.errorBorder
+                                  : AppColors.opacity30White,
+                              width: 1.5.w,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  selectedCategory?.label ?? ItemTextFieldPhrase.category.hintText,
+                                  style: CustomTextStyles.p2.copyWith(
+                                    color: selectedCategory != null
+                                        ? AppColors.textColorWhite
+                                        : AppColors.opacity40White,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                  ],
-                ),
-              ),
-
-              // 물건 설명 필드
-              RegisterCustomLabeledField(
-                label: ItemTextFieldPhrase.description.label,
-                field: RegisterCustomTextField(
-                  phrase: ItemTextFieldPhrase.description,
-                  controller: descriptionController,
-                  maxLength: 1000,
-                  maxLines: 6,
-                  forceValidate: _forceValidateAll,
-                ),
-              ),
-
-              // 물건 상태 필드
-              RegisterCustomLabeledField(
-                label: ItemTextFieldPhrase.condition.label,
-                field: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
-                      child: Wrap(
-                        spacing: 8.w,
-                        runSpacing: 8.w,
-                        children: ItemCondition.values
-                            .map(
-                              (option) => RegisterOptionChip(
-                                itemOption: option.label,
-                                isSelected: selectedItemConditionTypes.contains(option),
-                                onTap: () {
-                                  final newList = <ItemCondition>[];
-                                  if (selectedItemConditionTypes.contains(option)) {
-                                    // 선택 해제
-                                  } else {
-                                    newList
-                                      ..clear()
-                                      ..add(option);
-                                  }
-                                  setState(() {
-                                    _hasConditionBeenTouched = true;
-                                    selectedItemConditionTypes = newList;
-                                  });
-                                },
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                    ((_hasConditionBeenTouched || _forceValidateAll) && selectedItemConditionTypes.isEmpty)
-                        ? Text(
-                            ItemTextFieldPhrase.condition.errorText,
+                      if ((_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null)
+                        Padding(
+                          padding: EdgeInsets.only(top: 8.0.h),
+                          child: Text(
+                            ItemTextFieldPhrase.category.errorText,
                             style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
-                          )
-                        : Text('', style: CustomTextStyles.p3),
-                  ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // 거래 방식 필드
-              RegisterCustomLabeledField(
-                label: ItemTextFieldPhrase.tradeOption.label,
-                field: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
-                      child: Wrap(
-                        spacing: 8.w,
-                        children: ItemTradeOption.values
-                            .map(
-                              (option) => RegisterOptionChip(
-                                itemOption: option.label,
-                                isSelected: selectedTradeOptions.contains(option),
-                                onTap: () {
-                                  final newList = List<ItemTradeOption>.from(selectedTradeOptions);
-                                  if (newList.contains(option)) {
-                                    newList.remove(option);
-                                  } else {
-                                    newList.add(option);
-                                  }
-                                  setState(() {
-                                    _hasTradeOptionBeenTouched = true;
-                                    selectedTradeOptions = newList;
-                                  });
-                                },
-                              ),
-                            )
-                            .toList(),
+                // 물건 설명 필드
+                RegisterCustomLabeledField(
+                  label: ItemTextFieldPhrase.description.label,
+                  field: RegisterCustomTextField(
+                    phrase: ItemTextFieldPhrase.description,
+                    controller: descriptionController,
+                    maxLength: 1000,
+                    maxLines: 6,
+                    forceValidate: _forceValidateAll,
+                    focusNode: _descriptionFocusNode,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) => _priceFocusNode.requestFocus(),
+                  ),
+                ),
+
+                // 물건 상태 필드
+                RegisterCustomLabeledField(
+                  label: ItemTextFieldPhrase.condition.label,
+                  field: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                        child: Wrap(
+                          spacing: 8.w,
+                          runSpacing: 8.w,
+                          children: ItemCondition.values
+                              .map(
+                                (option) => RegisterOptionChip(
+                                  itemOption: option.label,
+                                  isSelected: selectedItemConditionTypes.contains(option),
+                                  onTap: () {
+                                    final newList = <ItemCondition>[];
+                                    if (selectedItemConditionTypes.contains(option)) {
+                                      // 선택 해제
+                                    } else {
+                                      newList
+                                        ..clear()
+                                        ..add(option);
+                                    }
+                                    setState(() {
+                                      _hasConditionBeenTouched = true;
+                                      selectedItemConditionTypes = newList;
+                                    });
+                                  },
+                                ),
+                              )
+                              .toList(),
+                        ),
                       ),
-                    ),
-                    ((_hasTradeOptionBeenTouched || _forceValidateAll) && selectedTradeOptions.isEmpty)
-                        ? Text(
-                            ItemTextFieldPhrase.tradeOption.errorText,
-                            style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
-                          )
-                        : Text('', style: CustomTextStyles.p3),
-                  ],
+                      ((_hasConditionBeenTouched || _forceValidateAll) && selectedItemConditionTypes.isEmpty)
+                          ? Text(
+                              ItemTextFieldPhrase.condition.errorText,
+                              style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
+                            )
+                          : Text('', style: CustomTextStyles.p3),
+                    ],
+                  ),
                 ),
-              ),
 
-              // AI 추천 가격 안내
-              Container(
-                height: 58.h,
-                margin: EdgeInsets.only(bottom: 24.w),
-                padding: EdgeInsets.only(left: 12.w, right: 23.w),
-                decoration: BoxDecoration(
-                  color: AppColors.aiSuggestionContainerBackground,
-                  borderRadius: BorderRadius.circular(8.r),
+                // 거래 방식 필드
+                RegisterCustomLabeledField(
+                  label: ItemTextFieldPhrase.tradeOption.label,
+                  field: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                        child: Wrap(
+                          spacing: 8.w,
+                          children: ItemTradeOption.values
+                              .map(
+                                (option) => RegisterOptionChip(
+                                  itemOption: option.label,
+                                  isSelected: selectedTradeOptions.contains(option),
+                                  onTap: () {
+                                    final newList = List<ItemTradeOption>.from(selectedTradeOptions);
+                                    if (newList.contains(option)) {
+                                      newList.remove(option);
+                                    } else {
+                                      newList.add(option);
+                                    }
+                                    setState(() {
+                                      _hasTradeOptionBeenTouched = true;
+                                      selectedTradeOptions = newList;
+                                    });
+                                  },
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      ((_hasTradeOptionBeenTouched || _forceValidateAll) && selectedTradeOptions.isEmpty)
+                          ? Text(
+                              ItemTextFieldPhrase.tradeOption.errorText,
+                              style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
+                            )
+                          : Text('', style: CustomTextStyles.p3),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+
+                // AI 추천 가격 안내
+                Container(
+                  height: 58.h,
+                  margin: EdgeInsets.only(bottom: 24.h),
+                  padding: EdgeInsets.only(left: 12.w, right: 23.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.aiSuggestionContainerBackground,
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(4.r),
+                          border: Border.all(
+                            color: AppColors.textColorWhite,
+                            width: 0.5.w,
+                            strokeAlign: BorderSide.strokeAlignInside,
+                          ),
+                        ),
+                        child: GradientText(
+                          text: 'AI 추천 가격',
+                          style: CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
+                          gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Text(
+                          ItemTextFieldPhrase.price.hintText,
+                          style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500, height: 1.4),
+                          maxLines: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // AI 가격 추천 스위치
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    Text(ItemTextFieldPhrase.price.label, style: CustomTextStyles.p1),
+                    const Spacer(),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
                       decoration: BoxDecoration(
-                        color: Colors.transparent,
+                        color: AppColors.aiSuggestionContainerBackground,
                         borderRadius: BorderRadius.circular(4.r),
-                        border: Border.all(
-                          color: AppColors.textColorWhite,
-                          width: 0.5.w,
-                          strokeAlign: BorderSide.strokeAlignInside,
-                        ),
                       ),
                       child: GradientText(
                         text: 'AI 추천 가격',
@@ -742,257 +806,227 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
                       ),
                     ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Text(
-                        ItemTextFieldPhrase.price.hintText,
-                        style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500, height: 1.4),
-                        maxLines: 2,
+                    SizedBox(width: 4.w),
+                    AnimatedToggleSwitch.dual(
+                      current: useAiPrice,
+                      first: false,
+                      second: true,
+                      spacing: 2.0.w,
+                      height: 20.h,
+                      style: ToggleStyle(
+                        indicatorColor: AppColors.textColorWhite,
+                        borderRadius: BorderRadius.all(Radius.circular(100.r)),
+                        indicatorBoxShadow: [
+                          const BoxShadow(
+                            color: AppColors.toggleSwitchIndicatorShadow,
+                            offset: Offset(-1, 0),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                      indicatorSize: Size(18.w, 18.h),
+                      borderWidth: 0,
+                      padding: EdgeInsets.all(1.w),
+                      onTap: canUseAiPrice
+                          ? null
+                          : (b) {
+                              // 조건이 안 맞으면 스낵바로 안내
+                              if (context.mounted) {
+                                CommonSnackBar.show(
+                                  context: context,
+                                  message: 'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요',
+                                  type: SnackBarType.info,
+                                );
+                              }
+                              return;
+                            }, // 비활성화
+                      onChanged: canUseAiPrice
+                          ? (b) {
+                              setState(() => useAiPrice = b as bool);
+                              if ((b as bool) && canUseAiPrice) {
+                                _measureAiPrice();
+                              }
+                            }
+                          : null, // 비활성화
+                      styleBuilder: (b) => ToggleStyle(
+                        backgroundGradient: b
+                            ? const LinearGradient(colors: AppColors.aiGradient)
+                            : const LinearGradient(colors: [AppColors.opacity40White, AppColors.opacity40White]),
                       ),
                     ),
                   ],
                 ),
-              ),
 
-              // AI 가격 추천 스위치
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(ItemTextFieldPhrase.price.label, style: CustomTextStyles.p1),
-                  const Spacer(),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.aiSuggestionContainerBackground,
-                      borderRadius: BorderRadius.circular(4.r),
-                    ),
-                    child: GradientText(
-                      text: 'AI 추천 가격',
-                      style: CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
-                      gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
-                    ),
-                  ),
-                  SizedBox(width: 4.w),
-                  AnimatedToggleSwitch.dual(
-                    current: useAiPrice,
-                    first: false,
-                    second: true,
-                    spacing: 2.0.w,
-                    height: 20.h,
-                    style: ToggleStyle(
-                      indicatorColor: AppColors.textColorWhite,
-                      borderRadius: BorderRadius.all(Radius.circular(100.r)),
-                      indicatorBoxShadow: [
-                        const BoxShadow(
-                          color: AppColors.toggleSwitchIndicatorShadow,
-                          offset: Offset(-1, 0),
-                          blurRadius: 2,
-                        ),
-                      ],
-                    ),
-                    indicatorSize: Size(18.w, 18.h),
-                    borderWidth: 0,
-                    padding: EdgeInsets.all(1.w),
-                    onTap: canUseAiPrice
-                        ? null
-                        : (b) {
-                            // 조건이 안 맞으면 스낵바로 안내
-                            if (context.mounted) {
-                              CommonSnackBar.show(
-                                context: context,
-                                message: 'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요',
-                                type: SnackBarType.info,
-                              );
-                              // ScaffoldMessenger.of(context).showSnackBar(
-                              //   const SnackBar(
-                              //     content: Text(
-                              //         'AI 가격 측정을 위해 제목, 설명(10자 이상), 물건 상태를 모두 입력해주세요'),
-                              //   ),
-                              // );
-                            }
-                            return;
-                          }, // 비활성화
-                    onChanged: canUseAiPrice
-                        ? (b) {
-                            setState(() => useAiPrice = b as bool);
-                            if ((b as bool) && canUseAiPrice) {
-                              _measureAiPrice();
-                            }
-                          }
-                        : null, // 비활성화
-                    styleBuilder: (b) => ToggleStyle(
-                      backgroundGradient: b
-                          ? const LinearGradient(colors: AppColors.aiGradient)
-                          : const LinearGradient(colors: [AppColors.opacity40White, AppColors.opacity40White]),
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 8.w),
-              // 가격 필드
-              RegisterCustomTextField(
-                phrase: ItemTextFieldPhrase.price,
-                prefixText: '₩',
-                readOnly: useAiPrice,
-                maxLength: 11,
-                keyboardType: TextInputType.number,
-                controller: priceController,
-                forceValidate: _forceValidateAll,
-              ),
-
-              // 거래 희망 위치 필드
-              SizedBox(height: 24.w),
-              RegisterCustomLabeledField(
-                label: ItemTextFieldPhrase.location.label,
-                field: RegisterCustomTextField(
-                  readOnly: true,
-                  phrase: ItemTextFieldPhrase.location,
-                  suffixIcon: Icon(AppIcons.detailView, color: AppColors.textColorWhite, size: 18.w),
-                  controller: locationController,
+                SizedBox(height: 8.w),
+                // 가격 필드
+                RegisterCustomTextField(
+                  phrase: ItemTextFieldPhrase.price,
+                  prefixText: '₩',
+                  readOnly: useAiPrice,
+                  maxLength: 11,
+                  keyboardType: TextInputType.number,
+                  controller: priceController,
                   forceValidate: _forceValidateAll,
-                  onTap: () async {
-                    final result = await Navigator.of(context).push<LocationAddress>(
-                      MaterialPageRoute(
-                        builder: (_) => ItemRegisterLocationScreen(
-                          initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
-                          onLocationSelected: (address) {
-                            debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
-                            setState(() {
-                              locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-                              // 위치 좌표 저장
-                              _latitude = address.latitude;
-                              _longitude = address.longitude;
-                            });
-                            debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
-                          },
-                        ),
-                      ),
-                    );
-                    // Navigator.pop으로만 돌아온 경우도 처리
-                    if (result != null) {
-                      locationController.text = '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
-                    }
-                  },
+                  focusNode: _priceFocusNode,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                 ),
-                spacing: 32,
-              ),
 
-              // 등록 완료 버튼
-              IgnorePointer(
-                ignoring: _isLoading,
-                child: CompletionButton(
-                  isEnabled: isFormValid,
-                  buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
-                  enabledOnPressed: () async {
-                    // 모든 필드 강제 검증
-                    if (!isFormValid) {
-                      setState(() {
-                        _forceValidateAll = true;
-                        _hasCategoryBeenTouched = true;
-                        _hasConditionBeenTouched = true;
-                        _hasTradeOptionBeenTouched = true;
-                        _hasImageBeenTouched = true;
-                      });
-                      return;
-                    }
-
-                    if (_longitude == null || _latitude == null) {
-                      CommonSnackBar.show(
-                        context: context,
-                        message: ItemTextFieldPhrase.location.errorText,
-                        type: SnackBarType.info,
+                // 거래 희망 위치 필드
+                SizedBox(height: 24.h),
+                RegisterCustomLabeledField(
+                  label: ItemTextFieldPhrase.location.label,
+                  field: RegisterCustomTextField(
+                    readOnly: true,
+                    phrase: ItemTextFieldPhrase.location,
+                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.textColorWhite, size: 18.w),
+                    controller: locationController,
+                    forceValidate: _forceValidateAll,
+                    onTap: () async {
+                      final result = await Navigator.of(context).push<LocationAddress>(
+                        MaterialPageRoute(
+                          builder: (_) => ItemRegisterLocationScreen(
+                            initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
+                            onLocationSelected: (address) {
+                              debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
+                              setState(() {
+                                locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                                // 위치 좌표 저장
+                                _latitude = address.latitude;
+                                _longitude = address.longitude;
+                              });
+                              debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
+                            },
+                          ),
+                        ),
                       );
-                      return;
-                    }
-
-                    try {
-                      debugPrint('물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      final itemRequest = ItemRequest(
-                        itemId: widget.isEditMode ? widget.item?.itemId : null,
-                        itemName: titleController.text.trim(),
-                        itemDescription: descriptionController.text.trim(),
-                        itemCategory: selectedCategory!.serverName,
-                        itemCondition: selectedItemConditionTypes.isNotEmpty
-                            ? selectedItemConditionTypes.first.serverName
-                            : null,
-                        itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
-                        itemPrice: int.parse(priceController.text.replaceAll(',', '')),
-                        itemCustomTags: [],
-                        itemImageUrls: imageUrls,
-                        longitude: _longitude,
-                        latitude: _latitude,
-                        isAiPredictedPrice: useAiPrice,
-                      );
-
-                      if (widget.isEditMode) {
-                        // 수정 모드
-                        await ItemApi().updateItem(itemRequest);
-                        if (context.mounted) {
-                          Navigator.of(context).pop();
-                          CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
-                        }
-                      } else {
-                        // 등록 모드
-                        final response = await ItemApi().postItem(itemRequest);
-                        debugPrint('====================================');
-                        debugPrint(
-                          '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
-                        );
-                        debugPrint('====================================');
-
-                        final userInfo = UserInfo();
-                        await userInfo.getUserInfo();
-
-                        if (response.isFirstItemPosted == true) {
-                          debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
-                          await userInfo.saveLoginStatus(
-                            isFirstLogin: false,
-                            isFirstItemPosted: true,
-                            isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
-                            isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
-                            isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
-                            isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
-                            isCoachMarkShown: userInfo.isCoachMarkShown,
-                          );
-                        }
-
-                        if (context.mounted) {
-                          final resultData = {
-                            if (response.item?.itemId != null) 'itemId': response.item!.itemId,
-                            'isFirstItemPosted': response.isFirstItemPosted ?? false,
-                          };
-                          debugPrint('Navigator.pop 전달 데이터: $resultData');
-
-                          // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
-                          Navigator.of(context).pop(resultData);
-
-                          CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
-                        }
+                      // Navigator.pop으로만 돌아온 경우도 처리
+                      if (result != null) {
+                        locationController.text = '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
                       }
-                    } catch (e) {
-                      if (context.mounted) {
+                    },
+                  ),
+                  spacing: 32,
+                ),
+
+                // 등록 완료 버튼
+                IgnorePointer(
+                  ignoring: _isLoading,
+                  child: CompletionButton(
+                    isEnabled: isFormValid,
+                    buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
+                    enabledOnPressed: () async {
+                      // 모든 필드 강제 검증
+                      if (!isFormValid) {
+                        setState(() {
+                          _forceValidateAll = true;
+                          _hasCategoryBeenTouched = true;
+                          _hasConditionBeenTouched = true;
+                          _hasTradeOptionBeenTouched = true;
+                          _hasImageBeenTouched = true;
+                        });
+                        return;
+                      }
+
+                      if (_longitude == null || _latitude == null) {
                         CommonSnackBar.show(
                           context: context,
-                          message: '물품 $modeText에 실패했습니다: $e',
-                          type: SnackBarType.error,
+                          message: ItemTextFieldPhrase.location.errorText,
+                          type: SnackBarType.info,
                         );
+                        return;
                       }
-                    }
-                    setState(() {
-                      _isLoading = false;
-                    });
-                  },
+
+                      try {
+                        debugPrint('물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        final itemRequest = ItemRequest(
+                          itemId: widget.isEditMode ? widget.item?.itemId : null,
+                          itemName: titleController.text.trim(),
+                          itemDescription: descriptionController.text.trim(),
+                          itemCategory: selectedCategory!.serverName,
+                          itemCondition: selectedItemConditionTypes.isNotEmpty
+                              ? selectedItemConditionTypes.first.serverName
+                              : null,
+                          itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
+                          itemPrice: int.parse(priceController.text.replaceAll(',', '')),
+                          itemCustomTags: [],
+                          itemImageUrls: imageUrls,
+                          longitude: _longitude,
+                          latitude: _latitude,
+                          isAiPredictedPrice: useAiPrice,
+                        );
+
+                        if (widget.isEditMode) {
+                          // 수정 모드
+                          await ItemApi().updateItem(itemRequest);
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
+                          }
+                        } else {
+                          // 등록 모드
+                          final response = await ItemApi().postItem(itemRequest);
+                          debugPrint('====================================');
+                          debugPrint(
+                            '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
+                          );
+                          debugPrint('====================================');
+
+                          final userInfo = UserInfo();
+                          await userInfo.getUserInfo();
+
+                          if (response.isFirstItemPosted == true) {
+                            debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
+                            await userInfo.saveLoginStatus(
+                              isFirstLogin: false,
+                              isFirstItemPosted: true,
+                              isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
+                              isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+                              isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+                              isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
+                              isCoachMarkShown: userInfo.isCoachMarkShown,
+                            );
+                          }
+
+                          if (context.mounted) {
+                            final resultData = {
+                              if (response.item?.itemId != null) 'itemId': response.item!.itemId,
+                              'isFirstItemPosted': response.isFirstItemPosted ?? false,
+                            };
+                            debugPrint('Navigator.pop 전달 데이터: $resultData');
+
+                            // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
+                            Navigator.of(context).pop(resultData);
+
+                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '물품 $modeText에 실패했습니다: $e',
+                            type: SnackBarType.error,
+                          );
+                        }
+                      }
+                      if (mounted) {
+                        setState(() {
+                          _isLoading = false;
+                        });
+                      }
+                    },
+                  ),
                 ),
-              ),
-              SizedBox(height: 24.w),
-            ],
+                SizedBox(height: 24.h),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

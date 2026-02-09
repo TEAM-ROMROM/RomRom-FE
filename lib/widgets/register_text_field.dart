@@ -43,6 +43,9 @@ class RegisterCustomTextField extends StatefulWidget {
   final String prefixText;
   final VoidCallback? onTap;
   final bool? forceValidate; // 강제로 유효성 검사를 실행할지 여부
+  final FocusNode? focusNode; // 외부에서 전달 시 포커스 체인 제어
+  final TextInputAction? textInputAction;
+  final void Function(String)? onFieldSubmitted;
 
   const RegisterCustomTextField({
     super.key,
@@ -56,6 +59,9 @@ class RegisterCustomTextField extends StatefulWidget {
     this.prefixText = '',
     this.onTap,
     this.forceValidate,
+    this.focusNode,
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -64,25 +70,35 @@ class RegisterCustomTextField extends StatefulWidget {
 
 class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
   bool _hasLostFocus = false; // 포커스를 잃은 적이 있는지
-  late FocusNode _focusNode;
+  late FocusNode _internalFocusNode;
+  FocusNode get _effectiveFocusNode => widget.focusNode ?? _internalFocusNode;
 
   @override
   void initState() {
     super.initState();
-    _focusNode = FocusNode();
-    _focusNode.addListener(() {
-      // 포커스를 잃었을 때만 validation 시작
-      if (!_focusNode.hasFocus && !_hasLostFocus) {
-        setState(() {
-          _hasLostFocus = true;
-        });
-      }
-    });
+    if (widget.focusNode == null) {
+      _internalFocusNode = FocusNode();
+    } else {
+      _internalFocusNode = widget.focusNode!;
+    }
+    _effectiveFocusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    // 포커스를 잃었을 때만 validation 시작
+    if (!_effectiveFocusNode.hasFocus && !_hasLostFocus) {
+      setState(() {
+        _hasLostFocus = true;
+      });
+    }
   }
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    _effectiveFocusNode.removeListener(_onFocusChange);
+    if (widget.focusNode == null) {
+      _internalFocusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -112,10 +128,12 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   // number field일 때
                   return TextField(
                     controller: widget.controller,
-                    focusNode: _focusNode,
+                    focusNode: _effectiveFocusNode,
                     maxLength: widget.maxLength,
                     maxLines: widget.maxLines,
                     keyboardType: widget.keyboardType,
+                    textInputAction: widget.textInputAction,
+                    onSubmitted: widget.onFieldSubmitted,
                     readOnly: widget.readOnly,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly, // 숫자만 허용
@@ -162,13 +180,14 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   }
 
                   return SizedBox(
-                    height: 46.h,
                     child: TextField(
                       controller: widget.controller,
-                      focusNode: _focusNode,
+                      focusNode: _effectiveFocusNode,
                       maxLength: widget.maxLength,
                       maxLines: widget.maxLines,
                       keyboardType: widget.keyboardType,
+                      textInputAction: widget.textInputAction,
+                      onSubmitted: widget.onFieldSubmitted,
                       readOnly: widget.readOnly,
                       onTap: widget.onTap,
                       style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, height: 1.4),
