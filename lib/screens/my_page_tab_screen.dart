@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_like_list_screen.dart';
+import 'package:romrom_fe/screens/notification_settings_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
@@ -88,7 +89,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                   Text('마이페이지', style: CustomTextStyles.h1),
                   GestureDetector(
                     onTap: () {
-                      // TODO: 설정 화면으로 이동
+                      context.navigateTo(screen: const NotificationSettingsScreen());
                     },
                     child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
                   ),
