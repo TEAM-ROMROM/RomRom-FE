@@ -1,11 +1,44 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-02T13:38:04Z",
-    "currentVersion": "1.8.74",
-    "totalReleases": 59,
+    "lastUpdated": "2026-02-09T02:17:27Z",
+    "currentVersion": "1.9.0",
+    "totalReleases": 60,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.0",
+      "project_type": "flutter",
+      "date": "2026-02-09",
+      "pr_number": 494,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **새로운 기능**\n  * 채팅에서 이미지 메시지 전송 및 보기 기능 추가\n  * 회원 신고 기능 추가 (신고 사유 및 추가 의견 제출 가능)\n  * 채팅방 차단 여부 확인 기능 추가\n  * 앱 화면 방향을 세로 모드로 고정\n\n* **개선 사항**\n  * 채팅 목록 페이지 로딩 상태 관리 개선\n  * 페이징 기능 최적화\n\n* **기타**\n  * 버전 업데이트 (v1.9.0)\n  * E2E 자동화 테스트 환경 구축",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅에서 이미지 메시지 전송 및 보기 기능 추가",
+            "회원 신고 기능 추가 (신고 사유 및 추가 의견 제출 가능)",
+            "채팅방 차단 여부 확인 기능 추가",
+            "앱 화면 방향을 세로 모드로 고정"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "채팅 목록 페이지 로딩 상태 관리 개선",
+            "페이징 기능 최적화"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 업데이트 (v1.9.0)",
+            "E2E 자동화 테스트 환경 구축"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.8.74",
       "project_type": "flutter",
