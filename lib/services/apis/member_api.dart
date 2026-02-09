@@ -238,19 +238,34 @@ class MemberApi {
     return isSuccess;
   }
 
-  /// 알림 수신 동의 업데이트 API
+  /// 알림 수신 설정 업데이트 API (개별 알림 타입별)
   /// `POST /api/members/notification/update`
-  Future<MemberResponse> updateNotificationAgreement({required bool isNotificationAgreed}) async {
+  /// 변경하지 않는 필드는 null로 전달
+  Future<MemberResponse> updateNotificationSetting({
+    bool? isMarketingInfoAgreed,
+    bool? isActivityNotificationAgreed,
+    bool? isChatNotificationAgreed,
+    bool? isContentNotificationAgreed,
+    bool? isTradeNotificationAgreed,
+  }) async {
     const String url = '${AppUrls.baseUrl}/api/members/notification/update';
     late MemberResponse memberResponse;
 
+    final Map<String, dynamic> fields = {
+      if (isMarketingInfoAgreed != null) 'isMarketingInfoAgreed': isMarketingInfoAgreed.toString(),
+      if (isActivityNotificationAgreed != null) 'isActivityNotificationAgreed': isActivityNotificationAgreed.toString(),
+      if (isChatNotificationAgreed != null) 'isChatNotificationAgreed': isChatNotificationAgreed.toString(),
+      if (isContentNotificationAgreed != null) 'isContentNotificationAgreed': isContentNotificationAgreed.toString(),
+      if (isTradeNotificationAgreed != null) 'isTradeNotificationAgreed': isTradeNotificationAgreed.toString(),
+    };
+
     await ApiClient.sendMultipartRequest(
       url: url,
-      fields: {'isNotificationAgreed': isNotificationAgreed.toString()},
+      fields: fields,
       isAuthRequired: true,
       onSuccess: (responseData) {
         memberResponse = MemberResponse.fromJson(responseData);
-        debugPrint('알림 수신 동의 업데이트 성공: $isNotificationAgreed');
+        debugPrint('알림 수신 설정 업데이트 성공');
       },
     );
 
