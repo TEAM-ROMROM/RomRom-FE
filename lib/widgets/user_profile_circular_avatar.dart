@@ -12,16 +12,10 @@ class UserProfileCircularAvatar extends StatefulWidget {
   final String? profileUrl;
   final bool hasBorder;
 
-  const UserProfileCircularAvatar({
-    super.key,
-    required this.avatarSize,
-    this.profileUrl,
-    this.hasBorder = false,
-  });
+  const UserProfileCircularAvatar({super.key, required this.avatarSize, this.profileUrl, this.hasBorder = false});
 
   @override
-  State<UserProfileCircularAvatar> createState() =>
-      _UserProfileCircularAvatarState();
+  State<UserProfileCircularAvatar> createState() => _UserProfileCircularAvatarState();
 }
 
 class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
@@ -90,23 +84,14 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
       child: ClipOval(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _avatarUrl != null &&
-                  _avatarUrl!.isNotEmpty &&
-                  _avatarUrl != _kDefaultProfileAsset
-            ? CachedImage(
-                imageUrl: _avatarUrl!,
-                fit: BoxFit.contain,
-                errorWidget: _buildDefaultImage(),
-              )
+            : _avatarUrl != null && _avatarUrl!.isNotEmpty && _avatarUrl != _kDefaultProfileAsset
+            ? CachedImage(imageUrl: _avatarUrl!, fit: BoxFit.contain, errorWidget: _buildDefaultImage())
             : _buildDefaultImage(),
       ),
     );
   }
 
   Widget _buildDefaultImage() {
-    return SvgPicture.asset(
-      _kDefaultProfileAsset,
-      fit: BoxFit.cover,
-    );
+    return SvgPicture.asset(_kDefaultProfileAsset, fit: BoxFit.cover);
   }
 }

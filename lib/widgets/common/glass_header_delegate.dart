@@ -40,11 +40,9 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => minExtent + expandedExtra;
 
   @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     final extraRange = (maxExtent - minExtent).clamp(0.0, double.infinity);
-    final t =
-        extraRange == 0 ? 1.0 : (shrinkOffset / extraRange).clamp(0.0, 1.0);
+    final t = extraRange == 0 ? 1.0 : (shrinkOffset / extraRange).clamp(0.0, 1.0);
 
     final sigma = enableBlur ? lerpDouble(0, 30, t)! : 0.0;
 
@@ -59,11 +57,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
           ),
 
           // 2) 틴트 (단색)
-          Container(
-            decoration: const BoxDecoration(
-              color: AppColors.opacity90PrimaryBlack,
-            ),
-          ),
+          Container(decoration: const BoxDecoration(color: AppColors.opacity90PrimaryBlack)),
 
           // 3) 좌측 위젯 (뒤로가기 버튼 등)
           // centerTitle이면 toolbarHeight 영역 중앙에 배치
@@ -114,11 +108,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
                   opacity: centerTitle ? 0.0 : t,
                   child: Padding(
                     padding: const EdgeInsets.only(top: 16, bottom: 24),
-                    child: Text(
-                      headerTitle,
-                      style: CustomTextStyles.h3
-                          .copyWith(fontWeight: FontWeight.w600),
-                    ),
+                    child: Text(headerTitle, style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600)),
                   ),
                 ),
               ),
@@ -130,14 +120,9 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
           Positioned(
             left: 0,
             right: 0,
-            top: statusBarHeight +
-                toolbarHeight +
-                (centerTitle ? 0.0 : lerpDouble(10, 0, t)!),
+            top: statusBarHeight + toolbarHeight + (centerTitle ? 0.0 : lerpDouble(10, 0, t)!),
             height: toggleHeight,
-            child: Material(
-              color: Colors.transparent,
-              child: toggle,
-            ),
+            child: Material(color: Colors.transparent, child: toggle),
           ),
 
           // 8) 하단 라인(살짝)
@@ -147,11 +132,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             bottom: 0,
             child: Opacity(
               opacity: 0.15 * t,
-              child: const Divider(
-                height: 1,
-                thickness: 1,
-                color: AppColors.opacity20Black,
-              ),
+              child: const Divider(height: 1, thickness: 1, color: AppColors.opacity20Black),
             ),
           ),
         ],
@@ -192,10 +173,7 @@ class GlassHeaderToggleBuilder {
       child: Container(
         width: 345.w,
         height: 46.h,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.r),
-          color: AppColors.secondaryBlack1,
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
         child: AnimatedBuilder(
           animation: animation,
           builder: (context, child) {
@@ -208,10 +186,7 @@ class GlassHeaderToggleBuilder {
                   child: Container(
                     width: 170.w,
                     height: 42.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.r),
-                      color: AppColors.primaryBlack,
-                    ),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(8.r), color: AppColors.primaryBlack),
                   ),
                 ),
                 // 좌/우 탭 영역
@@ -227,9 +202,7 @@ class GlassHeaderToggleBuilder {
                           child: AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 300),
                             style: CustomTextStyles.p2.copyWith(
-                              color: !isRightSelected
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity50White,
+                              color: !isRightSelected ? AppColors.textColorWhite : AppColors.opacity50White,
                             ),
                             child: Text(leftText),
                           ),
@@ -246,9 +219,7 @@ class GlassHeaderToggleBuilder {
                           child: AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 300),
                             style: CustomTextStyles.p2.copyWith(
-                              color: isRightSelected
-                                  ? AppColors.textColorWhite
-                                  : AppColors.opacity50White,
+                              color: isRightSelected ? AppColors.textColorWhite : AppColors.opacity50White,
                             ),
                             child: Text(rightText),
                           ),

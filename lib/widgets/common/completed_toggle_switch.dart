@@ -7,11 +7,7 @@ class CompletedToggleSwitch extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  const CompletedToggleSwitch({
-    super.key,
-    required this.value,
-    required this.onChanged,
-  });
+  const CompletedToggleSwitch({super.key, required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +19,7 @@ class CompletedToggleSwitch extends StatelessWidget {
         height: 20.h,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10.r),
-          color: value ? AppColors.primaryYellow : const Color(0x33FFFFFF), // 활성/비활성 색상
+          color: value ? AppColors.primaryYellow : AppColors.opacity40White, // 활성/비활성 색상
         ),
         child: Stack(
           children: [

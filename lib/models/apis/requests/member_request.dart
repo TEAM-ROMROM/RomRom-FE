@@ -30,7 +30,6 @@ class MemberRequest {
     this.roadAddress,
   });
 
-  factory MemberRequest.fromJson(Map<String, dynamic> json) =>
-      _$MemberRequestFromJson(json);
+  factory MemberRequest.fromJson(Map<String, dynamic> json) => _$MemberRequestFromJson(json);
   Map<String, dynamic> toJson() => _$MemberRequestToJson(this);
 }

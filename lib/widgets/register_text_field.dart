@@ -21,9 +21,7 @@ class RegisterCustomTextFieldLabel extends StatelessWidget {
                 SizedBox(width: 8.w),
                 Text(
                   ItemTextFieldPhrase.tradeOption.hintText,
-                  style: CustomTextStyles.p3.copyWith(
-                    color: AppColors.opacity40White,
-                  ),
+                  style: CustomTextStyles.p3.copyWith(color: AppColors.opacity40White),
                 ),
               ],
             )
@@ -67,8 +65,7 @@ class RegisterCustomTextField extends StatefulWidget {
   });
 
   @override
-  State<RegisterCustomTextField> createState() =>
-      _RegisterCustomTextFieldState();
+  State<RegisterCustomTextField> createState() => _RegisterCustomTextFieldState();
 }
 
 class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
@@ -109,19 +106,11 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
   Widget build(BuildContext context) {
     OutlineInputBorder inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(8.r),
-      borderSide: BorderSide(
-        color: AppColors.opacity30White,
-        width: 1.5.w,
-        strokeAlign: BorderSide.strokeAlignInside,
-      ),
+      borderSide: BorderSide(color: AppColors.opacity30White, width: 1.5.w, strokeAlign: BorderSide.strokeAlignInside),
     );
     OutlineInputBorder errorBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(8.r),
-      borderSide: BorderSide(
-        color: AppColors.errorBorder,
-        width: 1.5.w,
-        strokeAlign: BorderSide.strokeAlignInside,
-      ),
+      borderSide: BorderSide(color: AppColors.errorBorder, width: 1.5.w, strokeAlign: BorderSide.strokeAlignInside),
     );
     final isNumberField = widget.keyboardType == TextInputType.number;
 
@@ -133,11 +122,8 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                 valueListenable: widget.controller!,
                 builder: (context, value, child) {
                   // 가격 유효성 검사 (포커스를 잃었거나 강제 검증일 때)
-                  final price =
-                      int.tryParse(value.text.replaceAll(',', '')) ?? 0;
-                  bool shouldShowError =
-                      (_hasLostFocus || widget.forceValidate == true) &&
-                      price == 0;
+                  final price = int.tryParse(value.text.replaceAll(',', '')) ?? 0;
+                  bool shouldShowError = (_hasLostFocus || widget.forceValidate == true) && price == 0;
 
                   // number field일 때
                   return TextField(
@@ -154,40 +140,25 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                       const PriceCommaFormatter(), // 콤마 포맷팅
                     ],
                     onTap: widget.onTap,
-                    style: CustomTextStyles.p2.copyWith(
-                      color: AppColors.textColorWhite,
-                    ),
+                    style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
                     cursorColor: AppColors.textColorWhite,
                     decoration: InputDecoration(
                       hintText: widget.phrase.hintText,
                       filled: true,
-                      fillColor: shouldShowError
-                          ? AppColors.errorContainer
-                          : AppColors.opacity10White,
+                      fillColor: shouldShowError ? AppColors.errorContainer : AppColors.opacity10White,
                       border: shouldShowError ? errorBorder : inputBorder,
-                      enabledBorder: shouldShowError
-                          ? errorBorder
-                          : inputBorder,
-                      focusedBorder: shouldShowError
-                          ? errorBorder
-                          : inputBorder,
-                      hintStyle: CustomTextStyles.p2.copyWith(
-                        color: AppColors.opacity40White,
-                      ),
+                      enabledBorder: shouldShowError ? errorBorder : inputBorder,
+                      focusedBorder: shouldShowError ? errorBorder : inputBorder,
+                      hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity40White),
                       counterText: '',
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16.w,
-                        vertical: 16.h,
-                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                       suffixIcon: widget.suffixIcon,
                       prefix: widget.prefixText.isNotEmpty
                           ? Padding(
                               padding: EdgeInsets.only(right: 8.0.w),
                               child: Text(
                                 widget.prefixText,
-                                style: CustomTextStyles.p2.copyWith(
-                                  color: AppColors.textColorWhite,
-                                ),
+                                style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
                               ),
                             )
                           : null,
@@ -202,9 +173,7 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   bool shouldShowError = false;
                   if (_hasLostFocus || widget.forceValidate == true) {
                     if (widget.phrase == ItemTextFieldPhrase.description) {
-                      shouldShowError =
-                          value.text.trim().isEmpty ||
-                          value.text.trim().length < 10;
+                      shouldShowError = value.text.trim().isEmpty || value.text.trim().length < 10;
                     } else {
                       shouldShowError = value.text.trim().isEmpty;
                     }
@@ -221,32 +190,18 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                       onSubmitted: widget.onFieldSubmitted,
                       readOnly: widget.readOnly,
                       onTap: widget.onTap,
-                      style: CustomTextStyles.p2.copyWith(
-                        color: AppColors.textColorWhite,
-                        height: 1.4,
-                      ),
+                      style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, height: 1.4),
                       cursorColor: AppColors.textColorWhite,
                       decoration: InputDecoration(
                         hintText: widget.phrase.hintText,
                         filled: true,
-                        fillColor: shouldShowError
-                            ? AppColors.errorContainer
-                            : AppColors.opacity10White,
+                        fillColor: shouldShowError ? AppColors.errorContainer : AppColors.opacity10White,
                         border: shouldShowError ? errorBorder : inputBorder,
-                        enabledBorder: shouldShowError
-                            ? errorBorder
-                            : inputBorder,
-                        focusedBorder: shouldShowError
-                            ? errorBorder
-                            : inputBorder,
-                        hintStyle: CustomTextStyles.p2.copyWith(
-                          color: AppColors.opacity40White,
-                        ),
+                        enabledBorder: shouldShowError ? errorBorder : inputBorder,
+                        focusedBorder: shouldShowError ? errorBorder : inputBorder,
+                        hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity40White),
                         counterText: '',
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 14.h,
-                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
                         suffixIcon: widget.suffixIcon,
                         errorBorder: errorBorder,
                         prefix: widget.prefixText.isNotEmpty
@@ -254,9 +209,7 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                                 padding: EdgeInsets.only(right: 8.0.w),
                                 child: Text(
                                   widget.prefixText,
-                                  style: CustomTextStyles.p2.copyWith(
-                                    color: AppColors.textColorWhite,
-                                  ),
+                                  style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
                                 ),
                               )
                             : null,
@@ -277,8 +230,7 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
               if (_hasLostFocus || widget.forceValidate == true) {
                 if (widget.keyboardType == TextInputType.number) {
                   // 가격 필드
-                  final price =
-                      int.tryParse(value.text.replaceAll(',', '')) ?? 0;
+                  final price = int.tryParse(value.text.replaceAll(',', '')) ?? 0;
                   if (price == 0) {
                     shouldShowError = true;
                     errorMessage = '가격은 0원보다 커야 합니다';
@@ -304,20 +256,15 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                   children: [
                     Text(
                       shouldShowError ? errorMessage : '',
-                      style: CustomTextStyles.p3.copyWith(
-                        color: AppColors.errorBorder,
-                      ),
+                      style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
                     ),
                     // 카운터는 maxLength가 있고, 카테고리가 아닌 경우에만 표시
                     if (widget.maxLength != null &&
-                        widget.phrase.name !=
-                            ItemTextFieldPhrase.category.name &&
+                        widget.phrase.name != ItemTextFieldPhrase.category.name &&
                         widget.phrase.name != ItemTextFieldPhrase.price.name)
                       Text(
                         '$currentLength/${widget.maxLength}',
-                        style: CustomTextStyles.p3.copyWith(
-                          color: AppColors.opacity50White,
-                        ),
+                        style: CustomTextStyles.p3.copyWith(color: AppColors.opacity50White),
                       ),
                   ],
                 ),
@@ -335,12 +282,7 @@ class RegisterCustomLabeledField extends StatelessWidget {
   final Widget field;
   final double spacing;
 
-  const RegisterCustomLabeledField({
-    super.key,
-    required this.label,
-    required this.field,
-    this.spacing = 24,
-  });
+  const RegisterCustomLabeledField({super.key, required this.label, required this.field, this.spacing = 24});
 
   @override
   Widget build(BuildContext context) {

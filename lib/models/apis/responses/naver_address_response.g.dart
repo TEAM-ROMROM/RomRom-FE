@@ -6,24 +6,18 @@ part of 'naver_address_response.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-NaverAddressResponse _$NaverAddressResponseFromJson(
-  Map<String, dynamic> json,
-) => NaverAddressResponse(
+NaverAddressResponse _$NaverAddressResponseFromJson(Map<String, dynamic> json) => NaverAddressResponse(
   status: Status.fromJson(json['status'] as Map<String, dynamic>),
-  results: (json['results'] as List<dynamic>)
-      .map((e) => Result.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  results: (json['results'] as List<dynamic>).map((e) => Result.fromJson(e as Map<String, dynamic>)).toList(),
 );
 
-Map<String, dynamic> _$NaverAddressResponseToJson(
-  NaverAddressResponse instance,
-) => <String, dynamic>{'status': instance.status, 'results': instance.results};
+Map<String, dynamic> _$NaverAddressResponseToJson(NaverAddressResponse instance) => <String, dynamic>{
+  'status': instance.status,
+  'results': instance.results,
+};
 
-Status _$StatusFromJson(Map<String, dynamic> json) => Status(
-  code: (json['code'] as num).toInt(),
-  name: json['name'] as String,
-  message: json['message'] as String,
-);
+Status _$StatusFromJson(Map<String, dynamic> json) =>
+    Status(code: (json['code'] as num).toInt(), name: json['name'] as String, message: json['message'] as String);
 
 Map<String, dynamic> _$StatusToJson(Status instance) => <String, dynamic>{
   'code': instance.code,
@@ -35,9 +29,7 @@ Result _$ResultFromJson(Map<String, dynamic> json) => Result(
   name: json['name'] as String,
   code: Code.fromJson(json['code'] as Map<String, dynamic>),
   region: Region.fromJson(json['region'] as Map<String, dynamic>),
-  land: json['land'] == null
-      ? null
-      : Land.fromJson(json['land'] as Map<String, dynamic>),
+  land: json['land'] == null ? null : Land.fromJson(json['land'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ResultToJson(Result instance) => <String, dynamic>{
@@ -47,11 +39,8 @@ Map<String, dynamic> _$ResultToJson(Result instance) => <String, dynamic>{
   'land': instance.land,
 };
 
-Code _$CodeFromJson(Map<String, dynamic> json) => Code(
-  id: json['id'] as String,
-  type: json['type'] as String,
-  mappingId: json['mappingId'] as String,
-);
+Code _$CodeFromJson(Map<String, dynamic> json) =>
+    Code(id: json['id'] as String, type: json['type'] as String, mappingId: json['mappingId'] as String);
 
 Map<String, dynamic> _$CodeToJson(Code instance) => <String, dynamic>{
   'id': instance.id,
@@ -87,46 +76,31 @@ Map<String, dynamic> _$AreaToJson(Area instance) => <String, dynamic>{
   'alias': instance.alias,
 };
 
-Coords _$CoordsFromJson(Map<String, dynamic> json) => Coords(
-  center: NaverCenter.fromJson(json['center'] as Map<String, dynamic>),
-);
+Coords _$CoordsFromJson(Map<String, dynamic> json) =>
+    Coords(center: NaverCenter.fromJson(json['center'] as Map<String, dynamic>));
 
-Map<String, dynamic> _$CoordsToJson(Coords instance) => <String, dynamic>{
-  'center': instance.center,
+Map<String, dynamic> _$CoordsToJson(Coords instance) => <String, dynamic>{'center': instance.center};
+
+NaverCenter _$NaverCenterFromJson(Map<String, dynamic> json) =>
+    NaverCenter(crs: json['crs'] as String, x: (json['x'] as num).toDouble(), y: (json['y'] as num).toDouble());
+
+Map<String, dynamic> _$NaverCenterToJson(NaverCenter instance) => <String, dynamic>{
+  'crs': instance.crs,
+  'x': instance.x,
+  'y': instance.y,
 };
-
-NaverCenter _$NaverCenterFromJson(Map<String, dynamic> json) => NaverCenter(
-  crs: json['crs'] as String,
-  x: (json['x'] as num).toDouble(),
-  y: (json['y'] as num).toDouble(),
-);
-
-Map<String, dynamic> _$NaverCenterToJson(NaverCenter instance) =>
-    <String, dynamic>{'crs': instance.crs, 'x': instance.x, 'y': instance.y};
 
 Land _$LandFromJson(Map<String, dynamic> json) => Land(
   type: json['type'] as String?,
   number1: json['number1'] as String?,
   number2: json['number2'] as String?,
-  addition0: json['addition0'] == null
-      ? null
-      : Addition.fromJson(json['addition0'] as Map<String, dynamic>),
-  addition1: json['addition1'] == null
-      ? null
-      : Addition.fromJson(json['addition1'] as Map<String, dynamic>),
-  addition2: json['addition2'] == null
-      ? null
-      : Addition.fromJson(json['addition2'] as Map<String, dynamic>),
-  addition3: json['addition3'] == null
-      ? null
-      : Addition.fromJson(json['addition3'] as Map<String, dynamic>),
-  addition4: json['addition4'] == null
-      ? null
-      : Addition.fromJson(json['addition4'] as Map<String, dynamic>),
+  addition0: json['addition0'] == null ? null : Addition.fromJson(json['addition0'] as Map<String, dynamic>),
+  addition1: json['addition1'] == null ? null : Addition.fromJson(json['addition1'] as Map<String, dynamic>),
+  addition2: json['addition2'] == null ? null : Addition.fromJson(json['addition2'] as Map<String, dynamic>),
+  addition3: json['addition3'] == null ? null : Addition.fromJson(json['addition3'] as Map<String, dynamic>),
+  addition4: json['addition4'] == null ? null : Addition.fromJson(json['addition4'] as Map<String, dynamic>),
   name: json['name'] as String?,
-  coords: json['coords'] == null
-      ? null
-      : Coords.fromJson(json['coords'] as Map<String, dynamic>),
+  coords: json['coords'] == null ? null : Coords.fromJson(json['coords'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$LandToJson(Land instance) => <String, dynamic>{

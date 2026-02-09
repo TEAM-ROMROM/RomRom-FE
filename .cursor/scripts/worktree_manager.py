@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Git Worktree Manager v1.0.4
+Git Worktree Manager v1.1.0
 
 Git worktree를 자동으로 생성하고 관리하는 스크립트입니다.
-브랜치가 없으면 자동으로 생성하고, 브랜치명의 특수문자를 안전하게 처리합니다.
+브랜치가 없으면 리모트(origin) 확인 후 자동으로 생성하고, 브랜치명의 특수문자를 안전하게 처리합니다.
 
 사용법:
     macOS/Linux:
@@ -46,7 +46,7 @@ if platform.system() == 'Windows':
 # 상수 정의
 # ===================================================================
 
-VERSION = "1.0.4"
+VERSION = "1.1.0"
 
 # Windows 환경 감지
 IS_WINDOWS = platform.system() == 'Windows'
@@ -249,13 +249,13 @@ def get_current_branch() -> Optional[str]:
 
 def branch_exists(branch_name: str) -> bool:
     """
-    브랜치 존재 여부 확인
+    로컬 브랜치 존재 여부 확인
     
     Args:
         branch_name: 확인할 브랜치명
         
     Returns:
-        bool: 브랜치가 존재하면 True
+        bool: 로컬 브랜치가 존재하면 True
     """
     success, stdout, _ = run_git_command(['branch', '--list', branch_name], check=False)
     if success and stdout:
@@ -265,9 +265,44 @@ def branch_exists(branch_name: str) -> bool:
     return False
 
 
+def remote_branch_exists(branch_name: str, remote: str = 'origin') -> bool:
+    """
+    리모트에 브랜치가 존재하는지 확인
+    
+    Args:
+        branch_name: 확인할 브랜치명
+        remote: 리모트 이름 (기본: 'origin')
+        
+    Returns:
+        bool: 리모트에 브랜치가 존재하면 True
+    """
+    success, stdout, _ = run_git_command(['branch', '-r', '--list', f'{remote}/{branch_name}'], check=False)
+    if success and stdout:
+        branches = [line.strip() for line in stdout.split('\n')]
+        return f'{remote}/{branch_name}' in branches
+    return False
+
+
+def fetch_remote(remote: str = 'origin') -> bool:
+    """
+    리모트에서 최신 정보를 가져옵니다 (git fetch)
+    
+    Args:
+        remote: 리모트 이름 (기본: 'origin')
+        
+    Returns:
+        bool: 성공 여부
+    """
+    print_step("🔄", f"리모트({remote}) 최신 정보 가져오는 중...")
+    success, _, stderr = run_git_command(['fetch', remote], check=False)
+    if not success:
+        print_warning(f"리모트 fetch 실패: {stderr}")
+    return success
+
+
 def create_branch(branch_name: str) -> bool:
     """
-    현재 브랜치에서 새 브랜치 생성
+    새 브랜치 생성 (현재 브랜치에서 분기)
     
     Args:
         branch_name: 생성할 브랜치명
@@ -278,6 +313,26 @@ def create_branch(branch_name: str) -> bool:
     success, _, stderr = run_git_command(['branch', branch_name], check=False)
     if not success:
         print_error(f"브랜치 생성 실패: {stderr}")
+    return success
+
+
+def create_branch_from_remote(branch_name: str, remote: str = 'origin') -> bool:
+    """
+    리모트 브랜치를 기반으로 로컬 tracking 브랜치 생성
+    
+    Args:
+        branch_name: 생성할 브랜치명
+        remote: 리모트 이름 (기본: 'origin')
+        
+    Returns:
+        bool: 성공 여부
+    """
+    success, _, stderr = run_git_command(
+        ['branch', '--track', branch_name, f'{remote}/{branch_name}'],
+        check=False
+    )
+    if not success:
+        print_error(f"리모트 브랜치 기반 로컬 브랜치 생성 실패: {stderr}")
     return success
 
 
@@ -561,25 +616,39 @@ def main() -> int:
     print_step("📁", f"폴더명: {folder_name}")
     print()
     
-    # 4. 브랜치 존재 확인
+    # 4. 브랜치 존재 확인 (로컬 → 리모트 순서)
     print_step("🔍", "브랜치 확인 중...")
     
-    if not branch_exists(branch_name):
-        print_warning("브랜치가 존재하지 않습니다.")
-        
-        current_branch = get_current_branch()
-        if current_branch:
-            print_step("🔄", f"현재 브랜치({current_branch})에서 새 브랜치 생성 중...")
-        else:
-            print_step("🔄", "새 브랜치 생성 중...")
-        
-        if not create_branch(branch_name):
-            print_error("브랜치 생성에 실패했습니다.")
-            return 1
-        
-        print_success("브랜치 생성 완료!")
+    if branch_exists(branch_name):
+        print_success("로컬 브랜치가 이미 존재합니다.")
     else:
-        print_success("브랜치가 이미 존재합니다.")
+        print_warning("로컬 브랜치가 존재하지 않습니다.")
+        
+        # 리모트에서 최신 정보 가져오기
+        fetch_remote()
+        
+        if remote_branch_exists(branch_name):
+            # 리모트에 브랜치가 있으면 tracking 브랜치로 생성
+            print_step("🌐", f"리모트(origin/{branch_name})에서 브랜치를 가져옵니다...")
+            
+            if not create_branch_from_remote(branch_name):
+                print_error("리모트 브랜치 기반 로컬 브랜치 생성에 실패했습니다.")
+                return 1
+            
+            print_success(f"리모트 브랜치(origin/{branch_name})를 기반으로 로컬 브랜치 생성 완료!")
+        else:
+            # 리모트에도 없으면 현재 브랜치에서 새로 생성
+            current_branch = get_current_branch()
+            if current_branch:
+                print_step("🔄", f"현재 브랜치({current_branch})에서 새 브랜치 생성 중...")
+            else:
+                print_step("🔄", "새 브랜치 생성 중...")
+            
+            if not create_branch(branch_name):
+                print_error("브랜치 생성에 실패했습니다.")
+                return 1
+            
+            print_success("새 브랜치 생성 완료!")
     
     print()
     

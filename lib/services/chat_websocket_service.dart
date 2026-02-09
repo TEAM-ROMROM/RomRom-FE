@@ -9,8 +9,7 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 /// STOMP + WebSocket 서비스 (stomp_dart_client 사용)
 class ChatWebSocketService {
-  static final ChatWebSocketService _instance =
-      ChatWebSocketService._internal();
+  static final ChatWebSocketService _instance = ChatWebSocketService._internal();
   factory ChatWebSocketService() => _instance;
   ChatWebSocketService._internal();
 
@@ -50,9 +49,7 @@ class ChatWebSocketService {
       debugPrint('[WebSocket] 연결 시도 시작 (HTTP 테스트)');
       debugPrint('[WebSocket] AppUrls.baseUrl: ${AppUrls.baseUrl}');
       debugPrint('[WebSocket] wsUrl: $wsUrl');
-      debugPrint(
-        '[WebSocket] Access Token: ${accessToken.substring(0, 20)}...',
-      );
+      debugPrint('[WebSocket] Access Token: ${accessToken.substring(0, 20)}...');
       debugPrint('[WebSocket] ========================================');
 
       // 3. StompClient 생성
@@ -124,11 +121,8 @@ class ChatWebSocketService {
   /// 채팅방 구독
   Stream<ChatMessage> subscribeToChatRoom(String chatRoomId) {
     // 참조 카운트 증가
-    _subscriptionRefCounts[chatRoomId] =
-        (_subscriptionRefCounts[chatRoomId] ?? 0) + 1;
-    debugPrint(
-      '[WebSocket] Subscribe to $chatRoomId (refCount: ${_subscriptionRefCounts[chatRoomId]})',
-    );
+    _subscriptionRefCounts[chatRoomId] = (_subscriptionRefCounts[chatRoomId] ?? 0) + 1;
+    debugPrint('[WebSocket] Subscribe to $chatRoomId (refCount: ${_subscriptionRefCounts[chatRoomId]})');
 
     // 이미 구독 중이면 기존 스트림 반환
     if (_subscriptions.containsKey(chatRoomId)) {
@@ -143,9 +137,7 @@ class ChatWebSocketService {
     if (_isConnected) {
       _subscribeToRoom(chatRoomId);
     } else {
-      debugPrint(
-        '[WebSocket] Not connected yet, will subscribe when connected',
-      );
+      debugPrint('[WebSocket] Not connected yet, will subscribe when connected');
     }
 
     return controller.stream;
@@ -175,10 +167,7 @@ class ChatWebSocketService {
           if (tsHdr != null) {
             final ms = int.tryParse(tsHdr);
             if (ms != null) {
-              headerTs = DateTime.fromMillisecondsSinceEpoch(
-                ms,
-                isUtc: true,
-              ).toLocal();
+              headerTs = DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true).toLocal();
             }
           }
 
@@ -186,27 +175,19 @@ class ChatWebSocketService {
           DateTime? payloadTs;
           final createdDate = jsonBody['createdDate'];
           if (createdDate is int) {
-            payloadTs = DateTime.fromMillisecondsSinceEpoch(
-              createdDate,
-              isUtc: true,
-            ).toLocal();
+            payloadTs = DateTime.fromMillisecondsSinceEpoch(createdDate, isUtc: true).toLocal();
           } else if (createdDate is String) {
             final parsed = DateTime.tryParse(createdDate);
             if (parsed != null) payloadTs = parsed.toLocal();
           } else if (jsonBody['clientSentAt'] is int) {
-            payloadTs = DateTime.fromMillisecondsSinceEpoch(
-              jsonBody['clientSentAt'],
-              isUtc: true,
-            ).toLocal();
+            payloadTs = DateTime.fromMillisecondsSinceEpoch(jsonBody['clientSentAt'], isUtc: true).toLocal();
           }
 
           // 3) 최종 시간 확정: 헤더 → 페이로드 → 지금
           final finalCreated = headerTs ?? payloadTs ?? DateTime.now();
 
           // 모델로 변환
-          final message = ChatMessage.fromJson(
-            jsonBody,
-          ).copyWith(createdDate: finalCreated);
+          final message = ChatMessage.fromJson(jsonBody).copyWith(createdDate: finalCreated);
 
           _subscriptions[chatRoomId]?.add(message);
         } catch (e) {
@@ -223,22 +204,31 @@ class ChatWebSocketService {
     required String chatRoomId,
     required String content,
     MessageType type = MessageType.text,
+    List<String>? imageUrls,
   }) {
+    if (type == MessageType.image && (imageUrls == null || imageUrls.isEmpty)) {
+      throw Exception('imageUrls is required for image messages');
+    }
     if (!_isConnected || _stompClient == null) {
       debugPrint('[WebSocket] Cannot send message: Not connected');
       throw Exception('STOMP not connected');
     }
 
-    final payload = jsonEncode({
+    final Map<String, dynamic> payload = {
       'chatRoomId': chatRoomId,
       'content': content,
       'type': type.toString().split('.').last.toUpperCase(),
-    });
+    };
 
-    debugPrint('[WebSocket] Sending message to /app/chat.send');
+    // IMAGE 타입인 경우 imageUrls 추가
+    if (type == MessageType.image && imageUrls != null) {
+      payload['imageUrls'] = imageUrls;
+    }
+
+    debugPrint('[WebSocket] Sending message to /app/chat.send\n$payload');
     _stompClient!.send(
       destination: '/app/chat.send',
-      body: payload,
+      body: jsonEncode(payload),
       headers: {'content-type': 'application/json'},
     );
   }
@@ -255,9 +245,7 @@ class ChatWebSocketService {
 
       _subscriptionRefCounts[chatRoomId] = currentCount - 1;
       final newCount = _subscriptionRefCounts[chatRoomId]!;
-      debugPrint(
-        '[WebSocket] Unsubscribe from $chatRoomId (refCount: $newCount)',
-      );
+      debugPrint('[WebSocket] Unsubscribe from $chatRoomId (refCount: $newCount)');
 
       // 참조 카운트가 0이 되면 실제로 구독 해제
       if (newCount <= 0) {
@@ -273,9 +261,7 @@ class ChatWebSocketService {
 
         debugPrint('[WebSocket] ✅ Fully unsubscribed from $chatRoomId');
       } else {
-        debugPrint(
-          '[WebSocket] Still $newCount active subscription(s) for $chatRoomId',
-        );
+        debugPrint('[WebSocket] Still $newCount active subscription(s) for $chatRoomId');
       }
     } catch (e) {
       debugPrint('[WebSocket] Unsubscribe error: $e');

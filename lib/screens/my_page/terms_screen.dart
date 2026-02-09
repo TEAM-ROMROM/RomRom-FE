@@ -19,9 +19,7 @@ class _TermsScreenState extends State<TermsScreen> {
   bool _isLoading = true;
 
   // 각 약관별 펼침 상태 관리
-  final Map<TermsType, bool> _expandedState = {
-    for (var term in TermsType.values) term: false,
-  };
+  final Map<TermsType, bool> _expandedState = {for (var term in TermsType.values) term: false};
 
   @override
   void initState() {
@@ -53,17 +51,9 @@ class _TermsScreenState extends State<TermsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: CommonAppBar(
-        title: '이용 약관',
-        showBottomBorder: true,
-        onBackPressed: () => Navigator.pop(context),
-      ),
+      appBar: CommonAppBar(title: '이용 약관', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primaryYellow,
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
           : SingleChildScrollView(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
@@ -101,21 +91,12 @@ class _TermsScreenState extends State<TermsScreen> {
                 AnimatedRotation(
                   turns: isExpanded ? 0.25 : 0,
                   duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    Icons.chevron_right,
-                    size: 24.sp,
-                    color: AppColors.textColorWhite,
-                  ),
+                  child: Icon(Icons.chevron_right, size: 24.sp, color: AppColors.textColorWhite),
                 ),
                 SizedBox(width: 8.w),
                 // 약관 제목
                 Expanded(
-                  child: Text(
-                    term.title,
-                    style: CustomTextStyles.p1.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  child: Text(term.title, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
                 ),
               ],
             ),
@@ -130,10 +111,7 @@ class _TermsScreenState extends State<TermsScreen> {
             constraints: BoxConstraints(maxHeight: 300.h),
             margin: EdgeInsets.only(bottom: 16.h),
             padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: AppColors.secondaryBlack1,
-              borderRadius: BorderRadius.circular(8.r),
-            ),
+            decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(8.r)),
             child: SingleChildScrollView(
               child: Text(
                 content,
@@ -145,17 +123,12 @@ class _TermsScreenState extends State<TermsScreen> {
               ),
             ),
           ),
-          crossFadeState:
-              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 200),
         ),
 
         // 구분선
-        if (term != TermsType.values.last)
-          Container(
-            height: 1.h,
-            color: AppColors.opacity10White,
-          ),
+        if (term != TermsType.values.last) Container(height: 1.h, color: AppColors.opacity10White),
       ],
     );
   }

@@ -40,10 +40,7 @@ class TripleToggleSwitch extends StatelessWidget {
           return Container(
             width: containerWidth,
             height: 46.h,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10.r),
-              color: AppColors.secondaryBlack1,
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
             child: AnimatedBuilder(
               animation: animation,
               builder: (context, child) {
@@ -76,9 +73,7 @@ class TripleToggleSwitch extends StatelessWidget {
                               child: AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 300),
                                 style: CustomTextStyles.p2.copyWith(
-                                  color: selectedIndex == 0
-                                      ? AppColors.textColorWhite
-                                      : AppColors.opacity50White,
+                                  color: selectedIndex == 0 ? AppColors.textColorWhite : AppColors.opacity50White,
                                 ),
                                 child: Text(firstText),
                               ),
@@ -96,9 +91,7 @@ class TripleToggleSwitch extends StatelessWidget {
                               child: AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 300),
                                 style: CustomTextStyles.p2.copyWith(
-                                  color: selectedIndex == 1
-                                      ? AppColors.textColorWhite
-                                      : AppColors.opacity50White,
+                                  color: selectedIndex == 1 ? AppColors.textColorWhite : AppColors.opacity50White,
                                 ),
                                 child: Text(secondText),
                               ),
@@ -116,9 +109,7 @@ class TripleToggleSwitch extends StatelessWidget {
                               child: AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 300),
                                 style: CustomTextStyles.p2.copyWith(
-                                  color: selectedIndex == 2
-                                      ? AppColors.textColorWhite
-                                      : AppColors.opacity50White,
+                                  color: selectedIndex == 2 ? AppColors.textColorWhite : AppColors.opacity50White,
                                 ),
                                 child: Text(thirdText),
                               ),
@@ -137,4 +128,3 @@ class TripleToggleSwitch extends StatelessWidget {
     );
   }
 }
-

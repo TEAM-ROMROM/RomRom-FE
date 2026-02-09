@@ -56,7 +56,13 @@ class TradeRequestTargetPreview extends StatelessWidget {
                 Wrap(
                   spacing: 4.w,
                   runSpacing: 4.h,
-                  children: tags.map((tag) => ItemCondition.values.any((option) => option.label == tag) ? ItemDetailConditionTag(condition: tag) : ItemDetailTradeOptionTag(option: tag)).toList(),
+                  children: tags
+                      .map(
+                        (tag) => ItemCondition.values.any((option) => option.label == tag)
+                            ? ItemDetailConditionTag(condition: tag)
+                            : ItemDetailTradeOptionTag(option: tag),
+                      )
+                      .toList(),
                 ),
               ],
             ),
@@ -72,6 +78,12 @@ class TradeRequestTargetPreview extends StatelessWidget {
       return const ErrorImagePlaceholder();
     }
 
-    return CachedImage(imageUrl: imageUrl!, fit: BoxFit.cover, width: double.infinity, height: double.infinity, errorWidget: const ErrorImagePlaceholder());
+    return CachedImage(
+      imageUrl: imageUrl!,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorWidget: const ErrorImagePlaceholder(),
+    );
   }
 }

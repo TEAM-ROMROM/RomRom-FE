@@ -20,10 +20,20 @@ class Member extends BaseEntity {
   final bool? isRequiredTermsAgreed;
   final bool? isMarketingInfoAgreed;
   final bool? isNotificationAgreed;
+  final bool? isActivityNotificationAgreed;
+  final bool? isChatNotificationAgreed;
+  final bool? isContentNotificationAgreed;
+  final bool? isTradeNotificationAgreed;
   final double? latitude;
   final double? longitude;
   final int? totalLikeCount;
   final double? searchRadiusInMeters;
+
+  /// 해당 회원이 차단된 상태인지 여부 (타인 프로필 조회 시)
+  final bool? isBlocked;
+
+  /// 위치 주소 문자열 (예: "서울특별시 광진구 화양동")
+  final String? locationAddress;
 
   Member({
     super.createdDate,
@@ -42,10 +52,16 @@ class Member extends BaseEntity {
     this.isRequiredTermsAgreed,
     this.isMarketingInfoAgreed,
     this.isNotificationAgreed,
+    this.isActivityNotificationAgreed,
+    this.isChatNotificationAgreed,
+    this.isContentNotificationAgreed,
+    this.isTradeNotificationAgreed,
     this.latitude,
     this.longitude,
     this.totalLikeCount,
     this.searchRadiusInMeters,
+    this.isBlocked,
+    this.locationAddress,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);

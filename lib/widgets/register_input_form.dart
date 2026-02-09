@@ -69,9 +69,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   // 각 TextField의 controller 추가
   TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController priceController = TextEditingController(
-    text: '0',
-  );
+  final TextEditingController priceController = TextEditingController(text: '0');
   final TextEditingController locationController = TextEditingController();
 
   // 포커스 체인 (상단→하단 자동 이동)
@@ -96,11 +94,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
       if (imageFiles.length == 10) {
         if (context.mounted) {
-          CommonSnackBar.show(
-            context: context,
-            message: '이미지는 최대 10장까지 등록할 수 있습니다.',
-            type: SnackBarType.info,
-          );
+          CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
         }
         return;
       }
@@ -113,19 +107,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       final int remain = (kMaxImages - imageFiles.length).clamp(0, kMaxImages);
       if (remain == 0) {
         if (context.mounted) {
-          CommonSnackBar.show(
-            context: context,
-            message: '이미지는 최대 10장까지 등록할 수 있습니다.',
-            type: SnackBarType.info,
-          );
+          CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
         }
         return;
       }
 
       // 초과 선택 분리
-      final List<XFile> toAdd = picked.length > remain
-          ? picked.sublist(0, remain)
-          : picked;
+      final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
 
       // 로딩 인덱스 계산 (추가될 위치 범위)
       final int startIndex = imageFiles.length;
@@ -158,11 +146,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         }
       } catch (e) {
         if (context.mounted) {
-          CommonSnackBar.show(
-            context: context,
-            message: '이미지 업로드에 실패했습니다: $e',
-            type: SnackBarType.error,
-          );
+          CommonSnackBar.show(context: context, message: '이미지 업로드에 실패했습니다: $e', type: SnackBarType.error);
         }
       } finally {
         if (mounted) {
@@ -175,11 +159,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       }
     } catch (e) {
       if (context.mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '이미지 선택에 실패했습니다: $e',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
       }
     }
   }
@@ -196,8 +176,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       final imageUrl = imageUrls[index];
 
       // 서버에 업로드된 이미지인지 확인 (예: http로 시작)
-      final isNetwork =
-          imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+      final isNetwork = imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
 
       if (isNetwork && imageUrl.isNotEmpty) {
         try {
@@ -216,11 +195,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       }
     } catch (e) {
       if (context.mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '이미지 삭제에 실패했습니다: $e',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '이미지 삭제에 실패했습니다: $e', type: SnackBarType.error);
       }
     } finally {
       if (mounted) {
@@ -240,9 +215,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         ItemRequest(
           itemName: titleController.text.trim(),
           itemDescription: descriptionController.text.trim(),
-          itemCondition: selectedItemConditionTypes.isNotEmpty
-              ? selectedItemConditionTypes.first.serverName
-              : null,
+          itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
         ),
       );
       // 숫자를 콤마 포함 문자열로 변환
@@ -261,11 +234,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
     } catch (e) {
       // 에러 처리 (스낵바 표시 등)
       if (context.mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: 'AI 가격 예측에 실패했습니다: $e',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e', type: SnackBarType.error);
       }
     }
   }
@@ -277,9 +246,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
       // 좌표가 있으면 주소 변환, 없으면 빈 문자열로 초기화
       if (item?.latitude != null && item?.longitude != null) {
-        _selectedAddress = await LocationService().getAddressFromCoordinates(
-          NLatLng(item!.latitude!, item.longitude!),
-        );
+        _selectedAddress = await LocationService().getAddressFromCoordinates(NLatLng(item!.latitude!, item.longitude!));
         locationController.text =
             '${_selectedAddress?.siDo ?? ''} ${_selectedAddress?.siGunGu ?? ''} ${_selectedAddress?.eupMyoenDong ?? ''}'
                 .trim();
@@ -298,15 +265,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
       priceController.value = formatted;
 
-      selectedCategory = item?.itemCategory != null
-          ? ItemCategories.fromServerName(item!.itemCategory!)
-          : null;
+      selectedCategory = item?.itemCategory != null ? ItemCategories.fromServerName(item!.itemCategory!) : null;
       selectedItemConditionTypes = item?.itemCondition != null
           ? [ItemCondition.fromServerName(item!.itemCondition!)]
           : [];
-      selectedTradeOptions = (item?.itemTradeOptions ?? [])
-          .map((e) => ItemTradeOption.fromServerName(e))
-          .toList();
+      selectedTradeOptions = (item?.itemTradeOptions ?? []).map((e) => ItemTradeOption.fromServerName(e)).toList();
       // 수정 모드에서는 이미 선택된 값이 있으므로 touched 상태로 설정
       if (selectedItemConditionTypes.isNotEmpty) {
         _hasConditionBeenTouched = true;
@@ -315,17 +278,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         _hasTradeOptionBeenTouched = true;
       }
       imageUrls = widget.item != null
-          ? widget.item!.itemImages!
-                .map((img) => img.imageUrl ?? '')
-                .where((url) => url.isNotEmpty)
-                .toList()
+          ? widget.item!.itemImages!.map((img) => img.imageUrl ?? '').where((url) => url.isNotEmpty).toList()
           : [];
       imageFiles = widget.item!.itemImages != null
           ? widget.item!.itemImages!
                 .map((img) {
                   final imageUrl = img.imageUrl ?? '';
-                  if (imageUrl.startsWith('http://') ||
-                      imageUrl.startsWith('https://')) {
+                  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
                     return XFile(imageUrl);
                   } else if (imageUrl.isNotEmpty) {
                     return XFile('http://suh-project.synology.me/$imageUrl');
@@ -391,8 +350,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
     return titleController.text.trim().isNotEmpty && // 공백만 있는 경우 제외
         selectedCategory != null &&
-        descriptionController.text.trim().length >=
-            10 && // 최소 10자 이상, 공백만 있는 경우 제외
+        descriptionController.text.trim().length >= 10 && // 최소 10자 이상, 공백만 있는 경우 제외
         selectedItemConditionTypes.isNotEmpty &&
         selectedTradeOptions.isNotEmpty &&
         price > 0 && // 0원 초과
@@ -433,10 +391,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   height: 80.h,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(
-                      color: AppColors.opacity40White,
-                      width: 1.5.w,
-                    ),
+                    border: Border.all(color: AppColors.opacity40White, width: 1.5.w),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -447,26 +402,18 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           height: 24.h,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.w,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppColors.textColorWhite,
-                            ),
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
                           ),
                         )
                       else
                         Column(
                           children: [
                             SizedBox(height: 6.h),
-                            Icon(
-                              AppIcons.itmeRegisterImage,
-                              color: AppColors.opacity60White,
-                              size: 18.sp,
-                            ),
+                            Icon(AppIcons.itmeRegisterImage, color: AppColors.opacity60White, size: 18.sp),
                             SizedBox(height: 4.h),
                             Text(
                               '$imageCount/10',
-                              style: CustomTextStyles.p3.copyWith(
-                                color: AppColors.opacity40White,
-                              ),
+                              style: CustomTextStyles.p3.copyWith(color: AppColors.opacity40White),
                             ),
                           ],
                         ),
@@ -498,10 +445,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                       height: 24.h,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.w,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              AppColors.textColorWhite,
-                                            ),
+                                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
                                       ),
                                     )
                                   : CachedImage(
@@ -511,10 +455,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                       fit: BoxFit.cover,
                                       errorWidget: Container(
                                         color: Colors.grey,
-                                        child: const Icon(
-                                          Icons.broken_image,
-                                          color: Colors.white,
-                                        ),
+                                        child: const Icon(Icons.broken_image, color: Colors.white),
                                       ),
                                     ),
                             ),
@@ -529,17 +470,12 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                   width: 24.w,
                                   height: 24.h,
                                   decoration: const BoxDecoration(
-                                    color: AppColors
-                                        .itemPictureRemoveButtonBackground,
+                                    color: AppColors.itemPictureRemoveButtonBackground,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.zero,
-                                    child: Icon(
-                                      AppIcons.cancel,
-                                      color: AppColors.primaryBlack,
-                                      size: 16.sp,
-                                    ),
+                                    child: Icon(AppIcons.cancel, color: AppColors.primaryBlack, size: 16.sp),
                                   ),
                                 ),
                               ),
@@ -559,12 +495,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
               padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
               child: Row(
                 children: [
-                  Text(
-                    '상품 사진을 최소 1장 이상 등록해주세요',
-                    style: CustomTextStyles.p3.copyWith(
-                      color: AppColors.errorBorder,
-                    ),
-                  ),
+                  Text('상품 사진을 최소 1장 이상 등록해주세요', style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder)),
                 ],
               ),
             ),
@@ -585,8 +516,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     forceValidate: _forceValidateAll,
                     focusNode: _titleFocusNode,
                     textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) =>
-                        _descriptionFocusNode.requestFocus(),
+                    onFieldSubmitted: (_) => _descriptionFocusNode.requestFocus(),
                   ),
                 ),
 
@@ -608,9 +538,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             backgroundColor: AppColors.primaryBlack,
                             barrierColor: AppColors.opacity80Black,
                             shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(16),
-                              ),
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                             ),
                             isScrollControlled: true,
                             builder: (context) {
@@ -619,21 +547,17 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                   return SizedBox(
                                     height: 502.h,
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Center(
                                           child: Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 14.0.h,
-                                            ),
+                                            padding: EdgeInsets.symmetric(vertical: 14.0.h),
                                             child: Container(
                                               width: 50.w,
                                               height: 4.h,
                                               decoration: BoxDecoration(
                                                 color: AppColors.opacity50White,
-                                                borderRadius:
-                                                    BorderRadius.circular(5.r),
+                                                borderRadius: BorderRadius.circular(5.r),
                                               ),
                                             ),
                                           ),
@@ -642,27 +566,18 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                           padding: EdgeInsets.only(left: 26.w),
                                           child: Text(
                                             ItemTextFieldPhrase.category.label,
-                                            style: CustomTextStyles.h2.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
+                                            style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w700),
                                           ),
                                         ),
                                         SizedBox(
                                           width: double.infinity,
                                           child: Padding(
-                                            padding: EdgeInsets.only(
-                                              right: 26.w,
-                                              left: 26.w,
-                                              top: 24.h,
-                                            ),
+                                            padding: EdgeInsets.only(right: 26.w, left: 26.w, top: 24.h),
                                             child: Wrap(
                                               spacing: 8.0.w,
                                               runSpacing: 12.0.h,
-                                              children: categories.map((
-                                                category,
-                                              ) {
-                                                final isSelected =
-                                                    tempSelected == category;
+                                              children: categories.map((category) {
+                                                final isSelected = tempSelected == category;
                                                 return CategoryChip(
                                                   label: category.label,
                                                   isSelected: isSelected,
@@ -689,23 +604,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           });
                         },
                         child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 14.h,
-                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
                           decoration: BoxDecoration(
-                            color:
-                                (_hasCategoryBeenTouched ||
-                                        _forceValidateAll) &&
-                                    selectedCategory == null
+                            color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
                                 ? AppColors.errorContainer
                                 : AppColors.opacity10White,
                             borderRadius: BorderRadius.circular(8.r),
                             border: Border.all(
-                              color:
-                                  (_hasCategoryBeenTouched ||
-                                          _forceValidateAll) &&
-                                      selectedCategory == null
+                              color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
                                   ? AppColors.errorBorder
                                   : AppColors.opacity30White,
                               width: 1.5.w,
@@ -715,8 +621,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  selectedCategory?.label ??
-                                      ItemTextFieldPhrase.category.hintText,
+                                  selectedCategory?.label ?? ItemTextFieldPhrase.category.hintText,
                                   style: CustomTextStyles.p2.copyWith(
                                     color: selectedCategory != null
                                         ? AppColors.textColorWhite
@@ -728,15 +633,12 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           ),
                         ),
                       ),
-                      if ((_hasCategoryBeenTouched || _forceValidateAll) &&
-                          selectedCategory == null)
+                      if ((_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null)
                         Padding(
                           padding: EdgeInsets.only(top: 8.0.h),
                           child: Text(
                             ItemTextFieldPhrase.category.errorText,
-                            style: CustomTextStyles.p3.copyWith(
-                              color: AppColors.errorBorder,
-                            ),
+                            style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
                           ),
                         ),
                     ],
@@ -773,13 +675,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               .map(
                                 (option) => RegisterOptionChip(
                                   itemOption: option.label,
-                                  isSelected: selectedItemConditionTypes
-                                      .contains(option),
+                                  isSelected: selectedItemConditionTypes.contains(option),
                                   onTap: () {
                                     final newList = <ItemCondition>[];
-                                    if (selectedItemConditionTypes.contains(
-                                      option,
-                                    )) {
+                                    if (selectedItemConditionTypes.contains(option)) {
                                       // 선택 해제
                                     } else {
                                       newList
@@ -796,13 +695,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               .toList(),
                         ),
                       ),
-                      ((_hasConditionBeenTouched || _forceValidateAll) &&
-                              selectedItemConditionTypes.isEmpty)
+                      ((_hasConditionBeenTouched || _forceValidateAll) && selectedItemConditionTypes.isEmpty)
                           ? Text(
                               ItemTextFieldPhrase.condition.errorText,
-                              style: CustomTextStyles.p3.copyWith(
-                                color: AppColors.errorBorder,
-                              ),
+                              style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
                             )
                           : Text('', style: CustomTextStyles.p3),
                     ],
@@ -823,13 +719,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               .map(
                                 (option) => RegisterOptionChip(
                                   itemOption: option.label,
-                                  isSelected: selectedTradeOptions.contains(
-                                    option,
-                                  ),
+                                  isSelected: selectedTradeOptions.contains(option),
                                   onTap: () {
-                                    final newList = List<ItemTradeOption>.from(
-                                      selectedTradeOptions,
-                                    );
+                                    final newList = List<ItemTradeOption>.from(selectedTradeOptions);
                                     if (newList.contains(option)) {
                                       newList.remove(option);
                                     } else {
@@ -845,13 +737,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               .toList(),
                         ),
                       ),
-                      ((_hasTradeOptionBeenTouched || _forceValidateAll) &&
-                              selectedTradeOptions.isEmpty)
+                      ((_hasTradeOptionBeenTouched || _forceValidateAll) && selectedTradeOptions.isEmpty)
                           ? Text(
                               ItemTextFieldPhrase.tradeOption.errorText,
-                              style: CustomTextStyles.p3.copyWith(
-                                color: AppColors.errorBorder,
-                              ),
+                              style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
                             )
                           : Text('', style: CustomTextStyles.p3),
                     ],
@@ -871,10 +760,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 5.w,
-                          vertical: 4.h,
-                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(4.r),
@@ -886,23 +772,15 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         ),
                         child: GradientText(
                           text: 'AI 추천 가격',
-                          style: CustomTextStyles.p3.copyWith(
-                            letterSpacing: -0.5.sp,
-                          ),
-                          gradient: const LinearGradient(
-                            colors: AppColors.aiGradient,
-                            stops: [0.0, 0.35, 0.7, 1.0],
-                          ),
+                          style: CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
+                          gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
                         ),
                       ),
                       SizedBox(width: 12.w),
                       Expanded(
                         child: Text(
                           ItemTextFieldPhrase.price.hintText,
-                          style: CustomTextStyles.p3.copyWith(
-                            fontWeight: FontWeight.w500,
-                            height: 1.4,
-                          ),
+                          style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500, height: 1.4),
                           maxLines: 2,
                         ),
                       ),
@@ -914,29 +792,18 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      ItemTextFieldPhrase.price.label,
-                      style: CustomTextStyles.p1,
-                    ),
+                    Text(ItemTextFieldPhrase.price.label, style: CustomTextStyles.p1),
                     const Spacer(),
                     Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 5.w,
-                        vertical: 4.h,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
                       decoration: BoxDecoration(
                         color: AppColors.aiSuggestionContainerBackground,
                         borderRadius: BorderRadius.circular(4.r),
                       ),
                       child: GradientText(
                         text: 'AI 추천 가격',
-                        style: CustomTextStyles.p3.copyWith(
-                          letterSpacing: -0.5.sp,
-                        ),
-                        gradient: const LinearGradient(
-                          colors: AppColors.aiGradient,
-                          stops: [0.0, 0.35, 0.7, 1.0],
-                        ),
+                        style: CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
+                        gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
                       ),
                     ),
                     SizedBox(width: 4.w),
@@ -967,8 +834,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               if (context.mounted) {
                                 CommonSnackBar.show(
                                   context: context,
-                                  message:
-                                      'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요',
+                                  message: 'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요',
                                   type: SnackBarType.info,
                                 );
                                 // ScaffoldMessenger.of(context).showSnackBar(
@@ -991,12 +857,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       styleBuilder: (b) => ToggleStyle(
                         backgroundGradient: b
                             ? const LinearGradient(colors: AppColors.aiGradient)
-                            : const LinearGradient(
-                                colors: [
-                                  AppColors.opacity40White,
-                                  AppColors.opacity40White,
-                                ],
-                              ),
+                            : const LinearGradient(colors: [AppColors.opacity40White, AppColors.opacity40White]),
                       ),
                     ),
                   ],
@@ -1014,8 +875,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   forceValidate: _forceValidateAll,
                   focusNode: _priceFocusNode,
                   textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) =>
-                      FocusManager.instance.primaryFocus?.unfocus(),
+                  onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                 ),
 
                 // 거래 희망 위치 필드
@@ -1025,43 +885,30 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   field: RegisterCustomTextField(
                     readOnly: true,
                     phrase: ItemTextFieldPhrase.location,
-                    suffixIcon: Icon(
-                      AppIcons.detailView,
-                      color: AppColors.textColorWhite,
-                      size: 18.w,
-                    ),
+                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.textColorWhite, size: 18.w),
                     controller: locationController,
                     forceValidate: _forceValidateAll,
                     onTap: () async {
                       final result = await Navigator.of(context).push<LocationAddress>(
                         MaterialPageRoute(
                           builder: (_) => ItemRegisterLocationScreen(
-                            initialLocation:
-                                _latitude != null && _longitude != null
-                                ? _selectedAddress
-                                : null,
+                            initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
                             onLocationSelected: (address) {
-                              debugPrint(
-                                '위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}',
-                              );
+                              debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
                               setState(() {
-                                locationController.text =
-                                    '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                                locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
                                 // 위치 좌표 저장
                                 _latitude = address.latitude;
                                 _longitude = address.longitude;
                               });
-                              debugPrint(
-                                '저장된 좌표: _latitude=$_latitude, _longitude=$_longitude',
-                              );
+                              debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
                             },
                           ),
                         ),
                       );
                       // Navigator.pop으로만 돌아온 경우도 처리
                       if (result != null) {
-                        locationController.text =
-                            '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
+                        locationController.text = '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
                       }
                     },
                   ),
@@ -1097,28 +944,20 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       }
 
                       try {
-                        debugPrint(
-                          '물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude',
-                        );
+                        debugPrint('물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
                         setState(() {
                           _isLoading = true;
                         });
                         final itemRequest = ItemRequest(
-                          itemId: widget.isEditMode
-                              ? widget.item?.itemId
-                              : null,
+                          itemId: widget.isEditMode ? widget.item?.itemId : null,
                           itemName: titleController.text.trim(),
                           itemDescription: descriptionController.text.trim(),
                           itemCategory: selectedCategory!.serverName,
                           itemCondition: selectedItemConditionTypes.isNotEmpty
                               ? selectedItemConditionTypes.first.serverName
                               : null,
-                          itemTradeOptions: selectedTradeOptions
-                              .map((e) => e.serverName)
-                              .toList(),
-                          itemPrice: int.parse(
-                            priceController.text.replaceAll(',', ''),
-                          ),
+                          itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
+                          itemPrice: int.parse(priceController.text.replaceAll(',', '')),
                           itemCustomTags: [],
                           itemImageUrls: imageUrls,
                           longitude: _longitude,
@@ -1131,16 +970,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           await ItemApi().updateItem(itemRequest);
                           if (context.mounted) {
                             Navigator.of(context).pop();
-                            CommonSnackBar.show(
-                              context: context,
-                              message: '물품이 성공적으로 $modeText되었습니다.',
-                            );
+                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         } else {
                           // 등록 모드
-                          final response = await ItemApi().postItem(
-                            itemRequest,
-                          );
+                          final response = await ItemApi().postItem(itemRequest);
                           debugPrint('====================================');
                           debugPrint(
                             '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
@@ -1155,34 +989,25 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             await userInfo.saveLoginStatus(
                               isFirstLogin: false,
                               isFirstItemPosted: true,
-                              isItemCategorySaved:
-                                  userInfo.isItemCategorySaved ?? false,
-                              isMemberLocationSaved:
-                                  userInfo.isMemberLocationSaved ?? false,
-                              isMarketingInfoAgreed:
-                                  userInfo.isMarketingInfoAgreed ?? false,
-                              isRequiredTermsAgreed:
-                                  userInfo.isRequiredTermsAgreed ?? false,
+                              isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
+                              isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+                              isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+                              isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
                               isCoachMarkShown: userInfo.isCoachMarkShown,
                             );
                           }
 
                           if (context.mounted) {
                             final resultData = {
-                              if (response.item?.itemId != null)
-                                'itemId': response.item!.itemId,
-                              'isFirstItemPosted':
-                                  response.isFirstItemPosted ?? false,
+                              if (response.item?.itemId != null) 'itemId': response.item!.itemId,
+                              'isFirstItemPosted': response.isFirstItemPosted ?? false,
                             };
                             debugPrint('Navigator.pop 전달 데이터: $resultData');
 
                             // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
                             Navigator.of(context).pop(resultData);
 
-                            CommonSnackBar.show(
-                              context: context,
-                              message: '물품이 성공적으로 $modeText되었습니다.',
-                            );
+                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         }
                       } catch (e) {

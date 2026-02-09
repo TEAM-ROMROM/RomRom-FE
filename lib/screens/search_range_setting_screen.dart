@@ -21,8 +21,7 @@ class SearchRangeSettingScreen extends StatefulWidget {
   const SearchRangeSettingScreen({super.key, this.onRangeChanged});
 
   @override
-  State<SearchRangeSettingScreen> createState() =>
-      _SearchRangeSettingScreenState();
+  State<SearchRangeSettingScreen> createState() => _SearchRangeSettingScreenState();
 }
 
 class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
@@ -68,14 +67,9 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
       children: [
         NaverMap(
           options: NaverMapViewOptions(
-            initialCameraPosition: NCameraPosition(
-              target: _currentPosition!,
-              zoom: _getZoomLevel(_selectedRangeIndex),
-            ),
+            initialCameraPosition: NCameraPosition(target: _currentPosition!, zoom: _getZoomLevel(_selectedRangeIndex)),
             logoAlign: NLogoAlign.leftBottom,
-            logoMargin: NEdgeInsets.fromEdgeInsets(
-              EdgeInsets.only(left: 24.w, bottom: 20.h),
-            ),
+            logoMargin: NEdgeInsets.fromEdgeInsets(EdgeInsets.only(left: 24.w, bottom: 20.h)),
             indoorEnable: true,
             locationButtonEnable: false,
             consumeSymbolTapEvents: false,
@@ -85,9 +79,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
             if (!_mapControllerCompleter.isCompleted) {
               _mapControllerCompleter.complete(controller);
             }
-            await controller.setLocationTrackingMode(
-              NLocationTrackingMode.follow,
-            );
+            await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
             _updateRangeCircle();
           },
         ),
@@ -98,9 +90,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
           child: CurrentLocationButton(
             onTap: () async {
               final controller = await _mapControllerCompleter.future;
-              await controller.setLocationTrackingMode(
-                NLocationTrackingMode.follow,
-              );
+              await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
             },
             iconSize: 24.h,
           ),
@@ -137,8 +127,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
 
       if (mounted) {
         // 기존에 저장된 탐색 범위로 초기화
-        double searchRadiusInMeters =
-            memberResponse.member?.searchRadiusInMeters ?? 7500.0;
+        double searchRadiusInMeters = memberResponse.member?.searchRadiusInMeters ?? 7500.0;
 
         if (position != null) {
           setState(() {
@@ -167,23 +156,12 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
   Future<void> _saveSearchRadius(int index) async {
     try {
       final radiusInMeters = defaultSearchRangeOptions[index].distanceKm * 1000;
-      final isSuccess = await MemberApi().saveSearchRadius(radiusInMeters);
-
-      if (mounted && isSuccess) {
-        CommonSnackBar.show(
-          context: context,
-          message: '탐색 범위가 저장되었습니다',
-          type: SnackBarType.success,
-        );
-      }
+      await MemberApi().saveSearchRadius(radiusInMeters);
+      // 성공 시 토스트 표시 제거 - 슬라이더 이동 자체가 시각적 피드백
     } catch (e) {
       debugPrint('탐색 범위 저장 실패: $e');
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '탐색 범위 저장에 실패했습니다',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: '탐색 범위 저장에 실패했습니다', type: SnackBarType.error);
       }
     }
   }
@@ -195,8 +173,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
     }
 
     final controller = await _mapControllerCompleter.future;
-    final radiusMeters =
-        defaultSearchRangeOptions[_selectedRangeIndex].distanceKm * 1000;
+    final radiusMeters = defaultSearchRangeOptions[_selectedRangeIndex].distanceKm * 1000;
 
     // 기존 원 제거
     if (_rangeCircle != null) {
@@ -225,9 +202,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
     final controller = await _mapControllerCompleter.future;
     final zoom = _getZoomLevel(_selectedRangeIndex);
 
-    await controller.updateCamera(
-      NCameraUpdate.withParams(target: _currentPosition, zoom: zoom),
-    );
+    await controller.updateCamera(NCameraUpdate.withParams(target: _currentPosition, zoom: zoom));
   }
 
   /// 범위에 따른 줌 레벨 반환

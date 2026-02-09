@@ -21,9 +21,7 @@ class RomAuthApi {
   final TokenManager _tokenManager = TokenManager();
 
   /// POST : `/api/auth/sign-in` 소셜 로그인
-  Future<void> signInWithSocial({
-    required String socialPlatform,
-  }) async {
+  Future<void> signInWithSocial({required String socialPlatform}) async {
     const String url = '${AppUrls.baseUrl}/api/auth/sign-in';
 
     try {
@@ -32,9 +30,7 @@ class RomAuthApi {
       await userInfo.getUserInfo();
 
       // 요청 파라미터 준비 (플랫폼, 유저 정보)
-      Map<String, dynamic> fields = {
-        'socialPlatform': socialPlatform,
-      };
+      Map<String, dynamic> fields = {'socialPlatform': socialPlatform};
 
       // 사용자 정보 직접 추가 (null이 아닌 값만)
       if (userInfo.email?.isNotEmpty == true) {
@@ -99,9 +95,7 @@ class RomAuthApi {
       }
 
       // 요청 파라미터 준비
-      Map<String, dynamic> fields = {
-        TokenKeys.refreshToken.name: refreshToken,
-      };
+      Map<String, dynamic> fields = {TokenKeys.refreshToken.name: refreshToken};
 
       // 요청 보냄
       http.Response response = await ApiClient.sendMultipartRequest(
@@ -144,7 +138,6 @@ class RomAuthApi {
         debugPrint('====================================');
         return true;
       }
-
       // refresh 만료 -> 강제 로그아웃시키기
       else if (response.statusCode == 401) {
         debugPrint('refresh 만료');
