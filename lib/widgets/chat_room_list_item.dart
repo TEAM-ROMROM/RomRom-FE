@@ -134,7 +134,10 @@ class ChatRoomListItem extends StatelessWidget {
                             child: Text(
                               // 99 초과 시 '99+' 표시
                               unreadCount > 99 ? '99+' : '$unreadCount',
-                              style: CustomTextStyles.p3.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+                              style: CustomTextStyles.p3.copyWith(
+                                color: AppColors.textColorWhite,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),
