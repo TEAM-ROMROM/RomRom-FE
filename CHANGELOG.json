@@ -1,11 +1,45 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-09T06:06:03Z",
-    "currentVersion": "1.9.1",
-    "totalReleases": 61,
+    "lastUpdated": "2026-02-10T10:13:26Z",
+    "currentVersion": "1.9.5",
+    "totalReleases": 62,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.5",
+      "project_type": "flutter",
+      "date": "2026-02-10",
+      "pr_number": 503,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 채팅 목록에 상품 썸네일 이미지 표시\n  * 상품 등록 시 AI 기반 가격 제안 기능 추가\n  * 위치 선택 기능 개선\n\n* **개선 사항**\n  * 이미지 업로드 UI 및 UX 개선\n  * 폼 필드 포커스 관리 개선\n  * 채팅 목록 레이아웃 및 간격 최적화\n  * 배지 스타일 업데이트\n\n* **Chores**\n  * 버전 업데이트 (v1.9.5)\n  * 서버 인프라 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅 목록에 상품 썸네일 이미지 표시",
+            "상품 등록 시 AI 기반 가격 제안 기능 추가",
+            "위치 선택 기능 개선"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "이미지 업로드 UI 및 UX 개선",
+            "폼 필드 포커스 관리 개선",
+            "채팅 목록 레이아웃 및 간격 최적화",
+            "배지 스타일 업데이트"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업데이트 (v1.9.5)",
+            "서버 인프라 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.1",
       "project_type": "flutter",
