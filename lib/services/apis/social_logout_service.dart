@@ -1,6 +1,7 @@
 // lib/services/social_logout_service.dart
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
+import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
@@ -16,7 +17,7 @@ class SocialLogoutService {
   final TokenManager _tokenManager = TokenManager();
   final LoginPlatformManager _loginPlatformManager = LoginPlatformManager();
 
-  static const String baseUrl = "https://api.romrom.xyz";
+  static const String baseUrl = AppUrls.baseUrl;
 
   /// 로그아웃 처리 (서버 API 호출 + 소셜 로그아웃)
   Future<void> logout(BuildContext context) async {
