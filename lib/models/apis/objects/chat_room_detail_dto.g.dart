@@ -14,6 +14,7 @@ ChatRoomDetailDto _$ChatRoomDetailDtoFromJson(Map<String, dynamic> json) => Chat
   lastMessageTime: ChatRoomDetailDto._fromIsoString(json['lastMessageTime']),
   unreadCount: (json['unreadCount'] as num?)?.toInt(),
   chatRoomType: $enumDecodeNullable(_$ChatRoomTypeEnumMap, json['chatRoomType']),
+  targetItemImageUrl: json['targetItemImageUrl'] as String?,
   blocked: json['blocked'] as bool?,
 );
 
@@ -25,6 +26,7 @@ Map<String, dynamic> _$ChatRoomDetailDtoToJson(ChatRoomDetailDto instance) => <S
   'lastMessageTime': ChatRoomDetailDto._toIsoString(instance.lastMessageTime),
   'unreadCount': instance.unreadCount,
   'chatRoomType': _$ChatRoomTypeEnumMap[instance.chatRoomType],
+  'targetItemImageUrl': instance.targetItemImageUrl,
   'blocked': instance.blocked,
 };
 

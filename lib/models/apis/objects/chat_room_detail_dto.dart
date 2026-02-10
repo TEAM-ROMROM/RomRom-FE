@@ -14,6 +14,7 @@ class ChatRoomDetailDto {
   final DateTime? lastMessageTime;
   final int? unreadCount;
   final ChatRoomType? chatRoomType;
+  final String? targetItemImageUrl;
   final bool? blocked;
 
   ChatRoomDetailDto({
@@ -24,6 +25,7 @@ class ChatRoomDetailDto {
     this.lastMessageTime,
     this.unreadCount,
     this.chatRoomType,
+    this.targetItemImageUrl,
     this.blocked,
   });
 

@@ -44,7 +44,7 @@ class ChatWebSocketService {
 
       // 2. 엔드포인트 URL 생성
       // 🔧 TEST: HTTP로 시도 (stomp_dart_client의 HTTPS URL 파싱 버그 우회)
-      const wsUrl = 'wss://${AppUrls.baseUrl}/chat';
+      const wsUrl = 'wss://api.romrom.suhsaechan.kr/chat';
       debugPrint('[WebSocket] ========================================');
       debugPrint('[WebSocket] 연결 시도 시작 (HTTP 테스트)');
       debugPrint('[WebSocket] AppUrls.baseUrl: ${AppUrls.baseUrl}');
