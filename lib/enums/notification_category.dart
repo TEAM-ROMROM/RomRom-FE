@@ -25,7 +25,7 @@ extension NotificationCategoryExtension on NotificationCategory {
   String get svgAssetPath {
     switch (this) {
       case NotificationCategory.exchangeRequest:
-        return 'assets/images/exchangeYellowCircle.svg';
+        return 'assets/images/notificationExchangeYellowCircle.svg';
       case NotificationCategory.like:
         return 'assets/images/notificationLike.svg';
       case NotificationCategory.chat:
