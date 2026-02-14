@@ -1,4 +1,4 @@
-# init-workflow
+# init-worktree
 
 Git worktree를 자동으로 생성하는 커맨드입니다.
 
@@ -13,7 +13,7 @@ Git worktree를 자동으로 생성하는 커맨드입니다.
 ## 사용법
 
 ```
-/init-workflow
+/init-worktree
 
 20260120_#163_Github_Projects_에_대한_템플릿_개발_필요_및_관련_Sync_워크플로우_개발_필요
 ```
@@ -38,9 +38,9 @@ Git worktree를 자동으로 생성하는 커맨드입니다.
 1. 프로젝트 루트로 이동
 2. Git 긴 경로 지원 활성화: `git config --global core.longpaths true` (최초 1회만 실행)
 3. 임시 Python 스크립트 파일 생성:
-   - 파일명: `init_worktree_temp_{timestamp}.py`
-   - 브랜치명을 코드에 직접 포함 (인코딩 문제 해결, `#` 문자 유지)
-   - worktree 생성 로직 포함
+    - 파일명: `init_worktree_temp_{timestamp}.py`
+    - 브랜치명을 코드에 직접 포함 (인코딩 문제 해결, `#` 문자 유지)
+    - worktree 생성 로직 포함
 4. **Python 스크립트 실행** (Windows에서는 `-X utf8` 플래그 필수):
    ```bash
    python -X utf8 init_worktree_temp_{timestamp}.py
@@ -94,18 +94,18 @@ exit_code = worktree_manager.main()
 
 # worktree 경로를 환경변수로 설정 (에이전트가 파일 복사에 사용)
 if exit_code == 0:
-    import subprocess
-    result = subprocess.run(['git', 'worktree', 'list', '--porcelain'],
+  import subprocess
+  result = subprocess.run(['git', 'worktree', 'list', '--porcelain'],
                           capture_output=True, text=True, encoding='utf-8')
-    lines = result.stdout.split('\n')
-    worktree_path = None
-    for i, line in enumerate(lines):
-        if line.startswith(f'branch refs/heads/{branch_name}'):
-            worktree_path = lines[i-1].replace('worktree ', '')
-            break
+  lines = result.stdout.split('\n')
+  worktree_path = None
+  for i, line in enumerate(lines):
+    if line.startswith(f'branch refs/heads/{branch_name}'):
+      worktree_path = lines[i-1].replace('worktree ', '')
+      break
 
-    if worktree_path:
-        print(f'📍 WORKTREE_PATH={worktree_path}')
+  if worktree_path:
+    print(f'📍 WORKTREE_PATH={worktree_path}')
 
 sys.exit(exit_code)
 ```
