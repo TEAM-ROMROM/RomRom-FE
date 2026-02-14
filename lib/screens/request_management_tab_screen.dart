@@ -326,10 +326,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
                     ? takeItem.imageUrlList.first
                     : 'https://picsum.photos/400/300',
-                otherUserProfileUrl: takeItem.member!.profileUrl!,
-                title: takeItem.itemName!,
-                location: takeItem.address!,
-                createdDate: takeItem.createdDate!,
+                otherUserProfileUrl: takeItem.member?.profileUrl ?? '',
+                title: takeItem.itemName ?? ' ',
+                location: takeItem.address ?? '주소 미등록',
+                createdDate: takeItem.createdDate ?? DateTime.now(),
                 tradeOptions: takeItem.itemTradeOptions != null
                     ? takeItem.itemTradeOptions!
                           .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
