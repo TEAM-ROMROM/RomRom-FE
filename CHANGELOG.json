@@ -1,11 +1,33 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-14T12:10:40Z",
-    "currentVersion": "1.9.7",
-    "totalReleases": 63,
+    "lastUpdated": "2026-02-14T12:42:36Z",
+    "currentVersion": "1.9.9",
+    "totalReleases": 64,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.9",
+      "project_type": "flutter",
+      "date": "2026-02-14",
+      "pr_number": 512,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **버그 수정**\n  * 요청 관리 탭에서 null 안전성을 개선하여 앱의 안정성을 향상했습니다.\n\n* **기타**\n  * 버전을 v1.9.9로 업데이트했습니다.",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "요청 관리 탭에서 null 안전성을 개선하여 앱의 안정성을 향상했습니다."
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전을 v1.9.9로 업데이트했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.7",
       "project_type": "flutter",
