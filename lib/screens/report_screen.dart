@@ -43,6 +43,7 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // 키보드가 올라와도 바닥 고정 (버튼 위치 유지)
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(
         title: '신고하기',
@@ -53,54 +54,60 @@ class _ReportScreenState extends State<ReportScreen> {
       ),
       body: Stack(
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 40.h),
-                Text('신고 사유', style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600)),
-                SizedBox(height: 24.h),
-                // 신고 사유 리스트
-                ...ItemReportReason.values.map((reason) => _buildReasonRow(reason)),
-                if (_selectedReasons.contains(ItemReportReason.etc)) ...[
-                  Container(
-                    width: 345.w,
-                    height: 140.h,
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryBlack1,
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: AppColors.textColorWhite.withValues(alpha: 0.3), width: 1.5.w),
-                    ),
-                    child: TextField(
-                      controller: _extraCommentController,
-                      maxLines: null,
-                      maxLength: 300,
-                      style: CustomTextStyles.p2,
-                      cursorColor: AppColors.textColorWhite,
-                      decoration: InputDecoration(
-                        isCollapsed: true,
-                        border: InputBorder.none,
-                        counterText: '', // 기본 counter 숨김
-                        hintText: '신고 사유를 상세하게 적어주세요',
-                        hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite.withValues(alpha: 0.4)),
+          SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 40.h),
+                  Text('신고 사유', style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600)),
+                  SizedBox(height: 24.h),
+                  // 신고 사유 리스트
+                  ...ItemReportReason.values.map((reason) => _buildReasonRow(reason)),
+                  if (_selectedReasons.contains(ItemReportReason.etc)) ...[
+                    Container(
+                      width: 345.w,
+                      height: 140.h,
+                      padding: EdgeInsets.all(16.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryBlack1,
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: AppColors.textColorWhite.withValues(alpha: 0.3), width: 1.5.w),
+                      ),
+                      child: TextField(
+                        controller: _extraCommentController,
+                        maxLines: null,
+                        maxLength: 300,
+                        style: CustomTextStyles.p2,
+                        cursorColor: AppColors.textColorWhite,
+                        decoration: InputDecoration(
+                          isCollapsed: true,
+                          border: InputBorder.none,
+                          counterText: '', // 기본 counter 숨김
+                          hintText: '신고 사유를 상세하게 적어주세요',
+                          hintStyle: CustomTextStyles.p2.copyWith(
+                            color: AppColors.textColorWhite.withValues(alpha: 0.4),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '${_extraCommentController.text.length}/300',
-                      style: CustomTextStyles.p3.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textColorWhite.withValues(alpha: 0.5),
+                    SizedBox(height: 8.h),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${_extraCommentController.text.length}/300',
+                        style: CustomTextStyles.p3.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textColorWhite.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                  // 하단 버튼과 겹치지 않도록 여백 추가
+                  SizedBox(height: 180.h),
                 ],
-              ],
+              ),
             ),
           ),
 
