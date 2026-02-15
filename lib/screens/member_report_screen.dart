@@ -54,7 +54,11 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              FocusScope.of(context).unfocus();
+            },
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
