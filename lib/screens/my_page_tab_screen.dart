@@ -268,32 +268,16 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   }
 
   /// 회원 탈퇴 처리
-  void _handleDeleteMemberButtonTap(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.primaryBlack,
-        title: Text('회원 탈퇴', style: CustomTextStyles.h3),
-        content: Text('정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.', style: CustomTextStyles.p2),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('취소', style: CustomTextStyles.p2),
-          ),
-          TextButton(
-            onPressed: () => _confirmDeleteMember(dialogContext, context),
-            style: TextButton.styleFrom(foregroundColor: AppColors.warningRed),
-            child: Text('탈퇴하기', style: CustomTextStyles.p2.copyWith(color: AppColors.warningRed)),
-          ),
-        ],
-      ),
-    );
+  Future<void> _handleDeleteMemberButtonTap(BuildContext context) async {
+    final result = await context.showDeleteDialog(title: '회원 탈퇴', description: '정말 탈퇴하시겠습니까?', confirmText: '탈퇴하기');
+
+    if (result == true) {
+      await _confirmDeleteMember(context);
+    }
   }
 
   /// 회원 탈퇴 확인 후 처리
-  Future<void> _confirmDeleteMember(BuildContext dialogContext, BuildContext context) async {
-    Navigator.pop(dialogContext); // 다이얼로그 닫기
-
+  Future<void> _confirmDeleteMember(BuildContext context) async {
     // 회원 탈퇴 진행
     final memberApi = MemberApi();
     final isSuccess = await memberApi.deleteMember();

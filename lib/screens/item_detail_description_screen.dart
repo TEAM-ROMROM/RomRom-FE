@@ -778,10 +778,14 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                         title: '삭제',
                         textColor: AppColors.itemOptionsMenuRedText,
                         onTap: () async {
-                          await _deleteItem(item!);
+                          final result = await context.showDeleteDialog(title: '물품 삭제', description: '정말 삭제하시겠습니까?');
 
-                          if (mounted) {
-                            Navigator.of(context).pop(true);
+                          if (result == true) {
+                            await _deleteItem(item!);
+
+                            if (mounted) {
+                              Navigator.of(context).pop(true);
+                            }
                           }
                         },
                       ),
