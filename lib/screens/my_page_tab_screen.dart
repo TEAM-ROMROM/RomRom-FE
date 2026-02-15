@@ -87,11 +87,30 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('마이페이지', style: CustomTextStyles.h1),
-                  GestureDetector(
-                    onTap: () {
-                      context.navigateTo(screen: const NotificationSettingsScreen());
-                    },
-                    child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+                  SizedBox.square(
+                    dimension: 32.w,
+                    child: OverflowBox(
+                      maxWidth: 56.w,
+                      maxHeight: 56.w,
+                      child: Material(
+                        color: Colors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias, // 리플을 원형으로 클립
+                        child: InkResponse(
+                          onTap: () {
+                            context.navigateTo(screen: const NotificationSettingsScreen());
+                          },
+                          radius: 18.w,
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray,
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: SizedBox.square(
+                            dimension: 56.w,
+                            child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -342,9 +342,18 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        TextButton(
-          onPressed: _closeCoachMark,
-          child: const Text('닫기', style: TextStyle(color: Colors.white, fontSize: 14)),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _closeCoachMark,
+            highlightColor: AppColors.buttonHighlightColorGray,
+            customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100.r)),
+            splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+            child: const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text('닫기', style: TextStyle(color: Colors.white, fontSize: 14)),
+            ),
+          ),
         ),
       ],
     );
@@ -566,10 +575,19 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           children: [
             Text('물품이 없습니다.', style: CustomTextStyles.h3),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadInitialItems,
-              style: ElevatedButton.styleFrom(foregroundColor: Colors.black, backgroundColor: AppColors.primaryYellow),
-              child: const Text('새로고침'),
+            Material(
+              color: AppColors.primaryYellow,
+              borderRadius: BorderRadius.circular(4.r),
+              child: InkWell(
+                onTap: _loadInitialItems,
+                highlightColor: darkenBlend(AppColors.primaryYellow),
+                splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(4.r),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Text('새로고침', style: TextStyle(color: Colors.black)),
+                ),
+              ),
             ),
           ],
         ),
@@ -619,12 +637,30 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    context.navigateTo(screen: const NotificationScreen());
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
+                SizedBox.square(
+                  dimension: 32.w,
+                  child: OverflowBox(
+                    maxWidth: 56.w,
+                    maxHeight: 56.w,
+                    child: Material(
+                      color: Colors.transparent,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias, // 리플을 원형으로 클립
+                      child: InkResponse(
+                        onTap: () {
+                          context.navigateTo(screen: const NotificationScreen());
+                        },
+                        radius: 18.w,
+                        customBorder: const CircleBorder(),
+                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                        child: SizedBox.square(
+                          dimension: 56.w,
+                          child: Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
                 SizedBox(width: 10.w),
                 ReportMenuButton(

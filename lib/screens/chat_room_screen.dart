@@ -353,9 +353,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         backgroundColor: AppColors.primaryBlack,
         appBar: AppBar(
           backgroundColor: AppColors.primaryBlack,
-          leading: IconButton(
-            icon: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
-            onPressed: () => Navigator.of(context).pop(true),
+          leading: Material(
+            color: Colors.transparent,
+            child: ClipOval(
+              // 잉크가 원 밖으로 안 나가게
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).pop(true),
+                highlightColor: AppColors.buttonHighlightColorGray,
+                splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+                ),
+              ),
+            ),
           ),
         ),
         body: Center(
@@ -368,10 +380,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadInitialData,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryYellow),
-                child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
+              Material(
+                color: AppColors.primaryYellow,
+                borderRadius: BorderRadius.circular(4.r),
+                child: InkWell(
+                  onTap: _loadInitialData,
+                  customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),
+                  highlightColor: darkenBlend(AppColors.primaryYellow),
+                  splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -824,26 +845,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   // 텍스트 유무에 따라 버튼/아이콘 색상 및 활성화 상태 변경
                   suffixIcon: TextFieldTapRegion(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _messageController.text.trim().isEmpty
-                          ? null
-                          : () {
-                              _sendMessage();
-                            },
-                      child: Container(
-                        margin: EdgeInsets.all(4.w),
-                        width: 40.w,
-                        height: 40.w,
-                        decoration: BoxDecoration(
-                          color: !_hasText ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Icon(
-                            AppIcons.arrowUpward,
-                            color: !_hasText ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
-                            size: 32.w,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ClipOval(
+                        child: InkWell(
+                          onTap: _messageController.text.trim().isEmpty
+                              ? null
+                              : () {
+                                  _sendMessage();
+                                },
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray,
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: Container(
+                            margin: EdgeInsets.all(4.w),
+                            width: 40.w,
+                            height: 40.w,
+                            decoration: BoxDecoration(
+                              color: !_hasText ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                AppIcons.arrowUpward,
+                                color: !_hasText ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
+                                size: 32.w,
+                              ),
+                            ),
                           ),
                         ),
                       ),

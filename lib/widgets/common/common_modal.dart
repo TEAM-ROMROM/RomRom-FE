@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 공통 모달 위젯
 /// 팩토리 메서드 패턴으로 success, error, confirm 타입 지원
@@ -165,15 +166,20 @@ class CommonModal extends StatelessWidget {
     return SizedBox(
       width: 264.w,
       height: 44.h,
-      child: TextButton(
-        style: TextButton.styleFrom(
-          backgroundColor: confirmButtonColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-        ),
-        onPressed: onConfirm,
-        child: Text(
-          confirmText,
-          style: CustomTextStyles.p1.copyWith(color: confirmTextColor, fontWeight: FontWeight.w700),
+      child: Material(
+        color: confirmButtonColor,
+        borderRadius: BorderRadius.circular(10.r),
+        child: InkWell(
+          onTap: onConfirm,
+          highlightColor: darkenBlend(confirmButtonColor),
+          splashColor: darkenBlend(confirmButtonColor).withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(10.r),
+          child: Center(
+            child: Text(
+              confirmText,
+              style: CustomTextStyles.p1.copyWith(color: confirmTextColor, fontWeight: FontWeight.w700),
+            ),
+          ),
         ),
       ),
     );
@@ -188,15 +194,18 @@ class CommonModal extends StatelessWidget {
         SizedBox(
           width: 128.w,
           height: 44.h,
-          child: ElevatedButton(
-            onPressed: onCancel,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.opacity30PrimaryBlack,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-              elevation: 0,
-              padding: EdgeInsets.zero,
+          child: Material(
+            color: AppColors.opacity30PrimaryBlack,
+            borderRadius: BorderRadius.circular(10.r),
+            child: InkWell(
+              onTap: onCancel,
+              highlightColor: AppColors.opacity30PrimaryBlack,
+              splashColor: darkenBlend(AppColors.opacity30PrimaryBlack).withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(10.r),
+              child: Center(
+                child: Text(cancelText!, style: CustomTextStyles.p1, textAlign: TextAlign.center),
+              ),
             ),
-            child: Text(cancelText!, style: CustomTextStyles.p1, textAlign: TextAlign.center),
           ),
         ),
         SizedBox(width: 8.w),
@@ -204,15 +213,18 @@ class CommonModal extends StatelessWidget {
         SizedBox(
           width: 128.w,
           height: 44.h,
-          child: ElevatedButton(
-            onPressed: onConfirm,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: confirmButtonColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-              elevation: 0,
-              padding: EdgeInsets.zero,
+          child: Material(
+            color: confirmButtonColor,
+            borderRadius: BorderRadius.circular(10.r),
+            child: InkWell(
+              onTap: onConfirm,
+              highlightColor: darkenBlend(confirmButtonColor),
+              splashColor: darkenBlend(confirmButtonColor).withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(10.r),
+              child: Center(
+                child: Text(confirmText, style: CustomTextStyles.p1, textAlign: TextAlign.center),
+              ),
             ),
-            child: Text(confirmText, style: CustomTextStyles.p1, textAlign: TextAlign.center),
           ),
         ),
       ],
