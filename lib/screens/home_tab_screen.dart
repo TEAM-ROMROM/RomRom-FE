@@ -343,7 +343,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: InkWell(
             onTap: _closeCoachMark,
             highlightColor: AppColors.buttonHighlightColorGray,
@@ -351,7 +351,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
             child: const Padding(
               padding: EdgeInsets.all(8.0),
-              child: Text('닫기', style: TextStyle(color: Colors.white, fontSize: 14)),
+              child: Text('닫기', style: TextStyle(color: AppColors.textColorWhite, fontSize: 14)),
             ),
           ),
         ),
@@ -585,7 +585,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                 borderRadius: BorderRadius.circular(4.r),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  child: Text('새로고침', style: TextStyle(color: Colors.black)),
+                  child: Text('새로고침', style: TextStyle(color: AppColors.textColorBlack)),
                 ),
               ),
             ),
