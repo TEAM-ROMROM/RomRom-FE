@@ -74,7 +74,6 @@ class AppColors {
 
   // 버튼 하이라이트 색상
   static const Color buttonHighlightColorGray = Color(0xFF55585E);
-  static const Color buttonHighlightColorYellow = Color(0xFFCC9D00);
 
   // 투명 색상
   static const Color transparent = Color(0x00000000);
