@@ -363,13 +363,13 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                       await TradeApi().cancelTradeRequest(
                         TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
                       );
+                      if (mounted) {
+                        setState(() {
+                          _sentRequests.removeAt(index);
+                        });
+                      }
                     } catch (e) {
                       debugPrint('요청 취소 실패: $e');
-                    }
-                    if (mounted) {
-                      setState(() {
-                        _sentRequests.removeAt(index);
-                      });
                     }
                   }
                 },
@@ -772,15 +772,15 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                               await TradeApi().cancelTradeRequest(
                                 TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
                               );
+                              if (mounted) {
+                                setState(() {
+                                  _receivedRequests.removeWhere(
+                                    (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
+                                  );
+                                });
+                              }
                             } catch (e) {
                               debugPrint('요청 취소 실패: $e');
-                            }
-                            if (mounted) {
-                              setState(() {
-                                _receivedRequests.removeWhere(
-                                  (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
-                                );
-                              });
                             }
                           }
                         },
