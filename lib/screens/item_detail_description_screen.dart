@@ -552,6 +552,8 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                     maxHeight: 56.w,
                                     child: Material(
                                       color: Colors.transparent,
+                                      shape: const CircleBorder(),
+                                      clipBehavior: Clip.antiAlias,
                                       child: InkResponse(
                                         onTap: _toggleLike,
                                         radius: 18.w,
@@ -744,24 +746,36 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
           /// 상단 고정 버튼들
           Positioned(
             top: MediaQuery.of(context).padding.top + 8.h,
-            child: Material(
-              color: Colors.transparent,
-              child: InkResponse(
-                onTap: () async {
-                  // 뒤로갈 때 좋아요가 취소된 상태면 목록에 반영되도록 정보 반환
-                  if (isLikedVN.value == false) {
-                    Navigator.of(context).pop(widget.itemId);
-                  } else {
-                    Navigator.of(context).pop();
-                  }
-                },
-                radius: 18.w,
-                customBorder: const CircleBorder(),
-                highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-                  child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+            left: 24.w,
+            child: SizedBox.square(
+              dimension: 32.w,
+              child: OverflowBox(
+                maxWidth: 56.w,
+                maxHeight: 56.w,
+                child: Material(
+                  color: Colors.transparent,
+                  clipBehavior: Clip.antiAlias,
+                  shape: const CircleBorder(),
+                  child: InkResponse(
+                    onTap: () async {
+                      // 뒤로갈 때 좋아요가 취소된 상태면 목록에 반영되도록 정보 반환
+                      if (isLikedVN.value == false) {
+                        Navigator.of(context).pop(widget.itemId);
+                      } else {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    radius: 18.w,
+                    customBorder: const CircleBorder(),
+                    highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                    splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                    child: SizedBox.square(
+                      dimension: 56.w,
+                      child: Center(
+                        child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

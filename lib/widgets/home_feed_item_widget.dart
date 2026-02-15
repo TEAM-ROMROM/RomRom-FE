@@ -209,7 +209,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       maxHeight: 56.w,
                       child: Material(
                         color: Colors.transparent,
-
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
                         child: InkResponse(
                           radius: 18.w,
                           containedInkWell: false,

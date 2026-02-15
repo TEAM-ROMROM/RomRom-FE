@@ -171,6 +171,8 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
         maxHeight: 48.w,
         child: Material(
           color: Colors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
           child: InkResponse(
             key: _triggerKey,
             onTap: _showMenu,

@@ -645,7 +645,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     child: Material(
                       color: Colors.transparent,
                       shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias, // 리플을 원형으로 클립
+                      clipBehavior: Clip.antiAlias,
                       child: InkResponse(
                         onTap: () {
                           context.navigateTo(screen: const NotificationScreen());

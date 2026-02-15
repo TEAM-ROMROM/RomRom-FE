@@ -87,36 +87,41 @@ class _LoginButtonState extends State<LoginButton> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _isLoading
-          ? null
-          : () async {
-              await handleLogin(context);
-            },
-      child: Container(
-        width: double.infinity,
-        height: 56.h,
-        margin: EdgeInsets.only(bottom: 12.h),
-        decoration: BoxDecoration(color: widget.platform.backgroundColor, borderRadius: BorderRadius.circular(10.r)),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned(
-              left: 70.w,
-              child: SvgPicture.asset(
-                widget.platform.iconPath,
-                width: 22.h,
-                height: 22.h,
-                placeholderBuilder: (context) => Icon(Icons.error, size: 24.sp, color: Colors.red),
+    return Material(
+      color: widget.platform.backgroundColor,
+      borderRadius: BorderRadius.circular(10.r),
+      child: InkWell(
+        onTap: _isLoading
+            ? null
+            : () async {
+                await handleLogin(context);
+              },
+        customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+        highlightColor: darkenBlend(widget.platform.backgroundColor),
+        splashColor: darkenBlend(widget.platform.backgroundColor).withValues(alpha: 0.3),
+        child: SizedBox(
+          width: double.infinity,
+          height: 56.h,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                left: 70.w,
+                child: SvgPicture.asset(
+                  widget.platform.iconPath,
+                  width: 22.h,
+                  height: 22.h,
+                  placeholderBuilder: (context) => Icon(Icons.error, size: 24.sp, color: Colors.red),
+                ),
               ),
-            ),
-            Center(
-              child: Text(
-                widget.platform.displayText,
-                style: CustomTextStyles.p2.copyWith(color: AppColors.textColorBlack, fontWeight: FontWeight.w700),
+              Center(
+                child: Text(
+                  widget.platform.displayText,
+                  style: CustomTextStyles.p2.copyWith(color: AppColors.textColorBlack, fontWeight: FontWeight.w700),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
