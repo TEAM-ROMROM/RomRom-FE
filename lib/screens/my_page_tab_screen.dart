@@ -93,7 +93,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                       maxWidth: 56.w,
                       maxHeight: 56.w,
                       child: Material(
-                        color: Colors.transparent,
+                        color: AppColors.transparent,
                         shape: const CircleBorder(),
                         clipBehavior: Clip.antiAlias, // 리플을 원형으로 클립
                         child: InkResponse(

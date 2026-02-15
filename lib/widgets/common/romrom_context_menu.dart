@@ -177,7 +177,7 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
         maxWidth: 48.w,
         maxHeight: 48.w,
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkResponse(
@@ -389,7 +389,7 @@ class _MenuOverlay extends StatelessWidget {
             child: Container(
               height: itemHeight,
               padding: menuPadding,
-              color: Colors.transparent,
+              color: AppColors.transparent,
               alignment: Alignment.centerLeft,
               child: Row(
                 children: [
