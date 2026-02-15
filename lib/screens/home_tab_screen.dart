@@ -643,7 +643,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     maxWidth: 56.w,
                     maxHeight: 56.w,
                     child: Material(
-                      color: Colors.transparent,
+                      color: AppColors.transparent,
                       shape: const CircleBorder(),
                       clipBehavior: Clip.antiAlias,
                       child: InkResponse(

@@ -376,7 +376,7 @@ class _MenuOverlay extends StatelessWidget {
 
       widgets.add(
         Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: InkWell(
             onTap: () {
               if (enableHapticFeedback) {
