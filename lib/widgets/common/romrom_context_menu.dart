@@ -75,6 +75,7 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
   late Animation<double> _animation;
   final GlobalKey _triggerKey = GlobalKey();
   bool _isMenuOpen = false;
+  bool _isItemHandling = false;
 
   @override
   void initState() {
@@ -126,10 +127,15 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
         menuBorderRadius: widget.menuBorderRadius ?? BorderRadius.circular(10.r),
         menuBackgroundColor: widget.menuBackgroundColor ?? AppColors.primaryBlack,
         itemHeight: widget.itemHeight.h,
-        onItemSelected: (id) {
+        onItemSelected: (ContextMenuItem item) {
+          if (_isItemHandling) return;
+          _isItemHandling = true;
+
           _closeMenu();
-          widget.onItemSelected?.call(id);
+          item.onTap();
+          widget.onItemSelected?.call(item.id); // 외부 콜백도 1번
         },
+
         onDismiss: _closeMenu,
         enableHapticFeedback: widget.enableHapticFeedback,
       ),
@@ -147,9 +153,10 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
 
     _animationController.reverse().then((_) {
       _removeOverlay();
-      setState(() {
-        _isMenuOpen = false;
-      });
+      if (mounted) {
+        setState(() => _isMenuOpen = false);
+      }
+      _isItemHandling = false;
     });
   }
 
@@ -192,7 +199,7 @@ class _MenuOverlay extends StatelessWidget {
   final BorderRadius menuBorderRadius;
   final Color menuBackgroundColor;
   final double itemHeight;
-  final Function(String) onItemSelected;
+  final void Function(ContextMenuItem) onItemSelected;
   final VoidCallback onDismiss;
   final bool enableHapticFeedback;
 
@@ -348,12 +355,12 @@ class _MenuOverlay extends StatelessWidget {
 
       widgets.add(
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () {
             if (enableHapticFeedback) {
               HapticFeedback.selectionClick();
             }
-            item.onTap();
-            onItemSelected(item.id);
+            onItemSelected(item);
           },
           child: Container(
             height: itemHeight,
