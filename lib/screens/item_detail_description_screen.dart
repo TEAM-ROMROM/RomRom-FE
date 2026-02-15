@@ -760,7 +760,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                 highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
                 splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.0.w, vertical: 16.h),
+                  padding: EdgeInsets.symmetric(horizontal: 24.0.w),
                   child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
                 ),
               ),
@@ -769,7 +769,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
 
           Positioned(
             top: MediaQuery.of(context).padding.top + 8.h,
-            right: 24.w,
+            right: 16.w,
             child: !widget.isMyItem
                 ? ReportMenuButton(
                     onReportPressed: () async {
