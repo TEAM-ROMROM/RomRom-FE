@@ -326,10 +326,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
                     ? takeItem.imageUrlList.first
                     : 'https://picsum.photos/400/300',
-                otherUserProfileUrl: takeItem.member!.profileUrl!,
-                title: takeItem.itemName!,
-                location: takeItem.address!,
-                createdDate: takeItem.createdDate!,
+                otherUserProfileUrl: takeItem.member?.profileUrl ?? '',
+                title: takeItem.itemName ?? ' ',
+                location: takeItem.address ?? '주소 미등록',
+                createdDate: takeItem.createdDate ?? DateTime.now(),
                 tradeOptions: takeItem.itemTradeOptions != null
                     ? takeItem.itemTradeOptions!
                           .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
@@ -352,17 +352,25 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   );
                 },
                 onCancelTap: () async {
-                  try {
-                    await TradeApi().cancelTradeRequest(
-                      TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                    );
-                  } catch (e) {
-                    debugPrint('요청 취소 실패: $e');
-                  }
-                  if (mounted) {
-                    setState(() {
-                      _sentRequests.removeAt(index); // Use the correct index here
-                    });
+                  final result = await context.showDeleteDialog(
+                    title: '거래 요청 취소',
+                    description: '거래 요청을 취소하시겠습니까?',
+                    confirmText: '확인',
+                  );
+
+                  if (result == true) {
+                    try {
+                      await TradeApi().cancelTradeRequest(
+                        TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
+                      );
+                      if (mounted) {
+                        setState(() {
+                          _sentRequests.removeAt(index);
+                        });
+                      }
+                    } catch (e) {
+                      debugPrint('요청 취소 실패: $e');
+                    }
                   }
                 },
               ),
@@ -757,19 +765,23 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                               )
                             : TradeStatus.chatting,
                         onMenuTap: () async {
-                          try {
-                            await TradeApi().cancelTradeRequest(
-                              TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                            );
-                          } catch (e) {
-                            debugPrint('요청 취소 실패: $e');
-                          }
-                          if (mounted) {
-                            setState(() {
-                              _receivedRequests.removeWhere(
-                                (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
+                          final result = await context.showDeleteDialog(title: '거래 요청 삭제', description: '정말 삭제하시겠습니까?');
+
+                          if (result == true) {
+                            try {
+                              await TradeApi().cancelTradeRequest(
+                                TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
                               );
-                            });
+                              if (mounted) {
+                                setState(() {
+                                  _receivedRequests.removeWhere(
+                                    (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
+                                  );
+                                });
+                              }
+                            } catch (e) {
+                              debugPrint('요청 취소 실패: $e');
+                            }
                           }
                         },
                       ),

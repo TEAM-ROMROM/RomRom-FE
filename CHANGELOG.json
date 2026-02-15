@@ -1,11 +1,69 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-10T10:13:26Z",
-    "currentVersion": "1.9.5",
-    "totalReleases": 62,
+    "lastUpdated": "2026-02-14T12:42:36Z",
+    "currentVersion": "1.9.9",
+    "totalReleases": 64,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.9",
+      "project_type": "flutter",
+      "date": "2026-02-14",
+      "pr_number": 512,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **버그 수정**\n  * 요청 관리 탭에서 null 안전성을 개선하여 앱의 안정성을 향상했습니다.\n\n* **기타**\n  * 버전을 v1.9.9로 업데이트했습니다.",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "요청 관리 탭에서 null 안전성을 개선하여 앱의 안정성을 향상했습니다."
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전을 v1.9.9로 업데이트했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.7",
+      "project_type": "flutter",
+      "date": "2026-02-14",
+      "pr_number": 508,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * GitHub 이슈 자동 생성 워크플로우(Issue Mode) 추가\n\n* **버그 수정**\n  * 교환 요청 알림 아이콘 경로 수정\n\n* **개선 사항**\n  * Android 빌드에서 한글 등 비ASCII 경로 지원 추가\n  * 워크트리 관리 기능 최적화\n  * 명령어 문서 및 보고서 가이드 업데이트\n\n* **Chores**\n  * 버전 업데이트: v1.9.7",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "GitHub 이슈 자동 생성 워크플로우(Issue Mode) 추가"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "교환 요청 알림 아이콘 경로 수정"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "Android 빌드에서 한글 등 비ASCII 경로 지원 추가",
+            "워크트리 관리 기능 최적화",
+            "명령어 문서 및 보고서 가이드 업데이트"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업데이트: v1.9.7"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.5",
       "project_type": "flutter",

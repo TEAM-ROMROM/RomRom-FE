@@ -250,10 +250,10 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   }
 
   /// 물품 삭제
-  Future<void> _deleteItem(Item item) async {
+  Future<bool> _deleteItem(Item item) async {
     if (item.itemId == null) {
       CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
-      return;
+      return false;
     }
 
     try {
@@ -263,6 +263,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       if (mounted) {
         CommonSnackBar.show(context: context, message: '물품이 삭제되었습니다');
       }
+      return true;
     } catch (e) {
       if (mounted) {
         CommonSnackBar.show(
@@ -271,6 +272,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
           type: SnackBarType.error,
         );
       }
+      return false;
     }
   }
 
@@ -838,10 +840,13 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                         title: '삭제',
                         textColor: AppColors.itemOptionsMenuRedText,
                         onTap: () async {
-                          await _deleteItem(item!);
+                          final result = await context.showDeleteDialog(title: '물품 삭제', description: '정말 삭제하시겠습니까?');
 
-                          if (mounted) {
-                            Navigator.of(context).pop(true);
+                          if (result == true) {
+                            final deleted = await _deleteItem(item!);
+                            if (deleted && mounted) {
+                              Navigator.of(context).pop(true);
+                            }
                           }
                         },
                       ),
