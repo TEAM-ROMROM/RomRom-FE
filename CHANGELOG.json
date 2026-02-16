@@ -1,11 +1,44 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-14T12:42:36Z",
-    "currentVersion": "1.9.9",
-    "totalReleases": 64,
+    "lastUpdated": "2026-02-16T04:18:52Z",
+    "currentVersion": "1.9.13",
+    "totalReleases": 65,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.13",
+      "project_type": "flutter",
+      "date": "2026-02-16",
+      "pr_number": 523,
+      "raw_summary": "## Summary by CodeRabbit\n\n* **새 기능**\n  * 이슈 생성 시 자동 파일 저장 기능 추가\n\n* **개선사항**\n  * 항목 및 회원 삭제 작업에 확인 단계 추가\n  * 키보드 표시 시 화면 레이아웃 안정성 개선\n  * 신고 화면의 입력 환경 향상\n  * 메뉴 탭 감지 신뢰도 개선\n  * 거래 요청 취소 시 확인 기능 추가\n\n* **기타**\n  * 템플릿 포맷 일관성 개선\n  * 버전 업데이트 (v1.9.9 → v1.9.13)",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "이슈 생성 시 자동 파일 저장 기능 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "항목 및 회원 삭제 작업에 확인 단계 추가",
+            "키보드 표시 시 화면 레이아웃 안정성 개선",
+            "신고 화면의 입력 환경 향상",
+            "메뉴 탭 감지 신뢰도 개선",
+            "거래 요청 취소 시 확인 기능 추가"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "템플릿 포맷 일관성 개선",
+            "버전 업데이트 (v1.9.9 → v1.9.13)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.9",
       "project_type": "flutter",
