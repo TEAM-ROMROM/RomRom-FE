@@ -11,8 +11,15 @@ class UserProfileCircularAvatar extends StatefulWidget {
   final Size avatarSize;
   final String? profileUrl;
   final bool hasBorder;
+  final bool isDeleteAccount;
 
-  const UserProfileCircularAvatar({super.key, required this.avatarSize, this.profileUrl, this.hasBorder = false});
+  const UserProfileCircularAvatar({
+    super.key,
+    required this.avatarSize,
+    this.profileUrl,
+    this.hasBorder = false,
+    required this.isDeleteAccount,
+  });
 
   @override
   State<UserProfileCircularAvatar> createState() => _UserProfileCircularAvatarState();
@@ -38,7 +45,13 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
   }
 
   Future<void> _loadAvatar() async {
-    if (widget.profileUrl != null && widget.profileUrl!.isNotEmpty) {
+    if (widget.isDeleteAccount) {
+      setState(() {
+        _avatarUrl = _kDefaultProfileAsset;
+        _isLoading = false;
+      });
+      return;
+    } else if (widget.profileUrl != null && widget.profileUrl!.isNotEmpty) {
       setState(() {
         _avatarUrl = widget.profileUrl;
         _isLoading = false;
@@ -76,7 +89,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
         color: AppColors.textColorWhite,
         border: widget.hasBorder
             ? Border.all(
-                color: AppColors.textColorWhite, // 테두리 색상
+                color: widget.isDeleteAccount ? AppColors.profileBorderGray : AppColors.profileBorderWhite, // 테두리 색상
                 width: 1.0, // 테두리 두께
               )
             : null,
@@ -85,7 +98,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _avatarUrl != null && _avatarUrl!.isNotEmpty && _avatarUrl != _kDefaultProfileAsset
-            ? CachedImage(imageUrl: _avatarUrl!, fit: BoxFit.contain, errorWidget: _buildDefaultImage())
+            ? CachedImage(imageUrl: _avatarUrl!, fit: BoxFit.cover, errorWidget: _buildDefaultImage())
             : _buildDefaultImage(),
       ),
     );

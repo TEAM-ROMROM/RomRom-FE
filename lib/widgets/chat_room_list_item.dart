@@ -53,6 +53,7 @@ class ChatRoomListItem extends StatelessWidget {
                 avatarSize: Size(40.w, 40.h),
                 profileUrl: profileImageUrl,
                 hasBorder: true,
+                isDeleteAccount: accountStatus == AccountStatus.deleteAccount.serverName,
               ),
             ),
 

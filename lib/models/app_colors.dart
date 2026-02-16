@@ -75,6 +75,10 @@ class AppColors {
   // 투명 색상
   static const Color transparent = Color(0x00000000);
 
+  // 프로필 이미지 테두리 및 배경
+  static const Color profileBorderGray = Color(0xFF77787D); // 프로필 이미지 테두리 색상 - 기본 프로필
+  static const Color profileBorderWhite = Color(0xFFFFFFFF); // 프로필 이미지 테두리 색상 - 기본 프로필 외
+
   // 아이템 옵션 메뉴
   static const Color itemOptionsMenuRedText = Color(0xFFFF5656); // 삭제 텍스트 색상
   static const Color itemOptionsMenuRedIcon = Color(0xFF993333); // 삭제 아이콘 색상

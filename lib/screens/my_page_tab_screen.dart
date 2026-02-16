@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -34,6 +35,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   String _nickname = '닉네임';
   String _location = '위치정보 없음';
   String? _profileUrl;
+  String? _accountStatus;
 
   @override
   void initState() {
@@ -54,6 +56,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
           // 프로필 이미지
           _profileUrl = memberResponse.member?.profileUrl;
+
+          // 계정 상태
+          _accountStatus = memberResponse.member?.accountStatus;
 
           // 위치 정보 (주소 조합)
           final location = memberResponse.memberLocation;
@@ -178,7 +183,12 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         child: Row(
           children: [
             // 프로필 이미지
-            UserProfileCircularAvatar(avatarSize: const Size(50, 50), profileUrl: _profileUrl, hasBorder: true),
+            UserProfileCircularAvatar(
+              avatarSize: const Size(50, 50),
+              profileUrl: _profileUrl,
+              hasBorder: true,
+              isDeleteAccount: _accountStatus == AccountStatus.deleteAccount.serverName,
+            ),
             SizedBox(width: 16.w),
 
             // 닉네임 및 장소

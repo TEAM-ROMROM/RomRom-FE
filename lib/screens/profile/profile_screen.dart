@@ -286,6 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       avatarSize: Size(132.w, 132.h),
       profileUrl: _profileUrl.isNotEmpty ? _profileUrl : null,
       hasBorder: true,
+      isDeleteAccount: _accountStatus == AccountStatus.deleteAccount.serverName,
     );
   }
 
