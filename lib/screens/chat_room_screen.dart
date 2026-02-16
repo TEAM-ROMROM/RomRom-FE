@@ -15,6 +15,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -518,6 +519,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         return;
                       }
                       try {
+                        await MemberApi().blockMember(opponentId);
                         if (context.mounted) {
                           Navigator.of(context).pop(true); // 모달 닫기
                         }
