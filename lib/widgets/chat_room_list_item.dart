@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
@@ -7,6 +8,7 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 /// 채팅방 리스트 아이템 위젯
 class ChatRoomListItem extends StatelessWidget {
+  final String? accountStatus;
   final String? profileImageUrl;
   final String? memberId;
   final String nickname;
@@ -21,6 +23,7 @@ class ChatRoomListItem extends StatelessWidget {
 
   const ChatRoomListItem({
     super.key,
+    this.accountStatus,
     this.profileImageUrl,
     this.memberId,
     required this.nickname,
@@ -64,7 +67,7 @@ class ChatRoomListItem extends StatelessWidget {
                     children: [
                       // 첫 줄: 닉네임
                       Text(
-                        nickname,
+                        accountStatus == AccountStatus.deleteAccount.serverName ? '(탈퇴)' : nickname,
                         style: CustomTextStyles.p1.copyWith(
                           color: AppColors.textColorWhite,
                           fontWeight: FontWeight.w500,
