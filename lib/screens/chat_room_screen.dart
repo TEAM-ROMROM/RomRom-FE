@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
@@ -54,6 +55,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   bool _isLoading = true;
   bool _hasError = false;
+  bool _deleteModalShown = false;
+
   String _errorMessage = '';
   String? _myMemberId;
 
@@ -206,6 +209,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       setState(() => _isLoading = false);
       _scrollToBottom();
       chatApi.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true); // 입장 처리
+      _showDeletedAccountModal(); // 탈퇴한 회원 모달 체크
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;
@@ -324,6 +328,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
       }
     }
+  }
+
+  void _showDeletedAccountModal() {
+    if (!mounted) return;
+    if (_deleteModalShown) return;
+    if (chatRoom.getOpponent(_myMemberId!)?.accountStatus != AccountStatus.deleteAccount.serverName) return;
+
+    _deleteModalShown = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      await CommonModal.error(
+        context: context,
+        message: '존재하지 않거나 탈퇴한 사용자입니다.',
+        onConfirm: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+        },
+      );
+    });
   }
 
   @override

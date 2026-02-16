@@ -188,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       await CommonModal.error(
         context: context,
-        message: '탈퇴한 회원의 프로필입니다.',
+        message: '존재하지 않거나 탈퇴한 사용자입니다.',
         onConfirm: () {
           Navigator.of(context).pop();
           Navigator.of(context).pop();
