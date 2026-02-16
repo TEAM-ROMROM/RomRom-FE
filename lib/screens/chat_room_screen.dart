@@ -13,6 +13,7 @@ import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
@@ -486,7 +487,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 icon: AppIcons.report,
                 title: '신고하기',
                 onTap: () async {
-                  // TODO : 신고하기 화면으로 이동
+                  context.navigateTo(
+                    screen: MemberReportScreen(memberId: chatRoom.getOpponent(_myMemberId!)!.memberId!),
+                  );
                 },
                 showDividerAfter: true,
               ),
