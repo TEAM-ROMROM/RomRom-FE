@@ -68,7 +68,7 @@ class ChatRoomListItem extends StatelessWidget {
                     children: [
                       // 첫 줄: 닉네임
                       Text(
-                        accountStatus == AccountStatus.deleteAccount.serverName ? '(탈퇴)' : nickname,
+                        accountStatus == AccountStatus.deleteAccount.serverName ? '(탈퇴)$nickname' : nickname,
                         style: CustomTextStyles.p1.copyWith(
                           color: AppColors.textColorWhite,
                           fontWeight: FontWeight.w500,
