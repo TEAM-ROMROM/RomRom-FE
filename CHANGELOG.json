@@ -1,11 +1,42 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-16T04:18:52Z",
-    "currentVersion": "1.9.13",
-    "totalReleases": 65,
+    "lastUpdated": "2026-02-18T16:26:13Z",
+    "currentVersion": "1.9.15",
+    "totalReleases": 66,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.15",
+      "project_type": "flutter",
+      "date": "2026-02-18",
+      "pr_number": 536,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 탈퇴한 계정 표시 기능 추가\n  * 삭제된 계정과의 상호작용 시 안내 메시지 표시\n\n* **개선 사항**\n  * 버튼 및 상호작용 요소에 터치 피드백 및 리플 효과 추가\n  * 사용자 인터페이스의 일관된 시각적 피드백 개선\n  * 채팅 목록에서 탈퇴한 사용자 상태 표시\n\n* **기타**\n  * 버전 1.9.15로 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "탈퇴한 계정 표시 기능 추가",
+            "삭제된 계정과의 상호작용 시 안내 메시지 표시"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "버튼 및 상호작용 요소에 터치 피드백 및 리플 효과 추가",
+            "사용자 인터페이스의 일관된 시각적 피드백 개선",
+            "채팅 목록에서 탈퇴한 사용자 상태 표시"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 1.9.15로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.13",
       "project_type": "flutter",
