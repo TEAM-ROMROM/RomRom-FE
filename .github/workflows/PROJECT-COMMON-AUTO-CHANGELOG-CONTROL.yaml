@@ -248,8 +248,8 @@ jobs:
 
             git commit -m "$REPO_NAME 버전 관리 : docs : v$VERSION 릴리즈 문서 업데이트 (PR #${{ github.event.pull_request.number }})"
 
-            # Race Condition 방지: pull-rebase 후 push (최대 3회 재시도)
-            MAX_RETRIES=3
+            # Race Condition 방지: pull-rebase 후 push (최대 5회 재시도)
+            MAX_RETRIES=5
             RETRY_COUNT=0
             PUSH_SUCCESS=false
 
@@ -262,7 +262,8 @@ jobs:
                 echo "✅ 변경사항 커밋 완료"
                 break
               else
-                echo "⚠️ Push 실패, remote 변경사항 동기화 중..."
+                echo "⚠️ Push 실패, ${RETRY_COUNT}번째 재시도 전 2초 대기..."
+                sleep 2
                 if git pull --rebase origin $DEFAULT_BRANCH; then
                   echo "✅ Rebase 성공, 다시 push 시도..."
                 else
@@ -341,9 +342,9 @@ jobs:
           fi
 
           # deploy 브랜치에 푸시 (다른 워크플로우 트리거)
-          # Race Condition 방지: pull-rebase 후 push (최대 3회 재시도)
+          # Race Condition 방지: pull-rebase 후 push (최대 5회 재시도)
           echo "🚀 $PR_BASE 브랜치에 푸시 중..."
-          MAX_RETRIES=3
+          MAX_RETRIES=5
           RETRY_COUNT=0
           PUSH_SUCCESS=false
 
@@ -356,7 +357,8 @@ jobs:
               echo "✅ $PR_BASE 브랜치에 푸시 완료 (배포 워크플로우 트리거됨)"
               break
             else
-              echo "⚠️ Push 실패, remote 변경사항 동기화 중..."
+              echo "⚠️ Push 실패, ${RETRY_COUNT}번째 재시도 전 2초 대기..."
+              sleep 2
               if git pull --rebase origin $PR_BASE; then
                 echo "✅ Rebase 성공, 다시 push 시도..."
               else

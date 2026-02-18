@@ -114,8 +114,8 @@ jobs:
             COMMIT_MSG="$REPO_NAME 버전 정보 관리: chore: 버전 ${{ steps.version.outputs.new_version }} [skip ci]"
 
             if git commit -m "$COMMIT_MSG"; then
-              # Race Condition 방지: pull-rebase 후 push (최대 3회 재시도)
-              MAX_RETRIES=3
+              # Race Condition 방지: pull-rebase 후 push (최대 5회 재시도)
+              MAX_RETRIES=5
               RETRY_COUNT=0
               PUSH_SUCCESS=false
 
@@ -128,7 +128,8 @@ jobs:
                   echo "✅ 버전 업데이트 커밋 완료"
                   break
                 else
-                  echo "⚠️ Push 실패, remote 변경사항 동기화 중..."
+                  echo "⚠️ Push 실패, ${RETRY_COUNT}번째 재시도 전 2초 대기..."
+                  sleep 2
 
                   # remote에서 최신 변경사항 가져와서 rebase
                   if git pull --rebase origin ${{ github.event.repository.default_branch || 'main' }}; then
