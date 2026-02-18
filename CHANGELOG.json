@@ -1,11 +1,40 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-18T16:26:13Z",
-    "currentVersion": "1.9.15",
-    "totalReleases": 66,
+    "lastUpdated": "2026-02-18T16:59:10Z",
+    "currentVersion": "1.9.18",
+    "totalReleases": 67,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.18",
+      "project_type": "flutter",
+      "date": "2026-02-18",
+      "pr_number": 538,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **버그 수정**\n  * 탈퇴한 계정에 대한 표시 처리 개선 (채팅방 및 프로필 화면)\n  * 탈퇴한 상대방의 별명 표시 로직 개선\n\n* **새로운 기능**\n  * 등록 폼의 설명 필드에서 줄바꿈 입력 지원 추가\n\n* **문서**\n  * 버전 정보 업데이트 (v1.9.15 → v1.9.18)",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "탈퇴한 계정에 대한 표시 처리 개선 (채팅방 및 프로필 화면)",
+            "탈퇴한 상대방의 별명 표시 로직 개선"
+          ]
+        },
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "등록 폼의 설명 필드에서 줄바꿈 입력 지원 추가"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "버전 정보 업데이트 (v1.9.15 → v1.9.18)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.15",
       "project_type": "flutter",
