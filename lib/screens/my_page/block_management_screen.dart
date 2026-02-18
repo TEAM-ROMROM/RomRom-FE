@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -161,7 +162,12 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
         child: Row(
           children: [
             // 프로필 이미지 (50x50px)
-            UserProfileCircularAvatar(avatarSize: Size(50.w, 50.h), profileUrl: member.profileUrl, hasBorder: true),
+            UserProfileCircularAvatar(
+              avatarSize: Size(50.w, 50.h),
+              profileUrl: member.profileUrl,
+              hasBorder: true,
+              isDeleteAccount: member.accountStatus == AccountStatus.deleteAccount.serverName,
+            ),
             SizedBox(width: 16.w), // Figma: 이미지 오른쪽 16px
             // 닉네임 및 위치
             Expanded(

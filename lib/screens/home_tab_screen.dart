@@ -467,7 +467,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         date: d.createdDate is DateTime ? d.createdDate as DateTime : DateTime.now(),
         itemCondition: cond,
         transactionTypes: opts,
-        profileUrl: d.member?.profileUrl ?? '', // FIXME: 프로필 URL이 없을 경우 에셋 사진으로 대체
+        accountStatus: d.member?.accountStatus,
+        profileUrl: d.member?.profileUrl ?? '',
         likeCount: d.likeCount ?? 0,
         imageUrls: d.imageUrlList, // List<String>
         description: d.itemDescription ?? '',

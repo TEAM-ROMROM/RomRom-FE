@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -352,6 +353,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               child: UserProfileCircularAvatar(
                                 avatarSize: const Size(50, 50),
                                 profileUrl: widget.item.profileUrl.isNotEmpty ? widget.item.profileUrl : null,
+                                isDeleteAccount: widget.item.accountStatus == AccountStatus.deleteAccount.serverName,
                               ),
                             ),
                           ),

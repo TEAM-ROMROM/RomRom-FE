@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -23,6 +24,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
   String _nickname = '닉네임';
   String _location = '위치정보 없음';
   int _receivedLikes = 0;
+  String _accountStatus = '';
 
   bool _hasImageBeenTouched = false;
   bool _showProfileSaveButton = false;
@@ -59,6 +61,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       if (mounted) {
         setState(() {
           _nickname = memberResponse.member?.nickname ?? '닉네임';
+          _accountStatus = memberResponse.member?.accountStatus ?? '';
           nicknameController.text = _nickname;
           imageUrl = memberResponse.member?.profileUrl ?? '';
 
@@ -248,7 +251,12 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                   padding: EdgeInsets.all(48.w),
                   child: const CircularProgressIndicator(color: AppColors.primaryYellow),
                 )
-              : UserProfileCircularAvatar(avatarSize: Size(132.w, 132.h), profileUrl: imageUrl, hasBorder: true),
+              : UserProfileCircularAvatar(
+                  avatarSize: Size(132.w, 132.h),
+                  profileUrl: imageUrl,
+                  hasBorder: true,
+                  isDeleteAccount: _accountStatus == AccountStatus.deleteAccount.serverName,
+                ),
 
           // 카메라 아이콘 (우하단)
           Positioned(

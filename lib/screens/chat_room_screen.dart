@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
@@ -12,8 +13,10 @@ import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -54,6 +57,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   bool _isLoading = true;
   bool _hasError = false;
+  bool _deleteModalShown = false;
+
   String _errorMessage = '';
   String? _myMemberId;
 
@@ -206,6 +211,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       setState(() => _isLoading = false);
       _scrollToBottom();
       chatApi.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true); // 입장 처리
+      _showDeletedAccountModal(); // 탈퇴한 회원 모달 체크
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;
@@ -324,6 +330,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
       }
     }
+  }
+
+  void _showDeletedAccountModal() {
+    if (!mounted) return;
+    if (_deleteModalShown) return;
+    if (chatRoom.getOpponent(_myMemberId!)?.accountStatus != AccountStatus.deleteAccount.serverName) return;
+
+    _deleteModalShown = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      await CommonModal.error(
+        context: context,
+        message: '존재하지 않거나 탈퇴한 사용자입니다.',
+        onConfirm: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+        },
+      );
+    });
   }
 
   @override
@@ -460,7 +487,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 icon: AppIcons.report,
                 title: '신고하기',
                 onTap: () async {
-                  // TODO : 신고하기 화면으로 이동
+                  context.navigateTo(
+                    screen: MemberReportScreen(memberId: chatRoom.getOpponent(_myMemberId!)!.memberId!),
+                  );
                 },
                 showDividerAfter: true,
               ),
@@ -493,6 +522,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         return;
                       }
                       try {
+                        await MemberApi().blockMember(opponentId);
                         if (context.mounted) {
                           Navigator.of(context).pop(true); // 모달 닫기
                         }

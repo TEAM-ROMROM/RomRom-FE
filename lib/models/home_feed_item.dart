@@ -20,6 +20,7 @@ class HomeFeedItem {
   final double? longitude; // 경도
   final bool isLiked; // 좋아요 상태
   final String? authorMemberId; // 게시글 작성자 ID
+  final String? accountStatus; // 작성자 계정 상태
 
   HomeFeedItem({
     required this.id,
@@ -34,6 +35,7 @@ class HomeFeedItem {
     required this.likeCount,
     required this.imageUrls,
     required this.description,
+    required this.accountStatus,
     this.hasAiAnalysis = false,
     this.aiPrice = false,
     this.latitude,

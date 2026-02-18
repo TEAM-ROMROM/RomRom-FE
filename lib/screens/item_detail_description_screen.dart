@@ -5,6 +5,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photo_viewer/photo_viewer.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
@@ -496,6 +497,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                               child: UserProfileCircularAvatar(
                                 avatarSize: const Size(40, 40),
                                 profileUrl: item?.member?.profileUrl,
+                                isDeleteAccount: item?.member?.accountStatus == AccountStatus.deleteAccount.serverName,
                               ),
                             ),
                             SizedBox(width: 10.w),
