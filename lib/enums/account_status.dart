@@ -11,7 +11,7 @@ enum AccountStatus {
   testAccount, // 테스트 계정
 }
 
-extension ChatRoomTypeExtension on AccountStatus {
+extension AccountStatusExtension on AccountStatus {
   String get serverName {
     switch (this) {
       case AccountStatus.activeAccount:
@@ -24,6 +24,6 @@ extension ChatRoomTypeExtension on AccountStatus {
   }
 
   static AccountStatus fromServerName(String name) {
-    return AccountStatus.values.firstWhere((e) => e.serverName == name, orElse: () => AccountStatus.testAccount);
+    return AccountStatus.values.firstWhere((e) => e.serverName == name, orElse: () => AccountStatus.activeAccount);
   }
 }
