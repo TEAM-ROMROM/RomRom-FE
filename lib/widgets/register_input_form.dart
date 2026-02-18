@@ -655,8 +655,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     maxLines: 6,
                     forceValidate: _forceValidateAll,
                     focusNode: _descriptionFocusNode,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => _priceFocusNode.requestFocus(),
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
                   ),
                 ),
 
