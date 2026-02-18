@@ -203,49 +203,77 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
               bottom: 216.h,
               child: Column(
                 children: [
-                  GestureDetector(
-                    onTap: () async {
-                      // 연타 방지 및 유효성 검사
-                      if (_isLiking || widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {
-                        return;
-                      }
+                  SizedBox.square(
+                    dimension: 32.w,
+                    child: OverflowBox(
+                      maxWidth: 56.w,
+                      maxHeight: 56.w,
+                      child: Material(
+                        color: Colors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkResponse(
+                          radius: 18.w,
+                          containedInkWell: false,
+                          onTap: () async {
+                            // 연타 방지 및 유효성 검사
+                            if (_isLiking || widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {
+                              return;
+                            }
 
-                      // 내가 작성한 게시글인지 확인
-                      final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
-                      if (isCurrentMember) {
-                        if (mounted) {
-                          CommonSnackBar.show(
-                            context: context,
-                            message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
-                            type: SnackBarType.error,
-                          );
-                        }
-                        return;
-                      }
+                            // 내가 작성한 게시글인지 확인
+                            final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
+                            if (isCurrentMember) {
+                              if (mounted) {
+                                CommonSnackBar.show(
+                                  context: context,
+                                  message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
+                                  type: SnackBarType.error,
+                                );
+                              }
+                              return;
+                            }
 
-                      setState(() => _isLiking = true);
-                      try {
-                        final itemApi = ItemApi();
-                        final response = await itemApi.postLike(ItemRequest(itemId: widget.item.itemUuid));
-                        if (!mounted) return;
-                        setState(() {
-                          _isLiked = response.isLiked == true;
-                          if (response.item?.likeCount != null) {
-                            _likeCount = response.item?.likeCount ?? _likeCount;
-                          } else {
-                            _likeCount = _isLiked ? _likeCount + 1 : (_likeCount > 0 ? _likeCount - 1 : 0);
-                          }
-                        });
-                      } catch (e) {
-                        debugPrint('좋아요 실패: $e');
-                      } finally {
-                        if (mounted) {
-                          setState(() => _isLiking = false);
-                        }
-                      }
-                    },
-                    child: SvgPicture.asset(
-                      _isLiked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg',
+                            setState(() => _isLiking = true);
+                            try {
+                              final itemApi = ItemApi();
+                              final response = await itemApi.postLike(ItemRequest(itemId: widget.item.itemUuid));
+                              if (!mounted) return;
+                              setState(() {
+                                _isLiked = response.isLiked == true;
+                                if (response.item?.likeCount != null) {
+                                  _likeCount = response.item?.likeCount ?? _likeCount;
+                                } else {
+                                  _likeCount = _isLiked ? _likeCount + 1 : (_likeCount > 0 ? _likeCount - 1 : 0);
+                                }
+                              });
+                            } catch (e) {
+                              debugPrint('좋아요 실패: $e');
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isLiking = false);
+                              }
+                            }
+                          },
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray,
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: SizedBox.square(
+                            dimension: 56.w, // 리플/터치 캔버스
+                            child: Center(
+                              child: SizedBox.square(
+                                dimension: 30.w,
+                                child: SvgPicture.asset(
+                                  _isLiked
+                                      ? 'assets/images/like-heart-icon.svg'
+                                      : 'assets/images/dislike-heart-icon.svg',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   SizedBox(height: 2.h),

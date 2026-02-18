@@ -30,7 +30,11 @@ class TradeRequestTradeOptionSelector extends StatelessWidget {
             runSpacing: 8.h,
             children: ItemTradeOption.values.map((option) {
               final isSelected = selectedOptions.contains(option);
-              return _TradeOptionChip(option: option, isSelected: isSelected, onTap: () => _toggle(option, isSelected));
+              return _TradeOptionChip(
+                label: option.label,
+                isSelected: isSelected,
+                onTap: () => _toggle(option, isSelected),
+              );
             }).toList(),
           ),
         ],
@@ -50,31 +54,55 @@ class TradeRequestTradeOptionSelector extends StatelessWidget {
 }
 
 /// 개별 거래 옵션 칩 위젯
-class _TradeOptionChip extends StatelessWidget {
-  final ItemTradeOption option;
+
+class _TradeOptionChip extends StatefulWidget {
+  const _TradeOptionChip({required this.label, required this.isSelected, required this.onTap});
+
+  final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _TradeOptionChip({required this.option, required this.isSelected, required this.onTap});
+  @override
+  State<_TradeOptionChip> createState() => _TradeOptionChipState();
+}
+
+class _TradeOptionChipState extends State<_TradeOptionChip> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: 80.w,
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryYellow : AppColors.secondaryBlack1,
-          borderRadius: BorderRadius.circular(100.r),
-        ),
-        child: Text(
-          option.label,
-          style: CustomTextStyles.p2.copyWith(
-            color: isSelected ? AppColors.primaryBlack : AppColors.textColorWhite,
-            letterSpacing: -0.32.sp,
+    final radius = BorderRadius.circular(100.r);
+
+    final bg = widget.isSelected ? AppColors.primaryYellow : AppColors.secondaryBlack1;
+    final baseText = widget.isSelected ? AppColors.primaryBlack : AppColors.textColorWhite;
+
+    // 눌렸을 때 글씨를 살짝 “먹이거나(불투명도↓)” 혹은 “톤 변경”
+    final pressedText = baseText.withValues(alpha: 0.75);
+
+    final splash = bg.withValues(alpha: 0.25);
+
+    return Material(
+      color: bg,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: widget.onTap,
+        onHighlightChanged: (v) => setState(() => _pressed = v),
+        splashColor: splash,
+        highlightColor: Colors.transparent, // 텍스트 위에 하이라이트가 덮이는 느낌 방지
+        customBorder: RoundedRectangleBorder(borderRadius: radius),
+        child: SizedBox(
+          width: 80.w,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+            child: Center(
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+                style: CustomTextStyles.p2.copyWith(color: _pressed ? pressedText : baseText, letterSpacing: -0.32.sp),
+                child: Text(widget.label),
+              ),
+            ),
           ),
         ),
       ),

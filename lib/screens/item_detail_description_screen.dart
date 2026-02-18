@@ -300,9 +300,15 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
         backgroundColor: AppColors.primaryBlack,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          leading: IconButton(
-            icon: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
-            onPressed: () => Navigator.pop(context),
+          leading: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.pop(context),
+              customBorder: const CircleBorder(),
+              highlightColor: AppColors.buttonHighlightColorGray,
+              splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+              child: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+            ),
           ),
         ),
         body: Center(
@@ -315,10 +321,19 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.h),
-              ElevatedButton(
-                onPressed: _loadItemDetail,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryYellow),
-                child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
+              Material(
+                color: AppColors.primaryYellow,
+                borderRadius: BorderRadius.circular(4.r),
+                child: InkWell(
+                  onTap: _loadItemDetail,
+                  highlightColor: darkenBlend(AppColors.primaryYellow),
+                  splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4.r),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                    child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -532,31 +547,55 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                               ),
                             ),
                             const Spacer(),
-                            GestureDetector(
-                              onTap: _toggleLike,
-                              child: Column(
-                                children: [
-                                  ValueListenableBuilder<bool>(
-                                    valueListenable: isLikedVN,
-                                    builder: (_, liked, __) {
-                                      return SvgPicture.asset(
-                                        liked
-                                            ? 'assets/images/like-heart-icon.svg'
-                                            : 'assets/images/dislike-heart-icon.svg',
-                                        width: 30.w,
-                                        height: 30.h,
-                                      );
-                                    },
+                            Column(
+                              children: [
+                                SizedBox.square(
+                                  dimension: 32.w,
+                                  child: OverflowBox(
+                                    maxWidth: 56.w,
+                                    maxHeight: 56.w,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      shape: const CircleBorder(),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: InkResponse(
+                                        onTap: _toggleLike,
+                                        radius: 18.w,
+                                        customBorder: const CircleBorder(),
+                                        highlightColor: AppColors.buttonHighlightColorGray,
+                                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                                        child: ValueListenableBuilder<bool>(
+                                          valueListenable: isLikedVN,
+                                          builder: (_, liked, __) {
+                                            return SizedBox.square(
+                                              dimension: 56.w, // 리플/터치 캔버스
+                                              child: Center(
+                                                child: SizedBox.square(
+                                                  dimension: 30.w,
+                                                  child: SvgPicture.asset(
+                                                    liked
+                                                        ? 'assets/images/like-heart-icon.svg'
+                                                        : 'assets/images/dislike-heart-icon.svg',
+                                                    width: 30.w,
+                                                    height: 30.h,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  SizedBox(height: 2.h),
-                                  ValueListenableBuilder<int>(
-                                    valueListenable: likeCountVN,
-                                    builder: (_, likeCount, __) {
-                                      return Text(likeCount.toString(), style: CustomTextStyles.p2);
-                                    },
-                                  ),
-                                ],
-                              ),
+                                ),
+                                SizedBox(height: 2.h),
+                                ValueListenableBuilder<int>(
+                                  valueListenable: likeCountVN,
+                                  builder: (_, likeCount, __) {
+                                    return Text(likeCount.toString(), style: CustomTextStyles.p2);
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -712,22 +751,43 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
           Positioned(
             top: MediaQuery.of(context).padding.top + 8.h,
             left: 24.w,
-            child: GestureDetector(
-              onTap: () async {
-                // 뒤로갈 때 좋아요가 취소된 상태면 목록에 반영되도록 정보 반환
-                if (isLikedVN.value == false) {
-                  Navigator.of(context).pop(widget.itemId);
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
-
-              child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+            child: SizedBox.square(
+              dimension: 32.w,
+              child: OverflowBox(
+                maxWidth: 56.w,
+                maxHeight: 56.w,
+                child: Material(
+                  color: Colors.transparent,
+                  clipBehavior: Clip.antiAlias,
+                  shape: const CircleBorder(),
+                  child: InkResponse(
+                    onTap: () async {
+                      // 뒤로갈 때 좋아요가 취소된 상태면 목록에 반영되도록 정보 반환
+                      if (isLikedVN.value == false) {
+                        Navigator.of(context).pop(widget.itemId);
+                      } else {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    radius: 18.w,
+                    customBorder: const CircleBorder(),
+                    highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                    splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                    child: SizedBox.square(
+                      dimension: 56.w,
+                      child: Center(
+                        child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
+
           Positioned(
             top: MediaQuery.of(context).padding.top + 8.h,
-            right: 24.w,
+            right: 16.w,
             child: !widget.isMyItem
                 ? ReportMenuButton(
                     onReportPressed: () async {

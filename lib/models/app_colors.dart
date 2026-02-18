@@ -72,6 +72,9 @@ class AppColors {
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);
 
+  // 버튼 하이라이트 색상
+  static const Color buttonHighlightColorGray = Color(0xFF55585E);
+
   // 투명 색상
   static const Color transparent = Color(0x00000000);
 

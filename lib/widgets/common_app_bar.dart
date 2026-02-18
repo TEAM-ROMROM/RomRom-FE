@@ -52,16 +52,23 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: true, // 제목을 중앙에 배치
       toolbarHeight: 64.h, // 앱바 높이 설정
       scrolledUnderElevation: 0, // 스크롤 할 때 그림자 효과 제거
-      leadingWidth: 52.w, // 뒤로가기 버튼 영역 너비 설정
-      leading: IconButton(
-        alignment: Alignment.centerRight, // 아이콘 버튼을 오른쪽 정렬
-        icon: Icon(
-          AppIcons.navigateBefore, // 뒤로가기 아이콘
-          size: 24.h,
-          color: AppColors.textColorWhite,
+      leadingWidth: 72.w, // 뒤로가기 버튼 영역 너비 설정
+      leading: Material(
+        color: Colors.transparent,
+        child: ClipOval(
+          child: InkResponse(
+            customBorder: const CircleBorder(),
+            onTap: onBackPressed ?? () => Navigator.of(context).pop(),
+            containedInkWell: true,
+            radius: 18.w,
+            highlightColor: AppColors.buttonHighlightColorGray,
+            splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+            child: SizedBox.square(
+              dimension: 32.w,
+              child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
+            ),
+          ),
         ),
-        onPressed: onBackPressed ?? () => Navigator.of(context).pop(), // 사용자 정의 콜백이 있으면 사용하고, 없으면 기본 뒤로가기 동작 실행
-        padding: EdgeInsets.only(bottom: 8.h),
       ),
       bottom: bottomWidgets,
       title: onTitleTap != null
