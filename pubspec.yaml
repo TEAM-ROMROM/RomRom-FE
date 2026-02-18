@@ -1,7 +1,7 @@
 name: romrom_fe
 description: "ROMROM-FE"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.9.17+160
+version: 1.9.18+161
 environment:
   sdk: ">=3.9.0 <4.0.0"
 dependencies:
