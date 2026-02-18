@@ -65,7 +65,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
         });
       }
-      _showDeletedAccountModal();
+      CommonModal.showOnceAfterFrame(
+        context: context,
+        isShown: () => _deleteModalShown,
+        markShown: () => _deleteModalShown = true,
+        shouldShow: () => _accountStatus == AccountStatus.deleteAccount.serverName,
+        message: '존재하지 않거나 탈퇴한 사용자입니다.',
+        onConfirm: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+        },
+      );
     } catch (e) {
       debugPrint('프로필 로드 실패: $e');
       if (mounted) {
@@ -174,27 +184,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onConfirm: () => Navigator.of(context).pop(),
       );
     }
-  }
-
-  void _showDeletedAccountModal() {
-    if (!mounted) return;
-    if (_deleteModalShown) return;
-    if (_accountStatus != AccountStatus.deleteAccount.serverName) return;
-
-    _deleteModalShown = true;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-
-      await CommonModal.error(
-        context: context,
-        message: '존재하지 않거나 탈퇴한 사용자입니다.',
-        onConfirm: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).pop();
-        },
-      );
-    });
   }
 
   @override

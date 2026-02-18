@@ -32,6 +32,26 @@ class CommonModal extends StatelessWidget {
     required this.onConfirm,
   });
 
+  //  앱 내에서 특정 조건에서 한 번만 보여줘야 하는 모달 처리 헬퍼
+  static void showOnceAfterFrame({
+    required BuildContext context,
+    required bool Function() shouldShow, // 보여줘야 하는지 판단하는 함수
+    required VoidCallback markShown, // 보여줬다고 표시하는 함수
+    required bool Function() isShown, // 이미 보여줬는지 체크하는 함수
+    required String message,
+    required VoidCallback onConfirm,
+  }) {
+    if (isShown()) return;
+    if (!shouldShow()) return;
+
+    markShown();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!context.mounted) return;
+      await CommonModal.error(context: context, message: message, onConfirm: onConfirm);
+    });
+  }
+
   /// 성공 모달 (노란색 체크 아이콘, 1버튼)
   static Future<void> success({
     required BuildContext context,
