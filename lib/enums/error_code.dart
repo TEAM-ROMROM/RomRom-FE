@@ -83,7 +83,7 @@ enum ErrorCode {
   selfLikeNotAllowed(code: 'SELF_LIKE_NOT_ALLOWED', koMessage: '내 아이템에는 좋아요를 누를 수 없습니다.'),
 
   // Vertex AI Client
-  aiPredictedPricePromptLoadError(code: 'AI_PREDICTED_PRICE_PROMPT_LOAD_ERROR', koMessage: 'AI 가격측정 프로포트 로딩에 실패했습니다.'),
+  aiPredictedPricePromptLoadError(code: 'AI_PREDICTED_PRICE_PROMPT_LOAD_ERROR', koMessage: 'AI 가격측정 프롬프트 로딩에 실패했습니다.'),
   vertexRequestSerializationFailed(
     code: 'VERTEX_REQUEST_SERIALIZATION_FAILED',
     koMessage: 'Vertex AI 요청 JSON 직렬화에 실패했습니다.',
@@ -106,8 +106,8 @@ enum ErrorCode {
   adminDataFetchFailed(code: 'ADMIN_DATA_FETCH_FAILED', koMessage: '관리자 데이터 조회에 실패했습니다.'),
 
   // NOTIFICATION
-  notificationHistoryNotFound(code: 'NOTIFICATION_HISTORY_NOT_FOUND', koMessage: '알림 히스토리를 찾을 수 없습니다'),
-  invalidNotificationHistoryOwner(code: 'INVALID_NOTIFICATION_HISTORY_OWNER', koMessage: '해당 알림의 수신자가 아닙니다'),
+  notificationHistoryNotFound(code: 'NOTIFICATION_HISTORY_NOT_FOUND', koMessage: '알림 히스토리를 찾을 수 없습니다.'),
+  invalidNotificationHistoryOwner(code: 'INVALID_NOTIFICATION_HISTORY_OWNER', koMessage: '해당 알림의 수신자가 아닙니다.'),
 
   // JSON
   unknown(code: 'UNKNOWN', koMessage: '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
