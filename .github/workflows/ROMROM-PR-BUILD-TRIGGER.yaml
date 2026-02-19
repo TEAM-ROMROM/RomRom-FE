@@ -217,8 +217,53 @@ jobs:
             core.setOutput('buildCount', buildCount.toString());
             core.setOutput('buildNumber', buildNumber);
 
-      - name: Android 빌드 워크플로우 트리거
+      - name: 브랜치 존재 여부 확인
+        id: branch_check
         if: steps.source_info.outputs.found == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branchName = '${{ steps.source_info.outputs.branchName }}';
+            const issueNumber = context.payload.issue.number;
+
+            console.log(`🔍 브랜치 존재 여부 확인 중: ${branchName}`);
+
+            try {
+              await github.rest.git.getRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branchName}`
+              });
+              console.log(`✅ 브랜치 확인 완료: ${branchName}`);
+              core.setOutput('exists', 'true');
+            } catch (error) {
+              console.log(`❌ 브랜치를 찾을 수 없습니다: ${branchName}`);
+              core.setOutput('exists', 'false');
+
+              const body = [
+                '❌ **앱 빌드 트리거 실패**',
+                '',
+                `브랜치 \`${branchName}\`가 존재하지 않습니다.`,
+                '',
+                '**해결 방법:**',
+                '- 브랜치가 생성되었는지 확인해주세요.',
+                '- 이슈에서 빌드하는 경우: "Guide by SUH-LAB" 댓글의 브랜치명을 확인해주세요.',
+                '- 브랜치가 삭제된 경우 재생성 후 다시 시도해주세요.'
+              ].join('\n');
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: body
+              });
+              // 브랜치가 존재하지 않으므로 워크플로우를 실패로 처리
+              core.setFailed(`브랜치 \`${branchName}\`가 존재하지 않습니다.`);
+            }
+
+      - name: Android 빌드 워크플로우 트리거
+        if: steps.source_info.outputs.found == 'true' && steps.branch_check.outputs.exists == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -253,7 +298,7 @@ jobs:
             console.log('✅ Android 빌드 워크플로우 트리거 완료');
 
       - name: iOS 빌드 워크플로우 트리거
-        if: steps.source_info.outputs.found == 'true'
+        if: steps.source_info.outputs.found == 'true' && steps.branch_check.outputs.exists == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -289,7 +334,7 @@ jobs:
 
       # 트리거 완료 댓글은 제거됨 - Android/iOS 각각의 진행상황 댓글이 이 역할을 대체
       - name: 트리거 완료 로그
-        if: steps.source_info.outputs.found == 'true'
+        if: steps.source_info.outputs.found == 'true' && steps.branch_check.outputs.exists == 'true'
         run: |
           echo "✅ Android 및 iOS 빌드 워크플로우 트리거 완료"
           echo "📦 빌드 번호: ${{ steps.build_number_calc.outputs.buildNumber }}"
