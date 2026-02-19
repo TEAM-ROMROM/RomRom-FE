@@ -6,19 +6,23 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/enums/item_condition.dart' as item_condition_enum;
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 
 class MyLikeListScreen extends StatefulWidget {
   const MyLikeListScreen({super.key});
@@ -154,17 +158,26 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(title: '좋아요 목록', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: _items.isEmpty && _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
-            : ListView.separated(
+      body: _items.isEmpty && _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+          : _items.isEmpty && !_isLoading
+          ? EmptyStateView(
+              icon: AppIcons.profilelikecount,
+              centerText: '아직 좋아요한 물품이 없어요',
+              descriptionText: '마음에 드는 물품을 찾아\n좋아요를 눌러보세요',
+              buttonText: '홈에서 둘러보기',
+              onButtonTap: () =>
+                  context.navigateTo(screen: const MainScreen(), type: NavigationTypes.pushAndRemoveUntil),
+            )
+          : Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: ListView.separated(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 itemCount: _items.length + (_hasMoreItems ? 1 : 0),
                 separatorBuilder: (_, __) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
                 itemBuilder: (context, index) {
-                  // 마지막 인덱스 = 로딩 인디케이터 셀
+                  // ... 기존 itemBuilder 코드 동일
                   if (_hasMoreItems && index == _items.length) {
                     return Padding(
                       padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -350,7 +363,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                   );
                 },
               ),
-      ),
+            ),
     );
   }
 }
