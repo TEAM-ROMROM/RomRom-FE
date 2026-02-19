@@ -367,9 +367,13 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         setState(() {
                           _sentRequests.removeAt(index);
                         });
+                        CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
                       }
                     } catch (e) {
                       debugPrint('요청 취소 실패: $e');
+                      if (mounted) {
+                        CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다', type: SnackBarType.error);
+                      }
                     }
                   }
                 },
@@ -778,9 +782,17 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                                     (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
                                   );
                                 });
+                                CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
                               }
                             } catch (e) {
                               debugPrint('요청 취소 실패: $e');
+                              if (mounted) {
+                                CommonSnackBar.show(
+                                  context: context,
+                                  message: '요청 삭제에 실패했습니다',
+                                  type: SnackBarType.error,
+                                );
+                              }
                             }
                           }
                         },
