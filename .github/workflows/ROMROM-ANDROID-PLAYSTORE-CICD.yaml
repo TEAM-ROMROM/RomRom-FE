@@ -502,12 +502,16 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
+          bundler-cache: false
 
+      # Fastlane 설치 (Bundler 방식으로 CFPropertyList 의존성 충돌 방지)
       - name: Install Fastlane
+        working-directory: android
         run: |
-          gem install fastlane --force
+          printf 'source "https://rubygems.org"\ngem "fastlane"\n' > Gemfile
+          bundle install
           echo "✅ Fastlane 설치 완료"
-          fastlane --version
+          bundle exec fastlane --version
 
       # Fastfile 복사 (Play Store 배포용)
       # android/fastlane/Fastfile.playstore를 사용하여 일관성 유지
@@ -626,7 +630,7 @@ jobs:
           echo "=========================================="
           
           cd android
-          fastlane deploy_internal
+          bundle exec fastlane deploy_internal
 
       # 성공 알림
       - name: Notify Play Store Upload Success

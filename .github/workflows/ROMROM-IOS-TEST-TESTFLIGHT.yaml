@@ -61,7 +61,6 @@ jobs:
       commit_hash: ${{ steps.release_notes.outputs.commit_hash }}
       progress_comment_id: ${{ steps.progress_comment.outputs.comment_id }}
       progress_start_time: ${{ steps.progress_comment.outputs.start_time }}
-      step1_elapsed: ${{ steps.progress_step1.outputs.elapsed }}
 
     steps:
       - name: Checkout repository
@@ -292,16 +291,26 @@ jobs:
             core.setOutput('comment_id', comment.id.toString());
             core.setOutput('start_time', startTime.toString());
 
-      # 진행상황 - 준비 완료
+  build-ios-test:
+    name: iOS 테스트 빌드
+    runs-on: macos-15
+    needs: prepare-test-build
+
+    outputs:
+      step1_elapsed: ${{ steps.progress_step1.outputs.elapsed }}
+      step2_elapsed: ${{ steps.progress_step2.outputs.elapsed }}
+
+    steps:
+      # 진행상황 - 준비 완료 (build job 시작 시점에 업데이트해야 준비 시간이 정확히 표시됨)
       - name: 진행상황 - 준비 완료
         id: progress_step1
-        if: github.event_name == 'repository_dispatch' && github.event.client_payload.pr_number != ''
+        if: github.event_name == 'repository_dispatch' && needs.prepare-test-build.outputs.progress_comment_id != ''
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const commentId = parseInt('${{ steps.progress_comment.outputs.comment_id }}');
-            const startTime = parseInt('${{ steps.progress_comment.outputs.start_time }}');
+            const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
+            const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
             const runId = '${{ github.run_id }}';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
 
@@ -332,15 +341,6 @@ jobs:
             console.log(`✅ 진행상황 업데이트: 준비 완료 (${elapsedStr})`);
             core.setOutput('elapsed', elapsedStr);
 
-  build-ios-test:
-    name: iOS 테스트 빌드
-    runs-on: macos-15
-    needs: prepare-test-build
-
-    outputs:
-      step2_elapsed: ${{ steps.progress_step2.outputs.elapsed }}
-
-    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -515,7 +515,7 @@ jobs:
           script: |
             const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
             const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
-            const step1Elapsed = '${{ needs.prepare-test-build.outputs.step1_elapsed }}';
+            const step1Elapsed = '${{ steps.progress_step1.outputs.elapsed }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
@@ -568,7 +568,7 @@ jobs:
             const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
             const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
-            const step1Elapsed = '${{ needs.prepare-test-build.outputs.step1_elapsed }}';
+            const step1Elapsed = '${{ steps.progress_step1.outputs.elapsed }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
@@ -658,11 +658,12 @@ jobs:
           name: release-notes
           path: .
 
-      # Install and setup Fastlane
+      # Install and setup Fastlane (Bundler 방식으로 CFPropertyList 의존성 충돌 방지)
       - name: Install Fastlane and create Fastfile
+        working-directory: ios
         run: |
-          gem install fastlane --force
-          cd ios
+          printf 'source "https://rubygems.org"\ngem "fastlane"\n' > Gemfile
+          bundle install
           mkdir -p fastlane
           cat > fastlane/Fastfile << 'EOF'
           default_platform(:ios)
@@ -729,7 +730,7 @@ jobs:
 
           # Fastlane 실행
           cd ios
-          fastlane upload_testflight || echo "⚠️ 권한 에러 발생했지만 업로드는 성공적으로 완료됨"
+          bundle exec fastlane upload_testflight || echo "⚠️ 권한 에러 발생했지만 업로드는 성공적으로 완료됨"
 
       # TestFlight 배포 완료 - PR 댓글 업데이트
       - name: TestFlight 배포 완료 - 댓글 업데이트
@@ -740,7 +741,7 @@ jobs:
           script: |
             const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
             const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
-            const step1Elapsed = '${{ needs.prepare-test-build.outputs.step1_elapsed }}';
+            const step1Elapsed = '${{ needs.build-ios-test.outputs.step1_elapsed }}';
             const step2Elapsed = '${{ needs.build-ios-test.outputs.step2_elapsed }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
@@ -814,7 +815,7 @@ jobs:
           script: |
             const commentId = parseInt('${{ needs.prepare-test-build.outputs.progress_comment_id }}');
             const startTime = parseInt('${{ needs.prepare-test-build.outputs.progress_start_time }}');
-            const step1Elapsed = '${{ needs.prepare-test-build.outputs.step1_elapsed }}';
+            const step1Elapsed = '${{ needs.build-ios-test.outputs.step1_elapsed }}';
             const step2Elapsed = '${{ needs.build-ios-test.outputs.step2_elapsed }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
