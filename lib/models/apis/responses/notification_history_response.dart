@@ -1,18 +1,18 @@
 // lib/models/apis/responses/notification_history_response.dart
 import 'package:json_annotation/json_annotation.dart';
-import 'package:romrom_fe/models/apis/objects/api_page.dart';
 import 'package:romrom_fe/models/apis/objects/notification_history.dart';
 
 part 'notification_history_response.g.dart';
 
 @JsonSerializable(explicitToJson: true)
 class NotificationHistoryResponse {
-  @JsonKey(fromJson: _notificationHistoriesFromJson, toJson: _notificationHistoriesToJson)
-  final List<NotificationHistory>? notificationHistory;
+  final NotificationHistory? notificationHistory;
 
   final NotificationHistoryPage? notificationHistoryPage;
 
-  NotificationHistoryResponse({this.notificationHistory, this.notificationHistoryPage});
+  final int? unReadCount; // 안읽은 알림 개수
+
+  NotificationHistoryResponse({this.notificationHistory, this.notificationHistoryPage, this.unReadCount});
 
   factory NotificationHistoryResponse.fromJson(Map<String, dynamic> json) =>
       _$NotificationHistoryResponseFromJson(json);
@@ -21,10 +21,32 @@ class NotificationHistoryResponse {
 
 @JsonSerializable(explicitToJson: true)
 class NotificationHistoryPage {
-  final ApiPage? page;
-  final int? unReadCount;
+  @JsonKey(fromJson: _int64FromJson)
+  final int? totalElements;
 
-  NotificationHistoryPage({this.page, this.unReadCount});
+  final int? totalPages;
+  final bool? last;
+  final bool? first;
+  final int? numberOfElements;
+  final int? size;
+
+  @JsonKey(fromJson: _notificationHistoriesFromJson, toJson: _notificationHistoriesToJson)
+  final List<NotificationHistory>? content;
+
+  final int? number;
+  final bool? empty;
+
+  NotificationHistoryPage({
+    this.totalElements,
+    this.totalPages,
+    this.last,
+    this.first,
+    this.numberOfElements,
+    this.size,
+    this.content,
+    this.number,
+    this.empty,
+  });
 
   factory NotificationHistoryPage.fromJson(Map<String, dynamic> json) => _$NotificationHistoryPageFromJson(json);
   Map<String, dynamic> toJson() => _$NotificationHistoryPageToJson(this);
@@ -40,3 +62,5 @@ List<NotificationHistory> _notificationHistoriesFromJson(Object? value) {
 
 Object _notificationHistoriesToJson(List<NotificationHistory>? histories) =>
     histories?.map((e) => e.toJson()).toList() ?? [];
+
+int _int64FromJson(Object? v) => (v is num) ? v.toInt() : (int.tryParse(v?.toString() ?? '') ?? 0);
