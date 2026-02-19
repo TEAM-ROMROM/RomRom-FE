@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/models/apis/requests/notification_history_request.dart';
+import 'package:romrom_fe/models/apis/responses/notification_history_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/api_client.dart';
 
@@ -33,21 +35,13 @@ class NotificationApi {
     );
   }
 
-  /// 특정 사용자에게 푸시 전송 API
-  /// `POST /api/notification/send/members`
-  Future<void> sendToMembers({
-    required List<String> memberIds,
-    required String title,
-    required String body,
-    Map<String, String>? data,
-  }) async {
-    const String url = '${AppUrls.baseUrl}/api/notification/send/members';
+  /// 알림 읽음 처리
+  /// `POST /api/notification/update/read`
+  Future<void> updateNotificationsAsRead(List<String> notificationHistoryIds) async {
+    const String url = '${AppUrls.baseUrl}/api/notification/update/read';
 
     final Map<String, dynamic> fields = {
-      'memberIds': memberIds.join(','),
-      'title': title,
-      'body': body,
-      if (data != null) 'data': data.toString(),
+      'notificationHistoryIds': notificationHistoryIds, // 읽음 처리할 알림 ID 리스트 (빈 리스트는 전체 읽음 처리 의미)
     };
 
     await ApiClient.sendMultipartRequest(
@@ -55,24 +49,102 @@ class NotificationApi {
       fields: fields,
       isAuthRequired: true,
       onSuccess: (_) {
-        debugPrint('특정 사용자 푸시 전송 성공');
+        debugPrint('알림 읽음 처리 성공');
       },
     );
   }
 
-  /// 전체 사용자에게 푸시 전송 API
-  /// `POST /api/notification/send/all`
-  Future<void> sendToAll({required String title, required String body, Map<String, String>? data}) async {
-    const String url = '${AppUrls.baseUrl}/api/notification/send/all';
+  /// 모든 알림 읽음 처리
+  /// `POST /api/notification/update/all/read`
+  Future<void> updateAllNotificationsAsRead() async {
+    const String url = '${AppUrls.baseUrl}/api/notification/update/all/read';
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('모든 알림 읽음 처리 성공');
+      },
+    );
+  }
 
-    final Map<String, dynamic> fields = {'title': title, 'body': body, if (data != null) 'data': data.toString()};
+  /// 안읽은 알림 개수 조회
+  /// `POST /api/notification/get/un-read/count`
+  Future<NotificationHistoryResponse> getUnreadNotificationCount() async {
+    const String url = '${AppUrls.baseUrl}/api/notification/get/un-read/count';
+    late NotificationHistoryResponse notificationResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        try {
+          final Map<String, dynamic> responseMap = responseData;
+          notificationResponse = NotificationHistoryResponse.fromJson(responseMap);
+          debugPrint('안읽은 알림 개수 조회 성공: ${notificationResponse.unReadCount}개');
+        } catch (e) {
+          debugPrint('안읽은 알림 개수 파싱 실패: $e');
+        }
+      },
+    );
+    return notificationResponse;
+  }
+
+  /// 사용자 알림 목록 조회
+  /// `POST /api/notification/get/notifications`
+  Future<NotificationHistoryResponse> getUserNotifications(NotificationHistoryRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/notification/get/notifications';
+
+    late NotificationHistoryResponse notificationResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {'pageNumber': request.pageNumber.toString(), 'pageSize': request.pageSize.toString()},
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        if (responseData != null && responseData['content'] != null) {
+          try {
+            final List<dynamic> content = responseData['content'];
+
+            debugPrint('사용자 알림 목록 조회 성공: ${content.length}개');
+            notificationResponse = NotificationHistoryResponse.fromJson(responseData);
+          } catch (e) {
+            debugPrint('사용자 알림 목록 파싱 실패: $e');
+          }
+        } else {
+          debugPrint('사용자 알림 목록 조회 실패: 응답 데이터 형식 오류');
+        }
+      },
+    );
+
+    return notificationResponse;
+  }
+
+  /// 알림 삭제
+  /// `POST /api/notification/delete`
+  Future<void> deleteNotification(NotificationHistoryRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/notification/delete';
+
+    final Map<String, dynamic> fields = {'notificationHistoryIds': request.notificationHistoryId};
 
     await ApiClient.sendMultipartRequest(
       url: url,
       fields: fields,
       isAuthRequired: true,
       onSuccess: (_) {
-        debugPrint('전체 사용자 푸시 전송 성공');
+        debugPrint('알림 삭제 성공');
+      },
+    );
+  }
+
+  /// 전체 알림 삭제
+  /// `POST /api/notification/delete/all`
+  Future<void> deleteAllNotifications() async {
+    const String url = '${AppUrls.baseUrl}/api/notification/delete/all';
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('모든 알림 삭제 성공');
       },
     );
   }
