@@ -130,7 +130,7 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                 try {
                   final api = ReportApi();
                   await api.reportMember(
-                    memberId: widget.memberId,
+                    targetMemberId: widget.memberId,
                     memberReportReasons: _selectedReasons.map((e) => e.id).toSet(),
                     extraComment: _extraCommentController.text.trim(),
                   );
