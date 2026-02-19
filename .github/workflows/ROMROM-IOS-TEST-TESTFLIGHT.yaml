@@ -581,7 +581,7 @@ jobs:
       # Install and setup Fastlane
       - name: Install Fastlane and create Fastfile
         run: |
-          gem install fastlane
+          gem install fastlane --force
           cd ios
           mkdir -p fastlane
           cat > fastlane/Fastfile << 'EOF'
