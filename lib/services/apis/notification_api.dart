@@ -96,22 +96,20 @@ class NotificationApi {
 
     late NotificationHistoryResponse notificationResponse;
 
+    final Map<String, dynamic> fields = {
+      'pageNumber': request.pageNumber.toString(),
+      'pageSize': request.pageSize.toString(),
+    };
+
     await ApiClient.sendMultipartRequest(
       url: url,
-      fields: {'pageNumber': request.pageNumber.toString(), 'pageSize': request.pageSize.toString()},
+      fields: fields,
       isAuthRequired: true,
       onSuccess: (responseData) {
-        if (responseData != null && responseData['content'] != null) {
-          try {
-            final List<dynamic> content = responseData['content'];
-
-            debugPrint('사용자 알림 목록 조회 성공: ${content.length}개');
-            notificationResponse = NotificationHistoryResponse.fromJson(responseData);
-          } catch (e) {
-            debugPrint('사용자 알림 목록 파싱 실패: $e');
-          }
-        } else {
-          debugPrint('사용자 알림 목록 조회 실패: 응답 데이터 형식 오류');
+        try {
+          notificationResponse = NotificationHistoryResponse.fromJson(responseData);
+        } catch (e) {
+          debugPrint('사용자 알림 목록 파싱 실패: $e');
         }
       },
     );

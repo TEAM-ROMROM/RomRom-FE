@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:romrom_fe/enums/notification_category.dart';
+import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -11,7 +11,7 @@ import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 /// 알림 데이터 모델
 class NotificationItemData {
   final String id;
-  final NotificationCategory category;
+  final NotificationType type;
   final String title;
   final String description;
   final DateTime time;
@@ -20,7 +20,7 @@ class NotificationItemData {
 
   NotificationItemData({
     required this.id,
-    required this.category,
+    required this.type,
     required this.title,
     required this.description,
     required this.time,
@@ -80,7 +80,7 @@ class NotificationItemWidget extends StatelessWidget {
                     children: [
                       // 카테고리 라벨
                       Text(
-                        data.category.label,
+                        data.type.label,
                         style: CustomTextStyles.p3.copyWith(
                           fontWeight: FontWeight.w500,
                           color: AppColors.opacity60White,
@@ -131,7 +131,7 @@ class NotificationItemWidget extends StatelessWidget {
       height: 20.w,
       decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(4.r)),
       child: Center(
-        child: SvgPicture.asset(data.category.svgAssetPath, width: 16.w, height: 16.w),
+        child: SvgPicture.asset(data.type.svgAssetPath, width: 16.w, height: 16.w),
       ),
     );
   }

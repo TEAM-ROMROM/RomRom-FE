@@ -1,19 +1,33 @@
 /// 알림 타입
-enum NotificationType { tradeRequestReceived, chatMessageReceived, itemLiked, systemNotice }
+enum NotificationType {
+  tradeRequestReceived(label: '교환 요청', serverName: 'TRADE_REQUEST_RECEIVED'),
+  chatMessageReceived(label: '채팅', serverName: 'CHAT_MESSAGE_RECEIVED'),
+  itemLiked(label: '좋아요', serverName: 'ITEM_LIKED'),
+  systemNotice(label: '공지사항', serverName: 'SYSTEM_NOTICE');
 
-/// 알림 타입 확장
-extension NotificationTypeExtension on NotificationType {
-  /// 알림 제목
-  String get title {
+  final String label;
+  final String serverName;
+
+  const NotificationType({required this.label, required this.serverName});
+
+  /// 알림 카테고리별 SVG 아이콘 경로
+  String get svgAssetPath {
     switch (this) {
       case NotificationType.tradeRequestReceived:
-        return '거래 요청 수신';
+        return 'assets/images/notificationExchangeYellowCircle.svg';
       case NotificationType.chatMessageReceived:
-        return '채팅 메시지 수신';
+        return 'assets/images/notificationChat.svg';
       case NotificationType.itemLiked:
-        return '좋아요 수신';
+        return 'assets/images/notificationLike.svg';
       case NotificationType.systemNotice:
-        return '시스템 공지';
+        return 'assets/images/notificationAnnouncement.svg';
     }
+  }
+
+  static NotificationType fromServerName(String name) {
+    return NotificationType.values.firstWhere(
+      (e) => e.serverName == name,
+      orElse: () => throw ArgumentError('No NotificationType with serverName $name'),
+    );
   }
 }
