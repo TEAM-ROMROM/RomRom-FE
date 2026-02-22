@@ -92,10 +92,7 @@ class NotificationItemWidget extends StatelessWidget {
                 ],
               ),
 
-              Text(
-                getTimeAgo(data.time),
-                style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity40White),
-              ),
+              Text(getTimeAgo(data.time), style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
             ],
           ),
         ),
@@ -106,7 +103,7 @@ class NotificationItemWidget extends StatelessWidget {
           height: 24.h,
           margin: EdgeInsets.only(top: 1.h),
           child: RomRomContextMenu(
-            customTrigger: Icon(AppIcons.dotsVerticalSmall, size: 20.sp, color: AppColors.opacity60White),
+            customTrigger: Icon(AppIcons.dotsVerticalDefault, size: 20.sp, color: AppColors.textColorWhite),
             items: [
               ContextMenuItem(
                 id: 'mute',
@@ -149,7 +146,7 @@ class NotificationItemWidget extends StatelessWidget {
               // 제목
               Text(
                 data.title,
-                style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textColorWhite),
+                style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.textColorWhite),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -161,7 +158,7 @@ class NotificationItemWidget extends StatelessWidget {
                 style: CustomTextStyles.p3.copyWith(
                   fontSize: 13.sp,
                   fontWeight: FontWeight.w400,
-                  color: AppColors.opacity60White,
+                  color: AppColors.textColorWhite,
                   height: 1.4,
                 ),
                 maxLines: 2,
