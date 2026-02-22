@@ -122,7 +122,7 @@ class NotificationApi {
   Future<void> deleteNotification(NotificationHistoryRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/notification/delete';
 
-    final Map<String, dynamic> fields = {'notificationHistoryIds': request.notificationHistoryId};
+    final Map<String, dynamic> fields = {'notificationHistoryId': request.notificationHistoryId};
 
     await ApiClient.sendMultipartRequest(
       url: url,

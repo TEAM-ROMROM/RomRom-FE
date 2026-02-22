@@ -151,12 +151,21 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
   }
 
   /// 알림 삭제
-  /// TODO: 실제 API 연동 후 삭제 기능 구현
-  void _onDeleteNotification(String notificationId) {
-    setState(() {
-      _activityNotifications.removeWhere((n) => n.id == notificationId);
-      _romromNotifications.removeWhere((n) => n.id == notificationId);
-    });
+  void _onDeleteNotification(String notificationId) async {
+    try {
+      await NotificationApi().deleteNotification(NotificationHistoryRequest(notificationHistoryId: notificationId));
+
+      if (mounted) {
+        setState(() {
+          _activityNotifications.removeWhere((n) => n.id == notificationId);
+          _romromNotifications.removeWhere((n) => n.id == notificationId);
+        });
+      }
+      CommonSnackBar.show(context: context, message: '알림이 삭제되었습니다.', type: SnackBarType.success);
+    } catch (e) {
+      debugPrint('알림 삭제 실패: $e');
+      CommonSnackBar.show(context: context, message: '알림 삭제에 실패했습니다.', type: SnackBarType.error);
+    }
   }
 
   @override
