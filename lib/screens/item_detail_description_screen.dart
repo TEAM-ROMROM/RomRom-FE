@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photo_viewer/photo_viewer.dart';
 import 'package:romrom_fe/enums/account_status.dart';
+import 'package:romrom_fe/enums/error_code.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
@@ -81,6 +82,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   late final ValueNotifier<int> likeCountVN;
   bool _likeInFlight = false;
 
+  bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
@@ -144,9 +146,23 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       debugPrint('물품 상세 정보 로드 실패: $e');
       if (!mounted) return;
 
+      if (ErrorUtils.getErrorMessage(e) == ErrorCode.deletedMember.koMessage) {
+        CommonModal.showOnceAfterFrame(
+          context: context,
+          isShown: () => deleteModalShown,
+          markShown: () => deleteModalShown = true,
+          shouldShow: () => ErrorUtils.getErrorMessage(e) == ErrorCode.deletedMember.koMessage,
+          message: '존재하지 않거나 탈퇴한 사용자입니다.',
+          onConfirm: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+          },
+        );
+      }
+
       setState(() {
         hasError = true;
-        errorMessage = '물품 정보를 불러오는데 실패했습니다.';
+        errorMessage = ErrorUtils.getErrorMessage(e);
         isLoading = false;
       });
     }
@@ -292,6 +308,33 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
         body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+      );
+    }
+
+    // 작성자가 탈퇴한 게시글인 경우 별도 화면 표시
+    if (errorMessage == ErrorCode.deletedMember.koMessage) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          leading: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.pop(context),
+              customBorder: const CircleBorder(),
+              highlightColor: AppColors.buttonHighlightColorGray,
+              splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+              child: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+            ),
+          ),
+        ),
+        body: Center(
+          child: Text(
+            '작성자가 탈퇴한 게시글입니다.',
+            style: CustomTextStyles.p1.copyWith(color: AppColors.textColorWhite),
+            textAlign: TextAlign.center,
+          ),
+        ),
       );
     }
 
