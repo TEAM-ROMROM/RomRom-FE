@@ -66,7 +66,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
               left: 16.w,
               top: statusBarHeight,
               height: toolbarHeight,
-              child: Center(child: leadingWidget!),
+              child: Align(alignment: const Alignment(0, -4 / 22), child: leadingWidget!),
             ),
 
           // 4) 우측 위젯 (설정 버튼 등)
@@ -76,7 +76,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
               right: 16.w,
               top: statusBarHeight,
               height: toolbarHeight,
-              child: Center(child: trailingWidget!),
+              child: Align(alignment: const Alignment(0, -4 / 22), child: trailingWidget!),
             ),
 
           // 5) 큰 제목(펼침에서만 보이고 스크롤되면 사라짐)
@@ -89,7 +89,10 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
             child: Opacity(
               opacity: centerTitle ? 1.0 : (1.0 - t), // centerTitle이면 항상 보임
               child: centerTitle
-                  ? Center(child: Text(headerTitle, style: CustomTextStyles.h2))
+                  ? Align(
+                      alignment: const Alignment(0, -4 / 22),
+                      child: Text(headerTitle, style: CustomTextStyles.h2),
+                    )
                   : Text(headerTitle, style: CustomTextStyles.h2),
             ),
           ),
@@ -107,7 +110,7 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
                 child: Opacity(
                   opacity: centerTitle ? 0.0 : t,
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 16, bottom: 24),
+                    padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
                     child: Text(headerTitle, style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600)),
                   ),
                 ),
@@ -166,10 +169,10 @@ class GlassHeaderToggleBuilder {
     required VoidCallback onRightTap,
     required String leftText,
     required String rightText,
-    double? bottomPadding, // null이면 기본값 24.h 사용
+    double? bottomPadding, // null이면 기본값 16.h 사용
   }) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, bottomPadding ?? 24.h),
+      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, bottomPadding ?? 16.h),
       child: Container(
         width: 345.w,
         height: 46.h,

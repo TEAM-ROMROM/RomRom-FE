@@ -186,12 +186,11 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                       onRightTap: () => _onToggleChanged(true),
                       leftText: '활동 및 채팅',
                       rightText: '롬롬 소식',
-                      bottomPadding: 0, // 토글 아래 패딩 제거
                     ),
                     headerTitle: '알림',
                     statusBarHeight: MediaQuery.of(context).padding.top,
-                    toolbarHeight: 58.h,
-                    toggleHeight: 46.h, // 실제 토글 높이 (bottom padding 제거)
+                    toolbarHeight: 64.h,
+                    toggleHeight: 62.h, // 실제 토글 높이 (bottom padding 제거)
                     expandedExtra: 0.h, // 토글-알림목록 간격 제거
                     enableBlur: _isScrolled,
                     centerTitle: true, // 타이틀 중앙 정렬
@@ -241,7 +240,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 37.h, 24.w, 0),
+      padding: EdgeInsets.fromLTRB(0.w, 4.h, 0.w, 0),
       child: MediaQuery.removePadding(
         context: context,
         removeTop: true,
@@ -249,7 +248,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: notifications.length,
-          separatorBuilder: (_, __) => SizedBox(height: 24.h),
+          separatorBuilder: (_, __) => SizedBox(height: 0.h),
           itemBuilder: (context, index) {
             final notification = notifications[index];
             return NotificationItemWidget(

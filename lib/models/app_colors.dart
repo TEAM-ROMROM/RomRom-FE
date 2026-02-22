@@ -155,6 +155,9 @@ class AppColors {
   static const Color tradeStatusIsChatting = Color(0x80FFC300); // 채팅 중 색상
   static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
 
+  // 알림 화면
+  static const Color notificationUnReadIndicator = Color(0xB334353D); // 읽지 않은 알림 표시 색상
+
   // 거래 요청 화면 - 배경 그라데이션
   static const List<Color> tradeRequestBackgroundGradient = [
     AppColors.primaryBlack,

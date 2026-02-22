@@ -276,8 +276,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                         ),
                         statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
                         toolbarHeight: 58.h,
-                        toggleHeight: 70.h,
-                        expandedExtra: 32.h, // 큰 제목/여백
+                        toggleHeight: 62.h,
+                        expandedExtra: 16.h, // 큰 제목/여백
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),

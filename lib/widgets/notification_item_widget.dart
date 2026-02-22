@@ -44,18 +44,22 @@ class NotificationItemWidget extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 상단 : 카테고리 + 시간 + 메뉴
-          _buildTopRow(),
+      child: Container(
+        color: data.isRead ? AppColors.secondaryBlack1 : AppColors.notificationUnReadIndicator, // 읽은 알림과 안 읽은 알림 구분
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 24.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 상단 : 카테고리 + 시간 + 메뉴
+            _buildTopRow(),
 
-          SizedBox(height: 4.h),
+            SizedBox(height: 4.h),
 
-          // 하단 : 제목 + 설명 + 사진
-          _buildBottomRow(),
-        ],
+            // 하단 : 제목 + 설명 + 사진
+            _buildBottomRow(),
+          ],
+        ),
       ),
     );
   }
@@ -75,6 +79,7 @@ class NotificationItemWidget extends StatelessWidget {
   /// 상단 섹션 (카테고리 + 시간 + 메뉴)
   Widget _buildTopRow() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Row(
@@ -103,7 +108,7 @@ class NotificationItemWidget extends StatelessWidget {
           height: 24.h,
           margin: EdgeInsets.only(top: 1.h),
           child: RomRomContextMenu(
-            customTrigger: Icon(AppIcons.dotsVerticalDefault, size: 20.sp, color: AppColors.textColorWhite),
+            customTrigger: Icon(AppIcons.dotsVerticalDefault, size: 24.sp, color: AppColors.textColorWhite),
             items: [
               ContextMenuItem(
                 id: 'mute',
