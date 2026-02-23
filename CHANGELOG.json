@@ -1,11 +1,40 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-18T16:59:10Z",
-    "currentVersion": "1.9.18",
-    "totalReleases": 67,
+    "lastUpdated": "2026-02-23T01:00:10Z",
+    "currentVersion": "1.9.26",
+    "totalReleases": 68,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.26",
+      "project_type": "flutter",
+      "date": "2026-02-23",
+      "pr_number": 555,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 좋아요 목록이 비어있을 때 빈 상태 화면 추가\n  \n* **개선사항**\n  * 요청 취소 및 삭제 작업 완료 시 사용자 피드백 메시지 추가\n  * 오류 처리 및 메시지 강화\n  \n* **버전**\n  * v1.9.26으로 업그레이드",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "좋아요 목록이 비어있을 때 빈 상태 화면 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "요청 취소 및 삭제 작업 완료 시 사용자 피드백 메시지 추가",
+            "오류 처리 및 메시지 강화"
+          ]
+        },
+        "버전": {
+          "title": "버전",
+          "items": [
+            "v1.9.26으로 업그레이드"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.18",
       "project_type": "flutter",
