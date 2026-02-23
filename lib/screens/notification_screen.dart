@@ -153,6 +153,16 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     context.navigateTo(screen: const NotificationSettingsScreen());
   }
 
+  /// 설정 화면으로 이동
+  void _onDeleteAllNotificationTap() async {
+    NotificationApi().deleteAllNotifications();
+    setState(() {
+      _activityNotifications.clear();
+      _romromNotifications.clear();
+    });
+    CommonSnackBar.show(context: context, message: '모든 알림이 삭제되었습니다.', type: SnackBarType.success);
+  }
+
   /// 알림 끄기
   /// 지정된 알림 유형에 맞게 알림 설정을 업데이트합니다.
   Future<void> _onMuteNotification(NotificationType notificationType) async {
@@ -240,12 +250,23 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                       onTap: () => Navigator.pop(context),
                       child: Icon(AppIcons.navigateBefore, size: 28.sp, color: AppColors.textColorWhite),
                     ),
-                    trailingWidget: Padding(
-                      padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
-                      child: GestureDetector(
-                        onTap: _onSettingsTap,
-                        child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
-                      ),
+                    trailingWidget: Row(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
+                          child: GestureDetector(
+                            onTap: _onDeleteAllNotificationTap,
+                            child: Icon(AppIcons.trash, size: 30.sp, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
+                          child: GestureDetector(
+                            onTap: _onSettingsTap,
+                            child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
