@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/apis/requests/notification_history_request.dart
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -62,6 +63,13 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _toggleAnimationController.dispose();
+
+    // 화면이 사라질 때(팝 등) 모든 알림을 읽음 처리
+    try {
+      NotificationApi().updateAllNotificationsAsRead();
+    } catch (e) {
+      debugPrint('모든 알림 읽음 처리 실패(dispose): $e');
+    }
     super.dispose();
   }
 
@@ -107,7 +115,8 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                 title: item.title!,
                 description: item.body!,
                 time: item.publishedAt ?? DateTime.now(),
-                imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출 (예시) - 실제 API에 따라 조정 필요
+                imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출
+                isRead: item.isRead ?? false, // 읽음 상태 API에서 받아온 값 사용
               );
 
               if (item.notificationType == NotificationType.systemNotice.serverName) {
@@ -145,9 +154,33 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
   }
 
   /// 알림 끄기
-  /// TODO: 실제 API 연동 후 알림 끄기 기능 구현
-  void _onMuteNotification(String notificationId) {
-    CommonSnackBar.show(context: context, message: '알림 끄기 기능 준비 중입니다.', type: SnackBarType.info);
+  /// 지정된 알림 유형에 맞게 알림 설정을 업데이트합니다.
+  Future<void> _onMuteNotification(NotificationType notificationType) async {
+    final MemberApi api = MemberApi();
+
+    try {
+      switch (notificationType) {
+        case NotificationType.systemNotice:
+          await api.updateNotificationSetting(isMarketingInfoAgreed: false, isContentNotificationAgreed: false);
+          break;
+        case NotificationType.chatMessageReceived:
+          await api.updateNotificationSetting(isChatNotificationAgreed: false);
+          break;
+        case NotificationType.itemLiked:
+          await api.updateNotificationSetting(isActivityNotificationAgreed: false);
+          break;
+        case NotificationType.tradeRequestReceived:
+          await api.updateNotificationSetting(isTradeNotificationAgreed: false);
+          break;
+      }
+
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '알림이 꺼졌습니다.', type: SnackBarType.success);
+    } catch (e) {
+      debugPrint('알림 끄기 실패: $e');
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '알림 끄기에 실패했습니다.', type: SnackBarType.error);
+    }
   }
 
   /// 알림 삭제
@@ -262,7 +295,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
             final notification = notifications[index];
             return NotificationItemWidget(
               data: notification,
-              onMuteTap: () => _onMuteNotification(notification.id),
+              onMuteTap: () => _onMuteNotification(notification.type),
               onDeleteTap: () => _onDeleteNotification(notification.id),
             );
           },

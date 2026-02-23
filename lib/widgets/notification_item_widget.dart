@@ -45,7 +45,7 @@ class NotificationItemWidget extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        color: data.isRead ? AppColors.secondaryBlack1 : AppColors.notificationUnReadIndicator, // 읽은 알림과 안 읽은 알림 구분
+        color: data.isRead ? AppColors.primaryBlack : AppColors.notificationUnReadIndicator, // 읽은 알림과 안 읽은 알림 구분
         padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 24.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
