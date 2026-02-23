@@ -19,6 +19,7 @@ class ItemCard extends ConsumerWidget {
   final List<ItemTradeOption> itemOptions;
   final bool isSmall; // 작은 카드 여부
   final Function(ItemTradeOption)? onOptionSelected; // 선택된 옵션 반환 콜백 추가
+  final bool isAiPredictedPrice; // AI 예측 가격 여부
 
   const ItemCard({
     super.key,
@@ -33,6 +34,7 @@ class ItemCard extends ConsumerWidget {
     ],
     this.isSmall = false,
     this.onOptionSelected, // 콜백 초기화
+    this.isAiPredictedPrice = false,
   });
 
   @override
@@ -79,107 +81,122 @@ class ItemCard extends ConsumerWidget {
 
             return AspectRatio(
               aspectRatio: 310 / 496,
-              child: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: cs.s(30), sigmaY: cs.s(30)),
-                  child: Container(
-                    width: constraints.maxWidth,
-                    decoration: buildBoxDecoration(AppColors.itemCardBackground, cardRadius).copyWith(
-                      border: Border.all(color: AppColors.itemCardBorder, width: borderWidth),
-                      boxShadow: const [
-                        BoxShadow(color: AppColors.itemCardShadow, offset: Offset(4, 4), blurRadius: 10),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 이미지 영역
-                        SizedBox(
-                          height: imageHeight,
-                          child: AspectRatio(
-                            aspectRatio: 31 / 35,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.only(
-                                topLeft: cardRadius.topLeft,
-                                topRight: cardRadius.topRight,
-                              ),
-                              child: _buildImage(itemCardImageUrl, cs),
-                            ),
+              child: Container(
+                decoration: BoxDecoration(
+                  boxShadow: isAiPredictedPrice
+                      ? [
+                          BoxShadow(
+                            color: AppColors.aiCardGradient[0],
+                            offset: const Offset(-5, -5),
+                            blurRadius: cs.s(10),
+                            spreadRadius: cs.s(0),
+                          ),
+                          BoxShadow(
+                            color: AppColors.aiCardGradient[1],
+                            offset: const Offset(0, 5),
+                            blurRadius: cs.s(25),
+                            spreadRadius: cs.s(0),
+                          ),
+                          BoxShadow(
+                            color: AppColors.aiCardGradient[2],
+                            offset: const Offset(-1, -1),
+                            blurRadius: cs.s(4),
+                            spreadRadius: cs.s(0),
+                          ),
+                        ]
+                      : [const BoxShadow(color: AppColors.itemCardShadow, offset: Offset(4, 4), blurRadius: 10)],
+                ),
+                child: Container(
+                  width: constraints.maxWidth,
+                  decoration: buildBoxDecoration(AppColors.itemCardBackground, cardRadius).copyWith(
+                    border: Border.all(color: AppColors.itemCardBorder, width: borderWidth),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 이미지 영역
+                      SizedBox(
+                        height: imageHeight,
+                        child: AspectRatio(
+                          aspectRatio: 31 / 35,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.only(topLeft: cardRadius.topLeft, topRight: cardRadius.topRight),
+                            child: _buildImage(itemCardImageUrl, cs),
                           ),
                         ),
-                        // 정보 및 옵션 영역
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 카테고리, 이름
-                            Padding(
-                              padding: itemNameLabelPadding,
+                      ),
+                      // 정보 및 옵션 영역
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 카테고리, 이름
+                          Padding(
+                            padding: itemNameLabelPadding,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  itemCategoryLabel,
+                                  style: categoryTextStyle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                cs.sizedBoxH(8),
+                                Text(
+                                  itemName,
+                                  style: nameTextStyle,
+                                  maxLines: isSmall ? 1 : 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          // 옵션 선택 영역
+                          Container(
+                            width: double.infinity,
+                            margin: boxMargin,
+                            constraints: BoxConstraints(minHeight: cs.s(60), maxHeight: cs.s(75)),
+                            decoration: buildBoxDecoration(Colors.white.withValues(alpha: 0.3), optionRadius),
+                            child: Padding(
+                              padding: optionPadding,
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    itemCategoryLabel,
-                                    style: categoryTextStyle,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  Text('요청 옵션', style: optionTextStyle),
                                   cs.sizedBoxH(8),
-                                  Text(
-                                    itemName,
-                                    style: nameTextStyle,
-                                    maxLines: isSmall ? 1 : 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  Flexible(
+                                    child: Wrap(
+                                      spacing: cs.s(8),
+                                      runSpacing: cs.s(4),
+                                      children: itemOptions
+                                          .map(
+                                            (option) => ItemCardOptionChip(
+                                              itemId: itemId,
+                                              itemOption: option,
+                                              chipColor: optionChipColor,
+                                              chipSelectedColor: optionChipSelectedColor,
+                                              chipTextColor: optionChipTextColor,
+                                              chipSelectedTextColor: optionChipSelectedTextColor,
+                                              externalScale: cs,
+                                              onTap: () {
+                                                if (onOptionSelected != null) {
+                                                  onOptionSelected!(option); // 선택된 옵션 반환
+                                                }
+                                              },
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            // 옵션 선택 영역
-                            Container(
-                              width: double.infinity,
-                              margin: boxMargin,
-                              constraints: BoxConstraints(minHeight: cs.s(60), maxHeight: cs.s(75)),
-                              decoration: buildBoxDecoration(Colors.white.withValues(alpha: 0.3), optionRadius),
-                              child: Padding(
-                                padding: optionPadding,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('요청 옵션', style: optionTextStyle),
-                                    cs.sizedBoxH(8),
-                                    Flexible(
-                                      child: Wrap(
-                                        spacing: cs.s(8),
-                                        runSpacing: cs.s(4),
-                                        children: itemOptions
-                                            .map(
-                                              (option) => ItemCardOptionChip(
-                                                itemId: itemId,
-                                                itemOption: option,
-                                                chipColor: optionChipColor,
-                                                chipSelectedColor: optionChipSelectedColor,
-                                                chipTextColor: optionChipTextColor,
-                                                chipSelectedTextColor: optionChipSelectedTextColor,
-                                                externalScale: cs,
-                                                onTap: () {
-                                                  if (onOptionSelected != null) {
-                                                    onOptionSelected!(option); // 선택된 옵션 반환
-                                                  }
-                                                },
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),

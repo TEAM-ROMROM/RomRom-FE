@@ -41,7 +41,7 @@ class AppColors {
   static const Color bottomNavigationDisableIcon = Color(0xFF676767); // 하단 네비게이션바 비활성화 아이콘
 
   // 물품 카드
-  static final Color itemCardBackground = const Color(0xFFFFFFFF).withValues(alpha: 0.8); // 물품 카드 배경 색상
+  static const Color itemCardBackground = Color(0xFFFFFFFF); // 물품 카드 배경 색상
   static final Color itemCardBorder = const Color(0xFFFFFFFF).withValues(alpha: 0.6); // 물품 카드 테두리 색상
   static const Color itemCardShadow = Color(0x26000000); // 물품 카드 그림자 색상 , 검정색, opacity 15%
   static const Color itemCardNameText = Color(0xFF131419); // 물품 카드 텍스트 색상
@@ -125,6 +125,13 @@ class AppColors {
     Color(0xFF9858F2), // 보라 테두리(Gradient 2)
     Color(0xFFF258F2), // 핑크 테두리(Gradient 3)
     Color(0xFFF25893), // 다홍 테두리(Gradient 4)
+  ];
+
+  // ai 카드 그라데이션
+  static const List<Color> aiCardGradient = [
+    Color(0xB35889F2), // 파란 테두리(Gradient 1)
+    Color(0xB39858F2), // 보라 테두리(Gradient 2)
+    Color(0xFFF258F2), // 핑크 테두리(Gradient 3)
   ];
 
   // 홈 피드 - blackGradient container 그라데이션

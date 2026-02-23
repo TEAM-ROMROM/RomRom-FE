@@ -9,7 +9,8 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/widgets/item_card.dart';
+import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
+import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'dart:async';
 
 /// 홈탭 카드 핸드 위젯
@@ -48,7 +49,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   // 카드 상태
   String? _hoveredCardId;
   String? _pulledCardId;
-  bool _isCardPulled = false;
   Offset _panStartPosition = Offset.zero;
   Offset _pullOffset = Offset.zero;
 
@@ -61,8 +61,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   static const int _loadChunkSize = 3; // 한 번에 로드할 카드 개수
 
   // 카드 레이아웃 파라미터
-  final double _cardWidth = 80.w;
-  final double _cardHeight = 130.h;
+  final double _cardWidth = 92.w;
+  final double _cardHeight = 137.h;
   final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
   final double _baseBottom = 50.h; // 기본 bottom 위치 (네비게이션 바 위)
   final double _deckRadius = 340.r;
@@ -280,7 +280,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
         double top = lerpDouble(fanOriginTop, transform['top'] as double, staggeredFanValue)!;
         double angle = lerpDouble(0.0, transform['angle'] as double, staggeredFanValue)!;
         double scale = 1.0;
-        double opacity = staggeredFanValue;
 
         if (!isPulled) {
           if (isHovered) {
@@ -299,10 +298,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
           const double dragScaleGain = 0.20;
           scale = dragBaseScale + (dragScaleGain * pullValue);
           angle *= (1 - pullValue);
-
-          if (_isCardPulled) {
-            opacity = 1.0 - (pullValue * 0.2);
-          }
         }
 
         return Positioned(
@@ -334,17 +329,19 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                   ),
                 ],
               ),
-              child: Opacity(
-                opacity: opacity,
-                child: ItemCard(
+              child: RequestManagementItemCardWidget(
+                card: RequestManagementItemCard(
                   itemId: cardId!,
-                  isSmall: true,
-                  itemName: cardData.itemName ?? '아이템',
-                  itemCategoryLabel: ItemCategories.fromServerName(cardData.itemCategory!).label,
-                  itemCardImageUrl: cardData.primaryImageUrl != null
-                      ? cardData.primaryImageUrl!
-                      : 'https://picsum.photos/400/300',
+                  imageUrl: cardData.primaryImageUrl ?? 'https://picsum.photos/400/300',
+                  category: ItemCategories.fromServerName(cardData.itemCategory!).label,
+                  title: cardData.itemName ?? '아이템',
+                  price: cardData.price ?? 0,
+                  likeCount: cardData.likeCount ?? 0,
+                  aiPrice: cardData.isAiPredictedPrice ?? false,
                 ),
+                width: _cardWidth,
+                height: _cardHeight,
+                isActive: true,
               ),
             ),
           ),
@@ -513,12 +510,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
           widget.onCardDrop!(_pulledCardId!);
           HapticFeedback.heavyImpact();
         }
-        setState(() => _isCardPulled = true);
         Future.delayed(const Duration(milliseconds: 300), () {
           if (!mounted) return;
           setState(() {
             _pulledCardId = null;
-            _isCardPulled = false;
             _pullOffset = Offset.zero;
             _dropShadowT = 0.0; // 그림자 원복
             _wasOverDropZone = false;

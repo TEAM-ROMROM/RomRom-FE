@@ -176,7 +176,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           // 이미지 인디케이터 (하단 점)
           if (!widget.showBlur)
             Positioned(
-              bottom: 220.h,
+              bottom: 236.h,
               left: 0,
               right: 0,
               child: Row(
@@ -200,7 +200,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           if (!widget.showBlur)
             Positioned(
               right: 33.w,
-              bottom: 216.h,
+              bottom: 232.h,
               child: Column(
                 children: [
                   SizedBox.square(
@@ -286,7 +286,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 92.h,
+            bottom: 110.h,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Row(
