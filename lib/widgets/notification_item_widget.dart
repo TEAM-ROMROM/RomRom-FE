@@ -18,6 +18,7 @@ class NotificationItemData {
   final DateTime time;
   final String? imageUrl;
   final bool isRead;
+  final String? deepLink;
 
   NotificationItemData({
     required this.id,
@@ -27,6 +28,7 @@ class NotificationItemData {
     required this.time,
     this.imageUrl,
     this.isRead = false,
+    this.deepLink,
   });
 }
 

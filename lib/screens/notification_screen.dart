@@ -11,6 +11,7 @@ import 'package:romrom_fe/screens/notification_settings_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
@@ -117,6 +118,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                 time: item.publishedAt ?? DateTime.now(),
                 imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출
                 isRead: item.isRead ?? false, // 읽음 상태 API에서 받아온 값 사용
+                deepLink: item.payload?['deepLink'], // payload에서 딥링크 추출
               );
 
               if (item.notificationType == NotificationType.systemNotice.serverName) {
@@ -316,6 +318,8 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
             final notification = notifications[index];
             return NotificationItemWidget(
               data: notification,
+              onTap: () =>
+                  RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type),
               onMuteTap: () => _onMuteNotification(notification.type),
               onDeleteTap: () => _onDeleteNotification(notification.id),
             );
