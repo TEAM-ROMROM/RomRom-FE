@@ -178,10 +178,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     }
   }
 
-  /// 첫 물건 등록 후 홈탭으로 전환하고 상세 페이지로 이동
-  void _navigateToHomeAndShowDetail(String itemId) {
+  /// 첫 물건 등록 후 홈탭으로 전환하고 코치마크 표시
+  void _navigateToHomeAndShowCoachMark() {
     debugPrint('====================================');
-    debugPrint('_navigateToHomeAndShowDetail 호출됨: itemId=$itemId');
+    debugPrint('_navigateToHomeAndShowCoachMark 호출됨');
 
     // MainScreen의 GlobalKey를 통해 홈탭(인덱스 0)으로 전환
     final mainState = MainScreen.globalKey.currentState;
@@ -194,15 +194,14 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
       debugPrint('⚠️ MainScreen.globalKey.currentState가 null입니다!');
     }
 
-    // 탭 전환 후 홈탭의 context에서 상세 페이지로 이동
+    // 탭 전환 후 홈탭에서 코치마크 표시
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final homeState = HomeTabScreen.globalKey.currentState;
       debugPrint('HomeTabScreen.globalKey.currentState: $homeState');
 
       if (homeState != null) {
-        debugPrint('HomeTabScreen의 navigateToItemDetail 호출 시도...');
-        // _HomeTabScreenState의 navigateToItemDetail 메서드 호출
-        (homeState as dynamic).navigateToItemDetail(itemId);
+        debugPrint('HomeTabScreen의 showCoachMark 호출 시도...');
+        (homeState as dynamic).showCoachMark();
       } else {
         debugPrint('⚠️ HomeTabScreen.globalKey.currentState가 null입니다!');
       }
@@ -543,12 +542,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                       // 등록 화면에서 돌아온 뒤 목록 새로고침
                       _loadMyItems(isRefresh: true);
 
-                      // 첫 물건 등록 완료 시 홈탭으로 전환 후 상세 페이지로 이동
-                      if (result is Map<String, dynamic> &&
-                          result['isFirstItemPosted'] == true &&
-                          result['itemId'] != null) {
+                      // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
+                      if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
                         debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
-                        _navigateToHomeAndShowDetail(result['itemId'] as String);
+                        _navigateToHomeAndShowCoachMark();
                       } else {
                         debugPrint(
                           '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
