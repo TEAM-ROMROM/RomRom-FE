@@ -7,6 +7,7 @@ import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
@@ -58,6 +59,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   bool _deleteModalShown = false;
+  bool _tradeCompletedModalShown = false;
 
   String _errorMessage = '';
   String? _myMemberId;
@@ -211,6 +213,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       setState(() => _isLoading = false);
       _scrollToBottom();
       chatApi.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true); // 입장 처리
+      // 탈퇴 사용자 모달 (채팅방 유지 - 대화 내용 열람 가능)
       CommonModal.showOnceAfterFrame(
         context: context,
         isShown: () => _deleteModalShown,
@@ -218,8 +221,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         shouldShow: () => chatRoom.getOpponent(_myMemberId!)?.accountStatus == AccountStatus.deleteAccount.serverName,
         message: '존재하지 않거나 탈퇴한 사용자입니다.',
         onConfirm: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(); // 모달만 닫기
+        },
+      );
+      // 거래완료 모달 (채팅방 유지 - 대화 내용 열람 가능, 탈퇴 모달과 중첩 방지)
+      CommonModal.showOnceAfterFrame(
+        context: context,
+        isShown: () => _tradeCompletedModalShown,
+        markShown: () => _tradeCompletedModalShown = true,
+        shouldShow: () =>
+            !_deleteModalShown && chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName,
+        message: '거래완료 된 글입니다.',
+        onConfirm: () {
+          Navigator.of(context).pop(); // 모달만 닫기
         },
       );
     } catch (e) {

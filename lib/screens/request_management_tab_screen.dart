@@ -305,7 +305,28 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
           return Padding(
             padding: EdgeInsets.only(bottom: 16.h),
             child: GestureDetector(
-              onTap: () {
+              onTap: () async {
+                // 거래완료 상태면 삭제 처리
+                if (request.tradeStatus == TradeStatus.traded.serverName) {
+                  try {
+                    await TradeApi().cancelTradeRequest(
+                      TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
+                    );
+                    if (mounted) {
+                      setState(() {
+                        _sentRequests.removeWhere((e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId);
+                      });
+                      CommonSnackBar.show(context: context, message: '삭제되었습니다.');
+                    }
+                  } catch (e) {
+                    debugPrint('거래완료 항목 삭제 실패: $e');
+                    if (mounted) {
+                      CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
+                    }
+                  }
+                  return;
+                }
+                // 기존 로직: 상세 페이지 이동
                 context.navigateTo(
                   screen: ItemDetailDescriptionScreen(
                     itemId: takeItem.itemId!, // 내가 요청 보낸 카드로 이동
