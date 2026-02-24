@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -66,11 +68,9 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     _toggleAnimationController.dispose();
 
     // 화면이 사라질 때(팝 등) 모든 알림을 읽음 처리
-    try {
-      NotificationApi().updateAllNotificationsAsRead();
-    } catch (e) {
-      debugPrint('모든 알림 읽음 처리 실패(dispose): $e');
-    }
+    unawaited(
+      NotificationApi().updateAllNotificationsAsRead().catchError((e) => debugPrint('모든 알림 읽음 처리 실패(dispose): $e')),
+    );
     super.dispose();
   }
 
@@ -110,11 +110,21 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           // API에서 받은 데이터를 기반으로 알림 리스트 업데이트
           if (notificationResponse.notificationHistoryPage?.content != null) {
             for (var item in notificationResponse.notificationHistoryPage!.content!) {
+              final id = item.notificationHistoryId;
+              final title = item.title;
+              final body = item.body;
+              if (id == null || title == null || body == null) continue;
+
+              final type = NotificationType.values.firstWhere(
+                (e) => e.serverName == item.notificationType,
+                orElse: () => NotificationType.systemNotice,
+              );
+
               final notificationData = NotificationItemData(
-                id: item.notificationHistoryId!,
-                type: NotificationType.fromServerName(item.notificationType ?? ''),
-                title: item.title!,
-                description: item.body!,
+                id: id,
+                type: type,
+                title: title,
+                description: body,
                 time: item.publishedAt ?? DateTime.now(),
                 imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출
                 isRead: item.isRead ?? false, // 읽음 상태 API에서 받아온 값 사용
@@ -128,13 +138,17 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
               }
             }
           }
-
-          _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint('알림 데이터 로드 실패: $e');
-      CommonSnackBar.show(context: context, message: '알림 데이터를 불러오는 데 실패했습니다.', type: SnackBarType.error);
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '알림 데이터를 불러오는 데 실패했습니다.', type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -156,13 +170,19 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
   }
 
   /// 설정 화면으로 이동
-  void _onDeleteAllNotificationTap() async {
-    NotificationApi().deleteAllNotifications();
-    setState(() {
-      _activityNotifications.clear();
-      _romromNotifications.clear();
-    });
-    CommonSnackBar.show(context: context, message: '모든 알림이 삭제되었습니다.', type: SnackBarType.success);
+  Future<void> _onDeleteAllNotificationTap() async {
+    try {
+      await NotificationApi().deleteAllNotifications();
+      if (!mounted) return;
+      setState(() {
+        _activityNotifications.clear();
+        _romromNotifications.clear();
+      });
+      CommonSnackBar.show(context: context, message: '모든 알림이 삭제되었습니다.', type: SnackBarType.success);
+    } catch (e) {
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '알림 삭제에 실패했습니다.', type: SnackBarType.error);
+    }
   }
 
   /// 알림 끄기

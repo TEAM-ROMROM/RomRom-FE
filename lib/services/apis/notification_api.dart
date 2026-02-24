@@ -69,9 +69,9 @@ class NotificationApi {
 
   /// 안읽은 알림 개수 조회
   /// `POST /api/notification/get/un-read/count`
-  Future<NotificationHistoryResponse> getUnreadNotificationCount() async {
+  Future<NotificationHistoryResponse?> getUnreadNotificationCount() async {
     const String url = '${AppUrls.baseUrl}/api/notification/get/un-read/count';
-    late NotificationHistoryResponse notificationResponse;
+    NotificationHistoryResponse? notificationResponse;
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -80,12 +80,15 @@ class NotificationApi {
         try {
           final Map<String, dynamic> responseMap = responseData;
           notificationResponse = NotificationHistoryResponse.fromJson(responseMap);
-          debugPrint('안읽은 알림 개수 조회 성공: ${notificationResponse.unReadCount}개');
+          debugPrint('안읽은 알림 개수 조회 성공: ${notificationResponse!.unReadCount}개');
         } catch (e) {
           debugPrint('안읽은 알림 개수 파싱 실패: $e');
         }
       },
     );
+    if (notificationResponse == null) {
+      throw StateError('안읽은 알림 개수 조회 응답이 비어있습니다.');
+    }
     return notificationResponse;
   }
 
