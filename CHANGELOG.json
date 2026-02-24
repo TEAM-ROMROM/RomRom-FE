@@ -1,11 +1,49 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-23T01:06:48Z",
-    "currentVersion": "1.9.27",
-    "totalReleases": 69,
+    "lastUpdated": "2026-02-24T13:52:28Z",
+    "currentVersion": "1.9.31",
+    "totalReleases": 70,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.31",
+      "project_type": "flutter",
+      "date": "2026-02-24",
+      "pr_number": 573,
+      "raw_summary": "## Summary by CodeRabbit\n\n## Release Notes - v1.9.31\n\n* **New Features**\n  * Real notification management with read/unread status tracking and batch deletion\n  * Deep link navigation for notifications directing users to relevant items or chats\n  * Interactive coach mark onboarding for new item listings\n\n* **Bug Fixes**\n  * Fixed modal overlap issues in chat screen\n  * Improved user profile avatar loading\n\n* **Documentation**\n  * Updated project guidelines with comprehensive style and structure documentation\n\n* **Chores**\n  * Version update to v1.9.31\n  * Restructured development documentation for improved maintainability",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "Real notification management with read/unread status tracking and batch deletion",
+            "Deep link navigation for notifications directing users to relevant items or chats",
+            "Interactive coach mark onboarding for new item listings"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "Fixed modal overlap issues in chat screen",
+            "Improved user profile avatar loading"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "Updated project guidelines with comprehensive style and structure documentation"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "Version update to v1.9.31",
+            "Restructured development documentation for improved maintainability"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.27",
       "project_type": "flutter",

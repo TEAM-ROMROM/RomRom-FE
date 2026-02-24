@@ -1,7 +1,29 @@
 # Changelog
 
-**현재 버전:** 1.9.27  
-**마지막 업데이트:** 2026-02-23T01:06:48Z  
+**현재 버전:** 1.9.31  
+**마지막 업데이트:** 2026-02-24T13:52:28Z  
+
+---
+
+## [1.9.31] - 2026-02-24
+
+**PR:** #573  
+
+**New Features**
+- Real notification management with read/unread status tracking and batch deletion
+- Deep link navigation for notifications directing users to relevant items or chats
+- Interactive coach mark onboarding for new item listings
+
+**Bug Fixes**
+- Fixed modal overlap issues in chat screen
+- Improved user profile avatar loading
+
+**Documentation**
+- Updated project guidelines with comprehensive style and structure documentation
+
+**Chores**
+- Version update to v1.9.31
+- Restructured development documentation for improved maintainability
 
 ---
 
