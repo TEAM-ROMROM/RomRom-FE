@@ -60,21 +60,21 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                 ? [
                     BoxShadow(
                       color: AppColors.aiCardGradient[0],
-                      offset: Offset((-5 * scaleFactor).w, (-5 * scaleFactor.h)),
-                      blurRadius: (10 * scaleFactor).r,
-                      spreadRadius: (0 * scaleFactor).r,
+                      offset: Offset((-1 * scaleFactor).w, (-1 * scaleFactor).h),
+                      blurRadius: (4 * scaleFactor).r,
+                      spreadRadius: (5 * scaleFactor).r,
                     ),
                     BoxShadow(
                       color: AppColors.aiCardGradient[1],
                       offset: Offset(0, (5 * scaleFactor).h),
                       blurRadius: (25 * scaleFactor).r,
-                      spreadRadius: (0 * scaleFactor).r,
+                      spreadRadius: (5 * scaleFactor).r,
                     ),
                     BoxShadow(
                       color: AppColors.aiCardGradient[2],
-                      offset: Offset((-1 * scaleFactor).w, (-1 * scaleFactor).h),
-                      blurRadius: (4 * scaleFactor).r,
-                      spreadRadius: (0 * scaleFactor).r,
+                      offset: Offset((-5 * scaleFactor).w, (-5 * scaleFactor.h)),
+                      blurRadius: (10 * scaleFactor).r,
+                      spreadRadius: (5 * scaleFactor).r,
                     ),
                   ]
                 : [const BoxShadow(color: AppColors.itemCardShadow, offset: Offset(4, 4), blurRadius: 10)],

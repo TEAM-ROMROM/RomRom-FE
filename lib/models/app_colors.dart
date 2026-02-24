@@ -129,9 +129,9 @@ class AppColors {
 
   // ai 카드 그라데이션
   static const List<Color> aiCardGradient = [
-    Color(0xB35889F2), // 파란 테두리(Gradient 1)
+    Color(0xFFF258F2), // 핑크 테두리(Gradient 1)
     Color(0xB39858F2), // 보라 테두리(Gradient 2)
-    Color(0xFFF258F2), // 핑크 테두리(Gradient 3)
+    Color(0xB35889F2), // 파란 테두리(Gradient 3)
   ];
 
   // 홈 피드 - blackGradient container 그라데이션

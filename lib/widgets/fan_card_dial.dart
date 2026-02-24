@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:playing_cards_layouts/playing_cards_layouts.dart';
-import 'package:romrom_fe/widgets/item_card.dart';
+import 'package:romrom_fe/deprecated/item_card.dart';
 
 /// 부채꼴 모양 카드
 class FanCardDial extends StatefulWidget {

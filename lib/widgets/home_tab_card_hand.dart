@@ -205,20 +205,15 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
   // 좌표에서 카드 찾기
   String? _findCardAtPosition(Offset localPosition) {
-    final transforms = List.generate(_cards.length, (index) => _calculateCardTransform(context, index, _cards.length));
-
-    final indexedCards = List.generate(_cards.length, (index) => index)
-      ..sort((a, b) {
-        return (transforms[b]['zIndex'] as int).compareTo(transforms[a]['zIndex'] as int);
-      });
-
-    for (final index in indexedCards) {
-      final transform = transforms[index];
+    // 왼쪽 카드가 위에 있으므로 (reversed로 렌더링됨)
+    // 역순으로 검사하여 위에 있는 카드부터 확인
+    for (int i = _cards.length - 1; i >= 0; i--) {
+      final transform = _calculateCardTransform(context, i, _cards.length);
       final cardCenterX = transform['centerX'] as double;
 
       // 카드 영역 체크 (카드 너비의 절반 범위 내)
       if ((localPosition.dx - cardCenterX).abs() < _cardWidth / 2) {
-        return _cards[index].itemId;
+        return _cards[i].itemId;
       }
     }
 
@@ -245,7 +240,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     final double proximity = 1.0 - (relativeIndex.abs() / (midIndex + 1e-6));
     // 카드가 1개일 때는 tilt를 0으로 설정
     final double tilt = totalCards == 1 ? 0 : _deckMaxTilt * proximity;
-    final int zIndex = ((_deckDepth * proximity) + (totalCards - relativeIndex.abs())).round();
+    final int zIndex = ((_deckDepth * proximity) + (totalCards + relativeIndex)).round();
 
     return {
       'left': cardCenterX - (_cardWidth / 2),
@@ -317,7 +312,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
               decoration: BoxDecoration(
                 // 선택된 카드에 노란색 테두리 추가
                 border: (isHovered || isPulled) ? Border.all(color: AppColors.primaryYellow, width: 2) : null,
-                borderRadius: BorderRadius.circular(4.r),
+                borderRadius: BorderRadius.circular((10 * scale * _cardHeight / 326.h).r),
                 boxShadow: [
                   BoxShadow(
                     color: isHovered || isPulled
@@ -682,8 +677,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                     ),
                   ),
 
-                // 카드들
-                ..._cards.asMap().entries.map((entry) {
+                // 카드들 - 왼쪽 카드가 위로 오도록 역순으로 렌더링
+                ..._cards.asMap().entries.toList().reversed.map((entry) {
                   final index = entry.key;
                   final card = entry.value;
                   return _buildCard(card, index, _cards.length);
