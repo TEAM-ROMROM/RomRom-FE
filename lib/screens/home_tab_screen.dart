@@ -267,7 +267,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           },
           child: Image.asset(
             _coachMarkImages[index],
-            fit: BoxFit.contain,
+            fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               debugPrint('오류: 이미지 로드 실패 - ${_coachMarkImages[index]} - $error');
               return Center(
