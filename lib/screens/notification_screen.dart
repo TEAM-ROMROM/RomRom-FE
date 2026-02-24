@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/enums/notification_category.dart';
+import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/apis/requests/notification_history_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
@@ -60,6 +66,11 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _toggleAnimationController.dispose();
+
+    // 화면이 사라질 때(팝 등) 모든 알림을 읽음 처리
+    unawaited(
+      NotificationApi().updateAllNotificationsAsRead().catchError((e) => debugPrint('모든 알림 읽음 처리 실패(dispose): $e')),
+    );
     super.dispose();
   }
 
@@ -81,52 +92,64 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       _isLoading = true;
     });
 
-    // TODO: 실제 API 연동 필요
-    // 임시 더미 데이터
-    await Future.delayed(const Duration(milliseconds: 500));
+    NotificationApi notificationApi = NotificationApi();
+    try {
+      // 실제 API 호출 예시 (주석 처리)
+      final notificationResponse = await notificationApi.getUserNotifications(
+        NotificationHistoryRequest(pageNumber: 0, pageSize: 10),
+      );
+      debugPrint(
+        '알림 데이터 로드 성공: ${notificationResponse.notificationHistoryPage?.content?.length ?? 0}개',
+      ); // API에서 알림 데이터 로그 출력
 
-    if (!mounted) return;
+      if (mounted) {
+        setState(() {
+          _activityNotifications.clear();
+          _romromNotifications.clear();
 
-    setState(() {
-      _activityNotifications.clear();
-      _activityNotifications.addAll([
-        NotificationItemData(
-          id: '1',
-          category: NotificationCategory.exchangeRequest,
-          title: '님이 회원님의 물건에 교환을 원해요!',
-          description: '[한정판 가전] 다이슨 에어랩 올인원 풀박스 정품, [한정판 가전] 다이슨 에어랩 올인원 풀박스 정품',
-          time: DateTime.now().subtract(const Duration(minutes: 3)),
-          imageUrl: 'https://picsum.photos/100/100',
-        ),
-        NotificationItemData(
-          id: '2',
-          category: NotificationCategory.like,
-          title: '님이 회원님의 물건을 좋아해요!',
-          description: '[한정판 가전] 다이슨 에어랩 올인원 풀박스 정품',
-          time: DateTime.now().subtract(const Duration(hours: 1)),
-        ),
-        NotificationItemData(
-          id: '3',
-          category: NotificationCategory.chat,
-          title: '님이 채팅을 보냈어요',
-          description: '안녕하세요! 혹시 직거래 가능할까요?',
-          time: DateTime.now().subtract(const Duration(hours: 2)),
-        ),
-      ]);
+          // API에서 받은 데이터를 기반으로 알림 리스트 업데이트
+          if (notificationResponse.notificationHistoryPage?.content != null) {
+            for (var item in notificationResponse.notificationHistoryPage!.content!) {
+              final id = item.notificationHistoryId;
+              final title = item.title;
+              final body = item.body;
+              if (id == null || title == null || body == null) continue;
 
-      _romromNotifications.clear();
-      _romromNotifications.addAll([
-        NotificationItemData(
-          id: '4',
-          category: NotificationCategory.announcement,
-          title: '롬롬 공지사항',
-          description: '새로운 기능이 추가되었습니다! 확인해보세요.',
-          time: DateTime.now().subtract(const Duration(days: 1)),
-        ),
-      ]);
+              final type = NotificationType.values.firstWhere(
+                (e) => e.serverName == item.notificationType,
+                orElse: () => NotificationType.systemNotice,
+              );
 
-      _isLoading = false;
-    });
+              final notificationData = NotificationItemData(
+                id: id,
+                type: type,
+                title: title,
+                description: body,
+                time: item.publishedAt ?? DateTime.now(),
+                imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출
+                isRead: item.isRead ?? false, // 읽음 상태 API에서 받아온 값 사용
+                deepLink: item.payload?['deepLink'], // payload에서 딥링크 추출
+              );
+
+              if (item.notificationType == NotificationType.systemNotice.serverName) {
+                _romromNotifications.add(notificationData);
+              } else {
+                _activityNotifications.add(notificationData);
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('알림 데이터 로드 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '알림 데이터를 불러오는 데 실패했습니다.', type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   /// 토글 변경 처리
@@ -146,17 +169,68 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     context.navigateTo(screen: const NotificationSettingsScreen());
   }
 
+  /// 설정 화면으로 이동
+  Future<void> _onDeleteAllNotificationTap() async {
+    try {
+      await NotificationApi().deleteAllNotifications();
+      if (!mounted) return;
+      setState(() {
+        _activityNotifications.clear();
+        _romromNotifications.clear();
+      });
+      CommonSnackBar.show(context: context, message: '모든 알림이 삭제되었습니다.', type: SnackBarType.success);
+    } catch (e) {
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '알림 삭제에 실패했습니다.', type: SnackBarType.error);
+    }
+  }
+
   /// 알림 끄기
-  void _onMuteNotification(String notificationId) {
-    CommonSnackBar.show(context: context, message: '알림 끄기 기능 준비 중입니다.', type: SnackBarType.info);
+  /// 지정된 알림 유형에 맞게 알림 설정을 업데이트합니다.
+  Future<void> _onMuteNotification(NotificationType notificationType) async {
+    final MemberApi api = MemberApi();
+
+    try {
+      switch (notificationType) {
+        case NotificationType.systemNotice:
+          await api.updateNotificationSetting(isMarketingInfoAgreed: false, isContentNotificationAgreed: false);
+          break;
+        case NotificationType.chatMessageReceived:
+          await api.updateNotificationSetting(isChatNotificationAgreed: false);
+          break;
+        case NotificationType.itemLiked:
+          await api.updateNotificationSetting(isActivityNotificationAgreed: false);
+          break;
+        case NotificationType.tradeRequestReceived:
+          await api.updateNotificationSetting(isTradeNotificationAgreed: false);
+          break;
+      }
+
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '알림이 꺼졌습니다.', type: SnackBarType.success);
+    } catch (e) {
+      debugPrint('알림 끄기 실패: $e');
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '알림 끄기에 실패했습니다.', type: SnackBarType.error);
+    }
   }
 
   /// 알림 삭제
-  void _onDeleteNotification(String notificationId) {
-    setState(() {
-      _activityNotifications.removeWhere((n) => n.id == notificationId);
-      _romromNotifications.removeWhere((n) => n.id == notificationId);
-    });
+  void _onDeleteNotification(String notificationId) async {
+    try {
+      await NotificationApi().deleteNotification(NotificationHistoryRequest(notificationHistoryId: notificationId));
+
+      if (mounted) {
+        setState(() {
+          _activityNotifications.removeWhere((n) => n.id == notificationId);
+          _romromNotifications.removeWhere((n) => n.id == notificationId);
+        });
+      }
+      CommonSnackBar.show(context: context, message: '알림이 삭제되었습니다.', type: SnackBarType.success);
+    } catch (e) {
+      debugPrint('알림 삭제 실패: $e');
+      CommonSnackBar.show(context: context, message: '알림 삭제에 실패했습니다.', type: SnackBarType.error);
+    }
   }
 
   @override
@@ -186,12 +260,11 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                       onRightTap: () => _onToggleChanged(true),
                       leftText: '활동 및 채팅',
                       rightText: '롬롬 소식',
-                      bottomPadding: 0, // 토글 아래 패딩 제거
                     ),
                     headerTitle: '알림',
                     statusBarHeight: MediaQuery.of(context).padding.top,
-                    toolbarHeight: 58.h,
-                    toggleHeight: 46.h, // 실제 토글 높이 (bottom padding 제거)
+                    toolbarHeight: 64.h,
+                    toggleHeight: 62.h, // 실제 토글 높이 (bottom padding 제거)
                     expandedExtra: 0.h, // 토글-알림목록 간격 제거
                     enableBlur: _isScrolled,
                     centerTitle: true, // 타이틀 중앙 정렬
@@ -199,12 +272,23 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                       onTap: () => Navigator.pop(context),
                       child: Icon(AppIcons.navigateBefore, size: 28.sp, color: AppColors.textColorWhite),
                     ),
-                    trailingWidget: Padding(
-                      padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
-                      child: GestureDetector(
-                        onTap: _onSettingsTap,
-                        child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
-                      ),
+                    trailingWidget: Row(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
+                          child: GestureDetector(
+                            onTap: _onDeleteAllNotificationTap,
+                            child: Icon(AppIcons.trash, size: 30.sp, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
+                          child: GestureDetector(
+                            onTap: _onSettingsTap,
+                            child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -241,7 +325,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 37.h, 24.w, 0),
+      padding: EdgeInsets.fromLTRB(0.w, 4.h, 0.w, 0),
       child: MediaQuery.removePadding(
         context: context,
         removeTop: true,
@@ -249,12 +333,14 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: notifications.length,
-          separatorBuilder: (_, __) => SizedBox(height: 24.h),
+          separatorBuilder: (_, __) => SizedBox(height: 0.h),
           itemBuilder: (context, index) {
             final notification = notifications[index];
             return NotificationItemWidget(
               data: notification,
-              onMuteTap: () => _onMuteNotification(notification.id),
+              onTap: () =>
+                  RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type),
+              onMuteTap: () => _onMuteNotification(notification.type),
               onDeleteTap: () => _onDeleteNotification(notification.id),
             );
           },

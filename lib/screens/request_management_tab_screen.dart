@@ -516,8 +516,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         ),
                         statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
                         toolbarHeight: 58.h,
-                        toggleHeight: 70.h,
-                        expandedExtra: 32.h, // 큰 제목/여백
+                        toggleHeight: 62.h,
+                        expandedExtra: 16.h, // 큰 제목/여백
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
@@ -526,7 +526,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // 1. 물품 카드 캐러셀 섹션 (받은 요청일 때만 표시)
-                          if (!_isRightSelected) ...[SizedBox(height: 10.h), _buildItemCardsCarousel()],
+                          if (!_isRightSelected) ...[SizedBox(height: 26.h), _buildItemCardsCarousel()],
 
                           // 2. 페이지 인디케이터 (받은 요청일 때만 표시)
                           if (!_isRightSelected) _buildPageIndicator(),
