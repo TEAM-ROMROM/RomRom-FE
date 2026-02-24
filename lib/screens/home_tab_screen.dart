@@ -28,7 +28,6 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
@@ -98,37 +97,16 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     super.dispose();
   }
 
-  /// 첫 물건 등록 후 상세 페이지로 이동 (외부 호출용)
-  void navigateToItemDetail(String itemId) {
+  /// 코치마크 표시 (외부 호출용 - 첫 물건 등록 후 홈 탭에서 직접 표시)
+  void showCoachMark() {
     debugPrint('====================================');
-    debugPrint('HomeTabScreen.navigateToItemDetail 호출됨: itemId=$itemId');
+    debugPrint('HomeTabScreen.showCoachMark 호출됨');
     debugPrint('mounted: $mounted');
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      debugPrint('PostFrameCallback 실행됨');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        debugPrint('상세 페이지로 네비게이션 시작...');
-        // 화면 크기 가져오기
-        final screenWidth = MediaQuery.of(context).size.width;
-        final imageHeight = screenWidth; // 정사각형 이미지
-
-        // context.navigateTo() 헬퍼 사용 (iOS 스와이프 백 지원)
-        context.navigateTo(
-          screen: ItemDetailDescriptionScreen(
-            itemId: itemId,
-            imageSize: Size(screenWidth, imageHeight),
-            currentImageIndex: 0,
-            heroTag: 'first_item_$itemId',
-            isMyItem: true,
-            isRequestManagement: false,
-          ),
-        );
-
-        // 상세 화면에서 돌아왔을 때 코치마크 표시
-        debugPrint('상세 화면에서 돌아옴! 이제 코치마크를 표시합니다.');
+        debugPrint('코치마크 표시 시작...');
         _checkAndShowCoachMark();
-
-        debugPrint('상세 페이지 네비게이션 완료');
       } else {
         debugPrint('⚠️ HomeTabScreen이 mounted되지 않음!');
       }
@@ -142,7 +120,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// - 내 물건이 0개일 때 (실제 물건 개수 기준)
   ///
   /// 코치마크 표시 조건:
-  /// - 첫 물품 등록 후 상세 화면에서 돌아올 때만 표시
+  /// - 첫 물품 등록 후 홈 탭에서 showCoachMark() 호출 시 표시
   /// - _checkAndShowCoachMark()에서 처리
   Future<void> _checkFirstMainScreen() async {
     debugPrint('====================================');
@@ -160,7 +138,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       });
 
       // 코치마크는 여기서 표시하지 않음!
-      // 첫 물품 등록 후 상세 화면 복귀 시에만 _checkAndShowCoachMark()에서 표시
+      // 첫 물품 등록 후 showCoachMark() 외부 호출 시에만 _checkAndShowCoachMark()에서 표시
       debugPrint('코치마크는 첫 물품 등록 플로우에서만 표시됨');
     } catch (e) {
       debugPrint('⚠️ 첫 화면 체크 실패: $e');
@@ -171,7 +149,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     debugPrint('====================================');
   }
 
-  /// 코치마크를 표시해야 하는지 체크하고 표시 (상세 화면에서 돌아올 때 호출)
+  /// 코치마크를 표시해야 하는지 체크하고 표시
   Future<void> _checkAndShowCoachMark() async {
     debugPrint('====================================');
     debugPrint('_checkAndShowCoachMark 호출됨 (상세 화면에서 돌아옴)');
