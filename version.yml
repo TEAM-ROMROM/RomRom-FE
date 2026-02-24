@@ -33,12 +33,12 @@
 # - project_type은 최초 설정 후 변경하지 마세요
 # - 버전은 항상 높은 버전으로 자동 동기화됩니다
 # ===================================================================
-version: "1.9.27"
-version_code: 171 # app build number
+version: "1.9.29"
+version_code: 173 # app build number
 project_type: "flutter" # spring, flutter, next, react, react-native, react-native-expo, node, python, basic
 metadata:
-  last_updated: "2026-02-23 01:04:59"
-  last_updated_by: "Cassiiopeia"
+  last_updated: "2026-02-24 08:43:36"
+  last_updated_by: "SeoHyun1024"
   default_branch: "main"
   integrated_from: "SUH-DEVOPS-TEMPLATE"
   integration_date: "2026-01-14"
