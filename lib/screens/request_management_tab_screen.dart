@@ -314,7 +314,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                     );
                     if (mounted) {
                       setState(() {
-                        _sentRequests.removeAt(index);
+                        _sentRequests.removeWhere((e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId);
                       });
                       CommonSnackBar.show(context: context, message: '삭제되었습니다.');
                     }
