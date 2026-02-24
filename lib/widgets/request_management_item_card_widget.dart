@@ -36,7 +36,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
     final imageHeight = cardHeight * 0.75;
 
     // 스케일 팩터 계산 (기본 크기에 대한 비율)
-    final double scaleFactor = cardHeight / 326.0.h == 1 ? 1.0 : cardHeight / 326.0.h * 0.5;
+    final double scaleFactor = cardHeight / 326.0.h;
 
     // 카드 스케일 조정
     final scale = isActive ? 1.0 : 0.85;
@@ -136,7 +136,11 @@ class RequestManagementItemCardWidget extends StatelessWidget {
                         children: [
                           // AI 배지
                           if (card.aiPrice) ...[
-                            Transform.scale(scale: scaleFactor, child: const AiBadgeWidget()),
+                            SizedBox(
+                              width: (21 * scaleFactor).w,
+                              height: (20 * scaleFactor).h,
+                              child: const FittedBox(fit: BoxFit.contain, child: AiBadgeWidget()),
+                            ),
                             SizedBox(width: (8 * scaleFactor).w),
                           ],
                           // 가격
