@@ -543,8 +543,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                       _loadMyItems(isRefresh: true);
 
                       // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
-                      if (result is Map<String, dynamic> &&
-                          result['isFirstItemPosted'] == true) {
+                      if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
                         debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
                         _navigateToHomeAndShowCoachMark();
                       } else {
