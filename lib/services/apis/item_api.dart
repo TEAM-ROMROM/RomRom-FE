@@ -80,7 +80,7 @@ class ItemApi {
     return itemResponse;
   }
 
-  /// 물품 리스트 조회 API (최신순)
+  /// 물품 리스트 조회 API
   /// `POST /api/item/list/get`
   Future<ItemResponse> getItems(ItemRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/item/list/get';
@@ -90,6 +90,10 @@ class ItemApi {
       'pageNumber': request.pageNumber.toString(),
       'pageSize': request.pageSize.toString(),
     };
+
+    if (request.sortField != null) {
+      fields['sortField'] = request.sortField!;
+    }
 
     await ApiClient.sendMultipartRequest(
       url: url,

@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_sort_field.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -360,7 +361,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(ItemRequest(pageNumber: _currentPage, pageSize: _pageSize));
+      final response = await itemApi.getItems(
+        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: ItemSortField.recommended.serverName),
+      );
 
       if (!mounted) return;
 
@@ -395,7 +398,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     try {
       _currentPage += 1;
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(ItemRequest(pageNumber: _currentPage, pageSize: _pageSize));
+      final response = await itemApi.getItems(
+        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: ItemSortField.recommended.serverName),
+      );
 
       final newItems = await _convertToFeedItems(response.itemPage?.content ?? []);
 
