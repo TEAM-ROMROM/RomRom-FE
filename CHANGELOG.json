@@ -1,11 +1,34 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-24T13:52:28Z",
-    "currentVersion": "1.9.31",
-    "totalReleases": 70,
+    "lastUpdated": "2026-02-25T08:41:57Z",
+    "currentVersion": "1.9.32",
+    "totalReleases": 71,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.32",
+      "project_type": "flutter",
+      "date": "2026-02-25",
+      "pr_number": 588,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리즈 노트\n\n* **새 기능**\n  * 물품 목록에 정렬 기능 추가 (생성일, 거리, 선호 카테고리, 추천순)\n  * 물품 조회 시 기본 정렬을 추천순으로 설정\n\n* **Chores**\n  * 앱 버전을 1.9.32로 업데이트",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "물품 목록에 정렬 기능 추가 (생성일, 거리, 선호 카테고리, 추천순)",
+            "물품 조회 시 기본 정렬을 추천순으로 설정"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전을 1.9.32로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.31",
       "project_type": "flutter",
