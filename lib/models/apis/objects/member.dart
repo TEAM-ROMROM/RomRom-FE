@@ -28,7 +28,7 @@ class Member extends BaseEntity {
   final double? longitude;
   final int? totalLikeCount;
   final double? searchRadiusInMeters;
-  final bool? online;
+  final bool? isOnline;
 
   /// 해당 회원이 차단된 상태인지 여부 (타인 프로필 조회 시)
   final bool? isBlocked;
@@ -63,7 +63,7 @@ class Member extends BaseEntity {
     this.searchRadiusInMeters,
     this.isBlocked,
     this.locationAddress,
-    this.online,
+    this.isOnline,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);

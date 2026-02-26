@@ -18,6 +18,7 @@ import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -66,6 +67,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
+
+  // 상대방 온라인 상태
+  DateTime? _opponentLastActiveAt;
+  bool _isOpponentOnline = false;
+  // _onlineStatusTimer 제거
+  StreamSubscription? _pollerSubscription;
 
   @override
   void initState() {
@@ -146,6 +153,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         chatRoom = response.chatRoom!;
         _messages = response.messages?.content ?? [];
       });
+
+      final opponentId = chatRoom.getOpponent(_myMemberId!)?.memberId;
+      if (opponentId != null) {
+        ChatMemberStatusPoller.instance.start(opponentId);
+
+        // 초기 opponent의 값으로 즉시 상태 세팅
+        final initialOpponent = chatRoom.getOpponent(_myMemberId!);
+        setState(() {
+          _opponentLastActiveAt = initialOpponent?.lastActiveAt;
+          _isOpponentOnline = initialOpponent?.isOnline ?? false; // 서버값 그대로 사용
+        });
+
+        // 폴링으로 새 Member 수신 시 서버가 준 inOnline 값 반영
+        _pollerSubscription = ChatMemberStatusPoller.instance.stream.listen((member) {
+          if (!mounted) return;
+          setState(() {
+            _opponentLastActiveAt = member.lastActiveAt;
+            _isOpponentOnline = member.isOnline ?? false; // 서버값 그대로 사용
+          });
+        });
+      }
 
       // 4. 실시간 메시지 구독 (WebSocket)
       _messageSubscription = _wsService.subscribeToChatRoom(widget.chatRoomId).listen((newMessage) {
@@ -359,6 +387,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   void dispose() {
     _messageSubscription?.cancel();
+    _pollerSubscription?.cancel();
     // 채팅방 구독 해제 (참조 카운팅으로 ChatTabScreen의 구독은 유지됨)
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
@@ -366,6 +395,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.dispose();
+    ChatMemberStatusPoller.instance.stop();
     super.dispose();
   }
 
@@ -490,14 +520,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     height: 8.w,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: chatRoom.getOnlineStatus(chatRoom.getOpponent(_myMemberId!)!)
-                          ? AppColors.chatActiveStatus
-                          : AppColors.chatInactiveStatus,
+                      color: _isOpponentOnline ? AppColors.chatActiveStatus : AppColors.chatInactiveStatus,
                     ),
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    getLastActivityTime(chatRoom, chatRoom.getOpponent(_myMemberId!)!),
+                    _isOpponentOnline ? '활동 중' : getLastActivityTime(_opponentLastActiveAt),
                     style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
                   ),
                 ],

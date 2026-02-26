@@ -33,7 +33,7 @@ Member _$MemberFromJson(Map<String, dynamic> json) => Member(
   searchRadiusInMeters: (json['searchRadiusInMeters'] as num?)?.toDouble(),
   isBlocked: json['isBlocked'] as bool?,
   locationAddress: json['locationAddress'] as String?,
-  online: json['online'] as bool?,
+  isOnline: json['isOnline'] as bool?,
 );
 
 Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
@@ -61,7 +61,7 @@ Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
   'longitude': instance.longitude,
   'totalLikeCount': instance.totalLikeCount,
   'searchRadiusInMeters': instance.searchRadiusInMeters,
-  'online': instance.online,
+  'isOnline': instance.isOnline,
   'isBlocked': instance.isBlocked,
   'locationAddress': instance.locationAddress,
 };
