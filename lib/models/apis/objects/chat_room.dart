@@ -40,7 +40,7 @@ class ChatRoom extends BaseEntity {
   String getOpponentNickname(String myMemberId) {
     final opponent = getOpponent(myMemberId);
     if (opponent == null) return '(탈퇴)';
-    if (opponent.accountStatus == 'DELETE_ACCOUNT') return '(탈퇴)';
+    if (opponent.accountStatus == 'DELETE_ACCOUNT') return '(탈퇴) ${opponent.nickname}';
     return opponent.nickname ?? '알 수 없음';
   }
 
