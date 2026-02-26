@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import '../widgets/common/common_modal.dart';
 
@@ -139,8 +140,8 @@ String formatMessageTime(DateTime? dt) {
   return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
 }
 
-String getLastActivityTime(ChatRoom chatRoom) {
-  final lastActivity = chatRoom.getLastActivityTime();
+String getLastActivityTime(ChatRoom chatRoom, Member member) {
+  final lastActivity = chatRoom.getLastActivityTime(member);
   final now = DateTime.now();
   final difference = now.difference(lastActivity);
 

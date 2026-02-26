@@ -13,7 +13,7 @@ class Member extends BaseEntity {
   final String? profileUrl;
   final String? role;
   final String? accountStatus;
-  final String? lastActiveAt;
+  final DateTime? lastActiveAt;
   final bool? isFirstLogin;
   final bool? isItemCategorySaved;
   final bool? isFirstItemPosted;

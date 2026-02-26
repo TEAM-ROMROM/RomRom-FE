@@ -1,4 +1,5 @@
 // lib/models/apis/objects/chat_room.dart
+import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
@@ -74,10 +75,10 @@ class ChatRoom extends BaseEntity {
   }
 
   /// UI 헬퍼: 마지막 활동 시간
-  DateTime getLastActivityTime() {
-    // FIXME: 백엔드 수정 대기 - 최근 메시지 시간 없음
-    // 임시: ChatRoom updatedDate 사용
-    return updatedDate ?? createdDate ?? DateTime.now();
+  DateTime getLastActivityTime(Member member) {
+    DateTime? opponentLastActivityTime = member.lastActiveAt;
+    debugPrint('⏰ ${member.nickname}${opponentLastActivityTime ?? DateTime.now()}');
+    return opponentLastActivityTime ?? updatedDate ?? DateTime.now();
   }
 
   /// UI 헬퍼: 읽지 않은 메시지 수

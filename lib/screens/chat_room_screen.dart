@@ -492,7 +492,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    getLastActivityTime(chatRoom),
+                    getLastActivityTime(chatRoom, chatRoom.getOpponent(_myMemberId!)!),
                     style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
                   ),
                 ],
