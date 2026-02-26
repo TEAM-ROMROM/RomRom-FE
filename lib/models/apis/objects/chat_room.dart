@@ -77,8 +77,15 @@ class ChatRoom extends BaseEntity {
   /// UI 헬퍼: 마지막 활동 시간
   DateTime getLastActivityTime(Member member) {
     DateTime? opponentLastActivityTime = member.lastActiveAt;
-    debugPrint('⏰ ${member.nickname}${opponentLastActivityTime ?? DateTime.now()}');
+    debugPrint('⏰ ${member.nickname} : ${opponentLastActivityTime ?? DateTime.now()}');
     return opponentLastActivityTime ?? updatedDate ?? DateTime.now();
+  }
+
+  /// UI 헬퍼: 활동 중인지 상태 반환
+  bool getOnlineStatus(Member member) {
+    bool? onlineStatus = member.online;
+    debugPrint('📳 ${member.nickname} : $onlineStatus');
+    return onlineStatus ?? false;
   }
 
   /// UI 헬퍼: 읽지 않은 메시지 수

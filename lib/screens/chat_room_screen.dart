@@ -488,7 +488,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   Container(
                     width: 8.w,
                     height: 8.w,
-                    decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.chatInactiveStatus),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: chatRoom.getOnlineStatus(chatRoom.getOpponent(_myMemberId!)!)
+                          ? AppColors.chatActiveStatus
+                          : AppColors.chatInactiveStatus,
+                    ),
                   ),
                   SizedBox(width: 8.w),
                   Text(
