@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' hide UserInfo;
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -14,7 +15,7 @@ class GoogleAuthService {
   GoogleAuthService._internal();
   final romAuthApi = RomAuthApi();
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   Future<void> getGoogleUserInfo(GoogleSignInAccount googleUser) async {
     try {
@@ -35,17 +36,27 @@ class GoogleAuthService {
   Future<bool> logInWithGoogle() async {
     try {
       // 구글로 로그인 진행
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
 
-      if (googleUser == null) {
-        return false; // 사용자가 로그인 취소 시 false 반환
-      }
-
-      final GoogleSignInAuthentication googleSignInAuthentication = await googleUser.authentication;
+      final GoogleSignInAuthentication googleSignInAuthentication = googleUser.authentication;
+      final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
       // 구글 OAuth2 토큰 받음
-      final String googleAccessToken = googleSignInAuthentication.accessToken!;
+      final String googleAccessToken = googleSignInAuthentication.idToken!;
       debugPrint('구글로 로그인 성공: $googleAccessToken');
+
+      // OAuthCredential 생성
+      OAuthCredential googleCredential = GoogleAuthProvider.credential(
+        idToken: googleSignInAuthentication.idToken,
+        accessToken: googleAccessToken,
+      );
+
+      // firebase Auth에 객체 저장
+      UserCredential credential = await firebaseAuth.signInWithCredential(googleCredential);
+      if (credential.user != null) {
+        final user = credential.user;
+        debugPrint('$user');
+      }
 
       await getGoogleUserInfo(googleUser);
 

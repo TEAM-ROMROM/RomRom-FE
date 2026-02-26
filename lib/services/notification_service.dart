@@ -13,5 +13,5 @@ Future<void> initNotificationPlugin() async {
     iOS: DarwinInitializationSettings(requestProvidesAppNotificationSettings: true),
   );
 
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
 }

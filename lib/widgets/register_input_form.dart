@@ -428,7 +428,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: imageUrls.length,
-                    separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                    separatorBuilder: (_, _) => SizedBox(width: 8.w),
                     padding: EdgeInsets.only(top: 8.h),
                     itemBuilder: (context, index) {
                       final url = imageUrls[index];

@@ -333,7 +333,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: notifications.length,
-          separatorBuilder: (_, __) => SizedBox(height: 0.h),
+          separatorBuilder: (_, _) => SizedBox(height: 0.h),
           itemBuilder: (context, index) {
             final notification = notifications[index];
             return NotificationItemWidget(

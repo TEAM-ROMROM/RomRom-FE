@@ -120,7 +120,7 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
       child: ListView.separated(
         physics: const BouncingScrollPhysics(),
         itemCount: _blockedMembers.length,
-        separatorBuilder: (_, __) => Column(
+        separatorBuilder: (_, _) => Column(
           children: [
             SizedBox(height: 16.h), // 아이템 사이 간격
             const Divider(color: AppColors.opacity10White, thickness: 1),

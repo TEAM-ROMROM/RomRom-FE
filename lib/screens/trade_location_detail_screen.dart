@@ -51,7 +51,7 @@ class _TradeLocationDetailScreenState extends State<TradeLocationDetailScreen> {
                   _mapControllerCompleter.complete(controller);
 
                   // 현재 위치 추적 활성화 (파란색 점 표시)
-                  await controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+                  controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
 
                   // 거래 희망 위치 마커 추가
                   await controller.addOverlay(

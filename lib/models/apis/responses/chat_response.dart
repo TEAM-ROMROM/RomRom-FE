@@ -20,7 +20,7 @@ class ChatRoomResponse {
   Map<String, dynamic> toJson() => _$ChatRoomResponseToJson(this);
 }
 
-/// Paged<ChatMessage>
+/// `Paged<ChatMessage>`
 @JsonSerializable(explicitToJson: true)
 class PagedChatMessage {
   @JsonKey(fromJson: _chatMessageListFromJson, toJson: _chatMessageListToJson)
@@ -39,7 +39,7 @@ class PagedChatMessage {
   Map<String, dynamic> toJson() => _$PagedChatMessageToJson(this);
 }
 
-/// Paged<ChatRoomDetailDto>
+/// `Paged<ChatRoomDetailDto>`
 @JsonSerializable(explicitToJson: true)
 class PagedChatRoomDetail {
   @JsonKey(fromJson: _chatRoomDetailListFromJson, toJson: _chatRoomDetailListToJson)

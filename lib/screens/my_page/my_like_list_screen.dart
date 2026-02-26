@@ -175,7 +175,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 itemCount: _items.length + (_hasMoreItems ? 1 : 0),
-                separatorBuilder: (_, __) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
+                separatorBuilder: (_, _) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
                 itemBuilder: (context, index) {
                   // ... 기존 itemBuilder 코드 동일
                   if (_hasMoreItems && index == _items.length) {
