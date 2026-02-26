@@ -38,34 +38,36 @@ class GoogleAuthService {
       // 구글로 로그인 진행
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
 
-      final GoogleSignInAuthentication googleSignInAuthentication = googleUser.authentication;
-      final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+      final String? idToken = googleUser.authentication.idToken;
 
-      // 구글 OAuth2 토큰 받음
-      final String googleAccessToken = googleSignInAuthentication.idToken!;
-      debugPrint('구글로 로그인 성공: $googleAccessToken');
+      // accessToken은 authorizationClient를 통해 별도로 가져옴
+      final authorization =
+          await googleUser.authorizationClient.authorizationForScopes(['email', 'profile']) ??
+          await googleUser.authorizationClient.authorizeScopes(['email', 'profile']);
+      final String accessToken = authorization.accessToken;
+
+      debugPrint('구글로 로그인 성공: idToken=$idToken');
 
       // OAuthCredential 생성
-      OAuthCredential googleCredential = GoogleAuthProvider.credential(
-        idToken: googleSignInAuthentication.idToken,
-        accessToken: googleAccessToken,
+      final OAuthCredential googleCredential = GoogleAuthProvider.credential(
+        idToken: idToken,
+        accessToken: accessToken,
       );
 
       // firebase Auth에 객체 저장
-      UserCredential credential = await firebaseAuth.signInWithCredential(googleCredential);
+      final UserCredential credential = await FirebaseAuth.instance.signInWithCredential(googleCredential);
       if (credential.user != null) {
-        final user = credential.user;
-        debugPrint('$user');
+        debugPrint('Firebase 로그인 성공: ${credential.user}');
       }
 
       await getGoogleUserInfo(googleUser);
 
       // 구글 로그인 성공 후 토큰 발급
       await romAuthApi.signInWithSocial(socialPlatform: LoginPlatforms.google.platformName);
-      return true; // 성공 시 true 반환
+      return true;
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');
-      return false; // 실패 시 false 반환
+      return false;
     }
   }
 
