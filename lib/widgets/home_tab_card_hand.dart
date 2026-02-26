@@ -18,7 +18,10 @@ class HomeTabCardHand extends StatefulWidget {
   final Function(String itemId)? onCardDrop;
   final List<Item>? cards;
 
-  const HomeTabCardHand({super.key, this.onCardDrop, this.cards});
+  /// AI 추천 상위 3개 itemId 목록 - 해당 카드에 glow boxShadow 효과 적용
+  final List<String> highlightedItemIds;
+
+  const HomeTabCardHand({super.key, this.onCardDrop, this.cards, this.highlightedItemIds = const []});
 
   @override
   State<HomeTabCardHand> createState() => _HomeTabCardHandState();
@@ -90,6 +93,15 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   late AnimationController _iconAnimationController;
   late Animation<double> _iconAnimation;
 
+  // AI 하이라이트 애니메이션
+  // - glow 펄스: repeat(reverse) 로 밝기 반복
+  // - float: 한 번만 위로 슥 올라오는 단방향 애니메이션
+  late AnimationController _highlightPulseController; // glow 밝기 반복
+  late Animation<double> _highlightPulseAnimation;
+
+  late AnimationController _highlightFloatController; // 위로 슥 올라오는 단방향
+  late Animation<double> _highlightFloatAnimation;
+
   @override
   void initState() {
     super.initState();
@@ -111,6 +123,43 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
       begin: 0.0,
       end: 10.0.h,
     ).animate(CurvedAnimation(parent: _iconAnimationController, curve: Curves.easeInOut));
+
+    // glow 밝기 반복 (0.5 ~ 1.0 사이를 계속 왔다갔다)
+    _highlightPulseController = AnimationController(duration: const Duration(milliseconds: 1400), vsync: this)
+      ..repeat(reverse: true);
+
+    _highlightPulseAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _highlightPulseController, curve: Curves.easeInOut));
+
+    // float: 0 → -10h 로 한 번만 올라옴 (easeOut으로 자연스럽게 감속)
+    _highlightFloatController = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
+
+    _highlightFloatAnimation = Tween<double>(
+      begin: 0.0,
+      end: -10.0,
+    ).animate(CurvedAnimation(parent: _highlightFloatController, curve: Curves.easeOut));
+
+    // highlightedItemIds 가 이미 있으면 즉시 float 실행
+    if (widget.highlightedItemIds.isNotEmpty) {
+      _highlightFloatController.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(HomeTabCardHand oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // highlightedItemIds 가 새로 들어오면 float 애니메이션 처음부터 재실행
+    if (widget.highlightedItemIds != oldWidget.highlightedItemIds) {
+      if (widget.highlightedItemIds.isNotEmpty) {
+        _highlightFloatController.forward(from: 0.0);
+      } else {
+        // 하이라이트 해제 시 원위치
+        _highlightFloatController.reverse();
+      }
+    }
   }
 
   void _initializeAnimations() {
@@ -196,6 +245,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   @override
   void dispose() {
     _iconAnimationController.dispose();
+    _highlightPulseController.dispose();
+    _highlightFloatController.dispose();
     _fanController.dispose();
     _pullController.dispose();
     _orbitController?.dispose();
@@ -260,8 +311,12 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     final transform = _calculateCardTransform(context, index, totalCards);
     final bool isPressed = _pressedCardId == cardId;
 
+    // AI 추천 하이라이트 여부
+    final bool isAiHighlighted = cardId != null && widget.highlightedItemIds.contains(cardId);
+
     return AnimatedBuilder(
-      animation: Listenable.merge([_fanAnimation, _pullAnimation]),
+      // float 컨트롤러도 함께 listen
+      animation: Listenable.merge([_fanAnimation, _pullAnimation, _highlightPulseAnimation, _highlightFloatAnimation]),
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
@@ -295,6 +350,53 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
           angle *= (1 - pullValue);
         }
 
+        // ── AI 하이라이트 float 적용 ─────────────────────────────────
+        // pulled/hovered 상태에서는 적용하지 않아 기존 드래그 인터랙션과 충돌 없음
+        // _highlightFloatAnimation: 0.0 → -10.h (위로 슥 한 번만 올라옴, easeOut)
+        if (isAiHighlighted && !isPulled && !isHovered) {
+          top += _highlightFloatAnimation.value.h;
+        }
+        // ────────────────────────────────────────────────────────────
+
+        // ── boxShadow 결정 ──────────────────────────────────────────
+        List<BoxShadow> cardBoxShadow;
+
+        if (isAiHighlighted && !isPulled && !isHovered) {
+          // AI 추천 카드: aiCardGradient 색상 기반 glow (펄스 애니메이션)
+          final pulse = _highlightPulseAnimation.value;
+          cardBoxShadow = [
+            BoxShadow(
+              color: AppColors.aiCardGradient[0].withValues(alpha: 0.75 * pulse),
+              offset: Offset((-1).w, (-1).h),
+              blurRadius: 6.r,
+              spreadRadius: 4.r,
+            ),
+            BoxShadow(
+              color: AppColors.aiCardGradient[1].withValues(alpha: 0.7 * pulse),
+              offset: Offset(0, 5.h),
+              blurRadius: 20.r,
+              spreadRadius: 4.r,
+            ),
+            BoxShadow(
+              color: AppColors.aiCardGradient[2].withValues(alpha: 0.65 * pulse),
+              offset: Offset((-3).w, (-3).h),
+              blurRadius: 10.r,
+              spreadRadius: 3.r,
+            ),
+          ];
+        } else {
+          // 기본 / hover / pulled 상태
+          cardBoxShadow = [
+            BoxShadow(
+              color: isHovered || isPulled ? AppColors.primaryBlack.withValues(alpha: 0.3) : AppColors.opacity20Black,
+              blurRadius: isHovered || isPulled ? 20 : 10,
+              spreadRadius: 0,
+              offset: Offset(0, isHovered || isPulled ? 10 : 5),
+            ),
+          ];
+        }
+        // ────────────────────────────────────────────────────────────
+
         return Positioned(
           left: left,
           top: top,
@@ -310,19 +412,16 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
               width: _cardWidth,
               height: _cardHeight,
               decoration: BoxDecoration(
-                // 선택된 카드에 노란색 테두리 추가
-                border: (isHovered || isPulled) ? Border.all(color: AppColors.primaryYellow, width: 2) : null,
+                border: (isHovered || isPulled)
+                    ? Border.all(color: AppColors.primaryYellow, width: 2)
+                    : isAiHighlighted
+                    ? Border.all(
+                        color: AppColors.aiCardGradient[1].withValues(alpha: _highlightPulseAnimation.value),
+                        width: 1.5.w,
+                      )
+                    : null,
                 borderRadius: BorderRadius.circular((10 * scale * _cardHeight / 326.h).r),
-                boxShadow: [
-                  BoxShadow(
-                    color: isHovered || isPulled
-                        ? AppColors.primaryBlack.withValues(alpha: 0.3)
-                        : AppColors.opacity20Black,
-                    blurRadius: isHovered || isPulled ? 20 : 10,
-                    spreadRadius: 0,
-                    offset: Offset(0, isHovered || isPulled ? 10 : 5),
-                  ),
-                ],
+                boxShadow: cardBoxShadow,
               ),
               child: RequestManagementItemCardWidget(
                 card: RequestManagementItemCard(

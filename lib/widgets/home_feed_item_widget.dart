@@ -6,14 +6,16 @@ import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
-import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
+import 'package:romrom_fe/widgets/home_feed_ai_sort_button.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -31,7 +33,10 @@ class HomeFeedItemWidget extends StatefulWidget {
   final HomeFeedItem item;
   final bool showBlur;
 
-  const HomeFeedItemWidget({super.key, required this.item, required this.showBlur});
+  /// AI 추천 버튼 탭 시 추천 itemId 상위 3개를 전달하는 콜백
+  final void Function(List<String> itemIds)? onAiRecommend;
+
+  const HomeFeedItemWidget({super.key, required this.item, required this.showBlur, this.onAiRecommend});
 
   @override
   State<HomeFeedItemWidget> createState() => _HomeFeedItemWidgetState();
@@ -44,6 +49,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   late bool _isLiked;
   late int _likeCount;
   bool _isLiking = false; // 좋아요 API 중복 호출 방지
+  bool _isAiLoading = false; // AI 추천 API 호출 중 여부
+  bool _isAiButtonActive = false; // AI 추천 버튼 활성화F
 
   @override
   void initState() {
@@ -73,6 +80,37 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       }
     } catch (e) {
       debugPrint('좋아요 상태 조회 실패: $e');
+    }
+  }
+
+  /// AI 추천 버튼 탭 핸들러
+  Future<void> _handleAiSortTap() async {
+    if (_isAiLoading || widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) return;
+
+    setState(() {
+      _isAiLoading = true;
+      _isAiButtonActive = true;
+    });
+    try {
+      debugPrint('AI 물품 정렬 리스트 요청');
+      final response = await TradeApi().getAiRecommendItemList(TradeRequest(takeItemId: widget.item.itemUuid));
+
+      // 상위 3개 itemId 추출
+      final items = response.itemPage?.content ?? [];
+      final topIds = items.take(3).map((item) => item.itemId).whereType<String>().toList();
+
+      debugPrint('AI 추천 상위 3개 itemId: $topIds, ${items.length}');
+
+      // 상위 컴포넌트로 전달
+      if (mounted) {
+        widget.onAiRecommend?.call(topIds);
+      }
+    } catch (e) {
+      debugPrint('AI 추천 요청 실패: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isAiLoading = false);
+      }
     }
   }
 
@@ -389,7 +427,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
                         SizedBox(height: 14.h),
 
-                        HomeFeedAiTag(isActive: _useAiPrice),
+                        // AI 추천 버튼 - 로딩 중일 때 비활성화
+                        HomeFeedAiSortButton(
+                          isActive: _isAiButtonActive,
+                          onTap: _isAiLoading ? null : _handleAiSortTap,
+                        ),
                       ],
                     ),
                   ),

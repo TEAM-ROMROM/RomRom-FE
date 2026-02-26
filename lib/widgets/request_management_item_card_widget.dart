@@ -56,28 +56,29 @@ class RequestManagementItemCardWidget extends StatelessWidget {
               strokeAlign: BorderSide.strokeAlignOutside,
             ),
             color: AppColors.textColorWhite,
-            boxShadow: card.aiPrice
-                ? [
-                    BoxShadow(
-                      color: AppColors.aiCardGradient[0],
-                      offset: Offset((-1 * scaleFactor).w, (-1 * scaleFactor).h),
-                      blurRadius: (4 * scaleFactor).r,
-                      spreadRadius: (5 * scaleFactor).r,
-                    ),
-                    BoxShadow(
-                      color: AppColors.aiCardGradient[1],
-                      offset: Offset(0, (5 * scaleFactor).h),
-                      blurRadius: (25 * scaleFactor).r,
-                      spreadRadius: (5 * scaleFactor).r,
-                    ),
-                    BoxShadow(
-                      color: AppColors.aiCardGradient[2],
-                      offset: Offset((-5 * scaleFactor).w, (-5 * scaleFactor.h)),
-                      blurRadius: (10 * scaleFactor).r,
-                      spreadRadius: (5 * scaleFactor).r,
-                    ),
-                  ]
-                : [const BoxShadow(color: AppColors.itemCardShadow, offset: Offset(4, 4), blurRadius: 10)],
+            // boxShadow: card.aiPrice
+            //     ? [
+            //         BoxShadow(
+            //           color: AppColors.aiCardGradient[0],
+            //           offset: Offset((-1 * scaleFactor).w, (-1 * scaleFactor).h),
+            //           blurRadius: (4 * scaleFactor).r,
+            //           spreadRadius: (5 * scaleFactor).r,
+            //         ),
+            //         BoxShadow(
+            //           color: AppColors.aiCardGradient[1],
+            //           offset: Offset(0, (5 * scaleFactor).h),
+            //           blurRadius: (25 * scaleFactor).r,
+            //           spreadRadius: (5 * scaleFactor).r,
+            //         ),
+            //         BoxShadow(
+            //           color: AppColors.aiCardGradient[2],
+            //           offset: Offset((-5 * scaleFactor).w, (-5 * scaleFactor.h)),
+            //           blurRadius: (10 * scaleFactor).r,
+            //           spreadRadius: (5 * scaleFactor).r,
+            //         ),
+            //       ]
+            //     : [const BoxShadow(color: AppColors.itemCardShadow, offset: Offset(4, 4), blurRadius: 10)],
+            boxShadow: const [BoxShadow(color: AppColors.itemCardShadow, offset: Offset(4, 4), blurRadius: 10)],
 
             backgroundBlendMode: BlendMode.srcOver,
           ),

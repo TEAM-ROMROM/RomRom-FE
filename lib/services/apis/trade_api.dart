@@ -230,4 +230,32 @@ class TradeApi {
 
     return tradeResponse.tradeRequestHistoryExists ?? false;
   }
+
+  /// 물품 AI 추천 정렬
+  /// `POST /api/trade/get`
+  Future<TradeResponse> getAiRecommendItemList(TradeRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/trade/get/recommend';
+    late TradeResponse tradeResponse;
+
+    final Map<String, dynamic> fields = {'takeItemId': request.takeItemId};
+
+    http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        // 여기서는 호출되지 않음 - 아래에서 직접 처리
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      tradeResponse = TradeResponse.fromJson(responseData);
+      debugPrint('물품 AI 추천 정렬 요청 성공');
+    } else {
+      throw Exception('물품 AI 추천 정렬 요청 실패: ${response.statusCode}');
+    }
+
+    return tradeResponse;
+  }
 }
