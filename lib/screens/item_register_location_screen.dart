@@ -116,7 +116,7 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
                             if (!_mapControllerCompleter.isCompleted) {
                               _mapControllerCompleter.complete(controller);
                               // 현재 위치 추적 활성화 (파란색 점 표시)
-                              await controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+                              controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
                             }
                           },
                           onCameraIdle: () async {
@@ -211,7 +211,7 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
                         );
 
                         // 현재 위치 추적 활성화 (파란색 점 표시)
-                        await controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+                        controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
 
                         // 현재 위치 업데이트
                         setState(() {

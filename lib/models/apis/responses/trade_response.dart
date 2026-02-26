@@ -56,7 +56,7 @@ class TradeRequestHistory extends BaseEntity {
   Map<String, dynamic> toJson() => _$TradeRequestHistoryToJson(this);
 }
 
-/// Paged<TradeRequestHistory>
+/// `Paged<TradeRequestHistory>`
 @JsonSerializable(explicitToJson: true)
 class PagedTradeRequestHistory {
   @JsonKey(fromJson: _tradeHistoryListFromJson, toJson: _tradeHistoryListToJson)
@@ -71,7 +71,7 @@ class PagedTradeRequestHistory {
   Map<String, dynamic> toJson() => _$PagedTradeRequestHistoryToJson(this);
 }
 
-/// Paged<Item>
+/// `Paged<Item>`
 @JsonSerializable(explicitToJson: true)
 class PagedItem {
   @JsonKey(fromJson: _itemsFromJson, toJson: _itemsToJson)

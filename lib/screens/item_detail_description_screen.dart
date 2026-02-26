@@ -454,7 +454,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                       right: 0,
                       child: ValueListenableBuilder<int>(
                         valueListenable: currentIndexVN,
-                        builder: (_, current, __) {
+                        builder: (_, current, _) {
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(
@@ -609,7 +609,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                         splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
                                         child: ValueListenableBuilder<bool>(
                                           valueListenable: isLikedVN,
-                                          builder: (_, liked, __) {
+                                          builder: (_, liked, _) {
                                             return SizedBox.square(
                                               dimension: 56.w, // 리플/터치 캔버스
                                               child: Center(
@@ -634,7 +634,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                 SizedBox(height: 2.h),
                                 ValueListenableBuilder<int>(
                                   valueListenable: likeCountVN,
-                                  builder: (_, likeCount, __) {
+                                  builder: (_, likeCount, _) {
                                     return Text(likeCount.toString(), style: CustomTextStyles.p2);
                                   },
                                 ),
