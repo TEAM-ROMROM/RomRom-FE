@@ -18,20 +18,13 @@ class ItemRegisterLocationScreen extends StatefulWidget {
   final void Function(LocationAddress)? onLocationSelected;
   final VoidCallback? onClose;
   final LocationAddress? initialLocation; // 이전에 선택한 위치
-  const ItemRegisterLocationScreen({
-    super.key,
-    this.onLocationSelected,
-    this.onClose,
-    this.initialLocation,
-  });
+  const ItemRegisterLocationScreen({super.key, this.onLocationSelected, this.onClose, this.initialLocation});
 
   @override
-  State<ItemRegisterLocationScreen> createState() =>
-      _ItemRegisterLocationScreenState();
+  State<ItemRegisterLocationScreen> createState() => _ItemRegisterLocationScreenState();
 }
 
-class _ItemRegisterLocationScreenState
-    extends State<ItemRegisterLocationScreen> {
+class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen> {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
   NLatLng? _selectedPosition; // 핀이 가리키는 선택된 위치
@@ -51,10 +44,7 @@ class _ItemRegisterLocationScreenState
     if (widget.initialLocation != null &&
         widget.initialLocation!.latitude != null &&
         widget.initialLocation!.longitude != null) {
-      final initialPosition = NLatLng(
-        widget.initialLocation!.latitude!,
-        widget.initialLocation!.longitude!,
-      );
+      final initialPosition = NLatLng(widget.initialLocation!.latitude!, widget.initialLocation!.longitude!);
       setState(() {
         _currentPosition = initialPosition;
         _selectedPosition = initialPosition;
@@ -106,10 +96,7 @@ class _ItemRegisterLocationScreenState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const OnboardingTitleHeader(
-            title: '거래 희망 위치',
-            subtitle: '공개된 공간을 선택하면 안전하게 거래할 수 있어요',
-          ),
+          const OnboardingTitleHeader(title: '거래 희망 위치', subtitle: '공개된 공간을 선택하면 안전하게 거래할 수 있어요'),
           Expanded(
             child: Stack(
               children: [
@@ -119,32 +106,22 @@ class _ItemRegisterLocationScreenState
                       ? const Center(child: CircularProgressIndicator())
                       : NaverMap(
                           options: NaverMapViewOptions(
-                            initialCameraPosition: NCameraPosition(
-                              target: _currentPosition!,
-                              zoom: 15,
-                            ),
+                            initialCameraPosition: NCameraPosition(target: _currentPosition!, zoom: 15),
                             logoAlign: NLogoAlign.leftBottom,
-                            logoMargin: NEdgeInsets.fromEdgeInsets(
-                              EdgeInsets.only(left: 24.w, bottom: 137.h),
-                            ),
+                            logoMargin: NEdgeInsets.fromEdgeInsets(EdgeInsets.only(left: 24.w, bottom: 137.h)),
                             indoorEnable: true,
-                            locationButtonEnable:
-                                false, // 기본 위치 버튼 비활성화하고 커스텀 버튼 사용
+                            locationButtonEnable: false, // 기본 위치 버튼 비활성화하고 커스텀 버튼 사용
                           ),
                           onMapReady: (controller) async {
                             if (!_mapControllerCompleter.isCompleted) {
                               _mapControllerCompleter.complete(controller);
                               // 현재 위치 추적 활성화 (파란색 점 표시)
-                              await controller.setLocationTrackingMode(
-                                NLocationTrackingMode.noFollow,
-                              );
+                              await controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
                             }
                           },
                           onCameraIdle: () async {
-                            final controller =
-                                await _mapControllerCompleter.future;
-                            final position = await controller
-                                .getCameraPosition();
+                            final controller = await _mapControllerCompleter.future;
+                            final position = await controller.getCameraPosition();
                             await _updateAddress(position.target);
                           },
                         ),
@@ -152,9 +129,7 @@ class _ItemRegisterLocationScreenState
                 // 중앙 핀 표시
                 Center(
                   child: Container(
-                    margin: EdgeInsets.only(
-                      bottom: 40.h,
-                    ), // 핀의 끝부분이 정확한 위치를 가리키도록 조정
+                    margin: EdgeInsets.only(bottom: 40.h), // 핀의 끝부분이 정확한 위치를 가리키도록 조정
                     child: Shadex(
                       shadowColor: AppColors.opacity20Black,
                       shadowBlurRadius: 2.0,
@@ -180,8 +155,7 @@ class _ItemRegisterLocationScreenState
                             _isLoading = true; // 로딩 시작
                           });
                           // 선택된 위치의 정확한 좌표로 LocationAddress 업데이트
-                          if (_selectedAddress != null &&
-                              _selectedPosition != null) {
+                          if (_selectedAddress != null && _selectedPosition != null) {
                             final updatedAddress = LocationAddress(
                               siDo: _selectedAddress!.siDo,
                               siGunGu: _selectedAddress!.siGunGu,
@@ -223,24 +197,17 @@ class _ItemRegisterLocationScreenState
                       final controller = await _mapControllerCompleter.future;
 
                       // 현재 위치 다시 가져오기
-                      final position = await _locationService
-                          .getCurrentPosition();
+                      final position = await _locationService.getCurrentPosition();
                       if (position != null) {
-                        final newPosition = _locationService.positionToLatLng(
-                          position,
-                        );
+                        final newPosition = _locationService.positionToLatLng(position);
 
                         // 지도를 현재 위치로 이동
                         await controller.updateCamera(
-                          NCameraUpdate.fromCameraPosition(
-                            NCameraPosition(target: newPosition, zoom: 15),
-                          ),
+                          NCameraUpdate.fromCameraPosition(NCameraPosition(target: newPosition, zoom: 15)),
                         );
 
                         // 현재 위치 추적 활성화 (파란색 점 표시)
-                        await controller.setLocationTrackingMode(
-                          NLocationTrackingMode.noFollow,
-                        );
+                        await controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
 
                         // 현재 위치 업데이트
                         setState(() {

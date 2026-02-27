@@ -37,15 +37,11 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
         children: [
           SizedBox(height: 1.h),
           // 카테고리 칩 표시
-          Expanded(
-            child: SingleChildScrollView(child: _buildCategoryChips(context)),
-          ),
+          Expanded(child: SingleChildScrollView(child: _buildCategoryChips(context))),
 
           // 완료 버튼 - CategoryCompletionButton 위젯으로 변경
           Padding(
-            padding: EdgeInsets.only(
-              bottom: 63.h + MediaQuery.of(context).padding.bottom,
-            ),
+            padding: EdgeInsets.only(bottom: 63.h + MediaQuery.of(context).padding.bottom),
             child: Center(
               child: CompletionButton(
                 isEnabled: isSelectedCategories,
@@ -63,17 +59,12 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                       isFirstLogin: userInfo.isFirstLogin ?? true,
                       isFirstItemPosted: userInfo.isFirstItemPosted ?? false,
                       isItemCategorySaved: true, // 카테고리 저장 완료 상태로 설정
-                      isMemberLocationSaved:
-                          userInfo.isMemberLocationSaved ?? false,
-                      isMarketingInfoAgreed:
-                          userInfo.isMarketingInfoAgreed ?? false,
-                      isRequiredTermsAgreed:
-                          userInfo.isRequiredTermsAgreed ?? false,
+                      isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+                      isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+                      isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
                       isCoachMarkShown: false, // 명시적으로 false 설정
                     );
-                    debugPrint(
-                      '온보딩 완료: isItemCategorySaved=true, isCoachMarkShown=false로 설정됨',
-                    );
+                    debugPrint('온보딩 완료: isItemCategorySaved=true, isCoachMarkShown=false로 설정됨');
 
                     // FCM 토큰 발급 및 저장
                     await FirebaseService().handleFcmToken();
@@ -83,11 +74,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                   } catch (e) {
                     debugPrint("Error: $e");
                     if (mounted) {
-                      CommonSnackBar.show(
-                        context: context,
-                        message: '카테고리 저장에 실패했습니다: $e',
-                        type: SnackBarType.error,
-                      );
+                      CommonSnackBar.show(context: context, message: '카테고리 저장에 실패했습니다: $e', type: SnackBarType.error);
                     }
                   } finally {
                     if (mounted) {
@@ -108,9 +95,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
     return Wrap(
       spacing: 8.0.w,
       runSpacing: 12.0.h,
-      children: ItemCategories.values
-          .map((category) => _buildCategoryChip(context, category))
-          .toList(),
+      children: ItemCategories.values.map((category) => _buildCategoryChip(context, category)).toList(),
     );
   }
 
@@ -122,9 +107,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
         category.label,
         style: CustomTextStyles.p2.copyWith(
           fontSize: adjustedFontSize(context, 14.0),
-          color: isSelected
-              ? AppColors.textColorBlack
-              : AppColors.textColorWhite,
+          color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
           wordSpacing: -0.32.w,
         ),
       ),
@@ -135,9 +118,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
       backgroundColor: AppColors.primaryBlack,
       shape: RoundedRectangleBorder(
         side: BorderSide(
-          color: isSelected
-              ? AppColors.primaryYellow
-              : AppColors.textColorWhite,
+          color: isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
           strokeAlign: BorderSide.strokeAlignOutside,
           width: 1.0.w,
         ),
@@ -146,8 +127,7 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
       checkmarkColor: Colors.transparent,
       showCheckmark: false,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      onSelected: (bool selected) =>
-          _toggleCategorySelection(category.id, selected),
+      onSelected: (bool selected) => _toggleCategorySelection(category.id, selected),
     );
   }
 

@@ -43,8 +43,7 @@ class CompletionButton extends StatelessWidget {
     // 버튼 배경 색 결정
     final Color backgroundColor = effectiveEnabled
         ? enabledBackgroundColor ?? AppColors.primaryYellow
-        : disabledBackgroundColor ??
-              AppColors.primaryYellow.withValues(alpha: 0.3);
+        : disabledBackgroundColor ?? AppColors.primaryYellow.withValues(alpha: 0.3);
 
     // 버튼 문구 색 결정
     final Color textColor = effectiveEnabled
@@ -52,9 +51,7 @@ class CompletionButton extends StatelessWidget {
         : disabledTextColor ?? AppColors.textColorBlack.withValues(alpha: 0.7);
 
     // 버튼 문구  결정
-    final TextStyle buttonTextStyle = CustomTextStyles.p1.copyWith(
-      color: textColor,
-    );
+    final TextStyle buttonTextStyle = CustomTextStyles.p1.copyWith(color: textColor);
 
     // 버튼 highlightColor와 splashColor는 backgroundColor를 어둡게 한 색상으로 설정
     final Color highlightColor = darkenBlend(backgroundColor);
@@ -69,9 +66,7 @@ class CompletionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(10.r),
           child: InkWell(
             onTap: effectiveEnabled ? enabledOnPressed : disabledOnPressed,
-            customBorder: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.r),
-            ),
+            customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
             highlightColor: highlightColor,
             splashColor: splashColor,
             borderRadius: BorderRadius.circular(10.r),
@@ -87,12 +82,7 @@ class CompletionButton extends StatelessWidget {
                         ),
                       ),
                     )
-                  : Text(
-                      buttonText,
-                      style: buttonTextStyle,
-                      textAlign: TextAlign.center,
-                      softWrap: false,
-                    ),
+                  : Text(buttonText, style: buttonTextStyle, textAlign: TextAlign.center, softWrap: false),
             ),
           ),
         ),
