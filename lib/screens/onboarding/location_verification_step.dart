@@ -24,11 +24,12 @@ class LocationVerificationStep extends StatefulWidget {
 class _LocationVerificationStepState extends State<LocationVerificationStep> {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
-  String currentAdress = '';
+  String currentAddress = '';
   String siDo = '';
   String siGunGu = '';
   String eupMyoenDong = '';
   String? ri;
+  bool _isVerifying = false;
   final Completer<NaverMapController> mapControllerCompleter = Completer();
 
   @override
@@ -93,7 +94,7 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: 20.0.h),
-                Text('현재 위치가 $currentAdress 이내에 있어요', style: CustomTextStyles.p2),
+                Text('현재 위치가 $currentAddress 이내에 있어요', style: CustomTextStyles.p2),
                 SizedBox(height: 16.0.h),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 12.0.h),
@@ -110,6 +111,7 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
                   child: Center(
                     child: CompletionButton(
                       isEnabled: true,
+                      isLoading: _isVerifying,
                       enabledOnPressed: () => _onVerifyLocationPressed(),
                       buttonText: '위치 인증하기',
                     ),
@@ -124,8 +126,10 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
   }
 
   Future<void> _onVerifyLocationPressed() async {
-    if (_currentPosition != null) {
-      try {
+    if (_isVerifying) return;
+    setState(() => _isVerifying = true);
+    try {
+      if (_currentPosition != null) {
         // 위치 정보가 비어있는지 확인
         if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
           await getAddressByNaverApi(_currentPosition!);
@@ -148,9 +152,13 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
 
         // 다음 단계로 이동
         widget.onNext();
-      } catch (e) {
-        if (!mounted) return;
-        CommonSnackBar.show(context: context, message: '위치 저장에 실패했습니다: $e', type: SnackBarType.error);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '위치 저장에 실패했습니다: $e', type: SnackBarType.error);
+    } finally {
+      if (mounted) {
+        setState(() => _isVerifying = false);
       }
     }
   }
@@ -178,7 +186,7 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
         siGunGu = addressInfo.siGunGu;
         eupMyoenDong = addressInfo.eupMyoenDong;
         ri = addressInfo.ri;
-        currentAdress = addressInfo.currentAddress;
+        currentAddress = addressInfo.currentAddress;
       });
     }
   }

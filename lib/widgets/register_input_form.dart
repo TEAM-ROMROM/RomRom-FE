@@ -27,6 +27,7 @@ import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 /// 물품 등록 입력 폼 위젯
@@ -883,143 +884,136 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     controller: locationController,
                     forceValidate: _forceValidateAll,
                     onTap: () async {
-                      final result = await Navigator.of(context).push<LocationAddress>(
-                        MaterialPageRoute(
-                          builder: (_) => ItemRegisterLocationScreen(
-                            initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
-                            onLocationSelected: (address) {
-                              debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
-                              setState(() {
-                                locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-                                // 위치 좌표 저장
-                                _latitude = address.latitude;
-                                _longitude = address.longitude;
-                              });
-                              debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
-                            },
-                          ),
+                      await context.navigateTo<LocationAddress>(
+                        screen: ItemRegisterLocationScreen(
+                          initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
+                          onLocationSelected: (address) {
+                            debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
+                            setState(() {
+                              locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                              // 위치 좌표 저장
+                              _latitude = address.latitude;
+                              _longitude = address.longitude;
+                            });
+                            debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
+                          },
                         ),
                       );
-                      // Navigator.pop으로만 돌아온 경우도 처리
-                      if (result != null) {
-                        locationController.text = '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
-                      }
                     },
                   ),
                   spacing: 32,
                 ),
 
                 // 등록 완료 버튼
-                IgnorePointer(
-                  ignoring: _isLoading,
-                  child: CompletionButton(
-                    isEnabled: isFormValid,
-                    buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
-                    enabledOnPressed: () async {
-                      // 모든 필드 강제 검증
-                      if (!isFormValid) {
-                        setState(() {
-                          _forceValidateAll = true;
-                          _hasCategoryBeenTouched = true;
-                          _hasConditionBeenTouched = true;
-                          _hasTradeOptionBeenTouched = true;
-                          _hasImageBeenTouched = true;
-                        });
-                        return;
-                      }
+                CompletionButton(
+                  isEnabled: isFormValid,
+                  isLoading: _isLoading,
+                  buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
+                  enabledOnPressed: () async {
+                    // 모든 필드 강제 검증
+                    if (!isFormValid) {
+                      setState(() {
+                        _forceValidateAll = true;
+                        _hasCategoryBeenTouched = true;
+                        _hasConditionBeenTouched = true;
+                        _hasTradeOptionBeenTouched = true;
+                        _hasImageBeenTouched = true;
+                      });
+                      return;
+                    }
 
-                      if (_longitude == null || _latitude == null) {
+                    if (_longitude == null || _latitude == null) {
+                      CommonSnackBar.show(
+                        context: context,
+                        message: ItemTextFieldPhrase.location.errorText,
+                        type: SnackBarType.info,
+                      );
+                      return;
+                    }
+
+                    try {
+                      debugPrint('물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      final itemRequest = ItemRequest(
+                        itemId: widget.isEditMode ? widget.item?.itemId : null,
+                        itemName: titleController.text.trim(),
+                        itemDescription: descriptionController.text.trim(),
+                        itemCategory: selectedCategory!.serverName,
+                        itemCondition: selectedItemConditionTypes.isNotEmpty
+                            ? selectedItemConditionTypes.first.serverName
+                            : null,
+                        itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
+                        itemPrice: int.parse(priceController.text.replaceAll(',', '')),
+                        itemCustomTags: [],
+                        itemImageUrls: imageUrls,
+                        longitude: _longitude,
+                        latitude: _latitude,
+                        isAiPredictedPrice: useAiPrice,
+                      );
+
+                      if (widget.isEditMode) {
+                        // 수정 모드
+                        await ItemApi().updateItem(itemRequest);
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                          CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
+                        }
+                      } else {
+                        // 등록 모드
+                        final response = await ItemApi().postItem(itemRequest);
+                        debugPrint('====================================');
+                        debugPrint(
+                          '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
+                        );
+                        debugPrint('====================================');
+
+                        final userInfo = UserInfo();
+                        await userInfo.getUserInfo();
+
+                        if (response.isFirstItemPosted == true) {
+                          debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
+                          await userInfo.saveLoginStatus(
+                            isFirstLogin: false,
+                            isFirstItemPosted: true,
+                            isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
+                            isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+                            isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+                            isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
+                            isCoachMarkShown: userInfo.isCoachMarkShown,
+                          );
+                        }
+
+                        if (context.mounted) {
+                          final resultData = {
+                            if (response.item?.itemId != null) 'itemId': response.item!.itemId,
+                            'isFirstItemPosted': response.isFirstItemPosted ?? false,
+                          };
+                          debugPrint('Navigator.pop 전달 데이터: $resultData');
+
+                          // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
+                          Navigator.of(context).pop(resultData);
+
+                          CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
+                        }
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
                         CommonSnackBar.show(
                           context: context,
-                          message: ItemTextFieldPhrase.location.errorText,
-                          type: SnackBarType.info,
+                          message: '물품 $modeText에 실패했습니다: $e',
+                          type: SnackBarType.error,
                         );
-                        return;
                       }
-
-                      try {
-                        debugPrint('물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
-                        setState(() {
-                          _isLoading = true;
-                        });
-                        final itemRequest = ItemRequest(
-                          itemId: widget.isEditMode ? widget.item?.itemId : null,
-                          itemName: titleController.text.trim(),
-                          itemDescription: descriptionController.text.trim(),
-                          itemCategory: selectedCategory!.serverName,
-                          itemCondition: selectedItemConditionTypes.isNotEmpty
-                              ? selectedItemConditionTypes.first.serverName
-                              : null,
-                          itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
-                          itemPrice: int.parse(priceController.text.replaceAll(',', '')),
-                          itemCustomTags: [],
-                          itemImageUrls: imageUrls,
-                          longitude: _longitude,
-                          latitude: _latitude,
-                          isAiPredictedPrice: useAiPrice,
-                        );
-
-                        if (widget.isEditMode) {
-                          // 수정 모드
-                          await ItemApi().updateItem(itemRequest);
-                          if (context.mounted) {
-                            Navigator.of(context).pop();
-                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
-                          }
-                        } else {
-                          // 등록 모드
-                          final response = await ItemApi().postItem(itemRequest);
-                          debugPrint('====================================');
-                          debugPrint(
-                            '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
-                          );
-                          debugPrint('====================================');
-
-                          final userInfo = UserInfo();
-                          await userInfo.getUserInfo();
-
-                          if (response.isFirstItemPosted == true) {
-                            debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
-                            await userInfo.saveLoginStatus(
-                              isFirstLogin: false,
-                              isFirstItemPosted: true,
-                              isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
-                              isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
-                              isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
-                              isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
-                              isCoachMarkShown: userInfo.isCoachMarkShown,
-                            );
-                          }
-
-                          if (context.mounted) {
-                            final resultData = {
-                              if (response.item?.itemId != null) 'itemId': response.item!.itemId,
-                              'isFirstItemPosted': response.isFirstItemPosted ?? false,
-                            };
-                            debugPrint('Navigator.pop 전달 데이터: $resultData');
-
-                            // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
-                            Navigator.of(context).pop(resultData);
-
-                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
-                          }
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          CommonSnackBar.show(
-                            context: context,
-                            message: '물품 $modeText에 실패했습니다: $e',
-                            type: SnackBarType.error,
-                          );
-                        }
-                      }
+                    } finally {
                       if (mounted) {
                         setState(() {
                           _isLoading = false;
                         });
                       }
-                    },
-                  ),
+                    }
+                  },
                 ),
                 SizedBox(height: 24.h),
               ],

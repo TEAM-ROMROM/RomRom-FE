@@ -22,6 +22,7 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
   final List<int> selectedCategories = [];
   final memberApi = MemberApi();
   bool _isLoading = true;
+  bool _isSaving = false;
 
   bool get isSelectedCategories => selectedCategories.isNotEmpty;
 
@@ -85,7 +86,10 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
                     child: Center(
                       child: CompletionButton(
                         isEnabled: isSelectedCategories,
+                        isLoading: _isSaving,
                         enabledOnPressed: () async {
+                          if (_isSaving) return;
+                          setState(() => _isSaving = true);
                           try {
                             final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
 
@@ -99,12 +103,16 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
                             }
                           } catch (e) {
                             debugPrint('선호 카테고리 저장 실패: $e');
-                            if (context.mounted) {
+                            if (mounted) {
                               CommonSnackBar.show(
                                 context: context,
                                 message: '카테고리 저장에 실패했습니다: $e',
                                 type: SnackBarType.error,
                               );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() => _isSaving = false);
                             }
                           }
                         },
