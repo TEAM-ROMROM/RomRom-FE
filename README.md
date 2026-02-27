@@ -10,7 +10,7 @@
 <!-- AUTO-VERSION-SECTION: DO NOT EDIT MANUALLY -->
 <!-- 수정하지마세요 자동으로 동기화 됩니다 -->
 <!-- AUTO-VERSION-SECTION: DO NOT EDIT MANUALLY -->
-## 최신 버전 : v1.9.32 (2026-02-25)
+## 최신 버전 : v1.9.33 (2026-02-27)
 
 [전체 업데이트 내역 보기](CHANGELOG.md)
 
