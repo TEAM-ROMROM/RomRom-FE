@@ -77,9 +77,7 @@ class CompletionButton extends StatelessWidget {
                       height: 24.h,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.w,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.textColorWhite,
-                        ),
+                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
                       ),
                     )
                   : Text(buttonText, style: buttonTextStyle, textAlign: TextAlign.center, softWrap: false),
