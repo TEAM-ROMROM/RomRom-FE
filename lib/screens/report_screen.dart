@@ -68,17 +68,10 @@ class _ReportScreenState extends State<ReportScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: 40.h),
-                    Text(
-                      '신고 사유',
-                      style: CustomTextStyles.h2.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text('신고 사유', style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600)),
                     SizedBox(height: 24.h),
                     // 신고 사유 리스트
-                    ...ItemReportReason.values.map(
-                      (reason) => _buildReasonRow(reason),
-                    ),
+                    ...ItemReportReason.values.map((reason) => _buildReasonRow(reason)),
                     if (_selectedReasons.contains(ItemReportReason.etc)) ...[
                       Container(
                         width: 345.w,
@@ -87,12 +80,7 @@ class _ReportScreenState extends State<ReportScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.secondaryBlack1,
                           borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(
-                            color: AppColors.textColorWhite.withValues(
-                              alpha: 0.3,
-                            ),
-                            width: 1.5.w,
-                          ),
+                          border: Border.all(color: AppColors.textColorWhite.withValues(alpha: 0.3), width: 1.5.w),
                         ),
                         child: TextField(
                           controller: _extraCommentController,
@@ -106,9 +94,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             counterText: '', // 기본 counter 숨김
                             hintText: '신고 사유를 상세하게 적어주세요',
                             hintStyle: CustomTextStyles.p2.copyWith(
-                              color: AppColors.textColorWhite.withValues(
-                                alpha: 0.4,
-                              ),
+                              color: AppColors.textColorWhite.withValues(alpha: 0.4),
                             ),
                           ),
                         ),
@@ -120,9 +106,7 @@ class _ReportScreenState extends State<ReportScreen> {
                           '${_extraCommentController.text.length}/300',
                           style: CustomTextStyles.p3.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textColorWhite.withValues(
-                              alpha: 0.5,
-                            ),
+                            color: AppColors.textColorWhite.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -151,9 +135,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   final api = ReportApi();
                   await api.reportItem(
                     itemId: widget.itemId,
-                    itemReportReasons: _selectedReasons
-                        .map((e) => e.id)
-                        .toSet(),
+                    itemReportReasons: _selectedReasons.map((e) => e.id).toSet(),
                     extraComment: _extraCommentController.text.trim(),
                   );
                 } catch (e) {
@@ -219,9 +201,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 },
                 activeColor: AppColors.primaryYellow,
                 checkColor: AppColors.primaryBlack,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),
                 side: BorderSide(color: AppColors.primaryYellow, width: 1.w),
               ),
             ),
