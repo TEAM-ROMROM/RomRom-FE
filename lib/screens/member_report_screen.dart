@@ -24,6 +24,7 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
   // 선택된 신고 사유 집합
   final Set<MemberReportReason> _selectedReasons = {};
   late final TextEditingController _extraCommentController;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -67,10 +68,17 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: 40.h),
-                    Text('신고 사유', style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      '신고 사유',
+                      style: CustomTextStyles.h2.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     SizedBox(height: 24.h),
                     // 신고 사유 리스트
-                    ...MemberReportReason.values.map((reason) => _buildReasonRow(reason)),
+                    ...MemberReportReason.values.map(
+                      (reason) => _buildReasonRow(reason),
+                    ),
                     if (_selectedReasons.contains(MemberReportReason.etc)) ...[
                       Container(
                         width: 345.w,
@@ -79,7 +87,12 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.secondaryBlack1,
                           borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(color: AppColors.textColorWhite.withValues(alpha: 0.3), width: 1.5.w),
+                          border: Border.all(
+                            color: AppColors.textColorWhite.withValues(
+                              alpha: 0.3,
+                            ),
+                            width: 1.5.w,
+                          ),
                         ),
                         child: TextField(
                           controller: _extraCommentController,
@@ -93,7 +106,9 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                             counterText: '', // 기본 counter 숨김
                             hintText: '신고 사유를 상세하게 적어주세요',
                             hintStyle: CustomTextStyles.p2.copyWith(
-                              color: AppColors.textColorWhite.withValues(alpha: 0.4),
+                              color: AppColors.textColorWhite.withValues(
+                                alpha: 0.4,
+                              ),
                             ),
                           ),
                         ),
@@ -105,7 +120,9 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                           '${_extraCommentController.text.length}/300',
                           style: CustomTextStyles.p3.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textColorWhite.withValues(alpha: 0.5),
+                            color: AppColors.textColorWhite.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                         ),
                       ),
@@ -125,13 +142,18 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
             bottom: 97.h,
             child: CompletionButton(
               isEnabled: _selectedReasons.isNotEmpty,
+              isLoading: _isSubmitting,
               buttonText: '신고 하기',
               enabledOnPressed: () async {
+                if (_isSubmitting) return;
+                setState(() => _isSubmitting = true);
                 try {
                   final api = ReportApi();
                   await api.reportMember(
                     targetMemberId: widget.memberId,
-                    memberReportReasons: _selectedReasons.map((e) => e.id).toSet(),
+                    memberReportReasons: _selectedReasons
+                        .map((e) => e.id)
+                        .toSet(),
                     extraComment: _extraCommentController.text.trim(),
                   );
                 } catch (e) {
@@ -139,12 +161,17 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                   // 에러 코드 파싱
                   final messageForUser = ErrorUtils.getErrorMessage(e);
 
+                  if (!mounted) return;
                   await CommonModal.error(
                     context: context,
                     message: messageForUser,
                     onConfirm: () => Navigator.of(context).pop(),
                   );
                   return;
+                } finally {
+                  if (mounted) {
+                    setState(() => _isSubmitting = false);
+                  }
                 }
 
                 if (!mounted) return;
@@ -187,7 +214,9 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                 onChanged: (_) => _toggleReason(reason),
                 activeColor: AppColors.primaryYellow,
                 checkColor: AppColors.primaryBlack,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
                 side: BorderSide(color: AppColors.primaryYellow, width: 1.w),
               ),
             ),

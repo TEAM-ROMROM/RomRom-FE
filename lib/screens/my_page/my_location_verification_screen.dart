@@ -16,17 +16,20 @@ class MyLocationVerificationScreen extends StatefulWidget {
   const MyLocationVerificationScreen({super.key});
 
   @override
-  State<MyLocationVerificationScreen> createState() => _MyLocationVerificationScreenState();
+  State<MyLocationVerificationScreen> createState() =>
+      _MyLocationVerificationScreenState();
 }
 
-class _MyLocationVerificationScreenState extends State<MyLocationVerificationScreen> {
+class _MyLocationVerificationScreenState
+    extends State<MyLocationVerificationScreen> {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
-  String currentAdress = '';
+  String currentAddress = '';
   String siDo = '';
   String siGunGu = '';
   String eupMyoenDong = '';
   String? ri;
+  bool _isVerifying = false;
   final Completer<NaverMapController> mapControllerCompleter = Completer();
 
   @override
@@ -56,9 +59,14 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
                     children: [
                       NaverMap(
                         options: NaverMapViewOptions(
-                          initialCameraPosition: NCameraPosition(target: _currentPosition!, zoom: 15),
+                          initialCameraPosition: NCameraPosition(
+                            target: _currentPosition!,
+                            zoom: 15,
+                          ),
                           logoAlign: NLogoAlign.leftBottom,
-                          logoMargin: NEdgeInsets.fromEdgeInsets(EdgeInsets.only(left: 24.w, bottom: 20.h)),
+                          logoMargin: NEdgeInsets.fromEdgeInsets(
+                            EdgeInsets.only(left: 24.w, bottom: 20.h),
+                          ),
                           indoorEnable: true,
                           locationButtonEnable: false,
                           consumeSymbolTapEvents: false,
@@ -69,7 +77,9 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
                             mapControllerCompleter.complete(controller);
                           }
                           await getAddressByNaverApi(_currentPosition!);
-                          await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+                          await controller.setLocationTrackingMode(
+                            NLocationTrackingMode.follow,
+                          );
                         },
                       ),
                       // 현재 위치 버튼
@@ -78,8 +88,11 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
                         left: 24.w,
                         child: CurrentLocationButton(
                           onTap: () async {
-                            final controller = await mapControllerCompleter.future;
-                            await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+                            final controller =
+                                await mapControllerCompleter.future;
+                            await controller.setLocationTrackingMode(
+                              NLocationTrackingMode.follow,
+                            );
                           },
                           iconSize: 24.h,
                         ),
@@ -97,21 +110,34 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         SizedBox(height: 20.0.h),
-                        Text('현재 위치가 $currentAdress 이내에 있어요', style: CustomTextStyles.p2),
+                        Text(
+                          '현재 위치가 $currentAddress 이내에 있어요',
+                          style: CustomTextStyles.p2,
+                        ),
                         SizedBox(height: 16.0.h),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 12.0.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20.0.w,
+                            vertical: 12.0.h,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.locationVerificationAreaLabel,
                             borderRadius: BorderRadius.circular(100.0.r),
                           ),
-                          child: Text("$siDo $siGunGu $eupMyoenDong", style: CustomTextStyles.p2),
+                          child: Text(
+                            "$siDo $siGunGu $eupMyoenDong",
+                            style: CustomTextStyles.p2,
+                          ),
                         ),
                         Expanded(child: Container()),
                         Padding(
-                          padding: EdgeInsets.only(bottom: 76.h + MediaQuery.of(context).padding.bottom),
+                          padding: EdgeInsets.only(
+                            bottom:
+                                76.h + MediaQuery.of(context).padding.bottom,
+                          ),
                           child: CompletionButton(
                             isEnabled: true,
+                            isLoading: _isVerifying,
                             buttonText: '위치 인증하기',
                             enabledOnPressed: () => _onVerifyLocationPressed(),
                           ),
@@ -126,15 +152,21 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
   }
 
   Future<void> _onVerifyLocationPressed() async {
-    if (_currentPosition != null) {
-      try {
+    if (_isVerifying) return;
+    setState(() => _isVerifying = true);
+    try {
+      if (_currentPosition != null) {
         // 위치 정보가 비어있는지 확인
         if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
           await getAddressByNaverApi(_currentPosition!);
 
           if (!mounted) return;
           if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
-            CommonSnackBar.show(context: context, message: '위치 정보를 가져오지 못했습니다. 다시 시도해주세요.', type: SnackBarType.info);
+            CommonSnackBar.show(
+              context: context,
+              message: '위치 정보를 가져오지 못했습니다. 다시 시도해주세요.',
+              type: SnackBarType.info,
+            );
             return;
           }
         }
@@ -148,11 +180,23 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
           ri: ri,
         );
         if (!mounted) return;
-        CommonSnackBar.show(context: context, message: '위치 인증이 완료되었습니다.', type: SnackBarType.success);
+        CommonSnackBar.show(
+          context: context,
+          message: '위치 인증이 완료되었습니다.',
+          type: SnackBarType.success,
+        );
         Navigator.pop(context);
-      } catch (e) {
-        if (!mounted) return;
-        CommonSnackBar.show(context: context, message: '위치 저장에 실패했습니다: $e', type: SnackBarType.error);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CommonSnackBar.show(
+        context: context,
+        message: '위치 저장에 실패했습니다: $e',
+        type: SnackBarType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isVerifying = false);
       }
     }
   }
@@ -172,7 +216,9 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
 
   // 주소 정보 로드 메서드
   Future<void> _loadAddressInfo(NLatLng position) async {
-    final addressInfo = await _locationService.getAddressFromCoordinates(position);
+    final addressInfo = await _locationService.getAddressFromCoordinates(
+      position,
+    );
 
     if (addressInfo != null) {
       setState(() {
@@ -180,7 +226,7 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
         siGunGu = addressInfo.siGunGu;
         eupMyoenDong = addressInfo.eupMyoenDong;
         ri = addressInfo.ri;
-        currentAdress = addressInfo.currentAddress;
+        currentAddress = addressInfo.currentAddress;
       });
     }
   }
