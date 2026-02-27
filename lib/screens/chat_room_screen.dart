@@ -64,6 +64,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   String _errorMessage = '';
   String? _myMemberId;
 
+  String get _myId => _myMemberId!;
+  dynamic get _opponent => chatRoom.getOpponent(_myId);
+  String get _opponentNickname => chatRoom.getOpponentNickname(_myId);
+  String? get _opponentId => _opponent?.memberId;
+  bool get _isOpponentDeleted => _opponent?.accountStatus == AccountStatus.deleteAccount.serverName;
+
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
 
@@ -218,7 +224,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         context: context,
         isShown: () => _deleteModalShown,
         markShown: () => _deleteModalShown = true,
-        shouldShow: () => chatRoom.getOpponent(_myMemberId!)?.accountStatus == AccountStatus.deleteAccount.serverName,
+        shouldShow: () => _isOpponentDeleted,
         message: '존재하지 않거나 탈퇴한 사용자입니다.',
         onConfirm: () {
           Navigator.of(context).pop(); // 모달만 닫기
@@ -459,12 +465,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 앱바 빌더
   CommonAppBar _buildAppBar() {
+    final opponentId = _opponentId;
+    final opponentNickname = _opponentNickname;
+
     return CommonAppBar(
-      title: chatRoom.getOpponentNickname(_myMemberId!),
+      title: opponentNickname,
       onTitleTap: () {
-        final opponent = chatRoom.getOpponent(_myMemberId!);
-        if (opponent?.memberId != null) {
-          context.navigateTo(screen: ProfileScreen(memberId: opponent!.memberId!));
+        if (opponentId != null) {
+          context.navigateTo(screen: ProfileScreen(memberId: opponentId));
         }
       },
       onBackPressed: () {
@@ -476,9 +484,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              chatRoom.getOpponentNickname(_myMemberId!),
-              style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
+            SizedBox(
+              width: 240.w,
+              child: Text(
+                opponentNickname,
+                textAlign: TextAlign.center,
+                style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, overflow: TextOverflow.ellipsis),
+              ),
             ),
             Padding(
               padding: EdgeInsets.only(top: 8.h),
@@ -511,9 +523,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 icon: AppIcons.report,
                 title: '신고하기',
                 onTap: () async {
-                  context.navigateTo(
-                    screen: MemberReportScreen(memberId: chatRoom.getOpponent(_myMemberId!)!.memberId!),
-                  );
+                  context.navigateTo(screen: MemberReportScreen(memberId: opponentId!));
                 },
                 showDividerAfter: true,
               ),
@@ -533,7 +543,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       Navigator.of(context).pop(); // 모달 닫기
                     },
                     onConfirm: () async {
-                      final opponentId = chatRoom.getOpponent(_myMemberId!)?.memberId;
+                      final opponentId = _opponentId;
                       if (opponentId == null) {
                         if (context.mounted) {
                           Navigator.of(context).pop();
