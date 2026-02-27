@@ -35,11 +35,19 @@ class NotificationItemData {
 /// 알림 아이템 위젯
 class NotificationItemWidget extends StatelessWidget {
   final NotificationItemData data;
+  final bool isMuted;
   final VoidCallback? onMuteTap;
   final VoidCallback? onDeleteTap;
   final VoidCallback? onTap;
 
-  const NotificationItemWidget({super.key, required this.data, this.onMuteTap, this.onDeleteTap, this.onTap});
+  const NotificationItemWidget({
+    super.key,
+    required this.data,
+    this.isMuted = false,
+    this.onMuteTap,
+    this.onDeleteTap,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -114,8 +122,8 @@ class NotificationItemWidget extends StatelessWidget {
             items: [
               ContextMenuItem(
                 id: 'mute',
-                icon: AppIcons.alertOff,
-                title: '알림 끄기',
+                icon: isMuted ? AppIcons.alert : AppIcons.alertOff,
+                title: isMuted ? '알림 켜기' : '알림 끄기',
                 onTap: () {
                   if (onMuteTap != null) onMuteTap!();
                 },
