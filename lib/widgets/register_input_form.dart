@@ -98,11 +98,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         }
         return;
       }
-      final List<XFile> picked = await _picker.pickMultiImage();
-
-      // 사용자가 취소했거나 선택 없음
-      if (picked.isEmpty) return;
-
       // 남은 슬록 계산 (최대 10장)
       final int remain = (kMaxImages - imageFiles.length).clamp(0, kMaxImages);
       if (remain == 0) {
@@ -111,6 +106,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         }
         return;
       }
+
+      final List<XFile> picked = await _picker.pickMultiImage(limit: remain);
+
+      // 사용자가 취소했거나 선택 없음
+      if (picked.isEmpty) return;
 
       // 초과 선택 분리
       final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
