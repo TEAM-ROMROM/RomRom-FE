@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' hide UserInfo, User;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:flutter/services.dart';
@@ -37,9 +38,42 @@ class KakaoAuthService {
     }
   }
 
+  /// Firebase OIDC provider로 카카오 credential 생성 후 FirebaseAuth에 저장
+  /// Firebase 콘솔 → Authentication → Sign-in method → OpenID Connect 에서
+  Future<void> _signInWithFirebase(OAuthToken token) async {
+    try {
+      // Firebase 콘솔에서 등록한 OIDC provider ID (예: 'oidc.kakao')
+      final OAuthProvider provider = OAuthProvider('oidc.kakao');
+
+      // OIDC idToken + accessToken으로 credential 생성
+      final OAuthCredential credential = provider.credential(
+        idToken: token.idToken, // OIDC 활성화 시 발급되는 idToken
+        accessToken: token.accessToken, // 카카오 로그인에서 발급된 accessToken
+      );
+
+      // FirebaseAuth에 credential 저장 (로그인)
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      debugPrint('Firebase 로그인 성공: ${userCredential.user?.uid}');
+
+      // Firebase 유저 프로필에 카카오 ID + 닉네임 저장
+      final User kakaoUser = await UserApi.instance.me();
+      await userCredential.user?.updateProfile(
+        displayName: '${kakaoUser.id}${kakaoUser.kakaoAccount?.profile?.nickname}',
+      );
+      debugPrint('Firebase 프로필 업데이트 성공');
+    } catch (error) {
+      debugPrint('Firebase 로그인 실패: $error');
+      rethrow; // 상위에서 로그인 실패 처리할 수 있도록 rethrow
+    }
+  }
+
   /// 로그인 성공 후 후처리 함수
   Future<void> _handleLoginSuccess(OAuthToken token) async {
     debugPrint('카카오 로그인 성공: ${token.accessToken}');
+
+    // Firebase OIDC credential 저장
+    await _signInWithFirebase(token);
+
     await getKakaoUserInfo();
     await romAuthApi.signInWithSocial(socialPlatform: LoginPlatforms.kakao.platformName);
   }
