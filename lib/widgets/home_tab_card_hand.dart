@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/physics.dart';
@@ -102,6 +103,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   late AnimationController _highlightFloatController; // 위로 슥 올라오는 단방향
   late Animation<double> _highlightFloatAnimation;
 
+  // AI 추천 카드 재정렬 애니메이션
+  // - _reorderAnimController: 카드가 old 위치 → new 위치로 이동하는 보간 제어
+  // - _preReorderTransforms: 재정렬 직전 각 카드의 transform 스냅샷 (cardId → transform map)
+  late AnimationController _reorderAnimController;
+  late Animation<double> _reorderAnimation;
+  Map<String, Map<String, dynamic>> _preReorderTransforms = {};
+  int _reorderGeneration = 0;
+
   @override
   void initState() {
     super.initState();
@@ -141,9 +150,20 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
       end: -10.0,
     ).animate(CurvedAnimation(parent: _highlightFloatController, curve: Curves.easeOut));
 
-    // highlightedItemIds 가 이미 있으면 즉시 float 실행
+    // 재정렬 위치 보간 (700ms: 350ms 집결 + 350ms 팬아웃)
+    _reorderAnimController = AnimationController(duration: const Duration(milliseconds: 700), vsync: this);
+    _reorderAnimation = CurvedAnimation(parent: _reorderAnimController, curve: Curves.linear);
+    _reorderAnimController.addStatusListener((status) {
+      if ((status == AnimationStatus.completed || status == AnimationStatus.dismissed) && mounted) {
+        setState(() => _preReorderTransforms = {});
+      }
+    });
+
+    // highlightedItemIds가 이미 있으면 재정렬 포함 전체 시퀀스 실행
     if (widget.highlightedItemIds.isNotEmpty) {
-      _highlightFloatController.forward();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _reorderForAiHighlight(widget.highlightedItemIds);
+      });
     }
   }
 
@@ -151,13 +171,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   void didUpdateWidget(HomeTabCardHand oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // highlightedItemIds 가 새로 들어오면 float 애니메이션 처음부터 재실행
-    if (widget.highlightedItemIds != oldWidget.highlightedItemIds) {
+    if (!listEquals(widget.highlightedItemIds, oldWidget.highlightedItemIds)) {
       if (widget.highlightedItemIds.isNotEmpty) {
-        _highlightFloatController.forward(from: 0.0);
+        // 재정렬 + orbit 복귀 + float 애니메이션 순서로 실행
+        _reorderForAiHighlight(widget.highlightedItemIds);
       } else {
-        // 하이라이트 해제 시 원위치
-        _highlightFloatController.reverse();
+        // 하이라이트 해제 시 float 슥 내려가기 (600ms easeInOut), 재정렬 애니메이션 역방향
+        _highlightFloatController.animateTo(0.0, duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
+        _reorderAnimController.reverse();
       }
     }
   }
@@ -225,6 +246,83 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     return true;
   }
 
+  /// AI 추천 카드를 덱 앞쪽으로 재정렬하고 애니메이션을 실행한다.
+  ///
+  /// 동작 순서:
+  /// 1. 추천 카드 중 _cards에 없는 것을 _allCards에서 찾아 _cards에 추가
+  /// 2. 현재 카드 위치 스냅샷 저장 (_preReorderTransforms)
+  /// 3. _cards를 [추천카드..., 나머지...] 순으로 재구성
+  /// 4. orbit 중앙 복귀 + 재정렬 보간 동시 시작 (400ms)
+  /// 5. 450ms 후 float 애니메이션 시작
+  void _reorderForAiHighlight(List<String> highlightedItemIds) {
+    if (highlightedItemIds.isEmpty || !mounted) return;
+    if (_allCards.isEmpty) return;
+
+    final generation = ++_reorderGeneration;
+
+    // 카드 7장 이상일 때만 카드 재정렬 + 집결/팬아웃 애니메이션 실행
+    // 7장 미만이면 카드 순서/위치 변경 없이 그 자리에서 float + glow만 적용
+    if (_allCards.length >= 7) {
+      // 1. 추천 카드 중 _cards에 없는 것 강제 로드
+      var workingCards = List<Item>.from(_cards);
+      for (final id in highlightedItemIds) {
+        if (!workingCards.any((c) => c.itemId == id)) {
+          final idx = _allCards.indexWhere((c) => c.itemId == id);
+          if (idx != -1) {
+            workingCards.add(_allCards[idx]);
+          }
+        }
+      }
+
+      // 2. _cards 재정렬: 추천 카드 먼저, 나머지 뒤
+      final highlighted = workingCards.where((c) => highlightedItemIds.contains(c.itemId)).toList();
+      final others = workingCards.where((c) => !highlightedItemIds.contains(c.itemId)).toList();
+      final reordered = [...highlighted, ...others];
+
+      // 3. 카드 인덱스(순서) 변화 여부 확인
+      final currentIds = workingCards.map((c) => c.itemId).toList();
+      final reorderedIds = reordered.map((c) => c.itemId).toList();
+      final orderChanged = !listEquals(currentIds, reorderedIds);
+
+      if (orderChanged) {
+        // 순서가 바뀔 때만: 현재 위치 스냅샷 저장 → 집결/팬아웃 애니메이션 실행
+        final snapshot = <String, Map<String, dynamic>>{};
+        for (int i = 0; i < workingCards.length; i++) {
+          final id = workingCards[i].itemId;
+          if (id != null) {
+            snapshot[id] = _calculateCardTransform(context, i, workingCards.length);
+          }
+        }
+
+        // 재정렬 후 _cards가 _allCards의 연속 슬라이스가 아니므로 lazy load 비활성화
+        setState(() {
+          _preReorderTransforms = snapshot;
+          _cards = reordered;
+          _leftLoadedCount = 0;
+          _rightLoadedCount = 0;
+        });
+
+        // orbit → 첫 번째 카드가 화면 왼쪽 끝에 오도록 + 재정렬 보간 동시 시작 (400ms)
+        final targetOrbit = _getHighlightOrbitAngle(reordered.length);
+        _orbitAccumulated = targetOrbit;
+        _orbitController?.animateTo(targetOrbit, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
+        _reorderAnimController.forward(from: 0.0);
+
+        // 750ms 후 float 시작 (집결+팬아웃 완료 직후)
+        Future.delayed(const Duration(milliseconds: 750), () {
+          if (!mounted || generation != _reorderGeneration) return;
+          _highlightFloatController.forward(from: 0.0);
+        });
+      } else {
+        // 순서 변화 없음: 집결/팬아웃 생략, 그 자리에서 float만 실행
+        _highlightFloatController.forward(from: 0.0);
+      }
+    } else {
+      // 7장 미만: 카드 순서/위치 변경 없이 그 자리에서 float만 실행
+      _highlightFloatController.forward(from: 0.0);
+    }
+  }
+
   // 각도 제한 계산 메서드 추가
   double _getMinOrbitAngle() {
     if (_cards.isEmpty || _cards.length <= 1) return -math.pi / 2;
@@ -242,11 +340,27 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     return -math.pi / 2 + (midIndex * _deckStepAngle);
   }
 
+  /// 재정렬 후 첫 번째 카드(index 0)가 화면 왼쪽 끝에 보이도록 orbit 각도를 역산
+  double _getHighlightOrbitAngle(int totalCards) {
+    if (totalCards <= 0) return -math.pi / 2;
+    final size = MediaQuery.of(context).size;
+    final double centerX = size.width / 2;
+    // index 0 카드 중앙을 화면 왼쪽에서 cardWidth/2 + 8w 위치에 배치 (카드 왼쪽 끝 ≈ 8w)
+    final double targetCardCenterX = _cardWidth / 2 + 8.w;
+    final double dx = targetCardCenterX - centerX; // 음수 (왼쪽)
+    // cos(cardAngle) = dx / deckRadius, 왼쪽(음수)이므로 -acos 사용
+    final double cardAngle0 = -math.acos((dx / _deckRadius).clamp(-1.0, 1.0));
+    final double midIndex = (totalCards - 1) / 2;
+    final double orbitAngle = cardAngle0 + midIndex * _deckStepAngle;
+    return orbitAngle.clamp(_getMinOrbitAngle(), _getMaxOrbitAngle());
+  }
+
   @override
   void dispose() {
     _iconAnimationController.dispose();
     _highlightPulseController.dispose();
     _highlightFloatController.dispose();
+    _reorderAnimController.dispose();
     _fanController.dispose();
     _pullController.dispose();
     _orbitController?.dispose();
@@ -316,7 +430,13 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
     return AnimatedBuilder(
       // float 컨트롤러도 함께 listen
-      animation: Listenable.merge([_fanAnimation, _pullAnimation, _highlightPulseAnimation, _highlightFloatAnimation]),
+      animation: Listenable.merge([
+        _fanAnimation,
+        _pullAnimation,
+        _highlightPulseAnimation,
+        _highlightFloatAnimation,
+        _reorderAnimation,
+      ]),
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
@@ -329,6 +449,47 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
         double left = lerpDouble(fanOriginLeft, transform['left'] as double, staggeredFanValue)!;
         double top = lerpDouble(fanOriginTop, transform['top'] as double, staggeredFanValue)!;
         double angle = lerpDouble(0.0, transform['angle'] as double, staggeredFanValue)!;
+
+        // ── 재정렬 보간 적용 ─────────────────────────────────────────
+        // 추천 카드 2개 이상: 전체 카드가 중앙 집결(0→0.4) → 겹쳐서 홀드(0.4→0.6) → 팬아웃(0.6→1.0)
+        // 추천 카드 1개: 직선 이동 (집결 애니메이션 생략)
+        if (cardId != null && _preReorderTransforms.containsKey(cardId)) {
+          final oldTransform = _preReorderTransforms[cardId]!;
+          final oldLeft = oldTransform['left'] as double;
+          final oldTop = oldTransform['top'] as double;
+          final oldAngle = oldTransform['angle'] as double;
+          final t = _reorderAnimation.value;
+
+          if (widget.highlightedItemIds.length > 1) {
+            // 집결 기준점: 팬 애니메이션 시작점 (화면 중앙 하단)
+            final gatherX = fanOriginLeft;
+            final gatherY = fanOriginTop;
+            if (t <= 0.4) {
+              // 1단계: 현재 위치 → 중앙 집결 (easeIn, 빠르게 빨려듦)
+              final gatherT = Curves.easeIn.transform(t / 0.4);
+              left = lerpDouble(oldLeft, gatherX, gatherT)!;
+              top = lerpDouble(oldTop, gatherY, gatherT)!;
+              angle = lerpDouble(oldAngle, 0.0, gatherT)!; // 중앙으로 모일 때 1자 정렬
+            } else if (t <= 0.6) {
+              // 2단계: 한 점에 완전히 겹쳐서 홀드
+              left = gatherX;
+              top = gatherY;
+              angle = 0.0; // 1자 정렬 유지
+            } else {
+              // 3단계: 중앙 → 최종 위치 팬아웃 (easeOut, 부드럽게 착지)
+              final expandT = Curves.easeOut.transform((t - 0.6) / 0.4);
+              left = lerpDouble(gatherX, left, expandT)!;
+              top = lerpDouble(gatherY, top, expandT)!;
+              angle = lerpDouble(0.0, angle, expandT)!; // 팬아웃 시 최종 각도로 복귀
+            }
+          } else {
+            // 추천 카드 1개: 직선 이동
+            left = lerpDouble(oldLeft, left, t)!;
+            top = lerpDouble(oldTop, top, t)!;
+          }
+        }
+        // ────────────────────────────────────────────────────────────
+
         double scale = 1.0;
 
         if (!isPulled) {

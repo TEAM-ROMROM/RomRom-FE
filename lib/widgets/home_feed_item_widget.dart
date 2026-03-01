@@ -83,8 +83,15 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     }
   }
 
-  /// AI 추천 버튼 탭 핸들러
+  /// AI 추천 버튼 탭 핸들러 (on/off 토글)
   Future<void> _handleAiSortTap() async {
+    // 토글 OFF: 이미 활성화된 경우 하이라이트 해제
+    if (_isAiButtonActive) {
+      setState(() => _isAiButtonActive = false);
+      widget.onAiRecommend?.call([]);
+      return;
+    }
+
     if (_isAiLoading || widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) return;
 
     setState(() {
@@ -107,6 +114,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       }
     } catch (e) {
       debugPrint('AI 추천 요청 실패: $e');
+      // 실패 시 버튼 비활성화
+      if (mounted) setState(() => _isAiButtonActive = false);
     } finally {
       if (mounted) {
         setState(() => _isAiLoading = false);

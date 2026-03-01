@@ -422,6 +422,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     setState(() {
       _isLoadingMore = true;
+      _aiHighlightedItemIds = []; // 추가 로드 시 AI 하이라이트 초기화
     });
 
     try {
@@ -623,10 +624,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
-                if (!_isBlurShown && index < _feedItems.length) {
+                if (!_isBlurShown) {
                   setState(() {
-                    _currentFeedIndex = index;
-                    // 피드 변경 시 AI 하이라이트 초기화
+                    if (index < _feedItems.length) _currentFeedIndex = index;
+                    // 피드 변경 시 AI 하이라이트 초기화 (로딩 인디케이터 페이지 포함)
                     _aiHighlightedItemIds = [];
                   });
                 }
