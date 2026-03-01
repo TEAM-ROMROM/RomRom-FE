@@ -54,6 +54,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   double? _latitude;
   double? _longitude;
   LocationAddress? _selectedAddress;
+  bool _isAiPriceLoading = false; // AI 가격 예측 로딩 상태
 
   // 처음 포커스 받았는지 추적을 위한 변수
   bool _hasConditionBeenTouched = false;
@@ -211,6 +212,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   // ai 가격 측정 함수
   Future<void> _measureAiPrice() async {
+    setState(() => _isAiPriceLoading = true); // 로딩 시작
     try {
       final predictedPrice = await ItemApi().pricePredict(
         ItemRequest(
@@ -237,6 +239,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       if (context.mounted) {
         CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e', type: SnackBarType.error);
       }
+    } finally {
+      if (mounted) setState(() => _isAiPriceLoading = false); // 로딩 종료
     }
   }
 
@@ -863,7 +867,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 RegisterCustomTextField(
                   phrase: ItemTextFieldPhrase.price,
                   prefixText: '₩',
-                  readOnly: useAiPrice,
+                  readOnly: useAiPrice || _isAiPriceLoading, // 로딩 중에도 readOnly
                   maxLength: 11,
                   keyboardType: TextInputType.number,
                   controller: priceController,
@@ -871,6 +875,20 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   focusNode: _priceFocusNode,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                  // 로딩 중일 때 suffixIcon으로 스피너 표시
+                  suffixIcon: _isAiPriceLoading
+                      ? Padding(
+                          padding: EdgeInsets.all(12.w),
+                          child: SizedBox(
+                            width: 10.w,
+                            height: 10.w,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.w,
+                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryYellow),
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
 
                 // 거래 희망 위치 필드
