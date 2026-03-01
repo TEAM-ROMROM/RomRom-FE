@@ -911,11 +911,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
                 // 등록 완료 버튼
                 IgnorePointer(
-                  ignoring: _isLoading,
+                  ignoring: _isLoading || _loadingImageIndices.isNotEmpty,
                   child: CompletionButton(
                     isEnabled: isFormValid,
                     buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
                     enabledOnPressed: () async {
+                      // 이미지 업로드 중이면 제출 차단 (이중 안전장치)
+                      if (_loadingImageIndices.isNotEmpty) return;
+
                       // 모든 필드 강제 검증
                       if (!isFormValid) {
                         setState(() {
