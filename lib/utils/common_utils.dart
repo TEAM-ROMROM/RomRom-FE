@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
-import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import '../widgets/common/common_modal.dart';
 
@@ -139,20 +138,14 @@ String formatMessageTime(DateTime? dt) {
   return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
 }
 
-String getLastActivityTime(ChatRoom chatRoom) {
-  final lastActivity = chatRoom.getLastActivityTime();
-  final now = DateTime.now();
-  final difference = now.difference(lastActivity);
-
-  if (difference.inMinutes < 1) {
-    return '방금 전 활동';
-  } else if (difference.inMinutes < 60) {
-    return '${difference.inMinutes}분 전 활동';
-  } else if (difference.inHours < 24) {
-    return '${difference.inHours}시간 전 활동';
-  } else {
-    return '${difference.inDays}일 전 활동';
-  }
+// 마지막 활동 시간을 텍스트로 변환
+String getLastActivityTime(DateTime? lastActiveAt) {
+  if (lastActiveAt == null) return '';
+  final diff = DateTime.now().difference(lastActiveAt);
+  if (diff.inMinutes < 1) return '방금 전 활동';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}분 전 활동';
+  if (diff.inHours < 24) return '${diff.inHours}시간 전 활동';
+  return '${diff.inDays}일 전 활동';
 }
 
 // 색상을 어둡게 만드는 함수(버튼 highlight용)
