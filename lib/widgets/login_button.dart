@@ -40,7 +40,7 @@ class _LoginButtonState extends State<LoginButton> {
 
       switch (widget.platform) {
         case LoginPlatforms.kakao:
-          isSuccess = await kakaoAuthService.loginWithKakao();
+          isSuccess = await kakaoAuthService.loginWithKakao(context);
           break;
         case LoginPlatforms.google:
           isSuccess = await googleAuthService.logInWithGoogle();

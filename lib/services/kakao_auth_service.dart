@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart' hide UserInfo, User;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:flutter/services.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
@@ -38,17 +42,40 @@ class KakaoAuthService {
     }
   }
 
+  /// 카카오톡 미설치 시 스토어 이동 유도 다이얼로그
+  Future<void> _showKakaoTalkInstallDialog(BuildContext context) async {
+    CommonModal.confirm(
+      context: context,
+      message: '카카오 로그인을 사용하려면\n카카오톡 앱이 필요합니다.',
+      onCancel: () => Navigator.of(context).pop(),
+      onConfirm: () async {
+        Navigator.of(context).pop();
+        // 플랫폼에 따라 앱스토어 또는 플레이스토어로 이동
+        final Uri storeUri = Uri.parse(
+          Platform.isIOS
+              ? 'https://apps.apple.com/kr/app/id362057947' // 앱스토어
+              : 'https://play.google.com/store/apps/details?id=com.kakao.talk', // 플레이스토어
+        );
+        if (await canLaunchUrl(storeUri)) {
+          await launchUrl(storeUri, mode: LaunchMode.externalApplication);
+        }
+      },
+    );
+  }
+
   /// Firebase OIDC provider로 카카오 credential 생성 후 FirebaseAuth에 저장
-  /// Firebase 콘솔 → Authentication → Sign-in method → OpenID Connect 에서
+  ///
+  /// 카카오톡 앱 로그인만 사용하므로 idToken의 aud는 항상 네이티브 앱 키로 고정됨
+  /// Firebase 콘솔 OIDC Client ID = 카카오 네이티브 앱 키로 설정 필요
   Future<void> _signInWithFirebase(OAuthToken token) async {
     try {
-      // Firebase 콘솔에서 등록한 OIDC provider ID (예: 'oidc.kakao')
+      // Firebase 콘솔에서 등록한 OIDC provider ID
       final OAuthProvider provider = OAuthProvider('oidc.kakao');
 
       // OIDC idToken + accessToken으로 credential 생성
       final OAuthCredential credential = provider.credential(
-        idToken: token.idToken, // OIDC 활성화 시 발급되는 idToken
-        accessToken: token.accessToken, // 카카오 로그인에서 발급된 accessToken
+        idToken: token.idToken, // 카카오톡 앱 로그인 시 aud = 네이티브 앱 키
+        accessToken: token.accessToken,
       );
 
       // FirebaseAuth에 credential 저장 (로그인)
@@ -63,7 +90,7 @@ class KakaoAuthService {
       debugPrint('Firebase 프로필 업데이트 성공');
     } catch (error) {
       debugPrint('Firebase 로그인 실패: $error');
-      rethrow; // 상위에서 로그인 실패 처리할 수 있도록 rethrow
+      rethrow;
     }
   }
 
@@ -78,13 +105,17 @@ class KakaoAuthService {
     await romAuthApi.signInWithSocial(socialPlatform: LoginPlatforms.kakao.platformName);
   }
 
-  /// 카카오 로그인 (카톡앱 -> 카카오 계정 순서로 시도)
-  Future<bool> loginWithKakao() async {
-    if (await isKakaoTalkInstalled()) {
-      return await loginWithKakaoTalk(); // 로그인 결과 반환
-    } else {
-      return await loginWithKakaoAccount(); // 로그인 결과 반환
+  /// 카카오 로그인 (카카오톡 앱만 사용)
+  ///
+  /// 카카오톡 미설치 시 설치 유도 다이얼로그 표시 후 스토어로 이동
+  /// aud가 네이티브 앱 키로 고정되어 Firebase OIDC audience 불일치 문제 없음
+  Future<bool> loginWithKakao(BuildContext context) async {
+    if (!await isKakaoTalkInstalled()) {
+      // 카카오톡 미설치 시 설치 유도 다이얼로그 표시
+      await _showKakaoTalkInstallDialog(context);
+      return false;
     }
+    return await loginWithKakaoTalk();
   }
 
   /// 카카오톡 앱을 통한 로그인
@@ -99,19 +130,7 @@ class KakaoAuthService {
       if (error is PlatformException && error.code == 'CANCELED') {
         return false; // 사용자가 로그인 취소 시 false 반환
       }
-      return await loginWithKakaoAccount(); // 카카오 계정으로 로그인 시도 결과 반환
-    }
-  }
-
-  /// 카카오 계정으로 로그인
-  Future<bool> loginWithKakaoAccount() async {
-    try {
-      OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
-      await _handleLoginSuccess(token);
-      return true; // 성공 시 true 반환
-    } catch (error) {
-      debugPrint('카카오 계정으로 로그인 실패: $error');
-      return false; // 실패 시 false 반환
+      return false; // 카카오 계정 로그인 폴백 제거 (aud 불일치 방지)
     }
   }
 
