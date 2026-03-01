@@ -297,8 +297,8 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
             // 정적 제목
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 24.h),
-                child: Text('채팅', style: CustomTextStyles.h1),
+                padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 16.h),
+                child: Text('채팅', style: CustomTextStyles.h2),
               ),
             ),
 
