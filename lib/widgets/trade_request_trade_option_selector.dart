@@ -94,16 +94,11 @@ class _TradeOptionChipState extends State<_TradeOptionChip> {
         child: SizedBox(
           width: 80.w,
           height: 34.h,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: Center(
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOut,
-                style: CustomTextStyles.p2.copyWith(color: _pressed ? pressedText : baseText, letterSpacing: -0.32.sp),
-                child: Text(widget.label),
-              ),
-            ),
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+            style: CustomTextStyles.p2.copyWith(color: _pressed ? pressedText : baseText, letterSpacing: -0.32.sp),
+            child: Center(child: Text(widget.label)),
           ),
         ),
       ),
