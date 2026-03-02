@@ -356,6 +356,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   /// 이미지 선택 후 전송
   Future<void> _onPickImage() async {
+    // 키보드가 올라온 상태에서 사진 선택 시 입력창/키보드 겹침 방지
+    FocusScope.of(context).unfocus();
     try {
       final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
 
