@@ -359,16 +359,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     // 키보드가 올라온 상태에서 사진 선택 시 입력창/키보드 겹침 방지
     FocusScope.of(context).unfocus();
     try {
-      final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+      final List<XFile> picked = await _picker.pickMultiImage();
 
-      if (picked == null) {
+      if (picked.isEmpty) {
         // 사용자가 선택을 취소함
         return;
       }
 
       try {
         // 1) 선택된 이미지를 서버에 업로드
-        final uploadedImageUrls = await ImageApi().uploadImages([picked]);
+        final uploadedImageUrls = await ImageApi().uploadImages(picked);
         if (!mounted) return;
 
         // imageUrls가 비어있는 경우 처리 필요
@@ -377,9 +377,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           return;
         }
 
-        // 2) 업로드된 URL로 메시지 전송 (imageMessage는 입력필드의 텍스트 사용)
+        // 2) 업로드된 URL을 picked 순서대로 각각 별도 버블로 전송
+        // 텍스트는 첫 번째 이미지에만 첨부
         final textMessage = _messageController.text.trim();
-        await _sendImage(imageUrls: uploadedImageUrls, imageMessage: textMessage.isEmpty ? null : textMessage);
+        for (int i = 0; i < uploadedImageUrls.length; i++) {
+          if (!mounted) return;
+          await _sendImage(
+            imageUrls: [uploadedImageUrls[i]],
+            imageMessage: i == 0 && textMessage.isNotEmpty ? textMessage : null,
+          );
+        }
       } catch (e) {
         if (context.mounted) {
           CommonSnackBar.show(context: context, message: '이미지 전송에 실패했습니다: $e', type: SnackBarType.error);
