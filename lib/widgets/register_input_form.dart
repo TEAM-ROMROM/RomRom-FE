@@ -27,6 +27,7 @@ import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 /// 물품 등록 입력 폼 위젯
@@ -655,8 +656,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     maxLines: 6,
                     forceValidate: _forceValidateAll,
                     focusNode: _descriptionFocusNode,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => _priceFocusNode.requestFocus(),
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
                   ),
                 ),
 
@@ -883,27 +884,21 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     controller: locationController,
                     forceValidate: _forceValidateAll,
                     onTap: () async {
-                      final result = await Navigator.of(context).push<LocationAddress>(
-                        MaterialPageRoute(
-                          builder: (_) => ItemRegisterLocationScreen(
-                            initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
-                            onLocationSelected: (address) {
-                              debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
-                              setState(() {
-                                locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-                                // 위치 좌표 저장
-                                _latitude = address.latitude;
-                                _longitude = address.longitude;
-                              });
-                              debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
-                            },
-                          ),
+                      await context.navigateTo<LocationAddress>(
+                        screen: ItemRegisterLocationScreen(
+                          initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
+                          onLocationSelected: (address) {
+                            debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
+                            setState(() {
+                              locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                              // 위치 좌표 저장
+                              _latitude = address.latitude;
+                              _longitude = address.longitude;
+                            });
+                            debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
+                          },
                         ),
                       );
-                      // Navigator.pop으로만 돌아온 경우도 처리
-                      if (result != null) {
-                        locationController.text = '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
-                      }
                     },
                   ),
                   spacing: 32,
@@ -1015,11 +1010,12 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             type: SnackBarType.error,
                           );
                         }
-                      }
-                      if (mounted) {
-                        setState(() {
-                          _isLoading = false;
-                        });
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
                       }
                     },
                   ),

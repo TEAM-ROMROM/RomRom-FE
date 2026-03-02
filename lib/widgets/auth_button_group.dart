@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AuthButtonGroup extends StatelessWidget {
   final List<Widget> buttons;
@@ -7,6 +8,11 @@ class AuthButtonGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: buttons);
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (int i = 0; i < buttons.length; i++) ...[buttons[i], if (i < buttons.length - 1) SizedBox(height: 12.h)],
+      ],
+    );
   }
 }

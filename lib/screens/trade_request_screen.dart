@@ -14,6 +14,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -301,6 +302,18 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
   /// 거래방식 선택 및 요청
   Widget _buildTradeRequestStep() {
+    // 요청하기 버튼 색
+    Color requestButtonColor = _isSubmitting ? AppColors.primaryYellow.withValues(alpha: 0.5) : AppColors.primaryYellow;
+    // 요청하기 버튼 highlightColor
+    Color requestButtonHighlightColor = darkenBlend(requestButtonColor);
+    Color requestButtonSplashColor = requestButtonHighlightColor.withValues(alpha: 0.3);
+
+    // 취소 버튼 색
+    Color cancelButtonColor = AppColors.secondaryBlack1;
+    // 취소 버튼 highlightColor
+    Color cancelButtonHighlightColor = darkenBlend(AppColors.buttonHighlightColorGray);
+    Color cancelButtonSplashColor = darkenBlend(AppColors.buttonHighlightColorGray).withValues(alpha: 0.3);
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.0.w),
       child: Column(
@@ -378,13 +391,16 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                 flex: 1,
                 child: SizedBox(
                   height: 56.h,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      backgroundColor: AppColors.secondaryBlack1,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                  child: Material(
+                    color: cancelButtonColor,
+                    borderRadius: BorderRadius.circular(10.r),
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context),
+                      customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                      highlightColor: cancelButtonHighlightColor,
+                      splashColor: cancelButtonSplashColor,
+                      child: Center(child: Text('취소', style: CustomTextStyles.p1)),
                     ),
-                    child: Text('취소', style: CustomTextStyles.p1),
                   ),
                 ),
               ),
@@ -394,21 +410,24 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                 flex: 1,
                 child: SizedBox(
                   height: 56.h,
-                  child: TextButton(
-                    onPressed: _isSubmitting ? null : _submitTradeRequest,
-                    style: TextButton.styleFrom(
-                      backgroundColor: _isSubmitting
-                          ? AppColors.primaryYellow.withValues(alpha: 0.5)
-                          : AppColors.primaryYellow,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                  child: Material(
+                    color: requestButtonColor,
+                    borderRadius: BorderRadius.circular(10.r),
+                    child: InkWell(
+                      customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                      onTap: _isSubmitting ? null : _submitTradeRequest,
+                      highlightColor: requestButtonHighlightColor,
+                      splashColor: requestButtonSplashColor,
+                      child: Center(
+                        child: _isSubmitting
+                            ? SizedBox(
+                                width: 24.w,
+                                height: 24.h,
+                                child: const CircularProgressIndicator(color: AppColors.textColorBlack, strokeWidth: 2),
+                              )
+                            : Text('요청하기', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
+                      ),
                     ),
-                    child: _isSubmitting
-                        ? SizedBox(
-                            width: 24.w,
-                            height: 24.h,
-                            child: const CircularProgressIndicator(color: AppColors.textColorBlack, strokeWidth: 2),
-                          )
-                        : Text('요청하기', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
                   ),
                 ),
               ),

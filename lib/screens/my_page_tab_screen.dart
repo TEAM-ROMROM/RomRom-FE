@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -34,6 +35,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   String _nickname = '닉네임';
   String _location = '위치정보 없음';
   String? _profileUrl;
+  String? _accountStatus;
 
   @override
   void initState() {
@@ -54,6 +56,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
           // 프로필 이미지
           _profileUrl = memberResponse.member?.profileUrl;
+
+          // 계정 상태
+          _accountStatus = memberResponse.member?.accountStatus;
 
           // 위치 정보 (주소 조합)
           final location = memberResponse.memberLocation;
@@ -87,11 +92,30 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('마이페이지', style: CustomTextStyles.h1),
-                  GestureDetector(
-                    onTap: () {
-                      context.navigateTo(screen: const NotificationSettingsScreen());
-                    },
-                    child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+                  SizedBox.square(
+                    dimension: 32.w,
+                    child: OverflowBox(
+                      maxWidth: 56.w,
+                      maxHeight: 56.w,
+                      child: Material(
+                        color: AppColors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias, // 리플을 원형으로 클립
+                        child: InkResponse(
+                          onTap: () {
+                            context.navigateTo(screen: const NotificationSettingsScreen());
+                          },
+                          radius: 18.w,
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray,
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: SizedBox.square(
+                            dimension: 56.w,
+                            child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -178,7 +202,12 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
         child: Row(
           children: [
             // 프로필 이미지
-            UserProfileCircularAvatar(avatarSize: const Size(50, 50), profileUrl: _profileUrl, hasBorder: true),
+            UserProfileCircularAvatar(
+              avatarSize: const Size(50, 50),
+              profileUrl: _profileUrl,
+              hasBorder: true,
+              isDeleteAccount: _accountStatus == AccountStatus.deleteAccount.serverName,
+            ),
             SizedBox(width: 16.w),
 
             // 닉네임 및 장소
@@ -268,32 +297,16 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   }
 
   /// 회원 탈퇴 처리
-  void _handleDeleteMemberButtonTap(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.primaryBlack,
-        title: Text('회원 탈퇴', style: CustomTextStyles.h3),
-        content: Text('정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.', style: CustomTextStyles.p2),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('취소', style: CustomTextStyles.p2),
-          ),
-          TextButton(
-            onPressed: () => _confirmDeleteMember(dialogContext, context),
-            style: TextButton.styleFrom(foregroundColor: AppColors.warningRed),
-            child: Text('탈퇴하기', style: CustomTextStyles.p2.copyWith(color: AppColors.warningRed)),
-          ),
-        ],
-      ),
-    );
+  Future<void> _handleDeleteMemberButtonTap(BuildContext context) async {
+    final result = await context.showDeleteDialog(title: '회원 탈퇴', description: '정말 탈퇴하시겠습니까?', confirmText: '탈퇴하기');
+
+    if (result == true) {
+      await _confirmDeleteMember(context);
+    }
   }
 
   /// 회원 탈퇴 확인 후 처리
-  Future<void> _confirmDeleteMember(BuildContext dialogContext, BuildContext context) async {
-    Navigator.pop(dialogContext); // 다이얼로그 닫기
-
+  Future<void> _confirmDeleteMember(BuildContext context) async {
     // 회원 탈퇴 진행
     final memberApi = MemberApi();
     final isSuccess = await memberApi.deleteMember();

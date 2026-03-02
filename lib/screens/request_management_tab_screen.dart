@@ -305,7 +305,28 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
           return Padding(
             padding: EdgeInsets.only(bottom: 16.h),
             child: GestureDetector(
-              onTap: () {
+              onTap: () async {
+                // 거래완료 상태면 삭제 처리
+                if (request.tradeStatus == TradeStatus.traded.serverName) {
+                  try {
+                    await TradeApi().cancelTradeRequest(
+                      TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
+                    );
+                    if (mounted) {
+                      setState(() {
+                        _sentRequests.removeWhere((e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId);
+                      });
+                      CommonSnackBar.show(context: context, message: '삭제되었습니다.');
+                    }
+                  } catch (e) {
+                    debugPrint('거래완료 항목 삭제 실패: $e');
+                    if (mounted) {
+                      CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
+                    }
+                  }
+                  return;
+                }
+                // 기존 로직: 상세 페이지 이동
                 context.navigateTo(
                   screen: ItemDetailDescriptionScreen(
                     itemId: takeItem.itemId!, // 내가 요청 보낸 카드로 이동
@@ -352,17 +373,29 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   );
                 },
                 onCancelTap: () async {
-                  try {
-                    await TradeApi().cancelTradeRequest(
-                      TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                    );
-                  } catch (e) {
-                    debugPrint('요청 취소 실패: $e');
-                  }
-                  if (mounted) {
-                    setState(() {
-                      _sentRequests.removeAt(index); // Use the correct index here
-                    });
+                  final result = await context.showDeleteDialog(
+                    title: '거래 요청 취소',
+                    description: '거래 요청을 취소하시겠습니까?',
+                    confirmText: '확인',
+                  );
+
+                  if (result == true) {
+                    try {
+                      await TradeApi().cancelTradeRequest(
+                        TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
+                      );
+                      if (mounted) {
+                        setState(() {
+                          _sentRequests.removeAt(index);
+                        });
+                        CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
+                      }
+                    } catch (e) {
+                      debugPrint('요청 취소 실패: $e');
+                      if (mounted) {
+                        CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다', type: SnackBarType.error);
+                      }
+                    }
                   }
                 },
               ),
@@ -483,8 +516,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         ),
                         statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
                         toolbarHeight: 58.h,
-                        toggleHeight: 70.h,
-                        expandedExtra: 32.h, // 큰 제목/여백
+                        toggleHeight: 62.h,
+                        expandedExtra: 16.h, // 큰 제목/여백
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
@@ -493,7 +526,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // 1. 물품 카드 캐러셀 섹션 (받은 요청일 때만 표시)
-                          if (!_isRightSelected) ...[SizedBox(height: 10.h), _buildItemCardsCarousel()],
+                          if (!_isRightSelected) ...[SizedBox(height: 26.h), _buildItemCardsCarousel()],
 
                           // 2. 페이지 인디케이터 (받은 요청일 때만 표시)
                           if (!_isRightSelected) _buildPageIndicator(),
@@ -757,19 +790,31 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                               )
                             : TradeStatus.chatting,
                         onMenuTap: () async {
-                          try {
-                            await TradeApi().cancelTradeRequest(
-                              TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                            );
-                          } catch (e) {
-                            debugPrint('요청 취소 실패: $e');
-                          }
-                          if (mounted) {
-                            setState(() {
-                              _receivedRequests.removeWhere(
-                                (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
+                          final result = await context.showDeleteDialog(title: '거래 요청 삭제', description: '정말 삭제하시겠습니까?');
+
+                          if (result == true) {
+                            try {
+                              await TradeApi().cancelTradeRequest(
+                                TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
                               );
-                            });
+                              if (mounted) {
+                                setState(() {
+                                  _receivedRequests.removeWhere(
+                                    (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
+                                  );
+                                });
+                                CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
+                              }
+                            } catch (e) {
+                              debugPrint('요청 취소 실패: $e');
+                              if (mounted) {
+                                CommonSnackBar.show(
+                                  context: context,
+                                  message: '요청 삭제에 실패했습니다',
+                                  type: SnackBarType.error,
+                                );
+                              }
+                            }
                           }
                         },
                       ),

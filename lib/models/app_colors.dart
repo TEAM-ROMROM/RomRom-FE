@@ -72,8 +72,15 @@ class AppColors {
   static const Color textColorWhite = Color(0xFFFFFFFF);
   static const Color textColorBlack = Color(0xFF000000);
 
+  // 버튼 하이라이트 색상
+  static const Color buttonHighlightColorGray = Color(0xFF55585E);
+
   // 투명 색상
   static const Color transparent = Color(0x00000000);
+
+  // 프로필 이미지 테두리 및 배경
+  static const Color profileBorderGray = Color(0xFF77787D); // 프로필 이미지 테두리 색상 - 기본 프로필
+  static const Color profileBorderWhite = Color(0xFFFFFFFF); // 프로필 이미지 테두리 색상 - 기본 프로필 외
 
   // 아이템 옵션 메뉴
   static const Color itemOptionsMenuRedText = Color(0xFFFF5656); // 삭제 텍스트 색상
@@ -147,6 +154,9 @@ class AppColors {
   // 요청 관리 화면
   static const Color tradeStatusIsChatting = Color(0x80FFC300); // 채팅 중 색상
   static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
+
+  // 알림 화면
+  static const Color notificationUnReadIndicator = Color(0xB334353D); // 읽지 않은 알림 표시 색상
 
   // 거래 요청 화면 - 배경 그라데이션
   static const List<Color> tradeRequestBackgroundGradient = [

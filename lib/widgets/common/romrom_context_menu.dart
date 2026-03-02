@@ -8,6 +8,7 @@ import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 class ContextMenuItem {
   final String id;
@@ -75,6 +76,7 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
   late Animation<double> _animation;
   final GlobalKey _triggerKey = GlobalKey();
   bool _isMenuOpen = false;
+  bool _isItemHandling = false;
 
   @override
   void initState() {
@@ -126,10 +128,15 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
         menuBorderRadius: widget.menuBorderRadius ?? BorderRadius.circular(10.r),
         menuBackgroundColor: widget.menuBackgroundColor ?? AppColors.primaryBlack,
         itemHeight: widget.itemHeight.h,
-        onItemSelected: (id) {
+        onItemSelected: (ContextMenuItem item) {
+          if (_isItemHandling) return;
+          _isItemHandling = true;
+
           _closeMenu();
-          widget.onItemSelected?.call(id);
+          item.onTap();
+          widget.onItemSelected?.call(item.id); // 외부 콜백도 1번
         },
+
         onDismiss: _closeMenu,
         enableHapticFeedback: widget.enableHapticFeedback,
       ),
@@ -147,9 +154,10 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
 
     _animationController.reverse().then((_) {
       _removeOverlay();
-      setState(() {
-        _isMenuOpen = false;
-      });
+      if (mounted) {
+        setState(() => _isMenuOpen = false);
+      }
+      _isItemHandling = false;
     });
   }
 
@@ -163,19 +171,39 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
     final triggerChild =
         widget.customTrigger ?? Icon(widget.items.first.contextIcon, size: 30.sp, color: AppColors.textColorWhite);
 
-    return GestureDetector(
-      key: _triggerKey,
-      onTap: _showMenu,
-      child: widget.triggerRotationDegreesOnOpen == 0
-          ? triggerChild
-          : AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                final radians = (widget.triggerRotationDegreesOnOpen * _animationController.value) * (math.pi / 180.0);
-                return Transform.rotate(angle: radians, child: child);
-              },
-              child: triggerChild,
+    return SizedBox.square(
+      dimension: 30.w,
+      child: OverflowBox(
+        maxWidth: 48.w,
+        maxHeight: 48.w,
+        child: Material(
+          color: AppColors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkResponse(
+            key: _triggerKey,
+            onTap: _showMenu,
+            radius: 18.w,
+            customBorder: const CircleBorder(),
+            highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+            splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+            child: SizedBox.square(
+              dimension: 48.w, // 리플/터치 캔버스
+              child: widget.triggerRotationDegreesOnOpen == 0
+                  ? triggerChild
+                  : AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        final radians =
+                            (widget.triggerRotationDegreesOnOpen * _animationController.value) * (math.pi / 180.0);
+                        return Transform.rotate(angle: radians, child: child);
+                      },
+                      child: triggerChild,
+                    ),
             ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -192,7 +220,7 @@ class _MenuOverlay extends StatelessWidget {
   final BorderRadius menuBorderRadius;
   final Color menuBackgroundColor;
   final double itemHeight;
-  final Function(String) onItemSelected;
+  final void Function(ContextMenuItem) onItemSelected;
   final VoidCallback onDismiss;
   final bool enableHapticFeedback;
 
@@ -347,36 +375,41 @@ class _MenuOverlay extends StatelessWidget {
       final item = items[i];
 
       widgets.add(
-        GestureDetector(
-          onTap: () {
-            if (enableHapticFeedback) {
-              HapticFeedback.selectionClick();
-            }
-            item.onTap();
-            onItemSelected(item.id);
-          },
-          child: Container(
-            height: itemHeight,
-            padding: menuPadding,
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                // SVG 아이콘 우선, 없으면 IconData 사용
-                if (item.svgAssetPath != null) ...[
-                  SvgPicture.asset(item.svgAssetPath!, width: 20.sp, height: 20.sp),
-                  SizedBox(width: 8.w),
-                ] else if (item.icon != null) ...[
-                  Icon(item.icon, size: 20.sp, color: item.iconColor ?? AppColors.opacity60White),
-                  SizedBox(width: 8.w),
-                ],
-                Text(
-                  item.title,
-                  style: CustomTextStyles.p2.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: item.textColor ?? AppColors.textColorWhite,
+        Material(
+          color: AppColors.transparent,
+          child: InkWell(
+            onTap: () {
+              if (enableHapticFeedback) {
+                HapticFeedback.selectionClick();
+              }
+              onItemSelected(item);
+            },
+            highlightColor: darkenBlend(AppColors.buttonHighlightColorGray),
+            splashColor: darkenBlend(AppColors.buttonHighlightColorGray).withValues(alpha: 0.3),
+            child: Container(
+              height: itemHeight,
+              padding: menuPadding,
+              color: AppColors.transparent,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  // SVG 아이콘 우선, 없으면 IconData 사용
+                  if (item.svgAssetPath != null) ...[
+                    SvgPicture.asset(item.svgAssetPath!, width: 20.sp, height: 20.sp),
+                    SizedBox(width: 8.w),
+                  ] else if (item.icon != null) ...[
+                    Icon(item.icon, size: 20.sp, color: item.iconColor ?? AppColors.opacity60White),
+                    SizedBox(width: 8.w),
+                  ],
+                  Text(
+                    item.title,
+                    style: CustomTextStyles.p2.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: item.textColor ?? AppColors.textColorWhite,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

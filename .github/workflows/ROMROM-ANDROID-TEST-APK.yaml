@@ -57,6 +57,42 @@ jobs:
       progress_start_time: ${{ steps.progress_comment.outputs.start_time }}
 
     steps:
+      # 트리거 즉시 진행상황 댓글 생성 (모든 준비 작업 전에 먼저 댓글 달기)
+      - name: 진행상황 댓글 생성
+        id: progress_comment
+        if: github.event_name == 'repository_dispatch' && github.event.client_payload.pr_number != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
+            const runId = '${{ github.run_id }}';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+            const startTime = Date.now();
+
+            const body = [
+              '## 🤖 Android APK 빌드 중...',
+              '',
+              '| 단계 | 상태 | 소요 시간 |',
+              '|------|------|----------|',
+              '| 🔧 준비 | ⏳ 진행 중... | - |',
+              '| 🔨 APK 빌드 | ⏸️ 대기 | - |',
+              '| 📤 업로드 | ⏸️ 대기 | - |',
+              '',
+              `📋 **[실시간 로그 보기](${runUrl})**`
+            ].join('\n');
+
+            const { data: comment } = await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
+
+            console.log(`✅ 진행상황 댓글 생성 완료 (ID: ${comment.id})`);
+            core.setOutput('comment_id', comment.id.toString());
+            core.setOutput('start_time', startTime.toString());
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -152,44 +188,6 @@ jobs:
           fi
           echo "  커밋 해시: $COMMIT_SHORT"
           echo "  빌드 날짜: $BUILD_DATE"
-
-      # 진행상황 댓글 생성 (repository_dispatch로 트리거된 경우에만)
-      - name: 진행상황 댓글 생성
-        id: progress_comment
-        if: github.event_name == 'repository_dispatch' && github.event.client_payload.pr_number != ''
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
-            const buildNumber = '${{ steps.build_info.outputs.build_number }}';
-            const branchName = '${{ steps.issue_info.outputs.branch_name }}';
-            const runId = '${{ github.run_id }}';
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
-            const startTime = Date.now();
-
-            const body = [
-              '## 🤖 Android APK 빌드 중...',
-              '',
-              '| 단계 | 상태 | 소요 시간 |',
-              '|------|------|----------|',
-              '| 🔧 준비 | ⏳ 진행 중... | - |',
-              '| 🔨 APK 빌드 | ⏸️ 대기 | - |',
-              '| 📤 업로드 | ⏸️ 대기 | - |',
-              '',
-              `📋 **[실시간 로그 보기](${runUrl})**`
-            ].join('\n');
-
-            const { data: comment } = await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: body
-            });
-
-            console.log(`✅ 진행상황 댓글 생성 완료 (ID: ${comment.id})`);
-            core.setOutput('comment_id', comment.id.toString());
-            core.setOutput('start_time', startTime.toString());
 
   build-android-test:
     name: Android 테스트 APK 빌드
@@ -306,20 +304,22 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4.1"
-          bundler-cache: true
+          ruby-version: "3.3"
+          bundler-cache: false
 
       - name: Verify Ruby version
         run: |
           echo "Ruby setup completed"
           ruby -v
 
-      # Fastlane 설치
+      # Fastlane 설치 (Bundler 방식으로 CFPropertyList 의존성 충돌 방지)
       - name: Install Fastlane
+        working-directory: android
         run: |
-          gem install fastlane
+          printf 'source "https://rubygems.org"\ngem "fastlane"\n' > Gemfile
+          bundle install
           echo "Fastlane installed"
-          fastlane --version
+          bundle exec fastlane --version
 
       # 진행상황 - 준비 완료
       - name: 진행상황 - 준비 완료
@@ -371,9 +371,9 @@ jobs:
 
       # Fastlane을 이용하여 APK 빌드
       - name: Build APK with Fastlane
+        working-directory: android
         run: |
-          cd android
-          fastlane build --verbose
+          bundle exec fastlane build --verbose
           ls -la ../build/app/outputs/flutter-apk/ || true
           echo "APK built with Fastlane"
 

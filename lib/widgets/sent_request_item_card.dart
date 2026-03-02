@@ -89,7 +89,7 @@ class SentRequestItemCard extends StatelessWidget {
               ],
             ),
           ),
-          _buildMenuIcon(),
+          if (tradeStatus != TradeStatus.traded) _buildMenuIcon(),
         ],
       ),
     );
@@ -192,7 +192,9 @@ class SentRequestItemCard extends StatelessWidget {
             ),
           ),
         ),
-        if (tradeStatus == TradeStatus.chatting) ...[TradeStatusTagWidget(status: tradeStatus!)],
+        if (tradeStatus == TradeStatus.chatting || tradeStatus == TradeStatus.traded) ...[
+          TradeStatusTagWidget(status: tradeStatus!),
+        ],
       ],
     );
   }

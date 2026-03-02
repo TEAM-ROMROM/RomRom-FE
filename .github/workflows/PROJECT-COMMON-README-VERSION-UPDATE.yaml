@@ -257,8 +257,8 @@ jobs:
 
             git commit -m "$REPO_NAME 버전 관리 : docs : v$VERSION README 버전 정보 업데이트 [skip ci]"
 
-            # Race Condition 방지: pull-rebase 후 push (최대 3회 재시도)
-            MAX_RETRIES=3
+            # Race Condition 방지: pull-rebase 후 push (최대 5회 재시도)
+            MAX_RETRIES=5
             RETRY_COUNT=0
             PUSH_SUCCESS=false
 
@@ -271,7 +271,8 @@ jobs:
                 echo "✅ README.md 버전 정보 업데이트 완료"
                 break
               else
-                echo "⚠️ Push 실패, remote 변경사항 동기화 중..."
+                echo "⚠️ Push 실패, ${RETRY_COUNT}번째 재시도 전 2초 대기..."
+                sleep 2
 
                 if git pull --rebase origin $DEFAULT_BRANCH; then
                   echo "✅ Rebase 성공, 다시 push 시도..."

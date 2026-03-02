@@ -24,6 +24,7 @@ class _ReportScreenState extends State<ReportScreen> {
   // 선택된 신고 사유 집합
   final Set<ItemReportReason> _selectedReasons = {};
   late final TextEditingController _extraCommentController;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // 키보드가 올라와도 바닥 고정 (버튼 위치 유지)
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(
         title: '신고하기',
@@ -52,67 +54,83 @@ class _ReportScreenState extends State<ReportScreen> {
         showBottomBorder: true,
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 40.h),
-                Text('신고 사유', style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600)),
-                SizedBox(height: 24.h),
-                // 신고 사유 리스트
-                ...ItemReportReason.values.map((reason) => _buildReasonRow(reason)),
-                if (_selectedReasons.contains(ItemReportReason.etc)) ...[
-                  Container(
-                    width: 345.w,
-                    height: 140.h,
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryBlack1,
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: AppColors.textColorWhite.withValues(alpha: 0.3), width: 1.5.w),
-                    ),
-                    child: TextField(
-                      controller: _extraCommentController,
-                      maxLines: null,
-                      maxLength: 300,
-                      style: CustomTextStyles.p2,
-                      cursorColor: AppColors.textColorWhite,
-                      decoration: InputDecoration(
-                        isCollapsed: true,
-                        border: InputBorder.none,
-                        counterText: '', // 기본 counter 숨김
-                        hintText: '신고 사유를 상세하게 적어주세요',
-                        hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite.withValues(alpha: 0.4)),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              FocusScope.of(context).unfocus();
+            },
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 40.h),
+                    Text('신고 사유', style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600)),
+                    SizedBox(height: 24.h),
+                    // 신고 사유 리스트
+                    ...ItemReportReason.values.map((reason) => _buildReasonRow(reason)),
+                    if (_selectedReasons.contains(ItemReportReason.etc)) ...[
+                      Container(
+                        width: 345.w,
+                        height: 140.h,
+                        padding: EdgeInsets.all(16.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryBlack1,
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: AppColors.textColorWhite.withValues(alpha: 0.3), width: 1.5.w),
+                        ),
+                        child: TextField(
+                          controller: _extraCommentController,
+                          maxLines: null,
+                          maxLength: 300,
+                          style: CustomTextStyles.p2,
+                          cursorColor: AppColors.textColorWhite,
+                          decoration: InputDecoration(
+                            isCollapsed: true,
+                            border: InputBorder.none,
+                            counterText: '', // 기본 counter 숨김
+                            hintText: '신고 사유를 상세하게 적어주세요',
+                            hintStyle: CustomTextStyles.p2.copyWith(
+                              color: AppColors.textColorWhite.withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '${_extraCommentController.text.length}/300',
-                      style: CustomTextStyles.p3.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textColorWhite.withValues(alpha: 0.5),
+                      SizedBox(height: 8.h),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '${_extraCommentController.text.length}/300',
+                          style: CustomTextStyles.p3.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textColorWhite.withValues(alpha: 0.5),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ],
+                    ],
+                    // 하단 버튼과 겹치지 않도록 여백 추가
+                    SizedBox(height: 180.h),
+                  ],
+                ),
+              ),
             ),
           ),
 
-          // 하단 고정 신고하기 버튼 (bottom 기준 76px)
+          // 하단 고정 신고하기 버튼 (bottom 기준 97.h)
           Positioned(
             left: 24.w,
             right: 24.w,
             bottom: 97.h,
             child: CompletionButton(
               isEnabled: _selectedReasons.isNotEmpty,
+              isLoading: _isSubmitting,
               buttonText: '신고 하기',
               enabledOnPressed: () async {
+                if (_isSubmitting) return;
+                setState(() => _isSubmitting = true);
                 try {
                   final api = ReportApi();
                   await api.reportItem(
@@ -125,12 +143,17 @@ class _ReportScreenState extends State<ReportScreen> {
                   // 에러 코드 파싱
                   final messageForUser = ErrorUtils.getErrorMessage(e);
 
+                  if (!mounted) return;
                   await CommonModal.error(
                     context: context,
                     message: messageForUser,
                     onConfirm: () => Navigator.of(context).pop(),
                   );
                   return;
+                } finally {
+                  if (mounted) {
+                    setState(() => _isSubmitting = false);
+                  }
                 }
 
                 if (!mounted) return;

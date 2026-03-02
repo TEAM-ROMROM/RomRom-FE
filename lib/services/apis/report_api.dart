@@ -35,14 +35,14 @@ class ReportApi {
   /// 회원 신고 API
   /// POST /api/report/member/post
   Future<void> reportMember({
-    required String memberId,
+    required String targetMemberId,
     required Set<int> memberReportReasons,
     String? extraComment,
   }) async {
     const String url = '${AppUrls.baseUrl}/api/report/member/post';
 
     final Map<String, dynamic> fields = {
-      'memberId': memberId,
+      'targetMemberId': targetMemberId,
       'memberReportReasons': memberReportReasons.join(','),
       if (extraComment != null && extraComment.isNotEmpty) 'extraComment': extraComment,
     };

@@ -1,11 +1,239 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-14T12:42:36Z",
-    "currentVersion": "1.9.9",
-    "totalReleases": 64,
+    "lastUpdated": "2026-02-27T01:35:31Z",
+    "currentVersion": "1.9.33",
+    "totalReleases": 72,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.33",
+      "project_type": "flutter",
+      "date": "2026-02-27",
+      "pr_number": 592,
+      "raw_summary": "## Summary by CodeRabbit\n\n## v1.9.33 릴리스 노트\n\n* **New Features**\n  * 탈퇴한 사용자를 \"(탈퇴)\" 라벨로 표시하여 명확하게 구분\n  * 채팅방 앱 바 제목 클릭 시 상대방 프로필로 이동 가능\n\n* **UI/UX Improvements**\n  * 채팅방 앱 바 제목 중앙 정렬 및 레이아웃 개선",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "탈퇴한 사용자를 \"(탈퇴)\" 라벨로 표시하여 명확하게 구분",
+            "채팅방 앱 바 제목 클릭 시 상대방 프로필로 이동 가능"
+          ]
+        },
+        "ui_ux_improvements": {
+          "title": "UI/UX Improvements",
+          "items": [
+            "채팅방 앱 바 제목 중앙 정렬 및 레이아웃 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.32",
+      "project_type": "flutter",
+      "date": "2026-02-25",
+      "pr_number": 588,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리즈 노트\n\n* **새 기능**\n  * 물품 목록에 정렬 기능 추가 (생성일, 거리, 선호 카테고리, 추천순)\n  * 물품 조회 시 기본 정렬을 추천순으로 설정\n\n* **Chores**\n  * 앱 버전을 1.9.32로 업데이트",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "물품 목록에 정렬 기능 추가 (생성일, 거리, 선호 카테고리, 추천순)",
+            "물품 조회 시 기본 정렬을 추천순으로 설정"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전을 1.9.32로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.31",
+      "project_type": "flutter",
+      "date": "2026-02-24",
+      "pr_number": 573,
+      "raw_summary": "## Summary by CodeRabbit\n\n## Release Notes - v1.9.31\n\n* **New Features**\n  * Real notification management with read/unread status tracking and batch deletion\n  * Deep link navigation for notifications directing users to relevant items or chats\n  * Interactive coach mark onboarding for new item listings\n\n* **Bug Fixes**\n  * Fixed modal overlap issues in chat screen\n  * Improved user profile avatar loading\n\n* **Documentation**\n  * Updated project guidelines with comprehensive style and structure documentation\n\n* **Chores**\n  * Version update to v1.9.31\n  * Restructured development documentation for improved maintainability",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "Real notification management with read/unread status tracking and batch deletion",
+            "Deep link navigation for notifications directing users to relevant items or chats",
+            "Interactive coach mark onboarding for new item listings"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "Fixed modal overlap issues in chat screen",
+            "Improved user profile avatar loading"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "Updated project guidelines with comprehensive style and structure documentation"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "Version update to v1.9.31",
+            "Restructured development documentation for improved maintainability"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.27",
+      "project_type": "flutter",
+      "date": "2026-02-23",
+      "pr_number": 556,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **버그 수정**\n  * 게시물 작성자가 계정을 삭제한 경우에 대한 처리 추가. 이제 상세 화면에서 명확한 메시지와 함께 안내됩니다.\n\n* **Chores**\n  * 버전을 1.9.27로 업데이트했습니다.",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "게시물 작성자가 계정을 삭제한 경우에 대한 처리 추가. 이제 상세 화면에서 명확한 메시지와 함께 안내됩니다."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전을 1.9.27로 업데이트했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.26",
+      "project_type": "flutter",
+      "date": "2026-02-23",
+      "pr_number": 555,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 좋아요 목록이 비어있을 때 빈 상태 화면 추가\n  \n* **개선사항**\n  * 요청 취소 및 삭제 작업 완료 시 사용자 피드백 메시지 추가\n  * 오류 처리 및 메시지 강화\n  \n* **버전**\n  * v1.9.26으로 업그레이드",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "좋아요 목록이 비어있을 때 빈 상태 화면 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "요청 취소 및 삭제 작업 완료 시 사용자 피드백 메시지 추가",
+            "오류 처리 및 메시지 강화"
+          ]
+        },
+        "버전": {
+          "title": "버전",
+          "items": [
+            "v1.9.26으로 업그레이드"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.18",
+      "project_type": "flutter",
+      "date": "2026-02-18",
+      "pr_number": 538,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **버그 수정**\n  * 탈퇴한 계정에 대한 표시 처리 개선 (채팅방 및 프로필 화면)\n  * 탈퇴한 상대방의 별명 표시 로직 개선\n\n* **새로운 기능**\n  * 등록 폼의 설명 필드에서 줄바꿈 입력 지원 추가\n\n* **문서**\n  * 버전 정보 업데이트 (v1.9.15 → v1.9.18)",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "탈퇴한 계정에 대한 표시 처리 개선 (채팅방 및 프로필 화면)",
+            "탈퇴한 상대방의 별명 표시 로직 개선"
+          ]
+        },
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "등록 폼의 설명 필드에서 줄바꿈 입력 지원 추가"
+          ]
+        },
+        "문서": {
+          "title": "문서",
+          "items": [
+            "버전 정보 업데이트 (v1.9.15 → v1.9.18)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.15",
+      "project_type": "flutter",
+      "date": "2026-02-18",
+      "pr_number": 536,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 탈퇴한 계정 표시 기능 추가\n  * 삭제된 계정과의 상호작용 시 안내 메시지 표시\n\n* **개선 사항**\n  * 버튼 및 상호작용 요소에 터치 피드백 및 리플 효과 추가\n  * 사용자 인터페이스의 일관된 시각적 피드백 개선\n  * 채팅 목록에서 탈퇴한 사용자 상태 표시\n\n* **기타**\n  * 버전 1.9.15로 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "탈퇴한 계정 표시 기능 추가",
+            "삭제된 계정과의 상호작용 시 안내 메시지 표시"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "버튼 및 상호작용 요소에 터치 피드백 및 리플 효과 추가",
+            "사용자 인터페이스의 일관된 시각적 피드백 개선",
+            "채팅 목록에서 탈퇴한 사용자 상태 표시"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 1.9.15로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.13",
+      "project_type": "flutter",
+      "date": "2026-02-16",
+      "pr_number": 523,
+      "raw_summary": "## Summary by CodeRabbit\n\n* **새 기능**\n  * 이슈 생성 시 자동 파일 저장 기능 추가\n\n* **개선사항**\n  * 항목 및 회원 삭제 작업에 확인 단계 추가\n  * 키보드 표시 시 화면 레이아웃 안정성 개선\n  * 신고 화면의 입력 환경 향상\n  * 메뉴 탭 감지 신뢰도 개선\n  * 거래 요청 취소 시 확인 기능 추가\n\n* **기타**\n  * 템플릿 포맷 일관성 개선\n  * 버전 업데이트 (v1.9.9 → v1.9.13)",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "이슈 생성 시 자동 파일 저장 기능 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "항목 및 회원 삭제 작업에 확인 단계 추가",
+            "키보드 표시 시 화면 레이아웃 안정성 개선",
+            "신고 화면의 입력 환경 향상",
+            "메뉴 탭 감지 신뢰도 개선",
+            "거래 요청 취소 시 확인 기능 추가"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "템플릿 포맷 일관성 개선",
+            "버전 업데이트 (v1.9.9 → v1.9.13)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.9",
       "project_type": "flutter",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -32,7 +33,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isMyProfile = false;
   bool _isBlockedUser = false;
   bool _blockStatusChanged = false;
+  bool _deleteModalShown = false;
 
+  String _accountStatus = '';
   String _nickname = '';
   String _profileUrl = '';
   String _location = '위치정보 없음';
@@ -62,6 +65,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
         });
       }
+      CommonModal.showOnceAfterFrame(
+        context: context,
+        isShown: () => _deleteModalShown,
+        markShown: () => _deleteModalShown = true,
+        shouldShow: () => _accountStatus == AccountStatus.deleteAccount.serverName,
+        message: '존재하지 않거나 탈퇴한 사용자입니다.',
+        onConfirm: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+        },
+      );
     } catch (e) {
       debugPrint('프로필 로드 실패: $e');
       if (mounted) {
@@ -80,6 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (mounted) {
       setState(() {
+        _accountStatus = memberResponse.member?.accountStatus ?? '';
         _nickname = memberResponse.member?.nickname ?? '닉네임';
         _profileUrl = memberResponse.member?.profileUrl ?? '';
         _totalLikeCount = memberResponse.member?.totalLikeCount ?? 0;
@@ -102,6 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (mounted) {
       setState(() {
+        _accountStatus = memberResponse.member?.accountStatus ?? '';
         _nickname = memberResponse.member?.nickname ?? '닉네임';
         _profileUrl = memberResponse.member?.profileUrl ?? '';
         _totalLikeCount = memberResponse.member?.totalLikeCount ?? 0;
@@ -196,6 +212,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
+    if (_accountStatus == AccountStatus.deleteAccount.serverName) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        appBar: CommonAppBar(title: '프로필', showBottomBorder: true, onBackPressed: () => _handleBackPressed()),
+        body: const SizedBox.shrink(),
+      );
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -251,6 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       avatarSize: Size(132.w, 132.h),
       profileUrl: _profileUrl.isNotEmpty ? _profileUrl : null,
       hasBorder: true,
+      isDeleteAccount: _accountStatus == AccountStatus.deleteAccount.serverName,
     );
   }
 

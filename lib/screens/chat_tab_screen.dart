@@ -328,6 +328,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                   return Column(
                     children: [
                       ChatRoomListItem(
+                        accountStatus: chatRoomDetail.targetMember?.accountStatus,
                         profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
                         memberId: chatRoomDetail.targetMember?.memberId,
                         nickname: chatRoomDetail.targetMember?.nickname ?? '',

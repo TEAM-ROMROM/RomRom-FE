@@ -24,6 +24,7 @@ class CategorySelectionStep extends StatefulWidget {
 class _CategorySelectionStepState extends State<CategorySelectionStep> {
   final List<int> selectedCategories = [];
   final memberApi = MemberApi();
+  bool _isSaving = false;
 
   bool get isSelectedCategories => selectedCategories.isNotEmpty;
 
@@ -44,7 +45,10 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
             child: Center(
               child: CompletionButton(
                 isEnabled: isSelectedCategories,
+                isLoading: _isSaving,
                 enabledOnPressed: () async {
+                  if (_isSaving) return;
+                  setState(() => _isSaving = true);
                   try {
                     await memberApi.savePreferredCategories(selectedCategories);
 
@@ -65,12 +69,16 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                     // FCM 토큰 발급 및 저장
                     await FirebaseService().handleFcmToken();
 
-                    widget.onComplete();
                     await RomAuthApi().fetchAndSaveMemberInfo();
+                    widget.onComplete();
                   } catch (e) {
                     debugPrint("Error: $e");
-                    if (context.mounted) {
+                    if (mounted) {
                       CommonSnackBar.show(context: context, message: '카테고리 저장에 실패했습니다: $e', type: SnackBarType.error);
+                    }
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isSaving = false);
                     }
                   }
                 },

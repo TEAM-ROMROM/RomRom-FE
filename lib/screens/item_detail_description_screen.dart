@@ -5,6 +5,8 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photo_viewer/photo_viewer.dart';
+import 'package:romrom_fe/enums/account_status.dart';
+import 'package:romrom_fe/enums/error_code.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
@@ -80,6 +82,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   late final ValueNotifier<int> likeCountVN;
   bool _likeInFlight = false;
 
+  bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
@@ -143,9 +146,23 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       debugPrint('물품 상세 정보 로드 실패: $e');
       if (!mounted) return;
 
+      if (ErrorUtils.getErrorMessage(e) == ErrorCode.deletedMember.koMessage) {
+        CommonModal.showOnceAfterFrame(
+          context: context,
+          isShown: () => deleteModalShown,
+          markShown: () => deleteModalShown = true,
+          shouldShow: () => ErrorUtils.getErrorMessage(e) == ErrorCode.deletedMember.koMessage,
+          message: '존재하지 않거나 탈퇴한 사용자입니다.',
+          onConfirm: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+          },
+        );
+      }
+
       setState(() {
         hasError = true;
-        errorMessage = '물품 정보를 불러오는데 실패했습니다.';
+        errorMessage = ErrorUtils.getErrorMessage(e);
         isLoading = false;
       });
     }
@@ -250,10 +267,10 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   }
 
   /// 물품 삭제
-  Future<void> _deleteItem(Item item) async {
+  Future<bool> _deleteItem(Item item) async {
     if (item.itemId == null) {
       CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
-      return;
+      return false;
     }
 
     try {
@@ -263,6 +280,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       if (mounted) {
         CommonSnackBar.show(context: context, message: '물품이 삭제되었습니다');
       }
+      return true;
     } catch (e) {
       if (mounted) {
         CommonSnackBar.show(
@@ -271,6 +289,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
           type: SnackBarType.error,
         );
       }
+      return false;
     }
   }
 
@@ -292,14 +311,47 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       );
     }
 
+    // 작성자가 탈퇴한 게시글인 경우 별도 화면 표시
+    if (errorMessage == ErrorCode.deletedMember.koMessage) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          leading: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.pop(context),
+              customBorder: const CircleBorder(),
+              highlightColor: AppColors.buttonHighlightColorGray,
+              splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+              child: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+            ),
+          ),
+        ),
+        body: Center(
+          child: Text(
+            '작성자가 탈퇴한 게시글입니다.',
+            style: CustomTextStyles.p1.copyWith(color: AppColors.textColorWhite),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
     if (hasError) {
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          leading: IconButton(
-            icon: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
-            onPressed: () => Navigator.pop(context),
+          leading: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.pop(context),
+              customBorder: const CircleBorder(),
+              highlightColor: AppColors.buttonHighlightColorGray,
+              splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+              child: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+            ),
           ),
         ),
         body: Center(
@@ -312,10 +364,19 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.h),
-              ElevatedButton(
-                onPressed: _loadItemDetail,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryYellow),
-                child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
+              Material(
+                color: AppColors.primaryYellow,
+                borderRadius: BorderRadius.circular(4.r),
+                child: InkWell(
+                  onTap: _loadItemDetail,
+                  highlightColor: darkenBlend(AppColors.primaryYellow),
+                  splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4.r),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                    child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -494,6 +555,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                               child: UserProfileCircularAvatar(
                                 avatarSize: const Size(40, 40),
                                 profileUrl: item?.member?.profileUrl,
+                                isDeleteAccount: item?.member?.accountStatus == AccountStatus.deleteAccount.serverName,
                               ),
                             ),
                             SizedBox(width: 10.w),
@@ -528,31 +590,55 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                               ),
                             ),
                             const Spacer(),
-                            GestureDetector(
-                              onTap: _toggleLike,
-                              child: Column(
-                                children: [
-                                  ValueListenableBuilder<bool>(
-                                    valueListenable: isLikedVN,
-                                    builder: (_, liked, __) {
-                                      return SvgPicture.asset(
-                                        liked
-                                            ? 'assets/images/like-heart-icon.svg'
-                                            : 'assets/images/dislike-heart-icon.svg',
-                                        width: 30.w,
-                                        height: 30.h,
-                                      );
-                                    },
+                            Column(
+                              children: [
+                                SizedBox.square(
+                                  dimension: 32.w,
+                                  child: OverflowBox(
+                                    maxWidth: 56.w,
+                                    maxHeight: 56.w,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      shape: const CircleBorder(),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: InkResponse(
+                                        onTap: _toggleLike,
+                                        radius: 18.w,
+                                        customBorder: const CircleBorder(),
+                                        highlightColor: AppColors.buttonHighlightColorGray,
+                                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                                        child: ValueListenableBuilder<bool>(
+                                          valueListenable: isLikedVN,
+                                          builder: (_, liked, __) {
+                                            return SizedBox.square(
+                                              dimension: 56.w, // 리플/터치 캔버스
+                                              child: Center(
+                                                child: SizedBox.square(
+                                                  dimension: 30.w,
+                                                  child: SvgPicture.asset(
+                                                    liked
+                                                        ? 'assets/images/like-heart-icon.svg'
+                                                        : 'assets/images/dislike-heart-icon.svg',
+                                                    width: 30.w,
+                                                    height: 30.h,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  SizedBox(height: 2.h),
-                                  ValueListenableBuilder<int>(
-                                    valueListenable: likeCountVN,
-                                    builder: (_, likeCount, __) {
-                                      return Text(likeCount.toString(), style: CustomTextStyles.p2);
-                                    },
-                                  ),
-                                ],
-                              ),
+                                ),
+                                SizedBox(height: 2.h),
+                                ValueListenableBuilder<int>(
+                                  valueListenable: likeCountVN,
+                                  builder: (_, likeCount, __) {
+                                    return Text(likeCount.toString(), style: CustomTextStyles.p2);
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -708,22 +794,43 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
           Positioned(
             top: MediaQuery.of(context).padding.top + 8.h,
             left: 24.w,
-            child: GestureDetector(
-              onTap: () async {
-                // 뒤로갈 때 좋아요가 취소된 상태면 목록에 반영되도록 정보 반환
-                if (isLikedVN.value == false) {
-                  Navigator.of(context).pop(widget.itemId);
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
-
-              child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+            child: SizedBox.square(
+              dimension: 32.w,
+              child: OverflowBox(
+                maxWidth: 56.w,
+                maxHeight: 56.w,
+                child: Material(
+                  color: Colors.transparent,
+                  clipBehavior: Clip.antiAlias,
+                  shape: const CircleBorder(),
+                  child: InkResponse(
+                    onTap: () async {
+                      // 뒤로갈 때 좋아요가 취소된 상태면 목록에 반영되도록 정보 반환
+                      if (isLikedVN.value == false) {
+                        Navigator.of(context).pop(widget.itemId);
+                      } else {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    radius: 18.w,
+                    customBorder: const CircleBorder(),
+                    highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                    splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                    child: SizedBox.square(
+                      dimension: 56.w,
+                      child: Center(
+                        child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
+
           Positioned(
             top: MediaQuery.of(context).padding.top + 8.h,
-            right: 24.w,
+            right: 16.w,
             child: !widget.isMyItem
                 ? ReportMenuButton(
                     onReportPressed: () async {
@@ -778,10 +885,13 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                         title: '삭제',
                         textColor: AppColors.itemOptionsMenuRedText,
                         onTap: () async {
-                          await _deleteItem(item!);
+                          final result = await context.showDeleteDialog(title: '물품 삭제', description: '정말 삭제하시겠습니까?');
 
-                          if (mounted) {
-                            Navigator.of(context).pop(true);
+                          if (result == true) {
+                            final deleted = await _deleteItem(item!);
+                            if (deleted && mounted) {
+                              Navigator.of(context).pop(true);
+                            }
                           }
                         },
                       ),

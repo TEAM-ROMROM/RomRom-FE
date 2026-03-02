@@ -3,17 +3,21 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
+import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -54,8 +58,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   bool _isLoading = true;
   bool _hasError = false;
+  bool _deleteModalShown = false;
+  bool _tradeCompletedModalShown = false;
+
   String _errorMessage = '';
   String? _myMemberId;
+
+  String get _myId => _myMemberId!;
+  dynamic get _opponent => chatRoom.getOpponent(_myId);
+  String get _opponentNickname => chatRoom.getOpponentNickname(_myId);
+  String? get _opponentId => _opponent?.memberId;
+  bool get _isOpponentDeleted => _opponent?.accountStatus == AccountStatus.deleteAccount.serverName;
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
@@ -206,6 +219,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       setState(() => _isLoading = false);
       _scrollToBottom();
       chatApi.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true); // 입장 처리
+      // 탈퇴 사용자 모달 (채팅방 유지 - 대화 내용 열람 가능)
+      CommonModal.showOnceAfterFrame(
+        context: context,
+        isShown: () => _deleteModalShown,
+        markShown: () => _deleteModalShown = true,
+        shouldShow: () => _isOpponentDeleted,
+        message: '존재하지 않거나 탈퇴한 사용자입니다.',
+        onConfirm: () {
+          Navigator.of(context).pop(); // 모달만 닫기
+        },
+      );
+      // 거래완료 모달 (채팅방 유지 - 대화 내용 열람 가능, 탈퇴 모달과 중첩 방지)
+      CommonModal.showOnceAfterFrame(
+        context: context,
+        isShown: () => _tradeCompletedModalShown,
+        markShown: () => _tradeCompletedModalShown = true,
+        shouldShow: () =>
+            !_deleteModalShown && chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName,
+        message: '거래완료 된 글입니다.',
+        onConfirm: () {
+          Navigator.of(context).pop(); // 모달만 닫기
+        },
+      );
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;
@@ -353,9 +389,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         backgroundColor: AppColors.primaryBlack,
         appBar: AppBar(
           backgroundColor: AppColors.primaryBlack,
-          leading: IconButton(
-            icon: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
-            onPressed: () => Navigator.of(context).pop(true),
+          leading: Material(
+            color: Colors.transparent,
+            child: ClipOval(
+              // 잉크가 원 밖으로 안 나가게
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).pop(true),
+                highlightColor: AppColors.buttonHighlightColorGray,
+                splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+                ),
+              ),
+            ),
           ),
         ),
         body: Center(
@@ -368,10 +416,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadInitialData,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryYellow),
-                child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
+              Material(
+                color: AppColors.primaryYellow,
+                borderRadius: BorderRadius.circular(4.r),
+                child: InkWell(
+                  onTap: _loadInitialData,
+                  customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),
+                  highlightColor: darkenBlend(AppColors.primaryYellow),
+                  splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryBlack)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -408,12 +465,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 앱바 빌더
   CommonAppBar _buildAppBar() {
+    final opponentId = _opponentId;
+    final opponentNickname = _opponentNickname;
+
     return CommonAppBar(
-      title: chatRoom.getOpponentNickname(_myMemberId!),
+      title: opponentNickname,
       onTitleTap: () {
-        final opponent = chatRoom.getOpponent(_myMemberId!);
-        if (opponent?.memberId != null) {
-          context.navigateTo(screen: ProfileScreen(memberId: opponent!.memberId!));
+        if (opponentId != null) {
+          context.navigateTo(screen: ProfileScreen(memberId: opponentId));
         }
       },
       onBackPressed: () {
@@ -425,9 +484,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              chatRoom.getOpponentNickname(_myMemberId!),
-              style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
+            SizedBox(
+              width: 240.w,
+              child: Text(
+                opponentNickname,
+                textAlign: TextAlign.center,
+                style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, overflow: TextOverflow.ellipsis),
+              ),
             ),
             Padding(
               padding: EdgeInsets.only(top: 8.h),
@@ -460,7 +523,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 icon: AppIcons.report,
                 title: '신고하기',
                 onTap: () async {
-                  // TODO : 신고하기 화면으로 이동
+                  context.navigateTo(screen: MemberReportScreen(memberId: opponentId!));
                 },
                 showDividerAfter: true,
               ),
@@ -480,7 +543,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       Navigator.of(context).pop(); // 모달 닫기
                     },
                     onConfirm: () async {
-                      final opponentId = chatRoom.getOpponent(_myMemberId!)?.memberId;
+                      final opponentId = _opponentId;
                       if (opponentId == null) {
                         if (context.mounted) {
                           Navigator.of(context).pop();
@@ -493,6 +556,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         return;
                       }
                       try {
+                        await MemberApi().blockMember(opponentId);
                         if (context.mounted) {
                           Navigator.of(context).pop(true); // 모달 닫기
                         }
@@ -824,26 +888,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   // 텍스트 유무에 따라 버튼/아이콘 색상 및 활성화 상태 변경
                   suffixIcon: TextFieldTapRegion(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _messageController.text.trim().isEmpty
-                          ? null
-                          : () {
-                              _sendMessage();
-                            },
-                      child: Container(
-                        margin: EdgeInsets.all(4.w),
-                        width: 40.w,
-                        height: 40.w,
-                        decoration: BoxDecoration(
-                          color: !_hasText ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Icon(
-                            AppIcons.arrowUpward,
-                            color: !_hasText ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
-                            size: 32.w,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ClipOval(
+                        child: InkWell(
+                          onTap: _messageController.text.trim().isEmpty
+                              ? null
+                              : () {
+                                  _sendMessage();
+                                },
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray,
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: Container(
+                            margin: EdgeInsets.all(4.w),
+                            width: 40.w,
+                            height: 40.w,
+                            decoration: BoxDecoration(
+                              color: !_hasText ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                AppIcons.arrowUpward,
+                                color: !_hasText ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
+                                size: 32.w,
+                              ),
+                            ),
                           ),
                         ),
                       ),
