@@ -116,7 +116,7 @@ class NotificationItemWidget extends StatelessWidget {
         Container(
           width: 24.w,
           height: 24.h,
-          margin: EdgeInsets.only(top: 1.h),
+          margin: EdgeInsets.only(top: 1.h, left: 8.w),
           child: RomRomContextMenu(
             customTrigger: Icon(AppIcons.dotsVerticalDefault, size: 24.sp, color: AppColors.textColorWhite),
             items: [

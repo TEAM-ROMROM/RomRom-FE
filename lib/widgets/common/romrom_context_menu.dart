@@ -174,8 +174,8 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
     return SizedBox.square(
       dimension: 30.w,
       child: OverflowBox(
-        maxWidth: 48.w,
-        maxHeight: 48.w,
+        maxWidth: 40.w,
+        maxHeight: 40.w,
         child: Material(
           color: AppColors.transparent,
           shape: const CircleBorder(),
