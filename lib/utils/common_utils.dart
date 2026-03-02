@@ -140,7 +140,7 @@ String formatMessageTime(DateTime? dt) {
 
 // 마지막 활동 시간을 텍스트로 변환
 String getLastActivityTime(DateTime? lastActiveAt) {
-  if (lastActiveAt == null) return '';
+  if (lastActiveAt == null) return '오래 전 활동';
   final diff = DateTime.now().difference(lastActiveAt);
   if (diff.inMinutes < 1) return '방금 전 활동';
   if (diff.inMinutes < 60) return '${diff.inMinutes}분 전 활동';
