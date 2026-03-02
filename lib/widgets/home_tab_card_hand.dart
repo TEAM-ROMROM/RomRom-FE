@@ -150,8 +150,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
       end: -10.0,
     ).animate(CurvedAnimation(parent: _highlightFloatController, curve: Curves.easeOut));
 
-    // 재정렬 위치 보간 (700ms: 350ms 집결 + 350ms 팬아웃)
-    _reorderAnimController = AnimationController(duration: const Duration(milliseconds: 700), vsync: this);
+    // 재정렬 위치 보간 (900ms: 360ms 집결 + 90ms 홀드 + 450ms 팬아웃)
+    _reorderAnimController = AnimationController(duration: const Duration(milliseconds: 900), vsync: this);
     _reorderAnimation = CurvedAnimation(parent: _reorderAnimController, curve: Curves.linear);
     _reorderAnimController.addStatusListener((status) {
       if ((status == AnimationStatus.completed || status == AnimationStatus.dismissed) && mounted) {
@@ -177,7 +177,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
         _reorderForAiHighlight(widget.highlightedItemIds);
       } else {
         // 하이라이트 해제 시 float 슥 내려가기 (600ms easeInOut), 재정렬 애니메이션 역방향
-        _highlightFloatController.animateTo(0.0, duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
+        _highlightFloatController.animateTo(0.0, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut);
         _reorderAnimController.reverse();
       }
     }
@@ -470,14 +470,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
               left = lerpDouble(oldLeft, gatherX, gatherT)!;
               top = lerpDouble(oldTop, gatherY, gatherT)!;
               angle = lerpDouble(oldAngle, 0.0, gatherT)!; // 중앙으로 모일 때 1자 정렬
-            } else if (t <= 0.6) {
+            } else if (t <= 0.5) {
               // 2단계: 한 점에 완전히 겹쳐서 홀드
               left = gatherX;
               top = gatherY;
               angle = 0.0; // 1자 정렬 유지
             } else {
               // 3단계: 중앙 → 최종 위치 팬아웃 (easeOut, 부드럽게 착지)
-              final expandT = Curves.easeOut.transform((t - 0.6) / 0.4);
+              final expandT = Curves.easeOut.transform((t - 0.5) / 0.5);
               left = lerpDouble(gatherX, left, expandT)!;
               top = lerpDouble(gatherY, top, expandT)!;
               angle = lerpDouble(0.0, angle, expandT)!; // 팬아웃 시 최종 각도로 복귀
