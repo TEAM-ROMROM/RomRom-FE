@@ -55,6 +55,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // 낙관적 로컬 메시지(서버 응답 대기)
   final Map<String, ChatMessage> _pendingLocalMessages = {};
 
+  // 업로드 중인 이미지 버블 ID 추적
+  final Set<String> _uploadingLocalIds = {};
+
   ChatRoom chatRoom = ChatRoom();
 
   bool _isLoading = true;
@@ -366,18 +369,46 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         return;
       }
 
+      // 1) picked 순서대로 로컬 파일로 즉시 스켈레톤 버블 표시
+      final List<String> uploadingIds = [];
+      for (int i = 0; i < picked.length; i++) {
+        final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}_$i';
+        uploadingIds.add(localId);
+        setState(() {
+          _messages.insert(
+            0,
+            ChatMessage(
+              chatRoomId: widget.chatRoomId,
+              chatMessageId: localId,
+              senderId: _myMemberId,
+              createdDate: DateTime.now(),
+              content: '사진을 보냈습니다.',
+              type: MessageType.image,
+              imageUrls: [picked[i].path],
+            ),
+          );
+          _uploadingLocalIds.add(localId);
+        });
+      }
+      _scrollToBottom();
+
       try {
-        // 1) 선택된 이미지를 서버에 업로드
+        // 2) 서버에 업로드
         final uploadedImageUrls = await ImageApi().uploadImages(picked);
         if (!mounted) return;
 
-        // imageUrls가 비어있는 경우 처리 필요
+        // 3) 스켈레톤 버블 제거
+        setState(() {
+          _messages.removeWhere((m) => uploadingIds.contains(m.chatMessageId));
+          _uploadingLocalIds.removeAll(uploadingIds);
+        });
+
         if (uploadedImageUrls.isEmpty) {
           CommonSnackBar.show(context: context, message: '이미지 업로드 실패', type: SnackBarType.error);
           return;
         }
 
-        // 2) 업로드된 URL을 picked 순서대로 각각 별도 버블로 전송
+        // 4) 업로드된 URL을 picked 순서대로 각각 별도 버블로 전송
         // 텍스트는 첫 번째 이미지에만 첨부
         final textMessage = _messageController.text.trim();
         for (int i = 0; i < uploadedImageUrls.length; i++) {
@@ -388,7 +419,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           );
         }
       } catch (e) {
-        if (context.mounted) {
+        if (mounted) {
+          setState(() {
+            _messages.removeWhere((m) => uploadingIds.contains(m.chatMessageId));
+            _uploadingLocalIds.removeAll(uploadingIds);
+          });
           CommonSnackBar.show(context: context, message: '이미지 전송에 실패했습니다: $e', type: SnackBarType.error);
         }
       }
@@ -397,6 +432,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
       }
     }
+  }
+
+  Widget _buildUploadingImageBubble(ChatMessage message) {
+    final path = message.imageUrls?.first ?? '';
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10.r),
+      child: SizedBox(
+        width: 264.w,
+        height: 180.h,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (path.isNotEmpty) Image.file(File(path), fit: BoxFit.cover),
+            ColoredBox(
+              color: AppColors.primaryBlack.withValues(alpha: 0.5),
+              child: const Center(
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(color: AppColors.primaryYellow),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -803,7 +865,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             children: [
               if (!isMine) ...[
                 message.type == MessageType.image
-                    ? chatImageBubble(context, message)
+                    ? (_uploadingLocalIds.contains(message.chatMessageId)
+                          ? _buildUploadingImageBubble(message)
+                          : chatImageBubble(context, message))
                     : Container(
                         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                         constraints: BoxConstraints(maxWidth: 264.w),
@@ -844,7 +908,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   SizedBox(width: 8.w),
                 ],
                 message.type == MessageType.image
-                    ? chatImageBubble(context, message)
+                    ? (_uploadingLocalIds.contains(message.chatMessageId)
+                          ? _buildUploadingImageBubble(message)
+                          : chatImageBubble(context, message))
                     : Container(
                         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                         constraints: BoxConstraints(maxWidth: 264.w, maxHeight: 264.h),
