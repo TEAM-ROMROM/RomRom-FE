@@ -98,7 +98,12 @@ class _TradeOptionChipState extends State<_TradeOptionChip> {
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeOut,
             style: CustomTextStyles.p2.copyWith(color: _pressed ? pressedText : baseText, letterSpacing: -0.32.sp),
-            child: Center(child: Text(widget.label)),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.only(top: 1.h),
+                child: Text(widget.label),
+              ),
+            ),
           ),
         ),
       ),
