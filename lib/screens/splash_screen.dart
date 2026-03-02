@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
 
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
 
     _controller.forward();
 
@@ -42,17 +42,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _initAndNavigate() async {
     try {
-      final screenFuture = _determineInitialScreen();
-      await Future.wait([screenFuture, Future.delayed(const Duration(seconds: 2))]);
-      final nextScreen = await screenFuture;
+      final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
+      final nextScreen = results[0] as Widget;
 
       if (!mounted) return;
 
-      context.navigateTo(screen: nextScreen, type: NavigationTypes.pushAndRemoveUntil);
-    } catch (e) {
-      debugPrint('[SplashScreen] 초기화 실패: $e');
+      context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition);
+    } catch (e, st) {
+      debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
       if (!mounted) return;
-      context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
+      context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.fadeTransition);
     }
   }
 
@@ -97,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
+        statusBarColor: AppColors.transparent,
         systemNavigationBarColor: AppColors.primaryBlack,
       ),
       child: Scaffold(

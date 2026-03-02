@@ -15,7 +15,7 @@ extension NavigationExtension on BuildContext {
     required Widget screen, // 이동할 page
     NavigationTypes type = NavigationTypes.push, // 이동 형식 (기본 Push)
     RouteSettings? routeSettings, // routing할 때 화면에 넘겨줄 값
-    bool Function(Route<dynamic>)? predicate, // pushAndRemoveUntil 용
+    bool Function(Route<dynamic>)? predicate, // pushAndRemoveUntil, fadeTransition 용
   }) {
     // iOS에서는 CupertinoPageRoute, 안드로이드에서는 MaterialPageRoute 사용
     PageRoute<T> createRoute(Widget screen, RouteSettings? settings) {
@@ -36,6 +36,24 @@ extension NavigationExtension on BuildContext {
 
       case NavigationTypes.pushAndRemoveUntil:
         return Navigator.pushAndRemoveUntil<T>(this, createRoute(screen, routeSettings), predicate ?? (route) => false);
+
+      case NavigationTypes.fadeTransition:
+        return Navigator.pushAndRemoveUntil<T>(
+          this,
+          PageRouteBuilder<T>(
+            pageBuilder: (context, animation, secondaryAnimation) => screen,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 800),
+            reverseTransitionDuration: const Duration(milliseconds: 300),
+            settings: routeSettings,
+          ),
+          predicate ?? (route) => false,
+        );
     }
   }
 }
