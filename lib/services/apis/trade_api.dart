@@ -232,7 +232,7 @@ class TradeApi {
   }
 
   /// 물품 AI 추천 정렬
-  /// `POST /api/trade/get`
+  /// `POST /api/trade/get/recommend`
   Future<TradeResponse> getAiRecommendItemList(TradeRequest request) async {
     const String url = '${AppUrls.baseUrl}/api/trade/get/recommend';
     late TradeResponse tradeResponse;

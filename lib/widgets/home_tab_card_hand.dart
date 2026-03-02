@@ -134,8 +134,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     ).animate(CurvedAnimation(parent: _iconAnimationController, curve: Curves.easeInOut));
 
     // glow 밝기 반복 (0.5 ~ 1.0 사이를 계속 왔다갔다)
-    _highlightPulseController = AnimationController(duration: const Duration(milliseconds: 1400), vsync: this)
-      ..repeat(reverse: true);
+    _highlightPulseController = AnimationController(duration: const Duration(milliseconds: 1400), vsync: this);
 
     _highlightPulseAnimation = Tween<double>(
       begin: 0.5,
@@ -161,6 +160,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
     // highlightedItemIds가 이미 있으면 재정렬 포함 전체 시퀀스 실행
     if (widget.highlightedItemIds.isNotEmpty) {
+      _highlightPulseController.repeat(reverse: true);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _reorderForAiHighlight(widget.highlightedItemIds);
       });
@@ -173,9 +173,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
     if (!listEquals(widget.highlightedItemIds, oldWidget.highlightedItemIds)) {
       if (widget.highlightedItemIds.isNotEmpty) {
+        if (!_highlightPulseController.isAnimating) {
+          _highlightPulseController.repeat(reverse: true);
+        }
         // 재정렬 + orbit 복귀 + float 애니메이션 순서로 실행
         _reorderForAiHighlight(widget.highlightedItemIds);
       } else {
+        _highlightPulseController.stop();
+        _highlightPulseController.value = 0.0;
         // 하이라이트 해제 시 float 슥 내려가기 (600ms easeInOut), 재정렬 애니메이션 역방향
         _highlightFloatController.animateTo(0.0, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut);
         _reorderAnimController.reverse();

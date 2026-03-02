@@ -30,7 +30,7 @@ class HomeFeedAiSortButton extends StatelessWidget {
         spreadRadius: 0.r,
       ),
       BoxShadow(
-        color: Colors.white.withValues(alpha: isActive ? 1.0 : 0.3), // 두 번째 그림자 투명도 조절
+        color: AppColors.textColorWhite.withValues(alpha: isActive ? 1.0 : 0.3), // 두 번째 그림자 투명도 조절
         offset: const Offset(0, -1),
         blurRadius: 4.r,
         spreadRadius: 0.r,
