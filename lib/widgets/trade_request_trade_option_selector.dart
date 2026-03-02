@@ -93,8 +93,9 @@ class _TradeOptionChipState extends State<_TradeOptionChip> {
         customBorder: RoundedRectangleBorder(borderRadius: radius),
         child: SizedBox(
           width: 80.w,
+          height: 34.h,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Center(
               child: AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 500),
