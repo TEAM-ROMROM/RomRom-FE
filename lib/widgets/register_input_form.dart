@@ -923,115 +923,120 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 ),
 
                 // 등록 완료 버튼
-                CompletionButton(
-                  isEnabled: isFormValid,
-                  isLoading: _isLoading,
-                  buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
-                  enabledOnPressed: () async {
-                    // 모든 필드 강제 검증
-                    if (!isFormValid) {
-                      setState(() {
-                        _forceValidateAll = true;
-                        _hasCategoryBeenTouched = true;
-                        _hasConditionBeenTouched = true;
-                        _hasTradeOptionBeenTouched = true;
-                        _hasImageBeenTouched = true;
-                      });
-                      return;
-                    }
+                IgnorePointer(
+                  ignoring: _isLoading || _loadingImageIndices.isNotEmpty,
+                  child: CompletionButton(
+                    isEnabled: isFormValid,
+                    buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
+                    enabledOnPressed: () async {
+                      // 이미지 업로드 중이면 제출 차단 (이중 안전장치)
+                      if (_loadingImageIndices.isNotEmpty) return;
 
-                    if (_longitude == null || _latitude == null) {
-                      CommonSnackBar.show(
-                        context: context,
-                        message: ItemTextFieldPhrase.location.errorText,
-                        type: SnackBarType.info,
-                      );
-                      return;
-                    }
-
-                    try {
-                      debugPrint('물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      final itemRequest = ItemRequest(
-                        itemId: widget.isEditMode ? widget.item?.itemId : null,
-                        itemName: titleController.text.trim(),
-                        itemDescription: descriptionController.text.trim(),
-                        itemCategory: selectedCategory!.serverName,
-                        itemCondition: selectedItemConditionTypes.isNotEmpty
-                            ? selectedItemConditionTypes.first.serverName
-                            : null,
-                        itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
-                        itemPrice: int.parse(priceController.text.replaceAll(',', '')),
-                        itemCustomTags: [],
-                        itemImageUrls: imageUrls,
-                        longitude: _longitude,
-                        latitude: _latitude,
-                        isAiPredictedPrice: useAiPrice,
-                      );
-
-                      if (widget.isEditMode) {
-                        // 수정 모드
-                        await ItemApi().updateItem(itemRequest);
-                        if (context.mounted) {
-                          Navigator.of(context).pop();
-                          CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
-                        }
-                      } else {
-                        // 등록 모드
-                        final response = await ItemApi().postItem(itemRequest);
-                        debugPrint('====================================');
-                        debugPrint(
-                          '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
-                        );
-                        debugPrint('====================================');
-
-                        final userInfo = UserInfo();
-                        await userInfo.getUserInfo();
-
-                        if (response.isFirstItemPosted == true) {
-                          debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
-                          await userInfo.saveLoginStatus(
-                            isFirstLogin: false,
-                            isFirstItemPosted: true,
-                            isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
-                            isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
-                            isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
-                            isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
-                            isCoachMarkShown: userInfo.isCoachMarkShown,
-                          );
-                        }
-
-                        if (context.mounted) {
-                          final resultData = {
-                            if (response.item?.itemId != null) 'itemId': response.item!.itemId,
-                            'isFirstItemPosted': response.isFirstItemPosted ?? false,
-                          };
-                          debugPrint('Navigator.pop 전달 데이터: $resultData');
-
-                          // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
-                          Navigator.of(context).pop(resultData);
-
-                          CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
-                        }
+                      // 모든 필드 강제 검증
+                      if (!isFormValid) {
+                        setState(() {
+                          _forceValidateAll = true;
+                          _hasCategoryBeenTouched = true;
+                          _hasConditionBeenTouched = true;
+                          _hasTradeOptionBeenTouched = true;
+                          _hasImageBeenTouched = true;
+                        });
+                        return;
                       }
-                    } catch (e) {
-                      if (context.mounted) {
+
+                      if (_longitude == null || _latitude == null) {
                         CommonSnackBar.show(
                           context: context,
-                          message: '물품 $modeText에 실패했습니다: $e',
-                          type: SnackBarType.error,
+                          message: ItemTextFieldPhrase.location.errorText,
+                          type: SnackBarType.info,
                         );
+                        return;
                       }
-                    } finally {
-                      if (mounted) {
+
+                      try {
+                        debugPrint('물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
                         setState(() {
-                          _isLoading = false;
+                          _isLoading = true;
                         });
+                        final itemRequest = ItemRequest(
+                          itemId: widget.isEditMode ? widget.item?.itemId : null,
+                          itemName: titleController.text.trim(),
+                          itemDescription: descriptionController.text.trim(),
+                          itemCategory: selectedCategory!.serverName,
+                          itemCondition: selectedItemConditionTypes.isNotEmpty
+                              ? selectedItemConditionTypes.first.serverName
+                              : null,
+                          itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
+                          itemPrice: int.parse(priceController.text.replaceAll(',', '')),
+                          itemCustomTags: [],
+                          itemImageUrls: imageUrls,
+                          longitude: _longitude,
+                          latitude: _latitude,
+                          isAiPredictedPrice: useAiPrice,
+                        );
+
+                        if (widget.isEditMode) {
+                          // 수정 모드
+                          await ItemApi().updateItem(itemRequest);
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
+                          }
+                        } else {
+                          // 등록 모드
+                          final response = await ItemApi().postItem(itemRequest);
+                          debugPrint('====================================');
+                          debugPrint(
+                            '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
+                          );
+                          debugPrint('====================================');
+
+                          final userInfo = UserInfo();
+                          await userInfo.getUserInfo();
+
+                          if (response.isFirstItemPosted == true) {
+                            debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
+                            await userInfo.saveLoginStatus(
+                              isFirstLogin: false,
+                              isFirstItemPosted: true,
+                              isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
+                              isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+                              isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+                              isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
+                              isCoachMarkShown: userInfo.isCoachMarkShown,
+                            );
+                          }
+
+                          if (context.mounted) {
+                            final resultData = {
+                              if (response.item?.itemId != null) 'itemId': response.item!.itemId,
+                              'isFirstItemPosted': response.isFirstItemPosted ?? false,
+                            };
+                            debugPrint('Navigator.pop 전달 데이터: $resultData');
+
+                            // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
+                            Navigator.of(context).pop(resultData);
+
+                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '물품 $modeText에 실패했습니다: $e',
+                            type: SnackBarType.error,
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
                       }
-                    }
-                  },
+                    },
+                  ),
                 ),
                 SizedBox(height: 24.h),
               ],
