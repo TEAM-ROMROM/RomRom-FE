@@ -58,6 +58,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // 업로드 중인 이미지 버블 ID 추적
   final Set<String> _uploadingLocalIds = {};
 
+  // 이미지 선택/업로드 중복 실행 방지
+  bool _isPickingImage = false;
+
   ChatRoom chatRoom = ChatRoom();
 
   bool _isLoading = true;
@@ -359,10 +362,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   /// 이미지 선택 후 전송
   Future<void> _onPickImage() async {
+    if (_isPickingImage) return; // 중복 실행 방지
+    _isPickingImage = true;
     // 키보드가 올라온 상태에서 사진 선택 시 입력창/키보드 겹침 방지
     FocusScope.of(context).unfocus();
     try {
       final List<XFile> picked = await _picker.pickMultiImage();
+
+      if (!mounted) return;
 
       if (picked.isEmpty) {
         // 사용자가 선택을 취소함
@@ -431,6 +438,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (context.mounted) {
         CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
       }
+    } finally {
+      if (mounted) _isPickingImage = false;
     }
   }
 
