@@ -51,9 +51,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   final PageController _coachMarkPageController = PageController();
   // 피드 아이템 목록
   final List<HomeFeedItem> _feedItems = [];
-  int _currentPage = 0; // 페이징 용(데이터)
+  int _currentPage = 0;
   // ignore: unused_field
-  int _currentFeedIndex = 0; // 화면 상 현재 보고 있는 피드 인덱스
+  int _currentFeedIndex = 0;
   final int _pageSize = 10;
   // 초기 로딩 상태
   bool _isLoading = true;
@@ -68,7 +68,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 오버레이 엔트리
   OverlayEntry? _overlayEntry;
 
-  // 코치마크 이미지 목록
+  /// AI 추천으로 하이라이트할 카드 itemId 목록 (상위 3개)
+  List<String> _aiHighlightedItemIds = [];
+
   final List<String> _coachMarkImages = [
     'assets/images/coachMark1.png',
     'assets/images/coachMark2.png',
@@ -96,6 +98,14 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     _coachMarkPageController.dispose();
     _coachMarkPageNotifier.dispose();
     super.dispose();
+  }
+
+  /// AI 추천 결과를 받아 카드 하이라이트 상태 업데이트
+  void _onAiRecommend(List<String> itemIds) {
+    setState(() {
+      _aiHighlightedItemIds = itemIds;
+    });
+    debugPrint('AI 추천 하이라이트 업데이트: $itemIds');
   }
 
   /// 코치마크 표시 (외부 호출용 - 첫 물건 등록 후 홈 탭에서 직접 표시)
@@ -208,7 +218,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   // 코치마크 오버레이 표시 (성능/메모리/오류 처리 최적화)
   void _showCoachMarkOverlay() {
-    _removeCoachMarkOverlay(); // 기존 오버레이 정리
+    _removeCoachMarkOverlay();
     _overlayEntry = OverlayEntry(builder: (context) => _buildCoachMarkOverlay());
     if (mounted && _overlayEntry != null) {
       try {
@@ -393,6 +403,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
     setState(() {
       _isLoadingMore = true;
+      _aiHighlightedItemIds = []; // 추가 로드 시 AI 하이라이트 초기화
     });
 
     try {
@@ -462,12 +473,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         accountStatus: d.member?.accountStatus,
         profileUrl: d.member?.profileUrl ?? '',
         likeCount: d.likeCount ?? 0,
-        imageUrls: d.imageUrlList, // List<String>
+        imageUrls: d.imageUrlList,
         description: d.itemDescription ?? '',
         hasAiAnalysis: false,
         latitude: d.latitude,
         longitude: d.longitude,
-        authorMemberId: d.member?.memberId, // 게시글 작성자 ID
+        authorMemberId: d.member?.memberId,
       );
 
       feedItems.add(feedItem);
@@ -596,9 +607,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
-                if (!_isBlurShown && index < _feedItems.length) {
+                if (!_isBlurShown) {
                   setState(() {
-                    _currentFeedIndex = index;
+                    if (index < _feedItems.length) _currentFeedIndex = index;
+                    // 피드 변경 시 AI 하이라이트 초기화 (로딩 인디케이터 페이지 포함)
+                    _aiHighlightedItemIds = [];
                   });
                 }
               },
@@ -607,7 +620,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                   // 리스트 끝에 로딩 인디케이터 표시
                   return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
                 }
-                return HomeFeedItemWidget(item: _feedItems[index], showBlur: _isBlurShown);
+                return HomeFeedItemWidget(
+                  item: _feedItems[index],
+                  showBlur: _isBlurShown,
+                  // AI 추천 결과를 HomeTabScreen으로 전달
+                  onAiRecommend: _onAiRecommend,
+                );
               },
             ),
           ),
@@ -667,13 +685,17 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
 
-        // 하단 고정 카드 덱 (터치 영역 분리)
+        // 하단 고정 카드 덱 - AI 하이라이트 itemId 전달
         if (!_isBlurShown)
           Positioned(
             left: 0,
             right: 0,
-            bottom: -140.h, // 네비게이션 바 위에 표시
-            child: HomeTabCardHand(cards: _myCards, onCardDrop: _handleCardDrop),
+            bottom: -130.h,
+            child: HomeTabCardHand(
+              cards: _myCards,
+              onCardDrop: _handleCardDrop,
+              highlightedItemIds: _aiHighlightedItemIds,
+            ),
           )
         else
           Positioned(
