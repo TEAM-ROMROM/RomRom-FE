@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/my_page/profile_image_crop_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -93,28 +94,12 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         return;
       }
 
-      // 원형 크롭 UI 호출
-      final CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: picked.path,
-        uiSettings: [
-          AndroidUiSettings(
-            cropStyle: CropStyle.circle,
-            toolbarTitle: '프로필 사진 조정',
-            toolbarColor: AppColors.primaryBlack,
-            toolbarWidgetColor: AppColors.textColorWhite,
-            activeControlsWidgetColor: AppColors.primaryYellow,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-            hideBottomControls: false,
-          ),
-          IOSUiSettings(
-            cropStyle: CropStyle.circle,
-            title: '프로필 사진 조정',
-            aspectRatioLockEnabled: true,
-            resetAspectRatioEnabled: false,
-          ),
-        ],
-      );
+      // 커스텀 크롭 화면으로 이동
+      if (!mounted) return;
+      final XFile? croppedFile = await context.navigateTo<XFile>(screen: ProfileImageCropScreen(imageFile: picked));
+
+      // navigateTo 완료 후 위젯이 dispose된 경우 대비
+      if (!mounted) return;
 
       // 사용자가 크롭 화면에서 취소
       if (croppedFile == null) {
@@ -128,7 +113,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       });
 
       try {
-        final List<String> urls = await ImageApi().uploadImages([XFile(croppedFile.path)]);
+        final List<String> urls = await ImageApi().uploadImages([croppedFile]);
 
         if (mounted) {
           setState(() {
