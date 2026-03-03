@@ -117,7 +117,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   Positioned.fill(
                     child: GestureDetector(
                       onTap: () async {
-                        final resultIndex = await Navigator.push(
+                        final result = await Navigator.push<dynamic>(
                           context,
                           MaterialPageRoute(
                             builder: (_) => ItemDetailDescriptionScreen(
@@ -132,11 +132,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             ),
                           ),
                         );
-                        if (resultIndex != null && resultIndex is int) {
+                        if (result is Map<String, dynamic> && mounted) {
                           setState(() {
-                            _currentImageIndex = resultIndex;
+                            _isLiked = result['isLiked'] as bool? ?? _isLiked;
+                            _likeCount = result['likeCount'] as int? ?? _likeCount;
                           });
-                          pageController.jumpToPage(_currentImageIndex);
                         }
                       },
                       child: Hero(
