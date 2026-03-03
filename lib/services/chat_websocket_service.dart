@@ -28,8 +28,10 @@ class ChatWebSocketService {
 
   ///  STOMP 연결
   Future<void> connect() async {
-    if (_isConnected) {
-      debugPrint('[WebSocket] Already connected');
+    // _stompClient != null 이면 이미 연결 중이거나 재연결 대기 중
+    // 이 경우 새 StompClient를 생성하면 중복 세션 문제가 발생하므로 early return
+    if (_isConnected || _stompClient != null) {
+      debugPrint('[WebSocket] Already connected or connecting');
       return;
     }
 
@@ -103,6 +105,9 @@ class ChatWebSocketService {
     debugPrint('[WebSocket] ❌ STOMP Error');
     debugPrint('[WebSocket] Headers: ${frame.headers}');
     debugPrint('[WebSocket] Body: ${frame.body}');
+    // STOMP 에러 수신 즉시 연결 상태를 false로 설정
+    // _onDisconnect 보다 먼저 처리하여 에러 발생 후 메시지 전송 시도를 차단
+    _isConnected = false;
   }
 
   /// WebSocket 에러 콜백

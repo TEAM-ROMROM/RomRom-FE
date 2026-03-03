@@ -200,20 +200,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             return;
           }
 
-          // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
+          // pending과 매칭 시도: 내가 보낸 메시지의 서버 에코만 매칭 (상대방 메시지 제외)
           String? matchedLocalId;
-          _pendingLocalMessages.forEach((localId, localMsg) {
-            if (matchedLocalId != null) return;
-            if (localMsg.senderId != _myMemberId) return;
-            if ((localMsg.content ?? '') != (newMessage.content ?? '')) {
-              return;
-            }
-            final localDt = localMsg.createdDate ?? DateTime.now();
-            final serverDt = newMessage.createdDate ?? DateTime.now();
-            if (serverDt.difference(localDt).inSeconds.abs() <= 10) {
-              matchedLocalId = localId;
-            }
-          });
+          if (newMessage.senderId == _myMemberId) {
+            _pendingLocalMessages.forEach((localId, localMsg) {
+              if (matchedLocalId != null) return;
+              if (localMsg.senderId != _myMemberId) return;
+              if ((localMsg.content ?? '') != (newMessage.content ?? '')) {
+                return;
+              }
+              final localDt = localMsg.createdDate ?? DateTime.now();
+              final serverDt = newMessage.createdDate ?? DateTime.now();
+              if (serverDt.difference(localDt).inSeconds.abs() <= 10) {
+                matchedLocalId = localId;
+              }
+            });
+          }
 
           if (matchedLocalId != null) {
             final localMsg = _pendingLocalMessages.remove(matchedLocalId)!;
@@ -243,7 +245,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               _messages.insert(0, fixedServer);
             }
           } else {
-            _messages.insert(0, newMessage);
+            // 서버 WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API로 보완
+            if (newMessage.type == MessageType.image &&
+                (newMessage.imageUrls == null || newMessage.imageUrls!.isEmpty)) {
+              final tempId = 'ws_img_${DateTime.now().microsecondsSinceEpoch}';
+              _messages.insert(0, newMessage.copyWith(chatMessageId: tempId));
+              _fetchAndUpdateImageUrls(tempId, newMessage);
+            } else {
+              _messages.insert(0, newMessage);
+            }
           }
         });
 
@@ -339,15 +349,51 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _scrollToBottom();
 
     // 2) WebSocket을 통해 서버로 전송
+    // content는 로컬 메시지와 동일한 값으로 전송해야 pending 매칭이 올바르게 동작함
     _wsService.sendMessage(
       chatRoomId: widget.chatRoomId,
       type: MessageType.image,
-      content: imageMessage ?? '',
+      content: imageMessage ?? '사진을 보냈습니다.',
       imageUrls: imageUrls,
     );
 
     // 텍스트 입력필드 초기화
     _messageController.clear();
+  }
+
+  /// WebSocket 메시지에 imageUrls 미포함 시 REST API로 imageUrls 보완
+  /// 서버가 WebSocket 브로드캐스트에 imageUrls를 포함하지 않는 문제 대응
+  Future<void> _fetchAndUpdateImageUrls(String tempId, ChatMessage wsMessage) async {
+    // 서버가 메시지를 저장·조회 가능한 상태가 될 때까지 대기
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    try {
+      final response = await ChatApi().getChatMessages(chatRoomId: widget.chatRoomId, pageNumber: 0, pageSize: 20);
+      if (!mounted) return;
+
+      final apiMessages = response.messages?.content ?? [];
+      // senderId가 같고 IMAGE 타입이며 imageUrls가 있는 최신 메시지 탐색
+      ChatMessage? found;
+      for (final m in apiMessages) {
+        if (m.type != MessageType.image) continue;
+        if (m.senderId != wsMessage.senderId) continue;
+        if (m.imageUrls == null || m.imageUrls!.isEmpty) continue;
+        found = m;
+        break;
+      }
+
+      if (found == null || !mounted) return;
+
+      setState(() {
+        final idx = _messages.indexWhere((m) => m.chatMessageId == tempId);
+        if (idx != -1) {
+          _messages[idx] = found!;
+        }
+      });
+    } catch (e) {
+      debugPrint('[ChatRoom] imageUrls 보완 실패: $e');
+    }
   }
 
   void _scrollToBottom() {
