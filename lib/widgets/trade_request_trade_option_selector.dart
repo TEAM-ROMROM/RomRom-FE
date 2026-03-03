@@ -93,13 +93,14 @@ class _TradeOptionChipState extends State<_TradeOptionChip> {
         customBorder: RoundedRectangleBorder(borderRadius: radius),
         child: SizedBox(
           width: 80.w,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+          height: 34.h,
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+            style: CustomTextStyles.p2.copyWith(color: _pressed ? pressedText : baseText, letterSpacing: -0.32.sp),
             child: Center(
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOut,
-                style: CustomTextStyles.p2.copyWith(color: _pressed ? pressedText : baseText, letterSpacing: -0.32.sp),
+              child: Padding(
+                padding: EdgeInsets.only(top: 1.h),
                 child: Text(widget.label),
               ),
             ),

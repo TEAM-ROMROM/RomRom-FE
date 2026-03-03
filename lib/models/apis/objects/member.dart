@@ -13,13 +13,13 @@ class Member extends BaseEntity {
   final String? profileUrl;
   final String? role;
   final String? accountStatus;
+  final DateTime? lastActiveAt;
   final bool? isFirstLogin;
   final bool? isItemCategorySaved;
   final bool? isFirstItemPosted;
   final bool? isMemberLocationSaved;
   final bool? isRequiredTermsAgreed;
   final bool? isMarketingInfoAgreed;
-  final bool? isNotificationAgreed;
   final bool? isActivityNotificationAgreed;
   final bool? isChatNotificationAgreed;
   final bool? isContentNotificationAgreed;
@@ -28,6 +28,7 @@ class Member extends BaseEntity {
   final double? longitude;
   final int? totalLikeCount;
   final double? searchRadiusInMeters;
+  final bool? isOnline;
 
   /// 해당 회원이 차단된 상태인지 여부 (타인 프로필 조회 시)
   final bool? isBlocked;
@@ -45,13 +46,13 @@ class Member extends BaseEntity {
     this.profileUrl,
     this.role,
     this.accountStatus,
+    this.lastActiveAt,
     this.isFirstLogin,
     this.isItemCategorySaved,
     this.isFirstItemPosted,
     this.isMemberLocationSaved,
     this.isRequiredTermsAgreed,
     this.isMarketingInfoAgreed,
-    this.isNotificationAgreed,
     this.isActivityNotificationAgreed,
     this.isChatNotificationAgreed,
     this.isContentNotificationAgreed,
@@ -62,6 +63,7 @@ class Member extends BaseEntity {
     this.searchRadiusInMeters,
     this.isBlocked,
     this.locationAddress,
+    this.isOnline,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);

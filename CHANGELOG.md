@@ -1,7 +1,105 @@
 # Changelog
 
-**현재 버전:** 1.9.18  
-**마지막 업데이트:** 2026-02-18T16:59:10Z  
+**현재 버전:** 1.9.45  
+**마지막 업데이트:** 2026-03-02T14:27:17Z  
+
+---
+
+## [1.9.45] - 2026-03-02
+
+**PR:** #609  
+
+**채팅에서 여러 이미지 동시 전송 지원**
+
+**대화 상대방의 온라인 상태 및 마지막 활동 시간 실시간 표시**
+
+**알림 종류별 뮤트/해제 토글 기능**
+
+**페이드 효과 및 즉시 화면 전환 옵션 추가**
+
+**앱 라이프사이클 관리로 안정성 향상**
+
+**로딩 상태 표시 개선**
+
+**온보딩 플로우 최적화**
+
+**UI 응답성 및 사용자 경험 개선**
+
+---
+
+## [1.9.33] - 2026-02-27
+
+**PR:** #592  
+
+**New Features**
+- 탈퇴한 사용자를 "(탈퇴)" 라벨로 표시하여 명확하게 구분
+- 채팅방 앱 바 제목 클릭 시 상대방 프로필로 이동 가능
+
+**UI/UX Improvements**
+- 채팅방 앱 바 제목 중앙 정렬 및 레이아웃 개선
+
+---
+
+## [1.9.32] - 2026-02-25
+
+**PR:** #588  
+
+**새 기능**
+- 물품 목록에 정렬 기능 추가 (생성일, 거리, 선호 카테고리, 추천순)
+- 물품 조회 시 기본 정렬을 추천순으로 설정
+
+**Chores**
+- 앱 버전을 1.9.32로 업데이트
+
+---
+
+## [1.9.31] - 2026-02-24
+
+**PR:** #573  
+
+**New Features**
+- Real notification management with read/unread status tracking and batch deletion
+- Deep link navigation for notifications directing users to relevant items or chats
+- Interactive coach mark onboarding for new item listings
+
+**Bug Fixes**
+- Fixed modal overlap issues in chat screen
+- Improved user profile avatar loading
+
+**Documentation**
+- Updated project guidelines with comprehensive style and structure documentation
+
+**Chores**
+- Version update to v1.9.31
+- Restructured development documentation for improved maintainability
+
+---
+
+## [1.9.27] - 2026-02-23
+
+**PR:** #556  
+
+**버그 수정**
+- 게시물 작성자가 계정을 삭제한 경우에 대한 처리 추가. 이제 상세 화면에서 명확한 메시지와 함께 안내됩니다.
+
+**Chores**
+- 버전을 1.9.27로 업데이트했습니다.
+
+---
+
+## [1.9.26] - 2026-02-23
+
+**PR:** #555  
+
+**새로운 기능**
+- 좋아요 목록이 비어있을 때 빈 상태 화면 추가
+
+**개선사항**
+- 요청 취소 및 삭제 작업 완료 시 사용자 피드백 메시지 추가
+- 오류 처리 및 메시지 강화
+
+**버전**
+- v1.9.26으로 업그레이드
 
 ---
 

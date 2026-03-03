@@ -40,7 +40,7 @@ class ChatRoom extends BaseEntity {
   String getOpponentNickname(String myMemberId) {
     final opponent = getOpponent(myMemberId);
     if (opponent == null) return '(탈퇴)';
-    if (opponent.accountStatus == 'DELETE_ACCOUNT') return '(탈퇴)';
+    if (opponent.accountStatus == 'DELETE_ACCOUNT') return '(탈퇴) ${opponent.nickname}';
     return opponent.nickname ?? '알 수 없음';
   }
 
@@ -74,10 +74,15 @@ class ChatRoom extends BaseEntity {
   }
 
   /// UI 헬퍼: 마지막 활동 시간
-  DateTime getLastActivityTime() {
-    // FIXME: 백엔드 수정 대기 - 최근 메시지 시간 없음
-    // 임시: ChatRoom updatedDate 사용
-    return updatedDate ?? createdDate ?? DateTime.now();
+  DateTime getLastActivityTime(Member member) {
+    DateTime? opponentLastActivityTime = member.lastActiveAt;
+    return opponentLastActivityTime ?? updatedDate ?? DateTime.now();
+  }
+
+  /// UI 헬퍼: 활동 중인지 상태 반환
+  bool getOnlineStatus(Member member) {
+    bool? onlineStatus = member.isOnline;
+    return onlineStatus ?? false;
   }
 
   /// UI 헬퍼: 읽지 않은 메시지 수

@@ -27,6 +27,7 @@ import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 /// 물품 등록 입력 폼 위젯
@@ -53,6 +54,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   double? _latitude;
   double? _longitude;
   LocationAddress? _selectedAddress;
+  bool _isAiPriceLoading = false; // AI 가격 예측 로딩 상태
 
   // 처음 포커스 받았는지 추적을 위한 변수
   bool _hasConditionBeenTouched = false;
@@ -98,11 +100,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         }
         return;
       }
-      final List<XFile> picked = await _picker.pickMultiImage();
-
-      // 사용자가 취소했거나 선택 없음
-      if (picked.isEmpty) return;
-
       // 남은 슬록 계산 (최대 10장)
       final int remain = (kMaxImages - imageFiles.length).clamp(0, kMaxImages);
       if (remain == 0) {
@@ -111,6 +108,11 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         }
         return;
       }
+
+      final List<XFile> picked = await _picker.pickMultiImage(limit: remain);
+
+      // 사용자가 취소했거나 선택 없음
+      if (picked.isEmpty) return;
 
       // 초과 선택 분리
       final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
@@ -210,6 +212,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   // ai 가격 측정 함수
   Future<void> _measureAiPrice() async {
+    setState(() => _isAiPriceLoading = true); // 로딩 시작
     try {
       final predictedPrice = await ItemApi().pricePredict(
         ItemRequest(
@@ -236,6 +239,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       if (context.mounted) {
         CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e', type: SnackBarType.error);
       }
+    } finally {
+      if (mounted) setState(() => _isAiPriceLoading = false); // 로딩 종료
     }
   }
 
@@ -862,7 +867,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 RegisterCustomTextField(
                   phrase: ItemTextFieldPhrase.price,
                   prefixText: '₩',
-                  readOnly: useAiPrice,
+                  readOnly: useAiPrice || _isAiPriceLoading, // 로딩 중에도 readOnly
                   maxLength: 11,
                   keyboardType: TextInputType.number,
                   controller: priceController,
@@ -870,6 +875,20 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   focusNode: _priceFocusNode,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                  // 로딩 중일 때 suffixIcon으로 스피너 표시
+                  suffixIcon: _isAiPriceLoading
+                      ? Padding(
+                          padding: EdgeInsets.all(12.w),
+                          child: SizedBox(
+                            width: 10.w,
+                            height: 10.w,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.w,
+                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryYellow),
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
 
                 // 거래 희망 위치 필드
@@ -883,27 +902,21 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     controller: locationController,
                     forceValidate: _forceValidateAll,
                     onTap: () async {
-                      final result = await Navigator.of(context).push<LocationAddress>(
-                        MaterialPageRoute(
-                          builder: (_) => ItemRegisterLocationScreen(
-                            initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
-                            onLocationSelected: (address) {
-                              debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
-                              setState(() {
-                                locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-                                // 위치 좌표 저장
-                                _latitude = address.latitude;
-                                _longitude = address.longitude;
-                              });
-                              debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
-                            },
-                          ),
+                      await context.navigateTo<LocationAddress>(
+                        screen: ItemRegisterLocationScreen(
+                          initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
+                          onLocationSelected: (address) {
+                            debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
+                            setState(() {
+                              locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+                              // 위치 좌표 저장
+                              _latitude = address.latitude;
+                              _longitude = address.longitude;
+                            });
+                            debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
+                          },
                         ),
                       );
-                      // Navigator.pop으로만 돌아온 경우도 처리
-                      if (result != null) {
-                        locationController.text = '${result.siDo} ${result.siGunGu} ${result.eupMyoenDong}';
-                      }
                     },
                   ),
                   spacing: 32,
@@ -911,11 +924,14 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
                 // 등록 완료 버튼
                 IgnorePointer(
-                  ignoring: _isLoading,
+                  ignoring: _isLoading || _loadingImageIndices.isNotEmpty,
                   child: CompletionButton(
                     isEnabled: isFormValid,
                     buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
                     enabledOnPressed: () async {
+                      // 이미지 업로드 중이면 제출 차단 (이중 안전장치)
+                      if (_loadingImageIndices.isNotEmpty) return;
+
                       // 모든 필드 강제 검증
                       if (!isFormValid) {
                         setState(() {
@@ -1012,11 +1028,12 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             type: SnackBarType.error,
                           );
                         }
-                      }
-                      if (mounted) {
-                        setState(() {
-                          _isLoading = false;
-                        });
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
                       }
                     },
                   ),

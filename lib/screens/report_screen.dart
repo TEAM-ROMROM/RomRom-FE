@@ -24,6 +24,7 @@ class _ReportScreenState extends State<ReportScreen> {
   // 선택된 신고 사유 집합
   final Set<ItemReportReason> _selectedReasons = {};
   late final TextEditingController _extraCommentController;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -118,15 +119,18 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
           ),
 
-          // 하단 고정 신고하기 버튼 (bottom 기준 76px)
+          // 하단 고정 신고하기 버튼 (bottom 기준 97.h)
           Positioned(
             left: 24.w,
             right: 24.w,
             bottom: 97.h,
             child: CompletionButton(
               isEnabled: _selectedReasons.isNotEmpty,
+              isLoading: _isSubmitting,
               buttonText: '신고 하기',
               enabledOnPressed: () async {
+                if (_isSubmitting) return;
+                setState(() => _isSubmitting = true);
                 try {
                   final api = ReportApi();
                   await api.reportItem(
@@ -139,12 +143,17 @@ class _ReportScreenState extends State<ReportScreen> {
                   // 에러 코드 파싱
                   final messageForUser = ErrorUtils.getErrorMessage(e);
 
+                  if (!mounted) return;
                   await CommonModal.error(
                     context: context,
                     message: messageForUser,
                     onConfirm: () => Navigator.of(context).pop(),
                   );
                   return;
+                } finally {
+                  if (mounted) {
+                    setState(() => _isSubmitting = false);
+                  }
                 }
 
                 if (!mounted) return;

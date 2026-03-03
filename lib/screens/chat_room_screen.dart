@@ -7,6 +7,7 @@ import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
@@ -17,6 +18,7 @@ import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -53,17 +55,36 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // 낙관적 로컬 메시지(서버 응답 대기)
   final Map<String, ChatMessage> _pendingLocalMessages = {};
 
+  // 업로드 중인 이미지 버블 ID 추적
+  final Set<String> _uploadingLocalIds = {};
+
+  // 이미지 선택/업로드 중복 실행 방지
+  bool _isPickingImage = false;
+
   ChatRoom chatRoom = ChatRoom();
 
   bool _isLoading = true;
   bool _hasError = false;
   bool _deleteModalShown = false;
+  bool _tradeCompletedModalShown = false;
 
   String _errorMessage = '';
   String? _myMemberId;
 
+  String get _myId => _myMemberId!;
+  dynamic get _opponent => chatRoom.getOpponent(_myId);
+  String get _opponentNickname => chatRoom.getOpponentNickname(_myId);
+  String? get _opponentId => _opponent?.memberId;
+  bool get _isOpponentDeleted => _opponent?.accountStatus == AccountStatus.deleteAccount.serverName;
+
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
+
+  // 상대방 온라인 상태
+  DateTime? _opponentLastActiveAt;
+  bool _isOpponentOnline = false;
+  // _onlineStatusTimer 제거
+  StreamSubscription? _pollerSubscription;
 
   @override
   void initState() {
@@ -145,6 +166,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         _messages = response.messages?.content ?? [];
       });
 
+      final opponentId = chatRoom.getOpponent(_myMemberId!)?.memberId;
+      if (opponentId != null) {
+        ChatMemberStatusPoller.instance.start(opponentId);
+
+        // 초기 opponent의 값으로 즉시 상태 세팅
+        final initialOpponent = chatRoom.getOpponent(_myMemberId!);
+        setState(() {
+          _opponentLastActiveAt = initialOpponent?.lastActiveAt;
+          _isOpponentOnline = initialOpponent?.isOnline ?? false; // 서버값 그대로 사용
+        });
+
+        // 폴링으로 새 Member 수신 시 서버가 준 inOnline 값 반영
+        _pollerSubscription = ChatMemberStatusPoller.instance.stream.listen((member) {
+          if (!mounted) return;
+          setState(() {
+            _opponentLastActiveAt = member.lastActiveAt;
+            _isOpponentOnline = member.isOnline ?? false; // 서버값 그대로 사용
+          });
+        });
+      }
+
       // 4. 실시간 메시지 구독 (WebSocket)
       _messageSubscription = _wsService.subscribeToChatRoom(widget.chatRoomId).listen((newMessage) {
         if (!mounted) return;
@@ -211,15 +253,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       setState(() => _isLoading = false);
       _scrollToBottom();
       chatApi.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true); // 입장 처리
+      // 탈퇴 사용자 모달 (채팅방 유지 - 대화 내용 열람 가능)
       CommonModal.showOnceAfterFrame(
         context: context,
         isShown: () => _deleteModalShown,
         markShown: () => _deleteModalShown = true,
-        shouldShow: () => chatRoom.getOpponent(_myMemberId!)?.accountStatus == AccountStatus.deleteAccount.serverName,
+        shouldShow: () => _isOpponentDeleted,
         message: '존재하지 않거나 탈퇴한 사용자입니다.',
         onConfirm: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(); // 모달만 닫기
+        },
+      );
+      // 거래완료 모달 (채팅방 유지 - 대화 내용 열람 가능, 탈퇴 모달과 중첩 방지)
+      CommonModal.showOnceAfterFrame(
+        context: context,
+        isShown: () => _tradeCompletedModalShown,
+        markShown: () => _tradeCompletedModalShown = true,
+        shouldShow: () =>
+            !_deleteModalShown && chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName,
+        message: '거래완료 된 글입니다.',
+        onConfirm: () {
+          Navigator.of(context).pop(); // 모달만 닫기
         },
       );
     } catch (e) {
@@ -308,30 +362,75 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   /// 이미지 선택 후 전송
   Future<void> _onPickImage() async {
+    if (_isPickingImage) return; // 중복 실행 방지
+    _isPickingImage = true;
+    // 키보드가 올라온 상태에서 사진 선택 시 입력창/키보드 겹침 방지
+    FocusScope.of(context).unfocus();
     try {
-      final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+      final List<XFile> picked = await _picker.pickMultiImage();
 
-      if (picked == null) {
+      if (!mounted) return;
+
+      if (picked.isEmpty) {
         // 사용자가 선택을 취소함
         return;
       }
 
+      // 1) picked 순서대로 로컬 파일로 즉시 스켈레톤 버블 표시
+      final List<String> uploadingIds = [];
+      for (int i = 0; i < picked.length; i++) {
+        final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}_$i';
+        uploadingIds.add(localId);
+        setState(() {
+          _messages.insert(
+            0,
+            ChatMessage(
+              chatRoomId: widget.chatRoomId,
+              chatMessageId: localId,
+              senderId: _myMemberId,
+              createdDate: DateTime.now(),
+              content: '사진을 보냈습니다.',
+              type: MessageType.image,
+              imageUrls: [picked[i].path],
+            ),
+          );
+          _uploadingLocalIds.add(localId);
+        });
+      }
+      _scrollToBottom();
+
       try {
-        // 1) 선택된 이미지를 서버에 업로드
-        final uploadedImageUrls = await ImageApi().uploadImages([picked]);
+        // 2) 서버에 업로드
+        final uploadedImageUrls = await ImageApi().uploadImages(picked);
         if (!mounted) return;
 
-        // imageUrls가 비어있는 경우 처리 필요
+        // 3) 스켈레톤 버블 제거
+        setState(() {
+          _messages.removeWhere((m) => uploadingIds.contains(m.chatMessageId));
+          _uploadingLocalIds.removeAll(uploadingIds);
+        });
+
         if (uploadedImageUrls.isEmpty) {
           CommonSnackBar.show(context: context, message: '이미지 업로드 실패', type: SnackBarType.error);
           return;
         }
 
-        // 2) 업로드된 URL로 메시지 전송 (imageMessage는 입력필드의 텍스트 사용)
+        // 4) 업로드된 URL을 picked 순서대로 각각 별도 버블로 전송
+        // 텍스트는 첫 번째 이미지에만 첨부
         final textMessage = _messageController.text.trim();
-        await _sendImage(imageUrls: uploadedImageUrls, imageMessage: textMessage.isEmpty ? null : textMessage);
+        for (int i = 0; i < uploadedImageUrls.length; i++) {
+          if (!mounted) return;
+          await _sendImage(
+            imageUrls: [uploadedImageUrls[i]],
+            imageMessage: i == 0 && textMessage.isNotEmpty ? textMessage : null,
+          );
+        }
       } catch (e) {
-        if (context.mounted) {
+        if (mounted) {
+          setState(() {
+            _messages.removeWhere((m) => uploadingIds.contains(m.chatMessageId));
+            _uploadingLocalIds.removeAll(uploadingIds);
+          });
           CommonSnackBar.show(context: context, message: '이미지 전송에 실패했습니다: $e', type: SnackBarType.error);
         }
       }
@@ -339,12 +438,42 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (context.mounted) {
         CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
       }
+    } finally {
+      if (mounted) _isPickingImage = false;
     }
+  }
+
+  Widget _buildUploadingImageBubble(ChatMessage message) {
+    final path = message.imageUrls?.first ?? '';
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10.r),
+      child: SizedBox(
+        width: 264.w,
+        height: 180.h,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (path.isNotEmpty) Image.file(File(path), fit: BoxFit.cover),
+            ColoredBox(
+              color: AppColors.primaryBlack.withValues(alpha: 0.5),
+              child: const Center(
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(color: AppColors.primaryYellow),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _messageSubscription?.cancel();
+    _pollerSubscription?.cancel();
     // 채팅방 구독 해제 (참조 카운팅으로 ChatTabScreen의 구독은 유지됨)
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
@@ -352,6 +481,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.dispose();
+    ChatMemberStatusPoller.instance.stop();
     super.dispose();
   }
 
@@ -445,12 +575,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 앱바 빌더
   CommonAppBar _buildAppBar() {
+    final opponentId = _opponentId;
+    final opponentNickname = _opponentNickname;
+
     return CommonAppBar(
-      title: chatRoom.getOpponentNickname(_myMemberId!),
+      title: opponentNickname,
       onTitleTap: () {
-        final opponent = chatRoom.getOpponent(_myMemberId!);
-        if (opponent?.memberId != null) {
-          context.navigateTo(screen: ProfileScreen(memberId: opponent!.memberId!));
+        if (opponentId != null) {
+          context.navigateTo(screen: ProfileScreen(memberId: opponentId));
         }
       },
       onBackPressed: () {
@@ -462,9 +594,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              chatRoom.getOpponentNickname(_myMemberId!),
-              style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
+            SizedBox(
+              width: 240.w,
+              child: Text(
+                opponentNickname,
+                textAlign: TextAlign.center,
+                style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, overflow: TextOverflow.ellipsis),
+              ),
             ),
             Padding(
               padding: EdgeInsets.only(top: 8.h),
@@ -474,11 +610,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   Container(
                     width: 8.w,
                     height: 8.w,
-                    decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.chatInactiveStatus),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _isOpponentOnline ? AppColors.chatActiveStatus : AppColors.chatInactiveStatus,
+                    ),
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    getLastActivityTime(chatRoom),
+                    _isOpponentOnline ? '활동 중' : getLastActivityTime(_opponentLastActiveAt),
                     style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
                   ),
                 ],
@@ -497,9 +636,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 icon: AppIcons.report,
                 title: '신고하기',
                 onTap: () async {
-                  context.navigateTo(
-                    screen: MemberReportScreen(memberId: chatRoom.getOpponent(_myMemberId!)!.memberId!),
-                  );
+                  context.navigateTo(screen: MemberReportScreen(memberId: opponentId!));
                 },
                 showDividerAfter: true,
               ),
@@ -519,7 +656,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       Navigator.of(context).pop(); // 모달 닫기
                     },
                     onConfirm: () async {
-                      final opponentId = chatRoom.getOpponent(_myMemberId!)?.memberId;
+                      final opponentId = _opponentId;
                       if (opponentId == null) {
                         if (context.mounted) {
                           Navigator.of(context).pop();
@@ -737,7 +874,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             children: [
               if (!isMine) ...[
                 message.type == MessageType.image
-                    ? chatImageBubble(context, message)
+                    ? (_uploadingLocalIds.contains(message.chatMessageId)
+                          ? _buildUploadingImageBubble(message)
+                          : chatImageBubble(context, message))
                     : Container(
                         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                         constraints: BoxConstraints(maxWidth: 264.w),
@@ -778,7 +917,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   SizedBox(width: 8.w),
                 ],
                 message.type == MessageType.image
-                    ? chatImageBubble(context, message)
+                    ? (_uploadingLocalIds.contains(message.chatMessageId)
+                          ? _buildUploadingImageBubble(message)
+                          : chatImageBubble(context, message))
                     : Container(
                         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                         constraints: BoxConstraints(maxWidth: 264.w, maxHeight: 264.h),

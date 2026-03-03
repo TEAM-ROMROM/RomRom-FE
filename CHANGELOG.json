@@ -1,11 +1,188 @@
 {
   "metadata": {
-    "lastUpdated": "2026-02-18T16:59:10Z",
-    "currentVersion": "1.9.18",
-    "totalReleases": 67,
+    "lastUpdated": "2026-03-02T14:27:17Z",
+    "currentVersion": "1.9.45",
+    "totalReleases": 73,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.45",
+      "project_type": "flutter",
+      "date": "2026-03-02",
+      "pr_number": 609,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n**새로운 기능**\n* 채팅에서 여러 이미지 동시 전송 지원\n* 대화 상대방의 온라인 상태 및 마지막 활동 시간 실시간 표시\n* 알림 종류별 뮤트/해제 토글 기능\n* 페이드 효과 및 즉시 화면 전환 옵션 추가\n\n**개선사항**\n* 앱 라이프사이클 관리로 안정성 향상\n* 로딩 상태 표시 개선\n* 온보딩 플로우 최적화\n* UI 응답성 및 사용자 경험 개선",
+      "parsed_changes": {
+        "채팅에서_여러_이미지_동시_전송_지원": {
+          "title": "채팅에서 여러 이미지 동시 전송 지원",
+          "items": []
+        },
+        "대화_상대방의_온라인_상태_및_마지막_활동_시간_실시간_표시": {
+          "title": "대화 상대방의 온라인 상태 및 마지막 활동 시간 실시간 표시",
+          "items": []
+        },
+        "알림_종류별_뮤트_해제_토글_기능": {
+          "title": "알림 종류별 뮤트/해제 토글 기능",
+          "items": []
+        },
+        "페이드_효과_및_즉시_화면_전환_옵션_추가": {
+          "title": "페이드 효과 및 즉시 화면 전환 옵션 추가",
+          "items": []
+        },
+        "앱_라이프사이클_관리로_안정성_향상": {
+          "title": "앱 라이프사이클 관리로 안정성 향상",
+          "items": []
+        },
+        "로딩_상태_표시_개선": {
+          "title": "로딩 상태 표시 개선",
+          "items": []
+        },
+        "온보딩_플로우_최적화": {
+          "title": "온보딩 플로우 최적화",
+          "items": []
+        },
+        "ui_응답성_및_사용자_경험_개선": {
+          "title": "UI 응답성 및 사용자 경험 개선",
+          "items": []
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.33",
+      "project_type": "flutter",
+      "date": "2026-02-27",
+      "pr_number": 592,
+      "raw_summary": "## Summary by CodeRabbit\n\n## v1.9.33 릴리스 노트\n\n* **New Features**\n  * 탈퇴한 사용자를 \"(탈퇴)\" 라벨로 표시하여 명확하게 구분\n  * 채팅방 앱 바 제목 클릭 시 상대방 프로필로 이동 가능\n\n* **UI/UX Improvements**\n  * 채팅방 앱 바 제목 중앙 정렬 및 레이아웃 개선",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "탈퇴한 사용자를 \"(탈퇴)\" 라벨로 표시하여 명확하게 구분",
+            "채팅방 앱 바 제목 클릭 시 상대방 프로필로 이동 가능"
+          ]
+        },
+        "ui_ux_improvements": {
+          "title": "UI/UX Improvements",
+          "items": [
+            "채팅방 앱 바 제목 중앙 정렬 및 레이아웃 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.32",
+      "project_type": "flutter",
+      "date": "2026-02-25",
+      "pr_number": 588,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리즈 노트\n\n* **새 기능**\n  * 물품 목록에 정렬 기능 추가 (생성일, 거리, 선호 카테고리, 추천순)\n  * 물품 조회 시 기본 정렬을 추천순으로 설정\n\n* **Chores**\n  * 앱 버전을 1.9.32로 업데이트",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "물품 목록에 정렬 기능 추가 (생성일, 거리, 선호 카테고리, 추천순)",
+            "물품 조회 시 기본 정렬을 추천순으로 설정"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전을 1.9.32로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.31",
+      "project_type": "flutter",
+      "date": "2026-02-24",
+      "pr_number": 573,
+      "raw_summary": "## Summary by CodeRabbit\n\n## Release Notes - v1.9.31\n\n* **New Features**\n  * Real notification management with read/unread status tracking and batch deletion\n  * Deep link navigation for notifications directing users to relevant items or chats\n  * Interactive coach mark onboarding for new item listings\n\n* **Bug Fixes**\n  * Fixed modal overlap issues in chat screen\n  * Improved user profile avatar loading\n\n* **Documentation**\n  * Updated project guidelines with comprehensive style and structure documentation\n\n* **Chores**\n  * Version update to v1.9.31\n  * Restructured development documentation for improved maintainability",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "Real notification management with read/unread status tracking and batch deletion",
+            "Deep link navigation for notifications directing users to relevant items or chats",
+            "Interactive coach mark onboarding for new item listings"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "Fixed modal overlap issues in chat screen",
+            "Improved user profile avatar loading"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "Updated project guidelines with comprehensive style and structure documentation"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "Version update to v1.9.31",
+            "Restructured development documentation for improved maintainability"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.27",
+      "project_type": "flutter",
+      "date": "2026-02-23",
+      "pr_number": 556,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **버그 수정**\n  * 게시물 작성자가 계정을 삭제한 경우에 대한 처리 추가. 이제 상세 화면에서 명확한 메시지와 함께 안내됩니다.\n\n* **Chores**\n  * 버전을 1.9.27로 업데이트했습니다.",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "게시물 작성자가 계정을 삭제한 경우에 대한 처리 추가. 이제 상세 화면에서 명확한 메시지와 함께 안내됩니다."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전을 1.9.27로 업데이트했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.26",
+      "project_type": "flutter",
+      "date": "2026-02-23",
+      "pr_number": 555,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 좋아요 목록이 비어있을 때 빈 상태 화면 추가\n  \n* **개선사항**\n  * 요청 취소 및 삭제 작업 완료 시 사용자 피드백 메시지 추가\n  * 오류 처리 및 메시지 강화\n  \n* **버전**\n  * v1.9.26으로 업그레이드",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "좋아요 목록이 비어있을 때 빈 상태 화면 추가"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "요청 취소 및 삭제 작업 완료 시 사용자 피드백 메시지 추가",
+            "오류 처리 및 메시지 강화"
+          ]
+        },
+        "버전": {
+          "title": "버전",
+          "items": [
+            "v1.9.26으로 업그레이드"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.18",
       "project_type": "flutter",

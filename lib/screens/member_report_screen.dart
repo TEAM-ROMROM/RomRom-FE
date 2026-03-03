@@ -24,6 +24,7 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
   // 선택된 신고 사유 집합
   final Set<MemberReportReason> _selectedReasons = {};
   late final TextEditingController _extraCommentController;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -125,8 +126,11 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
             bottom: 97.h,
             child: CompletionButton(
               isEnabled: _selectedReasons.isNotEmpty,
+              isLoading: _isSubmitting,
               buttonText: '신고 하기',
               enabledOnPressed: () async {
+                if (_isSubmitting) return;
+                setState(() => _isSubmitting = true);
                 try {
                   final api = ReportApi();
                   await api.reportMember(
@@ -139,12 +143,17 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                   // 에러 코드 파싱
                   final messageForUser = ErrorUtils.getErrorMessage(e);
 
+                  if (!mounted) return;
                   await CommonModal.error(
                     context: context,
                     message: messageForUser,
                     onConfirm: () => Navigator.of(context).pop(),
                   );
                   return;
+                } finally {
+                  if (mounted) {
+                    setState(() => _isSubmitting = false);
+                  }
                 }
 
                 if (!mounted) return;

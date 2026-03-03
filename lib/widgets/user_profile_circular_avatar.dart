@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 const String _kDefaultProfileAsset = 'assets/images/basicProfile.svg';
@@ -45,35 +44,17 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
   }
 
   Future<void> _loadAvatar() async {
-    if (widget.isDeleteAccount) {
-      setState(() {
-        _avatarUrl = _kDefaultProfileAsset;
-        _isLoading = false;
-      });
-      return;
-    } else if (widget.profileUrl != null && widget.profileUrl!.isNotEmpty) {
+    if (widget.profileUrl != null && widget.profileUrl!.isNotEmpty) {
       setState(() {
         _avatarUrl = widget.profileUrl;
         _isLoading = false;
       });
     } else {
-      await _loadUserProfile();
-    }
-  }
-
-  Future<void> _loadUserProfile() async {
-    try {
-      final userInfo = UserInfo();
-      await userInfo.getUserInfo(); // 사용자 정보 로딩
-      setState(() {
-        _avatarUrl = userInfo.profileUrl ?? _kDefaultProfileAsset;
-        _isLoading = false;
-      });
-    } catch (e) {
       setState(() {
         _avatarUrl = _kDefaultProfileAsset;
         _isLoading = false;
       });
+      return;
     }
   }
 
