@@ -608,7 +608,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                       maxWidth: 56.w,
                                       maxHeight: 56.w,
                                       child: Material(
-                                        color: Colors.transparent,
+                                        color: AppColors.transparent,
                                         shape: const CircleBorder(),
                                         clipBehavior: Clip.antiAlias,
                                         child: InkResponse(
@@ -837,10 +837,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
               child: !widget.isMyItem
                   ? ReportMenuButton(
                       onReportPressed: () async {
-                        final bool? reported = await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.itemId)),
-                        );
+                        final bool? reported = await context.navigateTo(screen: ReportScreen(itemId: widget.itemId));
 
                         if (reported == true && mounted) {
                           await CommonModal.success(
@@ -848,7 +845,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                             message: '신고가 접수되었습니다.',
                             onConfirm: () {
                               Navigator.of(context).pop();
-                              Navigator.of(context).pop();
+                              _popWithLikeResult();
                             },
                           );
                         }
