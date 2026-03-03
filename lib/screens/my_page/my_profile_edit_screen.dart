@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
@@ -29,10 +30,10 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
   bool _hasImageBeenTouched = false;
   bool _showProfileSaveButton = false;
   bool _isProfileEdited = false;
+  bool _isSaving = false;
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
-  XFile? imageFile; // 선택된 이미지 저장
   String imageUrl = ''; // 서버에 업로드된 이미지 URL 저장
 
   // nickname 수정 컨트롤러
@@ -81,14 +82,9 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
     }
   }
 
-  // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원)
+  // 프로필 이미지 갤러리에서 가져오는 함수
   Future<void> onPickImage() async {
     try {
-      setState(() {
-        _hasImageBeenTouched = true;
-        _showProfileSaveButton = true;
-      });
-
       final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
 
       // 사용자가 취소했거나 선택 없음
@@ -97,23 +93,48 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         return;
       }
 
+      // 원형 크롭 UI 호출
+      final CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        uiSettings: [
+          AndroidUiSettings(
+            cropStyle: CropStyle.circle,
+            toolbarTitle: '프로필 사진 조정',
+            toolbarColor: AppColors.primaryBlack,
+            toolbarWidgetColor: AppColors.textColorWhite,
+            activeControlsWidgetColor: AppColors.primaryYellow,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            hideBottomControls: false,
+          ),
+          IOSUiSettings(
+            cropStyle: CropStyle.circle,
+            title: '프로필 사진 조정',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+          ),
+        ],
+      );
+
+      // 사용자가 크롭 화면에서 취소
+      if (croppedFile == null) {
+        debugPrint('프로필 이미지 크롭 취소');
+        return;
+      }
+
       setState(() {
-        // 선택한 사진으로 사진 변경
-        imageFile = picked;
+        _hasImageBeenTouched = true;
+        _showProfileSaveButton = true;
       });
 
       try {
-        // 여러 장 업로드 (API가 List<XFile> -> List<String> 반환한다고 가정)
-        final List<String> urls = await ImageApi().uploadImages([picked]);
+        final List<String> urls = await ImageApi().uploadImages([XFile(croppedFile.path)]);
 
         if (mounted) {
           setState(() {
-            // 서버 URL 추가 (개수 불일치 대비하여 안전하게 처리)
             if (urls.isNotEmpty) {
               imageUrl = urls.first;
               _isProfileEdited = true;
-            } else {
-              // 필요 시: 업로드 실패한 항목 처리 로직 추가 가능
             }
           });
           debugPrint('프로필 이미지 변경 성공: $imageUrl');
@@ -126,6 +147,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         if (mounted) {
           setState(() {
             _hasImageBeenTouched = false;
+            if (!_isProfileEdited) _showProfileSaveButton = false;
           });
         }
       }
@@ -167,28 +189,30 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
               padding: EdgeInsets.only(right: 24.0.w),
               child: GestureDetector(
                 onTap: () async {
+                  if (_isSaving) return;
                   if (_isProfileEdited && (_nickname.isNotEmpty)) {
-                    await MemberApi()
-                        .updateMemberProfile(nicknameController.text, imageUrl)
-                        .then((_) {
-                          if (context.mounted) {
-                            CommonSnackBar.show(
-                              context: context,
-                              message: '프로필이 성공적으로 업데이트되었습니다.',
-                              type: SnackBarType.success,
-                            );
-                            Navigator.of(context).pop(true);
-                          }
-                        })
-                        .catchError((e) {
-                          if (context.mounted) {
-                            CommonSnackBar.show(
-                              context: context,
-                              message: '프로필 업데이트에 실패했습니다: $e',
-                              type: SnackBarType.error,
-                            );
-                          }
-                        });
+                    setState(() => _isSaving = true);
+                    try {
+                      await MemberApi().updateMemberProfile(nicknameController.text, imageUrl);
+                      if (context.mounted) {
+                        CommonSnackBar.show(
+                          context: context,
+                          message: '프로필이 성공적으로 업데이트되었습니다.',
+                          type: SnackBarType.success,
+                        );
+                        Navigator.of(context).pop(true);
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        CommonSnackBar.show(
+                          context: context,
+                          message: '프로필 업데이트에 실패했습니다: $e',
+                          type: SnackBarType.error,
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isSaving = false);
+                    }
                   }
                 },
                 child: Text(
@@ -244,7 +268,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         clipBehavior: Clip.none,
         children: [
           // 프로필 이미지
-          _hasImageBeenTouched && imageFile != null
+          _hasImageBeenTouched
               ? Container(
                   width: 132.w,
                   height: 132.w,
