@@ -223,8 +223,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     // 기존 타이머 취소
     _scrollTimer?.cancel();
 
-    // 스크롤이 멈춘 후 0.3초 후에 스크롤이 끝났다고 판단
-    _scrollTimer = Timer(const Duration(milliseconds: 700), () {
+    // 스크롤이 멈춘 후 0.5초 후에 스크롤이 끝났다고 판단
+    _scrollTimer = Timer(const Duration(milliseconds: 500), () {
       setState(() {
         _isScrolling = false;
       });
@@ -256,10 +256,17 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
               child: RefreshIndicator(
                 color: AppColors.primaryYellow,
                 backgroundColor: AppColors.transparent,
-                onRefresh: () => _loadMyItems(isRefresh: true),
+                displacement: MediaQuery.of(context).padding.top + 58.h + 62.h,
+                onRefresh: () async {
+                  try {
+                    await _loadMyItems(isRefresh: true);
+                  } finally {
+                    if (mounted) setState(() => _isScrolling = false);
+                  }
+                },
                 child: CustomScrollView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                   slivers: [
                     SliverPersistentHeader(
                       pinned: true,
