@@ -61,7 +61,7 @@ class RomAuthApi {
       final clientInfo = await _getClientInfo();
 
       // 요청 body 준비
-      final Map<String, dynamic> fields = {
+      final Map<String, dynamic> body = {
         'firebaseIdToken': firebaseIdToken,
         'providerId': providerId,
         'profile': {
@@ -73,10 +73,10 @@ class RomAuthApi {
       };
 
       // HTTP 요청 (JSON)
-      http.Response response = await ApiClient.sendMultipartRequest(
+      http.Response response = await ApiClient.sendHttpRequest(
         url: url,
         method: 'POST',
-        fields: fields,
+        body: body,
         isAuthRequired: false,
         onSuccess: (_) {},
       );
