@@ -101,8 +101,11 @@ class KakaoAuthService {
     // Firebase OIDC credential 저장
     await _signInWithFirebase(token);
 
+    // Firebase ID 토큰 취득
+    final String firebaseIdToken = await FirebaseAuth.instance.currentUser?.getIdToken() ?? '';
+
     await getKakaoUserInfo();
-    await romAuthApi.signInWithSocial(socialPlatform: LoginPlatforms.kakao.platformName);
+    await romAuthApi.signInWithSocial(firebaseIdToken: firebaseIdToken, providerId: 'oidc.kakao');
   }
 
   /// 카카오 로그인 (카카오톡 앱만 사용)

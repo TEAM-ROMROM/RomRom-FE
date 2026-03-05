@@ -60,10 +60,13 @@ class GoogleAuthService {
         debugPrint('Firebase 로그인 성공: ${credential.user}');
       }
 
+      // Firebase ID 토큰 취득
+      final String firebaseIdToken = await credential.user?.getIdToken() ?? '';
+
       await getGoogleUserInfo(googleUser);
 
       // 구글 로그인 성공 후 토큰 발급
-      await romAuthApi.signInWithSocial(socialPlatform: LoginPlatforms.google.platformName);
+      await romAuthApi.signInWithSocial(firebaseIdToken: firebaseIdToken, providerId: 'google.com');
       return true;
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');

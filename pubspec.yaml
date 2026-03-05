@@ -10,6 +10,8 @@ dependencies:
   # 알파벳 순으로 정렬
   animated_toggle_switch: ^0.8.5
   cupertino_icons: ^1.0.6
+  device_info_plus: ^10.0.0
+  package_info_plus: ^8.0.0
   firebase_auth: ^6.1.4
   firebase_core: ^4.2.1
   firebase_messaging: ^16.0.4
