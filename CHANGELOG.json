@@ -1,11 +1,43 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-03T10:34:26Z",
-    "currentVersion": "1.9.48",
-    "totalReleases": 74,
+    "lastUpdated": "2026-03-05T07:53:48Z",
+    "currentVersion": "1.9.49",
+    "totalReleases": 75,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.49",
+      "project_type": "flutter",
+      "date": "2026-03-05",
+      "pr_number": 619,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * Google 및 Kakao 소셜 로그인 흐름 개선 (Firebase 인증 통합)\n  * 로그인 중 로딩 오버레이 추가\n  * Kakao 로그인 시 앱 미설치 상태 처리\n\n* **Bug Fixes**\n  * 회원 위치 데이터 전송 안정성 개선\n  * 알림 시스템 호출 방식 수정\n\n* **Updates**\n  * 버전 1.9.49로 업그레이드\n  * 주요 의존성 업데이트 (Google Sign-in, Firebase Auth 등)",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "Google 및 Kakao 소셜 로그인 흐름 개선 (Firebase 인증 통합)",
+            "로그인 중 로딩 오버레이 추가",
+            "Kakao 로그인 시 앱 미설치 상태 처리"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "회원 위치 데이터 전송 안정성 개선",
+            "알림 시스템 호출 방식 수정"
+          ]
+        },
+        "updates": {
+          "title": "Updates",
+          "items": [
+            "버전 1.9.49로 업그레이드",
+            "주요 의존성 업데이트 (Google Sign-in, Firebase Auth 등)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.48",
       "project_type": "flutter",
