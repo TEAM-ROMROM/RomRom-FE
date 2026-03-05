@@ -9,9 +9,12 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_like_list_screen.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
+import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
+import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
@@ -307,6 +310,20 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
   /// 회원 탈퇴 확인 후 처리
   Future<void> _confirmDeleteMember(BuildContext context) async {
+    // Apple 로그인 사용자의 경우 토큰 취소 (Apple 정책 필수)
+    final platform = await LoginPlatformManager().getLoginPlatform();
+    if (platform == LoginPlatforms.apple.platformName) {
+      try {
+        await AppleAuthService().revokeAppleToken();
+      } catch (e) {
+        debugPrint('Apple 토큰 취소 실패: $e');
+        if (context.mounted) {
+          CommonSnackBar.show(context: context, message: '인증에 실패했습니다. 다시 시도해주세요.', type: SnackBarType.error);
+        }
+        return;
+      }
+    }
+
     // 회원 탈퇴 진행
     final memberApi = MemberApi();
     final isSuccess = await memberApi.deleteMember();

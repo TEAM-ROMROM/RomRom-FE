@@ -1,4 +1,6 @@
 // ignore_for_file: prefer_const_constructors
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
@@ -14,7 +16,11 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const List<LoginPlatforms> loginPlatforms = LoginPlatforms.values; // 모든 플랫폼을 가져옴
+    final List<LoginPlatforms> loginPlatforms = [
+      LoginPlatforms.kakao,
+      LoginPlatforms.google,
+      if (Platform.isIOS) LoginPlatforms.apple,
+    ];
 
     return Scaffold(
       body: Center(
