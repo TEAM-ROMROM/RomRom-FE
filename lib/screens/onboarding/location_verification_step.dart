@@ -66,7 +66,7 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
                     mapControllerCompleter.complete(controller);
                   }
                   await getAddressByNaverApi(_currentPosition!);
-                  await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+                  controller.setLocationTrackingMode(NLocationTrackingMode.follow);
                 },
               ),
               // 현재 위치 버튼
@@ -76,7 +76,7 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
                 child: CurrentLocationButton(
                   onTap: () async {
                     final controller = await mapControllerCompleter.future;
-                    await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+                    controller.setLocationTrackingMode(NLocationTrackingMode.follow);
                   },
                   iconSize: 24.h,
                 ),

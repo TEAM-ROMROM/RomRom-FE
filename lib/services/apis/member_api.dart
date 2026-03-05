@@ -84,7 +84,7 @@ class MemberApi {
       'siDo': siDo,
       'siGunGu': siGunGu,
       'eupMyoenDong': eupMyoenDong,
-      if (ri != null) 'ri': ri,
+      'ri': ri ?? '',
     };
 
     await ApiClient.sendMultipartRequest(

@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/models/app_urls.dart';
@@ -20,38 +23,62 @@ class RomAuthApi {
 
   final TokenManager _tokenManager = TokenManager();
 
-  /// POST : `/api/auth/sign-in` 소셜 로그인
-  Future<void> signInWithSocial({required String socialPlatform}) async {
-    const String url = '${AppUrls.baseUrl}/api/auth/sign-in';
+  Future<Map<String, dynamic>> _getClientInfo() async {
+    final platform = Platform.isIOS ? 'ios' : 'android';
+    final locale = Platform.localeName.replaceAll('_', '-');
+
+    String appVersion = 'unknown';
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      appVersion = packageInfo.version;
+    } catch (_) {}
+
+    String deviceModel = 'unknown';
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceModel = iosInfo.utsname.machine;
+      } else if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceModel = androidInfo.model;
+      }
+    } catch (_) {}
+
+    return {'platform': platform, 'appVersion': appVersion, 'deviceModel': deviceModel, 'locale': locale};
+  }
+
+  /// POST : `/api/auth/login` 소셜 로그인
+  Future<void> signInWithSocial({required String firebaseIdToken, required String providerId}) async {
+    const String url = '${AppUrls.baseUrl}/api/auth/login';
 
     try {
       // 사용자 정보 불러옴
       var userInfo = UserInfo();
       await userInfo.getUserInfo();
 
-      // 요청 파라미터 준비 (플랫폼, 유저 정보)
-      Map<String, dynamic> fields = {'socialPlatform': socialPlatform};
+      // 클라이언트 정보 수집
+      final clientInfo = await _getClientInfo();
 
-      // 사용자 정보 직접 추가 (null이 아닌 값만)
-      if (userInfo.email?.isNotEmpty == true) {
-        fields['email'] = userInfo.email;
-      }
-      if (userInfo.nickname?.isNotEmpty == true) {
-        fields['nickname'] = userInfo.nickname;
-      }
-      if (userInfo.profileUrl?.isNotEmpty == true) {
-        fields['profileUrl'] = userInfo.profileUrl;
-      }
+      // 요청 body 준비
+      final Map<String, dynamic> body = {
+        'firebaseIdToken': firebaseIdToken,
+        'providerId': providerId,
+        'profile': {
+          if (userInfo.email?.isNotEmpty == true) 'email': userInfo.email,
+          if (userInfo.nickname?.isNotEmpty == true) 'displayName': userInfo.nickname,
+          if (userInfo.profileUrl?.isNotEmpty == true) 'photoUrl': userInfo.profileUrl,
+        },
+        'client': clientInfo,
+      };
 
-      // HTTP 요청
-      http.Response response = await ApiClient.sendMultipartRequest(
+      // HTTP 요청 (JSON)
+      http.Response response = await ApiClient.sendHttpRequest(
         url: url,
         method: 'POST',
-        fields: fields,
-        isAuthRequired: false, // 소셜 로그인은 인증이 필요하지 않음
-        onSuccess: (responseData) {
-          // 콜백은 호출되지 않고 있지만 일단 유지
-        },
+        body: body,
+        isAuthRequired: false,
+        onSuccess: (_) {},
       );
 
       // 응답을 직접 처리

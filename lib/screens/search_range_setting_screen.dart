@@ -79,7 +79,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
             if (!_mapControllerCompleter.isCompleted) {
               _mapControllerCompleter.complete(controller);
             }
-            await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+            controller.setLocationTrackingMode(NLocationTrackingMode.follow);
             _updateRangeCircle();
           },
         ),
@@ -90,7 +90,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
           child: CurrentLocationButton(
             onTap: () async {
               final controller = await _mapControllerCompleter.future;
-              await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+              controller.setLocationTrackingMode(NLocationTrackingMode.follow);
             },
             iconSize: 24.h,
           ),

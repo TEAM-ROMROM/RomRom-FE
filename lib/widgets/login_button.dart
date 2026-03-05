@@ -35,12 +35,23 @@ class _LoginButtonState extends State<LoginButton> {
     if (_isLoading) return; // 이미 로그인 중이면 무시
     setState(() => _isLoading = true);
 
+    // 로딩 오버레이 표시
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+      ),
+    );
+
     try {
       bool isSuccess = false;
 
       switch (widget.platform) {
         case LoginPlatforms.kakao:
-          isSuccess = await kakaoAuthService.loginWithKakao();
+          isSuccess = await kakaoAuthService.loginWithKakao(context);
           break;
         case LoginPlatforms.google:
           isSuccess = await googleAuthService.logInWithGoogle();
@@ -48,6 +59,9 @@ class _LoginButtonState extends State<LoginButton> {
       }
 
       if (!mounted) return; // 로그인 완료 후 context가 유효한지 체크
+
+      // 로딩 오버레이 닫기
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
 
       if (isSuccess) {
         var userInfo = UserInfo();
@@ -80,6 +94,7 @@ class _LoginButtonState extends State<LoginButton> {
       }
     } catch (e) {
       debugPrint("로그인 처리 중 오류: $e");
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
