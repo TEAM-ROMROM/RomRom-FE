@@ -211,15 +211,14 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                         ),
                       );
 
-                      // 상세에서 itemId 반환하면 목록에서 제거
-                      if (result != null && result is String) {
-                        final String removedId = result;
-                        if (removedId.isNotEmpty && mounted) {
+                      // 좋아요 취소 시 목록에서 제거
+                      if (result is Map<String, dynamic> && mounted) {
+                        final isLiked = result['isLiked'] as bool? ?? true;
+                        if (!isLiked) {
                           setState(() {
-                            _items.removeWhere((it) => it.itemId == removedId);
+                            _items.removeWhere((it) => it.itemId == itemId);
                           });
                         }
-                        return;
                       }
                     },
                     child: Container(

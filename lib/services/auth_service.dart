@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
+import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
@@ -25,6 +26,8 @@ class AuthService {
 
       // 토큰 삭제
       await _tokenManager.deleteTokens();
+
+      HeartbeatManager.instance.stop();
 
       // 로그인 화면으로 이동
       if (context.mounted) {

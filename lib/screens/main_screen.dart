@@ -4,6 +4,7 @@ import 'package:romrom_fe/screens/home_tab_screen.dart';
 import 'package:romrom_fe/screens/my_page_tab_screen.dart';
 import 'package:romrom_fe/screens/register_tab_screen.dart';
 import 'package:romrom_fe/screens/request_management_tab_screen.dart';
+import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 
 /// 메인 화면
@@ -20,6 +21,12 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentTabIndex = 0; // 선택된 탭 인덱스 관리
 
+  @override
+  void initState() {
+    super.initState();
+    HeartbeatManager.instance.start();
+  }
+
   /// 외부에서 탭을 전환할 수 있는 메서드
   void switchToTab(int index) {
     if (index >= 0 && index < _navigationTabScreens.length) {
@@ -27,6 +34,11 @@ class _MainScreenState extends State<MainScreen> {
         _currentTabIndex = index;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   // 각 탭에 해당하는 페이지 위젯 리스트

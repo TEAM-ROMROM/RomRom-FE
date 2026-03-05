@@ -145,50 +145,46 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
                   bottom: 57.h,
                   child: SizedBox(
                     width: double.infinity,
-                    child: IgnorePointer(
-                      ignoring: _isLoading, // 로딩 중에는 버튼 비활성화
-                      child: CompletionButton(
-                        isEnabled: _selectedAddress != null,
-                        buttonText: '선택 완료',
-                        enabledOnPressed: () async {
-                          try {
-                            setState(() {
-                              _isLoading = true; // 로딩 시작
-                            });
-                            // 선택된 위치의 정확한 좌표로 LocationAddress 업데이트
-                            if (_selectedAddress != null && _selectedPosition != null) {
-                              final updatedAddress = LocationAddress(
-                                siDo: _selectedAddress!.siDo,
-                                siGunGu: _selectedAddress!.siGunGu,
-                                eupMyoenDong: _selectedAddress!.eupMyoenDong,
-                                ri: _selectedAddress!.ri,
-                                latitude: _selectedPosition!.latitude,
-                                longitude: _selectedPosition!.longitude,
-                              );
-                              widget.onLocationSelected?.call(updatedAddress);
-                              if (mounted) {
-                                setState(() {
-                                  _isLoading = false; // 로딩 종료
-                                });
-                                Navigator.pop(context);
-                              }
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              CommonSnackBar.show(
-                                context: context,
-                                message: '위치 등록에 실패했습니다: $e',
-                                type: SnackBarType.error,
-                              );
-                            }
+                    child: CompletionButton(
+                      isEnabled: _selectedAddress != null,
+                      isLoading: _isLoading,
+                      buttonText: '선택 완료',
+                      enabledOnPressed: () async {
+                        try {
+                          setState(() {
+                            _isLoading = true; // 로딩 시작
+                          });
+                          // 선택된 위치의 정확한 좌표로 LocationAddress 업데이트
+                          if (_selectedAddress != null && _selectedPosition != null) {
+                            final updatedAddress = LocationAddress(
+                              siDo: _selectedAddress!.siDo,
+                              siGunGu: _selectedAddress!.siGunGu,
+                              eupMyoenDong: _selectedAddress!.eupMyoenDong,
+                              ri: _selectedAddress!.ri,
+                              latitude: _selectedPosition!.latitude,
+                              longitude: _selectedPosition!.longitude,
+                            );
+                            widget.onLocationSelected?.call(updatedAddress);
                             if (mounted) {
-                              setState(() {
-                                _isLoading = false; // 로딩 종료
-                              });
+                              Navigator.pop(context);
                             }
                           }
-                        },
-                      ),
+                        } catch (e) {
+                          if (mounted) {
+                            CommonSnackBar.show(
+                              context: context,
+                              message: '위치 등록에 실패했습니다: $e',
+                              type: SnackBarType.error,
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isLoading = false; // 로딩 종료
+                            });
+                          }
+                        }
+                      },
                     ),
                   ),
                 ),

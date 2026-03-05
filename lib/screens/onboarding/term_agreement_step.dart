@@ -207,9 +207,10 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
           Padding(
             padding: EdgeInsets.only(bottom: 63.h + MediaQuery.of(context).padding.bottom),
             child: CompletionButton(
-              isEnabled: _allRequiredChecked && !_isSaving,
+              isEnabled: _allRequiredChecked,
+              isLoading: _isSaving,
               enabledOnPressed: _handleTermsAgreement,
-              buttonText: _isSaving ? '처리 중...' : '동의하고 계속하기',
+              buttonText: '동의하고 계속하기',
             ),
           ),
         ],

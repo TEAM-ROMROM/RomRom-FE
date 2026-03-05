@@ -46,6 +46,13 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final titleContent = onTitleTap != null
+        ? GestureDetector(onTap: onTitleTap, child: titleWidgets)
+        : Padding(
+            padding: EdgeInsets.only(bottom: 8.h),
+            child: Text(title, style: titleTextStyle ?? CustomTextStyles.h2),
+          );
+
     return AppBar(
       backgroundColor: Colors.transparent, // 투명 배경으로 설정
       elevation: 0, // 그림자 효과 제거
@@ -71,12 +78,19 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       bottom: bottomWidgets,
-      title: onTitleTap != null
-          ? GestureDetector(onTap: onTitleTap, child: titleWidgets)
-          : Padding(
-              padding: EdgeInsets.only(bottom: 8.h),
-              child: Text(title, style: titleTextStyle ?? CustomTextStyles.h2),
-            ),
+      // title을 IgnorePointer로 감싼 빈 위젯으로 대체
+      title: null,
+      // flexibleSpace로 전체 너비 기준 중앙 정렬
+      flexibleSpace: SafeArea(
+        child: SizedBox(
+          height: 64.h,
+          child: Stack(
+            children: [
+              Center(child: titleContent), // 👈 진짜 화면 중앙
+            ],
+          ),
+        ),
+      ),
 
       actions: actions, // 추가 액션 버튼들
     );
