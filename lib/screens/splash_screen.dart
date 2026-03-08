@@ -28,9 +28,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-
   // 로그인 전환 애니메이션 (로고 이동 + 로그인 UI 등장)
   late AnimationController _loginTransitionController;
   late Animation<Alignment> _logoAlignmentAnim; // 로고 Y 이동
@@ -42,13 +39,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-
-    _controller.forward();
-
-    _loginTransitionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _loginTransitionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
 
     // 로고: 중앙(-0.075) → 로그인 화면 위치(-0.52)
     _logoAlignmentAnim = AlignmentTween(
@@ -129,7 +120,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   @override
   void dispose() {
-    _controller.dispose();
     _loginTransitionController.dispose();
     super.dispose();
   }
@@ -176,16 +166,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 ),
               ),
 
-            // 로고 (항상 표시, 스플래시 단계엔 fade in, 전환 단계엔 이동)
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: AnimatedBuilder(
-                animation: _loginTransitionController,
-                builder: (context, child) {
-                  return Align(alignment: _logoAlignmentAnim.value, child: child);
-                },
-                child: SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 112.h),
-              ),
+            // 로고 (항상 표시, 전환 단계엔 이동)
+            AnimatedBuilder(
+              animation: _loginTransitionController,
+              builder: (context, child) {
+                return Align(alignment: _logoAlignmentAnim.value, child: child);
+              },
+              child: SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 112.h),
             ),
           ],
         ),
