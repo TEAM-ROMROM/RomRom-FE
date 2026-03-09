@@ -58,6 +58,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // 업로드 중인 이미지 버블 ID 추적
   final Set<String> _uploadingLocalIds = {};
 
+  // WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API 보완용
+  final Set<String> _pendingWsImageTempIds = {};
+  Timer? _wsImageFetchTimer;
+
   // 이미지 선택/업로드 중복 실행 방지
   bool _isPickingImage = false;
 
@@ -200,20 +204,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             return;
           }
 
-          // pending과 매칭 시도: 같은 발신자 + 동일 content + 시간 차 <= 10s
+          // pending과 매칭 시도: 내가 보낸 메시지의 서버 에코만 매칭 (상대방 메시지 제외)
           String? matchedLocalId;
-          _pendingLocalMessages.forEach((localId, localMsg) {
-            if (matchedLocalId != null) return;
-            if (localMsg.senderId != _myMemberId) return;
-            if ((localMsg.content ?? '') != (newMessage.content ?? '')) {
-              return;
-            }
-            final localDt = localMsg.createdDate ?? DateTime.now();
-            final serverDt = newMessage.createdDate ?? DateTime.now();
-            if (serverDt.difference(localDt).inSeconds.abs() <= 10) {
-              matchedLocalId = localId;
-            }
-          });
+          if (newMessage.senderId == _myMemberId) {
+            _pendingLocalMessages.forEach((localId, localMsg) {
+              if (matchedLocalId != null) return;
+              if (localMsg.senderId != _myMemberId) return;
+              if ((localMsg.content ?? '') != (newMessage.content ?? '')) {
+                return;
+              }
+              final localDt = localMsg.createdDate ?? DateTime.now();
+              final serverDt = newMessage.createdDate ?? DateTime.now();
+              if (serverDt.difference(localDt).inSeconds.abs() <= 10) {
+                matchedLocalId = localId;
+              }
+            });
+          }
 
           if (matchedLocalId != null) {
             final localMsg = _pendingLocalMessages.remove(matchedLocalId)!;
@@ -243,7 +249,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               _messages.insert(0, fixedServer);
             }
           } else {
-            _messages.insert(0, newMessage);
+            // 서버 WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API 배치 보완
+            if (newMessage.type == MessageType.image &&
+                (newMessage.imageUrls == null || newMessage.imageUrls!.isEmpty)) {
+              final tempId = 'ws_img_${DateTime.now().microsecondsSinceEpoch}';
+              _messages.insert(0, newMessage.copyWith(chatMessageId: tempId));
+              _pendingWsImageTempIds.add(tempId);
+              // 짧은 시간 내에 여러 장이 올 수 있으므로 debounce로 배치 처리
+              _wsImageFetchTimer?.cancel();
+              _wsImageFetchTimer = Timer(const Duration(milliseconds: 500), _batchFetchWsImageUrls);
+            } else {
+              _messages.insert(0, newMessage);
+            }
           }
         });
 
@@ -339,15 +356,64 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _scrollToBottom();
 
     // 2) WebSocket을 통해 서버로 전송
+    // content는 로컬 메시지와 동일한 값으로 전송해야 pending 매칭이 올바르게 동작함
     _wsService.sendMessage(
       chatRoomId: widget.chatRoomId,
       type: MessageType.image,
-      content: imageMessage ?? '',
+      content: imageMessage ?? '사진을 보냈습니다.',
       imageUrls: imageUrls,
     );
 
     // 텍스트 입력필드 초기화
     _messageController.clear();
+  }
+
+  /// WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API로 일괄 보완
+  /// 여러 장이 연속으로 올 경우 각 사진을 올바른 순서로 매칭
+  Future<void> _batchFetchWsImageUrls() async {
+    if (_pendingWsImageTempIds.isEmpty || !mounted) return;
+
+    try {
+      final response = await ChatApi().getChatMessages(chatRoomId: widget.chatRoomId, pageNumber: 0, pageSize: 20);
+      if (!mounted) return;
+
+      // _messages에서 pending 플레이스홀더를 위치 순서대로(최신→오래된) 수집
+      final List<(String tempId, int idx, String? senderId)> pendingList = [];
+      for (int i = 0; i < _messages.length; i++) {
+        final id = _messages[i].chatMessageId;
+        if (id != null && _pendingWsImageTempIds.contains(id)) {
+          pendingList.add((id, i, _messages[i].senderId));
+        }
+      }
+
+      // REST API IMAGE 메시지를 발신자별로 그룹화(최신→오래된 순)
+      final Map<String, List<ChatMessage>> apiImagesBySender = {};
+      for (final m in response.messages?.content ?? []) {
+        if (m.type != MessageType.image || m.imageUrls == null || m.imageUrls!.isEmpty) continue;
+        apiImagesBySender.putIfAbsent(m.senderId ?? '', () => []).add(m);
+      }
+
+      // pending도 발신자별로 그룹화(최신→오래된 순 유지)
+      final Map<String, List<(String tempId, int idx)>> pendingBySender = {};
+      for (final p in pendingList) {
+        pendingBySender.putIfAbsent(p.$3 ?? '', () => []).add((p.$1, p.$2));
+      }
+
+      setState(() {
+        // 발신자별로 순서대로 매칭: pending[i] ↔ apiImages[i]
+        for (final entry in pendingBySender.entries) {
+          final pending = entry.value; // 최신→오래된 순
+          final apiMsgs = apiImagesBySender[entry.key] ?? [];
+          for (int i = 0; i < pending.length && i < apiMsgs.length; i++) {
+            final (tempId, idx) = pending[i];
+            _messages[idx] = apiMsgs[i];
+            _pendingWsImageTempIds.remove(tempId);
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('[ChatRoom] WebSocket 이미지 URL 일괄 보완 실패: $e');
+    }
   }
 
   void _scrollToBottom() {
@@ -367,7 +433,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     // 키보드가 올라온 상태에서 사진 선택 시 입력창/키보드 겹침 방지
     FocusScope.of(context).unfocus();
     try {
-      final List<XFile> picked = await _picker.pickMultiImage();
+      final List<XFile> picked = await _picker.pickMultiImage(limit: 5);
 
       if (!mounted) return;
 
@@ -474,6 +540,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void dispose() {
     _messageSubscription?.cancel();
     _pollerSubscription?.cancel();
+    _wsImageFetchTimer?.cancel();
     // 채팅방 구독 해제 (참조 카운팅으로 ChatTabScreen의 구독은 유지됨)
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
