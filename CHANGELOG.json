@@ -1,11 +1,42 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-09T12:24:24Z",
-    "currentVersion": "1.9.53",
-    "totalReleases": 77,
+    "lastUpdated": "2026-03-09T19:00:52Z",
+    "currentVersion": "1.9.57",
+    "totalReleases": 78,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.57",
+      "project_type": "flutter",
+      "date": "2026-03-09",
+      "pr_number": 640,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * Google 계정으로 로그인 지원 추가\n  * 시스템 메시지 모달 표시 기능 추가\n\n* **버그 수정**\n  * 메시지 전송 타임아웃 처리 개선\n  * 메시지 전송 중 입력 비활성화 동작 수정\n  * 대화 상대 탈퇴 시 메시지 입력 상태 개선\n\n* **스타일**\n  * 카드 디자인 및 이미지 레이아웃 개선",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "Google 계정으로 로그인 지원 추가",
+            "시스템 메시지 모달 표시 기능 추가"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "메시지 전송 타임아웃 처리 개선",
+            "메시지 전송 중 입력 비활성화 동작 수정",
+            "대화 상대 탈퇴 시 메시지 입력 상태 개선"
+          ]
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": [
+            "카드 디자인 및 이미지 레이아웃 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.53",
       "project_type": "flutter",
