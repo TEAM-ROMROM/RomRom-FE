@@ -65,12 +65,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // 이미지 선택/업로드 중복 실행 방지
   bool _isPickingImage = false;
 
+  // 텍스트 메시지 전송 중 (서버 에코 대기)
+  bool _isSendingMessage = false;
+
   ChatRoom chatRoom = ChatRoom();
 
   bool _isLoading = true;
   bool _hasError = false;
   bool _deleteModalShown = false;
   bool _tradeCompletedModalShown = false;
+  bool _systemMessageModalShown = false;
+
+  bool get _hasSystemMessage => _messages.any((m) => m.type == MessageType.system);
+
+  bool get _isInputDisabled =>
+      _hasSystemMessage ||
+      _isOpponentDeleted ||
+      chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName;
+
+  String get _inputHintText {
+    if (_hasSystemMessage) return '상대방이 채팅방을 나갔습니다';
+    if (_isOpponentDeleted) return '존재하지 않거나 탈퇴한 사용자입니다';
+    if (chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName) return '거래완료 된 글입니다';
+    return '메세지를 입력하세요';
+  }
 
   String _errorMessage = '';
   String? _myMemberId;
@@ -89,6 +107,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isOpponentOnline = false;
   // _onlineStatusTimer 제거
   StreamSubscription? _pollerSubscription;
+  Timer? _sendMessageTimeoutTimer;
 
   @override
   void initState() {
@@ -204,7 +223,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             return;
           }
 
-          // pending과 매칭 시도: 내가 보낸 메시지의 서버 에코만 매칭 (상대방 메시지 제외)
+          // 내가 보낸 텍스트 메시지 에코 → 전송 중 상태 해제
+          if (newMessage.senderId == _myMemberId && newMessage.type == MessageType.text) {
+            _isSendingMessage = false;
+            _sendMessageTimeoutTimer?.cancel();
+          }
+
+          // pending과 매칭 시도: 이미지 낙관적 로컬 메시지 교체용 (텍스트는 pending 없음)
           String? matchedLocalId;
           if (newMessage.senderId == _myMemberId) {
             _pendingLocalMessages.forEach((localId, localMsg) {
@@ -265,6 +290,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         });
 
         _scrollToBottom();
+
+        // WS로 system 메시지 수신 시 모달 표시
+        if (newMessage.type == MessageType.system) {
+          CommonModal.showOnceAfterFrame(
+            context: context,
+            isShown: () => _systemMessageModalShown,
+            markShown: () => _systemMessageModalShown = true,
+            shouldShow: () => !_deleteModalShown && !_tradeCompletedModalShown,
+            message: '상대방이 채팅방을 나갔습니다.',
+            onConfirm: () {
+              Navigator.of(context).pop(); // 모달만 닫기
+            },
+          );
+        }
       });
 
       setState(() => _isLoading = false);
@@ -293,6 +332,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           Navigator.of(context).pop(); // 모달만 닫기
         },
       );
+      // 상대방 채팅방 나감 모달 (탈퇴/거래완료 모달과 중첩 방지)
+      CommonModal.showOnceAfterFrame(
+        context: context,
+        isShown: () => _systemMessageModalShown,
+        markShown: () => _systemMessageModalShown = true,
+        shouldShow: () => !_deleteModalShown && !_tradeCompletedModalShown && _hasSystemMessage,
+        message: '상대방이 채팅방을 나갔습니다.',
+        onConfirm: () {
+          Navigator.of(context).pop(); // 모달만 닫기
+        },
+      );
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;
@@ -307,27 +357,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   void _sendMessage() {
     final content = _messageController.text.trim();
-    if (content.isEmpty) return;
+    if (content.isEmpty || _isSendingMessage || _isInputDisabled) return;
 
-    // 1) 로컬에 즉시 추가(낙관적 업데이트) 및 pending에 등록
-    final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
-    final localMsg = ChatMessage(
-      chatRoomId: widget.chatRoomId,
-      chatMessageId: localId,
-      senderId: _myMemberId,
-      content: content,
-      createdDate: DateTime.now(),
-    );
-    setState(() {
-      _messages.insert(0, localMsg);
-      _pendingLocalMessages[localId] = localMsg;
-    });
-    _scrollToBottom();
-
-    // 2) 서버로 전송 (가능하면 clientMessageId 전송하도록 서비스 확장 권장)
-    _wsService.sendMessage(chatRoomId: widget.chatRoomId, content: content, type: MessageType.text);
-
+    setState(() => _isSendingMessage = true);
     _messageController.clear();
+
+    // 타임아웃 복구
+    _sendMessageTimeoutTimer?.cancel();
+    _sendMessageTimeoutTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted && _isSendingMessage) {
+        setState(() => _isSendingMessage = false);
+        CommonSnackBar.show(context: context, message: '메시지 전송에 실패했습니다.', type: SnackBarType.error);
+      }
+    });
+
+    // 서버로 전송 → 에코가 WebSocket으로 오면 _messages에 추가
+    _wsService.sendMessage(chatRoomId: widget.chatRoomId, content: content, type: MessageType.text);
   }
 
   /// 이미지 메시지 전송
@@ -933,6 +978,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     // 같은 발신자라도 이전(더 최신) 메시지와 분 단위가 다르면 표시
                     !isSameMinute(_messages[index].createdDate, _messages[index - 1].createdDate)));
 
+        // system 메시지는 중앙 텍스트로 표시
+        if (message.type == MessageType.system) {
+          return Padding(
+            padding: EdgeInsets.only(top: topGap),
+            child: Center(
+              child: Text(
+                message.content ?? '',
+                style: CustomTextStyles.p3.copyWith(color: AppColors.opacity50White, fontWeight: FontWeight.w400),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }
+
         return Padding(
           padding: EdgeInsets.only(top: topGap),
           child: Row(
@@ -1025,26 +1084,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             child: SizedBox(
               width: 40.w,
               height: 40.w,
-              child: RomRomContextMenu(
-                position: ContextMenuPosition.above,
-                triggerRotationDegreesOnOpen: 45,
-                customTrigger: Container(
-                  width: 40.w,
-                  height: 40.w,
-                  decoration: const BoxDecoration(color: AppColors.secondaryBlack1, shape: BoxShape.circle),
-                  child: Icon(AppIcons.addItemPlus, color: AppColors.textColorWhite, size: 20.sp),
-                ),
-                items: [
-                  ContextMenuItem(
-                    id: 'select_photo',
-                    icon: AppIcons.chatImage,
-                    iconColor: AppColors.opacity60White,
-                    title: '사진 선택하기',
-                    onTap: () {
-                      _onPickImage();
-                    },
+              child: IgnorePointer(
+                ignoring: _isInputDisabled,
+                child: RomRomContextMenu(
+                  position: ContextMenuPosition.above,
+                  triggerRotationDegreesOnOpen: 45,
+                  customTrigger: Container(
+                    width: 40.w,
+                    height: 40.w,
+                    decoration: const BoxDecoration(color: AppColors.secondaryBlack1, shape: BoxShape.circle),
+                    child: Icon(AppIcons.addItemPlus, color: AppColors.textColorWhite, size: 20.sp),
                   ),
-                ],
+                  items: [
+                    ContextMenuItem(
+                      id: 'select_photo',
+                      icon: AppIcons.chatImage,
+                      iconColor: AppColors.opacity60White,
+                      title: '사진 선택하기',
+                      onTap: () {
+                        _onPickImage();
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1053,6 +1115,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               height: 40.h <= _inputFieldHeight && _inputFieldHeight <= 70.h ? _inputFieldHeight : 40.h,
               child: TextField(
                 controller: _messageController,
+                enabled: !_isInputDisabled,
                 style: CustomTextStyles.p2.copyWith(
                   color: AppColors.textColorWhite,
                   fontWeight: FontWeight.w400,
@@ -1064,7 +1127,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 cursorColor: AppColors.primaryYellow,
                 cursorWidth: 1.5.w,
                 decoration: InputDecoration(
-                  hintText: '메세지를 입력하세요',
+                  hintText: _inputHintText,
                   hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
                   filled: true,
                   fillColor: AppColors.opacity10White,
@@ -1076,7 +1139,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       color: Colors.transparent,
                       child: ClipOval(
                         child: InkWell(
-                          onTap: _messageController.text.trim().isEmpty
+                          onTap: (_messageController.text.trim().isEmpty || _isInputDisabled || _isSendingMessage)
                               ? null
                               : () {
                                   _sendMessage();
@@ -1089,13 +1152,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             width: 40.w,
                             height: 40.w,
                             decoration: BoxDecoration(
-                              color: !_hasText ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
+                              color: (!_hasText || _isInputDisabled || _isSendingMessage)
+                                  ? AppColors.secondaryBlack2
+                                  : AppColors.primaryYellow,
                               shape: BoxShape.circle,
                             ),
                             child: Center(
                               child: Icon(
                                 AppIcons.arrowUpward,
-                                color: !_hasText ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
+                                color: (!_hasText || _isInputDisabled || _isSendingMessage)
+                                    ? AppColors.secondaryBlack1
+                                    : AppColors.primaryBlack,
                                 size: 32.w,
                               ),
                             ),
@@ -1111,7 +1178,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     maxHeight: 40.w,
                   ),
                 ),
-                onSubmitted: (_) => _sendMessage(),
+                onSubmitted: _isSendingMessage ? null : (_) => _sendMessage(),
               ),
             ),
           ),
