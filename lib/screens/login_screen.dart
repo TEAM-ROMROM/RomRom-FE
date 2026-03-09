@@ -18,8 +18,8 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<LoginPlatforms> loginPlatforms = [
       LoginPlatforms.kakao,
-      LoginPlatforms.google,
       if (Platform.isIOS) LoginPlatforms.apple,
+      LoginPlatforms.google,
     ];
 
     return Scaffold(
@@ -28,6 +28,7 @@ class LoginScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            SizedBox(height: 75.h), // 간격 추가
             SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 112.h),
             SizedBox(height: 45.h), // 간격 추가
             // 서비스 간단 소개 텍스트
@@ -41,7 +42,7 @@ class LoginScreen extends StatelessWidget {
             SizedBox(height: 17.0.h), // 간격 추가
             // "romrom" 이미지
             SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
-            SizedBox(height: 174.0.h), // 간격 추가
+            SizedBox(height: 172.0.h), // 간격 추가
             // 로그인 버튼 그룹
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.0.w),

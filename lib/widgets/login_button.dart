@@ -55,11 +55,11 @@ class _LoginButtonState extends State<LoginButton> {
         case LoginPlatforms.kakao:
           isSuccess = await kakaoAuthService.loginWithKakao(context);
           break;
-        case LoginPlatforms.google:
-          isSuccess = await googleAuthService.logInWithGoogle();
-          break;
         case LoginPlatforms.apple:
           isSuccess = await appleAuthService.logInWithApple();
+          break;
+        case LoginPlatforms.google:
+          isSuccess = await googleAuthService.logInWithGoogle();
           break;
       }
 
@@ -163,11 +163,11 @@ class LogoutButton extends StatelessWidget {
       case LoginPlatforms.kakao:
         kakaoAuthService.logoutWithKakaoAccount();
         break;
-      case LoginPlatforms.google:
-        googleAuthService.logOutWithGoogle();
-        break;
       case LoginPlatforms.apple:
         appleAuthService.logOutWithApple();
+        break;
+      case LoginPlatforms.google:
+        googleAuthService.logOutWithGoogle();
         break;
     }
   }
