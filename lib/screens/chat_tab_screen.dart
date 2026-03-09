@@ -143,6 +143,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
         chatRoomId: room.chatRoomId,
         targetMember: room.targetMember,
         targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
+        targetItemImageUrl: room.targetItemImageUrl,
         lastMessageContent: message.content ?? '',
         lastMessageTime: message.createdDate ?? DateTime.now(),
         unreadCount: _calculateUnreadCount(room, message),
