@@ -44,7 +44,7 @@ class KakaoAuthService {
 
   /// 카카오톡 미설치 시 스토어 이동 유도 다이얼로그
   Future<void> _showKakaoTalkInstallDialog(BuildContext context) async {
-    CommonModal.confirm(
+    await CommonModal.confirm(
       context: context,
       message: '카카오 로그인을 사용하려면\n카카오톡 앱이 필요합니다.',
       onCancel: () => Navigator.of(context).pop(),

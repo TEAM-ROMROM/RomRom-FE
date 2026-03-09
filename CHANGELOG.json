@@ -1,11 +1,72 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-05T07:53:48Z",
-    "currentVersion": "1.9.49",
-    "totalReleases": 75,
+    "lastUpdated": "2026-03-09T12:24:24Z",
+    "currentVersion": "1.9.53",
+    "totalReleases": 77,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.53",
+      "project_type": "flutter",
+      "date": "2026-03-09",
+      "pr_number": 629,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 이미지 메시지 일괄 처리 및 URL 가져오기 기능 추가\n  * 최대 5개 이미지 선택 제한\n\n* **개선 사항**\n  * WebSocket 연결 안정성 향상 및 자동 토큰 갱신 기능\n  * 메시지 매칭 로직 정확도 개선\n\n* **Chores**\n  * 버전 업데이트 (v1.9.53)\n  * Android 빌드 도구 의존성 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "이미지 메시지 일괄 처리 및 URL 가져오기 기능 추가",
+            "최대 5개 이미지 선택 제한"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "WebSocket 연결 안정성 향상 및 자동 토큰 갱신 기능",
+            "메시지 매칭 로직 정확도 개선"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업데이트 (v1.9.53)",
+            "Android 빌드 도구 의존성 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.51",
+      "project_type": "flutter",
+      "date": "2026-03-08",
+      "pr_number": 625,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트 v1.9.51\n\n* **Chores**\n  * 애플리케이션이 v1.9.51로 업데이트되었습니다.\n\n* **Bug Fixes**\n  * 불필요한 카메라 권한이 제거되었습니다.\n  * 위치 서비스 권한 설명이 앱의 기능을 정확하게 반영하도록 업데이트되었습니다.\n  * 사진 라이브러리 권한 설명이 업데이트되었습니다.\n\n* **Refactor**\n  * 앱 시작 화면의 애니메이션 성능이 개선되었습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "애플리케이션이 v1.9.51로 업데이트되었습니다."
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "불필요한 카메라 권한이 제거되었습니다.",
+            "위치 서비스 권한 설명이 앱의 기능을 정확하게 반영하도록 업데이트되었습니다.",
+            "사진 라이브러리 권한 설명이 업데이트되었습니다."
+          ]
+        },
+        "refactor": {
+          "title": "Refactor",
+          "items": [
+            "앱 시작 화면의 애니메이션 성능이 개선되었습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.49",
       "project_type": "flutter",

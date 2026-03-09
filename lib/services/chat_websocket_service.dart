@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
+import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
@@ -21,6 +22,9 @@ class ChatWebSocketService {
   // 구독 참조 카운팅 (여러 화면에서 같은 채팅방을 구독할 수 있도록)
   final Map<String, int> _subscriptionRefCounts = {};
 
+  // 토큰 갱신 중 중복 실행 방지
+  bool _isRefreshingToken = false;
+
   final TokenManager _tokenManager = TokenManager();
 
   /// 연결 상태 확인
@@ -28,8 +32,10 @@ class ChatWebSocketService {
 
   ///  STOMP 연결
   Future<void> connect() async {
-    if (_isConnected) {
-      debugPrint('[WebSocket] Already connected');
+    // _stompClient != null 이면 이미 연결 중이거나 재연결 대기 중
+    // 이 경우 새 StompClient를 생성하면 중복 세션 문제가 발생하므로 early return
+    if (_isConnected || _stompClient != null) {
+      debugPrint('[WebSocket] Already connected or connecting');
       return;
     }
 
@@ -103,12 +109,44 @@ class ChatWebSocketService {
     debugPrint('[WebSocket] ❌ STOMP Error');
     debugPrint('[WebSocket] Headers: ${frame.headers}');
     debugPrint('[WebSocket] Body: ${frame.body}');
+    // STOMP 에러 수신 즉시 연결 상태를 false로 설정
+    // _onDisconnect 보다 먼저 처리하여 에러 발생 후 메시지 전송 시도를 차단
+    _isConnected = false;
+    // 토큰 만료로 인한 인증 오류일 수 있으므로 재발급 후 재연결 시도
+    _refreshTokenAndReconnect();
   }
 
   /// WebSocket 에러 콜백
   void _onWebSocketError(dynamic error) {
     debugPrint('[WebSocket] ❌ WebSocket Error: $error');
     _isConnected = false;
+  }
+
+  /// 토큰 재발급 후 WebSocket 재연결
+  Future<void> _refreshTokenAndReconnect() async {
+    if (_isRefreshingToken) return;
+    _isRefreshingToken = true;
+
+    try {
+      debugPrint('[WebSocket] 토큰 재발급 시도...');
+
+      // auto-reconnect가 구 토큰으로 재시도하지 않도록 먼저 비활성화
+      _stompClient?.deactivate();
+      _stompClient = null;
+      _isConnected = false;
+
+      final success = await RomAuthApi().refreshAccessToken();
+      if (success) {
+        debugPrint('[WebSocket] 토큰 재발급 성공 - WebSocket 재연결');
+        await connect();
+      } else {
+        debugPrint('[WebSocket] 토큰 재발급 실패 (refresh 토큰 만료)');
+      }
+    } catch (e) {
+      debugPrint('[WebSocket] 토큰 재발급 및 재연결 실패: $e');
+    } finally {
+      _isRefreshingToken = false;
+    }
   }
 
   /// 기존 구독 재연결
