@@ -107,6 +107,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isOpponentOnline = false;
   // _onlineStatusTimer 제거
   StreamSubscription? _pollerSubscription;
+  Timer? _sendMessageTimeoutTimer;
 
   @override
   void initState() {
@@ -225,6 +226,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           // 내가 보낸 텍스트 메시지 에코 → 전송 중 상태 해제
           if (newMessage.senderId == _myMemberId && newMessage.type == MessageType.text) {
             _isSendingMessage = false;
+            _sendMessageTimeoutTimer?.cancel();
           }
 
           // pending과 매칭 시도: 이미지 낙관적 로컬 메시지 교체용 (텍스트는 pending 없음)
@@ -355,10 +357,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   void _sendMessage() {
     final content = _messageController.text.trim();
-    if (content.isEmpty || _isSendingMessage) return;
+    if (content.isEmpty || _isSendingMessage || _isInputDisabled) return;
 
     setState(() => _isSendingMessage = true);
     _messageController.clear();
+
+    // 타임아웃 복구
+    _sendMessageTimeoutTimer?.cancel();
+    _sendMessageTimeoutTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted && _isSendingMessage) {
+        setState(() => _isSendingMessage = false);
+        CommonSnackBar.show(context: context, message: '메시지 전송에 실패했습니다.', type: SnackBarType.error);
+      }
+    });
 
     // 서버로 전송 → 에코가 WebSocket으로 오면 _messages에 추가
     _wsService.sendMessage(chatRoomId: widget.chatRoomId, content: content, type: MessageType.text);
