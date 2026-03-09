@@ -55,8 +55,7 @@ class AppleAuthService {
       final UserCredential credential = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
 
       // Firebase ID 토큰 취득
-      // TODO : 백엔드에 소셜로그인 apple 추가 후 수정
-      // final String firebaseIdToken = await credential.user?.getIdToken() ?? '';
+      final String firebaseIdToken = await credential.user?.getIdToken() ?? '';
 
       // 사용자 정보 저장 (애플은 최초 로그인 시에만 이름/이메일 제공)
       final displayName = (appleCredential.givenName != null || appleCredential.familyName != null)
@@ -70,7 +69,7 @@ class AppleAuthService {
 
       LoginPlatformManager().saveLoginPlatform(LoginPlatforms.apple.platformName);
 
-      // await romAuthApi.signInWithSocial(firebaseIdToken: firebaseIdToken, providerId: 'apple.com');
+      await romAuthApi.signInWithSocial(firebaseIdToken: firebaseIdToken, providerId: 'apple.com');
 
       debugPrint('애플 로그인 성공: ${credential.user?.uid}');
       return true;
