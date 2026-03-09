@@ -28,12 +28,8 @@ Future<void> initNaverMap() async {
 /// Google Sign-In 초기화 (google_sign_in v7 필수)
 /// Android: serverClientId (web client ID) 없으면 clientConfigurationError 발생
 Future<void> initGoogleSignIn() async {
-  try {
-    await GoogleSignIn.instance.initialize(serverClientId: dotenv.get('GOOGLE_SERVER_CLIENT_ID'));
-    debugPrint('[AppInit] Google Sign-In 초기화 완료');
-  } catch (e) {
-    debugPrint('[AppInit] Google Sign-In 초기화 실패: $e');
-  }
+  await GoogleSignIn.instance.initialize(serverClientId: dotenv.get('GOOGLE_SERVER_CLIENT_ID'));
+  debugPrint('[AppInit] Google Sign-In 초기화 완료');
 }
 
 /// 카카오 SDK 초기화
