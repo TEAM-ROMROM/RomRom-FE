@@ -71,6 +71,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// AI 추천으로 하이라이트할 카드 itemId 목록 (상위 3개)
   List<String> _aiHighlightedItemIds = [];
 
+  // 초기 로드에 성공한 정렬 필드 저장
+  ItemSortField _currentSortField = ItemSortField.recommended;
+
   final List<String> _coachMarkImages = [
     'assets/images/coachMark1.png',
     'assets/images/coachMark2.png',
@@ -387,7 +390,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         );
         items = response.itemPage?.content ?? [];
         debugPrint('[HomeTab] sortField=${sortField.serverName} → ${items.length}개');
-        if (items.isNotEmpty) break;
+        if (items.isNotEmpty) {
+          _currentSortField = sortField;
+          break;
+        }
       }
 
       if (!mounted) return;
@@ -425,7 +431,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       _currentPage += 1;
       final itemApi = ItemApi();
       final response = await itemApi.getItems(
-        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: ItemSortField.recommended.serverName),
+        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: _currentSortField.serverName),
       );
 
       final newItems = await _convertToFeedItems(response.itemPage?.content ?? []);
