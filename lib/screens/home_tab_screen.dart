@@ -71,6 +71,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// AI 추천으로 하이라이트할 카드 itemId 목록 (상위 3개)
   List<String> _aiHighlightedItemIds = [];
 
+  // 초기 로드에 성공한 정렬 필드 저장
+  ItemSortField _currentSortField = ItemSortField.recommended;
+
   final List<String> _coachMarkImages = [
     'assets/images/coachMark1.png',
     'assets/images/coachMark2.png',
@@ -362,6 +365,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// 초기 아이템 로드
+  /// 결과가 0개이면 recommend → distance → preferredCategory → createdDate 순으로 폴백
   Future<void> _loadInitialItems() async {
     if (!mounted) return;
 
@@ -369,21 +373,38 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       _isLoading = true;
     });
 
+    const fallbackOrder = [
+      ItemSortField.recommended,
+      ItemSortField.distance,
+      ItemSortField.preferredCategory,
+      ItemSortField.createdDate,
+    ];
+
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(
-        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: ItemSortField.recommended.serverName),
-      );
+      List<Item> items = [];
+
+      for (final sortField in fallbackOrder) {
+        final response = await itemApi.getItems(
+          ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: sortField.serverName),
+        );
+        items = response.itemPage?.content ?? [];
+        debugPrint('[HomeTab] sortField=${sortField.serverName} → ${items.length}개');
+        if (items.isNotEmpty) {
+          _currentSortField = sortField;
+          break;
+        }
+      }
 
       if (!mounted) return;
 
-      final feedItems = await _convertToFeedItems(response.itemPage?.content ?? []);
+      final feedItems = await _convertToFeedItems(items);
 
       setState(() {
         _feedItems
           ..clear()
           ..addAll(feedItems);
-        _hasMoreItems = !(response.itemPage?.content.isEmpty ?? true);
+        _hasMoreItems = items.isNotEmpty;
         _isLoading = false;
       });
     } catch (e) {
@@ -410,7 +431,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       _currentPage += 1;
       final itemApi = ItemApi();
       final response = await itemApi.getItems(
-        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: ItemSortField.recommended.serverName),
+        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: _currentSortField.serverName),
       );
 
       final newItems = await _convertToFeedItems(response.itemPage?.content ?? []);
