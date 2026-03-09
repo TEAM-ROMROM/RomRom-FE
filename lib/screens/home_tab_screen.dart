@@ -362,6 +362,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   /// 초기 아이템 로드
+  /// 결과가 0개이면 recommend → distance → preferredCategory → createdDate 순으로 폴백
   Future<void> _loadInitialItems() async {
     if (!mounted) return;
 
@@ -369,21 +370,35 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       _isLoading = true;
     });
 
+    const fallbackOrder = [
+      ItemSortField.recommended,
+      ItemSortField.distance,
+      ItemSortField.preferredCategory,
+      ItemSortField.createdDate,
+    ];
+
     try {
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(
-        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: ItemSortField.recommended.serverName),
-      );
+      List<Item> items = [];
+
+      for (final sortField in fallbackOrder) {
+        final response = await itemApi.getItems(
+          ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: sortField.serverName),
+        );
+        items = response.itemPage?.content ?? [];
+        debugPrint('[HomeTab] sortField=${sortField.serverName} → ${items.length}개');
+        if (items.isNotEmpty) break;
+      }
 
       if (!mounted) return;
 
-      final feedItems = await _convertToFeedItems(response.itemPage?.content ?? []);
+      final feedItems = await _convertToFeedItems(items);
 
       setState(() {
         _feedItems
           ..clear()
           ..addAll(feedItems);
-        _hasMoreItems = !(response.itemPage?.content.isEmpty ?? true);
+        _hasMoreItems = items.isNotEmpty;
         _isLoading = false;
       });
     } catch (e) {
