@@ -26,10 +26,10 @@ Widget chatImageBubble(BuildContext context, ChatMessage message) {
             fadeInDuration: Duration.zero,
             fadeOutDuration: Duration.zero,
             placeholderFadeInDuration: Duration.zero,
-            placeholder: (_, __) => const Center(
+            placeholder: (_, _) => const Center(
               child: SizedBox(width: 32, height: 32, child: CircularProgressIndicator(color: AppColors.primaryYellow)),
             ),
-            errorWidget: (_, __, ___) => const Center(child: ErrorImagePlaceholder()),
+            errorWidget: (_, _, _) => const Center(child: ErrorImagePlaceholder()),
           );
         }).toList(),
         initialPage: 0,
@@ -50,7 +50,7 @@ Widget chatImageBubble(BuildContext context, ChatMessage message) {
             fadeInDuration: Duration.zero,
             fadeOutDuration: Duration.zero,
             placeholderFadeInDuration: Duration.zero,
-            placeholder: (_, __) => const ColoredBox(
+            placeholder: (_, _) => const ColoredBox(
               color: AppColors.opacity10White,
               child: Center(
                 child: SizedBox(
@@ -60,7 +60,7 @@ Widget chatImageBubble(BuildContext context, ChatMessage message) {
                 ),
               ),
             ),
-            errorWidget: (_, __, ___) => const Center(child: ErrorImagePlaceholder()),
+            errorWidget: (_, _, _) => const Center(child: ErrorImagePlaceholder()),
           ),
         ),
       ),
