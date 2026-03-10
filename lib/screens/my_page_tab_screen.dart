@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' hide UserInfo;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
@@ -9,18 +10,16 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_like_list_screen.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
-import 'package:romrom_fe/enums/login_platforms.dart';
-import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
-import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/screens/my_page/terms_screen.dart';
 import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -310,20 +309,6 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
   /// 회원 탈퇴 확인 후 처리
   Future<void> _confirmDeleteMember(BuildContext context) async {
-    // Apple 로그인 사용자의 경우 토큰 취소 (Apple 정책 필수)
-    final platform = await LoginPlatformManager().getLoginPlatform();
-    if (platform == LoginPlatforms.apple.platformName) {
-      try {
-        await AppleAuthService().revokeAppleToken();
-      } catch (e) {
-        debugPrint('Apple 토큰 취소 실패: $e');
-        if (context.mounted) {
-          CommonSnackBar.show(context: context, message: '인증에 실패했습니다. 다시 시도해주세요.', type: SnackBarType.error);
-        }
-        return;
-      }
-    }
-
     // 회원 탈퇴 진행
     final memberApi = MemberApi();
     final isSuccess = await memberApi.deleteMember();
@@ -339,6 +324,13 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
       // 소셜 플랫폼별 로그아웃 처리
       final socialLogoutService = SocialLogoutService();
       await socialLogoutService.performSocialLogout();
+
+      // Firebase 계정 삭제 후 로그아웃
+      await FirebaseAuth.instance.currentUser?.delete();
+      await FirebaseAuth.instance.signOut();
+
+      // 사용자 정보 클리어
+      await UserInfo().clearUserInfoExceptIsCoachMarkShown();
 
       // 메인 화면 블러 처리 변수 삭제
       final prefs = await SharedPreferences.getInstance();
