@@ -122,28 +122,27 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget> with SingleTicker
         final trackWidth = constraints.maxWidth - (_trackHorizontalPadding.w * 2);
         final segmentWidth = trackWidth / (widget.options.length - 1);
 
-        return SizedBox(
-          height: 76.h,
-          child: AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              final currentValue = _animation.value;
-              final nearestIndex = currentValue.round().clamp(0, widget.options.length - 1);
-              final dotX = _trackHorizontalPadding.w + (currentValue * segmentWidth);
+        return AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            final currentValue = _animation.value;
+            final nearestIndex = currentValue.round().clamp(0, widget.options.length - 1);
+            final dotX = _trackHorizontalPadding.w + (currentValue * segmentWidth);
 
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // 레이블 (큰 원 위 8px)
-                  _buildLabel(nearestIndex, dotX),
-                  // 슬라이더 트랙
-                  _buildSliderTrack(trackWidth),
-                  // 설명 텍스트 (큰 원 아래 8px)
-                  _buildDescription(nearestIndex, dotX),
-                ],
-              );
-            },
-          ),
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 레이블 (큰 원 위 8px)
+                _buildLabel(nearestIndex, dotX),
+                SizedBox(height: 8.h),
+                // 슬라이더 트랙
+                _buildSliderTrack(trackWidth),
+                SizedBox(height: 8.h),
+                // 설명 텍스트 (큰 원 아래 8px)
+                _buildDescription(nearestIndex, dotX),
+              ],
+            );
+          },
         );
       },
     );

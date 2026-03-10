@@ -29,6 +29,11 @@ class LocationService {
     return status.isGranted;
   }
 
+  /// 현재 위치 권한 상태 확인 (시스템 팝업 없이)
+  Future<PermissionStatus> checkPermissionStatus() {
+    return Permission.location.status;
+  }
+
   /// 현재 위치 좌표 가져오기
   Future<Position?> getCurrentPosition() async {
     try {

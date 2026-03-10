@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -24,17 +26,39 @@ class SearchRangeSettingScreen extends StatefulWidget {
   State<SearchRangeSettingScreen> createState() => _SearchRangeSettingScreenState();
 }
 
-class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
+class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> with WidgetsBindingObserver {
   final _locationService = LocationService();
   final Completer<NaverMapController> _mapControllerCompleter = Completer();
 
   NLatLng? _currentPosition;
   int _selectedRangeIndex = 0;
   NCircleOverlay? _rangeCircle;
+  bool _permissionDenied = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeLocation();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _permissionDenied) {
+      _retryLocationAfterPermission();
+    }
+  }
+
+  Future<void> _retryLocationAfterPermission() async {
+    final status = await _locationService.checkPermissionStatus();
+    if (!status.isGranted) return;
+    // _initializeLocation() 내부에서 _permissionDenied를 초기화하므로 별도 setState 불필요
     _initializeLocation();
   }
 
@@ -43,7 +67,9 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
       appBar: _buildAppBar(),
-      body: _currentPosition == null
+      body: _permissionDenied
+          ? _buildPermissionDeniedView()
+          : _currentPosition == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -112,32 +138,40 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
     );
   }
 
-  /// 위치 초기화
+  /// 위치 초기화 — initState 및 권한 허용 후 복귀 시 호출
   Future<void> _initializeLocation() async {
+    setState(() => _permissionDenied = false);
+
+    final hasPermission = await _locationService.requestPermission();
+
+    // 탐색 범위는 위치 권한과 무관하게 항상 서버에서 조회
+    double searchRadiusInMeters = 7500.0;
     try {
-      // 위치 서비스 활성화
-      final hasPermission = await _locationService.requestPermission();
-      if (!hasPermission) return;
-
-      // 현재 위치 가져오기
-      final position = await _locationService.getCurrentPosition();
-
-      final memberApi = MemberApi();
-      final memberResponse = await memberApi.getMemberInfo();
-
-      if (mounted) {
-        // 기존에 저장된 탐색 범위로 초기화
-        double searchRadiusInMeters = memberResponse.member?.searchRadiusInMeters ?? 7500.0;
-
-        if (position != null) {
-          setState(() {
-            _currentPosition = _locationService.positionToLatLng(position);
-            _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
-          });
-        }
-      }
+      final memberResponse = await MemberApi().getMemberInfo();
+      searchRadiusInMeters = memberResponse.member?.searchRadiusInMeters ?? 7500.0;
     } catch (e) {
-      debugPrint('위치 초기화 실패: $e');
+      debugPrint('탐색 범위 조회 실패, 기본값 사용: $e');
+    }
+
+    if (!hasPermission) {
+      if (mounted) {
+        setState(() {
+          _permissionDenied = true;
+          _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
+        });
+      }
+      return;
+    }
+
+    final position = await _locationService.getCurrentPosition();
+    if (mounted) {
+      setState(() {
+        // GPS 실패 시 서울시청 좌표로 폴백
+        _currentPosition = position != null
+            ? _locationService.positionToLatLng(position)
+            : const NLatLng(37.5665, 126.9780);
+        _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
+      });
     }
   }
 
@@ -232,5 +266,50 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
     if (radiusInMeters <= 7500) return 2;
     if (radiusInMeters <= 10000) return 3;
     return 0;
+  }
+
+  /// 위치 권한 거부 시 안내 UI
+  Widget _buildPermissionDeniedView() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 40.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_off_outlined, size: 64.sp, color: AppColors.opacity60White),
+            SizedBox(height: 24.h),
+            Text(
+              '위치 권한이 필요합니다',
+              style: CustomTextStyles.h3.copyWith(color: AppColors.textColorWhite),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              '위치 접근 권한을 허용하면 현재 위치를 기준으로 탐색 범위를 설정할 수 있습니다.',
+              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 32.h),
+            SizedBox(
+              width: double.infinity,
+              height: 48.h,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+                onPressed: () {
+                  openAppSettings();
+                },
+                child: Text(
+                  '설정으로 이동',
+                  style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

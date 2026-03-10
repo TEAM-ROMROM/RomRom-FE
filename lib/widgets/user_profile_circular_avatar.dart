@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
@@ -60,7 +59,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final double size = widget.avatarSize.width.w;
+    final double size = widget.avatarSize.width;
 
     return Container(
       width: size,

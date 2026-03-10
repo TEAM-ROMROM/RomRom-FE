@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -19,7 +20,7 @@ class MyLocationVerificationScreen extends StatefulWidget {
   State<MyLocationVerificationScreen> createState() => _MyLocationVerificationScreenState();
 }
 
-class _MyLocationVerificationScreenState extends State<MyLocationVerificationScreen> {
+class _MyLocationVerificationScreenState extends State<MyLocationVerificationScreen> with WidgetsBindingObserver {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
   String currentAddress = '';
@@ -28,11 +29,33 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
   String eupMyoenDong = '';
   String? ri;
   bool _isVerifying = false;
+  bool _permissionDenied = false;
   final Completer<NaverMapController> mapControllerCompleter = Completer();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeLocation();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _permissionDenied) {
+      _retryLocationAfterPermission();
+    }
+  }
+
+  Future<void> _retryLocationAfterPermission() async {
+    final status = await _locationService.checkPermissionStatus();
+    if (!status.isGranted) return;
+    // _initializeLocation() 내부에서 _permissionDenied를 초기화하므로 별도 setState 불필요
     _initializeLocation();
   }
 
@@ -46,7 +69,9 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
           Navigator.pop(context);
         },
       ),
-      body: _currentPosition == null
+      body: _permissionDenied
+          ? _buildPermissionDeniedView()
+          : _currentPosition == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -165,15 +190,22 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
     }
   }
 
-  // 위치 초기화 통합 메서드
+  // 위치 초기화 — initState 및 권한 허용 후 복귀 시 호출
   Future<void> _initializeLocation() async {
+    setState(() => _permissionDenied = false);
+
     final hasPermission = await _locationService.requestPermission();
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      if (mounted) setState(() => _permissionDenied = true);
+      return;
+    }
 
     final position = await _locationService.getCurrentPosition();
-    if (position != null) {
+    if (mounted) {
       setState(() {
-        _currentPosition = _locationService.positionToLatLng(position);
+        _currentPosition = position != null
+            ? _locationService.positionToLatLng(position)
+            : const NLatLng(37.5665, 126.9780);
       });
     }
   }
@@ -196,5 +228,49 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
   // NaverMap에서 주소 가져오는 메서드를 새 메서드로 호출
   Future<void> getAddressByNaverApi(NLatLng position) async {
     await _loadAddressInfo(position);
+  }
+
+  Widget _buildPermissionDeniedView() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 40.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_off_outlined, size: 64.sp, color: AppColors.opacity60White),
+            SizedBox(height: 24.h),
+            Text(
+              '위치 권한이 필요합니다',
+              style: CustomTextStyles.h3.copyWith(color: AppColors.textColorWhite),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              '위치 인증을 위해 위치 접근 권한을 허용해주세요.',
+              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 32.h),
+            SizedBox(
+              width: double.infinity,
+              height: 48.h,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+                onPressed: () {
+                  openAppSettings();
+                },
+                child: Text(
+                  '설정으로 이동',
+                  style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
