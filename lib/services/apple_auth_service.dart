@@ -41,7 +41,6 @@ class AppleAuthService {
         scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
         nonce: nonce,
       );
-      debugPrint("${appleCredential.authorizationCode}, ${appleCredential.email}, ${appleCredential.givenName}");
 
       final identityToken = appleCredential.identityToken;
       if (identityToken == null) {
@@ -102,6 +101,7 @@ class AppleAuthService {
   /// 애플 로그아웃
   Future<void> logOutWithApple() async {
     try {
+      await FirebaseAuth.instance.signOut();
       await LoginPlatformManager().deleteLoginPlatform();
       debugPrint('애플 로그아웃 성공');
     } catch (error) {

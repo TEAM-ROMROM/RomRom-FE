@@ -142,6 +142,7 @@ class KakaoAuthService {
     try {
       // 카카오 로그아웃
       await UserApi.instance.unlink();
+      await FirebaseAuth.instance.signOut();
       debugPrint('로그아웃 성공, 카카오 SDK에서 토큰 삭제');
       // 로그인 플랫폼 정보 삭제
       await LoginPlatformManager().deleteLoginPlatform();
