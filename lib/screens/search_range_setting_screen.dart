@@ -114,30 +114,25 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
 
   /// 위치 초기화
   Future<void> _initializeLocation() async {
-    try {
-      // 위치 서비스 활성화
-      final hasPermission = await _locationService.requestPermission();
-      if (!hasPermission) return;
+    const seoulCityHall = NLatLng(37.5665, 126.9780);
 
-      // 현재 위치 가져오기
-      final position = await _locationService.getCurrentPosition();
+    try {
+      final hasPermission = await _locationService.requestPermission();
+      final position = hasPermission ? await _locationService.getCurrentPosition() : null;
 
       final memberApi = MemberApi();
       final memberResponse = await memberApi.getMemberInfo();
 
       if (mounted) {
-        // 기존에 저장된 탐색 범위로 초기화
         double searchRadiusInMeters = memberResponse.member?.searchRadiusInMeters ?? 7500.0;
-
-        if (position != null) {
-          setState(() {
-            _currentPosition = _locationService.positionToLatLng(position);
-            _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
-          });
-        }
+        setState(() {
+          _currentPosition = position != null ? _locationService.positionToLatLng(position) : seoulCityHall;
+          _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
+        });
       }
     } catch (e) {
       debugPrint('위치 초기화 실패: $e');
+      if (mounted) setState(() => _currentPosition = seoulCityHall);
     }
   }
 

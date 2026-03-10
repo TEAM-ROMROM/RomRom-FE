@@ -87,6 +87,7 @@ class MyApp extends StatelessWidget {
       designSize: const Size(393, 852),
       useInheritedMediaQuery: true,
       minTextAdapt: true,
+      splitScreenMode: true,
       child: Builder(
         builder: (context) {
           return SafeArea(

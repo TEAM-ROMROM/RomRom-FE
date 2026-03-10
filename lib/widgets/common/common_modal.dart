@@ -137,10 +137,10 @@ class CommonModal extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       elevation: 0,
       backgroundColor: AppColors.secondaryBlack1,
-      insetPadding: EdgeInsets.symmetric(horizontal: 40.w),
+      insetPadding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width > 600 ? 200 : 40.w),
       child: Container(
         width: 312.w,
-        height: 206.h,
+        constraints: BoxConstraints(maxWidth: 312.w),
         decoration: BoxDecoration(
           color: AppColors.secondaryBlack1,
           borderRadius: BorderRadius.circular(8.r),
@@ -149,6 +149,7 @@ class CommonModal extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(24.0.w),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // 아이콘
               Center(
@@ -171,7 +172,7 @@ class CommonModal extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const Spacer(),
+              SizedBox(height: 24.h),
               // 버튼
               isTwoButton ? _buildTwoButtons() : _buildSingleButton(),
             ],
@@ -211,38 +212,40 @@ class CommonModal extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // 취소 버튼
-        SizedBox(
-          width: 128.w,
-          height: 44.h,
-          child: Material(
-            color: AppColors.opacity30PrimaryBlack,
-            borderRadius: BorderRadius.circular(10.r),
-            child: InkWell(
-              onTap: onCancel,
-              highlightColor: AppColors.opacity30PrimaryBlack,
-              splashColor: darkenBlend(AppColors.opacity30PrimaryBlack).withValues(alpha: 0.3),
+        Expanded(
+          child: SizedBox(
+            height: 44.h,
+            child: Material(
+              color: AppColors.opacity30PrimaryBlack,
               borderRadius: BorderRadius.circular(10.r),
-              child: Center(
-                child: Text(cancelText!, style: CustomTextStyles.p1, textAlign: TextAlign.center),
+              child: InkWell(
+                onTap: onCancel,
+                highlightColor: AppColors.opacity30PrimaryBlack,
+                splashColor: darkenBlend(AppColors.opacity30PrimaryBlack).withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(10.r),
+                child: Center(
+                  child: Text(cancelText!, style: CustomTextStyles.p1, textAlign: TextAlign.center),
+                ),
               ),
             ),
           ),
         ),
         SizedBox(width: 8.w),
         // 확인/삭제/나가기 버튼
-        SizedBox(
-          width: 128.w,
-          height: 44.h,
-          child: Material(
-            color: confirmButtonColor,
-            borderRadius: BorderRadius.circular(10.r),
-            child: InkWell(
-              onTap: onConfirm,
-              highlightColor: darkenBlend(confirmButtonColor),
-              splashColor: darkenBlend(confirmButtonColor).withValues(alpha: 0.3),
+        Expanded(
+          child: SizedBox(
+            height: 44.h,
+            child: Material(
+              color: confirmButtonColor,
               borderRadius: BorderRadius.circular(10.r),
-              child: Center(
-                child: Text(confirmText, style: CustomTextStyles.p1, textAlign: TextAlign.center),
+              child: InkWell(
+                onTap: onConfirm,
+                highlightColor: darkenBlend(confirmButtonColor),
+                splashColor: darkenBlend(confirmButtonColor).withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(10.r),
+                child: Center(
+                  child: Text(confirmText, style: CustomTextStyles.p1, textAlign: TextAlign.center),
+                ),
               ),
             ),
           ),

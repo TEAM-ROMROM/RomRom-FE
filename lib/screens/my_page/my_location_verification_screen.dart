@@ -167,13 +167,18 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
 
   // 위치 초기화 통합 메서드
   Future<void> _initializeLocation() async {
+    const seoulCityHall = NLatLng(37.5665, 126.9780);
+
     final hasPermission = await _locationService.requestPermission();
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      if (mounted) setState(() => _currentPosition = seoulCityHall);
+      return;
+    }
 
     final position = await _locationService.getCurrentPosition();
-    if (position != null) {
+    if (mounted) {
       setState(() {
-        _currentPosition = _locationService.positionToLatLng(position);
+        _currentPosition = position != null ? _locationService.positionToLatLng(position) : seoulCityHall;
       });
     }
   }

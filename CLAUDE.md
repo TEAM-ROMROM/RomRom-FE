@@ -13,6 +13,13 @@ Flutter 기반 중고거래 플랫폼. iOS/Android 전용 (웹 불필요).
 ## UI 패턴 규칙
 - **API 중복 요청 방지**: 버튼/액션에서 API를 호출할 때 `Set<T> _pendingRequests` 패턴으로 진행 중인 요청 추적. 요청 시작 시 Set에 추가, `finally`에서 제거. 이미 Set에 있으면 early return.
 
+- **iPad/대형기기 대응 (필수)**: 디자인 기준은 iPhone (393x852)이지만, iPad에서도 정상 동작해야 함.
+  - `SizedBox(height: N.h)` 같은 **고정 높이 컨테이너 안에 여러 위젯을 넣지 말 것** → overflow 발생. 대신 `IntrinsicHeight` 또는 고정 높이 제거
+  - 이미지/정사각형 요소는 `height: N.h` 대신 **`height: N.w`** 사용 (너비 기준이 더 안전)
+  - 위치 권한 거부 등 실패 케이스에서 **반드시 폴백 처리** (서울시청 좌표 등). `_currentPosition == null`인 채로 로딩 화면 유지 금지
+  - `ScreenUtil` 설정: `minTextAdapt: true`, `splitScreenMode: true` 유지 필수
+  - **모달/다이얼로그는 고정 픽셀값 사용** (`.w` `.h` 금지). 모달은 화면 크기에 비례하면 iPad에서 너무 커짐. `width: 312`, `height: 44` 같이 고정값 사용
+
 ```dart
 // ✅ 올바른 예시
 final Set<NotificationType> _pendingMuteRequests = {};
