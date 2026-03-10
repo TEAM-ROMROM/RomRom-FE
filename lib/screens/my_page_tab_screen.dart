@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
@@ -36,11 +37,22 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   String _location = '위치정보 없음';
   String? _profileUrl;
   String? _accountStatus;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _appVersion = packageInfo.version);
+      }
+    } catch (_) {}
   }
 
   /// 사용자 정보 로드
@@ -80,106 +92,120 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 헤더: "마이페이지"
-            Padding(
-              padding: EdgeInsets.only(top: 29.h, bottom: 13.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('마이페이지', style: CustomTextStyles.h1),
-                  SizedBox.square(
-                    dimension: 32.w,
-                    child: OverflowBox(
-                      maxWidth: 56.w,
-                      maxHeight: 56.w,
-                      child: Material(
-                        color: AppColors.transparent,
-                        shape: const CircleBorder(),
-                        clipBehavior: Clip.antiAlias, // 리플을 원형으로 클립
-                        child: InkResponse(
-                          onTap: () {
-                            context.navigateTo(screen: const NotificationSettingsScreen());
-                          },
-                          radius: 18.w,
-                          customBorder: const CircleBorder(),
-                          highlightColor: AppColors.buttonHighlightColorGray,
-                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                          child: SizedBox.square(
-                            dimension: 56.w,
-                            child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 헤더: "마이페이지"
+                Padding(
+                  padding: EdgeInsets.only(top: 29.h, bottom: 13.h),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('마이페이지', style: CustomTextStyles.h1),
+                      SizedBox.square(
+                        dimension: 32.w,
+                        child: OverflowBox(
+                          maxWidth: 56.w,
+                          maxHeight: 56.w,
+                          child: Material(
+                            color: AppColors.transparent,
+                            shape: const CircleBorder(),
+                            clipBehavior: Clip.antiAlias, // 리플을 원형으로 클립
+                            child: InkResponse(
+                              onTap: () {
+                                context.navigateTo(screen: const NotificationSettingsScreen());
+                              },
+                              radius: 18.w,
+                              customBorder: const CircleBorder(),
+                              highlightColor: AppColors.buttonHighlightColorGray,
+                              splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                              child: SizedBox.square(
+                                dimension: 56.w,
+                                child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
+
+                // 닉네임 박스
+                SizedBox(height: 16.h),
+                _buildNicknameBox(),
+
+                // 메뉴 섹션 1
+                SizedBox(height: 16.h),
+                _buildMenuSection([
+                  _MenuItem(
+                    label: '좋아요 목록',
+                    icon: AppIcons.profilelikecount,
+                    onTap: () {
+                      context.navigateTo(screen: const MyLikeListScreen());
+                    },
+                  ),
+                  _MenuItem(
+                    label: '내 위치인증',
+                    icon: AppIcons.location,
+                    onTap: () {
+                      context.navigateTo(screen: const MyLocationVerificationScreen());
+                    },
+                  ),
+                  _MenuItem(
+                    label: '선호 카테고리 설정',
+                    icon: AppIcons.preferCategory,
+                    onTap: () {
+                      context.navigateTo(screen: const MyCategorySettingsScreen());
+                    },
+                  ),
+                  _MenuItem(
+                    label: '탐색 범위 설정',
+                    icon: AppIcons.target,
+                    onTap: () {
+                      context.navigateTo(screen: const SearchRangeSettingScreen());
+                    },
+                  ),
+                  _MenuItem(
+                    label: '차단 관리',
+                    icon: AppIcons.slashCircle,
+                    onTap: () {
+                      context.navigateTo(screen: const BlockManagementScreen());
+                    },
+                  ),
+                ]),
+                SizedBox(height: 16.h),
+
+                // 이용약관 / 로그아웃 / 회원탈퇴 섹션
+                _buildMenuSection([
+                  _MenuItem(
+                    label: '이용 약관',
+                    icon: AppIcons.infoCircle,
+                    onTap: () {
+                      context.navigateTo(screen: const TermsScreen());
+                    },
+                  ),
+                  _MenuItem(label: '로그아웃', onTap: () => AuthService().logout(context), isDestructive: true),
+                  _MenuItem(label: '회원탈퇴', onTap: () => _handleDeleteMemberButtonTap(context), isDestructive: true),
+                ]),
+              ],
+            ),
+          ),
+          // 우하단 버전 정보
+          if (_appVersion.isNotEmpty)
+            Positioned(
+              right: 24,
+              bottom: 16,
+              child: Text(
+                'v$_appVersion',
+                style: CustomTextStyles.p4.copyWith(color: AppColors.textColorWhite.withValues(alpha: 0.4)),
               ),
             ),
-
-            // 닉네임 박스
-            SizedBox(height: 16.h),
-            _buildNicknameBox(),
-
-            // 메뉴 섹션 1
-            SizedBox(height: 16.h),
-            _buildMenuSection([
-              _MenuItem(
-                label: '좋아요 목록',
-                icon: AppIcons.profilelikecount,
-                onTap: () {
-                  context.navigateTo(screen: const MyLikeListScreen());
-                },
-              ),
-              _MenuItem(
-                label: '내 위치인증',
-                icon: AppIcons.location,
-                onTap: () {
-                  context.navigateTo(screen: const MyLocationVerificationScreen());
-                },
-              ),
-              _MenuItem(
-                label: '선호 카테고리 설정',
-                icon: AppIcons.preferCategory,
-                onTap: () {
-                  context.navigateTo(screen: const MyCategorySettingsScreen());
-                },
-              ),
-              _MenuItem(
-                label: '탐색 범위 설정',
-                icon: AppIcons.target,
-                onTap: () {
-                  context.navigateTo(screen: const SearchRangeSettingScreen());
-                },
-              ),
-              _MenuItem(
-                label: '차단 관리',
-                icon: AppIcons.slashCircle,
-                onTap: () {
-                  context.navigateTo(screen: const BlockManagementScreen());
-                },
-              ),
-            ]),
-            SizedBox(height: 16.h),
-
-            // 이용약관 / 로그아웃 / 회원탈퇴 섹션
-            _buildMenuSection([
-              _MenuItem(
-                label: '이용 약관',
-                icon: AppIcons.infoCircle,
-                onTap: () {
-                  context.navigateTo(screen: const TermsScreen());
-                },
-              ),
-              _MenuItem(label: '로그아웃', onTap: () => AuthService().logout(context), isDestructive: true),
-              _MenuItem(label: '회원탈퇴', onTap: () => _handleDeleteMemberButtonTap(context), isDestructive: true),
-            ]),
-          ],
-        ),
+        ],
       ),
     );
   }
