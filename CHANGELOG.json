@@ -1,11 +1,42 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-10T13:36:48Z",
-    "currentVersion": "1.9.59",
-    "totalReleases": 79,
+    "lastUpdated": "2026-03-11T08:55:49Z",
+    "currentVersion": "1.9.60",
+    "totalReleases": 80,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.60",
+      "project_type": "flutter",
+      "date": "2026-03-11",
+      "pr_number": 644,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * Apple Sign In 지원: Apple 계정으로 간편하게 로그인할 수 있습니다.\n  * 계정 삭제 기능: 사용자가 언제든지 계정을 삭제할 수 있습니다.\n\n* **개선 사항**\n  * iOS 기기에서만 Apple 로그인 옵션이 표시되도록 최적화했습니다.\n  * 로그인 인터페이스의 색상과 텍스트 스타일이 개선되었습니다.\n  * 인증 프로세스가 간소화되고 최적화되었습니다.\n\n* **버전 업데이트**\n  * 앱 버전이 1.9.60으로 업그레이드되었습니다.",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "Apple Sign In 지원: Apple 계정으로 간편하게 로그인할 수 있습니다.",
+            "계정 삭제 기능: 사용자가 언제든지 계정을 삭제할 수 있습니다."
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "iOS 기기에서만 Apple 로그인 옵션이 표시되도록 최적화했습니다.",
+            "로그인 인터페이스의 색상과 텍스트 스타일이 개선되었습니다.",
+            "인증 프로세스가 간소화되고 최적화되었습니다."
+          ]
+        },
+        "버전_업데이트": {
+          "title": "버전 업데이트",
+          "items": [
+            "앱 버전이 1.9.60으로 업그레이드되었습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.59",
       "project_type": "flutter",
