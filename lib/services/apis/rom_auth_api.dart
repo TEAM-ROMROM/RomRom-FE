@@ -8,7 +8,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
@@ -194,10 +193,18 @@ class RomAuthApi {
     }
   }
 
-  /// POST : `/api/auth/logout` 로그아웃
-  Future<void> logoutWithSocial(BuildContext context) async {
-    // 로그아웃 시 회원 정보 캐시 삭제
+  /// POST : `/api/auth/logout` 서버 로그아웃 API 호출
+  Future<void> logout() async {
     await MemberManager.clearMemberInfo();
-    await SocialLogoutService().logout(context);
+    const String url = '${AppUrls.baseUrl}/api/auth/logout';
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {
+        TokenKeys.accessToken.name: await _tokenManager.getAccessToken(),
+        TokenKeys.refreshToken.name: await _tokenManager.getRefreshToken(),
+      },
+      isAuthRequired: true,
+      onSuccess: (_) {},
+    );
   }
 }

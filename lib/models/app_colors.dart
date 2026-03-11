@@ -29,7 +29,8 @@ class AppColors {
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
-  static const Color google = Color(0xFFF3F4F4); // 구글 배경
+  static const Color google = Color(0xFFFFFFFF); // 구글 배경
+  static const Color apple = Color(0xFFFFFFFF); // 애플 배경
 
   // 동네 인증하기 화면
   static const Color locationVerificationAreaLabel = Color(0x4CFFFFFF); // 흰색, opacity 30%

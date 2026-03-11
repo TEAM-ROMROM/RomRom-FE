@@ -137,16 +137,27 @@ class KakaoAuthService {
     }
   }
 
-  /// 카카오 로그아웃
-  Future<void> logoutWithKakaoAccount() async {
+  /// 카카오 로그아웃 (토큰 만료, 연결 유지)
+  Future<void> logoutWithKakao() async {
     try {
-      // 카카오 로그아웃
-      await UserApi.instance.unlink();
-      debugPrint('로그아웃 성공, 카카오 SDK에서 토큰 삭제');
-      // 로그인 플랫폼 정보 삭제
+      await UserApi.instance.logout();
+      await FirebaseAuth.instance.signOut();
+      debugPrint('카카오 로그아웃 성공');
       await LoginPlatformManager().deleteLoginPlatform();
     } catch (error) {
-      debugPrint('로그아웃 실패: $error');
+      debugPrint('카카오 로그아웃 실패: $error');
+    }
+  }
+
+  /// 카카오 연결 해제 (회원 탈퇴 시 사용)
+  Future<void> unlinkKakao() async {
+    try {
+      await UserApi.instance.unlink();
+      await FirebaseAuth.instance.signOut();
+      debugPrint('카카오 연결 해제 성공');
+      await LoginPlatformManager().deleteLoginPlatform();
+    } catch (error) {
+      debugPrint('카카오 연결 해제 실패: $error');
     }
   }
 }

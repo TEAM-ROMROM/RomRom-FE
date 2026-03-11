@@ -11,6 +11,7 @@ import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
+import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -29,6 +30,7 @@ class LoginButton extends StatefulWidget {
 class _LoginButtonState extends State<LoginButton> {
   final KakaoAuthService kakaoAuthService = KakaoAuthService();
   final GoogleAuthService googleAuthService = GoogleAuthService();
+  final AppleAuthService appleAuthService = AppleAuthService();
   bool _isLoading = false;
 
   Future<void> handleLogin(BuildContext context) async {
@@ -52,6 +54,9 @@ class _LoginButtonState extends State<LoginButton> {
       switch (widget.platform) {
         case LoginPlatforms.kakao:
           isSuccess = await kakaoAuthService.loginWithKakao(context);
+          break;
+        case LoginPlatforms.apple:
+          isSuccess = await appleAuthService.logInWithApple();
           break;
         case LoginPlatforms.google:
           isSuccess = await googleAuthService.logInWithGoogle();
@@ -132,48 +137,12 @@ class _LoginButtonState extends State<LoginButton> {
               Center(
                 child: Text(
                   widget.platform.displayText,
-                  style: CustomTextStyles.p2.copyWith(color: AppColors.textColorBlack, fontWeight: FontWeight.w700),
+                  style: CustomTextStyles.p2.copyWith(color: widget.platform.textColor, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// 테스트용 로그아웃 버튼
-class LogoutButton extends StatelessWidget {
-  LogoutButton({super.key, required this.platform});
-
-  final LoginPlatforms platform;
-  final KakaoAuthService kakaoAuthService = KakaoAuthService();
-  final GoogleAuthService googleAuthService = GoogleAuthService();
-
-  /// 버튼 눌렀을 때 로그아웃 처리 함수
-  void handleLogout() async {
-    switch (platform) {
-      case LoginPlatforms.kakao:
-        // 카카오 로그아웃 처리
-        kakaoAuthService.logoutWithKakaoAccount();
-        break;
-      case LoginPlatforms.google:
-        // 구글 로그아웃 로직 처리
-        googleAuthService.logOutWithGoogle();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: handleLogout,
-      child: Container(
-        width: 150,
-        height: 30,
-        color: platform.backgroundColor.withValues(alpha: 0.5),
-        alignment: Alignment.center,
-        child: Text(platform.name),
       ),
     );
   }

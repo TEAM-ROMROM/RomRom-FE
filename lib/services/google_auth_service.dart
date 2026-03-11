@@ -78,6 +78,7 @@ class GoogleAuthService {
   Future<void> logOutWithGoogle() async {
     try {
       await _googleSignIn.disconnect();
+      await FirebaseAuth.instance.signOut();
       debugPrint('구글 로그아웃 성공');
       // 로그인 플랫폼 정보 삭제
       await LoginPlatformManager().deleteLoginPlatform();

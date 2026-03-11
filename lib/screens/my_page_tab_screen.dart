@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
-import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -10,7 +10,6 @@ import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_like_list_screen.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
-import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
@@ -18,11 +17,9 @@ import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/screens/my_page/terms_screen.dart';
 import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
-import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class MyPageTabScreen extends StatefulWidget {
   const MyPageTabScreen({super.key});
@@ -307,33 +304,11 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
   /// 회원 탈퇴 확인 후 처리
   Future<void> _confirmDeleteMember(BuildContext context) async {
-    // 회원 탈퇴 진행
-    final memberApi = MemberApi();
-    final isSuccess = await memberApi.deleteMember();
-
-    // context가 여전히 유효한지 확인
+    final isSuccess = await AuthService().deleteAccount();
     if (!context.mounted) return;
-
     if (isSuccess) {
-      // 토큰 삭제 후 로그인 화면으로 이동
-      final tokenManager = TokenManager();
-      await tokenManager.deleteTokens();
-
-      // 소셜 플랫폼별 로그아웃 처리
-      final socialLogoutService = SocialLogoutService();
-      await socialLogoutService.performSocialLogout();
-
-      // 메인 화면 블러 처리 변수 삭제
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('isFirstMainScreen');
-
-      // context가 여전히 유효한지 다시 확인
-      if (!context.mounted) return;
-
-      // 로그인 페이지로 이동
       context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
     } else {
-      // 실패 안내
       CommonSnackBar.show(context: context, message: '회원 탈퇴에 실패했습니다. 다시 시도해주세요.', type: SnackBarType.error);
     }
   }
