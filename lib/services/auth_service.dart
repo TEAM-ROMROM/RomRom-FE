@@ -58,7 +58,11 @@ class AuthService {
     }
 
     // Firebase 계정 삭제 (signOut 전에 수행해야 함)
-    await FirebaseAuth.instance.currentUser?.delete();
+    try {
+      await FirebaseAuth.instance.currentUser?.delete();
+    } catch (e) {
+      debugPrint('Firebase 계정 삭제 실패 (탈퇴 처리는 계속): $e');
+    }
 
     // 플랫폼별 소셜 연결 해제 (내부에서 Firebase signOut + 로그인 플랫폼 삭제 처리)
     await _performPlatformWithdraw(platform);
