@@ -1,11 +1,35 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-11T08:55:49Z",
-    "currentVersion": "1.9.60",
-    "totalReleases": 80,
+    "lastUpdated": "2026-03-12T09:42:11Z",
+    "currentVersion": "1.9.62",
+    "totalReleases": 81,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.62",
+      "project_type": "flutter",
+      "date": "2026-03-12",
+      "pr_number": 657,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **개선 사항**\n  * 채팅방 화면 UI를 정제하여 더 깔끔한 레이아웃 제공\n  * 시스템 메시지 표시 방식 개선으로 가독성 향상\n  * 위치 권한 처리 로직 안정화 및 일관성 개선\n\n* **기타**\n  * 버전 1.9.62로 업데이트",
+      "parsed_changes": {
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "채팅방 화면 UI를 정제하여 더 깔끔한 레이아웃 제공",
+            "시스템 메시지 표시 방식 개선으로 가독성 향상",
+            "위치 권한 처리 로직 안정화 및 일관성 개선"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 1.9.62로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.60",
       "project_type": "flutter",
