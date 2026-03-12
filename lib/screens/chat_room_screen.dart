@@ -982,11 +982,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         if (message.type == MessageType.system) {
           return Padding(
             padding: EdgeInsets.only(top: topGap),
-            child: Center(
-              child: Text(
-                message.content ?? '',
-                style: CustomTextStyles.p3.copyWith(color: AppColors.opacity50White, fontWeight: FontWeight.w400),
-                textAlign: TextAlign.center,
+            child: Align(
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 8.w),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(100.r), color: AppColors.secondaryBlack1),
+                child: Text(
+                  '$_opponentNickname님이 채팅방을 나갔습니다.',
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                    fontWeight: FontWeight.w400,
+                    wordSpacing: -0.32.sp,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           );
