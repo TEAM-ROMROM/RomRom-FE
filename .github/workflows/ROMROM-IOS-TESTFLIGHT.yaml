@@ -11,13 +11,13 @@ on:
 
 env:
   FLUTTER_VERSION: "3.35.5"
-  XCODE_VERSION: "16.4"
+  XCODE_VERSION: "26.0"
   PROJECT_TYPE: "flutter"
 
 jobs:
   prepare-build:
     name: 환경 설정 및 준비
-    runs-on: macos-15
+    runs-on: macos-26
     # CHANGELOG 워크플로우가 성공한 경우에만 실행
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
 
@@ -184,7 +184,7 @@ jobs:
 
   build-ios:
     name: iOS 앱 빌드
-    runs-on: macos-15
+    runs-on: macos-26
     needs: prepare-build
 
     steps:
@@ -339,7 +339,7 @@ jobs:
 
   deploy-testflight:
     name: TestFlight 배포
-    runs-on: macos-15
+    runs-on: macos-26
     needs: [prepare-build, build-ios]
 
     steps:

@@ -8,7 +8,7 @@ on:
 jobs:
   build-ios:
     name: Build iOS IPA
-    runs-on: macos-latest  # macOS 러너 사용
+    runs-on: macos-26  # macOS 러너 사용
 
     steps:
       # Repository 체크아웃
