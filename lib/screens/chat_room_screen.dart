@@ -471,14 +471,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-  /// 이미지 선택 후 전송
+  /// 이미지 선택 후 전송 (여러 장을 하나의 버블로 묶어서 전송)
   Future<void> _onPickImage() async {
     if (_isPickingImage) return; // 중복 실행 방지
     _isPickingImage = true;
     // 키보드가 올라온 상태에서 사진 선택 시 입력창/키보드 겹침 방지
     FocusScope.of(context).unfocus();
     try {
-      final List<XFile> picked = await _picker.pickMultiImage(limit: 5);
+      final List<XFile> picked = await _picker.pickMultiImage(limit: 10);
 
       if (!mounted) return;
 
@@ -487,27 +487,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         return;
       }
 
-      // 1) picked 순서대로 로컬 파일로 즉시 스켈레톤 버블 표시
-      final List<String> uploadingIds = [];
-      for (int i = 0; i < picked.length; i++) {
-        final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}_$i';
-        uploadingIds.add(localId);
-        setState(() {
-          _messages.insert(
-            0,
-            ChatMessage(
-              chatRoomId: widget.chatRoomId,
-              chatMessageId: localId,
-              senderId: _myMemberId,
-              createdDate: DateTime.now(),
-              content: '사진을 보냈습니다.',
-              type: MessageType.image,
-              imageUrls: [picked[i].path],
-            ),
-          );
-          _uploadingLocalIds.add(localId);
-        });
-      }
+      // 1) 모든 이미지를 하나의 스켈레톤 버블로 표시
+      final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}';
+      setState(() {
+        _messages.insert(
+          0,
+          ChatMessage(
+            chatRoomId: widget.chatRoomId,
+            chatMessageId: localId,
+            senderId: _myMemberId,
+            createdDate: DateTime.now(),
+            content: '사진을 보냈습니다.',
+            type: MessageType.image,
+            imageUrls: picked.map((f) => f.path).toList(),
+          ),
+        );
+        _uploadingLocalIds.add(localId);
+      });
       _scrollToBottom();
 
       try {
@@ -517,8 +513,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
         // 3) 스켈레톤 버블 제거
         setState(() {
-          _messages.removeWhere((m) => uploadingIds.contains(m.chatMessageId));
-          _uploadingLocalIds.removeAll(uploadingIds);
+          _messages.removeWhere((m) => m.chatMessageId == localId);
+          _uploadingLocalIds.remove(localId);
         });
 
         if (uploadedImageUrls.isEmpty) {
@@ -526,21 +522,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           return;
         }
 
-        // 4) 업로드된 URL을 picked 순서대로 각각 별도 버블로 전송
-        // 텍스트는 첫 번째 이미지에만 첨부
+        // 4) 모든 URL을 하나의 메시지로 전송
         final textMessage = _messageController.text.trim();
-        for (int i = 0; i < uploadedImageUrls.length; i++) {
-          if (!mounted) return;
-          await _sendImage(
-            imageUrls: [uploadedImageUrls[i]],
-            imageMessage: i == 0 && textMessage.isNotEmpty ? textMessage : null,
-          );
-        }
+        if (!mounted) return;
+        await _sendImage(imageUrls: uploadedImageUrls, imageMessage: textMessage.isNotEmpty ? textMessage : null);
       } catch (e) {
         if (mounted) {
           setState(() {
-            _messages.removeWhere((m) => uploadingIds.contains(m.chatMessageId));
-            _uploadingLocalIds.removeAll(uploadingIds);
+            _messages.removeWhere((m) => m.chatMessageId == localId);
+            _uploadingLocalIds.remove(localId);
           });
           CommonSnackBar.show(context: context, message: '이미지 전송에 실패했습니다: $e', type: SnackBarType.error);
         }
@@ -555,23 +545,32 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildUploadingImageBubble(ChatMessage message) {
-    final path = message.imageUrls?.first ?? '';
+    final paths = message.imageUrls ?? [];
+    if (paths.isEmpty) return const SizedBox.shrink();
+
+    Widget localCell(int index) {
+      final path = paths[index];
+      return path.isNotEmpty
+          ? Image.file(File(path), fit: BoxFit.cover)
+          : const ColoredBox(color: AppColors.opacity10White);
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(10.r),
       child: SizedBox(
         width: 264.w,
-        height: 180.h,
         child: Stack(
-          fit: StackFit.expand,
           children: [
-            if (path.isNotEmpty) Image.file(File(path), fit: BoxFit.cover),
-            ColoredBox(
-              color: AppColors.primaryBlack.withValues(alpha: 0.5),
-              child: const Center(
-                child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(color: AppColors.primaryYellow),
+            buildPhotoGrid(photoCount: paths.length, cellBuilder: localCell, width: 264.w),
+            Positioned.fill(
+              child: ColoredBox(
+                color: AppColors.primaryBlack.withValues(alpha: 0.5),
+                child: const Center(
+                  child: SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(color: AppColors.primaryYellow),
+                  ),
                 ),
               ),
             ),
@@ -1095,7 +1094,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               width: 40.w,
               height: 40.w,
               child: IgnorePointer(
-                ignoring: _isInputDisabled,
+                // ignoring: _isInputDisabled,
+                ignoring: false,
                 child: RomRomContextMenu(
                   position: ContextMenuPosition.above,
                   triggerRotationDegreesOnOpen: 45,
