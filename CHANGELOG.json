@@ -1,11 +1,29 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-12T09:42:11Z",
-    "currentVersion": "1.9.62",
-    "totalReleases": 81,
+    "lastUpdated": "2026-03-12T10:37:06Z",
+    "currentVersion": "1.9.63",
+    "totalReleases": 82,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.63",
+      "project_type": "flutter",
+      "date": "2026-03-12",
+      "pr_number": 659,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **Chores**\n  * 버전을 1.9.63으로 업데이트했습니다.\n  * Google Play Store 배포 프로세스를 간소화했습니다.\n  * 문서 및 버전 정보를 최신화했습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전을 1.9.63으로 업데이트했습니다.",
+            "Google Play Store 배포 프로세스를 간소화했습니다.",
+            "문서 및 버전 정보를 최신화했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.62",
       "project_type": "flutter",
