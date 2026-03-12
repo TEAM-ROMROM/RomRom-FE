@@ -7,6 +7,7 @@ import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
@@ -28,6 +29,7 @@ import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
+import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/screens/profile/profile_screen.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -859,11 +861,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ? chatRoom.tradeRequestHistory?.takeItem
         : chatRoom.tradeRequestHistory?.giveItem;
 
+    final tradeOptions = chatRoom.tradeRequestHistory?.itemTradeOptions ?? [];
+
     return Container(
       padding: EdgeInsets.only(top: 0.h, bottom: 16.h, left: 16.w, right: 16.w),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.primaryBlack,
-        border: Border(bottom: BorderSide(color: AppColors.opacity10White, width: 1)),
+        border: Border(
+          bottom: BorderSide(color: AppColors.opacity10White, width: 1.h, strokeAlign: BorderSide.strokeAlignInside),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -913,6 +919,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (tradeOptions.isNotEmpty) ...[
+                  SizedBox(height: 8.h),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: tradeOptions.map((serverName) {
+                      try {
+                        return Padding(
+                          padding: EdgeInsets.only(right: 4.w),
+                          child: RequestManagementTradeOptionTag(option: ItemTradeOption.fromServerName(serverName)),
+                        );
+                      } catch (_) {
+                        return const SizedBox.shrink();
+                      }
+                    }).toList(),
+                  ),
+                ],
               ],
             ),
           ),
