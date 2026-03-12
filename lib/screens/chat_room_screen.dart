@@ -1094,8 +1094,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               width: 40.w,
               height: 40.w,
               child: IgnorePointer(
-                // ignoring: _isInputDisabled,
-                ignoring: false,
+                ignoring: _isInputDisabled,
                 child: RomRomContextMenu(
                   position: ContextMenuPosition.above,
                   triggerRotationDegreesOnOpen: 45,
