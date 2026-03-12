@@ -13,6 +13,7 @@ env:
   FLUTTER_VERSION: "3.35.5"
   JAVA_VERSION: "17"
   PROJECT_TYPE: "flutter"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   prepare-build:
@@ -28,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: deploy
           fetch-depth: 0
@@ -149,7 +150,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: deploy
           fetch-depth: 0
@@ -471,7 +472,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: deploy
           fetch-depth: 0

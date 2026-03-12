@@ -44,6 +44,7 @@ env:
   FLUTTER_VERSION: "3.35.5"
   XCODE_VERSION: "26.0"
   PROJECT_TYPE: "flutter"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   prepare-test-build:
@@ -100,7 +101,7 @@ jobs:
             core.setOutput('start_time', startTime.toString());
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}
@@ -340,7 +341,7 @@ jobs:
             core.setOutput('elapsed', elapsedStr);
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}
@@ -631,7 +632,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref }}

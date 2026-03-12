@@ -5,6 +5,9 @@ on:
     branches: ["test"] #FIXME: 임시 테스트
   workflow_dispatch:  # 수동 실행 옵션 추가
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-ios:
     name: Build iOS IPA

@@ -29,6 +29,9 @@ on:
           - 'true'
           - 'false'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test-playwright-automation:
     name: Test Playwright Automation
@@ -39,7 +42,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # workflow_run (자동): deploy 브랜치
           # workflow_dispatch (수동): 현재 브랜치 (main 등)
