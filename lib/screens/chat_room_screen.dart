@@ -702,7 +702,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       },
       showBottomBorder: true,
       titleWidgets: Padding(
-        padding: EdgeInsets.only(top: 8.0.h),
+        padding: EdgeInsets.only(top: 6.0.h),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -715,7 +715,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.only(top: 8.h),
+              padding: EdgeInsets.only(top: 9.h),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -860,12 +860,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         : chatRoom.tradeRequestHistory?.giveItem;
 
     return Container(
-      padding: EdgeInsets.only(top: 8.h, bottom: 16.h, left: 16.w, right: 16.w),
+      padding: EdgeInsets.only(top: 0.h, bottom: 16.h, left: 16.w, right: 16.w),
       decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(bottom: BorderSide(color: AppColors.opacity10White, width: 1)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
             onTap: () {
@@ -898,16 +899,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SizedBox(height: 3.h),
                 Text(
                   targetItem?.itemName ?? '제목 없음',
                   style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 10.h),
+                SizedBox(height: 8.h),
                 Text(
                   '${formatPrice(targetItem?.price ?? 0)}원',
-                  style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White),
+                  style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w700),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
