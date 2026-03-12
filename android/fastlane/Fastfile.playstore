@@ -9,7 +9,18 @@ platform :android do
     )
   end
 
-  desc "Deploy to Play Store Internal Testing Track"
+  # ============================================================
+  # ⚠️ 이 파일을 처음 사용하는 경우 반드시 읽어주세요
+  # ============================================================
+  # Google Play Store에 한 번도 프로덕션 출시를 하지 않은 앱(Draft App)은
+  # release_status: 'completed' 및 프로덕션 자동 승급이 불가합니다.
+  #
+  # 최초 1회는 Play Console에서 수동으로 프로덕션 출시를 완료해야 합니다.
+  # 그 이후부터 아래 자동화 흐름이 정상 동작합니다:
+  #   internal(completed) → promote_internal_to_production → Google 심사 요청 자동화
+  # ============================================================
+
+  desc "Deploy to Play Store Internal Testing Track + Promote to Production"
   lane :deploy_internal do
     version_name = ENV["VERSION_NAME"] || "1.0.0"
     version_code = ENV["VERSION_CODE"] || "1"
@@ -17,9 +28,10 @@ platform :android do
     puts "📦 배포 정보:"
     puts "  버전: #{version_name} (#{version_code})"
 
+    # ── Step 1: 내부 테스트 트랙에 업로드 ──────────────────────
     puts ""
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    puts "📤 Play Store 내부 테스트 트랙에 업로드 중..."
+    puts "📤 1단계: Play Store 내부 테스트 트랙에 업로드 중..."
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     upload_to_play_store(
@@ -32,19 +44,48 @@ platform :android do
       skip_upload_images: true,               # 이미지 업로드 안함
       skip_upload_screenshots: true,          # 스크린샷 업로드 안함
       skip_upload_changelogs: false,          # Changelog 업로드 (metadata 디렉토리에서 자동 인식)
-      # release_status: 'draft',              # ⚠️ 미출시 앱(Draft App)일 때 사용 - completed 불가
-      release_status: 'completed',            # 앱 정식 출시(Published App) 이후 completed로 즉시 배포
+      # release_status: 'draft',              # ⚠️ Draft App(미출시)일 때 사용 - completed/프로덕션 승급 불가
+      release_status: 'completed',            # 정식 출시(Published App) 이후 completed로 즉시 배포
       version_name: ENV["VERSION_NAME"],      # 버전 이름
       version_code: ENV["VERSION_CODE"]       # 버전 코드
     )
 
+    puts "✅ 내부 테스트 업로드 완료!"
+
+    # ── Step 2: 내부 테스트 → 프로덕션 자동 승급 (Google 심사 요청) ──
     puts ""
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    puts "✅ Play Store 내부 테스트 배포 완료!"
+    puts "🚀 2단계: 프로덕션 트랙으로 승급 중... (Google 심사 요청)"
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    promote_internal_to_production
+
+    puts ""
+    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    puts "✅ 전체 배포 완료!"
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     puts "📦 버전: #{version_name} (#{version_code})"
-    puts "📱 테스터는 Play Store에서 즉시 업데이트 가능합니다."
+    puts "📋 내부 테스트: 즉시 배포됨"
+    puts "🔍 프로덕션: Google 심사 요청 완료 (심사 통과 후 전체 사용자 배포)"
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  end
+
+  desc "Promote internal track directly to production (Google 심사 요청)"
+  lane :promote_internal_to_production do
+    # ⚠️ Draft App(미출시)일 때는 이 lane이 동작하지 않습니다.
+    # Play Console에서 최초 1회 수동 프로덕션 출시 후 사용 가능합니다.
+    upload_to_play_store(
+      package_name: 'com.alom.romrom',
+      track: 'internal',
+      track_promote_to: 'production',
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"],
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      rollout: '1.0'                          # 100% 전체 출시 (심사 통과 후 자동 적용)
+    )
   end
 
   desc "Promote internal to alpha testing"
@@ -86,7 +127,7 @@ platform :android do
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      rollout: '0.1'  # 10% 단계적 출시
+      rollout: '0.1'                          # 10% 단계적 출시
     )
   end
 end
