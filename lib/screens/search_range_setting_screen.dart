@@ -57,7 +57,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> wit
 
   Future<void> _retryLocationAfterPermission() async {
     final status = await _locationService.checkPermissionStatus();
-    if (!status.isGranted) return;
+    if (!status) return;
     // _initializeLocation() 내부에서 _permissionDenied를 초기화하므로 별도 setState 불필요
     _initializeLocation();
   }
