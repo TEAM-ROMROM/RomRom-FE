@@ -1,11 +1,31 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-12T11:05:15Z",
-    "currentVersion": "1.9.66",
-    "totalReleases": 83,
+    "lastUpdated": "2026-03-12T11:18:53Z",
+    "currentVersion": "1.9.67",
+    "totalReleases": 84,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.67",
+      "project_type": "flutter",
+      "date": "2026-03-12",
+      "pr_number": 662,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **Chores**\n  * 애플리케이션 버전을 1.9.67로 업데이트하고 빌드 번호를 211로 증가시켰습니다.\n  * Google Play Store 배포 구성을 조정했습니다.\n  * 시스템 통합 메타데이터 정보를 추가했습니다.\n  * README 파일의 버전 정보를 동기화했습니다.\n  * 배포 워크플로우 설정을 수정했습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "애플리케이션 버전을 1.9.67로 업데이트하고 빌드 번호를 211로 증가시켰습니다.",
+            "Google Play Store 배포 구성을 조정했습니다.",
+            "시스템 통합 메타데이터 정보를 추가했습니다.",
+            "README 파일의 버전 정보를 동기화했습니다.",
+            "배포 워크플로우 설정을 수정했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.66",
       "project_type": "flutter",
