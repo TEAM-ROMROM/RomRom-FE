@@ -84,6 +84,7 @@ platform :android do
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
+      skip_upload_changelogs: true,           # 승급 시에는 changelog 업로드 불필요 (이미 Step 1에서 업로드됨)
       rollout: '1.0'                          # 100% 전체 출시 (심사 통과 후 자동 적용)
     )
   end
