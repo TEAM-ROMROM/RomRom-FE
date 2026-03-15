@@ -15,10 +15,10 @@ class AppVersionApi {
   AppVersionApi._internal();
 
   /// 앱 버전 체크 API
-  /// `GET /api/app/version`
+  /// `GET /api/app/version/check`
   /// 인증 불필요 — 스플래시 단계에서 호출
   Future<AppVersionResponse?> getAppVersion() async {
-    const String url = '${AppUrls.baseUrl}/api/app/version';
+    const String url = '${AppUrls.baseUrl}/api/app/version/check';
 
     try {
       final response = await ApiClient.sendHttpRequest(
