@@ -6,16 +6,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/firebase_options.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/app_update_screen.dart';
 import 'package:romrom_fe/screens/splash_screen.dart';
+import 'package:romrom_fe/services/apis/app_version_api.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/notification_service.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 백그라운드에서 알림 설정(최상단에 위치 해야 함)
 @pragma('vm:entry-point')
@@ -76,10 +81,63 @@ void _setupFcmTokenRefreshListener() {
 }
 
 /// 앱의 루트 위젯
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final bool isGestureMode;
 
   const MyApp({super.key, required this.isGestureMode});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  static const String _lastVersionCheckKey = 'last_version_check_timestamp';
+  static const Duration _checkInterval = Duration(hours: 24);
+
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkVersionOnResume();
+    }
+  }
+
+  Future<void> _checkVersionOnResume() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastCheckMs = prefs.getInt(_lastVersionCheckKey) ?? 0;
+      final lastCheck = DateTime.fromMillisecondsSinceEpoch(lastCheckMs);
+      final elapsed = DateTime.now().difference(lastCheck);
+
+      if (elapsed < _checkInterval) return; // 24시간 미경과 → 스킵
+
+      final UpdateType updateType = await AppVersionApi().checkUpdateType();
+
+      // 체크 시간 갱신
+      await prefs.setInt(_lastVersionCheckKey, DateTime.now().millisecondsSinceEpoch);
+
+      if (updateType == UpdateType.force) {
+        final context = _navigatorKey.currentContext;
+        if (context == null || !context.mounted) return;
+        context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+      }
+    } catch (e) {
+      debugPrint('[MyApp] 포그라운드 복귀 버전 체크 실패: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +153,12 @@ class MyApp extends StatelessWidget {
             bottom: Platform.isAndroid,
             child: MediaQuery(
               data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-              child: MaterialApp(title: 'RomRom', theme: AppTheme.defaultTheme, home: const SplashScreen()),
+              child: MaterialApp(
+                title: 'RomRom',
+                theme: AppTheme.defaultTheme,
+                navigatorKey: _navigatorKey,
+                home: const SplashScreen(),
+              ),
             ),
           );
         },
