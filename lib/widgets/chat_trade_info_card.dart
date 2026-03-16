@@ -93,10 +93,10 @@ class ChatTradeInfoCard extends StatelessWidget {
               itemId: myItem?.itemId,
               isMyItem: true,
               heroTag: 'first_item_${myItem?.itemId}',
-              imageUrl: myItem?.itemImages?.first.imageUrl,
+              imageUrl: myItem?.itemImages?.firstOrNull?.imageUrl,
             ),
             child: CachedImage(
-              imageUrl: myItem?.itemImages?.first.imageUrl ?? '',
+              imageUrl: myItem?.itemImages?.firstOrNull?.imageUrl ?? '',
               width: 48.w,
               height: 48.w,
               borderRadius: BorderRadius.circular(8.r),

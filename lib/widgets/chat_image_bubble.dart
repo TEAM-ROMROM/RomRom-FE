@@ -6,7 +6,7 @@ import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 
-double _gap = 2.0.w;
+double _gapBase = 2.0;
 
 /// 1~10장 이미지를 그리드 레이아웃으로 표시하는 공통 빌더
 /// [photoCount] 실제 이미지 수 (1~10 클램프됨)
@@ -19,8 +19,9 @@ Widget buildPhotoGrid({
 }) {
   final count = photoCount.clamp(1, 10);
   final w = width;
-  final h1 = (w - _gap) / 2; // 2행 레이아웃 행 높이
-  final h3 = (w - _gap * 2) / 3; // 3행 레이아웃 행 높이
+  double gap = _gapBase.w;
+  final h1 = (w - gap) / 2; // 2행 레이아웃 행 높이
+  final h3 = (w - gap * 2) / 3; // 3행 레이아웃 행 높이
 
   Widget makeRow(List<int> indices, double height) => SizedBox(
     height: height,
@@ -28,7 +29,7 @@ Widget buildPhotoGrid({
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (int i = 0; i < indices.length; i++) ...[
-          if (i > 0) SizedBox(width: _gap),
+          if (i > 0) SizedBox(width: gap),
           Expanded(child: cellBuilder(indices[i])),
         ],
       ],
@@ -43,7 +44,7 @@ Widget buildPhotoGrid({
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(child: cellBuilder(0)),
-          SizedBox(width: _gap),
+          SizedBox(width: gap),
           Expanded(child: cellBuilder(1)),
         ],
       ),
@@ -54,13 +55,13 @@ Widget buildPhotoGrid({
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(child: cellBuilder(0)),
-          SizedBox(width: _gap),
+          SizedBox(width: gap),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: cellBuilder(1)),
-                SizedBox(height: _gap),
+                SizedBox(height: gap),
                 Expanded(child: cellBuilder(2)),
               ],
             ),
@@ -71,59 +72,59 @@ Widget buildPhotoGrid({
     4 => Column(
       children: [
         makeRow([0, 1], h1),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([2, 3], h1),
       ],
     ),
     5 => Column(
       children: [
         makeRow([0, 1], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([2, 3, 4], h3),
       ],
     ),
     6 => Column(
       children: [
         makeRow([0, 1, 2], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([3, 4, 5], h3),
       ],
     ),
     7 => Column(
       children: [
         makeRow([0, 1, 2], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([3, 4], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([5, 6], h3),
       ],
     ),
     8 => Column(
       children: [
         makeRow([0, 1, 2], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([3, 4, 5], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([6, 7], h3),
       ],
     ),
     9 => Column(
       children: [
         makeRow([0, 1, 2], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([3, 4, 5], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([6, 7, 8], h3),
       ],
     ),
     _ => Column(
       children: [
         makeRow([0, 1, 2], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([3, 4, 5], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([6, 7], h3),
-        SizedBox(height: _gap),
+        SizedBox(height: gap),
         makeRow([8, 9], h3),
       ],
     ),

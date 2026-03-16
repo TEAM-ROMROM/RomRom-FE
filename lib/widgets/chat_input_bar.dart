@@ -36,7 +36,7 @@ class ChatInputBar extends StatelessWidget {
     final bool sendDisabled = !hasText || isInputDisabled || isSendingMessage;
 
     return Container(
-      padding: EdgeInsets.only(top: 8.w, left: 16.h, bottom: bottomPadding),
+      padding: EdgeInsets.only(top: 8.h, left: 16.w, bottom: bottomPadding),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -128,7 +128,7 @@ class ChatInputBar extends StatelessWidget {
                     maxHeight: 40.w,
                   ),
                 ),
-                onSubmitted: isSendingMessage ? null : (_) => onSend(),
+                onSubmitted: sendDisabled ? null : (_) => onSend(),
               ),
             ),
           ),
