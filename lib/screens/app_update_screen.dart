@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AppUpdateScreen extends StatefulWidget {
@@ -36,41 +37,17 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
   }
 
   Future<void> _showExitConfirmDialog() async {
-    await showDialog<void>(
+    await CommonModal.success(
       context: context,
-      barrierDismissible: false,
-      barrierColor: AppColors.dialogBarrier,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.secondaryBlack1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('롬롬 앱을 종료합니다', style: CustomTextStyles.p1, textAlign: TextAlign.center),
-        content: Text(
-          '안정적인 서비스를 위해서 롬롬 앱을\n최신버전으로 업데이트 해주세요.',
-          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White, height: 1.5),
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          SizedBox(
-            width: 200,
-            height: 44,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryYellow,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                if (Platform.isAndroid) {
-                  SystemNavigator.pop();
-                } else {
-                  exit(0);
-                }
-              },
-              child: Text('확인', style: CustomTextStyles.p1.copyWith(color: AppColors.primaryBlack)),
-            ),
-          ),
-        ],
-      ),
+      message: '안정적인 서비스를 위해서 롬롬 앱을\n최신버전으로 업데이트 해주세요.',
+      buttonText: '확인',
+      onConfirm: () {
+        if (Platform.isAndroid) {
+          SystemNavigator.pop();
+        } else {
+          exit(0);
+        }
+      },
     );
   }
 
