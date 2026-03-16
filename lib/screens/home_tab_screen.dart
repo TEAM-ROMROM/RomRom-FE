@@ -2,7 +2,6 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
@@ -31,6 +30,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
+import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
 
 /// 홈 탭 화면
@@ -722,8 +722,44 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 10.h,
-            child: SvgPicture.asset('assets/images/first-item-post-text.svg', width: 145.w),
+            bottom: 24.h,
+            child: Center(
+              child: GestureDetector(
+                onTap: () async {
+                  final result = await context.navigateTo<Map<String, dynamic>>(
+                    screen: ItemRegisterScreen(
+                      onClose: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                  if (!mounted) return;
+                  if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+                    _loadMyCards();
+                  }
+                },
+                child: Container(
+                  width: 123.w,
+                  height: 48.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryYellow,
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: const [BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4))],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, size: 24.sp, color: AppColors.primaryBlack),
+                      SizedBox(width: 4.w),
+                      Text(
+                        '등록하기',
+                        style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
       ],
     );
