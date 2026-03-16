@@ -211,8 +211,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   if (widget.showBlur)
                     Positioned.fill(
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-                        child: Container(color: AppColors.opacity10Black),
+                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        child: Container(color: AppColors.opacity80Black),
                       ),
                     ),
                 ],
@@ -457,20 +457,13 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  RichText(
-                    text: TextSpan(
-                      style: CustomTextStyles.h3.copyWith(color: Colors.white),
-                      children: [
-                        TextSpan(
-                          text: '내 물건을 등록',
-                          style: CustomTextStyles.h1.copyWith(color: AppColors.primaryYellow, height: 1.3),
-                        ),
-                        TextSpan(text: '하고\n물건을 교환해보세요!', style: CustomTextStyles.h1.copyWith(height: 1.3)),
-                      ],
-                    ),
+                  Text(
+                    '교환을 시작하려면\n먼저 나의 물건을 등록해 주세요!',
+                    textAlign: TextAlign.center,
+                    style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.3, height: 1.3),
                   ),
-                  SizedBox(height: 56.h),
-                  SvgPicture.asset('assets/images/first-item-post-box.svg', width: 133.w),
+                  SizedBox(height: 40.h),
+                  Image.asset('assets/images/romrom_empty_box.png', width: screenWidth * 0.85),
                 ],
               ),
             ),
