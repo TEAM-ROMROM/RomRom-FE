@@ -287,6 +287,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         extendBodyBehindAppBar: true,
         body: SafeArea(
           top: false,
+          bottom: false,
           child: RefreshIndicator(
             color: AppColors.primaryYellow,
             backgroundColor: AppColors.transparent,
