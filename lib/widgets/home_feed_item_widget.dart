@@ -466,7 +466,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       height: 1.3,
                     ),
                   ),
-                  Image.asset('assets/images/romrom_empty_box.png', width: screenWidth),
+                  Image.asset('assets/images/romrom-empty-box.png', width: screenWidth),
                 ],
               ),
             ),
