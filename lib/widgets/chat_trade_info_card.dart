@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -7,6 +8,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 
 /// 채팅방 상단 거래 아이템 정보 카드
 class ChatTradeInfoCard extends StatelessWidget {
@@ -20,6 +22,7 @@ class ChatTradeInfoCard extends StatelessWidget {
     final isMyTakeItem = chatRoom.tradeRequestHistory?.takeItem.member?.memberId == myMemberId;
     final targetItem = isMyTakeItem ? chatRoom.tradeRequestHistory?.giveItem : chatRoom.tradeRequestHistory?.takeItem;
     final myItem = isMyTakeItem ? chatRoom.tradeRequestHistory?.takeItem : chatRoom.tradeRequestHistory?.giveItem;
+    final tradeOptions = chatRoom.tradeRequestHistory?.itemTradeOptions ?? [];
 
     return Container(
       padding: EdgeInsets.only(top: 0.h, bottom: 16.h, left: 16.w, right: 16.w),
@@ -65,6 +68,22 @@ class ChatTradeInfoCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (tradeOptions.isNotEmpty) ...[
+                  SizedBox(height: 8.h),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: tradeOptions.map((serverName) {
+                      try {
+                        return Padding(
+                          padding: EdgeInsets.only(right: 4.w),
+                          child: RequestManagementTradeOptionTag(option: ItemTradeOption.fromServerName(serverName)),
+                        );
+                      } catch (_) {
+                        return const SizedBox.shrink();
+                      }
+                    }).toList(),
+                  ),
+                ],
               ],
             ),
           ),
