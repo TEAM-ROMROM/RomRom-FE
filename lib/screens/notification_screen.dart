@@ -260,6 +260,20 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
   }
 
+  /// 알림 아이템 탭 처리 - 읽음 처리 후 딥링크 이동, 복귀 시 알림 목록 갱신
+  Future<void> _onNotificationTap(NotificationItemData notification) async {
+    try {
+      await NotificationApi().updateNotificationsAsRead(notification.id);
+    } catch (e) {
+      debugPrint('알림 읽음 처리 실패: $e');
+    }
+    if (!mounted) return;
+    await RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type);
+    if (mounted) {
+      await _loadNotifications();
+    }
+  }
+
   /// 알림 삭제
   void _onDeleteNotification(String notificationId) async {
     try {
@@ -387,8 +401,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
             return NotificationItemWidget(
               data: notification,
               isMuted: _mutedNotificationTypes[notification.type] ?? false,
-              onTap: () =>
-                  RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type),
+              onTap: () => _onNotificationTap(notification),
               onMuteTap: () => _onToggleMuteNotification(notification.type),
               onDeleteTap: () => _onDeleteNotification(notification.id),
             );
