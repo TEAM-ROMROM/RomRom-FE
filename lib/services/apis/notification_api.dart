@@ -37,11 +37,11 @@ class NotificationApi {
 
   /// 알림 읽음 처리
   /// `POST /api/notification/update/read`
-  Future<void> updateNotificationsAsRead(List<String> notificationHistoryIds) async {
+  Future<void> updateNotificationsAsRead(String notificationHistoryId) async {
     const String url = '${AppUrls.baseUrl}/api/notification/update/read';
 
     final Map<String, dynamic> fields = {
-      'notificationHistoryIds': notificationHistoryIds, // 읽음 처리할 알림 ID 리스트 (빈 리스트는 전체 읽음 처리 의미)
+      'notificationHistoryId': notificationHistoryId, // 읽음 처리할 알림 ID(단건)
     };
 
     await ApiClient.sendMultipartRequest(

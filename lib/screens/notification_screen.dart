@@ -260,6 +260,28 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
   }
 
+  /// 알림 아이템 탭 처리 - 읽음 처리 후 딥링크 이동, 복귀 시 알림 목록 갱신
+  Future<void> _onNotificationTap(NotificationItemData notification) async {
+    try {
+      await NotificationApi().updateNotificationsAsRead(notification.id);
+    } catch (e) {
+      debugPrint('알림 읽음 처리 실패: $e');
+    }
+    if (!mounted) return;
+    try {
+      await RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type);
+    } catch (e) {
+      debugPrint('딥링크 이동 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '화면 이동에 실패했습니다.', type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) {
+        await _loadNotifications();
+      }
+    }
+  }
+
   /// 알림 삭제
   void _onDeleteNotification(String notificationId) async {
     try {
@@ -287,6 +309,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         extendBodyBehindAppBar: true,
         body: SafeArea(
           top: false,
+          bottom: false,
           child: RefreshIndicator(
             color: AppColors.primaryYellow,
             backgroundColor: AppColors.transparent,
@@ -386,8 +409,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
             return NotificationItemWidget(
               data: notification,
               isMuted: _mutedNotificationTypes[notification.type] ?? false,
-              onTap: () =>
-                  RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type),
+              onTap: () => _onNotificationTap(notification),
               onMuteTap: () => _onToggleMuteNotification(notification.type),
               onDeleteTap: () => _onDeleteNotification(notification.id),
             );
