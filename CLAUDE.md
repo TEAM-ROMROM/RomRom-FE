@@ -6,6 +6,7 @@ Flutter 기반 중고거래 플랫폼. iOS/Android 전용 (웹 불필요).
 - 텍스트 스타일: `CustomTextStyles` 사용 (직접 TextStyle 금지)
 - 색상: `AppColors` 사용 (직접 Color 코드 금지)
 - 화면 이동: `context.navigateTo()` 사용 (MaterialPageRoute 금지)
+- 모달/다이얼로그: `CommonModal` 사용 (AlertDialog 직접 사용 금지) → 상세: `.claude/instructions/code-style.md`
 - Enum 분리: 모든 enum은 `lib/enums/` 폴더에 개별 파일로 관리
 - CLI: 모든 명령어 앞에 `source ~/.zshrc &&` 필수
 - Git: 사용자 허락 없이 절대 커밋 금지
@@ -100,6 +101,7 @@ bash tool/full_check.sh
 - `prompts/코드_스타일_가이드라인.md` - 필수 참고
 - `lib/models/app_theme.dart` - 텍스트 스타일 정의
 - `lib/models/app_colors.dart` - 색상 상수 정의
+- `lib/widgets/common/common_modal.dart` - 공통 모달 위젯
 
 ## Git 커밋 규칙
 
