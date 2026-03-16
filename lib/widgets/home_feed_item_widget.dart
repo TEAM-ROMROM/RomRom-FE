@@ -139,7 +139,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final navigationBarHeight = 100.h; // 네비게이션바 높이 (80.h)
     final availableHeight = screenHeight - bottomPadding - navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
-    final registerBlurTextTopPosition = 205.h;
+    final registerBlurTextTopPosition = 191.h;
 
     return Container(
       height: screenHeight,
@@ -460,10 +460,13 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   Text(
                     '교환을 시작하려면\n먼저 나의 물건을 등록해 주세요!',
                     textAlign: TextAlign.center,
-                    style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.3, height: 1.3),
+                    style: CustomTextStyles.h2.copyWith(
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.015,
+                      height: 1.3,
+                    ),
                   ),
-                  SizedBox(height: 40.h),
-                  Image.asset('assets/images/romrom_empty_box.png', width: screenWidth * 0.85),
+                  Image.asset('assets/images/romrom_empty_box.png', width: screenWidth),
                 ],
               ),
             ),

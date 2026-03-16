@@ -722,7 +722,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 10.h,
+            bottom: 24.h,
             child: Center(
               child: GestureDetector(
                 onTap: () async {
@@ -739,8 +739,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                   }
                 },
                 child: Container(
-                  width: 123,
-                  height: 48,
+                  width: 123.w,
+                  height: 48.h,
                   decoration: BoxDecoration(
                     color: AppColors.primaryYellow,
                     borderRadius: BorderRadius.circular(100),
@@ -749,8 +749,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.add, size: 16, color: AppColors.primaryBlack),
-                      const SizedBox(width: 4),
+                      Icon(Icons.add, size: 24.sp, color: AppColors.primaryBlack),
+                      SizedBox(width: 4.w),
                       Text(
                         '등록하기',
                         style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
