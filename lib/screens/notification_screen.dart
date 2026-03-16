@@ -268,9 +268,17 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       debugPrint('알림 읽음 처리 실패: $e');
     }
     if (!mounted) return;
-    await RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type);
-    if (mounted) {
-      await _loadNotifications();
+    try {
+      await RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type);
+    } catch (e) {
+      debugPrint('딥링크 이동 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '화면 이동에 실패했습니다.', type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) {
+        await _loadNotifications();
+      }
     }
   }
 
