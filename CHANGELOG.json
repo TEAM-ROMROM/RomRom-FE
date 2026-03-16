@@ -1,11 +1,48 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-12T11:18:53Z",
-    "currentVersion": "1.9.67",
-    "totalReleases": 84,
+    "lastUpdated": "2026-03-16T11:47:12Z",
+    "currentVersion": "1.9.71",
+    "totalReleases": 85,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.71",
+      "project_type": "flutter",
+      "date": "2026-03-16",
+      "pr_number": 671,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **신기능**\n  * 알림 탭 처리 및 읽음 상태 관리 개선\n\n* **개선사항**\n  * 첫 물건 등록 버튼 디자인 및 등록 플로우 개선\n  * 채팅 인터페이스 및 메시지 표시 최적화\n  * 채팅 입력창 기능 강화\n\n* **리팩토링**\n  * 채팅방 UI 구성 요소 통합\n  * 알림 API 단순화\n\n* **스타일**\n  * 네비게이션 및 빈 상태 시각 디자인 업데이트",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": [
+            "알림 탭 처리 및 읽음 상태 관리 개선"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "첫 물건 등록 버튼 디자인 및 등록 플로우 개선",
+            "채팅 인터페이스 및 메시지 표시 최적화",
+            "채팅 입력창 기능 강화"
+          ]
+        },
+        "리팩토링": {
+          "title": "리팩토링",
+          "items": [
+            "채팅방 UI 구성 요소 통합",
+            "알림 API 단순화"
+          ]
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": [
+            "네비게이션 및 빈 상태 시각 디자인 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.67",
       "project_type": "flutter",
