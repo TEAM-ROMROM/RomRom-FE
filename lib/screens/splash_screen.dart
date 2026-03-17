@@ -61,16 +61,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   Future<void> _initAndNavigate() async {
     try {
-      // 1. 버전 체크 (가장 먼저)
-      final UpdateType updateType = await AppVersionApi().checkUpdateType();
-      if (!mounted) return;
-
-      if (updateType == UpdateType.force) {
+      // 버전 체크 (API 실패 시 스킵 — 앱 진입 차단 방지)
+      final updateType = await AppVersionApi().checkUpdateType();
+      if (updateType == UpdateType.force && mounted) {
         context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
         return;
       }
 
-      // 2. 기존 초기화 플로우
       final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
       final nextScreen = results[0]! as Widget;
 
