@@ -55,6 +55,42 @@ if (Platform.isIOS) {
 }
 ```
 
+## 모달/다이얼로그 사용 규칙
+- **반드시 `CommonModal` 사용** (`lib/widgets/common/common_modal.dart`): `AlertDialog`, `showDialog` 직접 사용 금지
+- 용도별 팩토리 메서드:
+  - `CommonModal.success()` - 성공/안내 모달 (노란색 체크 아이콘, 1버튼)
+  - `CommonModal.error()` - 에러 모달 (빨간색 경고 아이콘, 1버튼)
+  - `CommonModal.confirm()` - 확인 모달 (빨간색 경고 아이콘, 2버튼: 취소/확인)
+  - `CommonModal.showOnceAfterFrame()` - 특정 조건에서 1회만 노출하는 헬퍼
+- 삭제 전용: `context.showDeleteDialog()` (내부적으로 `CommonModal.confirm()` 사용, `lib/utils/common_utils.dart`)
+
+```dart
+// ❌ 잘못된 예시 - AlertDialog 직접 사용
+await showDialog(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: Text('제목'),
+    actions: [ElevatedButton(onPressed: () {}, child: Text('확인'))],
+  ),
+);
+
+// ✅ 올바른 예시 - CommonModal 사용
+await CommonModal.success(
+  context: context,
+  message: '처리가 완료되었습니다.',
+  onConfirm: () => Navigator.of(context).pop(),
+);
+
+// ✅ 확인/취소 2버튼 모달
+await CommonModal.confirm(
+  context: context,
+  message: '정말 삭제하시겠습니까?',
+  confirmText: '삭제',
+  onCancel: () => Navigator.of(context).pop(false),
+  onConfirm: () => Navigator.of(context).pop(true),
+);
+```
+
 ## 주요 참고 파일
 - `prompts/코드_스타일_가이드라인.md` - 필수 참고
 - `lib/models/app_theme.dart` - 텍스트 스타일 정의

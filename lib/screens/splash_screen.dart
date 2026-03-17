@@ -12,6 +12,9 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
+import 'package:romrom_fe/enums/app_update_type.dart';
+import 'package:romrom_fe/screens/app_update_screen.dart';
+import 'package:romrom_fe/services/apis/app_version_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
@@ -58,6 +61,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   Future<void> _initAndNavigate() async {
     try {
+      // 1. 버전 체크 (가장 먼저)
+      final UpdateType updateType = await AppVersionApi().checkUpdateType();
+      if (!mounted) return;
+
+      if (updateType == UpdateType.force) {
+        context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+        return;
+      }
+
+      // 2. 기존 초기화 플로우
       final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
       final nextScreen = results[0]! as Widget;
 
