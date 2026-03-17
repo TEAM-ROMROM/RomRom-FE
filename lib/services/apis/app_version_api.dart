@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/models/apis/responses/app_version_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
-import 'package:romrom_fe/services/api_client.dart';
+import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
+import 'package:romrom_fe/utils/secured_api_utils.dart';
 
 class AppVersionApi {
   static final AppVersionApi _instance = AppVersionApi._internal();
@@ -14,19 +16,18 @@ class AppVersionApi {
 
   AppVersionApi._internal();
 
+  static final LoggingHttpClient _client = LoggingHttpClient(http.Client());
+
   /// 앱 버전 체크 API
-  /// `GET /api/app/version/check`
-  /// 인증 불필요 — 스플래시 단계에서 호출
+  /// `POST /api/app/version/check`
+  /// @SecuredApi (HMAC + Timestamp) 인증, JWT 불필요
   Future<AppVersionResponse?> getAppVersion() async {
     const String url = '${AppUrls.baseUrl}/api/app/version/check';
 
     try {
-      final response = await ApiClient.sendHttpRequest(
-        url: url,
-        method: 'GET',
-        isAuthRequired: false,
-        onSuccess: (_) {},
-      );
+      final securedHeaders = SecuredApiUtils.generateHeaders();
+
+      final response = await _client.post(Uri.parse(url), headers: securedHeaders);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final Map<String, dynamic> json = jsonDecode(response.body);
@@ -37,17 +38,6 @@ class AppVersionApi {
       debugPrint('[AppVersionApi] 버전 체크 API 호출 실패: $e');
       return null;
     }
-  }
-
-  /// Mock 응답 (백엔드 API 완성 전 사용)
-  /// 실제 API 연동 후 이 메서드는 삭제한다.
-  AppVersionResponse getMockAppVersion() {
-    return const AppVersionResponse(
-      minimumVersion: '0.0.1', // 낮게 설정 → 강제 업데이트 발동 안 함 (개발 중)
-      latestVersion: '1.9.67',
-      androidStoreUrl: AppUrls.androidStoreUrl,
-      iosStoreUrl: AppUrls.iosStoreUrl,
-    );
   }
 
   /// 현재 앱 버전을 가져온다
@@ -80,9 +70,8 @@ class AppVersionApi {
   /// 업데이트 타입 결정
   Future<UpdateType> checkUpdateType() async {
     try {
-      // 실제 API 호출 시도, 실패 시 Mock 사용
-      AppVersionResponse? versionInfo = await getAppVersion();
-      versionInfo ??= getMockAppVersion();
+      final AppVersionResponse? versionInfo = await getAppVersion();
+      if (versionInfo == null) return UpdateType.none; // API 실패 시 차단하지 않음
 
       final String currentVersion = await getCurrentAppVersion();
       debugPrint('[AppVersionApi] 현재 버전: $currentVersion, 최소 버전: ${versionInfo.minimumVersion}');
