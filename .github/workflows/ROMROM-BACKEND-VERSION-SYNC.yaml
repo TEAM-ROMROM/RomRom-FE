@@ -1,0 +1,118 @@
+# ===================================================================
+# 백엔드 최신 버전 동기화 워크플로우
+# ===================================================================
+#
+# 앱 배포(Play Store / TestFlight) 완료 후
+# 백엔드 API를 호출하여 최신 버전 정보를 자동으로 갱신합니다.
+#
+# @SecuredApi (HMAC-SHA256 + Timestamp) 보안 적용
+# 관련 이슈: https://github.com/TEAM-ROMROM/RomRom-FE/issues/680
+#
+# ===================================================================
+
+name: ROMROM-BACKEND-VERSION-SYNC
+
+on:
+  # Android PlayStore 배포 완료 시
+  workflow_run:
+    workflows:
+      - "Android-PlayStore-Internal-Deploy"
+      - "Project-iOS-TestFlight-Deploy"
+    types: [completed]
+
+  # 수동 실행
+  workflow_dispatch:
+
+# 동시 실행 방지 (같은 버전으로 중복 호출 방지)
+concurrency:
+  group: backend-version-sync
+  cancel-in-progress: true
+
+env:
+  BACKEND_API_URL: "https://api.romrom.suhsaechan.kr"
+  PROJECT_TYPE: "flutter"
+
+jobs:
+  sync-version:
+    name: 백엔드 최신 버전 동기화
+    runs-on: ubuntu-latest
+
+    # workflow_run 트리거: 성공한 경우에만 실행 / 수동 실행: 항상 실행
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: deploy
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin deploy
+
+      # version.yml에서 현재 버전 가져오기
+      - name: 현재 버전 정보 추출
+        id: version
+        run: |
+          VERSION=$(grep '^version:' version.yml | sed 's/version: *"\(.*\)"/\1/')
+          echo "✅ 현재 앱 버전: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # HMAC-SHA256 서명 생성 및 API 호출
+      - name: 백엔드 최신 버전 업데이트 API 호출
+        env:
+          SECURED_API_SECRET_KEY: ${{ secrets.WEB_SMB_PASSWORD }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          echo "=========================================="
+          echo "🔄 백엔드 최신 버전 동기화"
+          echo "📦 버전: $VERSION"
+          echo "🌐 API: ${{ env.BACKEND_API_URL }}/api/app/version/update"
+          echo "=========================================="
+
+          # Timestamp 생성 (밀리초)
+          TIMESTAMP=$(date +%s%3N)
+          echo "⏰ Timestamp: $TIMESTAMP"
+
+          # HMAC-SHA256 서명 생성 (Hex 인코딩)
+          SIGNATURE=$(echo -n "$TIMESTAMP" | openssl dgst -sha256 -hmac "$SECURED_API_SECRET_KEY" | awk '{print $2}')
+          echo "🔑 Signature: ${SIGNATURE:0:16}..."
+
+          # API 호출 (form-data)
+          HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" \
+            -X POST "${{ env.BACKEND_API_URL }}/api/app/version/update" \
+            -H "X-Timestamp: $TIMESTAMP" \
+            -H "X-Signature: $SIGNATURE" \
+            -F "version=$VERSION")
+
+          RESPONSE=$(cat response.json)
+          echo ""
+          echo "📡 HTTP Status: $HTTP_STATUS"
+          echo "📄 Response: $RESPONSE"
+
+          # 결과 확인
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo ""
+            echo "=========================================="
+            echo "✅ 백엔드 최신 버전 동기화 성공!"
+            echo "📦 latestVersion: $(echo $RESPONSE | jq -r '.latestVersion // "N/A"')"
+            echo "📦 minimumVersion: $(echo $RESPONSE | jq -r '.minimumVersion // "N/A"')"
+            echo "=========================================="
+          else
+            echo ""
+            echo "=========================================="
+            echo "❌ 백엔드 최신 버전 동기화 실패!"
+            echo "📡 HTTP Status: $HTTP_STATUS"
+            echo "📄 Error: $RESPONSE"
+            echo "=========================================="
+            exit 1
+          fi
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ 백엔드 버전 동기화 실패!"
+          echo "트리거: ${{ github.event_name }}"
+          echo "워크플로우: ${{ github.event.workflow_run.name || 'manual' }}"
+          echo "로그를 확인해주세요."
