@@ -226,14 +226,13 @@ class UserInfo {
 
   /// 온보딩이 필요한지 확인
   bool get needsOnboarding {
-    return isRequiredTermsAgreed != true || isMemberLocationSaved != true || isItemCategorySaved != true;
+    return isRequiredTermsAgreed != true || isItemCategorySaved != true;
   }
 
   /// 다음 온보딩 단계 결정
   int get nextOnboardingStep {
     if (isRequiredTermsAgreed != true) return 1; // 이용약관 동의
-    if (isMemberLocationSaved != true) return 2; // 위치 인증
-    if (isItemCategorySaved != true) return 3; // 카테고리 선택
+    if (isItemCategorySaved != true) return 2; // 카테고리 선택
     return 1; // 기본값
   }
 
