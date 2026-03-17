@@ -1,11 +1,35 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-16T11:47:12Z",
-    "currentVersion": "1.9.71",
-    "totalReleases": 85,
+    "lastUpdated": "2026-03-17T15:16:34Z",
+    "currentVersion": "1.9.74",
+    "totalReleases": 86,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.74",
+      "project_type": "flutter",
+      "date": "2026-03-17",
+      "pr_number": 684,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **새로운 기능**\n  * 앱 업데이트 확인 및 알림 시스템 추가\n  * 필수 업데이트 필요 시 사용자에게 알리고 앱 스토어로 유도하는 화면 추가\n\n* **Chores**\n  * 앱 버전을 v1.9.74로 업데이트\n  * 모달/다이얼로그 사용 규칙 가이드라인 추가",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "앱 업데이트 확인 및 알림 시스템 추가",
+            "필수 업데이트 필요 시 사용자에게 알리고 앱 스토어로 유도하는 화면 추가"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전을 v1.9.74로 업데이트",
+            "모달/다이얼로그 사용 규칙 가이드라인 추가"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.71",
       "project_type": "flutter",
