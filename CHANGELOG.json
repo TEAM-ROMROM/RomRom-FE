@@ -1,11 +1,36 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-19T11:39:54Z",
-    "currentVersion": "1.9.75",
-    "totalReleases": 87,
+    "lastUpdated": "2026-03-19T14:24:06Z",
+    "currentVersion": "1.9.76",
+    "totalReleases": 88,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.76",
+      "project_type": "flutter",
+      "date": "2026-03-19",
+      "pr_number": 692,
+      "raw_summary": "## Summary by CodeRabbit\n\n## Release Notes v1.9.76\n\n* **New Features**\n  * 로그인 화면에 앱 버전 정보 표시\n  * 마이페이지에 알림 설정 메뉴 추가\n  * 마이페이지에 앱 버전 정보 메뉴 추가\n\n* **Improvements**\n  * 검색 범위 설정 화면의 위치 기반 초기화 로직 개선\n  * 마이페이지 레이아웃 스크롤 기능 강화",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "로그인 화면에 앱 버전 정보 표시",
+            "마이페이지에 알림 설정 메뉴 추가",
+            "마이페이지에 앱 버전 정보 메뉴 추가"
+          ]
+        },
+        "improvements": {
+          "title": "Improvements",
+          "items": [
+            "검색 범위 설정 화면의 위치 기반 초기화 로직 개선",
+            "마이페이지 레이아웃 스크롤 기능 강화"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.75",
       "project_type": "flutter",
