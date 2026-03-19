@@ -14,6 +14,7 @@ import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
+import 'package:romrom_fe/screens/my_page/app_info_screen.dart';
 import 'package:romrom_fe/screens/my_page/terms_screen.dart';
 import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
@@ -77,7 +78,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,6 +171,13 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 icon: AppIcons.infoCircle,
                 onTap: () {
                   context.navigateTo(screen: const TermsScreen());
+                },
+              ),
+              _MenuItem(
+                label: '앱 정보',
+                icon: AppIcons.infoCircle,
+                onTap: () {
+                  context.navigateTo(screen: const AppInfoScreen());
                 },
               ),
               _MenuItem(label: '로그아웃', onTap: () => AuthService().logout(context), isDestructive: true),
