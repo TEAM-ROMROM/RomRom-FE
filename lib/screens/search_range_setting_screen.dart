@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
-import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common/range_slider_widget.dart';
@@ -26,65 +26,60 @@ class SearchRangeSettingScreen extends StatefulWidget {
   State<SearchRangeSettingScreen> createState() => _SearchRangeSettingScreenState();
 }
 
-class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> with WidgetsBindingObserver {
-  final _locationService = LocationService();
+class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
   final Completer<NaverMapController> _mapControllerCompleter = Completer();
 
   NLatLng? _currentPosition;
   int _selectedRangeIndex = 0;
   NCircleOverlay? _rangeCircle;
-  bool _permissionDenied = false;
+  bool _locationNotSet = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _initializeLocation();
+    _initializeData();
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
+  /// 서버에서 위치 및 탐색 범위 로드
+  Future<void> _initializeData() async {
+    try {
+      final memberResponse = await MemberApi().getMemberInfo();
+      final location = memberResponse.memberLocation;
+      final searchRadiusInMeters = memberResponse.member?.searchRadiusInMeters ?? 7500.0;
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _permissionDenied) {
-      _retryLocationAfterPermission();
+      if (!mounted) return;
+
+      if (location?.latitude == null || location?.longitude == null) {
+        setState(() => _locationNotSet = true);
+        return;
+      }
+
+      setState(() {
+        _currentPosition = NLatLng(location!.latitude!, location.longitude!);
+        _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
+      });
+    } catch (e) {
+      debugPrint('위치/탐색 범위 조회 실패: $e');
+      if (mounted) setState(() => _locationNotSet = true);
     }
-  }
-
-  Future<void> _retryLocationAfterPermission() async {
-    final status = await _locationService.checkPermissionStatus();
-    if (!status) return;
-    // _initializeLocation() 내부에서 _permissionDenied를 초기화하므로 별도 setState 불필요
-    _initializeLocation();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: _buildAppBar(),
-      body: _permissionDenied
-          ? _buildPermissionDeniedView()
+      appBar: const CommonAppBar(title: '탐색 범위 설정', showBottomBorder: true),
+      body: _locationNotSet
+          ? _buildLocationNotSetView()
           : _currentPosition == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
           : Column(
               children: [
-                // 지도 영역
                 Expanded(child: _buildMapSection()),
-                // 슬라이더 영역
                 _buildSliderSection(),
               ],
             ),
     );
-  }
-
-  /// 앱바 빌드
-  PreferredSizeWidget _buildAppBar() {
-    return const CommonAppBar(title: '탐색 범위 설정', showBottomBorder: true);
   }
 
   /// 지도 섹션 빌드
@@ -105,18 +100,17 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> wit
             if (!_mapControllerCompleter.isCompleted) {
               _mapControllerCompleter.complete(controller);
             }
-            controller.setLocationTrackingMode(NLocationTrackingMode.follow);
             _updateRangeCircle();
           },
         ),
-        // 현재 위치 버튼
+        // 내 위치로 이동 버튼
         Positioned(
           bottom: 48.h,
           left: 24.w,
           child: CurrentLocationButton(
             onTap: () async {
               final controller = await _mapControllerCompleter.future;
-              controller.setLocationTrackingMode(NLocationTrackingMode.follow);
+              await controller.updateCamera(NCameraUpdate.withParams(target: _currentPosition));
             },
             iconSize: 24.h,
           ),
@@ -138,48 +132,62 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> wit
     );
   }
 
-  /// 위치 초기화 — initState 및 권한 허용 후 복귀 시 호출
-  Future<void> _initializeLocation() async {
-    setState(() => _permissionDenied = false);
-
-    final hasPermission = await _locationService.requestPermission();
-
-    // 탐색 범위는 위치 권한과 무관하게 항상 서버에서 조회
-    double searchRadiusInMeters = 7500.0;
-    try {
-      final memberResponse = await MemberApi().getMemberInfo();
-      searchRadiusInMeters = memberResponse.member?.searchRadiusInMeters ?? 7500.0;
-    } catch (e) {
-      debugPrint('탐색 범위 조회 실패, 기본값 사용: $e');
-    }
-
-    if (!hasPermission) {
-      if (mounted) {
-        setState(() {
-          _permissionDenied = true;
-          _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
-        });
-      }
-      return;
-    }
-
-    final position = await _locationService.getCurrentPosition();
-    if (mounted) {
-      setState(() {
-        // GPS 실패 시 서울시청 좌표로 폴백
-        _currentPosition = position != null
-            ? _locationService.positionToLatLng(position)
-            : const NLatLng(37.5665, 126.9780);
-        _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
-      });
-    }
+  /// 위치 미설정 시 안내 UI
+  Widget _buildLocationNotSetView() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 40.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_off_outlined, size: 64.sp, color: AppColors.opacity60White),
+            SizedBox(height: 24.h),
+            Text(
+              '내 위치를 먼저 설정해주세요',
+              style: CustomTextStyles.h3.copyWith(color: AppColors.textColorWhite),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              '탐색 범위를 설정하려면 먼저 내 위치인증이 필요합니다.',
+              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 32.h),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+                onPressed: () async {
+                  await context.navigateTo(screen: const MyLocationVerificationScreen());
+                  // 위치인증 후 돌아오면 데이터 재로드
+                  if (mounted) {
+                    setState(() {
+                      _locationNotSet = false;
+                      _currentPosition = null;
+                    });
+                    _initializeData();
+                  }
+                },
+                child: Text(
+                  '위치 설정하러 가기',
+                  style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// 범위 변경 처리
   void _onRangeChanged(int index) {
-    setState(() {
-      _selectedRangeIndex = index;
-    });
+    setState(() => _selectedRangeIndex = index);
     _updateRangeCircle();
     _updateCameraZoom();
     _saveSearchRadius(index);
@@ -191,7 +199,6 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> wit
     try {
       final radiusInMeters = defaultSearchRangeOptions[index].distanceKm * 1000;
       await MemberApi().saveSearchRadius(radiusInMeters);
-      // 성공 시 토스트 표시 제거 - 슬라이더 이동 자체가 시각적 피드백
     } catch (e) {
       debugPrint('탐색 범위 저장 실패: $e');
       if (mounted) {
@@ -202,19 +209,15 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> wit
 
   /// 범위 원 업데이트
   Future<void> _updateRangeCircle() async {
-    if (!_mapControllerCompleter.isCompleted || _currentPosition == null) {
-      return;
-    }
+    if (!_mapControllerCompleter.isCompleted || _currentPosition == null) return;
 
     final controller = await _mapControllerCompleter.future;
     final radiusMeters = defaultSearchRangeOptions[_selectedRangeIndex].distanceKm * 1000;
 
-    // 기존 원 제거
     if (_rangeCircle != null) {
       await controller.deleteOverlay(_rangeCircle!.info);
     }
 
-    // 새 원 추가
     _rangeCircle = NCircleOverlay(
       id: 'range_circle',
       center: _currentPosition!,
@@ -229,87 +232,37 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> wit
 
   /// 카메라 줌 업데이트
   Future<void> _updateCameraZoom() async {
-    if (!_mapControllerCompleter.isCompleted || _currentPosition == null) {
-      return;
-    }
+    if (!_mapControllerCompleter.isCompleted || _currentPosition == null) return;
 
     final controller = await _mapControllerCompleter.future;
-    final zoom = _getZoomLevel(_selectedRangeIndex);
-
-    await controller.updateCamera(NCameraUpdate.withParams(target: _currentPosition, zoom: zoom));
+    await controller.updateCamera(
+      NCameraUpdate.withParams(target: _currentPosition, zoom: _getZoomLevel(_selectedRangeIndex)),
+    );
   }
 
   /// 범위에 따른 줌 레벨 반환
   double _getZoomLevel(int rangeIndex) {
-    // 범위가 클수록 줌 아웃
     switch (rangeIndex) {
-      case 0: // 2.5km
+      case 0:
         return 12.0;
-      case 1: // 5km
+      case 1:
         return 11.0;
-      case 2: // 7.5km
+      case 2:
         return 10.5;
-      case 3: // 10km
+      case 3:
         return 10.0;
       default:
         return 12.0;
     }
   }
 
-  /// 범위에 따른 줌 레벨 반환
+  /// 서버 반환 반경(m) → 슬라이더 인덱스 변환
   int _getRangeIndex(double searchRadiusInMeters) {
-    // 범위가 클수록 줌 아웃
-    // 미터 단위로 비교하여 부동소수점 오차 방지
     final radiusInMeters = searchRadiusInMeters.round();
     if (radiusInMeters <= 2500) return 0;
     if (radiusInMeters <= 5000) return 1;
     if (radiusInMeters <= 7500) return 2;
     if (radiusInMeters <= 10000) return 3;
     return 0;
-  }
-
-  /// 위치 권한 거부 시 안내 UI
-  Widget _buildPermissionDeniedView() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 40.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.location_off_outlined, size: 64.sp, color: AppColors.opacity60White),
-            SizedBox(height: 24.h),
-            Text(
-              '위치 권한이 필요합니다',
-              style: CustomTextStyles.h3.copyWith(color: AppColors.textColorWhite),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              '위치 접근 권한을 허용하면 현재 위치를 기준으로 탐색 범위를 설정할 수 있습니다.',
-              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 32.h),
-            SizedBox(
-              width: double.infinity,
-              height: 48.h,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryYellow,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                ),
-                onPressed: () {
-                  openAppSettings();
-                },
-                child: Text(
-                  '설정으로 이동',
-                  style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
