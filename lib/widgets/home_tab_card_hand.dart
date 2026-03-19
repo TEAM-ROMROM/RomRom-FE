@@ -661,6 +661,29 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     final dispX = details.localPosition.dx - _panStartPosition.dx; // → 오른쪽 +
     final dispY = details.localPosition.dy - _panStartPosition.dy; // → 아래로 +
 
+    // 방향 조기 판별: 카드 위에서 시작했고 아직 방향 미결정 상태일 때
+    // 8px 이상 이동하면 수직/수평 의도를 벡터로 판별 → 타이머 상태 무관하게 판별
+    if (_panStartedOnCard && _startCardId != null && !_hasStartedCardDrag) {
+      const double directionThreshold = 8.0;
+      final double totalDisp = math.sqrt(dispX * dispX + dispY * dispY);
+      if (totalDisp >= directionThreshold) {
+        _longPressTimer?.cancel();
+        _longPressTimer = null;
+        // 수직 성분이 수평의 1.5배 이상이면 → 즉시 카드 드래그 모드
+        if (dispY.abs() > dispX.abs() * 1.5) {
+          setState(() {
+            _hasStartedCardDrag = true;
+            _hoveredCardId = _startCardId;
+            _orbitAccumulated = _orbitAngle;
+            _orbitDragStart = _panStartPosition.dx;
+          });
+        } else {
+          // 수평 방향으로 판별 → 카드 드래그 모드 진입 없이 회전 전용
+          setState(() => _panStartedOnCard = false);
+        }
+      }
+    }
+
     // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
     if (!_hasStartedCardDrag) {
       final double dragDx = details.localPosition.dx - _orbitDragStart;
@@ -696,19 +719,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
     // 2) 카드 드래그는 조건부
     if (_panStartedOnCard && _startCardId != null) {
-      // 드래그 임계치 확인 - 만약 일정 거리 이상 이동하면 롱프레스 타이머 취소
-      const double dragThreshold = 20.0; // px
-      if (_longPressTimer != null && (dispX.abs() > dragThreshold || dispY.abs() > dragThreshold)) {
-        _longPressTimer?.cancel();
-        _longPressTimer = null;
-      }
-
-      // 수직 임계치 통과했고 이미 선택됨
-      const double selectThreshold = 10.0; // px
-      if (_hasStartedCardDrag && dispY.abs() > selectThreshold) {
+      if (_hasStartedCardDrag) {
         setState(() {
-          // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -30px
-          if (_pulledCardId == null && dispY < -30) {
+          // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -15px
+          if (_pulledCardId == null && dispY < -15) {
             _pulledCardId = _hoveredCardId;
             _pullOffset = Offset(dispX, dispY);
             _pullController.forward();
