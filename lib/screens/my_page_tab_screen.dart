@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
@@ -14,7 +15,6 @@ import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
-import 'package:romrom_fe/screens/my_page/app_info_screen.dart';
 import 'package:romrom_fe/screens/my_page/terms_screen.dart';
 import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
@@ -34,11 +34,13 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   String _location = '위치정보 없음';
   String? _profileUrl;
   String? _accountStatus;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    _loadAppVersion();
   }
 
   /// 사용자 정보 로드
@@ -75,6 +77,15 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
     }
   }
 
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _appVersion = packageInfo.version);
+      }
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -86,37 +97,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             // 헤더: "마이페이지"
             Padding(
               padding: EdgeInsets.only(top: 29.h, bottom: 13.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('마이페이지', style: CustomTextStyles.h1),
-                  SizedBox.square(
-                    dimension: 32.w,
-                    child: OverflowBox(
-                      maxWidth: 56.w,
-                      maxHeight: 56.w,
-                      child: Material(
-                        color: AppColors.transparent,
-                        shape: const CircleBorder(),
-                        clipBehavior: Clip.antiAlias, // 리플을 원형으로 클립
-                        child: InkResponse(
-                          onTap: () {
-                            context.navigateTo(screen: const NotificationSettingsScreen());
-                          },
-                          radius: 18.w,
-                          customBorder: const CircleBorder(),
-                          highlightColor: AppColors.buttonHighlightColorGray,
-                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                          child: SizedBox.square(
-                            dimension: 56.w,
-                            child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: Text('마이페이지', style: CustomTextStyles.h1),
             ),
 
             // 닉네임 박스
@@ -161,10 +142,17 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                   context.navigateTo(screen: const BlockManagementScreen());
                 },
               ),
+              _MenuItem(
+                label: '알림 설정',
+                icon: AppIcons.alert,
+                onTap: () {
+                  context.navigateTo(screen: const NotificationSettingsScreen());
+                },
+              ),
             ]),
             SizedBox(height: 16.h),
 
-            // 이용약관 / 로그아웃 / 회원탈퇴 섹션
+            // 이용약관 / 앱 버전 / 로그아웃 / 회원탈퇴 섹션
             _buildMenuSection([
               _MenuItem(
                 label: '이용 약관',
@@ -174,15 +162,15 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 },
               ),
               _MenuItem(
-                label: '앱 정보',
+                label: '앱 버전 정보',
                 icon: AppIcons.infoCircle,
-                onTap: () {
-                  context.navigateTo(screen: const AppInfoScreen());
-                },
+                onTap: () {},
+                trailingText: _appVersion.isNotEmpty ? 'v$_appVersion' : '',
               ),
               _MenuItem(label: '로그아웃', onTap: () => AuthService().logout(context), isDestructive: true),
               _MenuItem(label: '회원탈퇴', onTap: () => _handleDeleteMemberButtonTap(context), isDestructive: true),
             ]),
+            SizedBox(height: 24.h),
           ],
         ),
       ),
@@ -260,6 +248,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             icon: item.icon,
             onTap: item.onTap,
             isDestructive: item.isDestructive,
+            trailingText: item.trailingText,
           );
         }).toList(),
       ),
@@ -272,9 +261,12 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
     IconData? icon,
     required VoidCallback onTap,
     bool isDestructive = false,
+    String? trailingText,
   }) {
+    final bool hasTrailingText = trailingText != null && trailingText.isNotEmpty;
+
     return InkWell(
-      onTap: onTap,
+      onTap: hasTrailingText ? null : onTap,
       borderRadius: BorderRadius.circular(10.r),
       child: Container(
         height: 60.h,
@@ -294,7 +286,10 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 ),
               ),
             ),
-            if (!isDestructive) Icon(AppIcons.detailView, size: 18.sp, color: AppColors.opacity30White),
+            if (hasTrailingText)
+              Text(trailingText, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White))
+            else if (!isDestructive)
+              Icon(AppIcons.detailView, size: 18.sp, color: AppColors.opacity30White),
           ],
         ),
       ),
@@ -328,6 +323,7 @@ class _MenuItem {
   final IconData? icon;
   final VoidCallback onTap;
   final bool isDestructive;
+  final String? trailingText;
 
-  _MenuItem({required this.label, this.icon, required this.onTap, this.isDestructive = false});
+  _MenuItem({required this.label, this.icon, required this.onTap, this.isDestructive = false, this.trailingText});
 }
