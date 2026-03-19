@@ -8,10 +8,12 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
+import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
@@ -25,6 +27,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterTabScreen extends StatefulWidget {
   const RegisterTabScreen({super.key});
@@ -49,6 +52,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
 
   // 물품 등록 제한
   static const int _maxAvailableItemCount = 10;
+
+  // FAB 중복 탭 방지
+  bool _isFabProcessing = false;
 
   // 토글 상태
   MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.selling;
@@ -496,67 +502,85 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                   child: InkWell(
                     borderRadius: BorderRadius.circular(100.r),
                     onTap: () async {
-                      // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
+                      if (_isFabProcessing) return;
+                      setState(() => _isFabProcessing = true);
                       try {
-                        final countResponse = await ItemApi().getMyItems(
-                          ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
-                        );
-                        final totalCount =
-                            countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
+                        // 위치 미등록 시 위치 등록 화면으로 이동
+                        final userInfo = UserInfo();
+                        if (userInfo.isMemberLocationSaved != true) {
+                          final locationResult = await context.navigateTo<bool>(
+                            screen: const MyLocationVerificationScreen(),
+                          );
+                          if (!mounted) return;
+                          if (locationResult != true) return;
+                          userInfo.isMemberLocationSaved = true;
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('isMemberLocationSaved', true);
+                        }
 
-                        if (totalCount >= _maxAvailableItemCount) {
+                        // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
+                        try {
+                          final countResponse = await ItemApi().getMyItems(
+                            ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
+                          );
+                          final totalCount =
+                              countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
+
+                          if (totalCount >= _maxAvailableItemCount) {
+                            if (mounted) {
+                              CommonSnackBar.show(
+                                context: context,
+                                message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
+                                type: SnackBarType.error,
+                              );
+                            }
+                            return;
+                          }
+                        } catch (e) {
+                          debugPrint('물품 개수 확인 실패: $e');
                           if (mounted) {
                             CommonSnackBar.show(
                               context: context,
-                              message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
+                              message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
                               type: SnackBarType.error,
                             );
                           }
                           return;
                         }
-                      } catch (e) {
-                        debugPrint('물품 개수 확인 실패: $e');
-                        if (mounted) {
-                          CommonSnackBar.show(
-                            context: context,
-                            message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
-                            type: SnackBarType.error,
-                          );
-                        }
-                        return;
-                      }
 
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ItemRegisterScreen(
+                        final result = await context.navigateTo(
+                          screen: ItemRegisterScreen(
                             onClose: () {
                               Navigator.pop(context);
                             },
                           ),
-                        ),
-                      );
-
-                      debugPrint('====================================');
-                      debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
-                      debugPrint('result type: ${result.runtimeType}');
-                      if (result is Map<String, dynamic>) {
-                        debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
-                        debugPrint('  - itemId: ${result['itemId']}');
-                      }
-                      debugPrint('====================================');
-
-                      // 등록 화면에서 돌아온 뒤 목록 새로고침
-                      _loadMyItems(isRefresh: true);
-
-                      // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
-                      if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
-                        debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
-                        _navigateToHomeAndShowCoachMark();
-                      } else {
-                        debugPrint(
-                          '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
                         );
+
+                        if (!mounted) return;
+
+                        debugPrint('====================================');
+                        debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
+                        debugPrint('result type: ${result.runtimeType}');
+                        if (result is Map<String, dynamic>) {
+                          debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
+                          debugPrint('  - itemId: ${result['itemId']}');
+                        }
+                        debugPrint('====================================');
+
+                        // 등록 화면에서 돌아온 뒤 목록 새로고침
+                        _loadMyItems(isRefresh: true);
+
+                        // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
+                        if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+                          debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
+                          _navigateToHomeAndShowCoachMark();
+                        } else {
+                          debugPrint(
+                            '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isFabProcessing = false);
                       }
                     },
                     child: Padding(
