@@ -48,14 +48,15 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Center(
+          SafeArea(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 75.h), // 간격 추가
-                SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 112.h),
-                SizedBox(height: 45.h), // 간격 추가
+                // 상단 여백 (화면 높이의 약 15%)
+                const Spacer(flex: 2),
+                // 로고
+                SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 108.w),
+                SizedBox(height: 45.h),
                 // 서비스 간단 소개 텍스트
                 Text(
                   '손쉬운 물건 교환',
@@ -64,17 +65,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: 17.0.h), // 간격 추가
+                SizedBox(height: 17.h),
                 // "romrom" 이미지
                 SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
-                SizedBox(height: 172.0.h), // 간격 추가
+                // 중간 여백 (화면 높이의 약 25%)
+                const Spacer(flex: 3),
                 // 로그인 버튼 그룹
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
                   child: AuthButtonGroup(
                     buttons: loginPlatforms.map((platform) => LoginButton(platform: platform)).toList(),
                   ),
                 ),
+                SizedBox(height: 48.h),
               ],
             ),
           ),
