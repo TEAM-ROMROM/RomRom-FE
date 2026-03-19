@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
@@ -23,6 +25,7 @@ import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 
 import 'package:romrom_fe/services/location_service.dart';
@@ -63,6 +66,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   bool _hasMoreItems = true;
   // 블러 효과 표시 여부
   bool _isBlurShown = false;
+  // 미확인 알림 존재 여부
+  bool _hasUnreadNotification = false;
   // 코치마크 현재 페이지 상태 관리 (성능 최적화)
   final ValueNotifier<int> _coachMarkPageNotifier = ValueNotifier<int>(0);
   // 오버레이 엔트리
@@ -92,6 +97,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     _loadInitialItems();
     _loadMyCards();
     _checkFirstMainScreen();
+    unawaited(_loadUnreadNotificationStatus());
   }
 
   @override
@@ -161,6 +167,21 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       });
     }
     debugPrint('====================================');
+  }
+
+  /// 미확인 알림 여부 조회
+  Future<void> _loadUnreadNotificationStatus() async {
+    try {
+      final response = await NotificationApi().getUnreadNotificationCount();
+      if (mounted) {
+        setState(() {
+          _hasUnreadNotification = (response?.unReadCount ?? 0) > 0;
+        });
+      }
+    } catch (e) {
+      // 실패 시 배지 미표시 (false 유지)
+      debugPrint('미확인 알림 조회 실패: $e');
+    }
   }
 
   /// 코치마크를 표시해야 하는지 체크하고 표시
@@ -670,8 +691,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                       shape: const CircleBorder(),
                       clipBehavior: Clip.antiAlias,
                       child: InkResponse(
-                        onTap: () {
-                          context.navigateTo(screen: const NotificationScreen());
+                        onTap: () async {
+                          await context.navigateTo(screen: const NotificationScreen());
+                          if (!mounted) return;
+                          _loadUnreadNotificationStatus();
                         },
                         radius: 18.w,
                         customBorder: const CircleBorder(),
@@ -679,7 +702,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                         splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
                         child: SizedBox.square(
                           dimension: 56.w,
-                          child: Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
+                          child: Center(
+                            child: _hasUnreadNotification
+                                ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.sp, height: 30.sp)
+                                : Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
+                          ),
                         ),
                       ),
                     ),
