@@ -32,6 +32,7 @@ import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
+import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -47,8 +48,6 @@ class HomeTabScreen extends StatefulWidget {
 class _HomeTabScreenState extends State<HomeTabScreen> {
   // 메인 콘텐츠 페이지 컨트롤러
   final PageController _pageController = PageController();
-  // 코치마크 전용 페이지 컨트롤러
-  final PageController _coachMarkPageController = PageController();
   // 피드 아이템 목록
   final List<HomeFeedItem> _feedItems = [];
   int _currentPage = 0;
@@ -63,8 +62,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   bool _hasMoreItems = true;
   // 블러 효과 표시 여부
   bool _isBlurShown = false;
-  // 코치마크 현재 페이지 상태 관리 (성능 최적화)
-  final ValueNotifier<int> _coachMarkPageNotifier = ValueNotifier<int>(0);
   // 오버레이 엔트리
   OverlayEntry? _overlayEntry;
 
@@ -73,15 +70,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   // 초기 로드에 성공한 정렬 필드 저장
   ItemSortField _currentSortField = ItemSortField.recommended;
-
-  final List<String> _coachMarkImages = [
-    'assets/images/coachMark1.png',
-    'assets/images/coachMark2.png',
-    'assets/images/coachMark3.png',
-    'assets/images/coachMark4.png',
-    'assets/images/coachMark5.png',
-    'assets/images/coachMark6.png',
-  ];
 
   // 내 카드 목록 (나중에 API에서 가져올 예정)
   List<Item> _myCards = [];
@@ -98,8 +86,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   void dispose() {
     _removeCoachMarkOverlay();
     _pageController.dispose();
-    _coachMarkPageController.dispose();
-    _coachMarkPageNotifier.dispose();
     super.dispose();
   }
 
@@ -200,7 +186,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   // 코치마크 닫기
-  void _closeCoachMark() async {
+  Future<void> _closeCoachMark() async {
     _removeCoachMarkOverlay();
 
     // 코치마크 표시 완료 플래그 설정
@@ -238,117 +224,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   }
 
   Widget _buildCoachMarkOverlay() {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: AppColors.opacity70Black,
-        child: Column(
-          children: [
-            Expanded(child: _buildCoachMarkPageView()),
-            _buildPageIndicators(),
-            _buildCoachMarkCloseButton(),
-            SizedBox(height: 32.h),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCoachMarkPageView() {
-    return PageView.builder(
-      controller: _coachMarkPageController,
-      itemCount: _coachMarkImages.length,
-      onPageChanged: (page) {
-        debugPrint('코치마크 페이징: 페이지 변경 $page');
-        _coachMarkPageNotifier.value = page;
-      },
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () {
-            if (index < _coachMarkImages.length - 1) {
-              debugPrint('코치마크 이벤트: 이미지 탭 - 다음 페이지 ${index + 1}');
-              _coachMarkPageController.animateToPage(
-                index + 1,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            } else {
-              debugPrint('코치마크 이벤트: 마지막 이미지 탭 - 코치마크 닫기');
-              _closeCoachMark();
-            }
-          },
-          child: Image.asset(
-            _coachMarkImages[index],
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('오류: 이미지 로드 실패 - ${_coachMarkImages[index]} - $error');
-              return Center(
-                child: Text(
-                  '이미지 로드 실패: ${_coachMarkImages[index]}',
-                  style: const TextStyle(color: AppColors.textColorWhite),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPageIndicators() {
-    return ValueListenableBuilder<int>(
-      valueListenable: _coachMarkPageNotifier,
-      builder: (context, currentPage, _) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_coachMarkImages.length, (index) {
-            final isCurrentPage = index == currentPage;
-            return GestureDetector(
-              onTap: () {
-                debugPrint('코치마크 이벤트: 인디케이터 탭 - 페이지 $index');
-                _coachMarkPageController.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isCurrentPage ? 12.w : 8.w,
-                height: isCurrentPage ? 12.w : 8.w,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isCurrentPage ? AppColors.primaryYellow : AppColors.opacity50White,
-                ),
-              ),
-            );
-          }),
-        );
-      },
-    );
-  }
-
-  Widget _buildCoachMarkCloseButton() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Material(
-          color: AppColors.transparent,
-          child: InkWell(
-            onTap: _closeCoachMark,
-            highlightColor: AppColors.buttonHighlightColorGray,
-            customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100.r)),
-            splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text('닫기', style: TextStyle(color: AppColors.textColorWhite, fontSize: 14)),
-            ),
-          ),
-        ),
-      ],
-    );
+    return CoachMarkOverlay(onClose: _closeCoachMark);
   }
 
   // 오버레이 안전 제거 (메모리 누수 방지)
