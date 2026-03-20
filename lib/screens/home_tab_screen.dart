@@ -612,6 +612,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                   if (!mounted) return;
                   if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
                     _loadMyCards();
+                    showCoachMark();
                   }
                 },
                 child: Container(
