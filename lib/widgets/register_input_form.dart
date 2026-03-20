@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
@@ -17,6 +18,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/screens/image_fullscreen_viewer.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
@@ -354,7 +356,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _totalImageCount,
-                    separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                    separatorBuilder: (_, _2) => SizedBox(width: 8.w),
                     padding: EdgeInsets.only(top: 8.h),
                     itemBuilder: (context, index) {
                       final int existingCount = _existingImageUrls.length;
@@ -380,7 +382,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           width: 80.w,
                           height: 80.h,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _2, _3) => Container(
                             width: 80.w,
                             height: 80.h,
                             color: AppColors.opacity40White,
@@ -394,7 +396,22 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            ClipRRect(borderRadius: BorderRadius.circular(8.r), child: imageWidget),
+                            GestureDetector(
+                              onTap: () {
+                                context.navigateTo(
+                                  type: NavigationTypes.fadePush,
+                                  screen: ImageFullscreenViewer(
+                                    existingImageUrls: List.unmodifiable(_existingImageUrls),
+                                    newImageFilePaths: _newImageFiles.map((f) => f.path).toList(growable: false),
+                                    initialIndex: index,
+                                  ),
+                                );
+                              },
+                              child: Hero(
+                                tag: 'item_image_$index',
+                                child: ClipRRect(borderRadius: BorderRadius.circular(8.r), child: imageWidget),
+                              ),
+                            ),
                             Positioned(
                               top: -8.h,
                               right: -8.w,
