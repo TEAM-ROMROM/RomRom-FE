@@ -14,7 +14,6 @@ import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final TokenManager _tokenManager = TokenManager();
@@ -70,12 +69,8 @@ class AuthService {
     // 토큰 삭제
     await _tokenManager.deleteTokens();
 
-    // 사용자 정보 클리어
-    await UserInfo().clearUserInfoExceptIsCoachMarkShown();
-
-    // 메인 화면 블러 처리 변수 삭제
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('isFirstMainScreen');
+    // 사용자 정보 클리어 (회원탈퇴는 새 사용자이므로 isCoachMarkShown, isFirstMainScreen 포함 전체 초기화)
+    await UserInfo().clearAllUserInfo();
 
     return true;
   }
