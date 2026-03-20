@@ -68,6 +68,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   bool _isBlurShown = false;
   // 미확인 알림 존재 여부
   bool _hasUnreadNotification = false;
+  // 미확인 알림 조회 중복 요청 방지
+  bool _isLoadingUnreadNotification = false;
   // 코치마크 현재 페이지 상태 관리 (성능 최적화)
   final ValueNotifier<int> _coachMarkPageNotifier = ValueNotifier<int>(0);
   // 오버레이 엔트리
@@ -171,6 +173,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   /// 미확인 알림 여부 조회
   Future<void> _loadUnreadNotificationStatus() async {
+    if (_isLoadingUnreadNotification) return;
+    _isLoadingUnreadNotification = true;
     try {
       final response = await NotificationApi().getUnreadNotificationCount();
       if (mounted) {
@@ -179,8 +183,14 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         });
       }
     } catch (e) {
-      // 실패 시 배지 미표시 (false 유지)
+      if (mounted) {
+        setState(() {
+          _hasUnreadNotification = false;
+        });
+      }
       debugPrint('미확인 알림 조회 실패: $e');
+    } finally {
+      _isLoadingUnreadNotification = false;
     }
   }
 
@@ -704,8 +714,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                           dimension: 56.w,
                           child: Center(
                             child: _hasUnreadNotification
-                                ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.sp, height: 30.sp)
-                                : Icon(AppIcons.alert, size: 30.sp, color: AppColors.textColorWhite),
+                                ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
+                                : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
                           ),
                         ),
                       ),
