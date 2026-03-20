@@ -81,7 +81,7 @@ class _ImageFullscreenViewerState extends State<ImageFullscreenViewer> {
                       File(widget.newImageFilePaths[index - existingCount]),
                       width: double.infinity,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, _2, _3) =>
+                      errorBuilder: (_, error, stackTrace) =>
                           const Icon(Icons.broken_image, color: AppColors.textColorWhite, size: 48),
                     );
 

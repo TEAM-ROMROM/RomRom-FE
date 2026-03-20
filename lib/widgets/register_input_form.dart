@@ -356,7 +356,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _totalImageCount,
-                    separatorBuilder: (_, _2) => SizedBox(width: 8.w),
+                    separatorBuilder: (_, index) => SizedBox(width: 8.w),
                     padding: EdgeInsets.only(top: 8.h),
                     itemBuilder: (context, index) {
                       final int existingCount = _existingImageUrls.length;
@@ -382,7 +382,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           width: 80.w,
                           height: 80.h,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _2, _3) => Container(
+                          errorBuilder: (_, error, stackTrace) => Container(
                             width: 80.w,
                             height: 80.h,
                             color: AppColors.opacity40White,
