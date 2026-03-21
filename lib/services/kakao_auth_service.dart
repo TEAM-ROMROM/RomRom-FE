@@ -30,7 +30,7 @@ class KakaoAuthService {
       );
 
       // 사용자 정보 저장
-      await UserInfo().saveUserInfo('${user.kakaoAccount?.profile?.nickname}', '${user.kakaoAccount?.email}');
+      await UserInfo().saveUserInfo(user.kakaoAccount?.profile?.nickname, user.kakaoAccount?.email);
       // 로그인 플랫폼 저장
       LoginPlatformManager().saveLoginPlatform(LoginPlatforms.kakao.platformName);
     } catch (error) {
