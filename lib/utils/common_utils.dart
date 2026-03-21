@@ -66,6 +66,23 @@ extension NavigationExtension on BuildContext {
           ),
           predicate ?? (route) => false,
         );
+
+      case NavigationTypes.fadePush:
+        return Navigator.push<T>(
+          this,
+          PageRouteBuilder<T>(
+            pageBuilder: (context, animation, secondaryAnimation) => screen,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 300),
+            reverseTransitionDuration: const Duration(milliseconds: 250),
+            settings: routeSettings,
+          ),
+        );
     }
   }
 }
