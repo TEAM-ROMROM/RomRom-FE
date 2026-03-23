@@ -25,7 +25,7 @@ class CoachMarkCoords {
   double left(double x) => x * scale - offsetX;
 
   /// 디자인 right(px from right edge) → 화면 right
-  double right(double x) => x * scale - offsetX;
+  double right(double x) => screenW - (kDesignW - x) * scale + offsetX;
 
   /// 디자인 top(px from top) → 화면 top
   double top(double y) => y * scale - offsetY;

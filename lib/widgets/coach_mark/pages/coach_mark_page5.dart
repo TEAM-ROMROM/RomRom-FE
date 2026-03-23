@@ -12,16 +12,12 @@ class CoachMarkPage5 extends StatefulWidget {
 }
 
 class _CoachMarkPage5State extends State<CoachMarkPage5> with TickerProviderStateMixin {
-  late final AnimationController _pulseController;
   late final AnimationController _fadeController;
   late final List<Animation<double>> _fadeAnims;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat(reverse: true);
-
     _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
     _fadeAnims = List.generate(3, (i) {
       final start = 0.3 + i * 0.25;
@@ -38,7 +34,6 @@ class _CoachMarkPage5State extends State<CoachMarkPage5> with TickerProviderStat
 
   @override
   void dispose() {
-    _pulseController.dispose();
     _fadeController.dispose();
     super.dispose();
   }

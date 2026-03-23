@@ -5,9 +5,7 @@ import 'package:romrom_fe/widgets/coach_mark/animations/ripple_widget.dart';
 import 'package:romrom_fe/widgets/coach_mark/coach_mark_coords.dart';
 
 class CoachMarkPage4 extends StatefulWidget {
-  final VoidCallback? onComplete;
-
-  const CoachMarkPage4({super.key, this.onComplete});
+  const CoachMarkPage4({super.key});
 
   @override
   State<CoachMarkPage4> createState() => _CoachMarkPage4State();
