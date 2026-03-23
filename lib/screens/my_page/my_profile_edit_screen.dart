@@ -218,7 +218,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
               // 닉네임 + 편집 버튼
               _buildNicknameSection(),
 
-              SizedBox(height: 50.h),
+              SizedBox(height: 48.h),
 
               // 내 위치 섹션
               _buildInfoSection(label: '내 위치', value: _location),
@@ -249,6 +249,10 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                   width: 132.w,
                   height: 132.w,
                   padding: EdgeInsets.all(48.w),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.textColorWhite, width: 1.w),
+                  ),
                   child: const CircularProgressIndicator(color: AppColors.primaryYellow),
                 )
               : UserProfileCircularAvatar(
@@ -264,7 +268,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
             bottom: 8.h,
             child: Container(
               width: 24.w,
-              height: 24.h,
+              height: 24.w,
               decoration: const BoxDecoration(color: AppColors.secondaryBlack2, shape: BoxShape.circle),
               child: Center(
                 child: Icon(AppIcons.camera, size: 16.sp, color: AppColors.textColorWhite),
@@ -415,10 +419,10 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
+          Text(label, style: CustomTextStyles.p2),
           Text(
             value,
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w500, color: AppColors.opacity60White),
+            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
           ),
         ],
       ),
@@ -431,18 +435,20 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       width: double.infinity,
       height: 54.h,
       decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text('받은 좋아요 수', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
+          Text('받은 좋아요 수', style: CustomTextStyles.p2),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(AppIcons.profilelikecount, size: 16.sp, color: AppColors.opacity60White),
-              SizedBox(width: 4.w),
+              Icon(AppIcons.profilelikecount, size: 16.sp, color: AppColors.textColorWhite),
+              SizedBox(width: 3.w),
               Text(
                 '$_receivedLikes',
-                style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
+                style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
                 textAlign: TextAlign.right,
               ),
             ],
