@@ -1,11 +1,35 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-19T14:24:06Z",
-    "currentVersion": "1.9.76",
-    "totalReleases": 88,
+    "lastUpdated": "2026-03-20T05:26:59Z",
+    "currentVersion": "1.9.78",
+    "totalReleases": 89,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.78",
+      "project_type": "flutter",
+      "date": "2026-03-20",
+      "pr_number": 700,
+      "raw_summary": "## Summary by CodeRabbit\n\n## v1.9.78 릴리스 노트\n\n* **새로운 기능**\n  * 미읽음 알림 뱃지 표시 추가\n  * iOS에서만 Apple 로그인 버튼 표시 (플랫폼별 최적화)\n  * 카드 드래그 제스처 반응성 개선\n\n* **버전 업데이트**\n  * v1.9.78로 업데이트 (빌드 222)",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "미읽음 알림 뱃지 표시 추가",
+            "iOS에서만 Apple 로그인 버튼 표시 (플랫폼별 최적화)",
+            "카드 드래그 제스처 반응성 개선"
+          ]
+        },
+        "버전_업데이트": {
+          "title": "버전 업데이트",
+          "items": [
+            "v1.9.78로 업데이트 (빌드 222)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.76",
       "project_type": "flutter",

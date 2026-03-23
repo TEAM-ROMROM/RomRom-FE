@@ -130,8 +130,8 @@ class UserInfo {
   }
 
   /// 기본 사용자 정보 저장 (소셜 로그인용)
-  Future<void> saveUserInfo(String? name, String? email, String? profileImageUrl) async {
-    await saveMemberInfo(nickname: name, email: email, profileUrl: profileImageUrl);
+  Future<void> saveUserInfo(String? name, String? email) async {
+    await saveMemberInfo(nickname: name, email: email);
   }
 
   /// 온보딩 및 약관 동의 상태 저장

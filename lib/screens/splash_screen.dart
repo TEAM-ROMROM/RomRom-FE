@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -168,7 +169,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 24.w),
                         child: AuthButtonGroup(
-                          buttons: LoginPlatforms.values.map((platform) => LoginButton(platform: platform)).toList(),
+                          buttons: [
+                            LoginPlatforms.kakao,
+                            if (Platform.isIOS) LoginPlatforms.apple,
+                            LoginPlatforms.google,
+                          ].map((platform) => LoginButton(platform: platform)).toList(),
                         ),
                       ),
                     ],
