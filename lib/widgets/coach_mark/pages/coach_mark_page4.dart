@@ -22,44 +22,44 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 6000))..repeat();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000))..repeat();
 
-    // 0~5%: fadein, 5~55%: 표시, 55~65%: fadeout
-    // 65~100%: 0.001 유지 (완전히 0으로 두면 ticker가 멈춰 재개 시 부자연스러움)
+    // 0~7%: fadein, 7~33%: 표시, 33~43%: fadeout
+    // 43~100%: 0.001 유지 (완전히 0으로 두면 ticker가 멈춰 재개 시 부자연스러움)
     _rippleOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 5),
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 7),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 26),
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 10),
-      TweenSequenceItem(tween: ConstantTween(0.001), weight: 35),
+      TweenSequenceItem(tween: ConstantTween(0.001), weight: 57),
     ]).animate(_controller);
 
-    // 0~5%: fadein, 5~55%: 표시, 55~65%: fadeout, 65~100%: invisible
+    // 0~7%: fadein, 7~33%: 표시, 33~43%: fadeout, 43~100%: invisible
     _barOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 5),
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 7),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 26),
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 10),
-      TweenSequenceItem(tween: ConstantTween(0.0), weight: 35),
+      TweenSequenceItem(tween: ConstantTween(0.0), weight: 57),
     ]).animate(_controller);
 
-    // 0~65%: 정지, 65~85%: 위로 슬라이드, 85~100%: 정지
+    // 0~33%: 정지, 33~82%: 위로 슬라이드, 82~100%: 정지
     _cardSlide = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(0.0), weight: 65),
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 20),
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 15),
+      TweenSequenceItem(tween: ConstantTween(0.0), weight: 33),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 49),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 18),
     ]).animate(_controller);
 
-    // 0~85%: 항상 표시 (ripple 중에도 카드 보임), 85~93%: 슬라이드 후 fadeout, 93~100%: invisible
+    // 0~82%: 항상 표시, 82~87%: 슬라이드 후 fadeout, 87~100%: invisible (13% 휴지)
     _cardOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 85),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 8),
-      TweenSequenceItem(tween: ConstantTween(0.0), weight: 7),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 82),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 5),
+      TweenSequenceItem(tween: ConstantTween(0.0), weight: 13),
     ]).animate(_controller);
 
-    // 0~65%: scale 1.0, 65~85%: 드래그하며 점점 커짐, 85~100%: 유지
+    // 0~33%: scale 1.0, 33~82%: 드래그하며 점점 커짐, 82~100%: 유지
     _pressAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 65),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3).chain(CurveTween(curve: Curves.easeInOut)), weight: 20),
-      TweenSequenceItem(tween: ConstantTween(1.3), weight: 15),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 33),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3).chain(CurveTween(curve: Curves.easeInOut)), weight: 49),
+      TweenSequenceItem(tween: ConstantTween(1.3), weight: 18),
     ]).animate(_controller);
   }
 

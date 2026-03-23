@@ -50,8 +50,8 @@ class _CoachMarkPage3State extends State<CoachMarkPage3> with SingleTickerProvid
           children: [
             Positioned(
               bottom: c.bottomRatio(0.31),
-              left: 24,
-              right: 24,
+              left: c.left(24),
+              right: c.right(24),
               child: FadeTransition(
                 opacity: _fadeAnims[0],
                 child: Text.rich(
@@ -83,8 +83,8 @@ class _CoachMarkPage3State extends State<CoachMarkPage3> with SingleTickerProvid
 
             Positioned(
               bottom: c.bottom(180),
-              left: 18,
-              right: 30,
+              left: c.left(18),
+              right: c.right(30),
               child: FadeTransition(
                 opacity: _fadeAnims[1],
                 child: SvgPicture.asset('assets/images/coachMark-scroll-arrow-horizontal.svg'),
@@ -92,8 +92,8 @@ class _CoachMarkPage3State extends State<CoachMarkPage3> with SingleTickerProvid
             ),
 
             Positioned(
-              bottom: c.bottom(144),
-              left: c.left(88),
+              bottom: c.bottom(164),
+              left: c.left(180),
               child: FadeTransition(
                 opacity: _fadeAnims[1],
                 child: const FingerWidget(direction: FingerDirection.arcLeftRightUp, size: 56, travelDistance: 100),

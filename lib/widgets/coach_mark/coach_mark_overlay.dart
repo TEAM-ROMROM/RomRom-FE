@@ -17,8 +17,10 @@ class CoachMarkOverlay extends StatefulWidget {
   State<CoachMarkOverlay> createState() => _CoachMarkOverlayState();
 }
 
-class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
+class _CoachMarkOverlayState extends State<CoachMarkOverlay> with SingleTickerProviderStateMixin {
   late final PageController _pageController;
+  late final AnimationController _fadeOutController;
+  late final Animation<double> _fadeOutAnim;
   final ValueNotifier<int> _pageNotifier = ValueNotifier(0);
   static const int _pageCount = 5;
   late final List<Widget> _pages;
@@ -27,6 +29,11 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    _fadeOutController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _fadeOutAnim = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _fadeOutController, curve: Curves.easeOut));
     _pages = [
       const CoachMarkPage1(),
       const CoachMarkPage2(),
@@ -39,8 +46,15 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
   @override
   void dispose() {
     _pageController.dispose();
+    _fadeOutController.dispose();
     _pageNotifier.dispose();
     super.dispose();
+  }
+
+  void _close() {
+    _fadeOutController.forward().then((_) {
+      if (mounted) widget.onClose();
+    });
   }
 
   void _nextOrClose(int currentIndex) {
@@ -51,140 +65,143 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
         curve: Curves.easeInOut,
       );
     } else {
-      widget.onClose();
+      _close();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.transparent,
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: AppColors.opacity70Black,
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: Stack(
-            children: [
-              // 코치마크 배경 화면 (페이지별 분리, fade 전환)
-              Positioned.fill(
-                child: ValueListenableBuilder<int>(
-                  valueListenable: _pageNotifier,
-                  builder: (context, page, child) {
-                    final bg = page <= 2
-                        ? 'assets/images/coach-background-screen-1.png'
-                        : page == 3
-                        ? 'assets/images/coach-background-screen-2.png'
-                        : 'assets/images/coach-background-screen-3.png';
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 500),
-                      child: Image.asset(
-                        bg,
-                        key: ValueKey(bg),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              Positioned.fill(child: Container(color: AppColors.opacity70Black)),
-
-              // 페이지 콘텐츠
-              Positioned.fill(
-                child: ValueListenableBuilder<int>(
-                  valueListenable: _pageNotifier,
-                  builder: (context, page, child) => PageView.builder(
-                    controller: _pageController,
-                    itemCount: _pageCount,
-                    physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
-                    onPageChanged: (p) => _pageNotifier.value = p,
-                    itemBuilder: (context, index) => GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTapUp: (details) {
-                        final screenWidth = MediaQuery.of(context).size.width;
-                        if (details.globalPosition.dx > screenWidth / 2) {
-                          _nextOrClose(index);
-                        } else if (index > 0) {
-                          _pageController.animateToPage(
-                            index - 1,
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeInOut,
-                          );
-                        }
-                      },
-                      child: _pages[index],
-                    ),
-                  ),
-                ),
-              ),
-
-              // 닫기 버튼 (PageView 위에 렌더링되어야 터치 가로채기 방지)
-              Positioned(
-                right: 24,
-                top: 8 + MediaQuery.of(context).padding.top,
-                child: SizedBox.square(
-                  dimension: 32,
-                  child: OverflowBox(
-                    maxWidth: 56,
-                    maxHeight: 56,
-                    child: Material(
-                      color: AppColors.transparent,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkResponse(
-                        onTap: widget.onClose,
-                        radius: 18,
-                        customBorder: const CircleBorder(),
-                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                        child: const SizedBox.square(
-                          dimension: 56,
-                          child: Icon(AppIcons.cancel, size: 30, color: AppColors.textColorWhite),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 페이지 인디케이터
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 45,
-                child: ValueListenableBuilder<int>(
-                  valueListenable: _pageNotifier,
-                  builder: (context, page, child) => Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_pageCount, (i) {
-                      final isActive = i == page;
-                      return GestureDetector(
-                        onTap: () => _pageController.animateToPage(
-                          i,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        ),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: isActive ? 20 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: isActive ? AppColors.primaryYellow : AppColors.opacity50White,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
+    return FadeTransition(
+      opacity: _fadeOutAnim,
+      child: Material(
+        color: AppColors.transparent,
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: AppColors.opacity70Black,
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: Stack(
+              children: [
+                // 코치마크 배경 화면 (페이지별 분리, fade 전환)
+                Positioned.fill(
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: _pageNotifier,
+                    builder: (context, page, child) {
+                      final bg = page <= 2
+                          ? 'assets/images/coach-background-screen-1.png'
+                          : page == 3
+                          ? 'assets/images/coach-background-screen-2.png'
+                          : 'assets/images/coach-background-screen-3.png';
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        child: Image.asset(
+                          bg,
+                          key: ValueKey(bg),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
                         ),
                       );
-                    }),
+                    },
                   ),
                 ),
-              ),
-            ],
+
+                Positioned.fill(child: Container(color: AppColors.opacity70Black)),
+
+                // 페이지 콘텐츠
+                Positioned.fill(
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: _pageNotifier,
+                    builder: (context, page, child) => PageView.builder(
+                      controller: _pageController,
+                      itemCount: _pageCount,
+                      physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+                      onPageChanged: (p) => _pageNotifier.value = p,
+                      itemBuilder: (context, index) => GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapUp: (details) {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          if (details.globalPosition.dx > screenWidth / 2) {
+                            _nextOrClose(index);
+                          } else if (index > 0) {
+                            _pageController.animateToPage(
+                              index - 1,
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                        child: _pages[index],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 닫기 버튼 (PageView 위에 렌더링되어야 터치 가로채기 방지)
+                Positioned(
+                  right: 24,
+                  top: 8 + MediaQuery.of(context).padding.top,
+                  child: SizedBox.square(
+                    dimension: 32,
+                    child: OverflowBox(
+                      maxWidth: 56,
+                      maxHeight: 56,
+                      child: Material(
+                        color: AppColors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkResponse(
+                          onTap: _close,
+                          radius: 18,
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: const SizedBox.square(
+                            dimension: 56,
+                            child: Icon(AppIcons.cancel, size: 30, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 페이지 인디케이터
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 45,
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: _pageNotifier,
+                    builder: (context, page, child) => Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(_pageCount, (i) {
+                        final isActive = i == page;
+                        return GestureDetector(
+                          onTap: () => _pageController.animateToPage(
+                            i,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          ),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isActive ? 20 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isActive ? AppColors.primaryYellow : AppColors.opacity50White,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
