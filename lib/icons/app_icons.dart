@@ -22,6 +22,7 @@ class AppIcons {
   static const IconData chat = IconData(0xe80d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData trash = IconData(0xe80e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData itmeRegisterImage = IconData(0xe80f, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData coachMarkFinger = IconData(0xe810, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrowUpward = IconData(0xe813, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData camera = IconData(0xe815, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData edit = IconData(0xe816, fontFamily: _kFontFam, fontPackage: _kFontPkg);

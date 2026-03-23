@@ -264,7 +264,17 @@ class UserInfo {
 
   // === 데이터 삭제 메서드 ===
 
-  /// 로그아웃 시 정보 삭제 (isCoachMarkShown 제외)
+  /// 회원탈퇴 시 호출: isCoachMarkShown 포함 모든 사용자 정보 삭제
+  /// 재가입 시 코치마크가 다시 표시되어야 하므로 전체 초기화
+  Future<void> clearAllUserInfo() async {
+    await clearUserInfoExceptIsCoachMarkShown();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('isCoachMarkShown');
+    await prefs.remove('isFirstMainScreen');
+    isCoachMarkShown = null;
+  }
+
+  /// 로그아웃 시 호출: isCoachMarkShown은 유지 (같은 사용자가 다시 로그인)
   Future<void> clearUserInfoExceptIsCoachMarkShown() async {
     final prefs = await SharedPreferences.getInstance();
 
