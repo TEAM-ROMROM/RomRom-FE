@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/widgets/coach_mark/animations/ripple_widget.dart';
 
 class CoachMarkPage5 extends StatefulWidget {
   const CoachMarkPage5({super.key});
@@ -10,26 +11,34 @@ class CoachMarkPage5 extends StatefulWidget {
   State<CoachMarkPage5> createState() => _CoachMarkPage5State();
 }
 
-class _CoachMarkPage5State extends State<CoachMarkPage5> with SingleTickerProviderStateMixin {
+class _CoachMarkPage5State extends State<CoachMarkPage5> with TickerProviderStateMixin {
+  late final AnimationController _pulseController;
   late final AnimationController _fadeController;
-  late final Animation<double> _fade1, _fade2;
+  late final List<Animation<double>> _fadeAnims;
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))..forward();
-    _fade1 = CurvedAnimation(
-      parent: _fadeController,
-      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-    );
-    _fade2 = CurvedAnimation(
-      parent: _fadeController,
-      curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
-    );
+    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
+      ..repeat(reverse: true);
+
+    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
+    _fadeAnims = List.generate(3, (i) {
+      final start = 0.3 + i * 0.25;
+      final end = (start + 0.35).clamp(0.0, 1.0);
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _fadeController,
+          curve: Interval(start, end, curve: Curves.easeOut),
+        ),
+      );
+    });
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
+    _pulseController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -39,33 +48,96 @@ class _CoachMarkPage5State extends State<CoachMarkPage5> with SingleTickerProvid
     return LayoutBuilder(
       builder: (context, constraints) {
         final h = constraints.maxHeight;
+        final w = constraints.maxWidth;
+
         return Stack(
           children: [
+            // 요청 옵션 텍스트 + 칩
             Positioned(
-              top: h * 0.58,
-              left: 24,
-              right: 24,
+              bottom: h * 193 / 852,
+              left: w * 86 / 393,
+              right: w * 142 / 393,
               child: FadeTransition(
-                opacity: _fade1,
+                opacity: _fadeAnims[0],
                 child: Column(
                   children: [
-                    const RippleWidget(size: 64, color: AppColors.primaryYellow),
-                    const SizedBox(height: 12),
-                    Text('요청 옵션을 선택하세요', style: CustomTextStyles.h3.copyWith(height: 1.6), textAlign: TextAlign.center),
+                    Text.rich(
+                      textAlign: TextAlign.center,
+                      TextSpan(
+                        style: CustomTextStyles.h3.copyWith(height: 1.3),
+                        children: [
+                          const TextSpan(
+                            text: '요청 옵션',
+                            style: TextStyle(color: AppColors.primaryYellow),
+                          ),
+                          const TextSpan(text: '을 선택하세요'),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Container(
+                      width: 80.w,
+                      height: 34.h,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 1.h),
+                          child: Text(
+                            ItemTradeOption.directTradeOnly.label,
+                            style: const TextStyle(color: AppColors.primaryBlack),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
+
+            // 요청하기 버튼
             Positioned(
-              bottom: 80,
-              left: 24,
-              right: 24,
+              bottom: h * 64 / 852,
+              right: w * 24 / 393,
               child: FadeTransition(
-                opacity: _fade2,
-                child: Text(
-                  '버튼을 눌러 교환을 요청하세요',
-                  style: CustomTextStyles.h3.copyWith(height: 1.6),
-                  textAlign: TextAlign.center,
+                opacity: _fadeAnims[1],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      height: 56,
+                      width: 169,
+                      child: Material(
+                        color: AppColors.primaryYellow,
+                        borderRadius: BorderRadius.circular(10.r),
+                        child: Center(
+                          child: Text('요청하기', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // 버튼 설명 텍스트
+                    Text.rich(
+                      textAlign: TextAlign.center,
+                      TextSpan(
+                        style: CustomTextStyles.h3.copyWith(height: 1.3),
+                        children: [
+                          const TextSpan(text: '버튼을 눌러 '),
+                          const TextSpan(
+                            text: '교환을 요청',
+                            style: TextStyle(color: AppColors.primaryYellow),
+                          ),
+                          const TextSpan(text: '하세요'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -5,15 +5,18 @@ import 'package:romrom_fe/models/app_colors.dart';
 class RippleWidget extends StatefulWidget {
   final double size;
   final Color color;
-  const RippleWidget({super.key, this.size = 60, this.color = AppColors.primaryYellow});
+
+  /// 외부에서 전체 투명도를 제어할 때 사용. 내부 opacity와 곱해짐.
+  final double opacity;
+
+  const RippleWidget({super.key, this.size = 70, this.color = AppColors.primaryYellow, this.opacity = 1.0});
 
   @override
   State<RippleWidget> createState() => _RippleWidgetState();
 }
 
 class _RippleWidgetState extends State<RippleWidget> with TickerProviderStateMixin {
-  static const int _animDurationMs = 1600;
-  static const int _staggerDelayMs = 400;
+  static const int _animDurationMs = 9000;
 
   late final List<AnimationController> _controllers;
   late final List<Animation<double>> _scaleAnims;
@@ -23,26 +26,27 @@ class _RippleWidgetState extends State<RippleWidget> with TickerProviderStateMix
   void initState() {
     super.initState();
     _controllers = List.generate(
-      3,
+      4,
       (i) => AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: _animDurationMs),
       ),
     );
     _scaleAnims = _controllers
-        .map((c) => Tween<double>(begin: 0.4, end: 1.0).animate(CurvedAnimation(parent: c, curve: Curves.easeOut)))
+        .map((c) => Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: c, curve: Curves.easeOut)))
         .toList();
-    _opacityAnims = _controllers
-        .map((c) => Tween<double>(begin: 0.8, end: 0.0).animate(CurvedAnimation(parent: c, curve: Curves.easeOut)))
-        .toList();
+    _opacityAnims = _controllers.map((c) {
+      return TweenSequence<double>([
+        TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.8), weight: 15),
+        TweenSequenceItem(tween: Tween(begin: 0.8, end: 0.0).chain(CurveTween(curve: Curves.ease)), weight: 85),
+      ]).animate(c);
+    }).toList();
 
-    _controllers[0].repeat();
-    Future.delayed(const Duration(milliseconds: _staggerDelayMs), () {
-      if (mounted) _controllers[1].repeat();
-    });
-    Future.delayed(const Duration(milliseconds: _staggerDelayMs * 2), () {
-      if (mounted) _controllers[2].repeat();
-    });
+    // 1/3씩 오프셋을 줘서 3개가 항상 동시에 보이도록
+    for (int i = 0; i < 4; i++) {
+      _controllers[i].value = i / 4;
+      _controllers[i].repeat();
+    }
   }
 
   @override
@@ -55,25 +59,26 @@ class _RippleWidgetState extends State<RippleWidget> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    double w = widget.size / 70;
     return SizedBox(
       width: widget.size,
       height: widget.size,
       child: Stack(
         alignment: Alignment.center,
         children: List.generate(
-          3,
+          4,
           (i) => AnimatedBuilder(
             animation: _controllers[i],
             builder: (context, child) => Transform.scale(
               scale: _scaleAnims[i].value,
               child: Opacity(
-                opacity: _opacityAnims[i].value,
+                opacity: (_opacityAnims[i].value * widget.opacity).clamp(0.0, 1.0),
                 child: Container(
                   width: widget.size,
                   height: widget.size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: widget.color, width: 1.5),
+                    border: Border.all(color: widget.color, width: w * 10),
                   ),
                 ),
               ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/coach_mark/pages/coach_mark_page1.dart';
 import 'package:romrom_fe/widgets/coach_mark/pages/coach_mark_page2.dart';
 import 'package:romrom_fe/widgets/coach_mark/pages/coach_mark_page3.dart';
@@ -21,19 +21,19 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
   late final PageController _pageController;
   final ValueNotifier<int> _pageNotifier = ValueNotifier(0);
   static const int _pageCount = 5;
-
-  final List<Widget> _pages = [
-    const CoachMarkPage1(),
-    const CoachMarkPage2(),
-    const CoachMarkPage3(),
-    const CoachMarkPage4(),
-    const CoachMarkPage5(),
-  ];
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _pages = [
+      const CoachMarkPage1(),
+      const CoachMarkPage2(),
+      const CoachMarkPage3(),
+      const CoachMarkPage4(),
+      const CoachMarkPage5(),
+    ];
   }
 
   @override
@@ -64,46 +64,102 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
         height: double.infinity,
         color: AppColors.opacity70Black,
         child: SafeArea(
-          child: Column(
+          top: false,
+          bottom: false,
+          child: Stack(
             children: [
-              // 닫기 버튼
-              Padding(
-                padding: const EdgeInsets.only(top: 8, right: 8),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Material(
-                    color: AppColors.transparent,
-                    child: InkWell(
-                      onTap: widget.onClose,
-                      customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                      splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Text('닫기', style: CustomTextStyles.p2),
+              // 코치마크 배경 화면 (페이지별 분리, fade 전환)
+              Positioned.fill(
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _pageNotifier,
+                  builder: (context, page, child) {
+                    final bg = page <= 2
+                        ? 'assets/images/coach-background-screen-1.png'
+                        : page == 3
+                        ? 'assets/images/coach-background-screen-2.png'
+                        : 'assets/images/coach-background-screen-3.png';
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      child: Image.asset(
+                        bg,
+                        key: ValueKey(bg),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
+
+              Positioned.fill(child: Container(color: AppColors.opacity70Black)),
+
               // 페이지 콘텐츠
-              Expanded(
+              Positioned.fill(
                 child: ValueListenableBuilder<int>(
                   valueListenable: _pageNotifier,
                   builder: (context, page, child) => PageView.builder(
                     controller: _pageController,
                     itemCount: _pageCount,
+                    physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
                     onPageChanged: (p) => _pageNotifier.value = p,
-                    itemBuilder: (context, index) =>
-                        GestureDetector(onTap: () => _nextOrClose(index), child: _pages[index]),
+                    itemBuilder: (context, index) => GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapUp: (details) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        if (details.globalPosition.dx > screenWidth / 2) {
+                          _nextOrClose(index);
+                        } else if (index > 0) {
+                          _pageController.animateToPage(
+                            index - 1,
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
+                      child: _pages[index],
+                    ),
                   ),
                 ),
               ),
+
+              // 닫기 버튼 (PageView 위에 렌더링되어야 터치 가로채기 방지)
+              Positioned(
+                right: 24,
+                top: 8 + MediaQuery.of(context).padding.top,
+                child: SizedBox.square(
+                  dimension: 32,
+                  child: OverflowBox(
+                    maxWidth: 56,
+                    maxHeight: 56,
+                    child: Material(
+                      color: AppColors.transparent,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkResponse(
+                        onTap: widget.onClose,
+                        radius: 18,
+                        customBorder: const CircleBorder(),
+                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                        child: const SizedBox.square(
+                          dimension: 56,
+                          child: Icon(AppIcons.cancel, size: 30, color: AppColors.textColorWhite),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
               // 페이지 인디케이터
-              ValueListenableBuilder<int>(
-                valueListenable: _pageNotifier,
-                builder: (context, page, child) => Padding(
-                  padding: const EdgeInsets.only(bottom: 32),
-                  child: Row(
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 45,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _pageNotifier,
+                  builder: (context, page, child) => Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(_pageCount, (i) {
                       final isActive = i == page;

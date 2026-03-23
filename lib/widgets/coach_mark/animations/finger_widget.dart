@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/enums/finger_direction.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 
 /// 손가락 아이콘이 지정 방향으로 반복 이동하는 위젯
@@ -21,7 +24,7 @@ class _FingerWidgetState extends State<FingerWidget> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat(reverse: true);
     _anim = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
   }
 
@@ -51,14 +54,29 @@ class _FingerWidgetState extends State<FingerWidget> with SingleTickerProviderSt
           case FingerDirection.leftRight:
             dx = t;
             break;
+          case FingerDirection.arcLeftRightUp:
+            const r = 325.32;
+            dx = t;
+            dy = r - math.sqrt(r * r - t * t);
+            break;
+          case FingerDirection.arcLeftRightDown:
+            const rUp = 325.32;
+            dx = t;
+            dy = -(rUp - math.sqrt(rUp * rUp - t * t));
+            break;
+          case FingerDirection.none:
+            break;
         }
         return Transform.translate(offset: Offset(dx, dy), child: child);
       },
-      child: Icon(
-        Icons.touch_app_rounded,
-        size: widget.size,
-        color: AppColors.textColorWhite,
-        shadows: const [Shadow(color: AppColors.opacity20Black, blurRadius: 8)],
+      child: Transform.rotate(
+        angle: -30 * math.pi / 180,
+        child: Icon(
+          AppIcons.coachMarkFinger,
+          size: widget.size,
+          color: AppColors.textColorWhite,
+          shadows: const [Shadow(color: AppColors.opacity20Black, blurRadius: 8)],
+        ),
       ),
     );
   }
