@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/coach_mark/coach_mark_coords.dart';
 
 class CoachMarkPage5 extends StatefulWidget {
   const CoachMarkPage5({super.key});
@@ -47,16 +47,15 @@ class _CoachMarkPage5State extends State<CoachMarkPage5> with TickerProviderStat
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final h = constraints.maxHeight;
-        final w = constraints.maxWidth;
+        final c = CoachMarkCoords(constraints.maxWidth, constraints.maxHeight);
 
         return Stack(
           children: [
             // 요청 옵션 텍스트 + 칩
             Positioned(
-              bottom: h * 193 / 852,
-              left: w * 86 / 393,
-              right: w * 142 / 393,
+              bottom: c.bottom(193),
+              left: c.left(86),
+              right: c.right(142),
               child: FadeTransition(
                 opacity: _fadeAnims[0],
                 child: Column(
@@ -78,15 +77,15 @@ class _CoachMarkPage5State extends State<CoachMarkPage5> with TickerProviderStat
                     const SizedBox(height: 10),
 
                     Container(
-                      width: 80.w,
-                      height: 34.h,
+                      width: c.px(80),
+                      height: c.px(34),
                       decoration: BoxDecoration(
                         color: AppColors.primaryYellow,
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Center(
                         child: Padding(
-                          padding: EdgeInsets.only(top: 1.h),
+                          padding: const EdgeInsets.only(top: 1),
                           child: Text(
                             ItemTradeOption.directTradeOnly.label,
                             style: const TextStyle(color: AppColors.primaryBlack),
@@ -101,8 +100,8 @@ class _CoachMarkPage5State extends State<CoachMarkPage5> with TickerProviderStat
 
             // 요청하기 버튼
             Positioned(
-              bottom: h * 64 / 852,
-              right: w * 24 / 393,
+              bottom: c.bottom(64),
+              right: c.right(24),
               child: FadeTransition(
                 opacity: _fadeAnims[1],
                 child: Column(
@@ -113,7 +112,7 @@ class _CoachMarkPage5State extends State<CoachMarkPage5> with TickerProviderStat
                       width: 169,
                       child: Material(
                         color: AppColors.primaryYellow,
-                        borderRadius: BorderRadius.circular(10.r),
+                        borderRadius: BorderRadius.circular(10),
                         child: Center(
                           child: Text('요청하기', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
                         ),

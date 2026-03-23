@@ -5,6 +5,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/coach_mark/animations/finger_widget.dart';
 import 'package:romrom_fe/widgets/coach_mark/animations/ripple_widget.dart';
+import 'package:romrom_fe/widgets/coach_mark/coach_mark_coords.dart';
 import 'package:romrom_fe/widgets/home_feed_ai_sort_button.dart';
 
 class CoachMarkPage2 extends StatefulWidget {
@@ -45,12 +46,12 @@ class _CoachMarkPage2State extends State<CoachMarkPage2> with SingleTickerProvid
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final h = constraints.maxHeight;
+        final c = CoachMarkCoords(constraints.maxWidth, constraints.maxHeight);
         return Stack(
           children: [
             // 상단: 이미지 탭 설명
             Positioned(
-              bottom: h * 432 / 852,
+              bottom: c.bottom(432),
               left: 40,
               right: 40,
               child: FadeTransition(
@@ -94,8 +95,8 @@ class _CoachMarkPage2State extends State<CoachMarkPage2> with SingleTickerProvid
 
             // 중단: 좋아요 설명
             Positioned(
-              bottom: h * 318 / 853,
-              right: 33,
+              bottom: c.bottom(318),
+              right: c.right(33),
               child: FadeTransition(
                 opacity: _fadeAnims[1],
                 child: Row(
@@ -130,8 +131,8 @@ class _CoachMarkPage2State extends State<CoachMarkPage2> with SingleTickerProvid
 
             // 하단: AI 분석 설명
             Positioned(
-              bottom: h * 151 / 852,
-              right: 24,
+              bottom: c.bottom(151),
+              right: c.right(24),
               child: FadeTransition(
                 opacity: _fadeAnims[2],
                 child: Column(

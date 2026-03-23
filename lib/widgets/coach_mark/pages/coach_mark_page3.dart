@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/finger_direction.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/coach_mark/animations/finger_widget.dart';
+import 'package:romrom_fe/widgets/coach_mark/coach_mark_coords.dart';
 
 class CoachMarkPage3 extends StatefulWidget {
   const CoachMarkPage3({super.key});
@@ -43,13 +44,12 @@ class _CoachMarkPage3State extends State<CoachMarkPage3> with SingleTickerProvid
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final h = constraints.maxHeight;
-        final w = constraints.maxHeight;
+        final c = CoachMarkCoords(constraints.maxWidth, constraints.maxHeight);
 
         return Stack(
           children: [
             Positioned(
-              bottom: h * 0.31,
+              bottom: c.bottomRatio(0.31),
               left: 24,
               right: 24,
               child: FadeTransition(
@@ -74,12 +74,15 @@ class _CoachMarkPage3State extends State<CoachMarkPage3> with SingleTickerProvid
             Positioned(
               left: 0,
               right: 0,
-              bottom: h * 86 / 852,
-              child: FadeTransition(opacity: _fadeAnims[1], child: Image.asset('assets/images/coach-clip-cards.png')),
+              bottom: c.bottom(86),
+              child: FadeTransition(
+                opacity: _fadeAnims[1],
+                child: Image.asset('assets/images/coach-clip-cards.png', width: c.px(393)),
+              ),
             ),
 
             Positioned(
-              bottom: h * 180 / 852,
+              bottom: c.bottom(180),
               left: 18,
               right: 30,
               child: FadeTransition(
@@ -89,8 +92,8 @@ class _CoachMarkPage3State extends State<CoachMarkPage3> with SingleTickerProvid
             ),
 
             Positioned(
-              bottom: h * 144 / 852,
-              left: w * 88 / 393,
+              bottom: c.bottom(144),
+              left: c.left(88),
               child: FadeTransition(
                 opacity: _fadeAnims[1],
                 child: const FingerWidget(direction: FingerDirection.arcLeftRightUp, size: 56, travelDistance: 100),

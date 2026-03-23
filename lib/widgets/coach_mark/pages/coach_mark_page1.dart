@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/finger_direction.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/coach_mark/animations/finger_widget.dart';
+import 'package:romrom_fe/widgets/coach_mark/coach_mark_coords.dart';
 
 class CoachMarkPage1 extends StatefulWidget {
   const CoachMarkPage1({super.key});
@@ -48,14 +49,14 @@ class _CoachMarkPage1State extends State<CoachMarkPage1> with TickerProviderStat
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final h = constraints.maxHeight;
+        final c = CoachMarkCoords(constraints.maxWidth, constraints.maxHeight);
         return Stack(
           children: [
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              bottom: h * 0.30,
+              bottom: c.bottomRatio(0.30),
               child: FadeTransition(
                 opacity: _fadeAnims[0],
                 child: Center(
@@ -75,7 +76,7 @@ class _CoachMarkPage1State extends State<CoachMarkPage1> with TickerProviderStat
             ),
 
             Positioned(
-              bottom: h * 334 / 852,
+              bottom: c.bottom(334),
               left: 24,
               right: 24,
               child: FadeTransition(

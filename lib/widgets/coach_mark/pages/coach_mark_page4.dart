@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/coach_mark/animations/ripple_widget.dart';
+import 'package:romrom_fe/widgets/coach_mark/coach_mark_coords.dart';
 
 class CoachMarkPage4 extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -75,28 +75,26 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final h = constraints.maxHeight;
-        final w = constraints.maxWidth;
-        const startRatio = 176 / 852;
-        const endRatio = 485 / 852;
-        final travelPx = (startRatio - endRatio) * h;
-        final cardW = 92.0.w;
-        final cardH = 137.0.h;
+        final c = CoachMarkCoords(constraints.maxWidth, constraints.maxHeight);
+        final startBottom = c.bottom(176);
+        final endBottom = c.bottom(485);
+        final cardW = c.px(92);
+        final cardH = c.px(137);
 
         return Stack(
           children: [
             // 목표 슬롯 컨테이너 (항상 표시)
             Positioned(
-              top: h * 211 / 852,
+              top: c.top(211),
               left: 0,
               right: 0,
               child: Center(
                 child: Container(
-                  width: 121,
-                  height: 175,
+                  width: c.px(121),
+                  height: c.px(175),
                   decoration: BoxDecoration(
                     color: AppColors.cardDragContainer,
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.textColorWhite, width: 2),
                     boxShadow: const [
                       BoxShadow(color: AppColors.textColorWhite, offset: Offset(0, 0), blurRadius: 30, spreadRadius: 4),
@@ -110,7 +108,7 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
             AnimatedBuilder(
               animation: _controller,
               builder: (context, child) => Positioned(
-                bottom: startRatio * h - _cardSlide.value * travelPx,
+                bottom: startBottom + _cardSlide.value * (endBottom - startBottom),
                 left: 0,
                 right: 0,
                 child: Opacity(
@@ -129,7 +127,7 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
             AnimatedBuilder(
               animation: _controller,
               builder: (context, child) => Positioned(
-                bottom: h * 265 / 852,
+                bottom: c.bottom(265),
                 left: 0,
                 right: 0,
                 child: Center(
@@ -148,9 +146,9 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
             AnimatedBuilder(
               animation: _controller,
               builder: (context, child) => Positioned(
-                bottom: h * 302 / 852,
-                left: w / 2 - 1,
-                right: w / 2 - 1,
+                bottom: c.bottom(302),
+                left: constraints.maxWidth / 2 - 1,
+                right: constraints.maxWidth / 2 - 1,
                 child: Opacity(
                   opacity: _barOpacity.value,
                   child: Container(height: 176, width: 2, color: AppColors.textColorWhite),
@@ -160,7 +158,7 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
 
             // 설명 텍스트
             Positioned(
-              bottom: h * 110 / 852,
+              bottom: c.bottom(110),
               left: 24,
               right: 24,
               child: Text.rich(
