@@ -29,6 +29,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
   bool _hasImageBeenTouched = false;
   bool _showProfileSaveButton = false;
   bool _isProfileEdited = false;
+  bool _isEditingNickname = false;
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
@@ -81,14 +82,9 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
     }
   }
 
-  // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원)
+  // 갤러리에서 프로필 사진 단일 선택
   Future<void> onPickImage() async {
     try {
-      setState(() {
-        _hasImageBeenTouched = true;
-        _showProfileSaveButton = true;
-      });
-
       final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
 
       // 사용자가 취소했거나 선택 없음
@@ -98,7 +94,8 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       }
 
       setState(() {
-        // 선택한 사진으로 사진 변경
+        _hasImageBeenTouched = true;
+        _showProfileSaveButton = true;
         imageFile = picked;
       });
 
@@ -309,7 +306,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
           height: 48.h,
           child: Align(
             alignment: const Alignment(0, -1.0),
-            child: nicknameFocusNode.hasFocus || _nickname.isEmpty
+            child: _isEditingNickname || nicknameFocusNode.hasFocus || _nickname.isEmpty
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -357,7 +354,10 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                             ),
                           ),
                           onTap: () => setState(() => _showProfileSaveButton = true),
-                          onTapOutside: (_) => setState(() => nicknameFocusNode.unfocus()),
+                          onTapOutside: (_) => setState(() {
+                            nicknameFocusNode.unfocus();
+                            _isEditingNickname = false;
+                          }),
                           onChanged: (_) => setState(() {
                             _nickname = nicknameController.text;
                             _isProfileEdited = true;
@@ -373,7 +373,10 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                   )
                 : GestureDetector(
                     onTap: () {
-                      FocusScope.of(context).requestFocus(nicknameFocusNode);
+                      setState(() => _isEditingNickname = true);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) FocusScope.of(context).requestFocus(nicknameFocusNode);
+                      });
                     },
                     child: Text(
                       viewText,
@@ -393,7 +396,13 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
             offset: Offset(iconOffsetX, -14.0),
             child: GestureDetector(
               onTap: () {
-                FocusScope.of(context).requestFocus(nicknameFocusNode);
+                setState(() {
+                  _showProfileSaveButton = true;
+                  _isEditingNickname = true;
+                });
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) FocusScope.of(context).requestFocus(nicknameFocusNode);
+                });
               },
               child: Container(
                 width: 24.w,
