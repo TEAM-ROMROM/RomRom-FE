@@ -46,9 +46,7 @@ class _LoginButtonState extends State<LoginButton> {
       barrierColor: Colors.black54,
       builder: (_) => const PopScope(
         canPop: false,
-        child: Center(
-          child: CircularProgressIndicator(color: AppColors.primaryYellow),
-        ),
+        child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
       ),
     );
 
@@ -89,9 +87,7 @@ class _LoginButtonState extends State<LoginButton> {
 
         Widget nextScreen;
         if (userInfo.needsOnboarding) {
-          nextScreen = OnboardingFlowScreen(
-            initialStep: userInfo.nextOnboardingStep,
-          );
+          nextScreen = OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
         } else {
           await RomAuthApi().fetchAndSaveMemberInfo();
           // 기존 회원 로그인: FCM 토큰 저장
@@ -100,10 +96,7 @@ class _LoginButtonState extends State<LoginButton> {
         }
 
         if (context.mounted) {
-          context.navigateTo(
-            screen: nextScreen,
-            type: NavigationTypes.pushReplacement,
-          );
+          context.navigateTo(screen: nextScreen, type: NavigationTypes.pushReplacement);
         }
       }
     } on AccountSuspendedException catch (e) {
@@ -111,10 +104,7 @@ class _LoginButtonState extends State<LoginButton> {
       if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
       if (context.mounted) {
         context.navigateTo(
-          screen: AccountSuspendedScreen(
-            suspendReason: e.suspendReason,
-            suspendedUntil: e.suspendedUntil,
-          ),
+          screen: AccountSuspendedScreen(suspendReason: e.suspendReason, suspendedUntil: e.suspendedUntil),
           type: NavigationTypes.pushReplacement,
         );
       }
@@ -137,13 +127,9 @@ class _LoginButtonState extends State<LoginButton> {
             : () async {
                 await handleLogin(context);
               },
-        customBorder: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.r),
-        ),
+        customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
         highlightColor: darkenBlend(widget.platform.backgroundColor),
-        splashColor: darkenBlend(
-          widget.platform.backgroundColor,
-        ).withValues(alpha: 0.3),
+        splashColor: darkenBlend(widget.platform.backgroundColor).withValues(alpha: 0.3),
         child: SizedBox(
           width: double.infinity,
           height: 56.h,
@@ -156,17 +142,13 @@ class _LoginButtonState extends State<LoginButton> {
                   widget.platform.iconPath,
                   width: 22.h,
                   height: 22.h,
-                  placeholderBuilder: (context) =>
-                      Icon(Icons.error, size: 24.sp, color: Colors.red),
+                  placeholderBuilder: (context) => Icon(Icons.error, size: 24.sp, color: Colors.red),
                 ),
               ),
               Center(
                 child: Text(
                   widget.platform.displayText,
-                  style: CustomTextStyles.p2.copyWith(
-                    color: widget.platform.textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: CustomTextStyles.p2.copyWith(color: widget.platform.textColor, fontWeight: FontWeight.w700),
                 ),
               ),
             ],

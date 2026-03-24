@@ -32,10 +32,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   await initialize(); // 초기화 실행
 
   // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
@@ -59,10 +56,7 @@ void main() async {
 
   // 시스템 오버레이 색상 설정
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      systemNavigationBarColor: AppColors.primaryBlack,
-      statusBarColor: Colors.transparent,
-    ),
+    const SystemUiOverlayStyle(systemNavigationBarColor: AppColors.primaryBlack, statusBarColor: Colors.transparent),
   );
 
   // 안드로이드에서 제스처 모드인지 확인
@@ -134,18 +128,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final UpdateType updateType = await AppVersionApi().checkUpdateType();
 
       // 체크 시간 갱신
-      await prefs.setInt(
-        _lastVersionCheckKey,
-        DateTime.now().millisecondsSinceEpoch,
-      );
+      await prefs.setInt(_lastVersionCheckKey, DateTime.now().millisecondsSinceEpoch);
 
       if (updateType == UpdateType.force) {
         final context = navigatorKey.currentContext;
         if (context == null || !context.mounted) return;
-        context.navigateTo(
-          screen: const AppUpdateScreen(),
-          type: NavigationTypes.fadeTransition,
-        );
+        context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
       }
     } catch (e) {
       debugPrint('[MyApp] 포그라운드 복귀 버전 체크 실패: $e');
@@ -165,9 +153,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             top: false,
             bottom: Platform.isAndroid,
             child: MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: const TextScaler.linear(1.0)),
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
               child: MaterialApp(
                 title: 'RomRom',
                 theme: AppTheme.defaultTheme,

@@ -3,12 +3,8 @@ class AccountSuspendedException implements Exception {
   final String suspendReason;
   final String suspendedUntil;
 
-  AccountSuspendedException({
-    required this.suspendReason,
-    required this.suspendedUntil,
-  });
+  AccountSuspendedException({required this.suspendReason, required this.suspendedUntil});
 
   @override
-  String toString() =>
-      'AccountSuspendedException: reason=$suspendReason, until=$suspendedUntil';
+  String toString() => 'AccountSuspendedException: reason=$suspendReason, until=$suspendedUntil';
 }

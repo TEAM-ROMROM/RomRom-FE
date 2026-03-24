@@ -47,21 +47,13 @@ class RomAuthApi {
       }
     } catch (_) {}
 
-    return {
-      'platform': platform,
-      'appVersion': appVersion,
-      'deviceModel': deviceModel,
-      'locale': locale,
-    };
+    return {'platform': platform, 'appVersion': appVersion, 'deviceModel': deviceModel, 'locale': locale};
   }
 
   /// POST : `/api/auth/login` 소셜 로그인
   /// 정지 계정인 경우 AccountSuspendedException throw
   /// 정상 계정인 경우 토큰 저장 후 정상 반환
-  Future<void> signInWithSocial({
-    required String firebaseIdToken,
-    required String providerId,
-  }) async {
+  Future<void> signInWithSocial({required String firebaseIdToken, required String providerId}) async {
     const String url = '${AppUrls.baseUrl}/api/auth/login';
 
     try {
@@ -78,10 +70,8 @@ class RomAuthApi {
         'providerId': providerId,
         'profile': {
           if (userInfo.email?.isNotEmpty == true) 'email': userInfo.email,
-          if (userInfo.nickname?.isNotEmpty == true)
-            'displayName': userInfo.nickname,
-          if (userInfo.profileUrl?.isNotEmpty == true)
-            'photoUrl': userInfo.profileUrl,
+          if (userInfo.nickname?.isNotEmpty == true) 'displayName': userInfo.nickname,
+          if (userInfo.profileUrl?.isNotEmpty == true) 'photoUrl': userInfo.profileUrl,
         },
         'client': clientInfo,
       };
@@ -101,8 +91,7 @@ class RomAuthApi {
         final authResponse = AuthResponse.fromJson(responseData);
 
         // 정지 계정인 경우: 토큰 저장하지 않고 예외 throw
-        if (authResponse.accountStatus ==
-            AccountStatus.suspendedAccount.serverName) {
+        if (authResponse.accountStatus == AccountStatus.suspendedAccount.serverName) {
           debugPrint('정지된 계정입니다. 제재 사유: ${authResponse.suspendReason}');
           throw AccountSuspendedException(
             suspendReason: authResponse.suspendReason ?? '',

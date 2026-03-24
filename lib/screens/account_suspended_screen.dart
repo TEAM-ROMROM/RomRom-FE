@@ -14,11 +14,7 @@ class AccountSuspendedScreen extends StatefulWidget {
   final String suspendReason;
   final String suspendedUntil;
 
-  const AccountSuspendedScreen({
-    super.key,
-    required this.suspendReason,
-    required this.suspendedUntil,
-  });
+  const AccountSuspendedScreen({super.key, required this.suspendReason, required this.suspendedUntil});
 
   @override
   State<AccountSuspendedScreen> createState() => _AccountSuspendedScreenState();
@@ -106,11 +102,7 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
                   width: 44.w,
                   height: 44.h,
                   child: Center(
-                    child: Icon(
-                      AppIcons.cancel,
-                      size: 24.sp,
-                      color: AppColors.textColorWhite,
-                    ),
+                    child: Icon(AppIcons.cancel, size: 24.sp, color: AppColors.textColorWhite),
                   ),
                 ),
               ),
@@ -128,10 +120,7 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
                     const TextSpan(text: '서비스 이용이\n'),
                     TextSpan(
                       text: isPermanent ? '영구적으로 제한' : '일시적으로 제한',
-                      style: CustomTextStyles.h1.copyWith(
-                        height: 1.2,
-                        color: AppColors.warningRed,
-                      ),
+                      style: CustomTextStyles.h1.copyWith(height: 1.2, color: AppColors.warningRed),
                     ),
                     const TextSpan(text: '되었습니다'),
                   ],
@@ -165,10 +154,7 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
               child: Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(24.w),
-                decoration: BoxDecoration(
-                  color: AppColors.secondaryBlack1,
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
+                decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -176,18 +162,13 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
                     _buildInfoRow('제재 사유', widget.suspendReason),
 
                     // 제재 기간 (일시 정지만)
-                    if (!isPermanent) ...[
-                      SizedBox(height: 8.h),
-                      _buildInfoRow('제재 기간', _formattedSuspendedUntil),
-                    ],
+                    if (!isPermanent) ...[SizedBox(height: 8.h), _buildInfoRow('제재 기간', _formattedSuspendedUntil)],
 
                     SizedBox(height: 16.h),
 
                     // 하단 안내 문구
                     Text(
-                      isPermanent
-                          ? '* 영구 제재 시 동일한 계정 및 기기로는 재가입이 불가능합니다.'
-                          : '* 해당 기간이 지나면 자동으로 제한이 해제됩니다.',
+                      isPermanent ? '* 영구 제재 시 동일한 계정 및 기기로는 재가입이 불가능합니다.' : '* 해당 기간이 지나면 자동으로 제한이 해제됩니다.',
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 12.sp,
@@ -246,22 +227,14 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
           child: Container(
             width: 4.w,
             height: 4.w,
-            decoration: const BoxDecoration(
-              color: AppColors.textColorWhite,
-              shape: BoxShape.circle,
-            ),
+            decoration: const BoxDecoration(color: AppColors.textColorWhite, shape: BoxShape.circle),
           ),
         ),
         SizedBox(width: 8.w),
         // 라벨
         Text(
           '$label : ',
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 16.sp,
-            height: 1.2,
-            color: AppColors.textColorWhite,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16.sp, height: 1.2, color: AppColors.textColorWhite),
         ),
         // 값
         Expanded(

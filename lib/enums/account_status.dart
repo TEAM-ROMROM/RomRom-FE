@@ -29,9 +29,6 @@ extension AccountStatusExtension on AccountStatus {
   }
 
   static AccountStatus fromServerName(String name) {
-    return AccountStatus.values.firstWhere(
-      (e) => e.serverName == name,
-      orElse: () => AccountStatus.activeAccount,
-    );
+    return AccountStatus.values.firstWhere((e) => e.serverName == name, orElse: () => AccountStatus.activeAccount);
   }
 }
