@@ -4,9 +4,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
@@ -44,7 +46,9 @@ class _LoginButtonState extends State<LoginButton> {
       barrierColor: Colors.black54,
       builder: (_) => const PopScope(
         canPop: false,
-        child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primaryYellow),
+        ),
       ),
     );
 
@@ -85,7 +89,9 @@ class _LoginButtonState extends State<LoginButton> {
 
         Widget nextScreen;
         if (userInfo.needsOnboarding) {
-          nextScreen = OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
+          nextScreen = OnboardingFlowScreen(
+            initialStep: userInfo.nextOnboardingStep,
+          );
         } else {
           await RomAuthApi().fetchAndSaveMemberInfo();
           // 기존 회원 로그인: FCM 토큰 저장
@@ -94,8 +100,23 @@ class _LoginButtonState extends State<LoginButton> {
         }
 
         if (context.mounted) {
-          context.navigateTo(screen: nextScreen, type: NavigationTypes.pushReplacement);
+          context.navigateTo(
+            screen: nextScreen,
+            type: NavigationTypes.pushReplacement,
+          );
         }
+      }
+    } on AccountSuspendedException catch (e) {
+      // 정지된 계정: 로딩 닫고 제재 안내 화면으로 이동
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (context.mounted) {
+        context.navigateTo(
+          screen: AccountSuspendedScreen(
+            suspendReason: e.suspendReason,
+            suspendedUntil: e.suspendedUntil,
+          ),
+          type: NavigationTypes.pushReplacement,
+        );
       }
     } catch (e) {
       debugPrint("로그인 처리 중 오류: $e");
@@ -116,9 +137,13 @@ class _LoginButtonState extends State<LoginButton> {
             : () async {
                 await handleLogin(context);
               },
-        customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.r),
+        ),
         highlightColor: darkenBlend(widget.platform.backgroundColor),
-        splashColor: darkenBlend(widget.platform.backgroundColor).withValues(alpha: 0.3),
+        splashColor: darkenBlend(
+          widget.platform.backgroundColor,
+        ).withValues(alpha: 0.3),
         child: SizedBox(
           width: double.infinity,
           height: 56.h,
@@ -131,13 +156,17 @@ class _LoginButtonState extends State<LoginButton> {
                   widget.platform.iconPath,
                   width: 22.h,
                   height: 22.h,
-                  placeholderBuilder: (context) => Icon(Icons.error, size: 24.sp, color: Colors.red),
+                  placeholderBuilder: (context) =>
+                      Icon(Icons.error, size: 24.sp, color: Colors.red),
                 ),
               ),
               Center(
                 child: Text(
                   widget.platform.displayText,
-                  style: CustomTextStyles.p2.copyWith(color: widget.platform.textColor, fontWeight: FontWeight.w700),
+                  style: CustomTextStyles.p2.copyWith(
+                    color: widget.platform.textColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],

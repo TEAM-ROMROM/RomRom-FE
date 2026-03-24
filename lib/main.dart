@@ -32,7 +32,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   await initialize(); // 초기화 실행
 
   // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
@@ -56,7 +59,10 @@ void main() async {
 
   // 시스템 오버레이 색상 설정
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(systemNavigationBarColor: AppColors.primaryBlack, statusBarColor: Colors.transparent),
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: AppColors.primaryBlack,
+      statusBarColor: Colors.transparent,
+    ),
   );
 
   // 안드로이드에서 제스처 모드인지 확인
@@ -80,6 +86,9 @@ void _setupFcmTokenRefreshListener() {
   firebaseService.setupTokenRefreshListener(notificationApi);
 }
 
+/// 앱 전역 navigatorKey (ApiClient 등에서 글로벌 네비게이션에 사용)
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 /// 앱의 루트 위젯
 class MyApp extends StatefulWidget {
   final bool isGestureMode;
@@ -93,8 +102,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   static const String _lastVersionCheckKey = 'last_version_check_timestamp';
   static const Duration _checkInterval = Duration(hours: 24);
-
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -127,12 +134,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final UpdateType updateType = await AppVersionApi().checkUpdateType();
 
       // 체크 시간 갱신
-      await prefs.setInt(_lastVersionCheckKey, DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(
+        _lastVersionCheckKey,
+        DateTime.now().millisecondsSinceEpoch,
+      );
 
       if (updateType == UpdateType.force) {
-        final context = _navigatorKey.currentContext;
+        final context = navigatorKey.currentContext;
         if (context == null || !context.mounted) return;
-        context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+        context.navigateTo(
+          screen: const AppUpdateScreen(),
+          type: NavigationTypes.fadeTransition,
+        );
       }
     } catch (e) {
       debugPrint('[MyApp] 포그라운드 복귀 버전 체크 실패: $e');
@@ -152,11 +165,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             top: false,
             bottom: Platform.isAndroid,
             child: MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.0)),
               child: MaterialApp(
                 title: 'RomRom',
                 theme: AppTheme.defaultTheme,
-                navigatorKey: _navigatorKey,
+                navigatorKey: navigatorKey,
                 home: const SplashScreen(),
               ),
             ),

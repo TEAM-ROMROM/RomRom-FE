@@ -4,8 +4,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/main.dart' show navigatorKey;
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
 import 'package:romrom_fe/utils/log_utils.dart';
 
@@ -13,6 +17,46 @@ import 'package:romrom_fe/utils/log_utils.dart';
 class ApiClient {
   static final TokenManager _tokenManager = TokenManager();
   static final LoggingHttpClient _client = LoggingHttpClient(http.Client());
+
+  /// 동시 다발적 403 응답 시 중복 네비게이션 방지 플래그
+  static bool _isSuspendedHandling = false;
+
+  /// 제재 처리 플래그 리셋 (로그아웃/재로그인 시 호출)
+  static void resetSuspendedFlag() {
+    _isSuspendedHandling = false;
+  }
+
+  /// 403 SUSPENDED_MEMBER 응답 글로벌 처리
+  /// 제재된 회원이 API 호출 시 서버에서 403 + SUSPENDED_MEMBER를 반환하면
+  /// 토큰 삭제 후 제재 안내 화면으로 이동
+  static bool _handleSuspendedResponse(http.Response response) {
+    if (_isSuspendedHandling) return true; // 이미 제재 처리 진행 중
+    if (response.statusCode == 403 && response.body.isNotEmpty) {
+      try {
+        final data = jsonDecode(response.body);
+        if (data['errorCode'] == 'SUSPENDED_MEMBER') {
+          _isSuspendedHandling = true;
+          debugPrint('제재된 회원 감지 (403 SUSPENDED_MEMBER)');
+          _tokenManager.deleteTokens();
+
+          final context = navigatorKey.currentContext;
+          if (context != null && context.mounted) {
+            context.navigateTo(
+              screen: AccountSuspendedScreen(
+                suspendReason: data['suspendReason'] ?? '',
+                suspendedUntil: data['suspendedUntil'] ?? '',
+              ),
+              type: NavigationTypes.clearStackImmediate,
+            );
+          }
+          return true; // 제재 처리됨
+        }
+      } catch (e) {
+        debugPrint('403 응답 body 파싱 실패: $e');
+      }
+    }
+    return false; // 제재 아님
+  }
 
   /// MultipartRequest 요청 전송 (form-data 형식, 파일 업로드 지원)
   static Future<http.Response> sendMultipartRequest({
@@ -45,6 +89,11 @@ class ApiClient {
         fields: fields,
         files: files,
       );
+
+      // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
+      if (_handleSuspendedResponse(response)) {
+        throw Exception('SUSPENDED_MEMBER');
+      }
 
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -90,7 +139,9 @@ class ApiClient {
             }
             return response;
           } else {
-            throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
+            throw Exception(
+              'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}',
+            );
           }
         } else {
           throw Exception('토큰 갱신 실패: 재로그인 필요');
@@ -134,6 +185,11 @@ class ApiClient {
         body: body,
       );
 
+      // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
+      if (_handleSuspendedResponse(response)) {
+        throw Exception('SUSPENDED_MEMBER');
+      }
+
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // await _handleResponse(response: response, url: url, onSuccess: onSuccess);
@@ -147,12 +203,19 @@ class ApiClient {
         if (isRefreshed) {
           accessToken = await _tokenManager.getAccessToken();
 
-          response = await _executeHttpRequest(url: url, method: method, accessToken: accessToken, body: body);
+          response = await _executeHttpRequest(
+            url: url,
+            method: method,
+            accessToken: accessToken,
+            body: body,
+          );
 
           if (response.statusCode >= 200 && response.statusCode < 300) {
             return response;
           } else {
-            throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
+            throw Exception(
+              'API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}',
+            );
           }
         } else {
           throw Exception('토큰 갱신 실패: 재로그인 필요');
@@ -297,7 +360,16 @@ class ApiClient {
       const String url = '${AppUrls.baseUrl}/api/auth/reissue';
 
       // 토큰 갱신
-      var response = await _executeMultipartRequest(url: url, method: 'POST', fields: {'refreshToken': refreshToken});
+      var response = await _executeMultipartRequest(
+        url: url,
+        method: 'POST',
+        fields: {'refreshToken': refreshToken},
+      );
+
+      // 토큰 갱신(reissue) 시에도 제재된 회원 체크 (403 SUSPENDED_MEMBER)
+      if (_handleSuspendedResponse(response)) {
+        return false;
+      }
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);

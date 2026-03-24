@@ -9,6 +9,9 @@ enum AccountStatus {
 
   @JsonValue('TEST_ACCOUNT')
   testAccount, // 테스트 계정
+
+  @JsonValue('SUSPENDED_ACCOUNT')
+  suspendedAccount, // 정지된 계정 (일시 정지 / 영구 정지)
 }
 
 extension AccountStatusExtension on AccountStatus {
@@ -20,10 +23,15 @@ extension AccountStatusExtension on AccountStatus {
         return 'DELETE_ACCOUNT';
       case AccountStatus.testAccount:
         return 'TEST_ACCOUNT';
+      case AccountStatus.suspendedAccount:
+        return 'SUSPENDED_ACCOUNT';
     }
   }
 
   static AccountStatus fromServerName(String name) {
-    return AccountStatus.values.firstWhere((e) => e.serverName == name, orElse: () => AccountStatus.activeAccount);
+    return AccountStatus.values.firstWhere(
+      (e) => e.serverName == name,
+      orElse: () => AccountStatus.activeAccount,
+    );
   }
 }

@@ -7,6 +7,9 @@ part 'auth_response.g.dart';
 class AuthResponse {
   final String? accessToken;
   final String? refreshToken;
+  final String? accountStatus;
+  final String? suspendReason;
+  final String? suspendedUntil;
   final bool? isFirstLogin;
   final bool? isFirstItemPosted;
   final bool? isItemCategorySaved;
@@ -17,6 +20,9 @@ class AuthResponse {
   AuthResponse({
     this.accessToken,
     this.refreshToken,
+    this.accountStatus,
+    this.suspendReason,
+    this.suspendedUntil,
     this.isFirstLogin,
     this.isFirstItemPosted,
     this.isItemCategorySaved,
@@ -25,6 +31,7 @@ class AuthResponse {
     this.isRequiredTermsAgreed,
   });
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) => _$AuthResponseFromJson(json);
+  factory AuthResponse.fromJson(Map<String, dynamic> json) =>
+      _$AuthResponseFromJson(json);
   Map<String, dynamic> toJson() => _$AuthResponseToJson(this);
 }
