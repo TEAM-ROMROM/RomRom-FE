@@ -1,11 +1,42 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-20T05:26:59Z",
-    "currentVersion": "1.9.78",
-    "totalReleases": 89,
+    "lastUpdated": "2026-03-24T00:16:08Z",
+    "currentVersion": "1.9.82",
+    "totalReleases": 90,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.82",
+      "project_type": "flutter",
+      "date": "2026-03-24",
+      "pr_number": 706,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 코치 마크 튜토리얼 오버레이 추가: 앱의 주요 기능을 안내하는 5단계 인터랙티브 튜토리얼 화면 구현\n  * 손가락 애니메이션 및 물결 효과 추가로 사용자 시선 유도\n\n* **개선 사항**\n  * 프로필 편집 화면에서 닉네임 편집 흐름 개선\n  * 프로필 이미지 선택 동작 최적화\n  * 사용자 정보 관리 프로세스 개선\n\n* **버전**\n  * v1.9.82로 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "코치 마크 튜토리얼 오버레이 추가: 앱의 주요 기능을 안내하는 5단계 인터랙티브 튜토리얼 화면 구현",
+            "손가락 애니메이션 및 물결 효과 추가로 사용자 시선 유도"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "프로필 편집 화면에서 닉네임 편집 흐름 개선",
+            "프로필 이미지 선택 동작 최적화",
+            "사용자 정보 관리 프로세스 개선"
+          ]
+        },
+        "버전": {
+          "title": "버전",
+          "items": [
+            "v1.9.82로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.78",
       "project_type": "flutter",
