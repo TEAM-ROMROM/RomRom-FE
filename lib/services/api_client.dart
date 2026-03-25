@@ -4,8 +4,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/main.dart' show navigatorKey;
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
 import 'package:romrom_fe/utils/log_utils.dart';
 
@@ -13,6 +18,56 @@ import 'package:romrom_fe/utils/log_utils.dart';
 class ApiClient {
   static final TokenManager _tokenManager = TokenManager();
   static final LoggingHttpClient _client = LoggingHttpClient(http.Client());
+
+  /// 동시 다발적 403 응답 시 중복 네비게이션 방지 플래그
+  static bool _isSuspendedHandling = false;
+
+  /// 제재 처리 플래그 리셋 (로그아웃/재로그인 시 호출)
+  static void resetSuspendedFlag() {
+    _isSuspendedHandling = false;
+  }
+
+  /// 403 SUSPENDED_MEMBER 응답 글로벌 처리
+  /// 제재된 회원이 API 호출 시 서버에서 403 + SUSPENDED_MEMBER를 반환하면
+  /// 토큰 삭제 후 제재 안내 화면으로 이동
+  /// 반환값: AccountSuspendedException(실제 제재 데이터) 또는 null(제재 아님)
+  static AccountSuspendedException? _handleSuspendedResponse(http.Response response) {
+    if (_isSuspendedHandling) return AccountSuspendedException(suspendReason: '', suspendedUntil: '');
+    if (response.statusCode == 403 && response.body.isNotEmpty) {
+      try {
+        final data = jsonDecode(response.body);
+        if (data['errorCode'] == 'SUSPENDED_MEMBER') {
+          _isSuspendedHandling = true;
+          final suspendReason = data['suspendReason'] as String? ?? '';
+          // suspendedUntil: 문자열("2026-03-26T16:32:00") 또는 배열([2026,3,26,16,32]) 모두 처리
+          final rawUntil = data['suspendedUntil'];
+          final suspendedUntil = rawUntil is List
+              ? DateTime(
+                  rawUntil[0],
+                  rawUntil[1],
+                  rawUntil[2],
+                  rawUntil.length > 3 ? rawUntil[3] : 0,
+                  rawUntil.length > 4 ? rawUntil[4] : 0,
+                ).toIso8601String()
+              : (rawUntil as String? ?? '');
+          debugPrint('제재된 회원 감지 (403 SUSPENDED_MEMBER)');
+          _tokenManager.deleteTokens();
+
+          final context = navigatorKey.currentContext;
+          if (context != null && context.mounted) {
+            context.navigateTo(
+              screen: AccountSuspendedScreen(suspendReason: suspendReason, suspendedUntil: suspendedUntil),
+              type: NavigationTypes.clearStackImmediate,
+            );
+          }
+          return AccountSuspendedException(suspendReason: suspendReason, suspendedUntil: suspendedUntil);
+        }
+      } catch (e) {
+        debugPrint('403 응답 body 파싱 실패: $e');
+      }
+    }
+    return null; // 제재 아님
+  }
 
   /// MultipartRequest 요청 전송 (form-data 형식, 파일 업로드 지원)
   static Future<http.Response> sendMultipartRequest({
@@ -45,6 +100,10 @@ class ApiClient {
         fields: fields,
         files: files,
       );
+
+      // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
+      final suspendedException = _handleSuspendedResponse(response);
+      if (suspendedException != null) throw suspendedException;
 
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -133,6 +192,10 @@ class ApiClient {
         accessToken: accessToken,
         body: body,
       );
+
+      // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
+      final suspendedExceptionHttp = _handleSuspendedResponse(response);
+      if (suspendedExceptionHttp != null) throw suspendedExceptionHttp;
 
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -298,6 +361,11 @@ class ApiClient {
 
       // 토큰 갱신
       var response = await _executeMultipartRequest(url: url, method: 'POST', fields: {'refreshToken': refreshToken});
+
+      // 토큰 갱신(reissue) 시에도 제재된 회원 체크 (403 SUSPENDED_MEMBER)
+      if (_handleSuspendedResponse(response) != null) {
+        return false;
+      }
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);

@@ -80,6 +80,9 @@ void _setupFcmTokenRefreshListener() {
   firebaseService.setupTokenRefreshListener(notificationApi);
 }
 
+/// 앱 전역 navigatorKey (ApiClient 등에서 글로벌 네비게이션에 사용)
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 /// 앱의 루트 위젯
 class MyApp extends StatefulWidget {
   final bool isGestureMode;
@@ -93,8 +96,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   static const String _lastVersionCheckKey = 'last_version_check_timestamp';
   static const Duration _checkInterval = Duration(hours: 24);
-
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -130,7 +131,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       await prefs.setInt(_lastVersionCheckKey, DateTime.now().millisecondsSinceEpoch);
 
       if (updateType == UpdateType.force) {
-        final context = _navigatorKey.currentContext;
+        final context = navigatorKey.currentContext;
         if (context == null || !context.mounted) return;
         context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
       }
@@ -156,7 +157,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               child: MaterialApp(
                 title: 'RomRom',
                 theme: AppTheme.defaultTheme,
-                navigatorKey: _navigatorKey,
+                navigatorKey: navigatorKey,
                 home: const SplashScreen(),
               ),
             ),

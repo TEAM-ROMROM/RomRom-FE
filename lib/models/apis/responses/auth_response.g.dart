@@ -9,6 +9,9 @@ part of 'auth_response.dart';
 AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) => AuthResponse(
   accessToken: json['accessToken'] as String?,
   refreshToken: json['refreshToken'] as String?,
+  accountStatus: json['accountStatus'] as String?,
+  suspendReason: json['suspendReason'] as String?,
+  suspendedUntil: json['suspendedUntil'] as String?,
   isFirstLogin: json['isFirstLogin'] as bool?,
   isFirstItemPosted: json['isFirstItemPosted'] as bool?,
   isItemCategorySaved: json['isItemCategorySaved'] as bool?,
@@ -20,6 +23,9 @@ AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) => AuthResponse(
 Map<String, dynamic> _$AuthResponseToJson(AuthResponse instance) => <String, dynamic>{
   'accessToken': instance.accessToken,
   'refreshToken': instance.refreshToken,
+  'accountStatus': instance.accountStatus,
+  'suspendReason': instance.suspendReason,
+  'suspendedUntil': instance.suspendedUntil,
   'isFirstLogin': instance.isFirstLogin,
   'isFirstItemPosted': instance.isFirstItemPosted,
   'isItemCategorySaved': instance.isItemCategorySaved,

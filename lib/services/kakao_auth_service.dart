@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide UserInfo, User;
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:flutter/services.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -30,7 +31,7 @@ class KakaoAuthService {
       );
 
       // 사용자 정보 저장
-      await UserInfo().saveUserInfo(user.kakaoAccount?.profile?.nickname, user.kakaoAccount?.email);
+      await UserInfo().saveUserInfo(user.kakaoAccount?.profile?.nickname ?? '', user.kakaoAccount?.email ?? '');
       // 로그인 플랫폼 저장
       LoginPlatformManager().saveLoginPlatform(LoginPlatforms.kakao.platformName);
     } catch (error) {
@@ -123,6 +124,8 @@ class KakaoAuthService {
       OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
       await _handleLoginSuccess(token);
       return true; // 성공 시 true 반환
+    } on AccountSuspendedException {
+      rethrow;
     } catch (error) {
       debugPrint('카카오톡으로 로그인 실패: $error');
 

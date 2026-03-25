@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
@@ -68,6 +69,8 @@ class GoogleAuthService {
       // 구글 로그인 성공 후 토큰 발급
       await romAuthApi.signInWithSocial(firebaseIdToken: firebaseIdToken, providerId: 'google.com');
       return true;
+    } on AccountSuspendedException {
+      rethrow;
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');
       return false;

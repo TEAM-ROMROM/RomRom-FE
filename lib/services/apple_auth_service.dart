@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
@@ -176,6 +177,8 @@ class AppleAuthService {
 
       debugPrint('애플 로그인 성공: ${credential.user?.uid}');
       return true;
+    } on AccountSuspendedException {
+      rethrow;
     } catch (error) {
       debugPrint('애플 로그인 실패: $error');
       return false;

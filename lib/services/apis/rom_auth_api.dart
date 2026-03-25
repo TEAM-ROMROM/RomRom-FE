@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/models/apis/responses/auth_response.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
@@ -48,6 +51,8 @@ class RomAuthApi {
   }
 
   /// POST : `/api/auth/login` 소셜 로그인
+  /// 정지 계정인 경우 AccountSuspendedException throw
+  /// 정상 계정인 경우 토큰 저장 후 정상 반환
   Future<void> signInWithSocial({required String firebaseIdToken, required String providerId}) async {
     const String url = '${AppUrls.baseUrl}/api/auth/login';
 
@@ -83,8 +88,19 @@ class RomAuthApi {
       // 응답을 직접 처리
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final authResponse = AuthResponse.fromJson(responseData);
 
-        // 로컬 저장소에 토큰 저장
+        // 정지 계정인 경우: 토큰 저장하지 않고 예외 throw
+        if (authResponse.accountStatus == AccountStatus.suspendedAccount.serverName) {
+          debugPrint('정지된 계정입니다. 제재 사유: ${authResponse.suspendReason}');
+          throw AccountSuspendedException(
+            suspendReason: authResponse.suspendReason ?? '',
+            suspendedUntil: authResponse.suspendedUntil ?? '',
+          );
+        }
+
+        // 정상 계정: 제재 플래그 리셋 후 토큰 저장
+        ApiClient.resetSuspendedFlag();
         String accessToken = responseData[TokenKeys.accessToken.name];
         String refreshToken = responseData[TokenKeys.refreshToken.name];
 
@@ -100,9 +116,13 @@ class RomAuthApi {
           isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
           isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
         );
+
+        return; // 정상 계정
       } else {
         throw Exception('소셜 로그인 실패: ${response.statusCode}, ${response.body}');
       }
+    } on AccountSuspendedException {
+      rethrow; // 제재 예외는 LoginButton에서 처리
     } catch (error) {
       throw Exception('Error during sign-in: $error');
     }

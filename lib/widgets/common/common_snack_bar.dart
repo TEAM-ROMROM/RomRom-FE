@@ -155,7 +155,7 @@ class CommonSnackBar {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      constraints: BoxConstraints(minHeight: 58.h),
+                      constraints: BoxConstraints(minHeight: 58.h, maxHeight: 120.h),
                       decoration: BoxDecoration(
                         color: AppColors.toastBackground,
                         borderRadius: BorderRadius.circular(8.r),
@@ -172,8 +172,6 @@ class CommonSnackBar {
                               child: Text(
                                 message.trim(),
                                 style: CustomTextStyles.p2.copyWith(height: 1.4),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                                 softWrap: true,
                               ),
                             ),
