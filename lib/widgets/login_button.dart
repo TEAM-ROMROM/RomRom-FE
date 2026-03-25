@@ -47,7 +47,7 @@ class _LoginButtonState extends State<LoginButton> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black54,
+      barrierColor: AppColors.opacity50Black,
       builder: (_) => const PopScope(
         canPop: false,
         child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
@@ -149,7 +149,7 @@ class _LoginButtonState extends State<LoginButton> {
                   widget.platform.iconPath,
                   width: 22.h,
                   height: 22.h,
-                  placeholderBuilder: (context) => Icon(Icons.error, size: 24.sp, color: Colors.red),
+                  placeholderBuilder: (context) => Icon(Icons.error, size: 24.sp, color: AppColors.warningRed),
                 ),
               ),
               Center(
