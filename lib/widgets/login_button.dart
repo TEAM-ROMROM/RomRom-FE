@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -12,11 +13,13 @@ import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
+import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 로그인 버튼
@@ -37,6 +40,7 @@ class _LoginButtonState extends State<LoginButton> {
 
   Future<void> handleLogin(BuildContext context) async {
     if (_isLoading) return; // 이미 로그인 중이면 무시
+    ApiClient.resetSuspendedFlag(); // 재로그인 시 제재 플래그 리셋
     setState(() => _isLoading = true);
 
     // 로딩 오버레이 표시
@@ -111,6 +115,9 @@ class _LoginButtonState extends State<LoginButton> {
     } catch (e) {
       debugPrint("로그인 처리 중 오류: $e");
       if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (context.mounted) {
+        CommonSnackBar.show(context: context, message: '로그인에 실패했습니다. 다시 시도해 주세요.', type: SnackBarType.error);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

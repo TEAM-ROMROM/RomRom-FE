@@ -8,6 +8,7 @@ import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
@@ -127,6 +128,8 @@ class KakaoAuthService {
       OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
       await _handleLoginSuccess(token);
       return true; // 성공 시 true 반환
+    } on AccountSuspendedException {
+      rethrow;
     } catch (error) {
       debugPrint('카카오톡으로 로그인 실패: $error');
 

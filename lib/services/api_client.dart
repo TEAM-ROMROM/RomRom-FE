@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/main.dart' show navigatorKey;
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
@@ -36,16 +37,25 @@ class ApiClient {
         final data = jsonDecode(response.body);
         if (data['errorCode'] == 'SUSPENDED_MEMBER') {
           _isSuspendedHandling = true;
+          final suspendReason = data['suspendReason'] as String? ?? '';
+          // suspendedUntil: 문자열("2026-03-26T16:32:00") 또는 배열([2026,3,26,16,32]) 모두 처리
+          final rawUntil = data['suspendedUntil'];
+          final suspendedUntil = rawUntil is List
+              ? DateTime(
+                  rawUntil[0],
+                  rawUntil[1],
+                  rawUntil[2],
+                  rawUntil.length > 3 ? rawUntil[3] : 0,
+                  rawUntil.length > 4 ? rawUntil[4] : 0,
+                ).toIso8601String()
+              : (rawUntil as String? ?? '');
           debugPrint('제재된 회원 감지 (403 SUSPENDED_MEMBER)');
           _tokenManager.deleteTokens();
 
           final context = navigatorKey.currentContext;
           if (context != null && context.mounted) {
             context.navigateTo(
-              screen: AccountSuspendedScreen(
-                suspendReason: data['suspendReason'] ?? '',
-                suspendedUntil: data['suspendedUntil'] ?? '',
-              ),
+              screen: AccountSuspendedScreen(suspendReason: suspendReason, suspendedUntil: suspendedUntil),
               type: NavigationTypes.clearStackImmediate,
             );
           }
@@ -92,7 +102,7 @@ class ApiClient {
 
       // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
       if (_handleSuspendedResponse(response)) {
-        throw Exception('SUSPENDED_MEMBER');
+        throw AccountSuspendedException(suspendReason: '', suspendedUntil: '');
       }
 
       // 성공 응답 처리 (200-299)
@@ -185,7 +195,7 @@ class ApiClient {
 
       // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
       if (_handleSuspendedResponse(response)) {
-        throw Exception('SUSPENDED_MEMBER');
+        throw AccountSuspendedException(suspendReason: '', suspendedUntil: '');
       }
 
       // 성공 응답 처리 (200-299)

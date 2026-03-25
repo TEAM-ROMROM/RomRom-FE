@@ -46,6 +46,7 @@
 		<string>kakaolink</string>
 		<string>kakaotalk</string>
 		<string>kakaoplus</string>
+		<string>mailto</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

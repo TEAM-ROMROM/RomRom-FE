@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/auth_service.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 /// 제재된 사용자 안내 화면
 /// suspendedUntil >= 2100-01-01 이면 영구 정지, 아니면 일시 정지
@@ -21,7 +23,7 @@ class AccountSuspendedScreen extends StatefulWidget {
 }
 
 class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
-  String _nickname = '롬롬';
+  String _nickname = '사용자';
 
   @override
   void initState() {
@@ -35,7 +37,7 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
       await userInfo.getUserInfo();
       if (mounted) {
         setState(() {
-          _nickname = userInfo.nickname ?? '롬롬';
+          _nickname = userInfo.nickname ?? '사용자';
         });
       }
     } catch (_) {
@@ -67,12 +69,21 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
   Future<void> _launchContactEmail() async {
     final uri = Uri(
       scheme: 'mailto',
-      path: 'romrom_official@gmail.com', // TODO: 실제 고객센터 이메일 확정 시 변경
+      path: 'romrom.noreply@gmail.com',
       queryParameters: {'subject': '[롬롬 이용 제한 문의] 계정명: $_nickname'},
     );
 
-    if (await canLaunchUrl(uri)) {
+    final launched = await canLaunchUrl(uri);
+    if (launched) {
       await launchUrl(uri);
+    } else {
+      if (mounted) {
+        CommonSnackBar.show(
+          context: context,
+          message: '메일 앱이 없습니다. romrom.noreply@gmail.com 으로 문의해 주세요.',
+          type: SnackBarType.info,
+        );
+      }
     }
   }
 
