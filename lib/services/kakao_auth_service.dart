@@ -32,9 +32,9 @@ class KakaoAuthService {
 
       // 사용자 정보 저장
       await UserInfo().saveUserInfo(
-        '${user.kakaoAccount?.profile?.nickname}',
-        '${user.kakaoAccount?.email}',
-        '${user.kakaoAccount?.profile?.profileImageUrl}',
+        user.kakaoAccount?.profile?.nickname ?? '',
+        user.kakaoAccount?.email ?? '',
+        user.kakaoAccount?.profile?.profileImageUrl ?? '',
       );
       // 로그인 플랫폼 저장
       LoginPlatformManager().saveLoginPlatform(LoginPlatforms.kakao.platformName);

@@ -30,8 +30,9 @@ class ApiClient {
   /// 403 SUSPENDED_MEMBER 응답 글로벌 처리
   /// 제재된 회원이 API 호출 시 서버에서 403 + SUSPENDED_MEMBER를 반환하면
   /// 토큰 삭제 후 제재 안내 화면으로 이동
-  static bool _handleSuspendedResponse(http.Response response) {
-    if (_isSuspendedHandling) return true; // 이미 제재 처리 진행 중
+  /// 반환값: AccountSuspendedException(실제 제재 데이터) 또는 null(제재 아님)
+  static AccountSuspendedException? _handleSuspendedResponse(http.Response response) {
+    if (_isSuspendedHandling) return AccountSuspendedException(suspendReason: '', suspendedUntil: '');
     if (response.statusCode == 403 && response.body.isNotEmpty) {
       try {
         final data = jsonDecode(response.body);
@@ -59,13 +60,13 @@ class ApiClient {
               type: NavigationTypes.clearStackImmediate,
             );
           }
-          return true; // 제재 처리됨
+          return AccountSuspendedException(suspendReason: suspendReason, suspendedUntil: suspendedUntil);
         }
       } catch (e) {
         debugPrint('403 응답 body 파싱 실패: $e');
       }
     }
-    return false; // 제재 아님
+    return null; // 제재 아님
   }
 
   /// MultipartRequest 요청 전송 (form-data 형식, 파일 업로드 지원)
@@ -101,9 +102,8 @@ class ApiClient {
       );
 
       // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
-      if (_handleSuspendedResponse(response)) {
-        throw AccountSuspendedException(suspendReason: '', suspendedUntil: '');
-      }
+      final suspendedException = _handleSuspendedResponse(response);
+      if (suspendedException != null) throw suspendedException;
 
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -194,9 +194,8 @@ class ApiClient {
       );
 
       // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
-      if (_handleSuspendedResponse(response)) {
-        throw AccountSuspendedException(suspendReason: '', suspendedUntil: '');
-      }
+      final suspendedExceptionHttp = _handleSuspendedResponse(response);
+      if (suspendedExceptionHttp != null) throw suspendedExceptionHttp;
 
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -364,7 +363,7 @@ class ApiClient {
       var response = await _executeMultipartRequest(url: url, method: 'POST', fields: {'refreshToken': refreshToken});
 
       // 토큰 갱신(reissue) 시에도 제재된 회원 체크 (403 SUSPENDED_MEMBER)
-      if (_handleSuspendedResponse(response)) {
+      if (_handleSuspendedResponse(response) != null) {
         return false;
       }
 

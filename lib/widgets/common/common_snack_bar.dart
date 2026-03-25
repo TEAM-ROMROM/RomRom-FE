@@ -155,7 +155,7 @@ class CommonSnackBar {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      constraints: BoxConstraints(minHeight: 58.h),
+                      constraints: BoxConstraints(minHeight: 58.h, maxHeight: 120.h),
                       decoration: BoxDecoration(
                         color: AppColors.toastBackground,
                         borderRadius: BorderRadius.circular(8.r),

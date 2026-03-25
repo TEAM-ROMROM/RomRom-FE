@@ -7,6 +7,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
@@ -29,6 +30,12 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
   void initState() {
     super.initState();
     _loadNickname();
+  }
+
+  @override
+  void dispose() {
+    ApiClient.resetSuspendedFlag();
+    super.dispose();
   }
 
   Future<void> _loadNickname() async {
