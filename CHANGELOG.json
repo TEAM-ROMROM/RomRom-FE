@@ -1,11 +1,42 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-24T00:16:08Z",
-    "currentVersion": "1.9.82",
-    "totalReleases": 90,
+    "lastUpdated": "2026-03-25T08:17:22Z",
+    "currentVersion": "1.9.84",
+    "totalReleases": 91,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.84",
+      "project_type": "flutter",
+      "date": "2026-03-25",
+      "pr_number": 708,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리즈 노트\n\n* **새로운 기능**\n  * 계정 정지 상태 안내 화면 추가 - 정지 사유 및 기간 표시\n  * 풀스크린 이미지 뷰어 추가 - 확대/축소, 페이지 네비게이션 지원\n\n* **버그 수정**\n  * 이미지 관리 개선 - 기존 및 신규 이미지 상태 관리 정상화\n  * 계정 정지 시 로그인 흐름 안정화\n\n* **UI/UX 개선**\n  * 스낵바 메시지 표시 영역 확대\n  * 로그인 버튼 아이콘 색상 조정",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "계정 정지 상태 안내 화면 추가 - 정지 사유 및 기간 표시",
+            "풀스크린 이미지 뷰어 추가 - 확대/축소, 페이지 네비게이션 지원"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "이미지 관리 개선 - 기존 및 신규 이미지 상태 관리 정상화",
+            "계정 정지 시 로그인 흐름 안정화"
+          ]
+        },
+        "ui_ux_개선": {
+          "title": "UI/UX 개선",
+          "items": [
+            "스낵바 메시지 표시 영역 확대",
+            "로그인 버튼 아이콘 색상 조정"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.82",
       "project_type": "flutter",
