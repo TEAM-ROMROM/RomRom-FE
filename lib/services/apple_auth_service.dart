@@ -169,11 +169,7 @@ class AppleAuthService {
       final displayName = (appleCredential.givenName != null || appleCredential.familyName != null)
           ? '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim()
           : credential.user?.displayName;
-      await UserInfo().saveUserInfo(
-        displayName,
-        appleCredential.email ?? credential.user?.email,
-        credential.user?.photoURL,
-      );
+      await UserInfo().saveUserInfo(displayName, appleCredential.email ?? credential.user?.email);
 
       LoginPlatformManager().saveLoginPlatform(LoginPlatforms.apple.platformName);
 

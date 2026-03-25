@@ -178,4 +178,7 @@ class AppColors {
   static const Color chatUnreadBadge = Color(0xFFFF3E3E); // 읽지 않은 메시지 뱃지
   static const Color chatActiveStatus = Color(0xFF30CF00); // 활성 상태 색상 (초록색)
   static const Color chatInactiveStatus = Color(0xFFFF3E3E); // 비활성 상태 색상 (빨간색)
+
+  // 코치마크 화면
+  static const Color cardDragContainer = Color(0xFF4F4F50); // 카드 드래그 시 중간 컨테이너 배경색
 }

@@ -25,7 +25,7 @@ class GoogleAuthService {
       );
 
       // 사용자 정보 저장
-      await UserInfo().saveUserInfo('${googleUser.displayName}', googleUser.email, googleUser.photoUrl);
+      await UserInfo().saveUserInfo('${googleUser.displayName}', googleUser.email);
       // 로그인 플랫폼(Google) 저장
       LoginPlatformManager().saveLoginPlatform(LoginPlatforms.google.platformName);
     } catch (error) {
