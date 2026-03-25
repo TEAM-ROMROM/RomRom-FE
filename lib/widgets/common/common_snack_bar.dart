@@ -172,8 +172,6 @@ class CommonSnackBar {
                               child: Text(
                                 message.trim(),
                                 style: CustomTextStyles.p2.copyWith(height: 1.4),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                                 softWrap: true,
                               ),
                             ),
