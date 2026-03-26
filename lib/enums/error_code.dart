@@ -14,6 +14,10 @@ enum ErrorCode {
   refreshTokenNotFound(code: 'REFRESH_TOKEN_NOT_FOUND', koMessage: '리프레시 토큰을 찾을 수 없습니다.'),
   tokenBlacklisted(code: 'TOKEN_BLACKLISTED', koMessage: '블랙리스트처리된 토큰이 요청되었습니다.'),
 
+  // FIREBASE
+  invalidFirebaseToken(code: 'INVALID_FIREBASE_TOKEN', koMessage: '유효하지 않은 Firebase 토큰입니다.'),
+  expiredFirebaseToken(code: 'EXPIRED_FIREBASE_TOKEN', koMessage: 'Firebase 토큰이 만료되었습니다.'),
+
   // OAUTH
   emptySocialAuthToken(code: 'EMPTY_SOCIAL_AUTH_TOKEN', koMessage: '소셜 로그인 인증 토큰이 제공되지 않았습니다.'),
   invalidSocialPlatform(code: 'INVALID_SOCIAL_PLATFORM', koMessage: '유효하지 않은 소셜 플랫폼입니다.'),
@@ -26,6 +30,7 @@ enum ErrorCode {
   duplicateNickname(code: 'DUPLICATE_NICKNAME', koMessage: '이미 사용 중인 닉네임입니다.'),
   invalidRequiredTermsAgreed(code: 'INVALID_REQUIRED_TERMS_AGREED', koMessage: '필수 이용약관에 동의하지 않았습니다.'),
   deletedMember(code: 'DELETED_MEMBER', koMessage: '탈퇴한 회원입니다.'),
+  suspendedMember(code: 'SUSPENDED_MEMBER', koMessage: '제재된 회원입니다.'),
 
   // MEMBER BLOCK
   alreadyBlocked(code: 'ALREADY_BLOCKED', koMessage: '이미 차단한 회원입니다.'),
@@ -41,6 +46,7 @@ enum ErrorCode {
   fileDeleteError(code: 'FILE_DELETE_ERROR', koMessage: '파일 삭제 중 오류가 발생했습니다.'),
 
   // REPORT
+  reportNotFound(code: 'REPORT_NOT_FOUND', koMessage: '신고를 찾을 수 없습니다.'),
   duplicateReport(code: 'DUPLICATE_REPORT', koMessage: '같은 물품을 여러 번 신고할 수 없습니다.'),
   tooLongExtraComment(code: 'TOO_LONG_EXTRA_COMMENT', koMessage: '기타 의견을 글자 수 제한을 넘겨서 작성할 수 없습니다.'),
   nullExtraComment(code: 'NULL_EXTRA_COMMENT', koMessage: '기타 의견을 빈 값으로 요청할 수 없습니다.'),
@@ -99,6 +105,9 @@ enum ErrorCode {
 
   // EMBEDDING
   embeddingNotFound(code: 'EMBEDDING_NOT_FOUND', koMessage: '임베딩을 찾을 수 없습니다.'),
+
+  // UGC
+  prohibitedContent(code: 'PROHIBITED_CONTENT', koMessage: '부적절한 표현이 포함되어 있습니다.'),
 
   // ADMIN
   unsupportedAdminAction(code: 'UNSUPPORTED_ADMIN_ACTION', koMessage: '지원하지 않는 관리자 액션입니다.'),

@@ -3,11 +3,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -165,27 +167,36 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
               child: GestureDetector(
                 onTap: () async {
                   if (_isProfileEdited && (_nickname.isNotEmpty)) {
-                    await MemberApi()
-                        .updateMemberProfile(nicknameController.text, imageUrl)
-                        .then((_) {
-                          if (context.mounted) {
-                            CommonSnackBar.show(
-                              context: context,
-                              message: '프로필이 성공적으로 업데이트되었습니다.',
-                              type: SnackBarType.success,
-                            );
-                            Navigator.of(context).pop(true);
-                          }
-                        })
-                        .catchError((e) {
-                          if (context.mounted) {
-                            CommonSnackBar.show(
-                              context: context,
-                              message: '프로필 업데이트에 실패했습니다: $e',
-                              type: SnackBarType.error,
-                            );
-                          }
-                        });
+                    try {
+                      await MemberApi().updateMemberProfile(nicknameController.text, imageUrl);
+                      if (context.mounted) {
+                        CommonSnackBar.show(
+                          context: context,
+                          message: '프로필이 성공적으로 업데이트되었습니다.',
+                          type: SnackBarType.success,
+                        );
+                        Navigator.of(context).pop(true);
+                      }
+                    } on UgcViolationException catch (e) {
+                      if (context.mounted) {
+                        final ugcMessage = e.violatingText.isNotEmpty
+                            ? '\'${e.violatingText}\'이(가) 포함된\n부적절한 표현입니다.\n수정 후 다시 시도해주세요.'
+                            : '부적절한 표현이 포함되어 있습니다.\n수정 후 다시 시도해주세요.';
+                        CommonModal.error(
+                          context: context,
+                          message: ugcMessage,
+                          onConfirm: () => Navigator.of(context).pop(),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        CommonSnackBar.show(
+                          context: context,
+                          message: ErrorUtils.getErrorMessage(e),
+                          type: SnackBarType.error,
+                        );
+                      }
+                    }
                   }
                 },
                 child: Text(

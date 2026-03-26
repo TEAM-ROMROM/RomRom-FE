@@ -25,6 +25,8 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
+import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
@@ -975,6 +977,17 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
+                        }
+                      } on UgcViolationException catch (e) {
+                        if (context.mounted) {
+                          final ugcMessage = e.violatingText.isNotEmpty
+                              ? '\'${e.violatingText}\'이(가) 포함된\n부적절한 표현입니다.\n수정 후 다시 시도해주세요.'
+                              : '부적절한 표현이 포함되어 있습니다.\n수정 후 다시 시도해주세요.';
+                          CommonModal.error(
+                            context: context,
+                            message: ugcMessage,
+                            onConfirm: () => Navigator.of(context).pop(),
+                          );
                         }
                       } catch (e) {
                         if (context.mounted) {

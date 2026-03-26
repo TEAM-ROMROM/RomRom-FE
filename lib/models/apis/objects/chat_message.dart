@@ -15,6 +15,7 @@ class ChatMessage extends BaseEntity {
   final String? content;
   final List<String>? imageUrls;
   final MessageType? type;
+  final bool? isProfanityDetected;
 
   ChatMessage({
     super.createdDate,
@@ -26,6 +27,7 @@ class ChatMessage extends BaseEntity {
     this.content,
     this.imageUrls,
     this.type,
+    this.isProfanityDetected,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => _$ChatMessageFromJson(json);
@@ -43,6 +45,7 @@ extension ChatMessageCopy on ChatMessage {
     String? content,
     List<String>? imageUrls,
     MessageType? type,
+    bool? isProfanityDetected,
     DateTime? createdDate,
     DateTime? updatedDate,
   }) => ChatMessage(
@@ -53,6 +56,7 @@ extension ChatMessageCopy on ChatMessage {
     content: content ?? this.content,
     imageUrls: imageUrls ?? this.imageUrls,
     type: type ?? this.type,
+    isProfanityDetected: isProfanityDetected ?? this.isProfanityDetected,
     createdDate: createdDate ?? this.createdDate,
     updatedDate: updatedDate ?? this.updatedDate,
   );

@@ -183,6 +183,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         setState(() => _handleIncomingMessage(newMessage));
         _scrollToBottom();
 
+        // 비속어 경고 (발신자 본인에게만 표시)
+        if (newMessage.isProfanityDetected == true && newMessage.senderId == _myMemberId) {
+          CommonSnackBar.show(context: context, message: '비속어 사용은 제재 대상이 될 수 있습니다.', type: SnackBarType.info);
+        }
+
         if (newMessage.type == MessageType.system) {
           CommonModal.showOnceAfterFrame(
             context: context,
@@ -276,6 +281,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         imageUrls: (newMessage.imageUrls != null && newMessage.imageUrls!.isNotEmpty)
             ? newMessage.imageUrls
             : localMsg.imageUrls,
+        isProfanityDetected: newMessage.isProfanityDetected,
       );
       if (idx != -1) {
         _messages[idx] = fixedServer;

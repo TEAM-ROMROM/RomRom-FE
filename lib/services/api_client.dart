@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/main.dart' show navigatorKey;
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
@@ -69,6 +70,27 @@ class ApiClient {
     return null; // 제재 아님
   }
 
+  /// 400 PROHIBITED_CONTENT 응답 처리 (UGC 필터링 위반)
+  /// UgcViolationException 반환 또는 null(UGC 위반 아님)
+  static UgcViolationException? _handleUgcViolationResponse(http.Response response) {
+    if (response.statusCode == 400 && response.body.isNotEmpty) {
+      try {
+        final data = jsonDecode(response.body);
+        if (data['errorCode'] == 'PROHIBITED_CONTENT') {
+          return UgcViolationException(
+            errorCode: data['errorCode'] as String? ?? '',
+            errorMessage: data['errorMessage'] as String? ?? '부적절한 표현이 포함되어 있습니다.',
+            violatingText: data['violatingText'] as String? ?? '',
+            fieldName: data['fieldName'] as String? ?? '',
+          );
+        }
+      } catch (e) {
+        debugPrint('400 응답 body 파싱 실패: $e');
+      }
+    }
+    return null;
+  }
+
   /// MultipartRequest 요청 전송 (form-data 형식, 파일 업로드 지원)
   static Future<http.Response> sendMultipartRequest({
     required String url,
@@ -105,6 +127,10 @@ class ApiClient {
       final suspendedException = _handleSuspendedResponse(response);
       if (suspendedException != null) throw suspendedException;
 
+      // UGC 필터링 위반 체크 (400 PROHIBITED_CONTENT)
+      final ugcViolation = _handleUgcViolationResponse(response);
+      if (ugcViolation != null) throw ugcViolation;
+
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (response.body.isNotEmpty) {
@@ -135,6 +161,10 @@ class ApiClient {
             fields: fields,
             files: files,
           );
+
+          // 토큰 갱신 후 재시도에서도 UGC 위반 체크
+          final ugcViolationRetry = _handleUgcViolationResponse(response);
+          if (ugcViolationRetry != null) throw ugcViolationRetry;
 
           if (response.statusCode >= 200 && response.statusCode < 300) {
             if (response.body.isNotEmpty) {
@@ -197,6 +227,10 @@ class ApiClient {
       final suspendedExceptionHttp = _handleSuspendedResponse(response);
       if (suspendedExceptionHttp != null) throw suspendedExceptionHttp;
 
+      // UGC 필터링 위반 체크 (400 PROHIBITED_CONTENT)
+      final ugcViolationHttp = _handleUgcViolationResponse(response);
+      if (ugcViolationHttp != null) throw ugcViolationHttp;
+
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // await _handleResponse(response: response, url: url, onSuccess: onSuccess);
@@ -211,6 +245,10 @@ class ApiClient {
           accessToken = await _tokenManager.getAccessToken();
 
           response = await _executeHttpRequest(url: url, method: method, accessToken: accessToken, body: body);
+
+          // 토큰 갱신 후 재시도에서도 UGC 위반 체크
+          final ugcViolationHttpRetry = _handleUgcViolationResponse(response);
+          if (ugcViolationHttpRetry != null) throw ugcViolationHttpRetry;
 
           if (response.statusCode >= 200 && response.statusCode < 300) {
             return response;
