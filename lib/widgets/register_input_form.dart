@@ -159,6 +159,18 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
           itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
         ),
       );
+
+      // AI 가격 측정 결과가 0 이하(0, -1 등)인 경우 유효하지 않은 결과로 처리
+      if (predictedPrice <= 0) {
+        setState(() {
+          useAiPrice = false;
+        });
+        if (context.mounted) {
+          CommonSnackBar.show(context: context, message: 'AI가 적정 가격을 측정하지 못했어요. 직접 입력해 주세요.', type: SnackBarType.error);
+        }
+        return;
+      }
+
       // 숫자를 콤마 포함 문자열로 변환
       final formatted = const PriceCommaFormatter().formatEditUpdate(
         const TextEditingValue(),
