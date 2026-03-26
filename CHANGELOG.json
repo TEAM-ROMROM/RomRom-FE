@@ -1,11 +1,41 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-25T08:17:22Z",
-    "currentVersion": "1.9.84",
-    "totalReleases": 91,
+    "lastUpdated": "2026-03-26T15:15:02Z",
+    "currentVersion": "1.9.87",
+    "totalReleases": 92,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.87",
+      "project_type": "flutter",
+      "date": "2026-03-26",
+      "pr_number": 712,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 부적절한 콘텐츠 감지 시 사용자 경고 추가\n  * 서비스 약관에 광고 ID 수집 및 활용 관련 조항 추가\n\n* **Bug Fixes**\n  * AI 가격 예측 검증 강화\n  * 콘텐츠 위반 오류 처리 개선\n\n* **Chores**\n  * 앱 버전 업데이트 (v1.9.84 → v1.9.87)",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "부적절한 콘텐츠 감지 시 사용자 경고 추가",
+            "서비스 약관에 광고 ID 수집 및 활용 관련 조항 추가"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "AI 가격 예측 검증 강화",
+            "콘텐츠 위반 오류 처리 개선"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전 업데이트 (v1.9.84 → v1.9.87)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.84",
       "project_type": "flutter",
