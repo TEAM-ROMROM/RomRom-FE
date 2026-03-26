@@ -91,9 +91,9 @@ class GlassHeaderDelegate extends SliverPersistentHeaderDelegate {
               child: centerTitle
                   ? Align(
                       alignment: const Alignment(0, -4 / 22),
-                      child: Text(headerTitle, style: CustomTextStyles.h2),
+                      child: Text(headerTitle, style: CustomTextStyles.h1),
                     )
-                  : Text(headerTitle, style: CustomTextStyles.h2),
+                  : Text(headerTitle, style: CustomTextStyles.h1),
             ),
           ),
 
