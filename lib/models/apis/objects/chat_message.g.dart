@@ -16,6 +16,7 @@ ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
   content: json['content'] as String?,
   imageUrls: (json['imageUrls'] as List<dynamic>?)?.map((e) => e as String).toList(),
   type: $enumDecodeNullable(_$MessageTypeEnumMap, json['type']),
+  isProfanityDetected: json['isProfanityDetected'] as bool?,
 );
 
 Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) => <String, dynamic>{
@@ -28,6 +29,7 @@ Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) => <String, dynam
   'content': instance.content,
   'imageUrls': instance.imageUrls,
   'type': _$MessageTypeEnumMap[instance.type],
+  'isProfanityDetected': instance.isProfanityDetected,
 };
 
 const _$MessageTypeEnumMap = {MessageType.text: 'TEXT', MessageType.image: 'IMAGE', MessageType.system: 'SYSTEM'};
