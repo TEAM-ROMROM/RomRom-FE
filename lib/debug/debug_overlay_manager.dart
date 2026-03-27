@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/debug/widgets/debug_log_panel.dart';
 import 'package:romrom_fe/debug/widgets/debug_menu_panel.dart';
+import 'package:romrom_fe/debug/widgets/debug_server_log_panel.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 
 /// 디버그 오버레이 전체 관리
@@ -14,12 +15,14 @@ class DebugOverlayManager {
   OverlayEntry? _buttonEntry;
   OverlayEntry? _menuEntry;
   OverlayEntry? _logPanelEntry;
+  OverlayEntry? _serverLogPanelEntry;
 
   double _buttonX = 0;
   double _buttonY = 0;
 
   bool _isMenuOpen = false;
   bool _isLogPanelOpen = false;
+  bool _isServerLogPanelOpen = false;
 
   /// 디버그 오버레이 초기화 — navigatorKey의 overlay에 플로팅 버튼 삽입
   void init(GlobalKey<NavigatorState> navigatorKey) {
@@ -69,7 +72,7 @@ class DebugOverlayManager {
           items: [
             DebugMenuItem(label: '로그 뷰어', icon: Icons.terminal, enabled: true, onTap: _toggleLogPanel),
             const DebugMenuItem(label: '자동 로그인', icon: Icons.login, enabled: false),
-            const DebugMenuItem(label: '서버 로그', icon: Icons.cloud, enabled: false),
+            DebugMenuItem(label: '서버 로그', icon: Icons.cloud, enabled: true, onTap: _toggleServerLogPanel),
           ],
         );
       },
@@ -112,10 +115,39 @@ class DebugOverlayManager {
     _isLogPanelOpen = false;
   }
 
+  void _toggleServerLogPanel() {
+    if (_isServerLogPanelOpen) {
+      _closeServerLogPanel();
+    } else {
+      _openServerLogPanel();
+    }
+  }
+
+  void _openServerLogPanel() {
+    _closeServerLogPanel();
+    final overlay = _navigatorKey?.currentState?.overlay;
+    if (overlay == null) return;
+
+    _serverLogPanelEntry = OverlayEntry(
+      builder: (context) {
+        return DebugServerLogPanel(onClose: _closeServerLogPanel, onMinimize: _closeServerLogPanel);
+      },
+    );
+    overlay.insert(_serverLogPanelEntry!, below: _buttonEntry);
+    _isServerLogPanelOpen = true;
+  }
+
+  void _closeServerLogPanel() {
+    _serverLogPanelEntry?.remove();
+    _serverLogPanelEntry = null;
+    _isServerLogPanelOpen = false;
+  }
+
   /// 리소스 정리
   void dispose() {
     _closeMenu();
     _closeLogPanel();
+    _closeServerLogPanel();
     _buttonEntry?.remove();
     _buttonEntry = null;
   }
