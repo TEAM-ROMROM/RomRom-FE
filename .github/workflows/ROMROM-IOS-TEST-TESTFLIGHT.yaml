@@ -115,6 +115,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
+          echo "TEST_BUILD=true" >> .env
           echo ".env file created"
 
       - name: Create Secrets.xcconfig file
@@ -365,6 +366,7 @@ jobs:
           if [ ! -f .env ]; then
             echo "⚠️ .env 파일이 아티팩트에서 복원되지 않았습니다. 재생성합니다."
             echo "${{ secrets.ENV_FILE }}" > .env
+            echo "TEST_BUILD=true" >> .env
           fi
           echo "✅ .env 파일 확인됨 (크기: $(wc -c < .env) bytes)"
 

@@ -214,6 +214,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
+          echo "TEST_BUILD=true" >> .env
           echo ".env file created"
 
       # Keystore와 key.properties 설정
