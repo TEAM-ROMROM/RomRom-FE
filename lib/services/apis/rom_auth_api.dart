@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/email_already_registered_exception.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/apis/responses/auth_response.dart';
 import 'package:romrom_fe/models/user_info.dart';
@@ -118,11 +119,18 @@ class RomAuthApi {
         );
 
         return; // 정상 계정
+      } else if (response.statusCode == 409) {
+        // 동일 이메일이 다른 소셜 플랫폼으로 이미 가입된 경우
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        final String registeredSocialPlatform = errorData['registeredSocialPlatform'] ?? '';
+        throw EmailAlreadyRegisteredException(registeredSocialPlatform: registeredSocialPlatform);
       } else {
         throw Exception('소셜 로그인 실패: ${response.statusCode}, ${response.body}');
       }
     } on AccountSuspendedException {
       rethrow; // 제재 예외는 LoginButton에서 처리
+    } on EmailAlreadyRegisteredException {
+      rethrow; // 이메일 중복 예외는 LoginButton에서 처리
     } catch (error) {
       throw Exception('Error during sign-in: $error');
     }
