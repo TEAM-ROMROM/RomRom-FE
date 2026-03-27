@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:logging/logging.dart';
 import 'package:romrom_fe/debug/log_capture.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 
@@ -29,13 +28,11 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
 
   // 로그 데이터
   final LogCapture _logCapture = LogCapture();
-  StreamSubscription<LogRecord>? _subscription;
+  StreamSubscription<CapturedLog>? _subscription;
   Timer? _debounceTimer;
-  List<LogRecord> _filteredLogs = [];
+  List<CapturedLog> _filteredLogs = [];
 
   // 필터 상태
-  final Set<String> _enabledCategories = {};
-  Level _minLevel = Level.ALL;
   String _searchQuery = '';
   bool _autoScroll = true;
   bool _showCopiedFeedback = false;
@@ -50,13 +47,9 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
   @override
   void initState() {
     super.initState();
-    _enabledCategories.addAll(_logCapture.categories);
     _applyFilters();
 
-    _subscription = _logCapture.stream.listen((record) {
-      if (!_enabledCategories.contains(record.loggerName)) {
-        _enabledCategories.add(record.loggerName);
-      }
+    _subscription = _logCapture.stream.listen((log) {
       // 디바운스: 빈번한 로그 유입 시 UI 업데이트 최적화
       _debounceTimer?.cancel();
       _debounceTimer = Timer(const Duration(milliseconds: 100), () {
@@ -84,13 +77,9 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
   void _applyFilters() {
     if (!mounted) return;
     setState(() {
-      _filteredLogs = _logCapture.logs.where((record) {
-        if (!_enabledCategories.contains(record.loggerName)) {
-          return false;
-        }
-        if (record.level < _minLevel) return false;
+      _filteredLogs = _logCapture.logs.where((log) {
         if (_searchQuery.isNotEmpty) {
-          final message = record.message.toLowerCase();
+          final message = log.message.toLowerCase();
           final query = _searchQuery.toLowerCase();
           if (!message.contains(query)) return false;
         }
@@ -106,15 +95,12 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
 
   void _copyLogs() {
     final text = _filteredLogs
-        .map((r) {
+        .map((log) {
           final time =
-              '${r.time.hour.toString().padLeft(2, '0')}:'
-              '${r.time.minute.toString().padLeft(2, '0')}:'
-              '${r.time.second.toString().padLeft(2, '0')}';
-          var line = '$time [${r.level.name}] ${r.loggerName}: ${r.message}';
-          if (r.error != null) line += '\n  Error: ${r.error}';
-          if (r.stackTrace != null) line += '\n  ${r.stackTrace}';
-          return line;
+              '${log.time.hour.toString().padLeft(2, '0')}:'
+              '${log.time.minute.toString().padLeft(2, '0')}:'
+              '${log.time.second.toString().padLeft(2, '0')}';
+          return '$time ${log.message}';
         })
         .join('\n');
     Clipboard.setData(ClipboardData(text: text));
@@ -122,13 +108,6 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) setState(() => _showCopiedFeedback = false);
     });
-  }
-
-  Color _levelColor(Level level) {
-    if (level >= Level.SEVERE) return AppColors.warningRed;
-    if (level >= Level.WARNING) return AppColors.primaryYellow;
-    if (level >= Level.INFO) return Colors.white;
-    return const Color(0xFF888888);
   }
 
   @override
@@ -221,108 +200,35 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
   }
 
   Widget _buildFilterBar() {
-    final allCategories = _logCapture.categories.toList()..sort();
-    final levels = [Level.ALL, Level.FINE, Level.INFO, Level.WARNING, Level.SEVERE];
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.secondaryBlack2, width: 0.5)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          if (allCategories.isNotEmpty)
-            Wrap(
-              spacing: 4,
-              runSpacing: 2,
-              children: allCategories.map((cat) {
-                final enabled = _enabledCategories.contains(cat);
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (enabled) {
-                        _enabledCategories.remove(cat);
-                      } else {
-                        _enabledCategories.add(cat);
-                      }
-                    });
-                    _applyFilters();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: enabled ? AppColors.opacity20PrimaryYellow : Colors.transparent,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: enabled ? AppColors.primaryYellow : AppColors.secondaryBlack2,
-                        width: 0.5,
-                      ),
-                    ),
-                    child: Text(
-                      cat.isEmpty ? '(root)' : cat,
-                      style: TextStyle(
-                        color: enabled ? AppColors.primaryYellow : const Color(0xFF888888),
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+          Expanded(
+            child: SizedBox(
+              height: 28,
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white, fontSize: 11),
+                decoration: InputDecoration(
+                  hintText: '검색...',
+                  hintStyle: const TextStyle(color: Color(0xFF888888), fontSize: 11),
+                  prefixIcon: const Icon(Icons.search, size: 14, color: Color(0xFF888888)),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 28),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  filled: true,
+                  fillColor: AppColors.secondaryBlack1,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+                ),
+                onChanged: (value) {
+                  _searchQuery = value;
+                  _applyFilters();
+                },
+              ),
             ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Container(
-                height: 28,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(4)),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<Level>(
-                    value: _minLevel,
-                    isDense: true,
-                    dropdownColor: AppColors.secondaryBlack1,
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
-                    items: levels.map((level) {
-                      return DropdownMenuItem(
-                        value: level,
-                        child: Text(level == Level.ALL ? 'ALL' : level.name, style: const TextStyle(fontSize: 11)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _minLevel = value);
-                        _applyFilters();
-                      }
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: SizedBox(
-                  height: 28,
-                  child: TextField(
-                    controller: _searchController,
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
-                    decoration: InputDecoration(
-                      hintText: '검색...',
-                      hintStyle: const TextStyle(color: Color(0xFF888888), fontSize: 11),
-                      prefixIcon: const Icon(Icons.search, size: 14, color: Color(0xFF888888)),
-                      prefixIconConstraints: const BoxConstraints(minWidth: 28),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      filled: true,
-                      fillColor: AppColors.secondaryBlack1,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
-                    ),
-                    onChanged: (value) {
-                      _searchQuery = value;
-                      _applyFilters();
-                    },
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -341,58 +247,27 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       itemCount: _filteredLogs.length,
       itemBuilder: (context, index) {
-        final record = _filteredLogs[index];
+        final log = _filteredLogs[index];
         final time =
-            '${record.time.hour.toString().padLeft(2, '0')}:'
-            '${record.time.minute.toString().padLeft(2, '0')}:'
-            '${record.time.second.toString().padLeft(2, '0')}';
-        final color = _levelColor(record.level);
+            '${log.time.hour.toString().padLeft(2, '0')}:'
+            '${log.time.minute.toString().padLeft(2, '0')}:'
+            '${log.time.second.toString().padLeft(2, '0')}';
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 1),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text.rich(
+          child: Text.rich(
+            TextSpan(
+              children: [
                 TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$time ',
-                      style: const TextStyle(color: Color(0xFF888888), fontSize: 10, fontFamily: 'monospace'),
-                    ),
-                    TextSpan(
-                      text: '[${record.level.name}] ',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                    TextSpan(
-                      text: '${record.loggerName}: ',
-                      style: const TextStyle(color: Color(0xFF88AAFF), fontSize: 10, fontFamily: 'monospace'),
-                    ),
-                    TextSpan(
-                      text: record.message,
-                      style: TextStyle(color: color, fontSize: 10, fontFamily: 'monospace'),
-                    ),
-                  ],
+                  text: '$time ',
+                  style: const TextStyle(color: Color(0xFF888888), fontSize: 10, fontFamily: 'monospace'),
                 ),
-              ),
-              if (record.error != null)
-                Text(
-                  '  Error: ${record.error}',
-                  style: const TextStyle(color: AppColors.warningRed, fontSize: 10, fontFamily: 'monospace'),
+                TextSpan(
+                  text: log.message,
+                  style: const TextStyle(color: Colors.white, fontSize: 10, fontFamily: 'monospace'),
                 ),
-              if (record.stackTrace != null)
-                Text(
-                  '  ${record.stackTrace}',
-                  style: const TextStyle(color: Color(0xFF888888), fontSize: 9, fontFamily: 'monospace'),
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },
