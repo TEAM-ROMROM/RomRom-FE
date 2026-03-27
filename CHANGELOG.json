@@ -1,11 +1,33 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-26T15:15:02Z",
+    "lastUpdated": "2026-03-27T04:40:42Z",
     "currentVersion": "1.9.87",
-    "totalReleases": 92,
+    "totalReleases": 93,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.87",
+      "project_type": "flutter",
+      "date": "2026-03-27",
+      "pr_number": 714,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 소셜 로그인 시 이메일이 다른 플랫폼으로 이미 등록된 경우를 감지하고 사용자에게 안내 메시지를 표시합니다.\n\n* **Documentation**\n  * 버전 정보를 v1.9.87로 업데이트했습니다.",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "소셜 로그인 시 이메일이 다른 플랫폼으로 이미 등록된 경우를 감지하고 사용자에게 안내 메시지를 표시합니다."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "버전 정보를 v1.9.87로 업데이트했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.87",
       "project_type": "flutter",
