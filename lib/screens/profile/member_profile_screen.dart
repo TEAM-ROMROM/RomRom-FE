@@ -14,20 +14,21 @@ import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/profile_sections.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-/// 프로필 조회 화면
+/// 멤버 프로필 조회 화면
 /// 내 프로필이면 "프로필 수정" 버튼 표시, 타인 프로필이면 읽기 전용
-class ProfileScreen extends StatefulWidget {
+class MemberProfileScreen extends StatefulWidget {
   final String memberId;
 
-  const ProfileScreen({super.key, required this.memberId});
+  const MemberProfileScreen({super.key, required this.memberId});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<MemberProfileScreen> createState() => _MemberProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _MemberProfileScreenState extends State<MemberProfileScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   bool _isMyProfile = false;
@@ -257,12 +258,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(height: 52.h),
 
                 // 위치 섹션
-                _buildInfoSection(label: '위치', value: _location),
+                ProfileInfoSection(label: '위치', value: _location),
 
                 SizedBox(height: 16.h),
 
                 // 받은 좋아요 수 섹션
-                _buildLikesSection(label: '받은 좋아요 수', value: "$_totalLikeCount"),
+                ProfileLikesSection(likeCount: _totalLikeCount),
 
                 // 내 프로필인 경우 수정 버튼
                 if (_isMyProfile) ...[SizedBox(height: 40.h), _buildEditButton()],
@@ -295,55 +296,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isBlockedUser ? '차단됨' : '',
       style: CustomTextStyles.p2.copyWith(color: AppColors.isBlockedStatusText),
       textAlign: TextAlign.center,
-    );
-  }
-
-  /// 정보 섹션 (위치)
-  Widget _buildInfoSection({required String label, required String value}) {
-    return Container(
-      width: double.infinity,
-      height: 54.h,
-      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: CustomTextStyles.p2),
-          Text(
-            value,
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 받은 좋아요 수 섹션
-  Widget _buildLikesSection({required String label, required String value}) {
-    return Container(
-      width: double.infinity,
-      height: 54.h,
-      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(label, style: CustomTextStyles.p2),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(AppIcons.profilelikecount, size: 16.sp, color: AppColors.textColorWhite),
-              SizedBox(width: 3.w),
-              Text(
-                value,
-                style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
-                textAlign: TextAlign.right,
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 

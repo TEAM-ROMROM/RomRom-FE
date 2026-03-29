@@ -5,7 +5,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/member_report_screen.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
@@ -30,7 +30,7 @@ CommonAppBar buildChatRoomAppBar({
     title: opponentNickname,
     onTitleTap: () {
       if (opponentId != null) {
-        context.navigateTo(screen: ProfileScreen(memberId: opponentId));
+        context.navigateTo(screen: MemberProfileScreen(memberId: opponentId));
       }
     },
     onBackPressed: onBackPressed,
