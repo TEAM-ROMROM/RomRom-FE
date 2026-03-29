@@ -50,8 +50,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   // 현재 선택된 카드 인덱스
   int _currentCardIndex = 0;
 
-  // 카드 컨트롤러
-  late PageController _cardController;
+  // 카드 컨트롤러 (초기값 0.578 = 227/393, didChangeDependencies에서 실제 화면 크기로 재생성)
+  PageController _cardController = PageController(initialPage: 0, viewportFraction: 227 / 393);
+  bool _cardControllerInitialized = false;
 
   // 토글 애니메이션 컨트롤러
   late AnimationController _toggleAnimationController;
@@ -75,9 +76,6 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     super.initState();
     _scrollController.addListener(_scrollListener);
 
-    // 카드 컨트롤러 초기화
-    _cardController = PageController(initialPage: 0, viewportFraction: 227.w / 393.w);
-
     // 토글 애니메이션 컨트롤러 초기화
     _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
     _toggleAnimation = Tween<double>(
@@ -86,6 +84,16 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
 
     _loadInitialItems();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_cardControllerInitialized) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      _cardController = PageController(initialPage: 0, viewportFraction: 227 / screenWidth);
+      _cardControllerInitialized = true;
+    }
   }
 
   /// 초기 아이템 로드
@@ -439,10 +447,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   void _recreateCardController(int initialPage) {
     // 기존 컨트롤러 정리 후 새로 생성
     _cardController.dispose();
+    final screenWidth = MediaQuery.of(context).size.width;
     _cardController = PageController(
       initialPage: initialPage,
       keepPage: false, // 이전 위치 자동 복원 방지
-      viewportFraction: 227.w / 393.w, // 화면에 보이는 카드의 비율
+      viewportFraction: 227 / screenWidth, // 카드 너비 227px 고정
     );
   }
 
@@ -561,7 +570,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
             )
           : Container(
-              height: 326.h,
+              height: 326,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
                 child: Text('등록된 물품이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
@@ -570,7 +579,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return SizedBox(
-      height: 334.h,
+      height: 334,
       child: PageView.builder(
         controller: _cardController,
         onPageChanged: _onCardPageChanged,
@@ -591,8 +600,13 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               );
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 4.h),
-              child: RequestManagementItemCardWidget(card: _itemCards[index], isActive: index == _currentCardIndex),
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: RequestManagementItemCardWidget(
+                card: _itemCards[index],
+                isActive: index == _currentCardIndex,
+                width: 219,
+                height: 326,
+              ),
             ),
           );
         },
