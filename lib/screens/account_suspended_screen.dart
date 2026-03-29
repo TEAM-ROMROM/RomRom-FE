@@ -161,11 +161,15 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
                     color: AppColors.opacity60White,
                   ),
                   children: [
-                    TextSpan(text: '안녕하세요, $_nickname님.존난나나나 '.noBreak),
+                    TextSpan(text: '안녕하세요, $_nickname님. '.noBreak),
                     TextSpan(text: (isPermanent ? '운영 정책 위반으로 인해\n' : '롬롬 커뮤니티 가이드라인\n위반으로 ').noBreak),
                     TextSpan(
                       text: (isPermanent ? '롬롬 서비스 이용이 영구적으로 제한' : '서비스 이용이 제한').noBreak,
-                      style: const TextStyle(color: AppColors.warningRed),
+                      style: CustomTextStyles.p1.copyWith(
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                        color: AppColors.warningRed,
+                      ),
                     ),
                     TextSpan(text: (isPermanent ? '되었습니다.' : '되었음을 알려드립니다.').noBreak),
                   ],

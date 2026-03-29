@@ -205,6 +205,6 @@ Color darkenBlend(Color c) {
 /// 단어 내부 문자 사이에 Word Joiner(\u2060)를 삽입하여 단어 중간 줄바꿈을 방지
 extension StringWordWrapExtension on String {
   String get noBreak {
-    return replaceAllMapped(RegExp(r'[^\s]+'), (match) => match.group(0)!.split('').join('\u2060'));
+    return replaceAllMapped(RegExp(r'[^\s]+'), (match) => match.group(0)!.characters.join('\u2060'));
   }
 }
