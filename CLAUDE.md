@@ -15,6 +15,15 @@ Flutter 기반 중고거래 플랫폼. iOS/Android 전용 (웹 불필요).
 - **API 중복 요청 방지**: 버튼/액션에서 API를 호출할 때 `Set<T> _pendingRequests` 패턴으로 진행 중인 요청 추적. 요청 시작 시 Set에 추가, `finally`에서 제거. 이미 Set에 있으면 early return.
 
 - **iPad/대형기기 대응 (필수)**: 디자인 기준은 iPhone (393x852)이지만, iPad에서도 정상 동작해야 함.
+  - **태블릿 여부 판별**: `lib/utils/device_type.dart`의 `isTablet` 전역 변수 사용. `MediaQuery.of(context).size.width > 600`을 직접 쓰지 말 것. `main.dart` 시작 시 `initDeviceType(context)`로 초기화되므로 앱 어디서든 `isTablet`으로 참조 가능
+    ```dart
+    // ✅ 올바른 사용
+    import 'package:romrom_fe/utils/device_type.dart';
+    final height = isTablet ? 88.0 : 64.0;
+
+    // ❌ 금지
+    final isTablet = MediaQuery.of(context).size.width > 600; // 매번 계산 금지
+    ```
   - `SizedBox(height: N.h)` 같은 **고정 높이 컨테이너 안에 여러 위젯을 넣지 말 것** → overflow 발생. 대신 `IntrinsicHeight` 또는 고정 높이 제거
   - 이미지/정사각형 요소는 `height: N.h` 대신 **`height: N.w`** 사용 (너비 기준이 더 안전)
   - 위치 권한 거부 등 실패 케이스에서 **반드시 폴백 처리** (서울시청 좌표 등). `_currentPosition == null`인 채로 로딩 화면 유지 금지

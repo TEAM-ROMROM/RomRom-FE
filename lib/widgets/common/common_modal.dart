@@ -154,8 +154,8 @@ class CommonModal extends StatelessWidget {
               // 아이콘
               Center(
                 child: Container(
-                  width: 40.w,
-                  height: 40.h,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(color: iconBackgroundColor, shape: BoxShape.circle),
                   alignment: Alignment.center,
                   child: Icon(icon, size: 40.sp, color: iconColor),
@@ -214,7 +214,7 @@ class CommonModal extends StatelessWidget {
         // 취소 버튼
         Expanded(
           child: SizedBox(
-            height: 44.h,
+            height: 44,
             child: Material(
               color: AppColors.opacity30PrimaryBlack,
               borderRadius: BorderRadius.circular(10.r),
@@ -234,7 +234,7 @@ class CommonModal extends StatelessWidget {
         // 확인/삭제/나가기 버튼
         Expanded(
           child: SizedBox(
-            height: 44.h,
+            height: 44,
             child: Material(
               color: confirmButtonColor,
               borderRadius: BorderRadius.circular(10.r),

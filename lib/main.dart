@@ -22,6 +22,7 @@ import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/notification_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/device_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 백그라운드에서 알림 설정(최상단에 위치 해야 함)
@@ -159,6 +160,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       splitScreenMode: true,
       child: Builder(
         builder: (context) {
+          initDeviceType(context);
           return SafeArea(
             top: false,
             bottom: Platform.isAndroid,
