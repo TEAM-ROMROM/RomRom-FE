@@ -249,7 +249,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // 닉네임
                 _buildNicknameSection(),
 
-                SizedBox(height: 50.h),
+                SizedBox(height: 8.h),
+
+                // 차단여부
+                _buildBlockedStatusSection(),
+
+                SizedBox(height: 52.h),
 
                 // 위치 섹션
                 _buildInfoSection(label: '위치', value: _location),
@@ -257,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(height: 16.h),
 
                 // 받은 좋아요 수 섹션
-                _buildLikesSection(),
+                _buildLikesSection(label: '받은 좋아요 수', value: "$_totalLikeCount"),
 
                 // 내 프로필인 경우 수정 버튼
                 if (_isMyProfile) ...[SizedBox(height: 40.h), _buildEditButton()],
@@ -284,6 +289,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Text(_nickname, style: CustomTextStyles.h2, textAlign: TextAlign.center);
   }
 
+  /// 차단 여부 섹션
+  Widget _buildBlockedStatusSection() {
+    return Text(
+      _isBlockedUser ? '차단됨' : '',
+      style: CustomTextStyles.p2.copyWith(color: AppColors.isBlockedStatusText),
+      textAlign: TextAlign.center,
+    );
+  }
+
   /// 정보 섹션 (위치)
   Widget _buildInfoSection({required String label, required String value}) {
     return Container(
@@ -294,10 +308,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
+          Text(label, style: CustomTextStyles.p2),
           Text(
             value,
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w500, color: AppColors.opacity60White),
+            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
           ),
         ],
       ),
@@ -305,23 +319,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// 받은 좋아요 수 섹션
-  Widget _buildLikesSection() {
+  Widget _buildLikesSection({required String label, required String value}) {
     return Container(
       width: double.infinity,
       height: 54.h,
       decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text('받은 좋아요 수', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
+          Text(label, style: CustomTextStyles.p2),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(AppIcons.profilelikecount, size: 16.sp, color: AppColors.opacity60White),
-              SizedBox(width: 4.w),
+              Icon(AppIcons.profilelikecount, size: 16.sp, color: AppColors.textColorWhite),
+              SizedBox(width: 3.w),
               Text(
-                '$_totalLikeCount',
-                style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
+                value,
+                style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
                 textAlign: TextAlign.right,
               ),
             ],

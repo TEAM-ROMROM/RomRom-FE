@@ -440,10 +440,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: CustomTextStyles.p2),
-          Text(
-            value,
-            style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, color: AppColors.opacity60White),
-          ),
+          Text(value, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
         ],
       ),
     );
