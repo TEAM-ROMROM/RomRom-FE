@@ -288,9 +288,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildInfoSection({required String label, required String value}) {
     return Container(
       width: double.infinity,
-      height: 54.h,
       decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -308,9 +307,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildLikesSection() {
     return Container(
       width: double.infinity,
-      height: 54.h,
       decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

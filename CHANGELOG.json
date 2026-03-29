@@ -1,11 +1,58 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-26T15:15:02Z",
-    "currentVersion": "1.9.87",
-    "totalReleases": 92,
+    "lastUpdated": "2026-03-29T13:04:07Z",
+    "currentVersion": "1.9.93",
+    "totalReleases": 94,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.93",
+      "project_type": "flutter",
+      "date": "2026-03-29",
+      "pr_number": 726,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 소셜 로그인 시 이메일이 다른 플랫폼에 이미 등록된 경우를 감지하고 사용자에게 안내 메시지 표시\n  * 테스트 환경에서 디버그 패널 추가로 실시간 로그 조회 및 서버 로그 모니터링 지원\n\n* **개선사항**\n  * 태블릿 및 다양한 화면 크기에 최적화된 반응형 레이아웃 개선\n  * iPhone 기기 설정 추가\n  * 버전 1.9.94로 업그레이드",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "소셜 로그인 시 이메일이 다른 플랫폼에 이미 등록된 경우를 감지하고 사용자에게 안내 메시지 표시",
+            "테스트 환경에서 디버그 패널 추가로 실시간 로그 조회 및 서버 로그 모니터링 지원"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "태블릿 및 다양한 화면 크기에 최적화된 반응형 레이아웃 개선",
+            "iPhone 기기 설정 추가",
+            "버전 1.9.94로 업그레이드"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.87",
+      "project_type": "flutter",
+      "date": "2026-03-27",
+      "pr_number": 714,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 소셜 로그인 시 이메일이 다른 플랫폼으로 이미 등록된 경우를 감지하고 사용자에게 안내 메시지를 표시합니다.\n\n* **Documentation**\n  * 버전 정보를 v1.9.87로 업데이트했습니다.",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "소셜 로그인 시 이메일이 다른 플랫폼으로 이미 등록된 경우를 감지하고 사용자에게 안내 메시지를 표시합니다."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "버전 정보를 v1.9.87로 업데이트했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.87",
       "project_type": "flutter",

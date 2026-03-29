@@ -42,7 +42,6 @@ class SentRequestItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 361.w,
-      height: 191.h,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
       child: Column(
         children: [
@@ -73,25 +72,23 @@ class SentRequestItemCard extends StatelessWidget {
 
   /// 하단 정보 영역
   Widget _buildBottomInfoSection(BuildContext context) {
-    return Expanded(
-      child: Stack(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTitle(),
-                SizedBox(height: 8.h),
-                _buildLocationAndTime(),
-                const Spacer(),
-                _buildTagsAndStatus(),
-              ],
-            ),
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTitle(),
+              SizedBox(height: 8.h),
+              _buildLocationAndTime(),
+              const SizedBox(height: 12),
+              _buildTagsAndStatus(),
+            ],
           ),
-          if (tradeStatus != TradeStatus.traded) _buildMenuIcon(),
-        ],
-      ),
+        ),
+        if (tradeStatus != TradeStatus.traded) _buildMenuIcon(),
+      ],
     );
   }
 
