@@ -25,7 +25,7 @@ class DebugMenuPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
 
-    final menuWidth = 180.0;
+    const menuWidth = 180.0;
     final menuHeight = items.length * 48.0 + 16;
     final menuX = (x - menuWidth - 8).clamp(8.0, screenSize.width - menuWidth - 8);
     final menuY = (y - menuHeight / 2).clamp(8.0, screenSize.height - menuHeight - 8);

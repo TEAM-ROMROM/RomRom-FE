@@ -25,7 +25,7 @@ import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -419,7 +419,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               ? null
                               : () {
                                   if (widget.item.authorMemberId != null) {
-                                    context.navigateTo(screen: ProfileScreen(memberId: widget.item.authorMemberId!));
+                                    context.navigateTo(
+                                      screen: MemberProfileScreen(memberId: widget.item.authorMemberId!),
+                                    );
                                   }
                                 },
                           child: ClipOval(
