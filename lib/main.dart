@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/debug/debug_config.dart';
+import 'package:romrom_fe/debug/debug_overlay_manager.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/firebase_options.dart';
@@ -101,11 +103,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // 테스트 빌드인 경우 디버그 오버레이 초기화
+    if (DebugConfig.isTestBuild) {
+      DebugOverlayManager().init(navigatorKey);
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (DebugConfig.isTestBuild) {
+      DebugOverlayManager().dispose();
+    }
     super.dispose();
   }
 
