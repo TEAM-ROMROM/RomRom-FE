@@ -200,3 +200,11 @@ String getLastActivityTime(DateTime? lastActiveAt) {
 Color darkenBlend(Color c) {
   return Color.alphaBlend(AppColors.opacity20Black, c);
 }
+
+/// 공백 단위로만 줄바꿈을 허용하는 String 확장
+/// 단어 내부 문자 사이에 Word Joiner(\u2060)를 삽입하여 단어 중간 줄바꿈을 방지
+extension StringWordWrapExtension on String {
+  String get noBreak {
+    return replaceAllMapped(RegExp(r'[^\s]+'), (match) => match.group(0)!.split('').join('\u2060'));
+  }
+}
