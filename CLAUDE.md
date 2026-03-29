@@ -21,6 +21,13 @@ Flutter 기반 중고거래 플랫폼. iOS/Android 전용 (웹 불필요).
   - `ScreenUtil` 설정: `minTextAdapt: true`, `splitScreenMode: true` 유지 필수
   - **모달/다이얼로그는 고정 픽셀값 사용** (`.w` `.h` 금지). 모달은 화면 크기에 비례하면 iPad에서 너무 커짐. `width: 312`, `height: 44` 같이 고정값 사용
   - **고정 높이 + 내부 Column 조합 금지**: `Container(height: N)` 안에 `Column`을 넣으면 내부 콘텐츠가 고정 높이를 초과할 때 overflow 발생. 대신 `Column(mainAxisSize: MainAxisSize.min)`으로 콘텐츠 크기에 맞게 자동 조절할 것
+  - **`height: N.h` + `padding: vertical: N.h` 조합 절대 금지**: iPad에서 height와 padding 모두 1.6배로 커지면, padding만으로 height를 초과해 내용이 잘리거나 overflow 발생. 해결: `height` 제거 후 `const EdgeInsets.symmetric(vertical: 고정px)`만 사용. 컨테이너가 콘텐츠 크기에 맞게 자동 조절됨
+    ```dart
+    // ❌ 금지
+    Container(height: 82.h, padding: EdgeInsets.symmetric(vertical: 16.h), child: ...)
+    // ✅ 올바른
+    Container(padding: const EdgeInsets.symmetric(vertical: 16), child: ...)
+    ```
   - **시스템 UI 패딩 처리**: 하단 네비게이션바 등 시스템 영역과 맞닿는 위젯은 `height` 고정 대신 `MediaQuery.of(context).padding.bottom`을 `SizedBox`로 별도 처리. Android는 `padding.bottom=0`이 일반적이므로 iOS/Android 분기 처리 필요
 
 ```dart
