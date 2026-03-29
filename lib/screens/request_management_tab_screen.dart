@@ -20,6 +20,7 @@ import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
@@ -289,12 +290,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     // 보낸 요청은 필터링 없이 모든 요청 표시
     if (_sentRequests.isEmpty) {
       return _isLoading
-          ? SizedBox(
-              height: 500.h,
-              child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+          ? const SizedBox(
+              height: 500,
+              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
             )
           : Container(
-              height: 200.h,
+              height: 200,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
                 child: Text('보낸 요청이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
@@ -546,7 +547,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                           // 4. 요청 목록 리스트
                           _buildFullRequestItemsList(),
 
-                          SizedBox(height: 100.h), // 하단 여백
+                          const SizedBox(height: 100), // 하단 여백
                         ],
                       ),
                     ),
@@ -562,15 +563,18 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 물품 카드 캐러셀 섹션
   Widget _buildItemCardsCarousel() {
+    final double cardAreaHeight = isTablet ? 280 : 326;
+    final double pageViewHeight = isTablet ? 290 : 334;
+
     if (_itemCards.isEmpty) {
       // 데이터가 없을 때 빈 상태 표시
       return _isLoading
-          ? SizedBox(
-              height: 150.h,
-              child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+          ? const SizedBox(
+              height: 150,
+              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
             )
           : Container(
-              height: 326,
+              height: cardAreaHeight,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
                 child: Text('등록된 물품이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
@@ -579,7 +583,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return SizedBox(
-      height: 334,
+      height: pageViewHeight,
       child: PageView.builder(
         controller: _cardController,
         onPageChanged: _onCardPageChanged,
@@ -604,8 +608,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               child: RequestManagementItemCardWidget(
                 card: _itemCards[index],
                 isActive: index == _currentCardIndex,
-                width: 219,
-                height: 326,
+                width: isTablet ? 183 : 219,
+                height: isTablet ? 272 : 326,
               ),
             ),
           );
@@ -720,12 +724,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
     if (filteredRequests.isEmpty) {
       return _isLoading
-          ? SizedBox(
-              height: 150.h,
-              child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+          ? const SizedBox(
+              height: 150,
+              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
             )
           : Container(
-              height: 200.h,
+              height: 200,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
                 child: Text(
@@ -737,9 +741,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return _isLoading
-        ? SizedBox(
-            height: 150.h,
-            child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+        ? const SizedBox(
+            height: 150,
+            child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
           )
         : Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
