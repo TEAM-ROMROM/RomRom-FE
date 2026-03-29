@@ -11,12 +11,14 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
+import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 채팅방 앱바
 /// [onBlockConfirm] 차단 확인 시 호출 - API 호출 및 채팅방 나가기 처리
 /// [onLeaveChatRoomConfirm] 채팅방 나가기 확인 시 호출 - API 호출 및 화면 이동 처리
-CommonAppBar buildChatRoomAppBar({
+/// iPad(너비 600px 초과)에서는 두 줄 타이틀을 위해 toolbarHeight를 88로 확장, iPhone은 64px 유지
+PreferredSizeWidget buildChatRoomAppBar({
   required BuildContext context,
   required String opponentNickname,
   required String? opponentId,
@@ -26,6 +28,8 @@ CommonAppBar buildChatRoomAppBar({
   required Future<void> Function() onBlockConfirm,
   required Future<void> Function() onLeaveChatRoomConfirm,
 }) {
+  final double appBarHeight = isTablet ? 88 : 64;
+
   return CommonAppBar(
     title: opponentNickname,
     onTitleTap: () {
@@ -35,6 +39,7 @@ CommonAppBar buildChatRoomAppBar({
     },
     onBackPressed: onBackPressed,
     showBottomBorder: true,
+    appBarHeight: appBarHeight,
     titleWidgets: _buildTitleWidgets(
       opponentNickname: opponentNickname,
       isOpponentOnline: isOpponentOnline,
@@ -56,42 +61,40 @@ Widget _buildTitleWidgets({
   required bool isOpponentOnline,
   required DateTime? opponentLastActiveAt,
 }) {
-  return Padding(
-    padding: EdgeInsets.only(top: 6.0.h),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 240.w,
-          child: Text(
-            opponentNickname,
-            textAlign: TextAlign.center,
-            style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, overflow: TextOverflow.ellipsis),
-          ),
+  return Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SizedBox(
+        width: 240.w,
+        child: Text(
+          opponentNickname,
+          textAlign: TextAlign.center,
+          style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, overflow: TextOverflow.ellipsis),
         ),
-        Padding(
-          padding: EdgeInsets.only(top: 9.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 8.w,
-                height: 8.w,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isOpponentOnline ? AppColors.chatActiveStatus : AppColors.chatInactiveStatus,
-                ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8.w,
+              height: 8.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isOpponentOnline ? AppColors.chatActiveStatus : AppColors.chatInactiveStatus,
               ),
-              SizedBox(width: 8.w),
-              Text(
-                isOpponentOnline ? '활동 중' : getLastActivityTime(opponentLastActiveAt),
-                style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
-              ),
-            ],
-          ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              isOpponentOnline ? '활동 중' : getLastActivityTime(opponentLastActiveAt),
+              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
+            ),
+          ],
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 

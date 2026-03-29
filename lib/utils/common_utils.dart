@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import '../widgets/common/common_modal.dart';
+import 'package:romrom_fe/utils/device_type.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
@@ -89,9 +90,7 @@ extension NavigationExtension on BuildContext {
 
 /// 화면 크기에 따라 폰트 크기를 조정하는 함수
 double adjustedFontSize(BuildContext context, double spSize) {
-  final shortestSide = MediaQuery.of(context).size.shortestSide;
-  if (shortestSide > 600) {
-    // 태블릿 크기 기준
+  if (isTablet) {
     return (spSize * 0.8).sp; // 태블릿에서는 80% 크기로 조정
   } else {
     return spSize.sp;
@@ -199,4 +198,12 @@ String getLastActivityTime(DateTime? lastActiveAt) {
 // 색상을 어둡게 만드는 함수(버튼 highlight용)
 Color darkenBlend(Color c) {
   return Color.alphaBlend(AppColors.opacity20Black, c);
+}
+
+/// 공백 단위로만 줄바꿈을 허용하는 String 확장
+/// 단어 내부 문자 사이에 Word Joiner(\u2060)를 삽입하여 단어 중간 줄바꿈을 방지
+extension StringWordWrapExtension on String {
+  String get noBreak {
+    return replaceAllMapped(RegExp(r'[^\s]+'), (match) => match.group(0)!.characters.join('\u2060'));
+  }
 }

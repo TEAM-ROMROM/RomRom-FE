@@ -314,92 +314,86 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       clipBehavior: Clip.none,
       children: [
         // 중앙 텍스트 or 입력창
-        SizedBox(
-          height: 48.h,
-          child: Align(
-            alignment: const Alignment(0, -1.0),
-            child: _isEditingNickname || nicknameFocusNode.hasFocus || _nickname.isEmpty
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 244.w, maxHeight: 28.h),
-                        child: TextField(
-                          controller: nicknameController,
-                          focusNode: nicknameFocusNode,
-                          style: style,
-                          textAlign: TextAlign.center,
-                          cursorColor: AppColors.textColorWhite,
-                          textAlignVertical: TextAlignVertical.bottom,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: _nickname.isEmpty
-                                ? const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.errorBorder))
-                                : InputBorder.none,
-                            focusedBorder: _nickname.isEmpty
-                                ? const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.errorBorder))
-                                : const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.secondaryBlack2)),
-                            isDense: true,
-                            hintText: '닉네임을 입력하세요',
-                            hintStyle: style.copyWith(color: AppColors.opacity30White),
-                            contentPadding: const EdgeInsets.all(8),
+        Align(
+          alignment: Alignment.center,
+          child: _isEditingNickname || nicknameFocusNode.hasFocus || _nickname.isEmpty
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: 244.w, maxHeight: 44),
+                      child: TextField(
+                        controller: nicknameController,
+                        focusNode: nicknameFocusNode,
+                        style: style,
+                        textAlign: TextAlign.center,
+                        cursorColor: AppColors.textColorWhite,
+                        textAlignVertical: TextAlignVertical.bottom,
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: _nickname.isEmpty
+                              ? const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.errorBorder))
+                              : InputBorder.none,
+                          focusedBorder: _nickname.isEmpty
+                              ? const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.errorBorder))
+                              : const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.secondaryBlack2)),
+                          isDense: true,
+                          hintText: '롬롬유저1234',
+                          hintStyle: style.copyWith(color: AppColors.opacity30White),
+                          contentPadding: const EdgeInsets.all(8),
 
-                            suffix: GestureDetector(
-                              onTap: () {
-                                nicknameController.clear();
-                                setState(() {
-                                  _nickname = '';
-                                  _isProfileEdited = true;
-                                });
-                              },
-                              child: Container(
-                                width: 16.w,
-                                height: 16.h,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.secondaryBlack2,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Icon(AppIcons.cancel, size: 11.sp, color: AppColors.textColorWhite),
-                                ),
+                          suffix: GestureDetector(
+                            onTap: () {
+                              nicknameController.clear();
+                              setState(() {
+                                _nickname = '';
+                                _isProfileEdited = true;
+                              });
+                            },
+                            child: Container(
+                              width: 16.w,
+                              height: 16.h,
+                              decoration: const BoxDecoration(color: AppColors.secondaryBlack2, shape: BoxShape.circle),
+                              child: Center(
+                                child: Icon(AppIcons.cancel, size: 11.sp, color: AppColors.textColorWhite),
                               ),
                             ),
                           ),
-                          onTap: () => setState(() => _showProfileSaveButton = true),
-                          onTapOutside: (_) => setState(() {
-                            nicknameFocusNode.unfocus();
-                            _isEditingNickname = false;
-                          }),
-                          onChanged: (_) => setState(() {
-                            _nickname = nicknameController.text;
-                            _isProfileEdited = true;
-                          }),
                         ),
+                        onTap: () => setState(() => _showProfileSaveButton = true),
+                        onTapOutside: (_) => setState(() {
+                          nicknameFocusNode.unfocus();
+                          _isEditingNickname = false;
+                        }),
+                        onChanged: (_) => setState(() {
+                          _nickname = nicknameController.text;
+                          _isProfileEdited = true;
+                        }),
                       ),
-                      if (_nickname.isEmpty)
-                        Padding(
-                          padding: EdgeInsets.only(top: 4.h),
-                          child: Text('닉네임을 입력해주세요', style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder)),
-                        ),
-                    ],
-                  )
-                : GestureDetector(
-                    onTap: () {
-                      setState(() => _isEditingNickname = true);
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) FocusScope.of(context).requestFocus(nicknameFocusNode);
-                      });
-                    },
-                    child: Text(
-                      viewText,
-                      style: style,
-                      maxLines: 1, // 실측과 표시를 일치시키기 위해 한 줄 고정
-                      overflow: TextOverflow.clip, // 필요 시 ellipsis로 교체 가능
-                      softWrap: false,
-                      textAlign: TextAlign.center,
                     ),
+                    if (_nickname.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text('닉네임을 입력해주세요', style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder)),
+                      ),
+                  ],
+                )
+              : GestureDetector(
+                  onTap: () {
+                    setState(() => _isEditingNickname = true);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) FocusScope.of(context).requestFocus(nicknameFocusNode);
+                    });
+                  },
+                  child: Text(
+                    viewText,
+                    style: style,
+                    maxLines: 1, // 실측과 표시를 일치시키기 위해 한 줄 고정
+                    overflow: TextOverflow.clip, // 필요 시 ellipsis로 교체 가능
+                    softWrap: false,
+                    textAlign: TextAlign.center,
                   ),
-          ),
+                ),
         ),
 
         // 텍스트 "오른쪽 끝 + 8px" 위치에 버튼
