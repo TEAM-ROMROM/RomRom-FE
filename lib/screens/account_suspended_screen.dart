@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/auth_service.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 /// 제재된 사용자 안내 화면
@@ -112,7 +113,7 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
           children: [
             // X 닫기 버튼 (터치 영역 44x44 확보)
             Padding(
-              padding: EdgeInsets.only(left: 12.w, top: 4.h),
+              padding: EdgeInsets.only(left: 12.w, top: 16.h),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => _handleClose(context),
@@ -126,7 +127,7 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
               ),
             ),
 
-            SizedBox(height: 20.h),
+            SizedBox(height: 40.h),
 
             // 제목
             Padding(
@@ -135,12 +136,12 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
                 text: TextSpan(
                   style: CustomTextStyles.h1.copyWith(height: 1.2),
                   children: [
-                    const TextSpan(text: '서비스 이용이\n'),
+                    TextSpan(text: '서비스 이용이\n'.noBreak),
                     TextSpan(
-                      text: isPermanent ? '영구적으로 제한' : '일시적으로 제한',
-                      style: CustomTextStyles.h1.copyWith(height: 1.2, color: AppColors.warningRed),
+                      text: (isPermanent ? '영구적으로 제한' : '일시적으로 제한').noBreak,
+                      style: CustomTextStyles.h1.copyWith(height: 1.2, color: AppColors.primaryYellow),
                     ),
-                    const TextSpan(text: '되었습니다'),
+                    TextSpan(text: '되었습니다'.noBreak),
                   ],
                 ),
               ),
@@ -151,14 +152,27 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
             // 부제목
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: Text(
-                isPermanent
-                    ? '안녕하세요, $_nickname님. 운영 정책 위반으로 인해\n롬롬 서비스 이용이 영구적으로 제한되었습니다.'
-                    : '안녕하세요, $_nickname님. 롬롬 커뮤니티 가이드라인\n위반으로 서비스 이용이 제한되었음을 알려드립니다.',
-                style: CustomTextStyles.p1.copyWith(
-                  fontWeight: FontWeight.w500,
-                  height: 1.4,
-                  color: AppColors.opacity60White,
+              child: RichText(
+                textAlign: TextAlign.left,
+                text: TextSpan(
+                  style: CustomTextStyles.p1.copyWith(
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                    color: AppColors.opacity60White,
+                  ),
+                  children: [
+                    TextSpan(text: '안녕하세요, $_nickname님. '.noBreak),
+                    TextSpan(text: (isPermanent ? '운영 정책 위반으로 인해\n' : '롬롬 커뮤니티 가이드라인\n위반으로 ').noBreak),
+                    TextSpan(
+                      text: (isPermanent ? '롬롬 서비스 이용이 영구적으로 제한' : '서비스 이용이 제한').noBreak,
+                      style: CustomTextStyles.p1.copyWith(
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                        color: AppColors.warningRed,
+                      ),
+                    ),
+                    TextSpan(text: (isPermanent ? '되었습니다.' : '되었음을 알려드립니다.').noBreak),
+                  ],
                 ),
               ),
             ),
@@ -185,7 +199,7 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
 
                     // 하단 안내 문구
                     Text(
-                      isPermanent ? '* 영구 제재 시 동일한 계정 및 기기로는 재가입이 불가능합니다.' : '* 해당 기간이 지나면 자동으로 제한이 해제됩니다.',
+                      (isPermanent ? '* 영구 제재 시 동일한 계정 및 기기로는 재가입이 불가능합니다.' : '* 해당 기간이 지나면 자동으로 제한이 해제됩니다.').noBreak,
                       style: CustomTextStyles.p3.copyWith(
                         fontWeight: FontWeight.w500,
                         height: 1.0,
@@ -248,10 +262,10 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
         ),
         SizedBox(width: 8.w),
         // 라벨
-        Text('$label : ', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500, height: 1.2)),
+        Text('$label : '.noBreak, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500, height: 1.2)),
         // 값
         Expanded(
-          child: Text(value, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500, height: 1.2)),
+          child: Text(value.noBreak, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500, height: 1.2)),
         ),
       ],
     );
