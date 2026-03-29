@@ -20,7 +20,6 @@ import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
@@ -92,7 +91,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     super.didChangeDependencies();
     if (!_cardControllerInitialized) {
       final screenWidth = MediaQuery.of(context).size.width;
-      _cardController = PageController(initialPage: 0, viewportFraction: 227 / screenWidth);
+      _cardController = PageController(initialPage: 0, viewportFraction: 219 / screenWidth);
       _cardControllerInitialized = true;
     }
   }
@@ -452,7 +451,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     _cardController = PageController(
       initialPage: initialPage,
       keepPage: false, // 이전 위치 자동 복원 방지
-      viewportFraction: 227 / screenWidth, // 카드 너비 227px 고정
+      viewportFraction: 219 / screenWidth, // 카드 너비 219px 고정
     );
   }
 
@@ -563,18 +562,14 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 물품 카드 캐러셀 섹션
   Widget _buildItemCardsCarousel() {
-    final double cardAreaHeight = isTablet ? 280 : 326;
-    final double pageViewHeight = isTablet ? 290 : 334;
-
     if (_itemCards.isEmpty) {
-      // 데이터가 없을 때 빈 상태 표시
       return _isLoading
           ? const SizedBox(
               height: 150,
               child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
             )
           : Container(
-              height: cardAreaHeight,
+              height: 326,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
                 child: Text('등록된 물품이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
@@ -583,7 +578,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return SizedBox(
-      height: pageViewHeight,
+      height: 334,
       child: PageView.builder(
         controller: _cardController,
         onPageChanged: _onCardPageChanged,
@@ -596,10 +591,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   itemId: _itemCards[index].itemId,
                   imageSize: Size(MediaQuery.of(context).size.width, 400.h),
                   currentImageIndex: 0,
-                  heroTag: 'itemImage_${_itemCards[index].itemId}_0', // ← 인덱스 포함
+                  heroTag: 'itemImage_${_itemCards[index].itemId}_0',
                   isMyItem: true,
                   isRequestManagement: true,
-                  isChatAccessAllowed: false, // 내 물품 = 채팅 불가
+                  isChatAccessAllowed: false,
                 ),
               );
             },
@@ -608,8 +603,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               child: RequestManagementItemCardWidget(
                 card: _itemCards[index],
                 isActive: index == _currentCardIndex,
-                width: isTablet ? 183 : 219,
-                height: isTablet ? 272 : 326,
+                width: 219,
+                height: 326,
               ),
             ),
           );
