@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:flutter/services.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/email_already_registered_exception.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -126,6 +127,18 @@ class KakaoAuthService {
       return true; // 성공 시 true 반환
     } on AccountSuspendedException {
       rethrow;
+    } on EmailAlreadyRegisteredException {
+      rethrow;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'account-exists-with-different-credential' && e.email != null) {
+        debugPrint('Firebase 이메일 중복 감지: ${e.email}');
+        final methods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(e.email!);
+        debugPrint('기존 가입 provider: $methods');
+        final platform = LoginPlatforms.platformNameFromFirebaseProvider(methods.isNotEmpty ? methods.first : '');
+        throw EmailAlreadyRegisteredException(registeredSocialPlatform: platform);
+      }
+      debugPrint('카카오톡으로 로그인 실패: $e');
+      return false;
     } catch (error) {
       debugPrint('카카오톡으로 로그인 실패: $error');
 
