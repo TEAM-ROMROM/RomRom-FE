@@ -40,80 +40,83 @@ class RequestListItemCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 345.w,
-      height: 70.h,
-      child: Row(
-        children: [
-          // 이미지 (왼쪽, 위, 아래 12px 마진)
-          Padding(
-            padding: EdgeInsets.only(right: 8.w),
-            child: Container(
-              width: 70.w,
-              height: 70.h,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(4.r)),
-              child: ClipRRect(borderRadius: BorderRadius.circular(4.r), child: _buildImage(imageUrl)),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 이미지
+            Padding(
+              padding: EdgeInsets.only(right: 8.w),
+              child: SizedBox(
+                width: 70.w,
+                height: 70.w,
+                child: Container(
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(4.r)),
+                  child: ClipRRect(borderRadius: BorderRadius.circular(4.r), child: _buildImage(imageUrl)),
+                ),
+              ),
             ),
-          ),
-          // 정보 영역
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.zero,
+            // 정보 영역
+            Expanded(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 왼쪽 영역 (제목 + 주소 + 시간 + 거래 옵션 태그)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          // 제목 (7자 제한)
-                          Text(
-                            title.length > 8 ? '${title.substring(0, 8)}...' : title,
-                            style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
-                          ),
-                          if (isNew) ...[
-                            SizedBox(width: 8.w),
-                            SvgPicture.asset('assets/images/redNew.svg', width: 16.w, height: 16.h),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            // 제목 (7자 제한)
+                            Text(
+                              title.length > 8 ? '${title.substring(0, 8)}...' : title,
+                              style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
+                            ),
+                            if (isNew) ...[
+                              SizedBox(width: 8.w),
+                              SvgPicture.asset('assets/images/redNew.svg', width: 16.w, height: 16.w),
+                            ],
                           ],
-                        ],
-                      ),
+                        ),
 
-                      SizedBox(height: 8.h),
+                        const SizedBox(height: 8),
 
-                      Row(
-                        children: [
-                          // 주소
-                          Text(
-                            address,
-                            style: CustomTextStyles.p3.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.opacity60White,
+                        Row(
+                          children: [
+                            // 주소
+                            Text(
+                              address,
+                              style: CustomTextStyles.p3.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.opacity60White,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 4.w),
-                          // 중간점
-                          Container(
-                            width: 2.w,
-                            height: 2.h,
-                            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.opacity60White),
-                          ),
-                          SizedBox(width: 4.w),
-                          // 시간
-                          Text(
-                            getTimeAgo(createdDate),
-                            style: CustomTextStyles.p3.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.opacity60White,
+                            SizedBox(width: 4.w),
+                            // 중간점
+                            Container(
+                              width: 2.w,
+                              height: 2.w,
+                              decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.opacity60White),
                             ),
-                          ),
-                        ],
-                      ),
+                            SizedBox(width: 4.w),
+                            // 시간
+                            Text(
+                              getTimeAgo(createdDate),
+                              style: CustomTextStyles.p3.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.opacity60White,
+                              ),
+                            ),
+                          ],
+                        ),
 
-                      SizedBox(height: 11.h),
+                        const SizedBox(height: 11),
 
-                      // 거래 옵션 태그들 (줄바꿈 방지)
-                      Expanded(
-                        child: SingleChildScrollView(
+                        // 거래 옵션 태그들 (줄바꿈 방지)
+                        SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: tradeOptions
@@ -126,8 +129,8 @@ class RequestListItemCardWidget extends StatelessWidget {
                                 .toList(),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
 
                   // 오른쪽 메뉴 버튼
@@ -156,8 +159,8 @@ class RequestListItemCardWidget extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

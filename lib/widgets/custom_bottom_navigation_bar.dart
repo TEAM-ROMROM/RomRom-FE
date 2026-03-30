@@ -13,20 +13,25 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double bottomPadding = Platform.isIOS ? 58 + MediaQuery.of(context).padding.bottom : 70;
+    // iOS: 홈 인디케이터 영역 반영, Android: 고정값 (기존 동작 유지)
+    final double bottomPadding = Platform.isIOS ? MediaQuery.of(context).padding.bottom : 0;
     return Container(
       width: MediaQuery.of(context).size.width,
-      // 기본 높이 + 시스템 네비게이션 영역 패딩
-      height: bottomPadding,
       decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(top: BorderSide(color: AppColors.opacity10Black, width: 1)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: NavigationTabItems.values
-            .map((tab) => _buildNavItem(context, tab.index, tab.iconData, tab.title))
-            .toList(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: NavigationTabItems.values
+                .map((tab) => _buildNavItem(context, tab.index, tab.iconData, tab.title))
+                .toList(),
+          ),
+          SizedBox(height: bottomPadding),
+        ],
       ),
     );
   }
@@ -39,8 +44,9 @@ class CustomBottomNavigationBar extends StatelessWidget {
       child: SizedBox(
         width: MediaQuery.of(context).size.width / 5,
         child: Padding(
-          padding: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.only(top: 12, bottom: 12),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // 아이콘 (선택됨: 흰색, 선택 안됨: 회색)
               Icon(

@@ -181,4 +181,7 @@ class AppColors {
 
   // 코치마크 화면
   static const Color cardDragContainer = Color(0xFF4F4F50); // 카드 드래그 시 중간 컨테이너 배경색
+
+  // 상대 프로필 화면
+  static const Color isBlockedStatusText = Color(0xFF993333); // 차단된 회원 text 색상
 }
