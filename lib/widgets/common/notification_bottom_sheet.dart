@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
+import 'package:romrom_fe/widgets/common/notification_bottom_sheet_chatting_preview.dart';
+import 'package:romrom_fe/widgets/common/notification_bottom_sheet_request_preview.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
@@ -18,6 +19,11 @@ import 'package:romrom_fe/utils/common_utils.dart';
 /// [onButton2]   : 우측 버튼 콜백
 class NotificationBottomSheet {
   const NotificationBottomSheet._();
+
+  static TextStyle get titleStyle => CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600, height: 1.2);
+  static TextStyle get descriptionStyle =>
+      CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500, color: AppColors.opacity60White, height: 1.4);
+  static TextStyle get buttonTextStyle => CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600);
 
   static Future<void> show({
     required BuildContext context,
@@ -51,29 +57,26 @@ class NotificationBottomSheet {
   static Future<void> showNotificationBottomSheetAfterSiginIn(BuildContext context) {
     return show(
       context: context,
-      title: Text('교환 소식을 놓치지 마세요!', style: CustomTextStyles.h1),
-      description: Text(
-        '내 물건에 대한 실시간 교환 제안과 채팅 알림을 보내드려요.',
-        style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White, height: 1.5),
-      ),
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: AppColors.secondaryBlack2, borderRadius: BorderRadius.circular(12)),
-        child: Row(
+      title: Text('교환 소식을 놓치지 마세요!', style: titleStyle),
+      description: RichText(
+        text: TextSpan(
+          style: descriptionStyle,
           children: [
-            SvgPicture.asset('assets/images/notificationExchangeYellowCircle.svg', width: 40, height: 40),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('내 물건에 교환 요청', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text('받은 요청을 지금 확인해볼까요?', style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White)),
-              ],
+            const TextSpan(text: '내 물건에 대한 실시간 '),
+            const TextSpan(
+              text: '교환 제안',
+              style: TextStyle(color: AppColors.primaryYellow),
             ),
+            const TextSpan(text: '과\n'),
+            const TextSpan(
+              text: '채팅 알림',
+              style: TextStyle(color: AppColors.primaryYellow),
+            ),
+            const TextSpan(text: '을 보내드려요.'),
           ],
         ),
       ),
+      body: const NotificationBotomSheetRequestPreview(),
       buttonText1: '나중에 하기',
       buttonText2: '알림 설정하기',
       onButton1: () {},
@@ -88,29 +91,21 @@ class NotificationBottomSheet {
   static Future<void> showdNotificationBottomSheetCycle(BuildContext context) {
     return show(
       context: context,
-      title: Text('아직 알림이 꺼져 있어요!', style: CustomTextStyles.h1),
-      description: Text(
-        '알림을 켜지 않으면 상대방의 교환 요청 제안을\n바로 확인하기 어려워요.',
-        style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White, height: 1.5),
-      ),
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: AppColors.secondaryBlack2, borderRadius: BorderRadius.circular(12)),
-        child: Row(
+      title: RichText(
+        text: TextSpan(
+          style: titleStyle,
           children: [
-            SvgPicture.asset('assets/images/notificationExchangeYellowCircle.svg', width: 40, height: 40),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('내 물건에 교환 요청', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text('받은 요청을 지금 확인해볼까요?', style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White)),
-              ],
+            const TextSpan(text: '아직 '),
+            const TextSpan(
+              text: '알림',
+              style: TextStyle(color: AppColors.primaryYellow),
             ),
+            const TextSpan(text: '이 꺼져 있어요!'),
           ],
         ),
       ),
+      description: Text('알림을 켜지 않으면 상대방의 교환 요청 제안을\n바로 확인하기 어려워요.', style: descriptionStyle),
+      body: const NotificationBotomSheetRequestPreview(),
       buttonText1: '7일 동안 보지 않기',
       buttonText2: '알림 설정하기',
       onButton1: () {
@@ -128,29 +123,20 @@ class NotificationBottomSheet {
   static Future<void> showChatNotificationBottomSheet(BuildContext context) {
     return show(
       context: context,
-      title: Text('아직 알림이 꺼져 있어요!', style: CustomTextStyles.h1),
-      description: Text(
-        '알림을 켜지 않으면 상대방의 교환 요청 제안을\n바로 확인하기 어려워요.',
-        style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White, height: 1.5),
-      ),
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: AppColors.secondaryBlack2, borderRadius: BorderRadius.circular(12)),
-        child: Row(
+      title: RichText(
+        text: TextSpan(
+          style: titleStyle,
           children: [
-            SvgPicture.asset('assets/images/notificationExchangeYellowCircle.svg', width: 40, height: 40),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('내 물건에 교환 요청', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text('받은 요청을 지금 확인해볼까요?', style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White)),
-              ],
+            const TextSpan(
+              text: '채팅 알림',
+              style: TextStyle(color: AppColors.primaryYellow),
             ),
+            const TextSpan(text: '이 꺼져 있어요!'),
           ],
         ),
       ),
+      description: Text('현재 알림이 꺼져 있어 답장을 놓칠 수 있어요.', style: descriptionStyle),
+      body: const NotificationBotomSheetChattingPreview(),
       buttonText1: '닫기',
       buttonText2: '알림 설정하기',
       onButton1: () {},
@@ -186,12 +172,12 @@ class _ChatNotificationSheet extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.primaryBlack,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(40.r)),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+          padding: EdgeInsets.only(top: 14.h, bottom: 11.h),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,82 +185,100 @@ class _ChatNotificationSheet extends StatelessWidget {
               // 핸들 바
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(color: AppColors.secondaryBlack2, borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 타이틀
-              title,
-              const SizedBox(height: 10),
-
-              // 설명
-              description,
-              const SizedBox(height: 20),
-
-              // 본문 영역
-              body,
-              const SizedBox(height: 24),
-
-              // 버튼 행
-              Row(
-                children: [
-                  // 좌측 버튼 (보조)
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: Material(
-                        color: AppColors.opacity30PrimaryBlack,
-                        borderRadius: BorderRadius.circular(10.r),
-                        child: InkWell(
-                          onTap: () {
-                            onButton1();
-                            Navigator.pop(context);
-                          },
-                          highlightColor: AppColors.opacity30PrimaryBlack,
-                          splashColor: AppColors.opacity30PrimaryBlack.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(10.r),
-                          child: Center(
-                            child: Text(buttonText1, style: CustomTextStyles.p2, textAlign: TextAlign.center),
-                          ),
-                        ),
-                      ),
+                  width: 50.w,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryBlack2,
+                    borderRadius: BorderRadius.circular(2.r),
+                    border: Border.all(
+                      width: 2.w,
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                      color: AppColors.secondaryBlack2,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                ),
+              ),
+              SizedBox(height: 24.h),
 
-                  // 우측 버튼 (주요, 노란색)
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: Material(
-                        color: AppColors.primaryYellow,
-                        borderRadius: BorderRadius.circular(10.r),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            onButton2();
-                          },
-                          highlightColor: darkenBlend(AppColors.primaryYellow),
-                          splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+              // 타이틀
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: title,
+              ),
+              SizedBox(height: 12.h),
+
+              // 설명
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: description,
+              ),
+              SizedBox(height: 24.h),
+
+              // 본문 영역 (좌우 패딩 없음)
+              body,
+
+              // 버튼 행
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Row(
+                  children: [
+                    // 좌측 버튼 (보조)
+                    Expanded(
+                      child: SizedBox(
+                        height: 56.h,
+                        child: Material(
+                          color: AppColors.secondaryBlack1,
                           borderRadius: BorderRadius.circular(10.r),
-                          child: Center(
-                            child: Text(
-                              buttonText2,
-                              style: CustomTextStyles.p2.copyWith(
-                                color: AppColors.textColorBlack,
-                                fontWeight: FontWeight.w700,
+                          child: InkWell(
+                            onTap: () {
+                              onButton1();
+                              Navigator.pop(context);
+                            },
+                            highlightColor: AppColors.buttonHighlightColorGray,
+                            splashColor: AppColors.opacity30PrimaryBlack.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(10.r),
+                            child: Center(
+                              child: Text(
+                                buttonText1,
+                                style: NotificationBottomSheet.buttonTextStyle,
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(width: 7.w),
+
+                    // 우측 버튼 (주요, 노란색)
+                    Expanded(
+                      child: SizedBox(
+                        height: 56.h,
+                        child: Material(
+                          color: AppColors.primaryYellow,
+                          borderRadius: BorderRadius.circular(10.r),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              onButton2();
+                            },
+                            highlightColor: darkenBlend(AppColors.primaryYellow),
+                            splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(10.r),
+                            child: Center(
+                              child: Text(
+                                buttonText2,
+                                style: NotificationBottomSheet.buttonTextStyle.copyWith(
+                                  color: AppColors.textColorBlack,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
