@@ -17,12 +17,14 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
+import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
@@ -66,6 +68,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   bool _isLoading = true;
   bool _hasError = false;
+  bool _notificationSnackBarShown = false;
   bool _deleteModalShown = false;
   bool _tradeCompletedModalShown = false;
   bool _systemMessageModalShown = false;
@@ -203,6 +206,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       setState(() => _isLoading = false);
       _scrollToBottom();
       chatApi.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true);
+
+      // 알림 꺼진 경우 바텀시트 안내 (세션 당 1회)
+      if (mounted && !_notificationSnackBarShown) {
+        final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
+        final memberResponse = await MemberApi().getMemberInfo();
+        final bool chatNotificationAgreed = memberResponse.member?.isChatNotificationAgreed ?? true;
+        // 시스템 알림 권한 없고 채팅 알림 권한 없을 때
+        if (!permissionGranted || !chatNotificationAgreed) {
+          _notificationSnackBarShown = true;
+          if (mounted) {
+            await NotificationBottomSheet.showChatNotificationBottomSheet(context);
+          }
+        }
+      }
 
       CommonModal.showOnceAfterFrame(
         context: context,
