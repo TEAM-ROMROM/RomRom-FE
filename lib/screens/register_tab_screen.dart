@@ -375,103 +375,101 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
 
     final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : 'Unknown';
 
-    return SizedBox(
-      height: 90.h,
-      child: Stack(
-        children: [
-          GestureDetector(
-            onTap: () => _navigateToItemDetail(item),
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // 이미지 썸네일
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4.r),
-                  child: SizedBox(
-                    width: 90.w,
-                    height: 90.h,
-                    child: item.itemId != null
-                        ? Hero(tag: 'itemImage_${item.itemId}_0', child: _buildImage(imageUrl))
-                        : _buildImage(imageUrl),
-                  ),
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: () => _navigateToItemDetail(item),
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 이미지 썸네일
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4.r),
+                child: SizedBox(
+                  width: 90.w,
+                  height: 90.w,
+                  child: item.itemId != null
+                      ? Hero(tag: 'itemImage_${item.itemId}_0', child: _buildImage(imageUrl))
+                      : _buildImage(imageUrl),
                 ),
-                SizedBox(width: 16.h),
+              ),
+              SizedBox(width: 16.h),
 
-                // 텍스트 영역
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item.itemName ?? '물품명 없음',
-                        style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 6.h),
-                      Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
-                      SizedBox(height: 12.h),
-                      Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
-                      SizedBox(height: 10.h),
-                      Row(
-                        children: [
-                          Icon(AppIcons.itemRegisterHeart, size: 14.sp, color: AppColors.opacity60White),
-                          SizedBox(width: 4.w),
-                          Text(
-                            '${item.likeCount ?? 0}',
-                            style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              // 텍스트 영역
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.itemName ?? '물품명 없음',
+                      style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 6.h),
+                    Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
+                    SizedBox(height: 12.h),
+                    Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
+                    SizedBox(height: 10.h),
+                    Row(
+                      children: [
+                        Icon(AppIcons.itemRegisterHeart, size: 14.sp, color: AppColors.opacity60White),
+                        SizedBox(width: 4.w),
+                        Text(
+                          '${item.likeCount ?? 0}',
+                          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                SizedBox(width: 30.w),
+              ),
+              SizedBox(width: 30.w),
+            ],
+          ),
+        ),
+
+        // 더보기 버튼
+        Positioned(
+          top: 0,
+          right: 0,
+          child: SizedBox(
+            width: 30.w,
+            height: 30.h,
+            child: RomRomContextMenu(
+              items: [
+                ContextMenuItem(
+                  id: 'changeTradeStatus',
+                  contextIcon: AppIcons.dotsVerticalSmall,
+                  icon: AppIcons.change,
+                  title: _currentTabStatus == MyItemToggleStatus.selling ? '거래완료로 변경' : '판매중으로 변경',
+                  onTap: () => _showChangeStatusConfirmDialog(item),
+                  showDividerAfter: true,
+                ),
+                ContextMenuItem(
+                  id: 'edit',
+                  contextIcon: AppIcons.dotsVerticalSmall,
+                  icon: AppIcons.edit,
+                  title: '수정',
+                  onTap: () => _navigateToEditItem(item),
+                  showDividerAfter: true,
+                ),
+                ContextMenuItem(
+                  id: 'delete',
+                  contextIcon: AppIcons.dotsVerticalSmall,
+                  icon: AppIcons.trash,
+                  iconColor: AppColors.itemOptionsMenuRedIcon,
+                  title: '삭제',
+                  textColor: AppColors.itemOptionsMenuRedText,
+                  onTap: () => _showDeleteConfirmDialog(item),
+                ),
               ],
             ),
           ),
-
-          // 더보기 버튼
-          Positioned(
-            top: 0,
-            right: 0,
-            child: SizedBox(
-              width: 30.w,
-              height: 30.h,
-              child: RomRomContextMenu(
-                items: [
-                  ContextMenuItem(
-                    id: 'changeTradeStatus',
-                    contextIcon: AppIcons.dotsVerticalSmall,
-                    icon: AppIcons.change,
-                    title: _currentTabStatus == MyItemToggleStatus.selling ? '거래완료로 변경' : '판매중으로 변경',
-                    onTap: () => _showChangeStatusConfirmDialog(item),
-                    showDividerAfter: true,
-                  ),
-                  ContextMenuItem(
-                    id: 'edit',
-                    contextIcon: AppIcons.dotsVerticalSmall,
-                    icon: AppIcons.edit,
-                    title: '수정',
-                    onTap: () => _navigateToEditItem(item),
-                    showDividerAfter: true,
-                  ),
-                  ContextMenuItem(
-                    id: 'delete',
-                    contextIcon: AppIcons.dotsVerticalSmall,
-                    icon: AppIcons.trash,
-                    iconColor: AppColors.itemOptionsMenuRedIcon,
-                    title: '삭제',
-                    textColor: AppColors.itemOptionsMenuRedText,
-                    onTap: () => _showDeleteConfirmDialog(item),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

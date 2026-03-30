@@ -64,13 +64,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   static const int _initialLoadCount = 7; // 초기 로드 개수
   static const int _loadChunkSize = 3; // 한 번에 로드할 카드 개수
 
-  // 카드 레이아웃 파라미터
-  final double _cardWidth = 92.w;
-  final double _cardHeight = 137.h;
-  final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
-  final double _baseBottom = 50.h; // 기본 bottom 위치 (네비게이션 바 위)
-  final double _deckRadius = 340.r;
-  final double _deckCenterYOffset = 140.h;
+  // 카드 레이아웃 파라미터 (didChangeDependencies에서 화면 크기 기준으로 초기화)
+  double _cardWidth = 92;
+  double _cardHeight = 137;
+  double _pullLift = 80; // 카드 뽑을 때 상승 높이
+  double _baseBottom = 50; // 기본 bottom 위치 (네비게이션 바 위)
+  double _deckRadius = 340;
+  double _deckCenterYOffset = 140;
+  bool _layoutInitialized = false;
   final double _deckStepAngle = 10 * math.pi / 180;
   final double _deckMaxTilt = 8 * math.pi / 180;
   final int _deckDepth = 8;
@@ -130,7 +131,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
     _iconAnimation = Tween<double>(
       begin: 0.0,
-      end: 10.0.h,
+      end: 10.0,
     ).animate(CurvedAnimation(parent: _iconAnimationController, curve: Curves.easeInOut));
 
     // glow 밝기 반복 (0.5 ~ 1.0 사이를 계속 왔다갔다)
@@ -164,6 +165,23 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _reorderForAiHighlight(widget.highlightedItemIds);
       });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_layoutInitialized) {
+      // 화면 너비 기준으로 카드 크기 계산 (iPhone 393 기준 비율 유지)
+      final sw = MediaQuery.of(context).size.width;
+      final scale = sw / 393.0;
+      _cardWidth = 92 * scale;
+      _cardHeight = 137 * scale;
+      _pullLift = 80 * scale;
+      _baseBottom = 50 * scale;
+      _deckRadius = 340 * scale;
+      _deckCenterYOffset = 140 * scale;
+      _layoutInitialized = true;
     }
   }
 
@@ -586,7 +604,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                         width: 1.5.w,
                       )
                     : null,
-                borderRadius: BorderRadius.circular((10 * scale * _cardHeight / 326.h).r),
+                borderRadius: BorderRadius.circular(10 * scale * _cardWidth / 219.0),
                 boxShadow: cardBoxShadow,
               ),
               child: RequestManagementItemCardWidget(
