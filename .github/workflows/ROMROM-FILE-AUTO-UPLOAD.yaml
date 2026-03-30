@@ -97,6 +97,14 @@ jobs:
             echo "경고: Secrets.xcconfig 파일이 비어 있거나 생성되지 않았습니다"
           fi
 
+          # Firebase 서비스 계정 JSON 파일 생성
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 -d > firebase-service-account.json
+          if [ -s "firebase-service-account.json" ]; then
+            echo "firebase-service-account.json 생성 성공 (크기: $(stat -c%s firebase-service-account.json) 바이트)"
+          else
+            echo "경고: firebase-service-account.json이 비어 있거나 생성되지 않았습니다"
+          fi
+
           # 파일 목록 확인
           echo "=== 현재 디렉토리 (/): ==="
           ls -la .env
@@ -106,6 +114,8 @@ jobs:
           ls -la android/app/keystore/key.jks
           echo "=== ios/Flutter/ 디렉토리: ==="
           ls -la ios/Flutter/Secrets.xcconfig
+          echo "=== Firebase 서비스 계정: ==="
+          ls -la firebase-service-account.json
 
       # 짧은 커밋 해시 계산
       - name: 짧은 커밋 해시 계산
@@ -126,6 +136,7 @@ jobs:
           KEY_PROPERTIES_SIZE=$(stat -c%s "android/key.properties" 2>/dev/null || echo "0")
           GOOGLE_SERVICES_SIZE=$(stat -c%s "android/app/google-services.json" 2>/dev/null || echo "0")
           SECRETS_XCCONFIG_SIZE=$(stat -c%s "ios/Flutter/Secrets.xcconfig" 2>/dev/null || echo "0")
+          FIREBASE_SA_SIZE=$(stat -c%s "firebase-service-account.json" 2>/dev/null || echo "0")
           
           # JSON 파일 생성
           cat > cicd-gitignore-file.json << EOF
@@ -183,6 +194,12 @@ jobs:
                 "file_path": "ios/Flutter/",
                 "file_size": "${SECRETS_XCCONFIG_SIZE}",
                 "last_updated": "${BUILD_DATE}"
+              },
+              {
+                "file_name": "firebase-service-account.json",
+                "file_path": "/",
+                "file_size": "${FIREBASE_SA_SIZE}",
+                "last_updated": "${BUILD_DATE}"
               }
             ]
           }
@@ -211,8 +228,9 @@ jobs:
           cp -v android/key.properties gitignore_files/${TIMESTAMP}/ || echo "key.properties 파일 복사 실패"
           cp -v android/app/google-services.json gitignore_files/${TIMESTAMP}/ || echo "google-services.json 파일 복사 실패"
           cp -v ios/Flutter/Secrets.xcconfig gitignore_files/${TIMESTAMP}/ || echo "Secrets.xcconfig 파일 복사 실패"
+          cp -v firebase-service-account.json gitignore_files/${TIMESTAMP}/ || echo "firebase-service-account.json 파일 복사 실패"
           cp -v cicd-gitignore-file.json gitignore_files/${TIMESTAMP}/ || echo "cicd-gitignore-file.json 파일 복사 실패"
-          
+
           echo "타임스탬프 폴더 파일 준비 완료:"
           ls -la gitignore_files/${TIMESTAMP}/
 
@@ -238,8 +256,9 @@ jobs:
           cp -v android/key.properties gitignore_files/latest/ || echo "key.properties 파일 복사 실패"
           cp -v android/app/google-services.json gitignore_files/latest/ || echo "google-services.json 파일 복사 실패"
           cp -v ios/Flutter/Secrets.xcconfig gitignore_files/latest/ || echo "Secrets.xcconfig 파일 복사 실패"
+          cp -v firebase-service-account.json gitignore_files/latest/ || echo "firebase-service-account.json 파일 복사 실패"
           cp -v cicd-gitignore-file.json gitignore_files/latest/ || echo "cicd-gitignore-file.json 파일 복사 실패"
-          
+
           echo "최신 파일 폴더 준비 완료:"
           ls -la gitignore_files/latest/
 
