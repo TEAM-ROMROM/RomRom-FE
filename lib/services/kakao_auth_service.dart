@@ -132,10 +132,15 @@ class KakaoAuthService {
     } on FirebaseAuthException catch (e) {
       if (e.code == 'account-exists-with-different-credential' && e.email != null) {
         debugPrint('Firebase 이메일 중복 감지: ${e.email}');
-        final methods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(e.email!);
-        debugPrint('기존 가입 provider: $methods');
-        final platform = LoginPlatforms.platformNameFromFirebaseProvider(methods.isNotEmpty ? methods.first : '');
-        throw EmailAlreadyRegisteredException(registeredSocialPlatform: platform);
+        String? platform;
+        try {
+          final methods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(e.email!);
+          debugPrint('기존 가입 provider: $methods');
+          platform = LoginPlatforms.platformNameFromFirebaseProvider(methods.isNotEmpty ? methods.first : '');
+        } catch (_) {
+          debugPrint('fetchSignInMethodsForEmail 실패');
+        }
+        throw EmailAlreadyRegisteredException(registeredSocialPlatform: platform ?? '');
       }
       debugPrint('카카오톡으로 로그인 실패: $e');
       return false;

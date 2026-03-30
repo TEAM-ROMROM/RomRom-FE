@@ -14,7 +14,7 @@ class EmailAlreadyRegisteredException implements Exception {
       case 'APPLE':
         return 'Apple';
       default:
-        return registeredSocialPlatform;
+        return '다른 소셜';
     }
   }
 

@@ -43,10 +43,10 @@ enum LoginPlatforms {
     required this.textColor,
   });
 
-  /// Firebase provider ID로 플랫폼 코드(KAKAO, GOOGLE, APPLE) 반환
-  static String platformNameFromFirebaseProvider(String providerId) {
-    return LoginPlatforms.values
-        .firstWhere((p) => p.firebaseProviderId == providerId, orElse: () => LoginPlatforms.kakao)
-        .platformName;
+  /// Firebase provider ID로 플랫폼 코드(KAKAO, GOOGLE, APPLE) 반환. 매칭 실패 시 null.
+  static String? platformNameFromFirebaseProvider(String providerId) {
+    if (providerId.isEmpty) return null;
+    final match = LoginPlatforms.values.where((p) => p.firebaseProviderId == providerId);
+    return match.isNotEmpty ? match.first.platformName : null;
   }
 }
