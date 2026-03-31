@@ -1,11 +1,41 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-29T13:04:07Z",
-    "currentVersion": "1.9.93",
-    "totalReleases": 94,
+    "lastUpdated": "2026-03-31T16:12:34Z",
+    "currentVersion": "1.9.104",
+    "totalReleases": 95,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.9.104",
+      "project_type": "flutter",
+      "date": "2026-03-31",
+      "pr_number": 737,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **새로운 기능**\n  * 회원 프로필에 차단 상태 표시 추가\n\n* **개선 사항**\n  * 계정 정지 화면의 UI 레이아웃 및 간격 개선\n  * 프로필 화면의 색상 스타일 업데이트\n  * 로그인 화면의 레이아웃 및 로고 정렬 개선\n\n* **버전**\n  * 앱 버전 1.9.104 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "회원 프로필에 차단 상태 표시 추가"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "계정 정지 화면의 UI 레이아웃 및 간격 개선",
+            "프로필 화면의 색상 스타일 업데이트",
+            "로그인 화면의 레이아웃 및 로고 정렬 개선"
+          ]
+        },
+        "버전": {
+          "title": "버전",
+          "items": [
+            "앱 버전 1.9.104 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.93",
       "project_type": "flutter",

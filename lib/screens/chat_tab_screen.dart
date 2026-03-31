@@ -16,7 +16,7 @@ import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/skeletons/chat_room_list_skeleton.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
 enum LoadMode { initial, paging, refresh }
 
@@ -342,7 +342,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                         onProfileTap: () {
                           final targetMember = chatRoomDetail.targetMember;
                           if (targetMember?.memberId != null) {
-                            context.navigateTo(screen: ProfileScreen(memberId: targetMember!.memberId!));
+                            context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
                           }
                         },
                         onTap: () async {
