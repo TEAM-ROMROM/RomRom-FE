@@ -383,7 +383,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 이미지 썸네일 (너비 기준 정사각형 → 태블릿 overflow 방지)
+              // 이미지 썸네일
               ClipRRect(
                 borderRadius: BorderRadius.circular(4.r),
                 child: SizedBox(
@@ -400,6 +400,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(

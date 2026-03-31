@@ -887,6 +887,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   ignoring: _isLoading,
                   child: CompletionButton(
                     isEnabled: isFormValid,
+                    isLoading: _isLoading,
                     buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
                     enabledOnPressed: () async {
                       // 모든 필드 강제 검증

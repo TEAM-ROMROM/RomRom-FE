@@ -189,8 +189,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
       },
       child: Container(
         width: double.infinity,
-        height: 82.h,
-        padding: EdgeInsets.only(left: 16.w, right: 18.w, top: 16.h, bottom: 16.h),
+        padding: const EdgeInsets.only(left: 16, right: 18, top: 16, bottom: 16),
         decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
         child: Row(
           children: [
@@ -210,7 +209,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(_nickname, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
-                  SizedBox(height: 6.h),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Icon(AppIcons.location, size: 13.sp, color: AppColors.opacity60White),

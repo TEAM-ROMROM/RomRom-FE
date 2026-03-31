@@ -16,12 +16,11 @@ class HomeFeedConditionTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 24.h,
       constraints: BoxConstraints(
         minWidth: 62.w, // 최소 가로 길이
       ),
       alignment: Alignment.center,
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: AppColors.conditionTagBackground, borderRadius: BorderRadius.circular(100.r)),
       child: Text(
         condition.label,
@@ -41,9 +40,8 @@ class HomeFeedTransactionTypeTag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 62.w,
-      height: 24.h,
       alignment: Alignment.center,
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: AppColors.transactionTagBackground, borderRadius: BorderRadius.circular(100.r)),
       child: Text(
         type.label,
