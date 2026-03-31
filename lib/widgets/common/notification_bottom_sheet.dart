@@ -174,114 +174,105 @@ class _ChatNotificationSheet extends StatelessWidget {
         color: AppColors.primaryBlack,
         borderRadius: BorderRadius.vertical(top: Radius.circular(40.r)),
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.only(top: 14.h, bottom: 11.h),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 핸들 바
-              Center(
-                child: Container(
-                  width: 50.w,
-                  decoration: BoxDecoration(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 핸들 바
+            Center(
+              child: Container(
+                width: 50,
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryBlack2,
+                  borderRadius: BorderRadius.circular(2.r),
+                  border: Border.all(
+                    width: 2,
+                    strokeAlign: BorderSide.strokeAlignOutside,
                     color: AppColors.secondaryBlack2,
-                    borderRadius: BorderRadius.circular(2.r),
-                    border: Border.all(
-                      width: 2.w,
-                      strokeAlign: BorderSide.strokeAlignOutside,
-                      color: AppColors.secondaryBlack2,
-                    ),
                   ),
                 ),
               ),
-              SizedBox(height: 24.h),
+            ),
+            const SizedBox(height: 24),
 
-              // 타이틀
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                child: title,
-              ),
-              SizedBox(height: 12.h),
+            // 타이틀
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: title),
+            const SizedBox(height: 12),
 
-              // 설명
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                child: description,
-              ),
-              SizedBox(height: 24.h),
+            // 설명
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: description),
+            const SizedBox(height: 24),
 
-              // 본문 영역 (좌우 패딩 없음)
-              body,
+            // 본문 영역 (좌우 패딩 없음)
+            body,
 
-              // 버튼 행
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                child: Row(
-                  children: [
-                    // 좌측 버튼 (보조)
-                    Expanded(
-                      child: SizedBox(
-                        height: 56.h,
-                        child: Material(
-                          color: AppColors.secondaryBlack1,
+            // 버튼 행
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  // 좌측 버튼 (보조)
+                  Expanded(
+                    child: SizedBox(
+                      height: 56,
+                      child: Material(
+                        color: AppColors.secondaryBlack1,
+                        borderRadius: BorderRadius.circular(10.r),
+                        child: InkWell(
+                          onTap: () {
+                            onButton1();
+                            Navigator.pop(context);
+                          },
+                          highlightColor: AppColors.buttonHighlightColorGray,
+                          splashColor: AppColors.opacity30PrimaryBlack.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(10.r),
-                          child: InkWell(
-                            onTap: () {
-                              onButton1();
-                              Navigator.pop(context);
-                            },
-                            highlightColor: AppColors.buttonHighlightColorGray,
-                            splashColor: AppColors.opacity30PrimaryBlack.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(10.r),
-                            child: Center(
-                              child: Text(
-                                buttonText1,
-                                style: NotificationBottomSheet.buttonTextStyle,
-                                textAlign: TextAlign.center,
-                              ),
+                          child: Center(
+                            child: Text(
+                              buttonText1,
+                              style: NotificationBottomSheet.buttonTextStyle,
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(width: 7.w),
+                  ),
+                  const SizedBox(width: 7),
 
-                    // 우측 버튼 (주요, 노란색)
-                    Expanded(
-                      child: SizedBox(
-                        height: 56.h,
-                        child: Material(
-                          color: AppColors.primaryYellow,
+                  // 우측 버튼 (주요, 노란색)
+                  Expanded(
+                    child: SizedBox(
+                      height: 56,
+                      child: Material(
+                        color: AppColors.primaryYellow,
+                        borderRadius: BorderRadius.circular(10.r),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            onButton2();
+                          },
+                          highlightColor: darkenBlend(AppColors.primaryYellow),
+                          splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(10.r),
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.pop(context);
-                              onButton2();
-                            },
-                            highlightColor: darkenBlend(AppColors.primaryYellow),
-                            splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(10.r),
-                            child: Center(
-                              child: Text(
-                                buttonText2,
-                                style: NotificationBottomSheet.buttonTextStyle.copyWith(
-                                  color: AppColors.textColorBlack,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                          child: Center(
+                            child: Text(
+                              buttonText2,
+                              style: NotificationBottomSheet.buttonTextStyle.copyWith(color: AppColors.textColorBlack),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 11),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
         ),
       ),
     );

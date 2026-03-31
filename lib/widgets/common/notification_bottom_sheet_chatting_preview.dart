@@ -10,9 +10,9 @@ class NotificationBotomSheetChattingPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(top: 16.0.h, left: 24.w, right: 24.w, bottom: 59.h),
-      child: const _NotificationBottomSheetChattingCardAnimation(),
+    return const Padding(
+      padding: EdgeInsets.only(top: 16, left: 24, right: 24, bottom: 59),
+      child: _NotificationBottomSheetChattingCardAnimation(),
     );
   }
 }
@@ -88,9 +88,9 @@ class _NotificationBottomSheetCardAnimationState extends State<_NotificationBott
           child: SlideTransition(
             position: _shadow1Slide,
             child: Padding(
-              padding: EdgeInsets.only(left: 22.0.w, right: 22.0.w, top: 25.0.h),
+              padding: const EdgeInsets.only(left: 22, right: 22, top: 25),
               child: Container(
-                height: 57.h,
+                height: 57,
                 decoration: BoxDecoration(
                   color: AppColors.notificationBottomSheetChattingContainerBottom,
                   borderRadius: BorderRadius.circular(22.r),
@@ -106,9 +106,9 @@ class _NotificationBottomSheetCardAnimationState extends State<_NotificationBott
           child: SlideTransition(
             position: _shadow2Slide,
             child: Padding(
-              padding: EdgeInsets.only(left: 10.0.w, right: 10.0.w, top: 17.0.h),
+              padding: const EdgeInsets.only(left: 10, right: 10, top: 17),
               child: Container(
-                height: 57.h,
+                height: 57,
                 decoration: BoxDecoration(
                   color: AppColors.notificationBottomSheetChattingContainerMiddle,
                   borderRadius: BorderRadius.circular(22.r),
@@ -125,8 +125,7 @@ class _NotificationBottomSheetCardAnimationState extends State<_NotificationBott
           child: SlideTransition(
             position: _cardSlide,
             child: Container(
-              height: 66.h,
-              padding: EdgeInsets.all(13.w),
+              padding: const EdgeInsets.all(13),
               decoration: BoxDecoration(
                 color: AppColors.notificationBottomSheetChattingContainerTop,
                 borderRadius: BorderRadius.circular(22.r),
@@ -135,17 +134,17 @@ class _NotificationBottomSheetCardAnimationState extends State<_NotificationBott
               child: Row(
                 children: [
                   const UserProfileCircularAvatar(avatarSize: Size(40, 40), isDeleteAccount: true, hasBorder: true),
-                  SizedBox(width: 14.w),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text('롬롬', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
-                            SizedBox(width: 8.h),
+                            const SizedBox(width: 8),
                             Row(
                               children: [
                                 Text(
@@ -155,16 +154,16 @@ class _NotificationBottomSheetCardAnimationState extends State<_NotificationBott
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                SizedBox(width: 2.w),
+                                const SizedBox(width: 2),
                                 Container(
-                                  width: 2.w,
-                                  height: 2.w,
+                                  width: 2,
+                                  height: 2,
                                   decoration: const BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: AppColors.opacity60White,
                                   ),
                                 ),
-                                SizedBox(width: 2.w),
+                                const SizedBox(width: 2),
                                 Text(
                                   '3시간 전',
                                   style: CustomTextStyles.p3.copyWith(
@@ -176,15 +175,15 @@ class _NotificationBottomSheetCardAnimationState extends State<_NotificationBott
                             ),
                           ],
                         ),
-                        SizedBox(height: 8.h),
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text('오늘 거래 가능할까요? 🥹', style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400)),
                             Container(
-                              width: 16.w,
-                              height: 16.w,
-                              margin: EdgeInsets.only(right: 8.w),
+                              width: 16,
+                              height: 16,
+                              margin: const EdgeInsets.only(right: 8),
                               alignment: Alignment.center,
                               decoration: const BoxDecoration(color: AppColors.chatUnreadBadge, shape: BoxShape.circle),
                               child: Text('5', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500)),

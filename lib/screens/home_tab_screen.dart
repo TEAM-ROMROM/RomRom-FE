@@ -45,7 +45,7 @@ class HomeTabScreen extends StatefulWidget {
   static final GlobalKey<State<HomeTabScreen>> globalKey = GlobalKey<State<HomeTabScreen>>();
 
   /// 초기 피드 로딩 완료 시 호출되는 콜백 (최초 1회)
-  final VoidCallback? onLoaded;
+  final Future<void> Function()? onLoaded;
 
   @override
   State<HomeTabScreen> createState() => _HomeTabScreenState();
@@ -317,13 +317,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _hasMoreItems = items.isNotEmpty;
         _isLoading = false;
       });
-      widget.onLoaded?.call();
+      await widget.onLoaded?.call();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
-      widget.onLoaded?.call();
+      await widget.onLoaded?.call();
 
       if (!mounted) return;
       CommonSnackBar.show(context: context, message: '피드 로딩 실패: $e', type: SnackBarType.error);

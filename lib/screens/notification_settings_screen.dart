@@ -33,6 +33,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   // 시스템 설정 복귀 후 처리할 대기 중인 알림 설정 타입
   NotificationSettingType? _pendingEnableType;
 
+  // 진행 중인 API 요청 추적 (중복 요청 방지)
+  final Set<NotificationSettingType> _pendingRequests = {};
+
   @override
   void initState() {
     super.initState();
@@ -58,12 +61,19 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     final NotificationSettingType type = _pendingEnableType!;
     _pendingEnableType = null;
 
-    final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
-    if (permissionGranted) {
-      if (mounted) setState(() => _setSettingValue(type, true));
-      _updateNotificationSetting(type, true);
+    if (_pendingRequests.contains(type)) return;
+    _pendingRequests.add(type);
+
+    try {
+      final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
+      if (permissionGranted) {
+        if (mounted) setState(() => _setSettingValue(type, true));
+        await _updateNotificationSetting(type, true);
+      }
+      // 거부 시 UI 변경 없음 (토글이 원래 OFF 상태 유지)
+    } finally {
+      if (mounted) setState(() => _pendingRequests.remove(type));
     }
-    // 거부 시 UI 변경 없음 (토글이 원래 OFF 상태 유지)
   }
 
   /// 설정 값 직접 변경 (setState 내부에서 사용)
@@ -206,27 +216,34 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   /// 설정 값 변경 핸들러 (즉시 API 호출)
   /// ON 시도 시 시스템 권한 확인 → 거부 상태면 안내 모달 표시
   Future<void> _onSettingChanged(NotificationSettingType type, bool newValue) async {
-    if (newValue) {
-      final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
-      if (!permissionGranted) {
-        if (!mounted) return;
-        await CommonModal.confirm(
-          context: context,
-          message: '시스템 알림 허용이 필요합니다.',
-          cancelText: '취소',
-          confirmText: '알림 켜기',
-          onCancel: () => Navigator.pop(context),
-          onConfirm: () {
-            _pendingEnableType = type;
-            Navigator.pop(context);
-            NotificationPermissionService().openSettings();
-          },
-        );
-        return;
+    if (_pendingRequests.contains(type)) return;
+    _pendingRequests.add(type);
+
+    try {
+      if (newValue) {
+        final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
+        if (!permissionGranted) {
+          if (!mounted) return;
+          await CommonModal.confirm(
+            context: context,
+            message: '시스템 알림 허용이 필요합니다.',
+            cancelText: '취소',
+            confirmText: '알림 켜기',
+            onCancel: () => Navigator.pop(context),
+            onConfirm: () {
+              _pendingEnableType = type;
+              Navigator.pop(context);
+              NotificationPermissionService().openSettings();
+            },
+          );
+          return;
+        }
       }
+      if (mounted) setState(() => _setSettingValue(type, newValue));
+      await _updateNotificationSetting(type, newValue);
+    } finally {
+      if (mounted) setState(() => _pendingRequests.remove(type));
     }
-    if (mounted) setState(() => _setSettingValue(type, newValue));
-    _updateNotificationSetting(type, newValue);
   }
 
   /// 서버에 알림 설정 업데이트

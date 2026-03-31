@@ -24,7 +24,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentTabIndex = 0; // 선택된 탭 인덱스 관리
   late final List<Widget> _navigationTabScreens;
-  bool _isSyncingNotification = false;
+  final Set<String> _pendingRequests = <String>{};
 
   @override
   void initState() {
@@ -52,11 +52,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     final service = NotificationPermissionService();
 
-    // 회원가입 최초 1회 (권한 OFF인 경우에만)
+    // 회원가입 최초 1회 (권한 OFF + 미노출 시에만)
     if (await service.shouldShowBottomSheet(isSignup: true)) {
-      await service.markShownOnSignup();
       if (mounted) await NotificationBottomSheet.showNotificationBottomSheetAfterSiginIn(context);
-      return;
+      await service.markShownOnSignup();
+      return; // 동일 세션에서 7일 주기 바텀시트 중복 노출 방지
     }
 
     // 7일 주기 (권한 OFF인 경우에만)
@@ -68,8 +68,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   /// 시스템 알림 권한이 거부된 경우 백엔드 설정과 동기화
   /// - 시스템 OFF → 백엔드 5개 항목 전체 false
   Future<void> _syncNotificationPermissionToBackend() async {
-    if (_isSyncingNotification) return;
-    _isSyncingNotification = true;
+    const requestKey = 'sync_notification_permission';
+    if (_pendingRequests.contains(requestKey)) return;
+    _pendingRequests.add(requestKey);
     try {
       final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
       if (permissionGranted) return;
@@ -98,7 +99,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('[알림 동기화] 실패: $e');
     } finally {
-      _isSyncingNotification = false;
+      _pendingRequests.remove(requestKey);
     }
   }
 

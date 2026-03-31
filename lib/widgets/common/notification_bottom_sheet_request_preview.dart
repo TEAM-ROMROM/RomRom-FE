@@ -13,17 +13,16 @@ class NotificationBotomSheetRequestPreview extends StatelessWidget {
     return Stack(
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 36.w),
+          padding: const EdgeInsets.symmetric(horizontal: 36),
           child: Container(
-            height: 135.h,
             width: double.infinity,
             decoration: BoxDecoration(
               color: AppColors.transparent,
               borderRadius: BorderRadius.vertical(top: Radius.circular(38.r)),
-              border: Border(
-                top: BorderSide(width: 9.w, color: AppColors.secondaryBlack1),
-                right: BorderSide(width: 9.w, color: AppColors.secondaryBlack1),
-                left: BorderSide(width: 9.w, color: AppColors.secondaryBlack1),
+              border: const Border(
+                top: BorderSide(width: 9, color: AppColors.secondaryBlack1),
+                right: BorderSide(width: 9, color: AppColors.secondaryBlack1),
+                left: BorderSide(width: 9, color: AppColors.secondaryBlack1),
               ),
             ),
             child: const _NotificationBottomSheetRequestCardAnimation(),
@@ -31,7 +30,7 @@ class NotificationBotomSheetRequestPreview extends StatelessWidget {
         ),
         Center(
           child: Container(
-            height: 135.h,
+            height: 135,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -106,9 +105,9 @@ class _NotificationBottomSheetRequestCardAnimationState extends State<_Notificat
           child: SlideTransition(
             position: _shadowSlide,
             child: Padding(
-              padding: EdgeInsets.only(left: 16.0.w, right: 16.0.w, top: 19.0.w),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 19),
               child: Container(
-                height: 57.h,
+                height: 57,
                 decoration: BoxDecoration(
                   color: AppColors.secondaryBlack1,
                   borderRadius: BorderRadius.circular(22.r),
@@ -125,10 +124,9 @@ class _NotificationBottomSheetRequestCardAnimationState extends State<_Notificat
           child: SlideTransition(
             position: _cardSlide,
             child: Padding(
-              padding: EdgeInsets.only(left: 8.0.w, right: 8.0.w, top: 8.0.w),
+              padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
               child: Container(
-                height: 60.h,
-                padding: EdgeInsets.all(13.w),
+                padding: const EdgeInsets.all(13),
                 decoration: BoxDecoration(
                   color: AppColors.secondaryBlack2,
                   borderRadius: BorderRadius.circular(22.r),
@@ -137,23 +135,26 @@ class _NotificationBottomSheetRequestCardAnimationState extends State<_Notificat
                 child: Row(
                   children: [
                     Container(
-                      width: 34.w,
-                      height: 34.w,
-                      padding: EdgeInsets.all(5.w),
+                      width: 34,
+                      height: 34,
+                      padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
                         color: AppColors.primaryBlack,
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: SvgPicture.asset('assets/images/romrom-logo.svg'),
                     ),
-                    SizedBox(width: 8.w),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('내 물건에 교환 요청', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
-                        SizedBox(height: 4.h),
-                        Text('받은 요청을 지금 확인해볼까요?', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w400)),
-                      ],
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('내 물건에 교환 요청', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
+                          const SizedBox(height: 4),
+                          Text('받은 요청을 지금 확인해볼까요?', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w400)),
+                        ],
+                      ),
                     ),
                   ],
                 ),

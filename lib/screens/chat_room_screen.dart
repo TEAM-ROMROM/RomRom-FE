@@ -209,15 +209,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
       // 알림 꺼진 경우 바텀시트 안내 (세션 당 1회)
       if (mounted && !_notificationSnackBarShown) {
-        final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
-        final memberResponse = await MemberApi().getMemberInfo();
-        final bool chatNotificationAgreed = memberResponse.member?.isChatNotificationAgreed ?? true;
-        // 시스템 알림 권한 없고 채팅 알림 권한 없을 때
-        if (!permissionGranted || !chatNotificationAgreed) {
-          _notificationSnackBarShown = true;
-          if (mounted) {
-            await NotificationBottomSheet.showChatNotificationBottomSheet(context);
+        try {
+          final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
+          final memberResponse = await MemberApi().getMemberInfo();
+          final bool chatNotificationAgreed = memberResponse.member?.isChatNotificationAgreed ?? true;
+          if (!permissionGranted || !chatNotificationAgreed) {
+            _notificationSnackBarShown = true;
+            if (mounted) {
+              await NotificationBottomSheet.showChatNotificationBottomSheet(context);
+            }
           }
+        } catch (e) {
+          debugPrint('알림 권한 안내 노출 실패: $e');
         }
       }
 
