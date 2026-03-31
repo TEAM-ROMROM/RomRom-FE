@@ -39,13 +39,41 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   bool _showLoginUI = false; // true: 로그인 UI 오버레이를 Stack에 삽입
   bool _loginTransitionStarted = false; // true: 애니메이션이 이미 시작됨 (중복 호출 방지)
 
+  /// 로그인 화면의 실제 레이아웃(SafeArea + Spacer)을 기반으로
+  /// 로고 중심의 Alignment Y값을 계산한다.
+  /// 로그인 화면: SafeArea > Column > Spacer(2) + 로고(108w) + 45h + text + 17h + text + Spacer(3) + 버튼그룹 + 48h
+  double _calculateLoginLogoAlignmentY(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final topPadding = mediaQuery.padding.top;
+    final bottomPadding = mediaQuery.padding.bottom;
+
+    final logoSize = 108.w;
+    // 로고 아래 고정 콘텐츠 높이:
+    //   SizedBox(45.h) + Text('손쉬운 물건 교환', p1=16.sp) + SizedBox(17.h)
+    //   + SvgPicture(login-romrom-text, 17.h) + SizedBox(48.h, 하단 여백)
+    final fixedContentHeight = 45.h + 16.sp + 17.h + 17.h + 48.h;
+    final buttonCount = Platform.isIOS ? 3 : 2;
+    // LoginButton 높이 56.h, AuthButtonGroup 간격 12.h (login_button.dart, auth_button_group.dart 기준)
+    final buttonGroupHeight = buttonCount * 56.h + (buttonCount - 1) * 12.h;
+    final safeAreaHeight = screenHeight - topPadding - bottomPadding;
+    final spacerTotalHeight = safeAreaHeight - logoSize - fixedContentHeight - buttonGroupHeight;
+    final topSpacerHeight = spacerTotalHeight * 2 / 5; // Spacer(flex:2) / 총 flex(5)
+
+    // 로고 중심 Y (화면 top 기준)
+    final logoCenterY = topPadding + topSpacerHeight + logoSize / 2;
+
+    // Alignment Y: -1 = 화면 top, 0 = 화면 center, 1 = 화면 bottom
+    return (logoCenterY / (screenHeight / 2)) - 1;
+  }
+
   @override
   void initState() {
     super.initState();
 
     _loginTransitionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
 
-    // 로고: 중앙(-0.075) → 로그인 화면 위치(-0.52)
+    // 로고: 중앙(-0.075) → 임시값(-0.52), postFrameCallback에서 동적 계산값으로 교체됨
     _logoAlignmentAnim = AlignmentTween(
       begin: const Alignment(0, -0.075),
       end: const Alignment(0, -0.52),
@@ -56,6 +84,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       parent: _loginTransitionController,
       curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
     );
+
+    // 로그인 화면의 실제 로고 위치를 계산하여 애니메이션 end값 교체
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final endY = _calculateLoginLogoAlignmentY(context);
+      _logoAlignmentAnim = AlignmentTween(
+        begin: const Alignment(0, -0.075),
+        end: Alignment(0, endY),
+      ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
+    });
 
     unawaited(_initAndNavigate());
   }
@@ -146,15 +184,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         backgroundColor: AppColors.primaryBlack,
         body: Stack(
           children: [
-            // 로그인 UI (애니메이션 중에만 표시)
+            // 로그인 UI (애니메이션 중에만 표시) — 로그인 화면과 동일한 SafeArea + Spacer 구조
             if (_showLoginUI)
               FadeTransition(
                 opacity: _loginUIFadeAnim,
-                child: Center(
+                child: SafeArea(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      SizedBox(height: 112.h), // 로고 SVG 높이(112h)만큼 공간 확보 — AnimatedBuilder의 로고와 수직 정렬 맞춤
+                      const Spacer(flex: 2),
+                      SizedBox(height: 108.w), // 로고 자리 확보 (AnimatedBuilder의 로고와 동일 크기)
                       SizedBox(height: 45.h),
                       Text(
                         '손쉬운 물건 교환',
@@ -165,7 +204,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                       SizedBox(height: 17.h),
                       SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
-                      SizedBox(height: 174.h),
+                      const Spacer(flex: 3),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 24.w),
                         child: AuthButtonGroup(
@@ -176,6 +215,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ].map((platform) => LoginButton(platform: platform)).toList(),
                         ),
                       ),
+                      SizedBox(height: 48.h),
                     ],
                   ),
                 ),
@@ -187,7 +227,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               builder: (context, child) {
                 return Align(alignment: _logoAlignmentAnim.value, child: child);
               },
-              child: SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 112.h),
+              child: SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 108.w),
             ),
           ],
         ),
