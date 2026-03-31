@@ -57,6 +57,7 @@ jobs:
       commit_hash: ${{ steps.build_info.outputs.commit_hash }}
       pr_number: ${{ steps.build_info.outputs.pr_number }}
       build_number: ${{ steps.build_info.outputs.build_number }}
+      version: ${{ steps.build_info.outputs.version }}
       progress_comment_id: ${{ steps.progress_comment.outputs.comment_id }}
       progress_start_time: ${{ steps.progress_comment.outputs.start_time }}
       firebase_available: ${{ steps.firebase_check.outputs.available }}
@@ -201,10 +202,12 @@ jobs:
             echo "  빌드 번호: $BUILD_NUMBER (기본값)"
           fi
           
+          VERSION=$(grep '^version:' version.yml | sed 's/version:[[:space:]]*//' | tr -d '"')
           echo "commit_hash=$COMMIT_SHORT" >> $GITHUB_OUTPUT
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           echo "📋 빌드 정보:"
           echo "  빌드 번호: #$BUILD_NUMBER"
@@ -407,12 +410,13 @@ jobs:
           echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
           echo "📦 APK 파일명: $APK_NAME"
 
-      # 테스트 빌드 버전 설정 (0.0.0 고정 - 운영 버전과 분리)
-      - name: Set test build version (0.0.0)
+      # 테스트 빌드 버전 설정 (version.yml 실제 버전 사용 - 빌드번호는 PR/이슈 번호 기반)
+      - name: Set test build version
         run: |
           BUILD_NUMBER="${{ needs.prepare-test-build.outputs.build_number }}"
-          echo "📋 테스트 빌드 버전 설정: 0.0.0+${BUILD_NUMBER}"
-          sed -i "s/^version: .*/version: 0.0.0+${BUILD_NUMBER}/" pubspec.yaml
+          VERSION=$(grep '^version:' version.yml | sed 's/version:[[:space:]]*//' | tr -d '"')
+          echo "📋 테스트 빌드 버전 설정: ${VERSION}+${BUILD_NUMBER}"
+          sed -i "s/^version: .*/version: ${VERSION}+${BUILD_NUMBER}/" pubspec.yaml
           echo "✅ pubspec.yaml 버전 변경 완료:"
           grep "^version:" pubspec.yaml
 
@@ -654,6 +658,7 @@ jobs:
             const step4Elapsed = '${{ steps.firebase_time.outputs.elapsed }}';
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const version = '${{ needs.prepare-test-build.outputs.version }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
             const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
@@ -697,7 +702,7 @@ jobs:
               '### 📦 빌드 결과',
               '| 항목 | 값 |',
               '|------|-----|',
-              `| **앱 버전** | \`0.0.0(${buildNumber})\` |`,
+              `| **앱 버전** | \`${version}(${buildNumber})\` |`,
               `| **브랜치** | \`${branchName}\` |`,
               `| **커밋** | \`${commitHash}\` |`,
               `| **총 소요 시간** | ${totalElapsed} |`,
@@ -731,7 +736,7 @@ jobs:
               const issueLines = [
                 '🤖 ✅ **Android APK 빌드 완료**',
                 '',
-                `- 앱 버전: \`0.0.0(${buildNumber})\``,
+                `- 앱 버전: \`${version}(${buildNumber})\``,
                 `- 커밋: \`${commitHash}\``,
                 '',
               ];
@@ -768,6 +773,7 @@ jobs:
             const step1Elapsed = '${{ steps.progress_step1.outputs.elapsed }}';
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const version = '${{ needs.prepare-test-build.outputs.version }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const runId = '${{ github.run_id }}';
@@ -808,7 +814,7 @@ jobs:
               '|------|------|----------|',
               ...rows,
               '',
-              `- 앱 버전: \`0.0.0(${buildNumber})\``,
+              `- 앱 버전: \`${version}(${buildNumber})\``,
               `- 브랜치: \`${branchName}\``,
               `- 총 소요 시간: ${totalElapsed}`,
               '',
@@ -831,7 +837,7 @@ jobs:
               const issueBody = [
                 '🤖 ❌ **Android APK 빌드 실패**',
                 '',
-                `- 앱 버전: \`0.0.0(${buildNumber})\``,
+                `- 앱 버전: \`${version}(${buildNumber})\``,
                 '',
                 '❌ 빌드 중 오류가 발생했습니다.',
                 '',

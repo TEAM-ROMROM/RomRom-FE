@@ -7,7 +7,7 @@
 #
 # 주요 특징:
 # - workflow_dispatch로 수동 실행만 가능
-# - 버전은 0.0.0으로 고정 (운영 버전과 분리)
+# - 버전은 version.yml의 실제 버전 사용 (빌드번호는 PR/이슈 번호 기반)
 # - 빌드 번호는 GITHUB_RUN_NUMBER 사용 (절대 겹치지 않음)
 # - 브랜치명에서 이슈 번호 자동 추출 (YYYYMMDD_#이슈번호_내용 형식)
 # - GitHub API로 이슈 정보 가져와서 릴리즈 노트에 포함
@@ -155,11 +155,12 @@ jobs:
           gem install cocoapods
           cd ios && pod install
 
-      # 테스트 빌드 버전 설정 (0.0.0 고정)
+      # 테스트 빌드 버전 설정 (version.yml의 실제 버전 사용)
       - name: 테스트 빌드 버전 설정
         id: test_version
         run: |
-          echo "version=0.0.0" >> $GITHUB_OUTPUT
+          VERSION=$(grep '^version:' version.yml | sed 's/version:[[:space:]]*//' | tr -d '"')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # repository_dispatch 이벤트인 경우 PR 번호를 빌드 번호로 사용
           if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
@@ -177,7 +178,7 @@ jobs:
           
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "📋 테스트 빌드: 버전=0.0.0, 빌드번호=$BUILD_NUMBER"
+          echo "📋 테스트 빌드: 버전=$VERSION, 빌드번호=$BUILD_NUMBER"
 
       # 브랜치명에서 이슈 번호 추출 및 GitHub API로 이슈 정보 가져오기
       - name: 브랜치명에서 이슈 정보 추출
@@ -458,11 +459,11 @@ jobs:
               echo "GoogleService-Info.plist created"
               /usr/bin/plutil -lint ios/Runner/GoogleService-Info.plist
 
-      # Flutter build (no codesign) - 테스트 버전 0.0.0 사용
+      # Flutter build (no codesign) - version.yml 실제 버전 사용
       - name: Flutter build (no codesign)
         run: |
           flutter build ios --release --no-codesign --no-tree-shake-icons \
-            --build-name="0.0.0" \
+            --build-name="${{ needs.prepare-test-build.outputs.version }}" \
             --build-number="${{ needs.prepare-test-build.outputs.build_number }}"
 
       # Archive 생성 (manual signing)
@@ -522,6 +523,7 @@ jobs:
             const step1EndTime = parseInt('${{ steps.progress_step1.outputs.end_time }}');
             const step1Elapsed = '${{ steps.progress_step1.outputs.elapsed }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const version = '${{ needs.prepare-test-build.outputs.version }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
             const runId = '${{ github.run_id }}';
@@ -545,7 +547,7 @@ jobs:
               '### 📦 빌드 결과',
               '| 항목 | 값 |',
               '|------|-----|',
-              `| **앱 버전** | \`0.0.0(${buildNumber})\` |`,
+              `| **앱 버전** | \`${version}(${buildNumber})\` |`,
               `| **브랜치** | \`${branchName}\` |`,
               `| **커밋** | \`${commitHash}\` |`,
               `| **IPA 빌드 소요 시간** | ${elapsedStr} |`,
@@ -578,6 +580,7 @@ jobs:
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
             const step1Elapsed = '${{ steps.progress_step1.outputs.elapsed }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const version = '${{ needs.prepare-test-build.outputs.version }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const runId = '${{ github.run_id }}';
@@ -609,7 +612,7 @@ jobs:
               `| 🔨 IPA 빌드 | ❌ 실패 | ${step2ElapsedStr} |`,
               '| 📤 TestFlight 배포 | ⏸️ 건너뜀 | - |',
               '',
-              `- 앱 버전: \`0.0.0(${buildNumber})\``,
+              `- 앱 버전: \`${version}(${buildNumber})\``,
               `- 브랜치: \`${branchName}\``,
               `- 총 소요 시간: ${totalElapsed}`,
               '',
@@ -631,7 +634,7 @@ jobs:
               const issueBody = [
                 '🍎 ❌ **iOS TestFlight 빌드 실패**',
                 '',
-                `- 앱 버전: \`0.0.0(${buildNumber})\``,
+                `- 앱 버전: \`${version}(${buildNumber})\``,
                 '',
                 '❌ 빌드 중 오류가 발생했습니다.',
                 '',
@@ -766,6 +769,7 @@ jobs:
             const step1Elapsed = '${{ needs.build-ios-test.outputs.step1_elapsed }}';
             const step2Elapsed = '${{ needs.build-ios-test.outputs.step2_elapsed }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const version = '${{ needs.prepare-test-build.outputs.version }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const commitHash = '${{ needs.prepare-test-build.outputs.commit_hash }}';
             const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
@@ -799,7 +803,7 @@ jobs:
               '### 📦 빌드 결과',
               '| 항목 | 값 |',
               '|------|-----|',
-              `| **앱 버전** | \`0.0.0(${buildNumber})\` |`,
+              `| **앱 버전** | \`${version}(${buildNumber})\` |`,
               `| **브랜치** | \`${branchName}\` |`,
               `| **커밋** | \`${commitHash}\` |`,
               `| **총 소요 시간** | ${totalElapsed} |`,
@@ -822,7 +826,7 @@ jobs:
               const issueBody = [
                 '🍎 ✅ **iOS TestFlight 배포 완료**',
                 '',
-                `- 앱 버전: \`0.0.0(${buildNumber})\``,
+                `- 앱 버전: \`${version}(${buildNumber})\``,
                 `- 커밋: \`${commitHash}\``,
                 '',
                 '📱 **TestFlight에서 테스트 앱을 다운로드할 수 있습니다.**'
@@ -850,6 +854,7 @@ jobs:
             const step1Elapsed = '${{ needs.build-ios-test.outputs.step1_elapsed }}';
             const step2Elapsed = '${{ needs.build-ios-test.outputs.step2_elapsed }}';
             const buildNumber = '${{ needs.prepare-test-build.outputs.build_number }}';
+            const version = '${{ needs.prepare-test-build.outputs.version }}';
             const branchName = '${{ needs.prepare-test-build.outputs.branch_name }}';
             const issueNumber = '${{ needs.prepare-test-build.outputs.issue_number }}';
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
@@ -879,7 +884,7 @@ jobs:
               `| 🔨 IPA 빌드 | ✅ 완료 | ${step2Elapsed || '-'} |`,
               `| 📤 TestFlight 배포 | ❌ 실패 | ${step3Elapsed} |`,
               '',
-              `- 앱 버전: \`0.0.0(${buildNumber})\``,
+              `- 앱 버전: \`${version}(${buildNumber})\``,
               `- 브랜치: \`${branchName}\``,
               `- 총 소요 시간: ${totalElapsed}`,
               '',
@@ -902,7 +907,7 @@ jobs:
               const issueBody = [
                 '🍎 ❌ **iOS TestFlight 배포 실패**',
                 '',
-                `- 앱 버전: \`0.0.0(${buildNumber})\``,
+                `- 앱 버전: \`${version}(${buildNumber})\``,
                 `- 브랜치: \`${branchName}\``,
                 '',
                 '❌ TestFlight 배포 중 오류가 발생했습니다. IPA는 성공적으로 빌드되었습니다.',
@@ -924,7 +929,7 @@ jobs:
         if: success()
         run: |
           echo "✅ TestFlight 테스트 빌드 업로드 성공!"
-          echo "버전: 0.0.0"
+          echo "버전: ${{ needs.prepare-test-build.outputs.version }}"
           echo "빌드 번호: ${{ needs.prepare-test-build.outputs.build_number }}"
           echo "브랜치: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.branch_name || github.ref_name }}"
           echo "커밋: ${{ github.sha }}"
