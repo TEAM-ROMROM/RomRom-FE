@@ -414,7 +414,7 @@ jobs:
       - name: Set test build version
         run: |
           BUILD_NUMBER="${{ needs.prepare-test-build.outputs.build_number }}"
-          VERSION=$(grep '^version:' version.yml | sed 's/version:[[:space:]]*//' | tr -d '"')
+          VERSION="${{ needs.prepare-test-build.outputs.version }}"
           echo "📋 테스트 빌드 버전 설정: ${VERSION}+${BUILD_NUMBER}"
           sed -i "s/^version: .*/version: ${VERSION}+${BUILD_NUMBER}/" pubspec.yaml
           echo "✅ pubspec.yaml 버전 변경 완료:"
