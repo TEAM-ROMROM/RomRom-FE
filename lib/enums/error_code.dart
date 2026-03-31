@@ -27,6 +27,7 @@ enum ErrorCode {
   // MEMBER
   memberNotFound(code: 'MEMBER_NOT_FOUND', koMessage: '회원을 찾을 수 없습니다.'),
   emailAlreadyExists(code: 'EMAIL_ALREADY_EXISTS', koMessage: '이미 가입된 이메일입니다.'),
+  emailAlreadyRegistered(code: 'EMAIL_ALREADY_REGISTERED', koMessage: '이미 다른 소셜 플랫폼으로 가입된 이메일입니다.'),
   duplicateNickname(code: 'DUPLICATE_NICKNAME', koMessage: '이미 사용 중인 닉네임입니다.'),
   invalidRequiredTermsAgreed(code: 'INVALID_REQUIRED_TERMS_AGREED', koMessage: '필수 이용약관에 동의하지 않았습니다.'),
   deletedMember(code: 'DELETED_MEMBER', koMessage: '탈퇴한 회원입니다.'),
