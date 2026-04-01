@@ -433,6 +433,7 @@ class ApiClient {
             debugPrint('세션 만료 감지 (EXPIRED_REFRESH_TOKEN): 자동 로그아웃 처리');
             await _tokenManager.deleteTokens();
             HeartbeatManager.instance.stop();
+            // 회원 캐시 삭제
             await MemberManager.clearMemberInfo();
             final context = navigatorKey.currentContext;
             if (context != null && context.mounted) {
