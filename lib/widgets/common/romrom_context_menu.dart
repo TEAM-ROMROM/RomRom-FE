@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
@@ -85,7 +86,7 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
 
     final curve = CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeOutCubic,
+      curve: AppMotion.decelerate,
       reverseCurve: Curves.easeInCubic,
     );
 

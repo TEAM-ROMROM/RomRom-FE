@@ -36,6 +36,8 @@ import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
 import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
+import 'package:romrom_fe/widgets/common/app_skeleton.dart';
+import 'package:romrom_fe/widgets/skeletons/home_tab_skeleton.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -486,10 +488,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
-    }
+    return AppSkeleton(isLoading: _isLoading, skeleton: const HomeTabSkeleton(), child: _buildContent());
+  }
 
+  Widget _buildContent() {
     // 피드 아이템이 없을 때 메시지 표시
     if (_feedItems.isEmpty) {
       return Center(

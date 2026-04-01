@@ -13,6 +13,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
@@ -77,11 +78,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     _scrollController.addListener(_scrollListener);
 
     // 토글 애니메이션 컨트롤러 초기화
-    _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this);
     _toggleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
     _loadInitialItems();
   }

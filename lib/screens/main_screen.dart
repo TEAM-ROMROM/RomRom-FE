@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
 import 'package:romrom_fe/screens/my_page_tab_screen.dart';
@@ -55,7 +56,13 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      body: _navigationTabScreens[_currentTabIndex],
+      body: AnimatedSwitcher(
+        duration: AppMotion.normal,
+        switchInCurve: AppMotion.entry,
+        switchOutCurve: AppMotion.entry,
+        transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+        child: KeyedSubtree(key: ValueKey<int>(_currentTabIndex), child: _navigationTabScreens[_currentTabIndex]),
+      ),
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _currentTabIndex,
         onTap: (index) {

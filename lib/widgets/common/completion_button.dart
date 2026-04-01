@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 class CompletionButton extends StatelessWidget {
   final bool isEnabled; // 버튼 활성화
@@ -58,29 +59,34 @@ class CompletionButton extends StatelessWidget {
     final Color splashColor = highlightColor.withValues(alpha: 0.3);
 
     return Center(
-      child: SizedBox(
-        width: buttonWidth.w,
-        height: buttonHeight.h,
-        child: Material(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(10.r),
-          child: InkWell(
-            onTap: effectiveEnabled ? enabledOnPressed : disabledOnPressed,
-            customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-            highlightColor: highlightColor,
-            splashColor: splashColor,
+      child: AppPressable(
+        onTap: effectiveEnabled ? enabledOnPressed : disabledOnPressed,
+        enabled: effectiveEnabled,
+        borderRadius: BorderRadius.circular(10.r),
+        child: SizedBox(
+          width: buttonWidth.w,
+          height: buttonHeight.h,
+          child: Material(
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(10.r),
-            child: Center(
-              child: isLoading
-                  ? SizedBox(
-                      width: 24.w,
-                      height: 24.h,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.w,
-                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
-                      ),
-                    )
-                  : Text(buttonText, style: buttonTextStyle, textAlign: TextAlign.center, softWrap: false),
+            child: InkWell(
+              onTap: effectiveEnabled ? enabledOnPressed : disabledOnPressed,
+              customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+              highlightColor: highlightColor,
+              splashColor: splashColor,
+              borderRadius: BorderRadius.circular(10.r),
+              child: Center(
+                child: isLoading
+                    ? SizedBox(
+                        width: 24.w,
+                        height: 24.h,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.w,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
+                        ),
+                      )
+                    : Text(buttonText, style: buttonTextStyle, textAlign: TextAlign.center, softWrap: false),
+              ),
             ),
           ),
         ),

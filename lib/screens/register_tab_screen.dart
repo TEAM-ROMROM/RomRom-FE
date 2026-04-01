@@ -25,6 +25,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -66,11 +67,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     super.initState();
 
     // 토글 애니메이션 초기화
-    _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this);
     _toggleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
     _loadMyItems();
     _scrollController.addListener(_scrollListener);
@@ -482,11 +483,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
       child: IgnorePointer(
         ignoring: _isScrolling,
         child: AnimatedScale(
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.fast,
           scale: _isScrolling ? 0.0 : 1.0,
-          curve: Curves.easeInOut,
+          curve: AppMotion.standard,
           child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
+            duration: AppMotion.fast,
             opacity: _isScrolling ? 0.0 : 1.0,
             child: Center(
               child: Container(

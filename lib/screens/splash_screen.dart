@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
@@ -71,13 +72,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
-    _loginTransitionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _loginTransitionController = AnimationController(vsync: this, duration: AppMotion.slow);
 
     // 로고: 중앙(-0.075) → 임시값(-0.52), postFrameCallback에서 동적 계산값으로 교체됨
     _logoAlignmentAnim = AlignmentTween(
       begin: const Alignment(0, -0.075),
       end: const Alignment(0, -0.52),
-    ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _loginTransitionController, curve: AppMotion.standard));
 
     // 로그인 UI: 0 → 1 (30~100% 구간에서 fade in)
     _loginUIFadeAnim = CurvedAnimation(
@@ -92,7 +93,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       _logoAlignmentAnim = AlignmentTween(
         begin: const Alignment(0, -0.075),
         end: Alignment(0, endY),
-      ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
+      ).animate(CurvedAnimation(parent: _loginTransitionController, curve: AppMotion.standard));
     });
 
     unawaited(_initAndNavigate());
