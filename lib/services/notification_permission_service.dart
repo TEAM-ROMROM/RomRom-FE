@@ -19,11 +19,16 @@ class NotificationPermissionService {
   /// 알림 권한 허용 여부 확인
   /// Firebase Messaging 기준으로 확인 (앱 초기화 시 requestPermission과 동일한 채널)
   Future<bool> isPermissionGranted() async {
-    final settings = await FirebaseMessaging.instance.getNotificationSettings();
-    final status = settings.authorizationStatus;
-    final granted = status == AuthorizationStatus.authorized || status == AuthorizationStatus.provisional;
-    debugPrint('[NotificationPermission] 현재 상태: $status → ${granted ? '허용됨' : '미허용'}');
-    return granted;
+    try {
+      final settings = await FirebaseMessaging.instance.getNotificationSettings();
+      final status = settings.authorizationStatus;
+      final granted = status == AuthorizationStatus.authorized || status == AuthorizationStatus.provisional;
+      debugPrint('[NotificationPermission] 현재 상태: $status → ${granted ? '허용됨' : '미허용'}');
+      return granted;
+    } catch (e) {
+      debugPrint('[NotificationPermission] 상태 조회 실패: $e');
+      return false;
+    }
   }
 
   /// 바텀시트 표시 여부 결정
