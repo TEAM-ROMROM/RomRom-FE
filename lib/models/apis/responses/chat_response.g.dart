@@ -12,12 +12,18 @@ ChatRoomResponse _$ChatRoomResponseFromJson(Map<String, dynamic> json) => ChatRo
   chatRoomDetailDtoPage: json['chatRoomDetailDtoPage'] == null
       ? null
       : PagedChatRoomDetail.fromJson(json['chatRoomDetailDtoPage'] as Map<String, dynamic>),
+  isOpponentDeleted: json['isOpponentDeleted'] as bool? ?? false,
+  opponentState: json['opponentState'] == null
+      ? null
+      : ChatUserState.fromJson(json['opponentState'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ChatRoomResponseToJson(ChatRoomResponse instance) => <String, dynamic>{
   'chatRoom': instance.chatRoom?.toJson(),
   'messages': instance.messages?.toJson(),
   'chatRoomDetailDtoPage': instance.chatRoomDetailDtoPage?.toJson(),
+  'isOpponentDeleted': instance.isOpponentDeleted,
+  'opponentState': instance.opponentState?.toJson(),
 };
 
 PagedChatMessage _$PagedChatMessageFromJson(Map<String, dynamic> json) => PagedChatMessage(
