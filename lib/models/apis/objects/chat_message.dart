@@ -8,14 +8,17 @@ part 'chat_message.g.dart';
 /// 채팅 메시지 모델 (MongoDB)
 @JsonSerializable()
 class ChatMessage extends BaseEntity {
-  final String? chatMessageId; // MongoDB ObjectId
-  final String? chatRoomId; // UUID
-  final String? senderId; // UUID
-  final String? recipientId; // UUID
+  final String? chatMessageId;
+  final String? chatRoomId;
+  final String? senderId;
+  final String? recipientId;
   final String? content;
   final List<String>? imageUrls;
   final MessageType? type;
   final bool? isProfanityDetected;
+  final double? latitude;
+  final double? longitude;
+  final String? address;
 
   ChatMessage({
     super.createdDate,
@@ -28,6 +31,9 @@ class ChatMessage extends BaseEntity {
     this.imageUrls,
     this.type,
     this.isProfanityDetected,
+    this.latitude,
+    this.longitude,
+    this.address,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => _$ChatMessageFromJson(json);
@@ -48,6 +54,9 @@ extension ChatMessageCopy on ChatMessage {
     bool? isProfanityDetected,
     DateTime? createdDate,
     DateTime? updatedDate,
+    double? latitude,
+    double? longitude,
+    String? address,
   }) => ChatMessage(
     chatMessageId: chatMessageId ?? this.chatMessageId,
     chatRoomId: chatRoomId ?? this.chatRoomId,
@@ -59,5 +68,8 @@ extension ChatMessageCopy on ChatMessage {
     isProfanityDetected: isProfanityDetected ?? this.isProfanityDetected,
     createdDate: createdDate ?? this.createdDate,
     updatedDate: updatedDate ?? this.updatedDate,
+    latitude: latitude ?? this.latitude,
+    longitude: longitude ?? this.longitude,
+    address: address ?? this.address,
   );
 }
