@@ -17,6 +17,7 @@ class ChatMessageItem extends StatelessWidget {
   final bool showTime;
   final bool isUploading;
   final String opponentNickname;
+  final bool showReadReceipt;
 
   const ChatMessageItem({
     super.key,
@@ -26,6 +27,7 @@ class ChatMessageItem extends StatelessWidget {
     required this.showTime,
     required this.isUploading,
     required this.opponentNickname,
+    this.showReadReceipt = false,
   });
 
   @override
@@ -69,7 +71,14 @@ class ChatMessageItem extends StatelessWidget {
             _buildBubble(context, isMine: false),
             if (showTime) ...[SizedBox(width: 8.w), _buildTimeText()],
           ] else ...[
-            if (showTime) ...[_buildTimeText(), SizedBox(width: 8.w)],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (showReadReceipt) ...[_buildReadReceiptText(), SizedBox(height: 4.h)],
+                if (showTime) ...[_buildTimeText()],
+              ],
+            ),
+            SizedBox(width: 8.w),
             _buildBubble(context, isMine: true),
           ],
         ],
@@ -107,6 +116,13 @@ class ChatMessageItem extends StatelessWidget {
         color: AppColors.opacity50White,
         fontWeight: FontWeight.w400,
       ),
+    );
+  }
+
+  Widget _buildReadReceiptText() {
+    return Text(
+      '읽음',
+      style: CustomTextStyles.p3.copyWith(color: AppColors.opacity50White, fontWeight: FontWeight.w400, height: 1.2),
     );
   }
 

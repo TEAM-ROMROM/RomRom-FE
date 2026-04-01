@@ -10,6 +10,9 @@ import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/main.dart' show navigatorKey;
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
+import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/services/heart_beat_manager.dart';
+import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
@@ -23,9 +26,17 @@ class ApiClient {
   /// 동시 다발적 403 응답 시 중복 네비게이션 방지 플래그
   static bool _isSuspendedHandling = false;
 
+  /// 동시 다발적 세션 만료(EXPIRED_REFRESH_TOKEN) 시 중복 로그아웃 방지 플래그
+  static bool _isSessionExpiredHandling = false;
+
   /// 제재 처리 플래그 리셋 (로그아웃/재로그인 시 호출)
   static void resetSuspendedFlag() {
     _isSuspendedHandling = false;
+  }
+
+  /// 세션 만료 처리 플래그 리셋 (재로그인 성공 시 호출)
+  static void resetSessionExpiredFlag() {
+    _isSessionExpiredHandling = false;
   }
 
   /// 403 SUSPENDED_MEMBER 응답 글로벌 처리
@@ -397,7 +408,6 @@ class ApiClient {
 
       const String url = '${AppUrls.baseUrl}/api/auth/reissue';
 
-      // 토큰 갱신
       var response = await _executeMultipartRequest(url: url, method: 'POST', fields: {'refreshToken': refreshToken});
 
       // 토큰 갱신(reissue) 시에도 제재된 회원 체크 (403 SUSPENDED_MEMBER)
@@ -408,9 +418,33 @@ class ApiClient {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         final String newAccessToken = responseData['accessToken'];
-        await _tokenManager.saveTokens(newAccessToken, refreshToken);
+        // Refresh Token Rotation: 응답에 새 refreshToken이 있으면 갱신, 없으면 기존 유지
+        final String? newRefreshToken = responseData['refreshToken'] as String?;
+        await _tokenManager.saveTokens(newAccessToken, newRefreshToken ?? refreshToken);
         return true;
       }
+
+      // EXPIRED_REFRESH_TOKEN: 토큰 삭제 + 하트비트 중단 + 로그인 화면 이동
+      if (!_isSessionExpiredHandling && response.statusCode == 401) {
+        try {
+          final data = jsonDecode(response.body);
+          if (data['errorCode'] == 'EXPIRED_REFRESH_TOKEN') {
+            _isSessionExpiredHandling = true;
+            debugPrint('세션 만료 감지 (EXPIRED_REFRESH_TOKEN): 자동 로그아웃 처리');
+            await _tokenManager.deleteTokens();
+            HeartbeatManager.instance.stop();
+            // 회원 캐시 삭제
+            await MemberManager.clearMemberInfo();
+            final context = navigatorKey.currentContext;
+            if (context != null && context.mounted) {
+              context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.fadeTransition);
+            }
+          }
+        } catch (e) {
+          debugPrint('세션 만료 응답 파싱 실패: $e');
+        }
+      }
+
       return false;
     } catch (e) {
       debugPrint('토큰 갱신 중 오류 발생: $e');

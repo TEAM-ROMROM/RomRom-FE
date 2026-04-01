@@ -11,6 +11,7 @@ import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
+import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
@@ -30,6 +31,8 @@ class AuthService {
       await _performPlatformLogout();
       await _tokenManager.deleteTokens();
       HeartbeatManager.instance.stop();
+      ApiClient.resetSuspendedFlag();
+      ApiClient.resetSessionExpiredFlag();
       if (context.mounted) {
         context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
       }

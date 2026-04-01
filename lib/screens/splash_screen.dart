@@ -32,12 +32,11 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  // 로그인 전환 애니메이션 (로고 이동 + 로그인 UI 등장)
   late AnimationController _loginTransitionController;
-  late Animation<Alignment> _logoAlignmentAnim; // 로고 Y 이동
-  late Animation<double> _loginUIFadeAnim; // 로그인 UI fade in
-  bool _showLoginUI = false; // true: 로그인 UI 오버레이를 Stack에 삽입
-  bool _loginTransitionStarted = false; // true: 애니메이션이 이미 시작됨 (중복 호출 방지)
+  late Animation<Alignment> _logoAlignmentAnim;
+  late Animation<double> _loginUIFadeAnim;
+  bool _showLoginUI = false;
+  bool _loginTransitionStarted = false;
 
   @override
   void initState() {
@@ -45,13 +44,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
     _loginTransitionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
 
-    // 로고: 중앙(-0.075) → 로그인 화면 위치(-0.52)
+    // 로고 이동: 화면 중앙(-0.075) → 로그인 화면 로고 위치
+    // end 값은 postFrameCallback에서 실제 레이아웃 측정값으로 교체됨
     _logoAlignmentAnim = AlignmentTween(
       begin: const Alignment(0, -0.075),
       end: const Alignment(0, -0.52),
     ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
 
-    // 로그인 UI: 0 → 1 (30~100% 구간에서 fade in)
+    // 로그인 UI fade in: 30~100% 구간
     _loginUIFadeAnim = CurvedAnimation(
       parent: _loginTransitionController,
       curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
@@ -62,7 +62,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   Future<void> _initAndNavigate() async {
     try {
-      // 버전 체크 (API 실패 시 스킵 — 앱 진입 차단 방지)
       final updateType = await AppVersionApi().checkUpdateType();
       if (updateType == UpdateType.force && mounted) {
         context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
@@ -82,20 +81,70 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     } catch (e, st) {
       debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
       if (!mounted) return;
-      // 오류 시에도 로그인 화면이므로 전환 애니메이션 재생
       await _playLoginTransitionAnimation();
     }
   }
 
-  /// 로고 이동 + 로그인 UI 등장 애니메이션 재생 후 실제 LoginScreen으로 교체
+  /// 로고 이동 + 로그인 UI fade in.
+  /// LoginScreen으로 교체하지 않음 — 스플래시 자체가 로그인 화면 역할을 함.
+  /// clearStackImmediate 교체가 없으므로 순간이동 현상이 원천 차단됨.
   Future<void> _playLoginTransitionAnimation() async {
     if (!mounted || _loginTransitionStarted) return;
     _loginTransitionStarted = true;
+
     setState(() => _showLoginUI = true);
-    await _loginTransitionController.forward();
+
+    // 로그인 UI가 렌더링된 후 실제 로고 위치를 측정하여 애니메이션 end값 교체
+    final completer = Completer<void>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        completer.complete();
+        return;
+      }
+      final endY = _calculateLoginLogoAlignmentY(context);
+      _logoAlignmentAnim = AlignmentTween(
+        begin: const Alignment(0, -0.075),
+        end: Alignment(0, endY),
+      ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
+      completer.complete();
+    });
+    await completer.future;
     if (!mounted) return;
-    // 애니메이션 완료 후 즉시(전환 없이) 실제 LoginScreen으로 교체
-    context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.clearStackImmediate);
+
+    await _loginTransitionController.forward();
+  }
+
+  /// Scaffold.body(Stack) 기준으로 로고의 최종 Alignment Y를 계산한다.
+  /// Align의 좌표계는 부모(Stack = Scaffold.body)의 크기 기준이므로
+  /// screenHeight 대신 MediaQuery에서 padding을 뺀 실제 body 높이를 사용한다.
+  double _calculateLoginLogoAlignmentY(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    // Scaffold.body의 실제 높이 = 전체 화면 - 상단 padding(status bar)
+    // (Scaffold는 기본적으로 body를 status bar 아래부터 배치)
+    final bodyHeight = mq.size.height - mq.padding.top;
+    final logoSize = 108.w;
+
+    // 로그인 화면(LoginScreen)과 동일한 레이아웃 수치
+    final fixedBelowLogo = 45.h + 16.sp + 17.h + 17.h;
+    final buttonCount = Platform.isIOS ? 3 : 2;
+    final buttonGroupHeight = buttonCount * 56.h + (buttonCount - 1) * 12.h;
+    final totalFixed = logoSize + fixedBelowLogo + buttonGroupHeight + 48.h;
+
+    // SafeArea가 제거하는 top/bottom padding
+    final safeTop = mq.padding.top;
+    final safeBottom = mq.padding.bottom;
+    final safeAreaHeight = mq.size.height - safeTop - safeBottom;
+
+    final spacerTotal = safeAreaHeight - totalFixed;
+    final topSpacerHeight = spacerTotal * 2 / 5;
+
+    // 로고 중심 Y — body(Scaffold.body = status bar 아래) 기준
+    final logoCenterY = safeTop + topSpacerHeight + logoSize / 2;
+
+    // Align Y: Scaffold.body(=bodyHeight) 기준
+    // Align Y = (logoCenterY_in_body / (bodyHeight / 2)) - 1
+    final logoCenterInBody = logoCenterY - mq.padding.top; // body 안에서의 상대 Y
+    return (logoCenterInBody / (bodyHeight / 2)) - 1;
   }
 
   Future<Widget> _determineInitialScreen() async {
@@ -103,14 +152,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     final tokenManager = TokenManager();
     final String? refreshToken = await tokenManager.getRefreshToken();
 
-    if (refreshToken == null) {
-      return const LoginScreen();
-    }
+    if (refreshToken == null) return const LoginScreen();
 
     final isLoggedIn = await romAuthApi.refreshAccessToken();
-    if (!isLoggedIn) {
-      return const LoginScreen();
-    }
+    if (!isLoggedIn) return const LoginScreen();
 
     final userInfo = UserInfo();
     try {
@@ -146,15 +191,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         backgroundColor: AppColors.primaryBlack,
         body: Stack(
           children: [
-            // 로그인 UI (애니메이션 중에만 표시)
+            // 로그인 UI (애니메이션 중에만 표시) — 로그인 화면과 동일한 SafeArea + Spacer 구조
             if (_showLoginUI)
               FadeTransition(
                 opacity: _loginUIFadeAnim,
-                child: Center(
+                child: SafeArea(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      SizedBox(height: 112.h), // 로고 SVG 높이(112h)만큼 공간 확보 — AnimatedBuilder의 로고와 수직 정렬 맞춤
+                      const Spacer(flex: 2),
+                      SizedBox(height: 108.w), // 로고 자리 확보
                       SizedBox(height: 45.h),
                       Text(
                         '손쉬운 물건 교환',
@@ -165,7 +211,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                       SizedBox(height: 17.h),
                       SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
-                      SizedBox(height: 174.h),
+                      const Spacer(flex: 3),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 24.w),
                         child: AuthButtonGroup(
@@ -176,18 +222,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ].map((platform) => LoginButton(platform: platform)).toList(),
                         ),
                       ),
+                      SizedBox(height: 48.h),
                     ],
                   ),
                 ),
               ),
 
-            // 로고 (항상 표시, 전환 단계엔 이동)
+            // 로고: 항상 Align으로 표시, 애니메이션 중 이동
             AnimatedBuilder(
               animation: _loginTransitionController,
               builder: (context, child) {
                 return Align(alignment: _logoAlignmentAnim.value, child: child);
               },
-              child: SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 112.h),
+              child: SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 108.w),
             ),
           ],
         ),

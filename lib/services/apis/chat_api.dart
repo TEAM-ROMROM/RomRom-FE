@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/objects/api_pageable.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
+import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/api_client.dart';
@@ -165,5 +166,35 @@ class ChatApi {
         isEntered ? debugPrint('채팅방 입장 처리 성공: $chatRoomId') : debugPrint('채팅방 퇴장 처리 성공: $chatRoomId');
       },
     );
+  }
+
+  /// 특정 채팅방의 읽음 상태 조회 API
+  /// POST /api/chat/rooms/read-status/get
+  Future<ChatUserState?> getChatRoomReadStatus({required String chatRoomId}) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/read-status/get';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    final http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('상대방 읽음 상태 조회 성공: $chatRoomId');
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      try {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final opponentStateJson = responseData['opponentState'];
+        if (opponentStateJson != null) {
+          return ChatUserState.fromJson(opponentStateJson as Map<String, dynamic>);
+        }
+      } catch (e) {
+        debugPrint('읽음 상태 파싱 실패: $e');
+      }
+    }
+    return null;
   }
 }
