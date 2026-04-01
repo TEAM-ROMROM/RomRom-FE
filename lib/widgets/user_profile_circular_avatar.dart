@@ -74,6 +74,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
                     ? AppColors.opacity60White
                     : AppColors.profileBorderWhite,
                 width: 1.0,
+                strokeAlign: BorderSide.strokeAlignOutside,
               )
             : null,
       ),

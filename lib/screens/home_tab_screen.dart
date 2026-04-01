@@ -39,10 +39,13 @@ import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
-  const HomeTabScreen({super.key});
+  const HomeTabScreen({super.key, this.onLoaded});
 
   // HomeTabScreen의 상태에 접근하기 위한 GlobalKey
   static final GlobalKey<State<HomeTabScreen>> globalKey = GlobalKey<State<HomeTabScreen>>();
+
+  /// 초기 피드 로딩 완료 시 호출되는 콜백 (최초 1회)
+  final Future<void> Function()? onLoaded;
 
   @override
   State<HomeTabScreen> createState() => _HomeTabScreenState();
@@ -314,11 +317,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _hasMoreItems = items.isNotEmpty;
         _isLoading = false;
       });
+      await widget.onLoaded?.call();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
+      await widget.onLoaded?.call();
 
       if (!mounted) return;
       CommonSnackBar.show(context: context, message: '피드 로딩 실패: $e', type: SnackBarType.error);

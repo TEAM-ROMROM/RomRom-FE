@@ -20,7 +20,7 @@ import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
-import 'package:romrom_fe/services/notification_service.dart';
+import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';

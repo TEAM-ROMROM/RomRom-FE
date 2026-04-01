@@ -12,8 +12,10 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
+import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
@@ -26,7 +28,8 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> with SingleTickerProviderStateMixin {
+class _NotificationScreenState extends State<NotificationScreen>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
 
   // 로딩 상태
@@ -52,9 +55,13 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
   // API 요청 진행 중인 알림 타입 추적 (중복 클릭 방지)
   final Set<NotificationType> _pendingMuteRequests = {};
 
+  // 시스템 설정 복귀 후 처리할 대기 중인 알림 타입
+  NotificationType? _pendingNotificationEnableType;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_scrollListener);
 
     // 토글 애니메이션 컨트롤러 초기화
@@ -89,6 +96,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _toggleAnimationController.dispose();
@@ -98,6 +106,44 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       NotificationApi().updateAllNotificationsAsRead().catchError((e) => debugPrint('모든 알림 읽음 처리 실패(dispose): $e')),
     );
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _pendingNotificationEnableType != null) {
+      _handleReturnFromSystemSettings();
+    }
+  }
+
+  /// 시스템 설정에서 복귀 시 권한 상태 확인 후 처리
+  Future<void> _handleReturnFromSystemSettings() async {
+    final NotificationType type = _pendingNotificationEnableType!;
+    _pendingNotificationEnableType = null;
+
+    final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
+    if (!permissionGranted) return; // 거부 시 UI 변경 없음
+
+    // 권한 허용됨 → 백엔드 업데이트 후 UI 반영
+    final MemberApi api = MemberApi();
+    try {
+      switch (type) {
+        case NotificationType.systemNotice:
+          await api.updateNotificationSetting(isMarketingInfoAgreed: true, isContentNotificationAgreed: true);
+          break;
+        case NotificationType.chatMessageReceived:
+          await api.updateNotificationSetting(isChatNotificationAgreed: true);
+          break;
+        case NotificationType.itemLiked:
+          await api.updateNotificationSetting(isActivityNotificationAgreed: true);
+          break;
+        case NotificationType.tradeRequestReceived:
+          await api.updateNotificationSetting(isTradeNotificationAgreed: true);
+          break;
+      }
+      if (mounted) setState(() => _mutedNotificationTypes[type] = false);
+    } catch (e) {
+      debugPrint('알림 설정 변경 실패: $e');
+    }
   }
 
   void _scrollListener() {
@@ -221,6 +267,27 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     final MemberApi api = MemberApi();
     final bool isMuted = _mutedNotificationTypes[notificationType] ?? false;
     final bool newValue = isMuted; // muted=true이면 켜야 하므로 true 전송, muted=false이면 꺼야 하므로 false 전송
+
+    // 음소거 해제(켜기) 시도 시 시스템 권한 확인
+    if (isMuted) {
+      final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
+      if (!permissionGranted) {
+        if (!mounted) return;
+        await CommonModal.confirm(
+          context: context,
+          message: '시스템 알림 허용이 필요합니다.',
+          cancelText: '취소',
+          confirmText: '알림 켜기',
+          onCancel: () => Navigator.pop(context),
+          onConfirm: () {
+            _pendingNotificationEnableType = notificationType;
+            Navigator.pop(context);
+            NotificationPermissionService().openSettings();
+          },
+        );
+        return;
+      }
+    }
 
     setState(() {
       _pendingMuteRequests.add(notificationType);
