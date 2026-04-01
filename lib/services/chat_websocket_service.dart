@@ -243,9 +243,15 @@ class ChatWebSocketService {
     required String content,
     MessageType type = MessageType.text,
     List<String>? imageUrls,
+    double? latitude,
+    double? longitude,
+    String? address,
   }) {
     if (type == MessageType.image && (imageUrls == null || imageUrls.isEmpty)) {
       throw Exception('imageUrls is required for image messages');
+    }
+    if (type == MessageType.location && (latitude == null || longitude == null)) {
+      throw Exception('latitude and longitude are required for location messages');
     }
     if (!_isConnected || _stompClient == null) {
       debugPrint('[WebSocket] Cannot send message: Not connected');
@@ -258,9 +264,14 @@ class ChatWebSocketService {
       'type': type.toString().split('.').last.toUpperCase(),
     };
 
-    // IMAGE 타입인 경우 imageUrls 추가
     if (type == MessageType.image && imageUrls != null) {
       payload['imageUrls'] = imageUrls;
+    }
+
+    if (type == MessageType.location) {
+      payload['latitude'] = latitude;
+      payload['longitude'] = longitude;
+      payload['address'] = address;
     }
 
     debugPrint('[WebSocket] Sending message to /app/chat.send\n$payload');
