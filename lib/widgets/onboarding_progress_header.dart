@@ -153,10 +153,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
         width: 24.w,
         height: 24.h,
         decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primaryYellow),
-        child: Padding(
-          padding: EdgeInsets.all(6.w),
-          child: Icon(AppIcons.onboardingProgressCheck, size: 9.sp, color: AppColors.textColorBlack),
-        ),
+        child: Icon(AppIcons.onboardingProgressCheck, size: 20.sp, color: AppColors.textColorBlack),
       );
     }
 
