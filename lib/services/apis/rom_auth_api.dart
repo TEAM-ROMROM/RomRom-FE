@@ -100,8 +100,9 @@ class RomAuthApi {
           );
         }
 
-        // 정상 계정: 제재 플래그 리셋 후 토큰 저장
+        // 정상 계정: 제재 플래그 + 세션 만료 플래그 리셋 후 토큰 저장
         ApiClient.resetSuspendedFlag();
+        ApiClient.resetSessionExpiredFlag();
         String accessToken = responseData[TokenKeys.accessToken.name];
         String refreshToken = responseData[TokenKeys.refreshToken.name];
 
