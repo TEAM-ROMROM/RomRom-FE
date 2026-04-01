@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/context_menu_enums.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 
 /// 채팅방 하단 메시지 입력 바
@@ -93,29 +94,23 @@ class ChatInputBar extends StatelessWidget {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(100.r), borderSide: BorderSide.none),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   suffixIcon: TextFieldTapRegion(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: ClipOval(
-                        child: InkWell(
-                          onTap: sendDisabled ? null : onSend,
-                          customBorder: const CircleBorder(),
-                          highlightColor: AppColors.buttonHighlightColorGray,
-                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                          child: Container(
-                            margin: EdgeInsets.all(4.w),
-                            width: 40.w,
-                            height: 40.w,
-                            decoration: BoxDecoration(
-                              color: sendDisabled ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Icon(
-                                AppIcons.arrowUpward,
-                                color: sendDisabled ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
-                                size: 32.w,
-                              ),
-                            ),
+                    child: AppPressable(
+                      onTap: sendDisabled ? null : onSend,
+                      scaleDown: AppPressable.scaleIcon,
+                      enableRipple: false,
+                      child: Container(
+                        margin: EdgeInsets.all(4.w),
+                        width: 40.w,
+                        height: 40.w,
+                        decoration: BoxDecoration(
+                          color: sendDisabled ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Icon(
+                            AppIcons.arrowUpward,
+                            color: sendDisabled ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
+                            size: 32.w,
                           ),
                         ),
                       ),

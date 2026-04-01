@@ -14,6 +14,7 @@ import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
@@ -313,35 +314,37 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
           return Padding(
             padding: EdgeInsets.only(bottom: 16.h),
-            child: GestureDetector(
-              onTap: () async {
+            child: SentRequestItemCard(
+              onTap: () {
                 // 거래완료 상태면 삭제 처리
                 if (request.tradeStatus == TradeStatus.traded.serverName) {
-                  try {
-                    await TradeApi().cancelTradeRequest(
-                      TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                    );
-                    if (mounted) {
-                      setState(() {
-                        _sentRequests.removeWhere((e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId);
+                  TradeApi()
+                      .cancelTradeRequest(TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId))
+                      .then((_) {
+                        if (mounted) {
+                          setState(() {
+                            _sentRequests.removeWhere((e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId);
+                          });
+                          CommonSnackBar.show(context: context, message: '삭제되었습니다.');
+                        }
+                      })
+                      .catchError((e) {
+                        debugPrint('거래완료 항목 삭제 실패: $e');
+                        if (mounted) {
+                          CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
+                        }
                       });
-                      CommonSnackBar.show(context: context, message: '삭제되었습니다.');
-                    }
-                  } catch (e) {
-                    debugPrint('거래완료 항목 삭제 실패: $e');
-                    if (mounted) {
-                      CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
-                    }
-                  }
                   return;
                 }
                 // 기존 로직: 상세 페이지 이동
                 context.navigateTo(
                   screen: ItemDetailDescriptionScreen(
-                    itemId: takeItem.itemId!, // 내가 요청 보낸 카드로 이동
+                    itemId: takeItem.itemId!,
+                    // 내가 요청 보낸 카드로 이동
                     imageSize: Size(MediaQuery.of(context).size.width, 400.h),
                     currentImageIndex: 0,
-                    heroTag: 'itemImage_${takeItem.itemId!}_0', // ← 인덱스 포함
+                    heroTag: 'itemImage_${takeItem.itemId!}_0',
+                    // ← 인덱스 포함
                     isMyItem: false,
                     isRequestManagement: true,
                     tradeRequestHistoryId: request.tradeRequestHistoryId,
@@ -349,65 +352,63 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   ),
                 );
               },
-              child: SentRequestItemCard(
-                myItemImageUrl: giveItem.imageUrlList.isNotEmpty
-                    ? giveItem.imageUrlList.first
-                    : 'https://picsum.photos/400/300',
-                otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
-                    ? takeItem.imageUrlList.first
-                    : 'https://picsum.photos/400/300',
-                otherUserProfileUrl: takeItem.member?.profileUrl ?? '',
-                title: takeItem.itemName ?? ' ',
-                location: takeItem.address ?? '주소 미등록',
-                createdDate: takeItem.createdDate ?? DateTime.now(),
-                tradeOptions: takeItem.itemTradeOptions != null
-                    ? takeItem.itemTradeOptions!
-                          .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
-                          .toList()
-                    : [],
-                tradeStatus: request.tradeStatus != null
-                    ? TradeStatus.values.firstWhere(
-                        (e) => e.serverName == request.tradeStatus,
-                        orElse: () => TradeStatus.chatting,
-                      )
-                    : TradeStatus.chatting,
-                onEditTap: () {
-                  context.navigateTo(
-                    screen: ItemModificationScreen(
-                      itemId: giveItem.itemId,
-                      onClose: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                  );
-                },
-                onCancelTap: () async {
-                  final result = await context.showDeleteDialog(
-                    title: '거래 요청 취소',
-                    description: '거래 요청을 취소하시겠습니까?',
-                    confirmText: '확인',
-                  );
+              myItemImageUrl: giveItem.imageUrlList.isNotEmpty
+                  ? giveItem.imageUrlList.first
+                  : 'https://picsum.photos/400/300',
+              otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
+                  ? takeItem.imageUrlList.first
+                  : 'https://picsum.photos/400/300',
+              otherUserProfileUrl: takeItem.member?.profileUrl ?? '',
+              title: takeItem.itemName ?? ' ',
+              location: takeItem.address ?? '주소 미등록',
+              createdDate: takeItem.createdDate ?? DateTime.now(),
+              tradeOptions: takeItem.itemTradeOptions != null
+                  ? takeItem.itemTradeOptions!
+                        .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
+                        .toList()
+                  : [],
+              tradeStatus: request.tradeStatus != null
+                  ? TradeStatus.values.firstWhere(
+                      (e) => e.serverName == request.tradeStatus,
+                      orElse: () => TradeStatus.chatting,
+                    )
+                  : TradeStatus.chatting,
+              onEditTap: () {
+                context.navigateTo(
+                  screen: ItemModificationScreen(
+                    itemId: giveItem.itemId,
+                    onClose: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                );
+              },
+              onCancelTap: () async {
+                final result = await context.showDeleteDialog(
+                  title: '거래 요청 취소',
+                  description: '거래 요청을 취소하시겠습니까?',
+                  confirmText: '확인',
+                );
 
-                  if (result == true) {
-                    try {
-                      await TradeApi().cancelTradeRequest(
-                        TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                      );
-                      if (mounted) {
-                        setState(() {
-                          _sentRequests.removeAt(index);
-                        });
-                        CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
-                      }
-                    } catch (e) {
-                      debugPrint('요청 취소 실패: $e');
-                      if (mounted) {
-                        CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다', type: SnackBarType.error);
-                      }
+                if (result == true) {
+                  try {
+                    await TradeApi().cancelTradeRequest(
+                      TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
+                    );
+                    if (mounted) {
+                      setState(() {
+                        _sentRequests.removeAt(index);
+                      });
+                      CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
+                    }
+                  } catch (e) {
+                    debugPrint('요청 취소 실패: $e');
+                    if (mounted) {
+                      CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다', type: SnackBarType.error);
                     }
                   }
-                },
-              ),
+                }
+              },
             ),
           );
         }),
@@ -524,10 +525,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                           leftText: '받은 요청',
                           rightText: '보낸 요청',
                         ),
-                        statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
+                        statusBarHeight: MediaQuery.of(context).padding.top,
+                        // ★ 꼭 전달
                         toolbarHeight: 58.h,
                         toggleHeight: 62.h,
-                        expandedExtra: 16.h, // 큰 제목/여백
+                        expandedExtra: 16.h,
+                        // 큰 제목/여백
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
@@ -585,7 +588,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         onPageChanged: _onCardPageChanged,
         itemCount: _itemCards.length,
         itemBuilder: (context, index) {
-          return GestureDetector(
+          return AppPressable(
+            scaleDown: AppPressable.scaleCard,
+            enableRipple: false,
             onTap: () {
               context.navigateTo(
                 screen: ItemDetailDescriptionScreen(
@@ -750,33 +755,54 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
                 return Column(
                   children: [
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque, // 빈 공간도 터치 가능
-                      onTap: () async {
-                        await TradeApi()
+                    RequestListItemCardWidget(
+                      imageUrl: giveItem.imageUrlList.isNotEmpty
+                          ? giveItem.imageUrlList.first
+                          : 'https://picsum.photos/400/300',
+                      title: giveItem.itemName ?? ' ',
+                      address: giveItem.address!,
+                      createdDate: giveItem.createdDate!,
+                      isNew: request.isNew ?? false,
+                      tradeOptions: giveItem.itemTradeOptions != null
+                          ? giveItem.itemTradeOptions!
+                                .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
+                                .toList()
+                          : [],
+                      tradeStatus: request.tradeStatus != null
+                          ? TradeStatus.values.firstWhere(
+                              (e) => e.serverName == request.tradeStatus,
+                              orElse: () => TradeStatus.chatting,
+                            )
+                          : TradeStatus.chatting,
+                      onTap: () {
+                        TradeApi()
                             .getDetailedTradeRequest(request)
                             .then((detailedRequest) {
-                              setState(() {
-                                // isNew 상태 갱신
-                                final targetIndex = _receivedRequests.indexWhere(
-                                  (r) =>
-                                      r.tradeRequestHistoryId ==
-                                      detailedRequest.tradeRequestHistory?.tradeRequestHistoryId,
-                                );
-                                if (targetIndex != -1 && detailedRequest.tradeRequestHistory != null) {
-                                  _receivedRequests[targetIndex].isNew = detailedRequest.tradeRequestHistory!.isNew;
-                                }
-                              });
+                              if (mounted) {
+                                setState(() {
+                                  // isNew 상태 갱신
+                                  final targetIndex = _receivedRequests.indexWhere(
+                                    (r) =>
+                                        r.tradeRequestHistoryId ==
+                                        detailedRequest.tradeRequestHistory?.tradeRequestHistoryId,
+                                  );
+                                  if (targetIndex != -1 && detailedRequest.tradeRequestHistory != null) {
+                                    _receivedRequests[targetIndex].isNew = detailedRequest.tradeRequestHistory!.isNew;
+                                  }
+                                });
+                              }
                             })
                             .catchError((e) {
                               debugPrint('거래 요청 상세 조회 실패: $e');
                             });
                         context.navigateTo(
                           screen: ItemDetailDescriptionScreen(
-                            itemId: giveItem.itemId!, // 요청 받은 카드로 이동
+                            itemId: giveItem.itemId!,
+                            // 요청 받은 카드로 이동
                             imageSize: Size(MediaQuery.of(context).size.width, 400.h),
                             currentImageIndex: 0,
-                            heroTag: 'itemImage_${request.giveItem.itemId!}_0', // ← 인덱스 포함
+                            heroTag: 'itemImage_${request.giveItem.itemId!}_0',
+                            // ← 인덱스 포함
                             isMyItem: false,
                             isRequestManagement: true,
                             tradeRequestHistoryId: request.tradeRequestHistoryId,
@@ -784,54 +810,30 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                           ),
                         );
                       },
-                      child: RequestListItemCardWidget(
-                        imageUrl: giveItem.imageUrlList.isNotEmpty
-                            ? giveItem.imageUrlList.first
-                            : 'https://picsum.photos/400/300',
-                        title: giveItem.itemName ?? ' ',
-                        address: giveItem.address!,
-                        createdDate: giveItem.createdDate!,
-                        isNew: request.isNew ?? false,
-                        tradeOptions: giveItem.itemTradeOptions != null
-                            ? giveItem.itemTradeOptions!
-                                  .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
-                                  .toList()
-                            : [],
-                        tradeStatus: request.tradeStatus != null
-                            ? TradeStatus.values.firstWhere(
-                                (e) => e.serverName == request.tradeStatus,
-                                orElse: () => TradeStatus.chatting,
-                              )
-                            : TradeStatus.chatting,
-                        onMenuTap: () async {
-                          final result = await context.showDeleteDialog(title: '거래 요청 삭제', description: '정말 삭제하시겠습니까?');
+                      onMenuTap: () async {
+                        final result = await context.showDeleteDialog(title: '거래 요청 삭제', description: '정말 삭제하시겠습니까?');
 
-                          if (result == true) {
-                            try {
-                              await TradeApi().cancelTradeRequest(
-                                TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                              );
-                              if (mounted) {
-                                setState(() {
-                                  _receivedRequests.removeWhere(
-                                    (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
-                                  );
-                                });
-                                CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
-                              }
-                            } catch (e) {
-                              debugPrint('요청 취소 실패: $e');
-                              if (mounted) {
-                                CommonSnackBar.show(
-                                  context: context,
-                                  message: '요청 삭제에 실패했습니다',
-                                  type: SnackBarType.error,
+                        if (result == true) {
+                          try {
+                            await TradeApi().cancelTradeRequest(
+                              TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
+                            );
+                            if (mounted) {
+                              setState(() {
+                                _receivedRequests.removeWhere(
+                                  (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
                                 );
-                              }
+                              });
+                              CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
+                            }
+                          } catch (e) {
+                            debugPrint('요청 취소 실패: $e');
+                            if (mounted) {
+                              CommonSnackBar.show(context: context, message: '요청 삭제에 실패했습니다', type: SnackBarType.error);
                             }
                           }
-                        },
-                      ),
+                        }
+                      },
                     ),
                     if (index < filteredRequests.length - 1)
                       Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h),
