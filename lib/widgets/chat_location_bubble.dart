@@ -23,7 +23,7 @@ class ChatLocationBubble extends StatelessWidget {
     final center = '$lng,$lat';
     final markerPos = Uri.encodeComponent('$lng $lat');
     return '${AppUrls.naverStaticMapApiUrl}'
-        '?w=264&h=160'
+        '?w=220&h=130'
         '&center=$center'
         '&level=15'
         '&markers=type:d|size:mid|pos:$markerPos';
