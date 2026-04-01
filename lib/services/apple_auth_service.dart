@@ -11,6 +11,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/email_already_registered_exception.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
@@ -179,6 +180,15 @@ class AppleAuthService {
       return true;
     } on AccountSuspendedException {
       rethrow;
+    } on EmailAlreadyRegisteredException {
+      rethrow;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'account-exists-with-different-credential' && e.email != null) {
+        debugPrint('Firebase 이메일 중복 감지: ${e.email}');
+        throw EmailAlreadyRegisteredException(registeredSocialPlatform: '');
+      }
+      debugPrint('애플 로그인 실패: $e');
+      return false;
     } catch (error) {
       debugPrint('애플 로그인 실패: $error');
       return false;

@@ -9,6 +9,7 @@ import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
+import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
@@ -17,12 +18,14 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
+import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
@@ -66,11 +69,28 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   bool _isLoading = true;
   bool _hasError = false;
+  bool _notificationSnackBarShown = false;
   bool _deleteModalShown = false;
   bool _tradeCompletedModalShown = false;
   bool _systemMessageModalShown = false;
 
   bool get _hasSystemMessage => _messages.any((m) => m.type == MessageType.system);
+
+  /// 상대방이 읽은 내 메시지 중 가장 최근 메시지 ID
+  String? get _lastReadMyMessageId {
+    final state = _opponentState;
+    if (state == null || _myMemberId == null) return null;
+    for (final msg in _messages) {
+      // _messages는 reverse 순서(최신 먼저)
+      if (msg.senderId != _myMemberId) continue;
+      if (msg.chatMessageId == null) continue;
+      if (state.isPresent) return msg.chatMessageId;
+      final sentAt = msg.createdDate;
+      final leftAt = state.leftAt;
+      if (sentAt != null && leftAt != null && !sentAt.isAfter(leftAt)) return msg.chatMessageId;
+    }
+    return null;
+  }
 
   bool get _isInputDisabled =>
       _hasSystemMessage ||
@@ -100,6 +120,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isOpponentOnline = false;
   StreamSubscription? _pollerSubscription;
   Timer? _sendMessageTimeoutTimer;
+
+  // 상대방 읽음 상태
+  ChatUserState? _opponentState;
+  Timer? _readStatusTimer;
 
   @override
   void initState() {
@@ -154,11 +178,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
       final chatApi = ChatApi();
       final response = await chatApi.getChatMessages(chatRoomId: widget.chatRoomId, pageNumber: 0, pageSize: 50);
+      final opponentState = await chatApi.getChatRoomReadStatus(chatRoomId: widget.chatRoomId);
       if (!mounted) return;
 
       setState(() {
         chatRoom = response.chatRoom!;
         _messages = response.messages?.content ?? [];
+        _opponentState = opponentState;
       });
 
       final opponentId = chatRoom.getOpponent(_myMemberId!)?.memberId;
@@ -203,6 +229,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       setState(() => _isLoading = false);
       _scrollToBottom();
       chatApi.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true);
+      // 알림 꺼진 경우 바텀시트 안내 (세션 당 1회)
+      if (mounted && !_notificationSnackBarShown) {
+        try {
+          final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
+          final memberResponse = await MemberApi().getMemberInfo();
+          final bool chatNotificationAgreed = memberResponse.member?.isChatNotificationAgreed ?? true;
+          if (!permissionGranted || !chatNotificationAgreed) {
+            _notificationSnackBarShown = true;
+            if (mounted) {
+              await NotificationBottomSheet.showChatNotificationBottomSheet(context);
+            }
+          }
+        } catch (e) {
+          debugPrint('알림 권한 안내 노출 실패: $e');
+        }
+      }
+
+      // 읽음 상태 주기적 갱신 (5초마다)
+      _readStatusTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+        if (!mounted) return;
+        final state = await ChatApi().getChatRoomReadStatus(chatRoomId: widget.chatRoomId);
+        if (!mounted) return;
+        setState(() => _opponentState = state);
+      });
 
       CommonModal.showOnceAfterFrame(
         context: context,
@@ -467,6 +517,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _messageSubscription?.cancel();
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
+    _readStatusTimer?.cancel();
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
     }
@@ -619,6 +670,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           showTime: showTime,
           isUploading: _uploadingLocalIds.contains(message.chatMessageId),
           opponentNickname: _opponentNickname,
+          showReadReceipt: message.chatMessageId != null && message.chatMessageId == _lastReadMyMessageId,
         );
       },
     );

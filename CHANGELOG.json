@@ -1,11 +1,42 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-31T16:12:34Z",
-    "currentVersion": "1.9.104",
-    "totalReleases": 95,
+    "lastUpdated": "2026-04-01T18:33:42Z",
+    "currentVersion": "1.10.0",
+    "totalReleases": 96,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.0",
+      "project_type": "flutter",
+      "date": "2026-04-01",
+      "pr_number": 746,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트 (v1.10.0)\n\n* **New Features**\n  * 채팅에서 상대방의 메시지 읽음 표시 추가\n  * 소셜 로그인 실패 시 명확한 오류 메시지 제공\n  * 앱 알림 권한 관리 및 설정 기능 강화\n\n* **Bug Fixes**\n  * 앱 재개 시 알림 권한 상태 자동 동기화\n  * 세션 만료 처리 개선\n\n* **Style**\n  * 진행률 표시기 및 사용자 프로필 아바타 시각화 개선",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "채팅에서 상대방의 메시지 읽음 표시 추가",
+            "소셜 로그인 실패 시 명확한 오류 메시지 제공",
+            "앱 알림 권한 관리 및 설정 기능 강화"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "앱 재개 시 알림 권한 상태 자동 동기화",
+            "세션 만료 처리 개선"
+          ]
+        },
+        "style": {
+          "title": "Style",
+          "items": [
+            "진행률 표시기 및 사용자 프로필 아바타 시각화 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.104",
       "project_type": "flutter",
