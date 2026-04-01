@@ -71,8 +71,14 @@ class ChatMessageItem extends StatelessWidget {
             _buildBubble(context, isMine: false),
             if (showTime) ...[SizedBox(width: 8.w), _buildTimeText()],
           ] else ...[
-            if (showReadReceipt) ...[_buildReadReceiptText(), SizedBox(width: 4.w)],
-            if (showTime) ...[_buildTimeText(), SizedBox(width: 8.w)],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (showReadReceipt) ...[_buildReadReceiptText(), SizedBox(height: 4.h)],
+                if (showTime) ...[_buildTimeText()],
+              ],
+            ),
+            SizedBox(width: 8.w),
             _buildBubble(context, isMine: true),
           ],
         ],
@@ -116,7 +122,7 @@ class ChatMessageItem extends StatelessWidget {
   Widget _buildReadReceiptText() {
     return Text(
       '읽음',
-      style: CustomTextStyles.p3.copyWith(fontSize: 11.sp, color: AppColors.primaryYellow, fontWeight: FontWeight.w400),
+      style: CustomTextStyles.p3.copyWith(color: AppColors.opacity50White, fontWeight: FontWeight.w400, height: 1.2),
     );
   }
 
