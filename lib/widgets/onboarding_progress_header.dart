@@ -132,7 +132,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
                 // 활성화 선 (애니메이션)
                 Container(
                   height: 1.h,
-                  width: MediaQuery.of(context).size.width * lineProgress * 0.2,
+                  width: MediaQuery.of(context).size.width * lineProgress,
                   color: AppColors.primaryYellow,
                 ),
               ],
