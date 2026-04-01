@@ -12,6 +12,7 @@ import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
+import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
@@ -432,9 +433,10 @@ class ApiClient {
             debugPrint('세션 만료 감지 (EXPIRED_REFRESH_TOKEN): 자동 로그아웃 처리');
             await _tokenManager.deleteTokens();
             HeartbeatManager.instance.stop();
+            await MemberManager.clearMemberInfo();
             final context = navigatorKey.currentContext;
             if (context != null && context.mounted) {
-              context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.clearStackImmediate);
+              context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.fadeTransition);
             }
           }
         } catch (e) {
