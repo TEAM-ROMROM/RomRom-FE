@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -57,10 +58,7 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
     if (lat == null || lng == null) return;
 
     try {
-      final uri = Uri(
-        scheme: 'https',
-        host: 'naveropenapi.apigw.ntruss.com',
-        path: '/map-static/v2/raster',
+      final uri = Uri.parse(AppUrls.naverStaticMapApiUrl).replace(
         queryParameters: {
           'w': '440',
           'h': '260',
@@ -73,8 +71,8 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
       final response = await http.get(
         uri,
         headers: {
-          'X-NCP-APIGW-API-KEY-ID': dotenv.get('NMF_CLIENT_ID'),
-          'X-NCP-APIGW-API-KEY': dotenv.get('NMF_CLIENT_SECRET'),
+          'x-ncp-apigw-api-key-id': dotenv.get('NMF_CLIENT_ID'),
+          'x-ncp-apigw-api-key': dotenv.get('NMF_CLIENT_SECRET'),
         },
       );
 

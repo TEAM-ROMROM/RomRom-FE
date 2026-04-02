@@ -4,7 +4,7 @@ class AppUrls {
   static const String imageBaseUrl = "https://suh-project.synology.me"; // 이미지 서버 주소
   static const String naverReverseGeoCodeApiUrl =
       "https://maps.apigw.ntruss.com/map-reversegeocode/v2/gc"; // 네이버 주소 API
-  static const String naverStaticMapApiUrl = 'https://naveropenapi.apigw.ntruss.com/map-static/v2/raster';
+  static const String naverStaticMapApiUrl = 'https://maps.apigw.ntruss.com/map-static/v2/raster';
 
   // 스토어 URL
   static const String androidStoreUrl = "https://play.google.com/store/apps/details?id=com.alom.romrom&hl=ko";
