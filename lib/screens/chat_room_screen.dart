@@ -688,6 +688,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     !isSameMinute(_messages[index].createdDate, _messages[index - 1].createdDate)));
 
         return ChatMessageItem(
+          key: ValueKey(message.chatMessageId ?? '${message.senderId}_${message.createdDate?.millisecondsSinceEpoch}'),
           message: message,
           myMemberId: _myMemberId,
           topGap: topGap,
