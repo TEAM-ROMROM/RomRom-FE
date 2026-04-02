@@ -4,8 +4,10 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
@@ -126,6 +128,30 @@ class _ChatLocationPickerScreenState extends State<ChatLocationPickerScreen> {
                       shadowBlurRadius: 2.0,
                       shadowOffset: const Offset(2, 2),
                       child: SvgPicture.asset('assets/images/location-pin.svg'),
+                    ),
+                  ),
+                ),
+                // 위치 주소 텍스트
+                Positioned(
+                  bottom: isTablet ? 152 : 129.h,
+                  left: 24.w,
+                  right: 24.w,
+                  child: Center(
+                    child: IntrinsicWidth(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryBlack2,
+                          borderRadius: BorderRadius.circular(100.r),
+                        ),
+                        child: Text(
+                          _selectedAddress != null ? LocationUtils.formatAddress(_selectedAddress!) : '위치 정보 불러오는 중...',
+                          style: CustomTextStyles.p2,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
                   ),
                 ),

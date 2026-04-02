@@ -526,11 +526,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final lng = result.longitude;
     if (lat == null || lng == null) return;
 
-    final address = [result.siDo, result.siGunGu, result.eupMyoenDong].where((s) => s.isNotEmpty).join(' ');
-
     _wsService.sendMessage(
       chatRoomId: widget.chatRoomId,
-      content: address,
+      content: '위치를 보냈습니다.',
       type: MessageType.location,
       latitude: lat,
       longitude: lng,

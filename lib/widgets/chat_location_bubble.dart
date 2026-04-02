@@ -11,6 +11,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// LOCATION 타입 메시지 말풍선
@@ -47,8 +48,7 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
     if (!mounted) return;
 
     if (result != null) {
-      final parts = [result.siDo, result.siGunGu, result.eupMyoenDong].where((s) => s.isNotEmpty);
-      setState(() => _address = parts.join(' '));
+      setState(() => _address = LocationUtils.formatAddress(result));
     }
   }
 
