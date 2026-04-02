@@ -60,11 +60,11 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
     try {
       final uri = Uri.parse(AppUrls.naverStaticMapApiUrl).replace(
         queryParameters: {
-          'w': '440',
-          'h': '260',
+          'w': '528',
+          'h': '352',
           'center': '$lng,$lat',
           'level': '15',
-          'markers': 'type:d|size:mid|pos:$lng $lat',
+          'markers': 'type:d|size:mid|color:0xFFC300|pos:$lng $lat',
         },
       );
 
@@ -105,39 +105,42 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
 
   @override
   Widget build(BuildContext context) {
+    final double bubbleWidth = 264.w;
     return ClipRRect(
       borderRadius: BorderRadius.circular(10.r),
       child: Container(
-        width: 220,
+        width: bubbleWidth,
         decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 지도 이미지
-            SizedBox(width: 220, height: 130, child: _buildMapImage()),
+            SizedBox(width: bubbleWidth, height: 176.h, child: _buildMapImage(bubbleWidth)),
             // 주소 텍스트
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.only(left: 12.w, top: 9.h, bottom: 1.h),
               child: Text(
                 _address.isNotEmpty ? _address : '위치',
-                style: CustomTextStyles.p3.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w400),
+                style: CustomTextStyles.p3.copyWith(height: 1.2),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // 구분선
-            Container(height: 1, color: AppColors.opacity10White),
             // 지도에서 보기 버튼
-            GestureDetector(
-              onTap: _openNaverMap,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                alignment: Alignment.center,
-                child: Text(
-                  '지도에서 보기',
-                  style: CustomTextStyles.p3.copyWith(color: AppColors.primaryYellow, fontWeight: FontWeight.w500),
+            Padding(
+              padding: EdgeInsets.all(8.0.w),
+              child: GestureDetector(
+                onTap: _openNaverMap,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  decoration: BoxDecoration(color: AppColors.secondaryBlack2, borderRadius: BorderRadius.circular(4.r)),
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '지도에서 보기',
+                    style: CustomTextStyles.p3.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w500),
+                  ),
                 ),
               ),
             ),
@@ -147,7 +150,7 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
     );
   }
 
-  Widget _buildMapImage() {
+  Widget _buildMapImage(double width) {
     if (_mapImageError || (widget.message.latitude == null || widget.message.longitude == null)) {
       return Container(
         color: AppColors.secondaryBlack2,
@@ -166,6 +169,6 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
         ),
       );
     }
-    return Image.memory(_mapImageBytes!, width: 220, height: 130, fit: BoxFit.cover);
+    return Image.memory(_mapImageBytes!, width: width, height: 176.h, fit: BoxFit.cover);
   }
 }
