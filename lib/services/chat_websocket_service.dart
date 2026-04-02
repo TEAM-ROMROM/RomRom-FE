@@ -245,7 +245,6 @@ class ChatWebSocketService {
     List<String>? imageUrls,
     double? latitude,
     double? longitude,
-    String? address,
   }) {
     if (type == MessageType.image && (imageUrls == null || imageUrls.isEmpty)) {
       throw Exception('imageUrls is required for image messages');
@@ -271,7 +270,6 @@ class ChatWebSocketService {
     if (type == MessageType.location) {
       payload['latitude'] = latitude;
       payload['longitude'] = longitude;
-      payload['address'] = address;
     }
 
     debugPrint('[WebSocket] Sending message to /app/chat.send\n$payload');

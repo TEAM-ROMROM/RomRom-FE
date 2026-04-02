@@ -18,7 +18,6 @@ class ChatMessage extends BaseEntity {
   final bool? isProfanityDetected;
   final double? latitude;
   final double? longitude;
-  final String? address;
 
   ChatMessage({
     super.createdDate,
@@ -33,7 +32,6 @@ class ChatMessage extends BaseEntity {
     this.isProfanityDetected,
     this.latitude,
     this.longitude,
-    this.address,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => _$ChatMessageFromJson(json);
@@ -56,7 +54,6 @@ extension ChatMessageCopy on ChatMessage {
     DateTime? updatedDate,
     double? latitude,
     double? longitude,
-    String? address,
   }) => ChatMessage(
     chatMessageId: chatMessageId ?? this.chatMessageId,
     chatRoomId: chatRoomId ?? this.chatRoomId,
@@ -70,6 +67,5 @@ extension ChatMessageCopy on ChatMessage {
     updatedDate: updatedDate ?? this.updatedDate,
     latitude: latitude ?? this.latitude,
     longitude: longitude ?? this.longitude,
-    address: address ?? this.address,
   );
 }

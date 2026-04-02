@@ -534,7 +534,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       type: MessageType.location,
       latitude: lat,
       longitude: lng,
-      address: address,
     );
   }
 
