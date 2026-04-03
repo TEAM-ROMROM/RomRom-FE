@@ -8,6 +8,8 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
+import 'package:romrom_fe/models/location_address.dart';
+import 'package:romrom_fe/screens/chat_location_picker_screen.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -512,6 +514,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
+  Future<void> _onSendLocation() async {
+    if (_isInputDisabled) return;
+    FocusScope.of(context).unfocus();
+
+    final LocationAddress? result = await context.navigateTo<LocationAddress>(screen: const ChatLocationPickerScreen());
+
+    if (result == null || !mounted) return;
+
+    final lat = result.latitude;
+    final lng = result.longitude;
+    if (lat == null || lng == null) return;
+
+    _wsService.sendMessage(
+      chatRoomId: widget.chatRoomId,
+      content: '위치를 보냈습니다.',
+      type: MessageType.location,
+      latitude: lat,
+      longitude: lng,
+    );
+  }
+
   @override
   void dispose() {
     _messageSubscription?.cancel();
@@ -633,6 +656,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 hintText: _inputHintText,
                 onSend: _sendMessage,
                 onPickImage: _onPickImage,
+                onSendLocation: _onSendLocation,
               ),
             ],
           ),
@@ -664,6 +688,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     !isSameMinute(_messages[index].createdDate, _messages[index - 1].createdDate)));
 
         return ChatMessageItem(
+          key: ValueKey(message.chatMessageId ?? '${message.senderId}_${message.createdDate?.millisecondsSinceEpoch}'),
           message: message,
           myMemberId: _myMemberId,
           topGap: topGap,

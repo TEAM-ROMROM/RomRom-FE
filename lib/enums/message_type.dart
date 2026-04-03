@@ -8,4 +8,6 @@ enum MessageType {
   image,
   @JsonValue('SYSTEM')
   system,
+  @JsonValue('LOCATION')
+  location,
 }
