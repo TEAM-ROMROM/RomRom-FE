@@ -157,7 +157,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   void _updateInputFieldHeight() {
     final lineCount = '\n'.allMatches(_messageController.text).length + 1;
-    double newHeight = 40.h + ((lineCount - 1) * 14.h);
+    final clampedLines = lineCount.clamp(1, 5);
+    double newHeight = 40.h + ((clampedLines - 1) * 7.5.h);
     newHeight = newHeight.clamp(40.h, 70.h);
     if (_inputFieldHeight != newHeight && mounted) {
       setState(() => _inputFieldHeight = newHeight);
