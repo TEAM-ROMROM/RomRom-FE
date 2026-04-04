@@ -24,6 +24,7 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
@@ -162,7 +163,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                 children: [
                   // 이미지와 그라디언트
                   Positioned.fill(
-                    child: GestureDetector(
+                    child: AppPressable(
+                      scaleDown: AppPressable.scaleCard,
+                      enableRipple: false,
                       onTap: () async {
                         final result = await Navigator.push<dynamic>(
                           context,
@@ -414,7 +417,9 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         // 프로필 이미지
-                        GestureDetector(
+                        AppPressable(
+                          scaleDown: AppPressable.scaleIcon,
+                          enableRipple: false,
                           onTap: widget.showBlur
                               ? null
                               : () {

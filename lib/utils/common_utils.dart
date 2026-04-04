@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'package:animations/animations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import '../widgets/common/common_modal.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 
@@ -38,30 +40,37 @@ extension NavigationExtension on BuildContext {
         return Navigator.pushAndRemoveUntil<T>(this, createRoute(screen, routeSettings), predicate ?? (route) => false);
 
       case NavigationTypes.fadeTransition:
+        // 800ms → 400ms 단축 (AppMotion.slow)
         return Navigator.pushAndRemoveUntil<T>(
           this,
           PageRouteBuilder<T>(
             pageBuilder: (context, animation, secondaryAnimation) => screen,
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
-                opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                opacity: CurvedAnimation(parent: animation, curve: AppMotion.standard),
                 child: child,
               );
             },
-            transitionDuration: const Duration(milliseconds: 800),
-            reverseTransitionDuration: const Duration(milliseconds: 300),
+            transitionDuration: AppMotion.slow,
+            reverseTransitionDuration: AppMotion.normal,
             settings: routeSettings,
           ),
           predicate ?? (route) => false,
         );
 
       case NavigationTypes.clearStackImmediate:
+        // 즉시 전환 → 400ms fade 전환으로 개선 (딱딱함 제거)
         return Navigator.pushAndRemoveUntil<T>(
           this,
           PageRouteBuilder<T>(
             pageBuilder: (context, animation, secondaryAnimation) => screen,
-            // transitionsBuilder 미지정: 기본 동작(child 그대로 반환)으로 전환 없이 즉시 표시
-            transitionDuration: Duration.zero,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(parent: animation, curve: AppMotion.entry),
+                child: child,
+              );
+            },
+            transitionDuration: AppMotion.slow,
             reverseTransitionDuration: Duration.zero,
             settings: routeSettings,
           ),
@@ -75,12 +84,51 @@ extension NavigationExtension on BuildContext {
             pageBuilder: (context, animation, secondaryAnimation) => screen,
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
-                opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                opacity: CurvedAnimation(parent: animation, curve: AppMotion.decelerate),
                 child: child,
               );
             },
-            transitionDuration: const Duration(milliseconds: 300),
-            reverseTransitionDuration: const Duration(milliseconds: 250),
+            transitionDuration: AppMotion.normal,
+            reverseTransitionDuration: AppMotion.fast,
+            settings: routeSettings,
+          ),
+        );
+
+      case NavigationTypes.slideUp:
+        // 아래에서 위로 슬라이드 — 모달/바텀시트 느낌
+        return Navigator.push<T>(
+          this,
+          PageRouteBuilder<T>(
+            pageBuilder: (context, animation, secondaryAnimation) => screen,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(parent: animation, curve: AppMotion.decelerate));
+              return SlideTransition(position: slide, child: child);
+            },
+            transitionDuration: AppMotion.normal,
+            reverseTransitionDuration: AppMotion.fast,
+            settings: routeSettings,
+          ),
+        );
+
+      case NavigationTypes.sharedAxisHorizontal:
+        // 수평 SharedAxis — 리스트→상세 전환
+        return Navigator.push<T>(
+          this,
+          PageRouteBuilder<T>(
+            pageBuilder: (context, animation, secondaryAnimation) => screen,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return SharedAxisTransition(
+                animation: animation,
+                secondaryAnimation: secondaryAnimation,
+                transitionType: SharedAxisTransitionType.horizontal,
+                child: child,
+              );
+            },
+            transitionDuration: AppMotion.slow,
+            reverseTransitionDuration: AppMotion.normal,
             settings: routeSettings,
           ),
         );

@@ -9,6 +9,7 @@ dependencies:
     sdk: flutter
   # 알파벳 순으로 정렬
   animated_toggle_switch: ^0.8.5
+  animations: ^2.0.0
   crypto: ^3.0.6
   cupertino_icons: ^1.0.6
   dart_jsonwebtoken: ^2.8.0

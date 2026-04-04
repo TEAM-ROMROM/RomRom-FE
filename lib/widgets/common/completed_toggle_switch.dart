@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 
 /// 거래 완료 토글 스위치 위젯
 class CompletedToggleSwitch extends StatelessWidget {
@@ -14,7 +15,7 @@ class CompletedToggleSwitch extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.fast,
         width: 40.w,
         height: 20.h,
         decoration: BoxDecoration(
@@ -24,8 +25,8 @@ class CompletedToggleSwitch extends StatelessWidget {
         child: Stack(
           children: [
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
+              duration: AppMotion.fast,
+              curve: AppMotion.standard,
               left: value ? 19.w : 2.w,
               top: 1.h,
               child: Container(

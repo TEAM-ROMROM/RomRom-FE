@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 공통 글래스 헤더 Delegate
@@ -203,7 +204,7 @@ class GlassHeaderToggleBuilder {
                           color: Colors.transparent,
                           alignment: Alignment.center,
                           child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
+                            duration: AppMotion.normal,
                             style: CustomTextStyles.p2.copyWith(
                               color: !isRightSelected ? AppColors.textColorWhite : AppColors.opacity50White,
                             ),
@@ -220,7 +221,7 @@ class GlassHeaderToggleBuilder {
                           color: Colors.transparent,
                           alignment: Alignment.center,
                           child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
+                            duration: AppMotion.normal,
                             style: CustomTextStyles.p2.copyWith(
                               color: isRightSelected ? AppColors.textColorWhite : AppColors.opacity50White,
                             ),

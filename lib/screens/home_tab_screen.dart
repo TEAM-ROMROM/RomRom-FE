@@ -20,6 +20,7 @@ import 'package:romrom_fe/services/apis/trade_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
@@ -492,9 +493,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2));
     }
+    return _buildContent();
+  }
 
+  Widget _buildContent() {
     // 피드 아이템이 없을 때 메시지 표시
     if (_feedItems.isEmpty) {
       return Center(
@@ -503,13 +507,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           children: [
             Text('물품이 없습니다.', style: CustomTextStyles.h3),
             const SizedBox(height: 16),
-            Material(
-              color: AppColors.primaryYellow,
-              borderRadius: BorderRadius.circular(4.r),
-              child: InkWell(
-                onTap: _loadInitialItems,
-                highlightColor: darkenBlend(AppColors.primaryYellow),
-                splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+            AppPressable(
+              onTap: _loadInitialItems,
+              scaleDown: AppPressable.scaleButton,
+              enableRipple: false,
+              child: Material(
+                color: AppColors.primaryYellow,
                 borderRadius: BorderRadius.circular(4.r),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -572,34 +575,20 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox.square(
-                  dimension: 32.w,
-                  child: OverflowBox(
-                    maxWidth: 56.w,
-                    maxHeight: 56.w,
-                    child: Material(
-                      color: AppColors.transparent,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkResponse(
-                        onTap: () async {
-                          await context.navigateTo(screen: const NotificationScreen());
-                          if (!mounted) return;
-                          _loadUnreadNotificationStatus();
-                        },
-                        radius: 18.w,
-                        customBorder: const CircleBorder(),
-                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                        child: SizedBox.square(
-                          dimension: 56.w,
-                          child: Center(
-                            child: _hasUnreadNotification
-                                ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
-                                : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
-                          ),
-                        ),
-                      ),
+                AppPressable(
+                  onTap: () async {
+                    await context.navigateTo(screen: const NotificationScreen());
+                    if (!mounted) return;
+                    _loadUnreadNotificationStatus();
+                  },
+                  scaleDown: AppPressable.scaleIcon,
+                  enableRipple: false,
+                  child: SizedBox.square(
+                    dimension: 32.w,
+                    child: Center(
+                      child: _hasUnreadNotification
+                          ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
+                          : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
                     ),
                   ),
                 ),
@@ -642,7 +631,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             right: 0,
             bottom: 24.h,
             child: Center(
-              child: GestureDetector(
+              child: AppPressable(
                 onTap: () async {
                   final result = await context.navigateTo<Map<String, dynamic>>(
                     screen: ItemRegisterScreen(
@@ -657,6 +646,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     showCoachMark();
                   }
                 },
+                scaleDown: AppPressable.scaleButton,
+                enableRipple: false,
                 child: Container(
                   width: 123.w,
                   height: 48.h,

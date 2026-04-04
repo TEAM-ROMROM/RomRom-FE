@@ -21,6 +21,7 @@ import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -137,18 +138,17 @@ class _LoginButtonState extends State<LoginButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: widget.platform.backgroundColor,
-      borderRadius: BorderRadius.circular(10.r),
-      child: InkWell(
-        onTap: _isLoading
-            ? null
-            : () async {
-                await handleLogin(context);
-              },
-        customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-        highlightColor: darkenBlend(widget.platform.backgroundColor),
-        splashColor: darkenBlend(widget.platform.backgroundColor).withValues(alpha: 0.3),
+    return AppPressable(
+      scaleDown: AppPressable.scaleButton,
+      enableRipple: false,
+      onTap: _isLoading
+          ? null
+          : () async {
+              await handleLogin(context);
+            },
+      child: Material(
+        color: widget.platform.backgroundColor,
+        borderRadius: BorderRadius.circular(10.r),
         child: SizedBox(
           width: double.infinity,
           height: 56.h,
