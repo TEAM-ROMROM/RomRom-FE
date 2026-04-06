@@ -950,7 +950,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           // 수정 모드
                           await ItemApi().updateItem(itemRequest);
                           if (context.mounted) {
-                            Navigator.of(context).pop();
+                            Navigator.of(context).pop({'updated': true});
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         } else {

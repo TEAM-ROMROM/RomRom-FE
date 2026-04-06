@@ -866,8 +866,8 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                           id: 'edit',
                           icon: AppIcons.edit,
                           title: '수정',
-                          onTap: () {
-                            context.navigateTo(
+                          onTap: () async {
+                            final result = await context.navigateTo<Map<String, dynamic>>(
                               screen: ItemModificationScreen(
                                 itemId: item?.itemId!,
                                 onClose: () {
@@ -875,6 +875,9 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                 },
                               ),
                             );
+                            if (result != null && result['updated'] == true && mounted) {
+                              _loadItemDetail();
+                            }
                           },
                           showDividerAfter: true,
                         ),
