@@ -9,6 +9,7 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -27,7 +28,9 @@ class ChatTradeInfoCard extends StatelessWidget {
     final opponentId = isMyTakeItem
         ? chatRoom.tradeRequestHistory?.giveItem.member?.memberId
         : chatRoom.tradeRequestHistory?.takeItem.member?.memberId;
-    final isDeletedAccount = chatRoom.tradeRequestHistory?.takeItem.member?.accountStatus == 'DELETE_ACCOUNT';
+    final isDeletedAccount = isMyTakeItem
+        ? chatRoom.tradeRequestHistory?.giveItem.member?.accountStatus == 'DELETE_ACCOUNT'
+        : chatRoom.tradeRequestHistory?.takeItem.member?.accountStatus == 'DELETE_ACCOUNT';
     final profileImageUrl = isMyTakeItem
         ? chatRoom.tradeRequestHistory?.giveItem.member?.profileUrl
         : chatRoom.tradeRequestHistory?.takeItem.member?.profileUrl;
@@ -72,7 +75,13 @@ class ChatTradeInfoCard extends StatelessWidget {
                     border: Border.all(color: AppColors.primaryBlack, width: 2.w),
                   ),
                   child: GestureDetector(
-                    onTap: () => context.navigateTo(screen: MemberProfileScreen(memberId: opponentId ?? '')),
+                    onTap: opponentId != null
+                        ? () => context.navigateTo(screen: MemberProfileScreen(memberId: opponentId))
+                        : () => CommonModal.error(
+                            context: context,
+                            message: '존재하지 않는 회원입니다.',
+                            onConfirm: () => Navigator.of(context).pop(),
+                          ),
                     child: UserProfileCircularAvatar(
                       avatarSize: Size(22.w, 22.w),
                       profileUrl: profileImageUrl,
