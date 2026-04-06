@@ -6,9 +6,11 @@ import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
+import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 /// 채팅방 상단 거래 아이템 정보 카드
 class ChatTradeInfoCard extends StatelessWidget {
@@ -22,6 +24,13 @@ class ChatTradeInfoCard extends StatelessWidget {
     final isMyTakeItem = chatRoom.tradeRequestHistory?.takeItem.member?.memberId == myMemberId;
     final targetItem = isMyTakeItem ? chatRoom.tradeRequestHistory?.giveItem : chatRoom.tradeRequestHistory?.takeItem;
     final myItem = isMyTakeItem ? chatRoom.tradeRequestHistory?.takeItem : chatRoom.tradeRequestHistory?.giveItem;
+    final opponentId = isMyTakeItem
+        ? chatRoom.tradeRequestHistory?.giveItem.member?.memberId
+        : chatRoom.tradeRequestHistory?.takeItem.member?.memberId;
+    final isDeletedAccount = chatRoom.tradeRequestHistory?.takeItem.member?.accountStatus == 'DELETE_ACCOUNT';
+    final profileImageUrl = isMyTakeItem
+        ? chatRoom.tradeRequestHistory?.giveItem.member?.profileUrl
+        : chatRoom.tradeRequestHistory?.takeItem.member?.profileUrl;
     final tradeOptions = chatRoom.tradeRequestHistory?.itemTradeOptions ?? [];
 
     return Container(
@@ -33,21 +42,47 @@ class ChatTradeInfoCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () => _navigateToItem(
-              context,
-              itemId: targetItem?.itemId,
-              isMyItem: false,
-              heroTag: 'first_item_${targetItem?.itemId}',
-              imageUrl: targetItem?.primaryImageUrl,
-            ),
-            child: CachedImage(
-              imageUrl: targetItem?.primaryImageUrl ?? '',
-              width: 48.w,
-              height: 48.w,
-              borderRadius: BorderRadius.circular(8.r),
-              errorWidget: const SizedBox.shrink(),
-            ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: () => _navigateToItem(
+                  context,
+                  itemId: targetItem?.itemId,
+                  isMyItem: false,
+                  heroTag: 'first_item_${targetItem?.itemId}',
+                  imageUrl: targetItem?.primaryImageUrl,
+                ),
+                child: CachedImage(
+                  imageUrl: targetItem?.primaryImageUrl ?? '',
+                  width: 48.w,
+                  height: 48.w,
+                  borderRadius: BorderRadius.circular(4.r),
+                  errorWidget: const SizedBox.shrink(),
+                ),
+              ),
+
+              // 프로필 아바타 (22×22, 원형, 우하단 오버레이)
+              Positioned(
+                right: -6.w,
+                bottom: -6.h,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primaryBlack, width: 2.w),
+                  ),
+                  child: GestureDetector(
+                    onTap: () => context.navigateTo(screen: MemberProfileScreen(memberId: opponentId ?? '')),
+                    child: UserProfileCircularAvatar(
+                      avatarSize: Size(22.w, 22.w),
+                      profileUrl: profileImageUrl,
+                      hasBorder: false,
+                      isDeleteAccount: isDeletedAccount,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           SizedBox(width: 16.w),
           Expanded(
@@ -99,7 +134,7 @@ class ChatTradeInfoCard extends StatelessWidget {
               imageUrl: myItem?.itemImages?.firstOrNull?.imageUrl ?? '',
               width: 48.w,
               height: 48.w,
-              borderRadius: BorderRadius.circular(8.r),
+              borderRadius: BorderRadius.circular(4.r),
               errorWidget: const SizedBox.shrink(),
             ),
           ),
