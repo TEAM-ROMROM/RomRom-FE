@@ -338,6 +338,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                         messagePreview: chatRoomDetail.lastMessageContent ?? '',
                         unreadCount: chatRoomDetail.unreadCount ?? 0,
                         targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
+                        myItemImageUrl: chatRoomDetail.myItemImageUrl ?? '',
                         isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
                         onProfileTap: () {
                           final targetMember = chatRoomDetail.targetMember;
