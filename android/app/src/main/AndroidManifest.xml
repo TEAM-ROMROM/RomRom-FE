@@ -31,7 +31,7 @@
         <!-- Google AdMob 앱 ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="${GADApplicationIdentifier}"/>
+            android:value="${GAD_APPLICATION_IDENTIFIER}"/>
 
         <activity
             android:name=".MainActivity"
