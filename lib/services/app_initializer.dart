@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:romrom_fe/debug/debug_config.dart';
@@ -17,6 +18,7 @@ Future<void> initialize() async {
   await initNaverMap(); // 네이버 지도 초기화
   await initGoogleSignIn(); // Google Sign-In 초기화 (v7 필수)
   initKakaoSdk(); // 카카오 sdk 초기화
+  await MobileAds.instance.initialize(); // Google Mobile Ads 초기화
 }
 
 /// .env 파일 로드
