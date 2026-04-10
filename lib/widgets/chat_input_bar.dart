@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
@@ -37,11 +38,19 @@ class ChatInputBar extends StatelessWidget {
     final bottomPadding = Platform.isIOS ? 8.h + MediaQuery.of(context).padding.bottom : 21.h;
     final bool sendDisabled = !hasText || isInputDisabled || isSendingMessage;
 
+    // 동적 라운드 계산: 1줄(캡슐형) → 여러 줄(20.r 둥근 사각형)
+    final double minH = 40.h;
+    final double maxH = 130.h;
+    final double clampedHeight = inputFieldHeight.clamp(minH, maxH);
+    final double t = maxH > minH ? ((clampedHeight - minH) / (maxH - minH)) : 0.0;
+    final double borderRadius = lerpDouble(clampedHeight / 2, 20.r, t) ?? clampedHeight / 2;
+
     return Container(
       padding: EdgeInsets.only(top: 8.h, left: 16.w, bottom: bottomPadding),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // + 버튼 (하단 고정)
           Padding(
             padding: EdgeInsets.only(right: 8.0.w),
             child: SizedBox(
@@ -78,9 +87,10 @@ class ChatInputBar extends StatelessWidget {
               ),
             ),
           ),
+          // 텍스트 입력 필드 (suffixIcon 제거)
           Expanded(
             child: SizedBox(
-              height: 40.h <= inputFieldHeight && inputFieldHeight <= 70.h ? inputFieldHeight : 40.h,
+              height: clampedHeight,
               child: TextField(
                 controller: controller,
                 enabled: !isInputDisabled,
@@ -99,49 +109,50 @@ class ChatInputBar extends StatelessWidget {
                   hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
                   filled: true,
                   fillColor: AppColors.opacity10White,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(100.r), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                    borderSide: BorderSide.none,
+                  ),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                  suffixIcon: TextFieldTapRegion(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: ClipOval(
-                        child: InkWell(
-                          onTap: sendDisabled ? null : onSend,
-                          customBorder: const CircleBorder(),
-                          highlightColor: AppColors.buttonHighlightColorGray,
-                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                          child: Container(
-                            margin: EdgeInsets.all(4.w),
-                            width: 40.w,
-                            height: 40.w,
-                            decoration: BoxDecoration(
-                              color: sendDisabled ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Icon(
-                                AppIcons.arrowUpward,
-                                color: sendDisabled ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
-                                size: 32.w,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  suffixIconConstraints: BoxConstraints(
-                    minWidth: 40.w,
-                    minHeight: 40.w,
-                    maxWidth: 40.w,
-                    maxHeight: 40.w,
-                  ),
                 ),
                 onSubmitted: sendDisabled ? null : (_) => onSend(),
               ),
             ),
           ),
-          SizedBox(width: 16.w),
+          // 전송 버튼 (Row 자식으로 분리, 하단 고정)
+          Padding(
+            padding: EdgeInsets.only(left: 4.w, right: 16.w),
+            child: SizedBox(
+              width: 40.w,
+              height: 40.w,
+              child: Material(
+                color: Colors.transparent,
+                child: ClipOval(
+                  child: InkWell(
+                    onTap: sendDisabled ? null : onSend,
+                    customBorder: const CircleBorder(),
+                    highlightColor: AppColors.buttonHighlightColorGray,
+                    splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                    child: Container(
+                      width: 40.w,
+                      height: 40.w,
+                      decoration: BoxDecoration(
+                        color: sendDisabled ? AppColors.secondaryBlack2 : AppColors.primaryYellow,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          AppIcons.arrowUpward,
+                          color: sendDisabled ? AppColors.secondaryBlack1 : AppColors.primaryBlack,
+                          size: 32.w,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
