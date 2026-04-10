@@ -40,16 +40,8 @@ jobs:
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
 
-      - name: Cache iOS platform SDK
-        uses: actions/cache@v4
-        id: ios-sdk-cache
-        with:
-          path: ~/Library/Developer/CoreSimulator/Profiles/Platforms
-          key: ios-sdk-xcode-${{ env.XCODE_VERSION }}
-
-      - name: Install iOS platform SDK
-        if: steps.ios-sdk-cache.outputs.cache-hit != 'true'
-        run: xcodebuild -downloadPlatform iOS
+      - name: Xcode first launch setup
+        run: sudo xcodebuild -runFirstLaunch
 
       - name: Create .env file
         run: |
@@ -212,16 +204,8 @@ jobs:
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
 
-      - name: Cache iOS platform SDK
-        uses: actions/cache@v4
-        id: ios-sdk-cache
-        with:
-          path: ~/Library/Developer/CoreSimulator/Profiles/Platforms
-          key: ios-sdk-xcode-${{ env.XCODE_VERSION }}
-
-      - name: Install iOS platform SDK
-        if: steps.ios-sdk-cache.outputs.cache-hit != 'true'
-        run: xcodebuild -downloadPlatform iOS
+      - name: Xcode first launch setup
+        run: sudo xcodebuild -runFirstLaunch
 
       # 프로젝트 파일들 다운로드
       - name: Download project files
