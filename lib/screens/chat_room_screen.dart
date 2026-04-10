@@ -132,10 +132,24 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   void _updateInputFieldHeight() {
-    final lineCount = '\n'.allMatches(_messageController.text).length + 1;
-    final clampedLines = lineCount.clamp(1, 5);
-    double newHeight = 40.h + ((clampedLines - 1) * 7.5.h);
-    newHeight = newHeight.clamp(40.h, 70.h);
+    // '\n' 카운트 대신 TextPainter로 실제 렌더링된 시각적 라인 수 계산.
+    // ChatInputBar 레이아웃에서 TextField 가용 너비:
+    //   왼쪽 패딩(16) + + 버튼(40) + 버튼 우측 갭(8) +
+    //   전송 버튼 왼쪽 갭(4) + 전송 버튼(40) + 전송 오른쪽 패딩(16) +
+    //   TextField contentPadding horizontal(12 * 2) = 148
+    final availableWidth = MediaQuery.of(context).size.width - 148.w;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: _messageController.text.isEmpty ? ' ' : _messageController.text,
+        style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w400, height: 1.2),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: null,
+    )..layout(maxWidth: availableWidth);
+
+    final clampedLines = painter.computeLineMetrics().length.clamp(1, 5);
+    double newHeight = 40.h + ((clampedLines - 1) * 15.h);
+    newHeight = newHeight.clamp(40.h, 130.h);
     if (_inputFieldHeight != newHeight && mounted) {
       setState(() => _inputFieldHeight = newHeight);
     }

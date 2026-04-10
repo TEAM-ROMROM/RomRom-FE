@@ -38,7 +38,7 @@ class ChatInputBar extends StatelessWidget {
 
     // 동적 라운드 계산: 1줄(캡슐형) → 여러 줄(20.r 둥근 사각형)
     final double minH = 40.h;
-    final double maxH = 70.h;
+    final double maxH = 130.h;
     final double clampedHeight = inputFieldHeight.clamp(minH, maxH);
     final double t = maxH > minH ? ((clampedHeight - minH) / (maxH - minH)) : 0.0;
     final double borderRadius = lerpDouble(clampedHeight / 2, 20.r, t) ?? clampedHeight / 2;
