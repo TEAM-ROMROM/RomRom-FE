@@ -40,8 +40,10 @@ jobs:
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
 
-      - name: Xcode first launch setup
-        run: sudo xcodebuild -runFirstLaunch
+      - name: Install iOS platform SDK
+        run: |
+          xcrun simctl list devices >/dev/null 2>&1 || true
+          sudo xcodebuild -downloadPlatform iOS
 
       - name: Create .env file
         run: |
@@ -204,8 +206,10 @@ jobs:
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
 
-      - name: Xcode first launch setup
-        run: sudo xcodebuild -runFirstLaunch
+      - name: Install iOS platform SDK
+        run: |
+          xcrun simctl list devices >/dev/null 2>&1 || true
+          sudo xcodebuild -downloadPlatform iOS
 
       # 프로젝트 파일들 다운로드
       - name: Download project files
