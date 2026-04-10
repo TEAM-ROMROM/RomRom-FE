@@ -1,11 +1,45 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-01T18:33:42Z",
-    "currentVersion": "1.10.0",
-    "totalReleases": 96,
+    "lastUpdated": "2026-04-10T09:21:24Z",
+    "currentVersion": "1.10.12",
+    "totalReleases": 97,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.12",
+      "project_type": "flutter",
+      "date": "2026-04-10",
+      "pr_number": 764,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 채팅에서 위치 공유 메시지 지원 추가\n  * 홈 피드에 네이티브 광고 삽입\n  * AdMob 광고 통합 지원\n\n* **개선 사항**\n  * 채팅 입력창 UI 재설계\n  * 채팅방 목록 아이템 레이아웃 개선\n  * Android APK 빌드 방식 변경\n  * iOS 개발자 도구 설정 최적화\n\n* **기타**\n  * 앱 버전 업데이트 (v1.10.12)\n  * UI 각종 조정 및 스타일 개선",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅에서 위치 공유 메시지 지원 추가",
+            "홈 피드에 네이티브 광고 삽입",
+            "AdMob 광고 통합 지원"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "채팅 입력창 UI 재설계",
+            "채팅방 목록 아이템 레이아웃 개선",
+            "Android APK 빌드 방식 변경",
+            "iOS 개발자 도구 설정 최적화"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "앱 버전 업데이트 (v1.10.12)",
+            "UI 각종 조정 및 스타일 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.0",
       "project_type": "flutter",
