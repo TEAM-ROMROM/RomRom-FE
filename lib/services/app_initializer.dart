@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:romrom_fe/debug/debug_config.dart';
@@ -17,6 +18,15 @@ Future<void> initialize() async {
   await initNaverMap(); // 네이버 지도 초기화
   await initGoogleSignIn(); // Google Sign-In 초기화 (v7 필수)
   initKakaoSdk(); // 카카오 sdk 초기화
+  // Google Mobile Ads 초기화 (non-blocking: 광고 초기화 실패가 앱 시작을 막지 않도록)
+  MobileAds.instance
+      .initialize()
+      .then((_) {
+        debugPrint('[AppInit] Google Mobile Ads 초기화 완료');
+      })
+      .catchError((Object e) {
+        debugPrint('[ERROR] Google Mobile Ads 초기화 실패: $e');
+      });
 }
 
 /// .env 파일 로드
