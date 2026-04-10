@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_image_bubble.dart';
+import 'package:romrom_fe/widgets/chat_location_bubble.dart';
 
 /// 채팅 메시지 아이템 위젯
 /// system / text / image (업로드 중 포함) 모든 메시지 타입을 처리
@@ -87,6 +88,9 @@ class ChatMessageItem extends StatelessWidget {
   }
 
   Widget _buildBubble(BuildContext context, {required bool isMine}) {
+    if (message.type == MessageType.location) {
+      return ChatLocationBubble(message: message);
+    }
     if (message.type == MessageType.image) {
       return isUploading ? _buildUploadingBubble() : chatImageBubble(context, message);
     }

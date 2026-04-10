@@ -32,7 +32,7 @@ class TradeRequestTargetPreview extends StatelessWidget {
         children: [
           // 물품 이미지 썸네일
           ClipRRect(
-            borderRadius: BorderRadius.circular(10.r),
+            borderRadius: BorderRadius.circular(4.r),
             child: SizedBox(width: 48.w, height: 48.w, child: _buildImage()),
           ),
           SizedBox(width: 16.w),

@@ -31,11 +31,11 @@ permissions:
 jobs:
   trigger-builds:
     name: 빌드 워크플로우 트리거
-    # @suh-lab, build, app 키워드가 모두 포함되어 있으면 실행
+    # @suh-lab build app (둘 다) / @suh-lab build ios (iOS만) / @suh-lab build android (Android만)
     if: |
       contains(github.event.comment.body, '@suh-lab') &&
       contains(github.event.comment.body, 'build') &&
-      contains(github.event.comment.body, 'app')
+      (contains(github.event.comment.body, 'app') || contains(github.event.comment.body, 'ios') || contains(github.event.comment.body, 'android'))
     runs-on: ubuntu-latest
 
     steps:
@@ -263,7 +263,10 @@ jobs:
             }
 
       - name: Android 빌드 워크플로우 트리거
-        if: steps.source_info.outputs.found == 'true' && steps.branch_check.outputs.exists == 'true'
+        if: |
+          steps.source_info.outputs.found == 'true' &&
+          steps.branch_check.outputs.exists == 'true' &&
+          contains(github.event.comment.body, 'app')
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -298,7 +301,10 @@ jobs:
             console.log('✅ Android 빌드 워크플로우 트리거 완료');
 
       - name: iOS 빌드 워크플로우 트리거
-        if: steps.source_info.outputs.found == 'true' && steps.branch_check.outputs.exists == 'true'
+        if: |
+          steps.source_info.outputs.found == 'true' &&
+          steps.branch_check.outputs.exists == 'true' &&
+          (contains(github.event.comment.body, 'app') || contains(github.event.comment.body, 'ios'))
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
