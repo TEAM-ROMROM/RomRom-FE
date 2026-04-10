@@ -58,7 +58,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 피드 아이템 목록
   final List<HomeFeedItem> _feedItems = [];
   int _currentPage = 0;
-  // ignore: unused_field
   int _currentFeedIndex = 0;
   int _currentVirtualIndex = 0; // 현재 보고 있는 가상 인덱스 (광고 슬롯 판별용)
   final int _pageSize = 10;

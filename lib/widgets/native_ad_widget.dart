@@ -42,6 +42,11 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
         onAdFailedToLoad: (ad, error) {
           debugPrint('[AdMob] 네이티브 광고 로드 실패: $error');
           ad.dispose();
+          if (mounted) {
+            setState(() {
+              _nativeAd = null;
+            });
+          }
         },
         onAdOpened: (_) => debugPrint('[AdMob] 네이티브 광고 열림'),
         onAdClosed: (_) => debugPrint('[AdMob] 네이티브 광고 닫힘'),
