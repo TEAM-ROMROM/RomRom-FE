@@ -4,6 +4,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/device_type.dart';
 
 /// 공통 모달 위젯
 /// 팩토리 메서드 패턴으로 success, error, confirm 타입 지원
@@ -137,7 +138,7 @@ class CommonModal extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       elevation: 0,
       backgroundColor: AppColors.secondaryBlack1,
-      insetPadding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width > 600 ? 200 : 40.w),
+      insetPadding: EdgeInsets.symmetric(horizontal: isTablet ? 200 : 40.w),
       child: Container(
         width: 312.w,
         constraints: BoxConstraints(maxWidth: 312.w),
@@ -154,8 +155,8 @@ class CommonModal extends StatelessWidget {
               // 아이콘
               Center(
                 child: Container(
-                  width: 40.w,
-                  height: 40.h,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(color: iconBackgroundColor, shape: BoxShape.circle),
                   alignment: Alignment.center,
                   child: Icon(icon, size: 40.sp, color: iconColor),
@@ -214,7 +215,7 @@ class CommonModal extends StatelessWidget {
         // 취소 버튼
         Expanded(
           child: SizedBox(
-            height: 44.h,
+            height: 44,
             child: Material(
               color: AppColors.opacity30PrimaryBlack,
               borderRadius: BorderRadius.circular(10.r),
@@ -234,7 +235,7 @@ class CommonModal extends StatelessWidget {
         // 확인/삭제/나가기 버튼
         Expanded(
           child: SizedBox(
-            height: 44.h,
+            height: 44,
             child: Material(
               color: confirmButtonColor,
               borderRadius: BorderRadius.circular(10.r),

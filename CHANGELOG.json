@@ -1,11 +1,97 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-27T04:40:42Z",
-    "currentVersion": "1.9.87",
-    "totalReleases": 93,
+    "lastUpdated": "2026-04-01T18:33:42Z",
+    "currentVersion": "1.10.0",
+    "totalReleases": 96,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.0",
+      "project_type": "flutter",
+      "date": "2026-04-01",
+      "pr_number": 746,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트 (v1.10.0)\n\n* **New Features**\n  * 채팅에서 상대방의 메시지 읽음 표시 추가\n  * 소셜 로그인 실패 시 명확한 오류 메시지 제공\n  * 앱 알림 권한 관리 및 설정 기능 강화\n\n* **Bug Fixes**\n  * 앱 재개 시 알림 권한 상태 자동 동기화\n  * 세션 만료 처리 개선\n\n* **Style**\n  * 진행률 표시기 및 사용자 프로필 아바타 시각화 개선",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "채팅에서 상대방의 메시지 읽음 표시 추가",
+            "소셜 로그인 실패 시 명확한 오류 메시지 제공",
+            "앱 알림 권한 관리 및 설정 기능 강화"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "앱 재개 시 알림 권한 상태 자동 동기화",
+            "세션 만료 처리 개선"
+          ]
+        },
+        "style": {
+          "title": "Style",
+          "items": [
+            "진행률 표시기 및 사용자 프로필 아바타 시각화 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.104",
+      "project_type": "flutter",
+      "date": "2026-03-31",
+      "pr_number": 737,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **새로운 기능**\n  * 회원 프로필에 차단 상태 표시 추가\n\n* **개선 사항**\n  * 계정 정지 화면의 UI 레이아웃 및 간격 개선\n  * 프로필 화면의 색상 스타일 업데이트\n  * 로그인 화면의 레이아웃 및 로고 정렬 개선\n\n* **버전**\n  * 앱 버전 1.9.104 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "회원 프로필에 차단 상태 표시 추가"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "계정 정지 화면의 UI 레이아웃 및 간격 개선",
+            "프로필 화면의 색상 스타일 업데이트",
+            "로그인 화면의 레이아웃 및 로고 정렬 개선"
+          ]
+        },
+        "버전": {
+          "title": "버전",
+          "items": [
+            "앱 버전 1.9.104 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.93",
+      "project_type": "flutter",
+      "date": "2026-03-29",
+      "pr_number": 726,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 소셜 로그인 시 이메일이 다른 플랫폼에 이미 등록된 경우를 감지하고 사용자에게 안내 메시지 표시\n  * 테스트 환경에서 디버그 패널 추가로 실시간 로그 조회 및 서버 로그 모니터링 지원\n\n* **개선사항**\n  * 태블릿 및 다양한 화면 크기에 최적화된 반응형 레이아웃 개선\n  * iPhone 기기 설정 추가\n  * 버전 1.9.94로 업그레이드",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "소셜 로그인 시 이메일이 다른 플랫폼에 이미 등록된 경우를 감지하고 사용자에게 안내 메시지 표시",
+            "테스트 환경에서 디버그 패널 추가로 실시간 로그 조회 및 서버 로그 모니터링 지원"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "태블릿 및 다양한 화면 크기에 최적화된 반응형 레이아웃 개선",
+            "iPhone 기기 설정 추가",
+            "버전 1.9.94로 업그레이드"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.87",
       "project_type": "flutter",

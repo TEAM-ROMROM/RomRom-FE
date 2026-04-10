@@ -6,6 +6,7 @@ import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/email_already_registered_exception.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
@@ -19,6 +20,7 @@ import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -110,6 +112,16 @@ class _LoginButtonState extends State<LoginButton> {
         context.navigateTo(
           screen: AccountSuspendedScreen(suspendReason: e.suspendReason, suspendedUntil: e.suspendedUntil),
           type: NavigationTypes.pushReplacement,
+        );
+      }
+    } on EmailAlreadyRegisteredException catch (e) {
+      // 이메일 중복 가입: 로딩 닫고 기존 가입 플랫폼 안내 모달 표시
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (context.mounted) {
+        await CommonModal.error(
+          context: context,
+          message: '이미 ${e.displayPlatformName} 계정으로\n가입된 이메일입니다.\n해당 계정으로 로그인해주세요.',
+          onConfirm: () => Navigator.of(context).pop(),
         );
       }
     } catch (e) {

@@ -41,7 +41,7 @@ import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/screens/trade_location_detail_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
 
@@ -558,7 +558,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                               GestureDetector(
                                 onTap: () {
                                   if (item?.member?.memberId != null) {
-                                    context.navigateTo(screen: ProfileScreen(memberId: item!.member!.memberId!));
+                                    context.navigateTo(screen: MemberProfileScreen(memberId: item!.member!.memberId!));
                                   }
                                 },
                                 child: UserProfileCircularAvatar(
@@ -572,7 +572,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                               GestureDetector(
                                 onTap: () {
                                   if (item?.member?.memberId != null) {
-                                    context.navigateTo(screen: ProfileScreen(memberId: item!.member!.memberId!));
+                                    context.navigateTo(screen: MemberProfileScreen(memberId: item!.member!.memberId!));
                                   }
                                 },
                                 child: Container(
@@ -866,8 +866,8 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                           id: 'edit',
                           icon: AppIcons.edit,
                           title: '수정',
-                          onTap: () {
-                            context.navigateTo(
+                          onTap: () async {
+                            final result = await context.navigateTo<Map<String, dynamic>>(
                               screen: ItemModificationScreen(
                                 itemId: item?.itemId!,
                                 onClose: () {
@@ -875,6 +875,9 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                 },
                               ),
                             );
+                            if (result != null && result['updated'] == true && mounted) {
+                              _loadItemDetail();
+                            }
                           },
                           showDividerAfter: true,
                         ),

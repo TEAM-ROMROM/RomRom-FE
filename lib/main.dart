@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/debug/debug_config.dart';
+import 'package:romrom_fe/debug/debug_overlay_manager.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/firebase_options.dart';
@@ -18,8 +20,9 @@ import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
-import 'package:romrom_fe/services/notification_service.dart';
+import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/device_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 백그라운드에서 알림 설정(최상단에 위치 해야 함)
@@ -101,11 +104,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // 테스트 빌드인 경우 디버그 오버레이 초기화
+    if (DebugConfig.isTestBuild) {
+      DebugOverlayManager().init(navigatorKey);
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (DebugConfig.isTestBuild) {
+      DebugOverlayManager().dispose();
+    }
     super.dispose();
   }
 
@@ -149,6 +160,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       splitScreenMode: true,
       child: Builder(
         builder: (context) {
+          initDeviceType(context);
           return SafeArea(
             top: false,
             bottom: Platform.isAndroid,

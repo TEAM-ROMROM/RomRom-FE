@@ -66,11 +66,15 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.textColorWhite,
         border: widget.hasBorder
             ? Border.all(
-                color: widget.isDeleteAccount ? AppColors.profileBorderGray : AppColors.profileBorderWhite, // 테두리 색상
-                width: 1.0, // 테두리 두께
+                color: widget.isDeleteAccount
+                    ? AppColors.profileBorderGray
+                    : _avatarUrl == _kDefaultProfileAsset
+                    ? AppColors.opacity60White
+                    : AppColors.profileBorderWhite,
+                width: 1.0,
+                strokeAlign: BorderSide.strokeAlignOutside,
               )
             : null,
       ),

@@ -181,4 +181,12 @@ class AppColors {
 
   // 코치마크 화면
   static const Color cardDragContainer = Color(0xFF4F4F50); // 카드 드래그 시 중간 컨테이너 배경색
+
+  // 상대 프로필 화면
+  static const Color isBlockedStatusText = Color(0xFF993333); // 차단된 회원 text 색상
+
+  // 채팅 알림 유도 바텀시트 - 채팅 미리보기
+  static const Color notificationBottomSheetChattingContainerBottom = Color(0xFF282933); // 채팅 미리보기 하단 컨테이너 배경색
+  static const Color notificationBottomSheetChattingContainerMiddle = Color(0xFF34353D); // 채팅 미리보기 중간 컨테이너 배경색
+  static const Color notificationBottomSheetChattingContainerTop = Color(0xFF4C4E54); // 채팅 미리보기 상단 컨테이너 배경색
 }

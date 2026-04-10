@@ -5,7 +5,7 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -140,7 +140,7 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
     return GestureDetector(
       onTap: () async {
         if (member.memberId != null) {
-          final result = await context.navigateTo(screen: ProfileScreen(memberId: member.memberId!));
+          final result = await context.navigateTo(screen: MemberProfileScreen(memberId: member.memberId!));
 
           // 프로필 화면에서 차단 상태 변경됐으면 동기화
           if (result != null && result is Map<String, dynamic> && mounted) {

@@ -32,6 +32,9 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// 제공되지 않을 경우 타이틀은 클릭 불가
   final VoidCallback? onTitleTap;
 
+  /// 앱바 높이 (기본 64, 두 줄 타이틀이 필요한 경우 외부에서 지정)
+  final double appBarHeight;
+
   const CommonAppBar({
     super.key,
     required this.title,
@@ -42,24 +45,22 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.bottomWidgets = const PreferredSize(preferredSize: Size.fromHeight(0), child: SizedBox.shrink()),
     this.showBottomBorder = false,
     this.onTitleTap,
+    this.appBarHeight = 64,
   });
 
   @override
   Widget build(BuildContext context) {
-    final titleContent = onTitleTap != null
+    final titleWidget = onTitleTap != null
         ? GestureDetector(onTap: onTitleTap, child: titleWidgets)
-        : Padding(
-            padding: EdgeInsets.only(bottom: 8.h),
-            child: Text(title, style: titleTextStyle ?? CustomTextStyles.h2),
-          );
+        : Text(title, style: titleTextStyle ?? CustomTextStyles.h2);
 
     return AppBar(
-      backgroundColor: Colors.transparent, // 투명 배경으로 설정
-      elevation: 0, // 그림자 효과 제거
-      centerTitle: true, // 제목을 중앙에 배치
-      toolbarHeight: 64.h, // 앱바 높이 설정
-      scrolledUnderElevation: 0, // 스크롤 할 때 그림자 효과 제거
-      leadingWidth: 72.w, // 뒤로가기 버튼 영역 너비 설정
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: true,
+      toolbarHeight: appBarHeight,
+      scrolledUnderElevation: 0,
+      leadingWidth: 72.w,
       leading: Material(
         color: Colors.transparent,
         child: ClipOval(
@@ -72,31 +73,17 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
             splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
             child: SizedBox.square(
               dimension: 32.w,
-              child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
+              child: const Icon(AppIcons.navigateBefore, size: 24, color: AppColors.textColorWhite),
             ),
           ),
         ),
       ),
       bottom: bottomWidgets,
-      // title을 IgnorePointer로 감싼 빈 위젯으로 대체
-      title: null,
-      // flexibleSpace로 전체 너비 기준 중앙 정렬
-      flexibleSpace: SafeArea(
-        child: SizedBox(
-          height: 64.h,
-          child: Stack(
-            children: [
-              Center(child: titleContent), // 👈 진짜 화면 중앙
-            ],
-          ),
-        ),
-      ),
-
-      actions: actions, // 추가 액션 버튼들
+      title: titleWidget,
+      actions: actions,
     );
   }
 
-  /// 앱바의 기본 크기 (높이는 64.h로 고정)
   @override
-  Size get preferredSize => Size.fromHeight(64.h);
+  Size get preferredSize => Size.fromHeight(appBarHeight);
 }

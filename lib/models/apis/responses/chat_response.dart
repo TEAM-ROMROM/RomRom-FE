@@ -4,6 +4,7 @@ import 'package:romrom_fe/models/apis/objects/api_pageable.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
+import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 
 part 'chat_response.g.dart';
 
@@ -13,8 +14,16 @@ class ChatRoomResponse {
   final ChatRoom? chatRoom; // 단일 채팅방
   final PagedChatMessage? messages; // 메시지 페이지
   final PagedChatRoomDetail? chatRoomDetailDtoPage; // 채팅방 목록 페이지 (detail dto)
+  final bool isOpponentDeleted; // 상대방 탈퇴 여부
+  final ChatUserState? opponentState; // 상대방 채팅방 상태
 
-  ChatRoomResponse({this.chatRoom, this.messages, this.chatRoomDetailDtoPage});
+  ChatRoomResponse({
+    this.chatRoom,
+    this.messages,
+    this.chatRoomDetailDtoPage,
+    this.isOpponentDeleted = false,
+    this.opponentState,
+  });
 
   factory ChatRoomResponse.fromJson(Map<String, dynamic> json) => _$ChatRoomResponseFromJson(json);
   Map<String, dynamic> toJson() => _$ChatRoomResponseToJson(this);

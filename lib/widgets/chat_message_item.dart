@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_image_bubble.dart';
+import 'package:romrom_fe/widgets/chat_location_bubble.dart';
 
 /// 채팅 메시지 아이템 위젯
 /// system / text / image (업로드 중 포함) 모든 메시지 타입을 처리
@@ -17,6 +18,7 @@ class ChatMessageItem extends StatelessWidget {
   final bool showTime;
   final bool isUploading;
   final String opponentNickname;
+  final bool showReadReceipt;
 
   const ChatMessageItem({
     super.key,
@@ -26,6 +28,7 @@ class ChatMessageItem extends StatelessWidget {
     required this.showTime,
     required this.isUploading,
     required this.opponentNickname,
+    this.showReadReceipt = false,
   });
 
   @override
@@ -69,7 +72,14 @@ class ChatMessageItem extends StatelessWidget {
             _buildBubble(context, isMine: false),
             if (showTime) ...[SizedBox(width: 8.w), _buildTimeText()],
           ] else ...[
-            if (showTime) ...[_buildTimeText(), SizedBox(width: 8.w)],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (showReadReceipt) ...[_buildReadReceiptText(), SizedBox(height: 4.h)],
+                if (showTime) ...[_buildTimeText()],
+              ],
+            ),
+            SizedBox(width: 8.w),
             _buildBubble(context, isMine: true),
           ],
         ],
@@ -78,6 +88,9 @@ class ChatMessageItem extends StatelessWidget {
   }
 
   Widget _buildBubble(BuildContext context, {required bool isMine}) {
+    if (message.type == MessageType.location) {
+      return ChatLocationBubble(message: message);
+    }
     if (message.type == MessageType.image) {
       return isUploading ? _buildUploadingBubble() : chatImageBubble(context, message);
     }
@@ -107,6 +120,13 @@ class ChatMessageItem extends StatelessWidget {
         color: AppColors.opacity50White,
         fontWeight: FontWeight.w400,
       ),
+    );
+  }
+
+  Widget _buildReadReceiptText() {
+    return Text(
+      '읽음',
+      style: CustomTextStyles.p3.copyWith(color: AppColors.opacity50White, fontWeight: FontWeight.w400, height: 1.2),
     );
   }
 

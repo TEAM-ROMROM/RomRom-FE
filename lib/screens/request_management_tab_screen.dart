@@ -50,8 +50,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   // 현재 선택된 카드 인덱스
   int _currentCardIndex = 0;
 
-  // 카드 컨트롤러
-  late PageController _cardController;
+  // 카드 컨트롤러 (초기값 0.578 = 227/393, didChangeDependencies에서 실제 화면 크기로 재생성)
+  PageController _cardController = PageController(initialPage: 0, viewportFraction: 227 / 393);
+  bool _cardControllerInitialized = false;
 
   // 토글 애니메이션 컨트롤러
   late AnimationController _toggleAnimationController;
@@ -75,9 +76,6 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     super.initState();
     _scrollController.addListener(_scrollListener);
 
-    // 카드 컨트롤러 초기화
-    _cardController = PageController(initialPage: 0, viewportFraction: 227.w / 393.w);
-
     // 토글 애니메이션 컨트롤러 초기화
     _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
     _toggleAnimation = Tween<double>(
@@ -86,6 +84,16 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
 
     _loadInitialItems();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_cardControllerInitialized) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      _cardController = PageController(initialPage: 0, viewportFraction: 219 / screenWidth);
+      _cardControllerInitialized = true;
+    }
   }
 
   /// 초기 아이템 로드
@@ -281,12 +289,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     // 보낸 요청은 필터링 없이 모든 요청 표시
     if (_sentRequests.isEmpty) {
       return _isLoading
-          ? SizedBox(
-              height: 500.h,
-              child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+          ? const SizedBox(
+              height: 500,
+              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
             )
           : Container(
-              height: 200.h,
+              height: 200,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
                 child: Text('보낸 요청이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
@@ -439,10 +447,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   void _recreateCardController(int initialPage) {
     // 기존 컨트롤러 정리 후 새로 생성
     _cardController.dispose();
+    final screenWidth = MediaQuery.of(context).size.width;
     _cardController = PageController(
       initialPage: initialPage,
       keepPage: false, // 이전 위치 자동 복원 방지
-      viewportFraction: 227.w / 393.w, // 화면에 보이는 카드의 비율
+      viewportFraction: 219 / screenWidth, // 카드 너비 219px 고정
     );
   }
 
@@ -537,7 +546,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                           // 4. 요청 목록 리스트
                           _buildFullRequestItemsList(),
 
-                          SizedBox(height: 100.h), // 하단 여백
+                          const SizedBox(height: 100), // 하단 여백
                         ],
                       ),
                     ),
@@ -554,14 +563,13 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   /// 물품 카드 캐러셀 섹션
   Widget _buildItemCardsCarousel() {
     if (_itemCards.isEmpty) {
-      // 데이터가 없을 때 빈 상태 표시
       return _isLoading
-          ? SizedBox(
-              height: 150.h,
-              child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+          ? const SizedBox(
+              height: 150,
+              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
             )
           : Container(
-              height: 326.h,
+              height: 326,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
                 child: Text('등록된 물품이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
@@ -570,7 +578,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return SizedBox(
-      height: 334.h,
+      height: 334,
       child: PageView.builder(
         controller: _cardController,
         onPageChanged: _onCardPageChanged,
@@ -583,16 +591,21 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   itemId: _itemCards[index].itemId,
                   imageSize: Size(MediaQuery.of(context).size.width, 400.h),
                   currentImageIndex: 0,
-                  heroTag: 'itemImage_${_itemCards[index].itemId}_0', // ← 인덱스 포함
+                  heroTag: 'itemImage_${_itemCards[index].itemId}_0',
                   isMyItem: true,
                   isRequestManagement: true,
-                  isChatAccessAllowed: false, // 내 물품 = 채팅 불가
+                  isChatAccessAllowed: false,
                 ),
               );
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 4.h),
-              child: RequestManagementItemCardWidget(card: _itemCards[index], isActive: index == _currentCardIndex),
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: RequestManagementItemCardWidget(
+                card: _itemCards[index],
+                isActive: index == _currentCardIndex,
+                width: 219,
+                height: 326,
+              ),
             ),
           );
         },
@@ -706,12 +719,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
     if (filteredRequests.isEmpty) {
       return _isLoading
-          ? SizedBox(
-              height: 150.h,
-              child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+          ? const SizedBox(
+              height: 150,
+              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
             )
           : Container(
-              height: 200.h,
+              height: 200,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
                 child: Text(
@@ -723,9 +736,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return _isLoading
-        ? SizedBox(
-            height: 150.h,
-            child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+        ? const SizedBox(
+            height: 150,
+            child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
           )
         : Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w),

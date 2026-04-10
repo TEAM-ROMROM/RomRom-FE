@@ -11,7 +11,9 @@ import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
+import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
+import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
@@ -29,6 +31,8 @@ class AuthService {
       await _performPlatformLogout();
       await _tokenManager.deleteTokens();
       HeartbeatManager.instance.stop();
+      ApiClient.resetSuspendedFlag();
+      ApiClient.resetSessionExpiredFlag();
       if (context.mounted) {
         context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
       }
@@ -71,6 +75,9 @@ class AuthService {
 
     // 사용자 정보 클리어 (회원탈퇴는 새 사용자이므로 isCoachMarkShown, isFirstMainScreen 포함 전체 초기화)
     await UserInfo().clearAllUserInfo();
+
+    // 알림 권한 로컬 데이터 초기화 (재가입 시 바텀시트 재노출을 위해)
+    await NotificationPermissionService().clearLocalData();
 
     return true;
   }
