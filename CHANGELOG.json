@@ -1,11 +1,39 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-10T09:21:24Z",
-    "currentVersion": "1.10.12",
-    "totalReleases": 97,
+    "lastUpdated": "2026-04-12T10:10:37Z",
+    "currentVersion": "1.10.14",
+    "totalReleases": 98,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.14",
+      "project_type": "flutter",
+      "date": "2026-04-12",
+      "pr_number": 767,
+      "raw_summary": "## Summary by CodeRabbit\n\n* **버전 업데이트**\n  * 앱 버전을 v1.10.14로 업데이트했습니다.\n\n* **스타일**\n  * 런칭 화면의 배경색을 어두운 톤으로 변경하여 시각적 경험을 개선했습니다.\n\n* **Chores**\n  * iOS 빌드 프로세스의 진단 및 초기화 절차를 강화했습니다.",
+      "parsed_changes": {
+        "버전_업데이트": {
+          "title": "버전 업데이트",
+          "items": [
+            "앱 버전을 v1.10.14로 업데이트했습니다."
+          ]
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": [
+            "런칭 화면의 배경색을 어두운 톤으로 변경하여 시각적 경험을 개선했습니다."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "iOS 빌드 프로세스의 진단 및 초기화 절차를 강화했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.12",
       "project_type": "flutter",
