@@ -1,4 +1,8 @@
 {
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  },
   "flutter": {
     "platforms": {
       "android": {
@@ -43,7 +47,7 @@
     "rewrites": [
       {
         "source": "/item",
-        "destination": "/index.html"
+        "function": "itemOgRenderer"
       }
     ]
   }
