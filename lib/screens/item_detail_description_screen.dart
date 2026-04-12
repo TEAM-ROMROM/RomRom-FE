@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -301,10 +300,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   Future<void> _shareItem() async {
     final itemId = item?.itemId;
     if (itemId == null) return;
-    final url = 'https://romrom-c4008.web.app/item?itemId=$itemId';
-    final itemName = item?.itemName;
-    final text = itemName != null ? '$itemName\n$url' : url;
-    await Share.share(text);
+    await shareItem(itemId: itemId);
   }
 
   @override

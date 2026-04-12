@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
@@ -523,14 +522,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
   }
 
-  Future<void> _shareCurrentItem() async {
-    if (_feedItems.isEmpty || _currentFeedIndex >= _feedItems.length) return;
-    final item = _feedItems[_currentFeedIndex];
-    final itemId = item.itemUuid;
-    if (itemId == null) return;
-    final url = 'https://romrom-c4008.web.app/item?itemId=$itemId';
-    await Share.share('${item.name}\n$url');
-  }
+  // 공유 기능은 공용 유틸로 대체됨: `shareItem(itemId: ...)`
 
   @override
   Widget build(BuildContext context) {
@@ -635,7 +627,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                       shape: const CircleBorder(),
                       clipBehavior: Clip.antiAlias,
                       child: InkResponse(
-                        onTap: _shareCurrentItem,
+                        onTap: () async {
+                          if (_feedItems.isEmpty || _currentFeedIndex >= _feedItems.length) return;
+                          final item = _feedItems[_currentFeedIndex];
+                          final itemId = item.itemUuid;
+                          if (itemId == null) return;
+                          await shareItem(itemId: itemId);
+                        },
                         radius: 18.w,
                         customBorder: const CircleBorder(),
                         highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),

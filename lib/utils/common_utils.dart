@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_urls.dart';
+import 'package:share_plus/share_plus.dart';
 import '../widgets/common/common_modal.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 
@@ -198,6 +200,14 @@ String getLastActivityTime(DateTime? lastActiveAt) {
 // 색상을 어둡게 만드는 함수(버튼 highlight용)
 Color darkenBlend(Color c) {
   return Color.alphaBlend(AppColors.opacity20Black, c);
+}
+
+/// 아이템 공유
+/// itemId와 선택적으로 itemName을 받아 공유 시트를 띄움
+Future<void> shareItem({required String itemId}) async {
+  final url = '${AppUrls.itemShareBaseUrl}/item?itemId=$itemId';
+  final text = url;
+  await Share.share(text);
 }
 
 /// 공백 단위로만 줄바꿈을 허용하는 String 확장
