@@ -207,7 +207,14 @@ Color darkenBlend(Color c) {
 Future<void> shareItem({required String itemId}) async {
   final url = '${AppUrls.itemShareBaseUrl}/item?itemId=$itemId';
   final text = url;
-  await Share.share(text);
+  try {
+    debugPrint('[Share]: sharing itemId=$itemId url=$url');
+    await Share.share(text);
+    debugPrint('[Share]: share completed for itemId=$itemId');
+  } catch (e, st) {
+    debugPrint('[Share]: share failed for itemId=$itemId - $e\n$st');
+    rethrow;
+  }
 }
 
 /// 공백 단위로만 줄바꿈을 허용하는 String 확장
