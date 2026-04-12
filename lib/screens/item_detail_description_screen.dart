@@ -300,7 +300,16 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   Future<void> _shareItem() async {
     final itemId = item?.itemId;
     if (itemId == null) return;
-    await shareItem(itemId: itemId);
+    try {
+      final RenderBox box = context.findRenderObject() as RenderBox;
+      final Rect origin = box.localToGlobal(Offset.zero) & box.size;
+      debugPrint('ItemDetail: sharing itemId=$itemId origin=$origin');
+      await shareItem(itemId: itemId, sharePositionOrigin: origin);
+      debugPrint('ItemDetail: share completed for itemId=$itemId');
+    } catch (e, st) {
+      debugPrint('ItemDetail: share failed for itemId=$itemId - $e\n$st');
+      if (mounted) CommonSnackBar.show(context: context, message: '공유에 실패했습니다.', type: SnackBarType.error);
+    }
   }
 
   @override

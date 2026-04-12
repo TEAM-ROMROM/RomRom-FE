@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_urls.dart';
@@ -204,11 +205,11 @@ Color darkenBlend(Color c) {
 
 /// 아이템 공유
 /// itemId와 선택적으로 itemName을 받아 공유 시트를 띄움
-Future<void> shareItem({required String itemId}) async {
+Future<void> shareItem({required String itemId, Rect? sharePositionOrigin}) async {
   final url = '${AppUrls.itemShareBaseUrl}/item?itemId=$itemId';
   final text = url;
   try {
-    debugPrint('[Share]: sharing itemId=$itemId url=$url');
+    debugPrint('[Share]: sharing itemId=$itemId url=$url origin=$sharePositionOrigin');
     await Share.share(text);
     debugPrint('[Share]: share completed for itemId=$itemId');
   } catch (e, st) {

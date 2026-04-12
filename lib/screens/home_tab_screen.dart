@@ -628,11 +628,30 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                       clipBehavior: Clip.antiAlias,
                       child: InkResponse(
                         onTap: () async {
+                          debugPrint(
+                            'HomeTab: share button tapped (index=$_currentFeedIndex, total=${_feedItems.length})',
+                          );
                           if (_feedItems.isEmpty || _currentFeedIndex >= _feedItems.length) return;
                           final item = _feedItems[_currentFeedIndex];
                           final itemId = item.itemUuid;
-                          if (itemId == null) return;
-                          await shareItem(itemId: itemId);
+                          if (itemId == null) {
+                            debugPrint('HomeTab: share aborted - itemId is null');
+                            return;
+                          }
+                          debugPrint('HomeTab: sharing itemId=$itemId');
+                          try {
+                            // iPad/popover용 anchor(sharePositionOrigin)를 제공
+                            final RenderBox box = context.findRenderObject() as RenderBox;
+                            final Rect origin = box.localToGlobal(Offset.zero) & box.size;
+                            debugPrint('HomeTab: share origin=$origin');
+                            await shareItem(itemId: itemId, sharePositionOrigin: origin);
+                            debugPrint('HomeTab: share completed for itemId=$itemId');
+                          } catch (e, st) {
+                            debugPrint('HomeTab: share failed for itemId=$itemId - $e\n$st');
+                            if (mounted) {
+                              CommonSnackBar.show(context: context, message: '공유에 실패했습니다.', type: SnackBarType.error);
+                            }
+                          }
                         },
                         radius: 18.w,
                         customBorder: const CircleBorder(),
