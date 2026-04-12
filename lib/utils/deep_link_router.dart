@@ -6,13 +6,49 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 
 class RomRomDeepLinkRouter {
+  static const String _hostingDomain = 'romrom-c4008.web.app';
+
   static Future<void> open(BuildContext context, String? deepLink, {NotificationType? notificationType}) async {
     if (deepLink == null || deepLink.trim().isEmpty) return;
 
     final uri = Uri.tryParse(deepLink);
     if (uri == null) return;
-    if (uri.scheme != 'romrom') return;
 
+    await openFromUri(context, uri, notificationType: notificationType);
+  }
+
+  static Future<void> openFromUri(BuildContext context, Uri uri, {NotificationType? notificationType}) async {
+    if (uri.scheme == 'romrom') {
+      await _openRomRomScheme(context, uri, notificationType: notificationType);
+    } else if (uri.scheme == 'https' && uri.host == _hostingDomain) {
+      await _openHttpsLink(context, uri);
+    }
+  }
+
+  static Future<void> _openHttpsLink(BuildContext context, Uri uri) async {
+    // https://romrom-c4008.web.app/item?itemId=XXX
+    if (uri.path == '/item') {
+      final itemId = uri.queryParameters['itemId'];
+      if (itemId == null || itemId.isEmpty) return;
+
+      final imageSize = Size(MediaQuery.of(context).size.width, 400.h);
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ItemDetailDescriptionScreen(
+            itemId: itemId,
+            imageSize: imageSize,
+            currentImageIndex: 0,
+            heroTag: 'share_item_$itemId',
+            isMyItem: false,
+            isRequestManagement: false,
+          ),
+        ),
+      );
+    }
+  }
+
+  static Future<void> _openRomRomScheme(BuildContext context, Uri uri, {NotificationType? notificationType}) async {
     final routeKey = '${uri.host}${uri.path}';
 
     switch (routeKey) {

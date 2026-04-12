@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>롬롬 - 물물교환 앱</title>
+  <style>
+    body {
+      background: #1D1E27;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    a.btn {
+      display: inline-block;
+      margin: 12px;
+      padding: 14px 28px;
+      background: #FFD600;
+      color: #1D1E27;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+  <script>
+    (function () {
+      var ua = navigator.userAgent.toLowerCase();
+      var isAndroid = ua.indexOf('android') > -1;
+      var isIOS = /iphone|ipad|ipod/.test(ua);
+      var params = new URLSearchParams(window.location.search);
+      var itemId = params.get('itemId');
+
+      function tryOpenApp() {
+        if (!itemId) return;
+        var scheme = 'romrom://item/detail?itemId=' + encodeURIComponent(itemId);
+        window.location = scheme;
+      }
+
+      if (isAndroid) {
+        tryOpenApp();
+        setTimeout(function () {
+          window.location = 'https://play.google.com/store/apps/details?id=com.alom.romrom';
+        }, 1500);
+      } else if (isIOS) {
+        tryOpenApp();
+        setTimeout(function () {
+          // TODO: Replace with actual App Store URL after app is published
+          window.location = 'https://apps.apple.com/app/id_REPLACE_WITH_APP_ID';
+        }, 1500);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <p style="font-size:20px; font-weight:bold;">롬롬 앱으로 이동 중...</p>
+  <p style="color:#aaa;">앱이 열리지 않으면 아래 버튼을 눌러 앱을 설치해 주세요.</p>
+  <a class="btn" href="https://play.google.com/store/apps/details?id=com.alom.romrom">Android 다운로드</a>
+  <a class="btn" href="https://apps.apple.com/app/id_REPLACE_WITH_APP_ID">iOS 다운로드</a>
+</body>
+</html>

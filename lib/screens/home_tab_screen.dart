@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
@@ -522,6 +523,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
   }
 
+  Future<void> _shareCurrentItem() async {
+    if (_feedItems.isEmpty || _currentFeedIndex >= _feedItems.length) return;
+    final item = _feedItems[_currentFeedIndex];
+    final itemId = item.itemUuid;
+    if (itemId == null) return;
+    final url = 'https://romrom-c4008.web.app/item?itemId=$itemId';
+    await Share.share('${item.name}\n$url');
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -615,6 +625,32 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                SizedBox.square(
+                  dimension: 32.w,
+                  child: OverflowBox(
+                    maxWidth: 56.w,
+                    maxHeight: 56.w,
+                    child: Material(
+                      color: AppColors.transparent,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkResponse(
+                        onTap: _shareCurrentItem,
+                        radius: 18.w,
+                        customBorder: const CircleBorder(),
+                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                        child: SizedBox.square(
+                          dimension: 56.w,
+                          child: Center(
+                            child: Icon(AppIcons.share, size: 30.w, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
                 SizedBox.square(
                   dimension: 32.w,
                   child: OverflowBox(
