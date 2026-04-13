@@ -27,6 +27,7 @@ import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
+import 'package:romrom_fe/widgets/common/exchange_request_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -550,6 +551,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  Future<void> _onRequestExchange() async {
+    if (_isInputDisabled) return;
+    FocusScope.of(context).unfocus();
+
+    await ExchangeRequestBottomSheet.show(
+      context: context,
+      chatRoom: chatRoom,
+      myMemberId: _myId,
+      onConfirm: () {
+        try {
+          // TODO : 교환 완료 api 요청
+          if (mounted) {
+            CommonSnackBar.show(context: context, message: '교환 완료 요청이 전송되었습니다.', type: SnackBarType.success);
+          }
+        } catch (e) {
+          if (mounted) {
+            CommonSnackBar.show(context: context, message: '교환 완료 요청에 실패했습니다: $e', type: SnackBarType.error);
+          }
+        }
+      },
+    );
+  }
+
   @override
   void dispose() {
     _messageSubscription?.cancel();
@@ -672,6 +696,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 onSend: _sendMessage,
                 onPickImage: _onPickImage,
                 onSendLocation: _onSendLocation,
+                onRequestExchange: _onRequestExchange,
               ),
             ],
           ),
