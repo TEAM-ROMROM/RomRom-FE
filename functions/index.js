@@ -1,5 +1,5 @@
 const functions = require('firebase-functions');
-const appConfig = require('../public/app-config-node');
+const appConfig = require('./app-config');
 
 const BACKEND_BASE_URL = 'https://api.romrom.suhsaechan.kr';
 const HOSTING_URL = 'https://romrom-c4008.web.app';
@@ -16,9 +16,13 @@ const DEFAULT_OG_IMAGE = `${HOSTING_URL}/og-default.png`;
  * 백엔드 API: GET /api/item/public?itemId={itemId}
  */
 async function fetchItemPublicInfo(itemId) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
   const res = await fetch(`${BACKEND_BASE_URL}/api/item/public/get?itemId=${encodeURIComponent(itemId)}`, {
     method: 'GET',
+    signal: controller.signal,
   });
+  clearTimeout(timeoutId);
 
   if (!res.ok) return null;
 
@@ -50,9 +54,9 @@ function buildHtml({ itemId, itemName, itemDescription, primaryImageUrl, price }
   const title = itemName ? `${itemName} | 롬롬` : DEFAULT_TITLE;
   const description = buildDescription(itemDescription, price);
   const image = primaryImageUrl || DEFAULT_OG_IMAGE;
-  const url = `${HOSTING_URL}/item?itemId=${itemId}`;
-  const deepLinkUrl = `romrom://item/detail?itemId=${encodeURIComponent(itemId)}`;
-
+  const encodedItemId = encodeURIComponent(String(itemId));
+  const url = `${HOSTING_URL}/item?itemId=${encodedItemId}`;
+  const deepLinkUrl = `romrom://item/detail?itemId=${encodedItemId}`;
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -204,12 +208,14 @@ function escapeHtml(str) {
  * - 일반 유저: 앱 딥링크 + 스토어 리다이렉트
  */
 exports.itemOgRenderer = functions.https.onRequest(async (req, res) => {
-  const itemId = req.query.itemId;
+  const rawItemId = req.query.itemId;
 
-  if (!itemId) {
+  if (typeof rawItemId !== 'string' || rawItemId.trim().length === 0) {
     res.status(400).send('itemId가 필요합니다.');
     return;
   }
+  const itemId = rawItemId.trim();
+
 
   let itemData = null;
   try {

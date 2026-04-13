@@ -203,9 +203,9 @@ Color darkenBlend(Color c) {
 }
 
 /// 아이템 공유
-/// itemId와 선택적으로 itemName을 받아 공유 시트를 띄움
+/// itemId를 받아 공유 시트를 띄움
 Future<void> shareItem({required String itemId, Rect? sharePositionOrigin}) async {
-  final url = '${AppUrls.itemShareBaseUrl}/item?itemId=$itemId';
+  final url = Uri.parse('${AppUrls.itemShareBaseUrl}/item').replace(queryParameters: {'itemId': itemId}).toString();
   final text = url;
   try {
     debugPrint('[Share]: sharing itemId=$itemId url=$url origin=$sharePositionOrigin');
