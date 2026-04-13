@@ -76,17 +76,32 @@ function buildHtml({ itemId, itemName, itemDescription, primaryImageUrl, price }
       min-height: 100vh;
       margin: 0;
       text-align: center;
+      padding: 16px;
+      box-sizing: border-box;
     }
-    a.btn {
+    a.btn-primary {
       display: inline-block;
       margin: 12px;
-      padding: 14px 28px;
+      padding: 16px 32px;
       background: #FFD600;
       color: #1D1E27;
       border-radius: 8px;
       text-decoration: none;
       font-weight: bold;
+      font-size: 18px;
     }
+    a.btn-secondary {
+      display: inline-block;
+      margin: 6px;
+      padding: 12px 24px;
+      background: transparent;
+      color: #aaa;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      border: 1px solid #444;
+    }
+    #open-btn { display: none; }
   </style>
   <script>
     (function () {
@@ -99,27 +114,54 @@ function buildHtml({ itemId, itemName, itemDescription, primaryImageUrl, price }
       if (!isAndroid && !isIOS) return;
 
       var appOpened = false;
+      var storeTimer = null;
+
+      function goToStore() {
+        if (!appOpened) window.location = storeUrl;
+      }
 
       // 앱이 열리면 페이지가 숨겨짐 → 스토어 이동 취소
       document.addEventListener('visibilitychange', function () {
-        if (document.hidden) appOpened = true;
+        if (document.hidden) {
+          appOpened = true;
+          if (storeTimer) clearTimeout(storeTimer);
+        }
       });
 
-      // 커스텀 스킴으로 앱 열기 시도
+      window.addEventListener('pagehide', function () {
+        appOpened = true;
+        if (storeTimer) clearTimeout(storeTimer);
+      });
+
+      // Safari / 일반 브라우저: 커스텀 스킴으로 바로 시도
       window.location = deepLink;
 
       // 2초 후에도 앱이 안 열렸으면 스토어로 이동
-      setTimeout(function () {
-        if (!appOpened) window.location = storeUrl;
-      }, 2000);
+      storeTimer = setTimeout(goToStore, 2000);
+
+      // 인앱 브라우저(카카오톡 등) 대비: "앱에서 열기" 버튼 노출
+      document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('open-btn');
+        if (btn) {
+          btn.style.display = 'inline-block';
+          btn.href = deepLink;
+          btn.addEventListener('click', function () {
+            appOpened = false; // 버튼 탭 시 재시도
+            if (storeTimer) clearTimeout(storeTimer);
+            storeTimer = setTimeout(goToStore, 2000);
+          });
+        }
+      });
     })();
   </script>
 </head>
 <body>
   <p style="font-size:20px; font-weight:bold;">롬롬 앱으로 이동 중...</p>
-  <p style="color:#aaa;">앱이 열리지 않으면 아래 버튼을 눌러 앱을 설치해 주세요.</p>
-  <a class="btn" href="${ANDROID_STORE_URL}">Android 다운로드</a>
-  <a class="btn" href="${IOS_STORE_URL}">iOS 다운로드</a>
+  <p style="color:#aaa; margin-bottom: 8px;">잠시만 기다려 주세요...</p>
+  <a id="open-btn" class="btn-primary" href="#">앱에서 열기</a>
+  <br/>
+  <a class="btn-secondary" href="${ANDROID_STORE_URL}">Android 다운로드</a>
+  <a class="btn-secondary" href="${IOS_STORE_URL}">iOS 다운로드</a>
 </body>
 </html>`;
 }
