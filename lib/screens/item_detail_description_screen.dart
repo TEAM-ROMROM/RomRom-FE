@@ -81,6 +81,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   late final ValueNotifier<bool> isLikedVN;
   late final ValueNotifier<int> likeCountVN;
   bool _likeInFlight = false;
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool isLoading = true;
@@ -295,6 +296,21 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
 
   void _popWithLikeResult() {
     Navigator.of(context).pop(<String, dynamic>{'isLiked': isLikedVN.value, 'likeCount': likeCountVN.value});
+  }
+
+  Future<void> _shareItem() async {
+    final itemId = item?.itemId;
+    if (itemId == null) return;
+    try {
+      final RenderBox? box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      final Rect? origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+      debugPrint('ItemDetail: sharing itemId=$itemId origin=$origin');
+      await shareItem(itemId: itemId, sharePositionOrigin: origin);
+      debugPrint('ItemDetail: share completed for itemId=$itemId');
+    } catch (e, st) {
+      debugPrint('ItemDetail: share failed for itemId=$itemId - $e\n$st');
+      if (mounted) CommonSnackBar.show(context: context, message: '공유에 실패했습니다.', type: SnackBarType.error);
+    }
   }
 
   @override
@@ -834,72 +850,109 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
             Positioned(
               top: MediaQuery.of(context).padding.top + 8.h,
               right: 16.w,
-              child: !widget.isMyItem
-                  ? ReportMenuButton(
-                      onReportPressed: () async {
-                        final bool? reported = await context.navigateTo(screen: ReportScreen(itemId: widget.itemId));
-
-                        if (reported == true && mounted) {
-                          await CommonModal.success(
-                            context: context,
-                            message: '신고가 접수되었습니다.',
-                            onConfirm: () {
-                              Navigator.of(context).pop();
-                              _popWithLikeResult();
-                            },
-                          );
-                        }
-                      },
-                    )
-                  : RomRomContextMenu(
-                      items: [
-                        ContextMenuItem(
-                          id: 'changeTradeStatus',
-                          icon: AppIcons.change,
-                          title: item?.itemStatus == ItemStatus.available.serverName ? '거래완료로 변경' : '판매중으로 변경',
-                          onTap: () async {
-                            await _toggleItemStatus(item!);
-                          },
-                          showDividerAfter: true,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox.square(
+                    key: _shareButtonKey,
+                    dimension: 32.w,
+                    child: OverflowBox(
+                      maxWidth: 56.w,
+                      maxHeight: 56.w,
+                      child: Material(
+                        color: Colors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkResponse(
+                          onTap: _shareItem,
+                          radius: 18.w,
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: SizedBox.square(
+                            dimension: 56.w,
+                            child: Center(
+                              child: Icon(AppIcons.share, size: 30.sp, color: AppColors.textColorWhite),
+                            ),
+                          ),
                         ),
-                        ContextMenuItem(
-                          id: 'edit',
-                          icon: AppIcons.edit,
-                          title: '수정',
-                          onTap: () async {
-                            final result = await context.navigateTo<Map<String, dynamic>>(
-                              screen: ItemModificationScreen(
-                                itemId: item?.itemId!,
-                                onClose: () {
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            );
-                            if (result != null && result['updated'] == true && mounted) {
-                              _loadItemDetail();
-                            }
-                          },
-                          showDividerAfter: true,
-                        ),
-                        ContextMenuItem(
-                          id: 'delete',
-                          icon: AppIcons.trash,
-                          iconColor: AppColors.itemOptionsMenuRedIcon,
-                          title: '삭제',
-                          textColor: AppColors.itemOptionsMenuRedText,
-                          onTap: () async {
-                            final result = await context.showDeleteDialog(title: '물품 삭제', description: '정말 삭제하시겠습니까?');
-
-                            if (result == true) {
-                              final deleted = await _deleteItem(item!);
-                              if (deleted && mounted) {
-                                Navigator.of(context).pop(true);
-                              }
-                            }
-                          },
-                        ),
-                      ],
+                      ),
                     ),
+                  ),
+                  SizedBox(width: 12.w),
+                  !widget.isMyItem
+                      ? ReportMenuButton(
+                          onReportPressed: () async {
+                            final bool? reported = await context.navigateTo(
+                              screen: ReportScreen(itemId: widget.itemId),
+                            );
+
+                            if (reported == true && mounted) {
+                              await CommonModal.success(
+                                context: context,
+                                message: '신고가 접수되었습니다.',
+                                onConfirm: () {
+                                  Navigator.of(context).pop();
+                                  _popWithLikeResult();
+                                },
+                              );
+                            }
+                          },
+                        )
+                      : RomRomContextMenu(
+                          items: [
+                            ContextMenuItem(
+                              id: 'changeTradeStatus',
+                              icon: AppIcons.change,
+                              title: item?.itemStatus == ItemStatus.available.serverName ? '거래완료로 변경' : '판매중으로 변경',
+                              onTap: () async {
+                                await _toggleItemStatus(item!);
+                              },
+                              showDividerAfter: true,
+                            ),
+                            ContextMenuItem(
+                              id: 'edit',
+                              icon: AppIcons.edit,
+                              title: '수정',
+                              onTap: () async {
+                                final result = await context.navigateTo<Map<String, dynamic>>(
+                                  screen: ItemModificationScreen(
+                                    itemId: item?.itemId!,
+                                    onClose: () {
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                );
+                                if (result != null && result['updated'] == true && mounted) {
+                                  _loadItemDetail();
+                                }
+                              },
+                              showDividerAfter: true,
+                            ),
+                            ContextMenuItem(
+                              id: 'delete',
+                              icon: AppIcons.trash,
+                              iconColor: AppColors.itemOptionsMenuRedIcon,
+                              title: '삭제',
+                              textColor: AppColors.itemOptionsMenuRedText,
+                              onTap: () async {
+                                final result = await context.showDeleteDialog(
+                                  title: '물품 삭제',
+                                  description: '정말 삭제하시겠습니까?',
+                                );
+
+                                if (result == true) {
+                                  final deleted = await _deleteItem(item!);
+                                  if (deleted && mounted) {
+                                    Navigator.of(context).pop(true);
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                ],
+              ),
             ),
             widget.isChatAccessAllowed || widget.isTradeRequestAllowed
                 ? Positioned(

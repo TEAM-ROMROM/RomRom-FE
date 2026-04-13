@@ -33,6 +33,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>romrom</string>
 				<string>$(KAKAO_URL_SCHEMES)</string>
 				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
 			</array>
