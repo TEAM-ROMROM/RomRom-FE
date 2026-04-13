@@ -4,8 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.alom.romrom",
-      "sha256_cert_fingerprints":
-        ["B9:CF:5B:13:E9:6E:0A:CB:53:1B:D3:F3:A6:68:82:3E:29:D7:8E:56:15:67:20:12:F8:3F:09:EE:28:E5:C0:63"]
+      "sha256_cert_fingerprints": ["${ANDROID_SHA256_FINGERPRINT}"]
     }
   }
 ]

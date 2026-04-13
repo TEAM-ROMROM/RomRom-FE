@@ -18,7 +18,7 @@ if [ -z "$ANDROID_SHA256_FINGERPRINT" ]; then
 fi
 
 # assetlinks.json 생성 (env 치환)
-ASSETLINKS_TEMPLATE="public/.well-known/assetlinks.json"
+ASSETLINKS_TEMPLATE="public/.well-known/assetlinks.template.json"
 ASSETLINKS_OUT="public/.well-known/assetlinks.json"
 
 sed "s|\${ANDROID_SHA256_FINGERPRINT}|$ANDROID_SHA256_FINGERPRINT|g" \

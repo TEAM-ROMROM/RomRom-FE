@@ -1,9 +1,10 @@
 const functions = require('firebase-functions');
+const appConfig = require('../public/app-config-node');
 
 const BACKEND_BASE_URL = 'https://api.romrom.suhsaechan.kr';
 const HOSTING_URL = 'https://romrom-c4008.web.app';
-const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.alom.romrom&hl=ko';
-const IOS_STORE_URL = 'https://apps.apple.com/kr/app/%EB%A1%AC%EB%A1%AC-romrom-%ED%98%81%EC%8B%A0%EC%A0%81%EC%9D%B8-%EB%AC%BC%EB%AC%BC%EA%B5%90%ED%99%98/id6748823976';
+const ANDROID_STORE_URL = appConfig.androidStoreUrl;
+const IOS_STORE_URL = appConfig.iosStoreUrl;
 
 // 백엔드 API 실패 시 사용하는 기본값
 const DEFAULT_TITLE = '롬롬 - 물물교환 앱';
@@ -33,6 +34,15 @@ async function fetchItemPublicInfo(itemId) {
   };
 }
 
+function escapeJs(str) {
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
+}
+
 /**
  * OG 태그 포함 HTML 생성
  */
@@ -41,7 +51,7 @@ function buildHtml({ itemId, itemName, itemDescription, primaryImageUrl, price }
   const description = buildDescription(itemDescription, price);
   const image = primaryImageUrl || DEFAULT_OG_IMAGE;
   const url = `${HOSTING_URL}/item?itemId=${itemId}`;
-  const deepLink = `romrom://item/detail?itemId=${encodeURIComponent(itemId)}`;
+  const deepLinkUrl = `romrom://item/detail?itemId=${encodeURIComponent(itemId)}`;
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -108,7 +118,7 @@ function buildHtml({ itemId, itemName, itemDescription, primaryImageUrl, price }
       var ua = navigator.userAgent.toLowerCase();
       var isAndroid = ua.indexOf('android') > -1;
       var isIOS = /iphone|ipad|ipod/.test(ua);
-      var deepLink = '${deepLink}';
+      var deepLink = '${escapeJs(deepLinkUrl)}';
       var storeUrl = isAndroid ? '${ANDROID_STORE_URL}' : '${IOS_STORE_URL}';
 
       if (!isAndroid && !isIOS) return;

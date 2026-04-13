@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:app_links/app_links.dart';
@@ -103,6 +104,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   static const Duration _checkInterval = Duration(hours: 24);
 
   final _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
 
   @override
   void initState() {
@@ -135,7 +137,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     // 포그라운드: 앱 실행 중 링크 수신
-    _appLinks.uriLinkStream.listen((uri) {
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
       final context = navigatorKey.currentContext;
       if (context != null) {
         RomRomDeepLinkRouter.openFromUri(context, uri);
@@ -146,6 +148,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _linkSubscription?.cancel();
     if (DebugConfig.isTestBuild) {
       DebugOverlayManager().dispose();
     }

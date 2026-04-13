@@ -28,6 +28,7 @@
       font-weight: bold;
     }
   </style>
+  <script src="/app-config.js"></script>
   <script>
     (function () {
       var ua = navigator.userAgent.toLowerCase();
@@ -35,6 +36,9 @@
       var isIOS = /iphone|ipad|ipod/.test(ua);
       var params = new URLSearchParams(window.location.search);
       var itemId = params.get('itemId');
+      var cfg = window.APP_CONFIG || {};
+      var androidStoreUrl = cfg.androidStoreUrl || 'https://play.google.com/store/apps/details?id=com.alom.romrom';
+      var iosStoreUrl = cfg.iosStoreUrl || 'https://apps.apple.com/kr/app/id6748823976';
 
       function tryOpenApp() {
         if (!itemId) return;
@@ -45,13 +49,12 @@
       if (isAndroid) {
         tryOpenApp();
         setTimeout(function () {
-          window.location = 'https://play.google.com/store/apps/details?id=com.alom.romrom';
+          window.location = androidStoreUrl;
         }, 1500);
       } else if (isIOS) {
         tryOpenApp();
         setTimeout(function () {
-          // TODO: Replace with actual App Store URL after app is published
-          window.location = 'https://apps.apple.com/app/id_REPLACE_WITH_APP_ID';
+          window.location = iosStoreUrl;
         }, 1500);
       }
     })();
