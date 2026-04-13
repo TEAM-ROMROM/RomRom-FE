@@ -1,11 +1,34 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-12T10:10:37Z",
-    "currentVersion": "1.10.14",
-    "totalReleases": 98,
+    "lastUpdated": "2026-04-13T09:34:53Z",
+    "currentVersion": "1.10.15",
+    "totalReleases": 99,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.15",
+      "project_type": "flutter",
+      "date": "2026-04-13",
+      "pr_number": 769,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 아이템 공유 기능 추가 - 앱 내에서 아이템을 쉽게 공유할 수 있습니다.\n  * 딥링크 지원 - 공유된 링크를 통해 앱의 특정 아이템 페이지로 직접 이동할 수 있습니다.\n\n* **개선 사항**\n  * 앱 버전 v1.10.15로 업데이트되었습니다.",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "아이템 공유 기능 추가 - 앱 내에서 아이템을 쉽게 공유할 수 있습니다.",
+            "딥링크 지원 - 공유된 링크를 통해 앱의 특정 아이템 페이지로 직접 이동할 수 있습니다."
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "앱 버전 v1.10.15로 업데이트되었습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.14",
       "project_type": "flutter",
