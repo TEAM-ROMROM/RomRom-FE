@@ -63,6 +63,20 @@
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <!-- Firebase Hosting App Links (딥링크) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="romrom-c4008.web.app" />
+            </intent-filter>
+            <!-- 커스텀 URL 스킴 딥링크 (romrom://) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="romrom" />
+            </intent-filter>
         </activity>
         <!-- 카카오 로그인 커스텀 URL 스킴 설정 -->
         <activity 

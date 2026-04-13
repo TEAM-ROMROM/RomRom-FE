@@ -522,6 +522,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
   }
 
+  // 공유 기능은 공용 유틸로 대체됨: `shareItem(itemId: ...)`
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -615,6 +617,57 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                SizedBox.square(
+                  dimension: 32.w,
+                  child: OverflowBox(
+                    maxWidth: 56.w,
+                    maxHeight: 56.w,
+                    child: Material(
+                      color: AppColors.transparent,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkResponse(
+                        onTap: () async {
+                          debugPrint(
+                            'HomeTab: share button tapped (index=$_currentFeedIndex, total=${_feedItems.length})',
+                          );
+                          if (_feedItems.isEmpty || _currentFeedIndex >= _feedItems.length) return;
+                          final item = _feedItems[_currentFeedIndex];
+                          final itemId = item.itemUuid;
+                          if (itemId == null) {
+                            debugPrint('HomeTab: share aborted - itemId is null');
+                            return;
+                          }
+                          debugPrint('HomeTab: sharing itemId=$itemId');
+                          try {
+                            // iPad/popover용 anchor(sharePositionOrigin)를 제공
+                            final RenderBox box = context.findRenderObject() as RenderBox;
+                            final Rect origin = box.localToGlobal(Offset.zero) & box.size;
+                            debugPrint('HomeTab: share origin=$origin');
+                            await shareItem(itemId: itemId, sharePositionOrigin: origin);
+                            debugPrint('HomeTab: share completed for itemId=$itemId');
+                          } catch (e, st) {
+                            debugPrint('HomeTab: share failed for itemId=$itemId - $e\n$st');
+                            if (mounted) {
+                              CommonSnackBar.show(context: context, message: '공유에 실패했습니다.', type: SnackBarType.error);
+                            }
+                          }
+                        },
+                        radius: 18.w,
+                        customBorder: const CircleBorder(),
+                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                        child: SizedBox.square(
+                          dimension: 56.w,
+                          child: Center(
+                            child: Icon(AppIcons.share, size: 30.w, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
                 SizedBox.square(
                   dimension: 32.w,
                   child: OverflowBox(
