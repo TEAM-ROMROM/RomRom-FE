@@ -95,17 +95,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return null;
   }
 
-  bool get _isInputDisabled =>
-      _hasSystemMessage ||
-      _isOpponentDeleted ||
-      chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName;
+  bool get _isTradeCompleted =>
+      chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName ||
+      _messages.any((m) => m.type == MessageType.tradeCompleted);
+
+  bool get _isInputDisabled => _hasSystemMessage || _isOpponentDeleted || _isTradeCompleted;
 
   String get _inputHintText {
     if (_hasSystemMessage) return '상대방이 채팅방을 나갔습니다';
     if (_isOpponentDeleted) return '존재하지 않거나 탈퇴한 사용자입니다';
-    if (chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName) return '거래완료 된 글입니다';
+    if (_isTradeCompleted) return '거래완료 된 글입니다';
     return '메세지를 입력하세요';
   }
+
+  // 거래 완료 액션 중복 방지
+  bool _isPendingTradeAction = false;
 
   String _errorMessage = '';
   String? _myMemberId;
@@ -552,26 +556,88 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Future<void> _onRequestExchange() async {
-    if (_isInputDisabled) return;
+    if (_isInputDisabled || _isPendingTradeAction) return;
     FocusScope.of(context).unfocus();
 
     await ExchangeRequestBottomSheet.show(
       context: context,
       chatRoom: chatRoom,
       myMemberId: _myId,
-      onConfirm: () {
-        try {
-          // TODO : 교환 완료 api 요청
+      onConfirm: _doRequestTradeCompletion,
+    );
+  }
+
+  /// 교환 완료 요청 (바텀시트 확인 후 호출, fire-and-forget)
+  void _doRequestTradeCompletion() {
+    if (_isPendingTradeAction) return;
+    setState(() => _isPendingTradeAction = true);
+    ChatApi()
+        .requestTradeCompletion(chatRoomId: widget.chatRoomId)
+        .then((_) {
+          if (mounted) setState(() => _isPendingTradeAction = false);
+        })
+        .catchError((e) {
           if (mounted) {
-            CommonSnackBar.show(context: context, message: '교환 완료 요청이 전송되었습니다.', type: SnackBarType.success);
-          }
-        } catch (e) {
-          if (mounted) {
+            setState(() => _isPendingTradeAction = false);
             CommonSnackBar.show(context: context, message: '교환 완료 요청에 실패했습니다: $e', type: SnackBarType.error);
           }
-        }
-      },
-    );
+        });
+  }
+
+  Future<void> _onCancelTradeRequest() async {
+    if (_isPendingTradeAction) return;
+    setState(() => _isPendingTradeAction = true);
+    try {
+      await ChatApi().cancelTradeCompletionRequest(chatRoomId: widget.chatRoomId);
+    } catch (e) {
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다: $e', type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isPendingTradeAction = false);
+    }
+  }
+
+  Future<void> _onRejectTradeRequest() async {
+    if (_isPendingTradeAction) return;
+    setState(() => _isPendingTradeAction = true);
+    try {
+      await ChatApi().rejectTradeCompletion(chatRoomId: widget.chatRoomId);
+    } catch (e) {
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '거절에 실패했습니다: $e', type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isPendingTradeAction = false);
+    }
+  }
+
+  Future<void> _onConfirmTradeRequest() async {
+    if (_isPendingTradeAction) return;
+    setState(() => _isPendingTradeAction = true);
+    try {
+      await ChatApi().confirmTradeCompletion(chatRoomId: widget.chatRoomId);
+    } catch (e) {
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '교환 완료 확인에 실패했습니다: $e', type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isPendingTradeAction = false);
+    }
+  }
+
+  /// 메시지 리스트에서 인덱스 [index]의 TRADE_COMPLETE_REQUEST가 아직 활성 상태인지 확인.
+  /// _messages는 reverse 정렬(index 0 = 최신)이므로, 더 최신 메시지에 취소/거절/완료가 없으면 활성.
+  bool _isActiveTradeRequest(int index) {
+    for (int i = 0; i < index; i++) {
+      final t = _messages[i].type;
+      if (t == MessageType.tradeCompleteRequestCanceled ||
+          t == MessageType.tradeCompleteRequestRejected ||
+          t == MessageType.tradeCompleted) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @override
@@ -727,6 +793,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 (_messages[index].senderId != _messages[index - 1].senderId ||
                     !isSameMinute(_messages[index].createdDate, _messages[index - 1].createdDate)));
 
+        // 거래 완료 요청 활성 상태면 버튼 콜백 결정
+        VoidCallback? onCancelTradeRequest;
+        VoidCallback? onRejectTradeRequest;
+        VoidCallback? onConfirmTradeRequest;
+        if (message.type == MessageType.tradeCompleteRequest && _isActiveTradeRequest(index)) {
+          if (message.senderId == _myMemberId) {
+            onCancelTradeRequest = _onCancelTradeRequest;
+          } else {
+            onRejectTradeRequest = _onRejectTradeRequest;
+            onConfirmTradeRequest = _onConfirmTradeRequest;
+          }
+        }
+
         return ChatMessageItem(
           key: ValueKey(message.chatMessageId ?? '${message.senderId}_${message.createdDate?.millisecondsSinceEpoch}'),
           message: message,
@@ -736,6 +815,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           isUploading: _uploadingLocalIds.contains(message.chatMessageId),
           opponentNickname: _opponentNickname,
           showReadReceipt: message.chatMessageId != null && message.chatMessageId == _lastReadMyMessageId,
+          onCancelTradeRequest: onCancelTradeRequest,
+          onRejectTradeRequest: onRejectTradeRequest,
+          onConfirmTradeRequest: onConfirmTradeRequest,
         );
       },
     );
