@@ -210,7 +210,7 @@ Future<void> shareItem({required String itemId, Rect? sharePositionOrigin}) asyn
   final text = url;
   try {
     debugPrint('[Share]: sharing itemId=$itemId url=$url origin=$sharePositionOrigin');
-    await Share.share(text);
+    await Share.share(text, sharePositionOrigin: sharePositionOrigin);
     debugPrint('[Share]: share completed for itemId=$itemId');
   } catch (e, st) {
     debugPrint('[Share]: share failed for itemId=$itemId - $e\n$st');

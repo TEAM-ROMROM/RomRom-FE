@@ -81,6 +81,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   late final ValueNotifier<bool> isLikedVN;
   late final ValueNotifier<int> likeCountVN;
   bool _likeInFlight = false;
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool isLoading = true;
@@ -301,8 +302,8 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     final itemId = item?.itemId;
     if (itemId == null) return;
     try {
-      final RenderBox box = context.findRenderObject() as RenderBox;
-      final Rect origin = box.localToGlobal(Offset.zero) & box.size;
+      final RenderBox? box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      final Rect? origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
       debugPrint('ItemDetail: sharing itemId=$itemId origin=$origin');
       await shareItem(itemId: itemId, sharePositionOrigin: origin);
       debugPrint('ItemDetail: share completed for itemId=$itemId');
@@ -853,6 +854,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox.square(
+                    key: _shareButtonKey,
                     dimension: 32.w,
                     child: OverflowBox(
                       maxWidth: 56.w,
