@@ -68,21 +68,29 @@ class _ExchangeRequestBody extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _ItemColumn(item: opponentItem, categoryLabel: _categoryLabel(opponentItem.itemCategory)),
               ),
-              Container(
-                width: 32.w,
-                height: 32.h,
-                decoration: const BoxDecoration(color: AppColors.secondaryBlack1, shape: BoxShape.circle),
-                child: const Icon(AppIcons.change, color: AppColors.primaryYellow, size: 20),
+              // 카드 높이(165) 기준으로 아이콘 세로 중앙 정렬
+              SizedBox(
+                height: 165,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(color: AppColors.secondaryBlack1, shape: BoxShape.circle),
+                      child: const Icon(AppIcons.change, color: AppColors.primaryYellow, size: 20),
+                    ),
+                  ),
+                ),
               ),
               Expanded(
                 child: _ItemColumn(item: myItem, categoryLabel: _categoryLabel(myItem.itemCategory)),
               ),
-              // 중앙 교환 아이콘
             ],
           ),
           SizedBox(height: 32.h),
@@ -106,6 +114,7 @@ class _ItemColumn extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RequestManagementItemCardWidget(
           card: RequestManagementItemCard(
@@ -121,7 +130,7 @@ class _ItemColumn extends StatelessWidget {
           height: 165,
           isActive: true,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         Row(
           children: [
             UserProfileCircularAvatar(
@@ -130,11 +139,11 @@ class _ItemColumn extends StatelessWidget {
               hasBorder: false,
               isDeleteAccount: isDeletedAccount,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6.w),
             Flexible(
               child: Text(
                 nickname,
-                style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w500),
+                style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

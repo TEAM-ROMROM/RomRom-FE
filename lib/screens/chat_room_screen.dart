@@ -786,7 +786,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       itemBuilder: (context, index) {
         final message = _messages[index];
         final double topGap =
-            (index < _messages.length - 1 && _messages[index].senderId == _messages[index + 1].senderId) ? 8.h : 24.h;
+            (index < _messages.length - 1 &&
+                _messages[index].senderId == _messages[index + 1].senderId &&
+                _messages[index].type == _messages[index + 1].type)
+            ? 8.h
+            : 24.h;
         final bool showTime =
             (index == 0) ||
             (index > 0 &&
