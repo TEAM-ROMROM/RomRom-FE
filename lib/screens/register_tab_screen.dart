@@ -444,7 +444,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                   id: 'changeTradeStatus',
                   contextIcon: AppIcons.dotsVerticalSmall,
                   icon: AppIcons.change,
-                  title: _currentTabStatus == MyItemToggleStatus.selling ? '교환완료로 변경' : '판매중으로 변경',
+                  title: _currentTabStatus == MyItemToggleStatus.selling ? '교환 완료로 변경' : '판매중으로 변경',
                   onTap: () => _showChangeStatusConfirmDialog(item),
                   showDividerAfter: true,
                 ),
