@@ -106,6 +106,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return '메세지를 입력하세요';
   }
 
+  bool get _hasActiveTradeRequest {
+    final latestRequestIndex = _messages.indexWhere((m) => m.type == MessageType.tradeCompleteRequest);
+    return latestRequestIndex != -1 && _isActiveTradeRequest(latestRequestIndex);
+  }
+
   // 거래 완료 액션 중복 방지
   bool _isPendingTradeAction = false;
 
@@ -547,7 +552,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   /// 교환 완료 요청 플로우: 바텀시트 → API 호출
   Future<void> _onRequestExchange() async {
-    if (_isTradeCompleted || _isPendingTradeAction) {
+    if (_isTradeCompleted || _isPendingTradeAction || _hasActiveTradeRequest) {
       CommonSnackBar.show(context: context, message: '이미 교환이 완료되었거나 요청이 진행 중입니다.', type: SnackBarType.info);
       return;
     }
@@ -574,7 +579,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         .catchError((e) {
           if (mounted) {
             setState(() => _isPendingTradeAction = false);
-            CommonSnackBar.show(context: context, message: '교환 완료 요청에 실패했습니다: $e', type: SnackBarType.error);
+            CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
           }
         });
   }

@@ -63,38 +63,28 @@ class _ExchangeRequestBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 55.w),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _ItemColumn(item: opponentItem, categoryLabel: _categoryLabel(opponentItem.itemCategory)),
+      padding: EdgeInsets.only(bottom: 24.0.w),
+      child: SizedBox(
+        width: double.infinity,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ItemColumn(item: opponentItem, categoryLabel: _categoryLabel(opponentItem.itemCategory)),
+            SizedBox(
+              height: 165.h,
+              child: Container(
+                width: 32.w,
+                height: 32.h,
+                margin: EdgeInsets.symmetric(horizontal: 16.w),
+                decoration: const BoxDecoration(color: AppColors.secondaryBlack1, shape: BoxShape.circle),
+                child: const Icon(AppIcons.change, color: AppColors.primaryYellow, size: 20),
               ),
-              // 카드 높이(165) 기준으로 아이콘 세로 중앙 정렬
-              SizedBox(
-                height: 165,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(color: AppColors.secondaryBlack1, shape: BoxShape.circle),
-                      child: const Icon(AppIcons.change, color: AppColors.primaryYellow, size: 20),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _ItemColumn(item: myItem, categoryLabel: _categoryLabel(myItem.itemCategory)),
-              ),
-            ],
-          ),
-          SizedBox(height: 32.h),
-        ],
+            ),
+            _ItemColumn(item: myItem, categoryLabel: _categoryLabel(myItem.itemCategory)),
+          ],
+        ),
       ),
     );
   }
@@ -113,7 +103,6 @@ class _ItemColumn extends StatelessWidget {
     final isDeletedAccount = item.member?.accountStatus == 'DELETE_ACCOUNT';
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RequestManagementItemCardWidget(
@@ -140,13 +129,11 @@ class _ItemColumn extends StatelessWidget {
               isDeleteAccount: isDeletedAccount,
             ),
             SizedBox(width: 6.w),
-            Flexible(
-              child: Text(
-                nickname,
-                style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            Text(
+              nickname,
+              style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
