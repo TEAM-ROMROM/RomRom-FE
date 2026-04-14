@@ -230,6 +230,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
 
       _messageSubscription = _wsService.subscribeToChatRoom(widget.chatRoomId).listen((newMessage) {
+        debugPrint(
+          '[ChatRoom] 🔔 메시지 수신: type=${newMessage.type}, id=${newMessage.chatMessageId}, senderId=${newMessage.senderId}',
+        );
         if (!mounted) return;
         setState(() => _handleIncomingMessage(newMessage));
         _scrollToBottom();
@@ -307,10 +310,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   void _handleIncomingMessage(ChatMessage newMessage) {
+    debugPrint('[ChatRoom] _handleIncomingMessage: type=${newMessage.type}, id=${newMessage.chatMessageId}');
     final newId = newMessage.chatMessageId;
     final isDup = (newId != null) && _messages.any((m) => m.chatMessageId != null && m.chatMessageId == newId);
     if (isDup) {
-      debugPrint('중복 메시지 수신 무시: chatMessageId=$newId');
+      debugPrint('[ChatRoom] 중복 메시지 수신 무시: chatMessageId=$newId');
       return;
     }
 
@@ -571,12 +575,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void _doRequestTradeCompletion() {
     if (_isPendingTradeAction) return;
     setState(() => _isPendingTradeAction = true);
+    debugPrint('[ChatRoom] 교환 완료 요청 API 호출 시작: chatRoomId=${widget.chatRoomId}');
     ChatApi()
         .requestTradeCompletion(chatRoomId: widget.chatRoomId)
         .then((_) {
+          debugPrint('[ChatRoom] 교환 완료 요청 API 성공 → 이후 WebSocket 브로드캐스트 대기 중...');
           if (mounted) setState(() => _isPendingTradeAction = false);
         })
         .catchError((e) {
+          debugPrint('[ChatRoom] 교환 완료 요청 API 실패: $e');
           if (mounted) {
             setState(() => _isPendingTradeAction = false);
             CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);

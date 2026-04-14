@@ -194,10 +194,18 @@ class ChatWebSocketService {
     final unsubscribe = _stompClient!.subscribe(
       destination: destination,
       callback: (StompFrame frame) {
-        if (frame.body == null) return;
+        debugPrint('[WebSocket] 📨 Frame 수신 from $destination');
+        debugPrint('[WebSocket]   headers: ${frame.headers}');
+        debugPrint('[WebSocket]   body: ${frame.body}');
+
+        if (frame.body == null) {
+          debugPrint('[WebSocket]   ⚠️ body가 null → 무시');
+          return;
+        }
 
         try {
           final jsonBody = jsonDecode(frame.body!);
+          debugPrint('[WebSocket]   type 필드: ${jsonBody["type"]}');
 
           // 1) STOMP 헤더 timestamp(ms) → DateTime
           DateTime? headerTs;
@@ -226,10 +234,16 @@ class ChatWebSocketService {
 
           // 모델로 변환
           final message = ChatMessage.fromJson(jsonBody).copyWith(createdDate: finalCreated);
+          debugPrint(
+            '[WebSocket]   → 파싱 완료: type=${message.type}, id=${message.chatMessageId}, senderId=${message.senderId}',
+          );
 
           _subscriptions[chatRoomId]?.add(message);
-        } catch (e) {
-          debugPrint('[WebSocket] Failed to parse message: $e');
+          debugPrint('[WebSocket]   → StreamController 전달 완료');
+        } catch (e, st) {
+          debugPrint('[WebSocket]   ❌ 파싱 실패: $e');
+          debugPrint('[WebSocket]   raw body: ${frame.body}');
+          debugPrint('[WebSocket]   $st');
         }
       },
     );
