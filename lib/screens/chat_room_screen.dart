@@ -74,7 +74,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _hasError = false;
   bool _notificationSnackBarShown = false;
   bool _deleteModalShown = false;
-  bool _tradeCompletedModalShown = false;
   bool _systemMessageModalShown = false;
 
   bool get _hasSystemMessage => _messages.any((m) => m.type == MessageType.system);
@@ -99,12 +98,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName ||
       _messages.any((m) => m.type == MessageType.tradeCompleted);
 
-  bool get _isInputDisabled => _hasSystemMessage || _isOpponentDeleted || _isTradeCompleted;
+  bool get _isInputDisabled => _hasSystemMessage || _isOpponentDeleted;
 
   String get _inputHintText {
     if (_hasSystemMessage) return '상대방이 채팅방을 나갔습니다';
     if (_isOpponentDeleted) return '존재하지 않거나 탈퇴한 사용자입니다';
-    if (_isTradeCompleted) return '거래완료 된 글입니다';
     return '메세지를 입력하세요';
   }
 
@@ -241,7 +239,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             context: context,
             isShown: () => _systemMessageModalShown,
             markShown: () => _systemMessageModalShown = true,
-            shouldShow: () => !_deleteModalShown && !_tradeCompletedModalShown,
+            shouldShow: () => !_deleteModalShown,
             message: '상대방이 채팅방을 나갔습니다.',
             onConfirm: () => Navigator.of(context).pop(),
           );
@@ -286,18 +284,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       );
       CommonModal.showOnceAfterFrame(
         context: context,
-        isShown: () => _tradeCompletedModalShown,
-        markShown: () => _tradeCompletedModalShown = true,
-        shouldShow: () =>
-            !_deleteModalShown && chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName,
-        message: '거래완료 된 글입니다.',
-        onConfirm: () => Navigator.of(context).pop(),
-      );
-      CommonModal.showOnceAfterFrame(
-        context: context,
         isShown: () => _systemMessageModalShown,
         markShown: () => _systemMessageModalShown = true,
-        shouldShow: () => !_deleteModalShown && !_tradeCompletedModalShown && _hasSystemMessage,
+        shouldShow: () => !_deleteModalShown && _hasSystemMessage,
         message: '상대방이 채팅방을 나갔습니다.',
         onConfirm: () => Navigator.of(context).pop(),
       );
@@ -534,6 +523,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
+  /// 위치 메시지 전송 플로우: 위치 선택 → 메시지 전송
   Future<void> _onSendLocation() async {
     if (_isInputDisabled) return;
     FocusScope.of(context).unfocus();
@@ -555,8 +545,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  /// 교환 완료 요청 플로우: 바텀시트 → API 호출
   Future<void> _onRequestExchange() async {
-    if (_isInputDisabled || _isPendingTradeAction) return;
+    if (_isTradeCompleted || _isPendingTradeAction) {
+      CommonSnackBar.show(context: context, message: '이미 교환이 완료되었거나 요청이 진행 중입니다.', type: SnackBarType.info);
+      return;
+    }
+
     FocusScope.of(context).unfocus();
 
     await ExchangeRequestBottomSheet.show(
