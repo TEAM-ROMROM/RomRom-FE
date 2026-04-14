@@ -636,6 +636,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   /// 메시지 리스트에서 인덱스 [index]의 TRADE_COMPLETE_REQUEST가 아직 활성 상태인지 확인.
   /// _messages는 reverse 정렬(index 0 = 최신)이므로, 더 최신 메시지에 취소/거절/완료가 없으면 활성.
   bool _isActiveTradeRequest(int index) {
+    if (_isTradeCompleted) return false;
     for (int i = 0; i < index; i++) {
       final t = _messages[i].type;
       if (t == MessageType.tradeCompleteRequestCanceled ||
