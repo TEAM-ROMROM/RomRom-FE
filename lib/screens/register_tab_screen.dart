@@ -682,7 +682,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   Future<void> _showChangeStatusConfirmDialog(Item item) async {
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
     final title = isToCompleted ? '교환 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
-    final description = isToCompleted ? '교환완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
+    final description = isToCompleted ? '교환 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
 
     final result = await context.showDeleteDialog(title: title, description: description, confirmText: '확인');
 

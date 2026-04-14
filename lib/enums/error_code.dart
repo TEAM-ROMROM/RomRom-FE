@@ -75,7 +75,7 @@ enum ErrorCode {
   // CHAT
   cannotSendMessageToDeletedChatroom(
     code: 'CANNOT_SEND_MESSAGE_TO_DELETED_CHATROOM',
-    koMessage: '교환요청이 취소되었거나 교환완료된 상태이므로, 메시지를 보낼 수 없습니다.',
+    koMessage: '교환 요청이 취소되었거나 교환 완료된 상태이므로, 메시지를 보낼 수 없습니다.',
   ),
   chatUserStateNotFound(code: 'CHAT_USER_STATE_NOT_FOUND', koMessage: '채팅방 상태를 찾을 수 없습니다.'),
   chatroomNotFound(code: 'CHATROOM_NOT_FOUND', koMessage: '채팅방을 찾을 수 없습니다.'),
