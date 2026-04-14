@@ -19,6 +19,7 @@ class ChatInputBar extends StatelessWidget {
   final VoidCallback onSend;
   final VoidCallback onPickImage;
   final VoidCallback onSendLocation;
+  final VoidCallback onRequestExchange;
 
   const ChatInputBar({
     super.key,
@@ -31,6 +32,7 @@ class ChatInputBar extends StatelessWidget {
     required this.onSend,
     required this.onPickImage,
     required this.onSendLocation,
+    required this.onRequestExchange,
   });
 
   @override
@@ -81,6 +83,13 @@ class ChatInputBar extends StatelessWidget {
                       iconColor: AppColors.opacity60White,
                       title: '위치 보내기',
                       onTap: () => onSendLocation(),
+                    ),
+                    ContextMenuItem(
+                      id: 'request_exchange',
+                      icon: AppIcons.change,
+                      iconColor: AppColors.opacity60White,
+                      title: '교환 완료 요청',
+                      onTap: () => onRequestExchange(),
                     ),
                   ],
                 ),
