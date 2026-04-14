@@ -189,4 +189,8 @@ class AppColors {
   static const Color notificationBottomSheetChattingContainerBottom = Color(0xFF282933); // 채팅 미리보기 하단 컨테이너 배경색
   static const Color notificationBottomSheetChattingContainerMiddle = Color(0xFF34353D); // 채팅 미리보기 중간 컨테이너 배경색
   static const Color notificationBottomSheetChattingContainerTop = Color(0xFF4C4E54); // 채팅 미리보기 상단 컨테이너 배경색
+
+  // 교환 완료 요청 시스템 메시지
+  static const Color exchangeRequestSystemMessageBackground = Color(0x1AFFC300); // 채팅 시스템 메시지 배경색
+  static const Color exchangeRequestSystemMessageBorder = Color(0x1AFFC300); // 채팅 시스템 메시지 테두리 색상
 }

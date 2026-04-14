@@ -403,7 +403,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                       leftText: '활동 및 채팅',
                       rightText: '롬롬 소식',
                     ),
-                    headerTitle: '알림',
+                    headerTitle: '알림함',
                     statusBarHeight: MediaQuery.of(context).padding.top,
                     toolbarHeight: 64.h,
                     toggleHeight: 62.h, // 실제 토글 높이 (bottom padding 제거)

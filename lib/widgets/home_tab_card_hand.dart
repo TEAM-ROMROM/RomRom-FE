@@ -966,7 +966,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                           },
                         ),
                         Text(
-                          "위로 드래그하여\n거래방식 선택하기",
+                          "위로 드래그하여\n교환방식 선택하기",
                           textAlign: TextAlign.center,
                           style: CustomTextStyles.p2.copyWith(height: 1.4),
                         ),

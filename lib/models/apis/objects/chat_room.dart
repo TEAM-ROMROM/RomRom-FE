@@ -70,7 +70,7 @@ class ChatRoom extends BaseEntity {
     // FIXME: 백엔드 수정 대기 - 최근 메시지 정보 없음
     // 임시: 거래 상품명 기반 문구 생성
     final itemName = tradeRequestHistory?.takeItem.itemName ?? '상품';
-    return '$itemName 거래에 대해 대화해보세요';
+    return '$itemName 교환에 대해 대화해보세요';
   }
 
   /// UI 헬퍼: 마지막 활동 시간

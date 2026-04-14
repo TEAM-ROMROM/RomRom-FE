@@ -316,7 +316,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             padding: EdgeInsets.only(bottom: 16.h),
             child: SentRequestItemCard(
               onTap: () {
-                // 거래완료 상태면 삭제 처리
+                // 교환 완료 상태면 삭제 처리
                 if (request.tradeStatus == TradeStatus.traded.serverName) {
                   TradeApi()
                       .cancelTradeRequest(TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId))
@@ -329,7 +329,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         }
                       })
                       .catchError((e) {
-                        debugPrint('거래완료 항목 삭제 실패: $e');
+                        debugPrint('교환 완료 항목 삭제 실패: $e');
                         if (mounted) {
                           CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
                         }
@@ -385,8 +385,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               },
               onCancelTap: () async {
                 final result = await context.showDeleteDialog(
-                  title: '거래 요청 취소',
-                  description: '거래 요청을 취소하시겠습니까?',
+                  title: '교환 요청 취소',
+                  description: '교환 요청을 취소하시겠습니까?',
                   confirmText: '확인',
                 );
 
@@ -675,7 +675,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               Row(
                 children: [
                   Text(
-                    '거래완료된 글표시',
+                    '교환 완료된 글표시',
                     style: CustomTextStyles.p3.copyWith(
                       color: const Color(0x80FFFFFF),
                       fontWeight: FontWeight.w400,
@@ -793,7 +793,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                               }
                             })
                             .catchError((e) {
-                              debugPrint('거래 요청 상세 조회 실패: $e');
+                              debugPrint('교환 요청 상세 조회 실패: $e');
                             });
                         context.navigateTo(
                           screen: ItemDetailDescriptionScreen(
@@ -811,7 +811,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                         );
                       },
                       onMenuTap: () async {
-                        final result = await context.showDeleteDialog(title: '거래 요청 삭제', description: '정말 삭제하시겠습니까?');
+                        final result = await context.showDeleteDialog(title: '교환 요청 삭제', description: '정말 삭제하시겠습니까?');
 
                         if (result == true) {
                           try {

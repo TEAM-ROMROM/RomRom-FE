@@ -505,7 +505,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
       if (exists) {
         // 거래 요청이 이미 존재하면 토스트바 표시
-        CommonSnackBar.show(context: context, message: '이미 거래 요청이 존재합니다.', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: '이미 교환 요청이 존재합니다.', type: SnackBarType.error);
       } else {
         // 거래 요청이 없으면 요청 화면으로 이동
         context.navigateTo(
@@ -519,7 +519,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     } catch (e) {
       if (!mounted) return;
       debugPrint('거래 요청 확인 오류: $e');
-      CommonSnackBar.show(context: context, message: '거래 요청 확인에 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: '교환 요청 확인에 실패했습니다.', type: SnackBarType.error);
     }
   }
 

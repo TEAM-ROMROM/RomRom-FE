@@ -12,7 +12,7 @@
 ///   final codes = selectedReasons.map((e) => e.id).toSet(); // API 전송용
 enum MemberReportReason {
   badManners(id: 1, label: '비매너/욕설/혐오/성적 발언', serverName: 'BAD_MANNERS'),
-  fraud(id: 2, label: '사기 의심/거래 금지 물품', serverName: 'FRAUD'),
+  fraud(id: 2, label: '사기 의심/교환 금지 물품', serverName: 'FRAUD'),
   misrepresentation(id: 3, label: '물건 상태 불일치(허위 매물)', serverName: 'MISREPRESENTATION'),
   noShow(id: 4, label: '노쇼(약속 불이행)', serverName: 'NO_SHOW'),
   etc(id: 5, label: '기타(직접 입력)', serverName: 'ETC');
