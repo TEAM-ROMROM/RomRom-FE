@@ -102,7 +102,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   String get _inputHintText {
     if (_hasSystemMessage) return '상대방이 채팅방을 나갔습니다';
     if (_isOpponentDeleted) return '존재하지 않거나 탈퇴한 사용자입니다';
-    if (chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName) return '거래완료 된 글입니다';
+    if (chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName) return '교환완료 된 글입니다';
     return '메세지를 입력하세요';
   }
 
@@ -285,7 +285,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         markShown: () => _tradeCompletedModalShown = true,
         shouldShow: () =>
             !_deleteModalShown && chatRoom.tradeRequestHistory?.tradeStatus == TradeStatus.traded.serverName,
-        message: '거래완료 된 글입니다.',
+        message: '교환완료 된 글입니다.',
         onConfirm: () => Navigator.of(context).pop(),
       );
       CommonModal.showOnceAfterFrame(

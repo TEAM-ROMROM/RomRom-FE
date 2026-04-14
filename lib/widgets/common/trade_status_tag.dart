@@ -23,7 +23,7 @@ class TradeStatusTagWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(4.r),
               color: isChatting ? AppColors.tradeStatusIsChatting : AppColors.tradeStatusIsCompleted,
             ),
-            child: Text(isChatting ? '채팅 중' : '거래완료', style: CustomTextStyles.p3.copyWith(fontSize: 10.sp)),
+            child: Text(isChatting ? '채팅 중' : '교환완료', style: CustomTextStyles.p3.copyWith(fontSize: 10.sp)),
           );
   }
 }

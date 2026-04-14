@@ -284,7 +284,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                           onLeftTap: () => _onToggleChanged(MyItemToggleStatus.selling),
                           onRightTap: () => _onToggleChanged(MyItemToggleStatus.completed),
                           leftText: '판매 중',
-                          rightText: '거래 완료',
+                          rightText: '교환 완료',
                         ),
                         statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
                         toolbarHeight: 58.h,
@@ -444,7 +444,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                   id: 'changeTradeStatus',
                   contextIcon: AppIcons.dotsVerticalSmall,
                   icon: AppIcons.change,
-                  title: _currentTabStatus == MyItemToggleStatus.selling ? '거래완료로 변경' : '판매중으로 변경',
+                  title: _currentTabStatus == MyItemToggleStatus.selling ? '교환완료로 변경' : '판매중으로 변경',
                   onTap: () => _showChangeStatusConfirmDialog(item),
                   showDividerAfter: true,
                 ),
@@ -681,8 +681,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   /// 상태 변경 확인 대화상자
   Future<void> _showChangeStatusConfirmDialog(Item item) async {
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
-    final title = isToCompleted ? '거래 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
-    final description = isToCompleted ? '거래완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
+    final title = isToCompleted ? '교환 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
+    final description = isToCompleted ? '교환완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
 
     final result = await context.showDeleteDialog(title: title, description: description, confirmText: '확인');
 
@@ -721,7 +721,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
       _loadMyItems(isRefresh: true);
 
       if (mounted) {
-        final successMessage = _currentTabStatus == MyItemToggleStatus.selling ? '거래 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
+        final successMessage = _currentTabStatus == MyItemToggleStatus.selling ? '교환 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
 
         CommonSnackBar.show(context: context, message: successMessage);
       }

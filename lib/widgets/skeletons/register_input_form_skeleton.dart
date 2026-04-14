@@ -45,7 +45,7 @@ class RegisterInputFormSkeleton extends StatelessWidget {
             const SkeletonRectanglar(width: double.infinity, height: 68),
 
             // 거래방식 필드
-            Skeleton.keep(child: Text('거래방식', style: CustomTextStyles.p1)),
+            Skeleton.keep(child: Text('교환방식', style: CustomTextStyles.p1)),
             SizedBox(height: 16.h),
             const SkeletonRectanglar(width: double.infinity, height: 30),
 

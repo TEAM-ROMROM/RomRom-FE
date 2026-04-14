@@ -153,7 +153,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
   /// 거래 요청 API 호출
   Future<void> _submitTradeRequest() async {
     if (_selectedTradeOptions.isEmpty) {
-      CommonSnackBar.show(context: context, message: '거래방식을 선택해주세요.', type: SnackBarType.info);
+      CommonSnackBar.show(context: context, message: '교환방식을 선택해주세요.', type: SnackBarType.info);
       return;
     }
 
@@ -170,7 +170,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
       if (!mounted) return;
 
-      CommonSnackBar.show(context: context, message: '거래 요청이 전송되었습니다.', type: SnackBarType.success);
+      CommonSnackBar.show(context: context, message: '교환 요청이 전송되었습니다.', type: SnackBarType.success);
 
       Navigator.pop(context, true);
     } catch (e) {
