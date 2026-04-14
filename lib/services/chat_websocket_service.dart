@@ -195,8 +195,10 @@ class ChatWebSocketService {
       destination: destination,
       callback: (StompFrame frame) {
         debugPrint('[WebSocket] 📨 Frame 수신 from $destination');
-        debugPrint('[WebSocket]   headers: ${frame.headers}');
-        debugPrint('[WebSocket]   body: ${frame.body}');
+        if (kDebugMode) {
+          debugPrint('[WebSocket]   headers(keys): ${frame.headers.keys.toList()}');
+          debugPrint('[WebSocket]   bodyLength: ${frame.body?.length ?? 0}');
+        }
 
         if (frame.body == null) {
           debugPrint('[WebSocket]   ⚠️ body가 null → 무시');
@@ -234,16 +236,18 @@ class ChatWebSocketService {
 
           // 모델로 변환
           final message = ChatMessage.fromJson(jsonBody).copyWith(createdDate: finalCreated);
-          debugPrint(
-            '[WebSocket]   → 파싱 완료: type=${message.type}, id=${message.chatMessageId}, senderId=${message.senderId}',
-          );
+          if (kDebugMode) {
+            debugPrint('[WebSocket]   → 파싱 완료: type=${message.type}, hasId=${message.chatMessageId != null}');
+          }
 
           _subscriptions[chatRoomId]?.add(message);
           debugPrint('[WebSocket]   → StreamController 전달 완료');
         } catch (e, st) {
           debugPrint('[WebSocket]   ❌ 파싱 실패: $e');
-          debugPrint('[WebSocket]   raw body: ${frame.body}');
-          debugPrint('[WebSocket]   $st');
+          if (kDebugMode) {
+            debugPrint('[WebSocket]   rawBodyLength: ${frame.body?.length ?? 0}');
+            debugPrint('[WebSocket]   $st');
+          }
         }
       },
     );

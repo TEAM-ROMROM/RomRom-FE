@@ -120,22 +120,27 @@ class _ItemColumn extends StatelessWidget {
           isActive: true,
         ),
         SizedBox(height: 16.h),
-        Row(
-          children: [
-            UserProfileCircularAvatar(
-              avatarSize: const Size(20, 20),
-              profileUrl: profileUrl,
-              hasBorder: false,
-              isDeleteAccount: isDeletedAccount,
-            ),
-            SizedBox(width: 6.w),
-            Text(
-              nickname,
-              style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+        SizedBox(
+          width: 110.w,
+          child: Row(
+            children: [
+              UserProfileCircularAvatar(
+                avatarSize: const Size(20, 20),
+                profileUrl: profileUrl,
+                hasBorder: false,
+                isDeleteAccount: isDeletedAccount,
+              ),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  nickname,
+                  style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
