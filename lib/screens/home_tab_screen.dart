@@ -26,6 +26,7 @@ import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
+import 'package:romrom_fe/widgets/native_ad_widget.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 
@@ -40,10 +41,13 @@ import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
-  const HomeTabScreen({super.key});
+  const HomeTabScreen({super.key, this.onLoaded});
 
   // HomeTabScreen의 상태에 접근하기 위한 GlobalKey
   static final GlobalKey<State<HomeTabScreen>> globalKey = GlobalKey<State<HomeTabScreen>>();
+
+  /// 초기 피드 로딩 완료 시 호출되는 콜백 (최초 1회)
+  final Future<void> Function()? onLoaded;
 
   @override
   State<HomeTabScreen> createState() => _HomeTabScreenState();
@@ -55,8 +59,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 피드 아이템 목록
   final List<HomeFeedItem> _feedItems = [];
   int _currentPage = 0;
-  // ignore: unused_field
   int _currentFeedIndex = 0;
+  int _currentVirtualIndex = 0; // 현재 보고 있는 가상 인덱스 (광고 슬롯 판별용)
   final int _pageSize = 10;
   // 초기 로딩 상태
   bool _isLoading = true;
@@ -315,11 +319,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _hasMoreItems = items.isNotEmpty;
         _isLoading = false;
       });
+      await widget.onLoaded?.call();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
+      await widget.onLoaded?.call();
 
       if (!mounted) return;
       CommonSnackBar.show(context: context, message: '피드 로딩 실패: $e', type: SnackBarType.error);
@@ -358,6 +364,38 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       }
     }
   }
+
+  // ─── 광고 삽입 로직 ─────────────────────────────────────────────
+  // 처음 3개는 광고 없음, 이후 매 3슬롯마다 [아이템, 아이템, 광고] 패턴
+  static const int _adFreeCount = 3; // 초반 광고 없는 아이템 수
+  static const int _adInterval = 3; // 아이템 2개 + 광고 1개 = 3슬롯
+
+  /// 실제 피드 아이템 수를 기준으로 광고 포함 가상 총 슬롯 수 계산
+  int get _virtualItemCount {
+    final count = _feedItems.length;
+    if (count <= _adFreeCount) return count;
+    final remaining = count - _adFreeCount;
+    final fullGroups = remaining ~/ (_adInterval - 1); // 아이템 2개씩 묶음
+    final leftover = remaining % (_adInterval - 1);
+    return _adFreeCount + fullGroups * _adInterval + leftover;
+  }
+
+  /// 해당 가상 인덱스가 광고 슬롯인지 여부
+  bool _isAdAtVirtualIndex(int vi) {
+    if (vi < _adFreeCount) return false;
+    final offset = vi - _adFreeCount;
+    return offset % _adInterval == _adInterval - 1; // 매 3번째 슬롯 (index 2, 5, 8...)
+  }
+
+  /// 가상 인덱스 → 실제 피드 아이템 인덱스 변환 (광고 슬롯에서 호출 금지)
+  int _feedIndexAtVirtualIndex(int vi) {
+    if (vi < _adFreeCount) return vi;
+    final offset = vi - _adFreeCount;
+    final group = offset ~/ _adInterval;
+    final posInGroup = offset % _adInterval;
+    return _adFreeCount + group * (_adInterval - 1) + posInGroup;
+  }
+  // ────────────────────────────────────────────────────────────────
 
   /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
   Future<List<HomeFeedItem>> _convertToFeedItems(List<Item> details) async {
@@ -485,6 +523,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     }
   }
 
+  // 공유 기능은 공용 유틸로 대체됨: `shareItem(itemId: ...)`
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -535,24 +575,34 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               controller: _pageController,
               // 블러가 활성화된 경우 스와이프(스크롤) 동작을 비활성화해 첫 화면 고정
               physics: _isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
-              itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
+              itemCount: _virtualItemCount + (_hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
                 if (!_isBlurShown) {
                   setState(() {
-                    if (index < _feedItems.length) _currentFeedIndex = index;
+                    _currentVirtualIndex = index;
+                    // 광고 슬롯이 아닐 때만 현재 피드 인덱스 갱신
+                    if (index < _virtualItemCount && !_isAdAtVirtualIndex(index)) {
+                      _currentFeedIndex = _feedIndexAtVirtualIndex(index);
+                    }
                     // 피드 변경 시 AI 하이라이트 초기화 (로딩 인디케이터 페이지 포함)
                     _aiHighlightedItemIds = [];
                   });
                 }
               },
               itemBuilder: (context, index) {
-                if (index >= _feedItems.length) {
-                  // 리스트 끝에 로딩 인디케이터 표시
+                // 로딩 인디케이터 (맨 끝)
+                if (index >= _virtualItemCount) {
                   return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
                 }
+                // 광고 슬롯
+                if (_isAdAtVirtualIndex(index)) {
+                  return const NativeAdWidget();
+                }
+                // 일반 피드 아이템
+                final feedIndex = _feedIndexAtVirtualIndex(index);
                 return HomeFeedItemWidget(
-                  item: _feedItems[index],
+                  item: _feedItems[feedIndex],
                   showBlur: _isBlurShown,
                   // AI 추천 결과를 HomeTabScreen으로 전달
                   onAiRecommend: _onAiRecommend,
@@ -562,28 +612,42 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           ),
         ),
 
-        // 알림 아이콘 및 메뉴 버튼
-        if (!_isBlurShown)
+        // 알림 아이콘 및 메뉴 버튼 - 광고 슬롯에서는 숨김
+        if (!_isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
           Positioned(
             right: 16.w,
             top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppPressable(
-                  onTap: () async {
-                    await context.navigateTo(screen: const NotificationScreen());
-                    if (!mounted) return;
-                    _loadUnreadNotificationStatus();
-                  },
-                  scaleDown: AppPressable.scaleIcon,
-                  enableRipple: false,
-                  child: SizedBox.square(
-                    dimension: 32.w,
-                    child: Center(
-                      child: _hasUnreadNotification
-                          ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
-                          : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
+                SizedBox.square(
+                  dimension: 32.w,
+                  child: OverflowBox(
+                    maxWidth: 56.w,
+                    maxHeight: 56.w,
+                    child: Material(
+                      color: AppColors.transparent,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkResponse(
+                        onTap: () async {
+                          await context.navigateTo(screen: const NotificationScreen());
+                          if (!mounted) return;
+                          _loadUnreadNotificationStatus();
+                        },
+                        radius: 18.w,
+                        customBorder: const CircleBorder(),
+                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                        child: SizedBox.square(
+                          dimension: 56.w,
+                          child: Center(
+                            child: _hasUnreadNotification
+                                ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
+                                : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -608,8 +672,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
 
-        // 하단 고정 카드 덱 - AI 하이라이트 itemId 전달
-        if (!_isBlurShown)
+        // 하단 고정 카드 덱 - 광고 슬롯에서는 숨김
+        if (!_isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
           Positioned(
             left: 0,
             right: 0,
@@ -620,7 +684,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               highlightedItemIds: _aiHighlightedItemIds,
             ),
           )
-        else
+        else if (!_isAdAtVirtualIndex(_currentVirtualIndex))
           Positioned(
             left: 0,
             right: 0,

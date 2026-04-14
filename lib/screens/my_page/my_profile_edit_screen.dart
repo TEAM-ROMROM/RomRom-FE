@@ -399,7 +399,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         // 텍스트 "오른쪽 끝 + 8px" 위치에 버튼
         if (!nicknameFocusNode.hasFocus && _nickname.isNotEmpty)
           Transform.translate(
-            offset: Offset(iconOffsetX, -14.0),
+            offset: Offset(iconOffsetX, 0.0),
             child: GestureDetector(
               onTap: () {
                 setState(() {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/context_menu_enums.dart';
@@ -18,6 +19,7 @@ class ChatInputBar extends StatelessWidget {
   final String hintText;
   final VoidCallback onSend;
   final VoidCallback onPickImage;
+  final VoidCallback onSendLocation;
 
   const ChatInputBar({
     super.key,
@@ -29,6 +31,7 @@ class ChatInputBar extends StatelessWidget {
     required this.hintText,
     required this.onSend,
     required this.onPickImage,
+    required this.onSendLocation,
   });
 
   @override
@@ -36,11 +39,19 @@ class ChatInputBar extends StatelessWidget {
     final bottomPadding = Platform.isIOS ? 8.h + MediaQuery.of(context).padding.bottom : 21.h;
     final bool sendDisabled = !hasText || isInputDisabled || isSendingMessage;
 
+    // 동적 라운드 계산: 1줄(캡슐형) → 여러 줄(20.r 둥근 사각형)
+    final double minH = 40.h;
+    final double maxH = 130.h;
+    final double clampedHeight = inputFieldHeight.clamp(minH, maxH);
+    final double t = maxH > minH ? ((clampedHeight - minH) / (maxH - minH)) : 0.0;
+    final double borderRadius = lerpDouble(clampedHeight / 2, 20.r, t) ?? clampedHeight / 2;
+
     return Container(
       padding: EdgeInsets.only(top: 8.h, left: 16.w, bottom: bottomPadding),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // + 버튼 (하단 고정)
           Padding(
             padding: EdgeInsets.only(right: 8.0.w),
             child: SizedBox(
@@ -65,14 +76,22 @@ class ChatInputBar extends StatelessWidget {
                       title: '사진 선택하기',
                       onTap: () => onPickImage(),
                     ),
+                    ContextMenuItem(
+                      id: 'send_location',
+                      icon: AppIcons.location,
+                      iconColor: AppColors.opacity60White,
+                      title: '위치 보내기',
+                      onTap: () => onSendLocation(),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
+          // 텍스트 입력 필드 (suffixIcon 제거)
           Expanded(
             child: SizedBox(
-              height: 40.h <= inputFieldHeight && inputFieldHeight <= 70.h ? inputFieldHeight : 40.h,
+              height: clampedHeight,
               child: TextField(
                 controller: controller,
                 enabled: !isInputDisabled,
@@ -91,7 +110,10 @@ class ChatInputBar extends StatelessWidget {
                   hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White),
                   filled: true,
                   fillColor: AppColors.opacity10White,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(100.r), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                    borderSide: BorderSide.none,
+                  ),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   suffixIcon: TextFieldTapRegion(
                     child: AppPressable(
@@ -127,7 +149,6 @@ class ChatInputBar extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: 16.w),
         ],
       ),
     );

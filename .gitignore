@@ -1,3 +1,6 @@
+# Generated files with secrets (do not commit)
+public/.well-known/assetlinks.json
+
 # Miscellaneous
 *.class
 *.log

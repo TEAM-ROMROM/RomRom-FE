@@ -1,11 +1,127 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-31T16:12:34Z",
-    "currentVersion": "1.9.104",
-    "totalReleases": 95,
+    "lastUpdated": "2026-04-13T09:34:53Z",
+    "currentVersion": "1.10.15",
+    "totalReleases": 99,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.15",
+      "project_type": "flutter",
+      "date": "2026-04-13",
+      "pr_number": 769,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 아이템 공유 기능 추가 - 앱 내에서 아이템을 쉽게 공유할 수 있습니다.\n  * 딥링크 지원 - 공유된 링크를 통해 앱의 특정 아이템 페이지로 직접 이동할 수 있습니다.\n\n* **개선 사항**\n  * 앱 버전 v1.10.15로 업데이트되었습니다.",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "아이템 공유 기능 추가 - 앱 내에서 아이템을 쉽게 공유할 수 있습니다.",
+            "딥링크 지원 - 공유된 링크를 통해 앱의 특정 아이템 페이지로 직접 이동할 수 있습니다."
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "앱 버전 v1.10.15로 업데이트되었습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.14",
+      "project_type": "flutter",
+      "date": "2026-04-12",
+      "pr_number": 767,
+      "raw_summary": "## Summary by CodeRabbit\n\n* **버전 업데이트**\n  * 앱 버전을 v1.10.14로 업데이트했습니다.\n\n* **스타일**\n  * 런칭 화면의 배경색을 어두운 톤으로 변경하여 시각적 경험을 개선했습니다.\n\n* **Chores**\n  * iOS 빌드 프로세스의 진단 및 초기화 절차를 강화했습니다.",
+      "parsed_changes": {
+        "버전_업데이트": {
+          "title": "버전 업데이트",
+          "items": [
+            "앱 버전을 v1.10.14로 업데이트했습니다."
+          ]
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": [
+            "런칭 화면의 배경색을 어두운 톤으로 변경하여 시각적 경험을 개선했습니다."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "iOS 빌드 프로세스의 진단 및 초기화 절차를 강화했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.12",
+      "project_type": "flutter",
+      "date": "2026-04-10",
+      "pr_number": 764,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 채팅에서 위치 공유 메시지 지원 추가\n  * 홈 피드에 네이티브 광고 삽입\n  * AdMob 광고 통합 지원\n\n* **개선 사항**\n  * 채팅 입력창 UI 재설계\n  * 채팅방 목록 아이템 레이아웃 개선\n  * Android APK 빌드 방식 변경\n  * iOS 개발자 도구 설정 최적화\n\n* **기타**\n  * 앱 버전 업데이트 (v1.10.12)\n  * UI 각종 조정 및 스타일 개선",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅에서 위치 공유 메시지 지원 추가",
+            "홈 피드에 네이티브 광고 삽입",
+            "AdMob 광고 통합 지원"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "채팅 입력창 UI 재설계",
+            "채팅방 목록 아이템 레이아웃 개선",
+            "Android APK 빌드 방식 변경",
+            "iOS 개발자 도구 설정 최적화"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "앱 버전 업데이트 (v1.10.12)",
+            "UI 각종 조정 및 스타일 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.0",
+      "project_type": "flutter",
+      "date": "2026-04-01",
+      "pr_number": 746,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트 (v1.10.0)\n\n* **New Features**\n  * 채팅에서 상대방의 메시지 읽음 표시 추가\n  * 소셜 로그인 실패 시 명확한 오류 메시지 제공\n  * 앱 알림 권한 관리 및 설정 기능 강화\n\n* **Bug Fixes**\n  * 앱 재개 시 알림 권한 상태 자동 동기화\n  * 세션 만료 처리 개선\n\n* **Style**\n  * 진행률 표시기 및 사용자 프로필 아바타 시각화 개선",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "채팅에서 상대방의 메시지 읽음 표시 추가",
+            "소셜 로그인 실패 시 명확한 오류 메시지 제공",
+            "앱 알림 권한 관리 및 설정 기능 강화"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "앱 재개 시 알림 권한 상태 자동 동기화",
+            "세션 만료 처리 개선"
+          ]
+        },
+        "style": {
+          "title": "Style",
+          "items": [
+            "진행률 표시기 및 사용자 프로필 아바타 시각화 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.104",
       "project_type": "flutter",

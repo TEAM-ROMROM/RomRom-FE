@@ -17,8 +17,6 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/skeletons/chat_room_list_skeleton.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
-import 'package:romrom_fe/models/app_motion.dart';
-import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 
 enum LoadMode { initial, paging, refresh }
 
@@ -328,62 +326,59 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final chatRoomDetail = _getFilteredChatRooms()[index];
 
-                  return AppFadeSlideIn(
-                    delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
-                    child: Column(
-                      children: [
-                        ChatRoomListItem(
-                          accountStatus: chatRoomDetail.targetMember?.accountStatus,
-                          profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
-                          memberId: chatRoomDetail.targetMember?.memberId,
-                          nickname: chatRoomDetail.targetMember?.nickname ?? '',
-                          location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
-                          timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
-                          messagePreview: chatRoomDetail.lastMessageContent ?? '',
-                          unreadCount: chatRoomDetail.unreadCount ?? 0,
-                          targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
-                          isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
-                          onProfileTap: () {
-                            final targetMember = chatRoomDetail.targetMember;
-                            if (targetMember?.memberId != null) {
-                              context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
-                            }
-                          },
-                          onTap: () async {
-                            debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
+                  return Column(
+                    children: [
+                      ChatRoomListItem(
+                        accountStatus: chatRoomDetail.targetMember?.accountStatus,
+                        profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
+                        memberId: chatRoomDetail.targetMember?.memberId,
+                        nickname: chatRoomDetail.targetMember?.nickname ?? '',
+                        location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
+                        timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
+                        messagePreview: chatRoomDetail.lastMessageContent ?? '',
+                        unreadCount: chatRoomDetail.unreadCount ?? 0,
+                        targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
+                        isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
+                        onProfileTap: () {
+                          final targetMember = chatRoomDetail.targetMember;
+                          if (targetMember?.memberId != null) {
+                            context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
+                          }
+                        },
+                        onTap: () async {
+                          debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
 
-                            // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
-                            final roomId = chatRoomDetail.chatRoomId!;
-                            final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
+                          // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
+                          final roomId = chatRoomDetail.chatRoomId!;
+                          final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
 
-                            if (roomIndex != -1) {
-                              setState(() {
-                                final room = _chatRoomsDetail[roomIndex];
-                                _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
-                                  chatRoomId: room.chatRoomId,
-                                  targetMember: room.targetMember,
-                                  targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
-                                  lastMessageContent: room.lastMessageContent,
-                                  lastMessageTime: room.lastMessageTime,
-                                  unreadCount: 0, // 읽음 처리
-                                  chatRoomType: room.chatRoomType,
-                                );
-                              });
-                            }
+                          if (roomIndex != -1) {
+                            setState(() {
+                              final room = _chatRoomsDetail[roomIndex];
+                              _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
+                                chatRoomId: room.chatRoomId,
+                                targetMember: room.targetMember,
+                                targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
+                                lastMessageContent: room.lastMessageContent,
+                                lastMessageTime: room.lastMessageTime,
+                                unreadCount: 0, // 읽음 처리
+                                chatRoomType: room.chatRoomType,
+                              );
+                            });
+                          }
 
-                            final refreshed = await Navigator.of(
-                              context,
-                            ).push<bool>(MaterialPageRoute(builder: (_) => ChatRoomScreen(chatRoomId: roomId)));
+                          final refreshed = await Navigator.of(
+                            context,
+                          ).push<bool>(MaterialPageRoute(builder: (_) => ChatRoomScreen(chatRoomId: roomId)));
 
-                            // 엄격히 true일 때만 새로고침
-                            if (refreshed == true) {
-                              _loadChatRooms(mode: LoadMode.refresh);
-                            }
-                          },
-                        ),
-                        SizedBox(height: 8.h),
-                      ],
-                    ),
+                          // 엄격히 true일 때만 새로고침
+                          if (refreshed == true) {
+                            _loadChatRooms(mode: LoadMode.refresh);
+                          }
+                        },
+                      ),
+                      SizedBox(height: 8.h),
+                    ],
                   );
                 }, childCount: _getFilteredChatRooms().length),
               ),

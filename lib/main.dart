@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:app_links/app_links.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -20,8 +22,9 @@ import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
-import 'package:romrom_fe/services/notification_service.dart';
+import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -100,6 +103,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   static const String _lastVersionCheckKey = 'last_version_check_timestamp';
   static const Duration _checkInterval = Duration(hours: 24);
 
+  final _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -109,11 +115,40 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (DebugConfig.isTestBuild) {
       DebugOverlayManager().init(navigatorKey);
     }
+
+    _initAppLinks();
+  }
+
+  /// app_links: 콜드 스타트 + 포그라운드 딥링크 처리
+  Future<void> _initAppLinks() async {
+    // 콜드 스타트: 앱이 링크로 열린 경우
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final context = navigatorKey.currentContext;
+          if (context != null) {
+            RomRomDeepLinkRouter.openFromUri(context, initialUri);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[AppLinks] 초기 링크 처리 실패: $e');
+    }
+
+    // 포그라운드: 앱 실행 중 링크 수신
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        RomRomDeepLinkRouter.openFromUri(context, uri);
+      }
+    }, onError: (e) => debugPrint('[AppLinks] 링크 스트림 오류: $e'));
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _linkSubscription?.cancel();
     if (DebugConfig.isTestBuild) {
       DebugOverlayManager().dispose();
     }

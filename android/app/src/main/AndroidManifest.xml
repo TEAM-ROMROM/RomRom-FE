@@ -27,6 +27,11 @@
         <meta-data
         android:name="com.google.firebase.messaging.default_notification_color"
         android:resource="@color/ic_push_notification_color" />
+        
+        <!-- Google AdMob 앱 ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${GAD_APPLICATION_IDENTIFIER}"/>
 
         <activity
             android:name=".MainActivity"
@@ -58,6 +63,20 @@
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <!-- Firebase Hosting App Links (딥링크) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="romrom-c4008.web.app" />
+            </intent-filter>
+            <!-- 커스텀 URL 스킴 딥링크 (romrom://) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="romrom" />
+            </intent-filter>
         </activity>
         <!-- 카카오 로그인 커스텀 URL 스킴 설정 -->
         <activity 
@@ -70,7 +89,6 @@
 
                 <!-- 카카오 로그인 Redirect URI -->
                 <data android:scheme="kakao${KAKAO_NATIVE_APP_KEY}" android:host="oauth"/>
-                <!-- <data android:scheme="kakaokakao31344bf73c8ca4cc1d17bbd793758b97" android:host="oauth"/> -->
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

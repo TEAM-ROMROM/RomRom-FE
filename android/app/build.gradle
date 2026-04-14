@@ -79,7 +79,8 @@ android {
         versionName flutterVersionName
         manifestPlaceholders += [
             NMF_CLIENT_ID      : dotenv['NMF_CLIENT_ID'] ?: "",
-            KAKAO_NATIVE_APP_KEY : dotenv['KAKAO_NATIVE_APP_KEY'] ?: ""
+            KAKAO_NATIVE_APP_KEY : dotenv['KAKAO_NATIVE_APP_KEY'] ?: "",
+            GAD_APPLICATION_IDENTIFIER : dotenv['GAD_APPLICATION_IDENTIFIER'] ?: ""
         ]
         multiDexEnabled true
 
