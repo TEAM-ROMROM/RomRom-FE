@@ -249,7 +249,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       await itemApi.updateItemStatus(request);
 
       if (mounted) {
-        final successMessage = item.itemStatus == ItemStatus.available.serverName ? '거래 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
+        final successMessage = item.itemStatus == ItemStatus.available.serverName ? '교환 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
 
         CommonSnackBar.show(context: context, message: successMessage);
 
@@ -546,7 +546,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                   ),
                                   alignment: Alignment.center,
                                   child: Text(
-                                    '거래 완료',
+                                    '교환 완료',
                                     style: CustomTextStyles.p1.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textColorWhite,
@@ -750,7 +750,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '거래희망장소',
+                                '교환희망장소',
                                 style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600, height: 1.4),
                               ),
                               SizedBox(height: 8.h),
@@ -904,7 +904,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                             ContextMenuItem(
                               id: 'changeTradeStatus',
                               icon: AppIcons.change,
-                              title: item?.itemStatus == ItemStatus.available.serverName ? '거래완료로 변경' : '판매중으로 변경',
+                              title: item?.itemStatus == ItemStatus.available.serverName ? '교환완료로 변경' : '판매중으로 변경',
                               onTap: () async {
                                 await _toggleItemStatus(item!);
                               },

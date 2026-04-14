@@ -111,7 +111,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return latestRequestIndex != -1 && _isActiveTradeRequest(latestRequestIndex);
   }
 
-  // 거래 완료 액션 중복 방지
+  // 교환 완료 액션 중복 방지
   bool _isPendingTradeAction = false;
 
   String _errorMessage = '';
@@ -805,7 +805,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 (_messages[index].senderId != _messages[index - 1].senderId ||
                     !isSameMinute(_messages[index].createdDate, _messages[index - 1].createdDate)));
 
-        // 거래 완료 요청 활성 상태면 버튼 콜백 결정
+        // 교환 완료 요청 활성 상태면 버튼 콜백 결정
         VoidCallback? onCancelTradeRequest;
         VoidCallback? onRejectTradeRequest;
         VoidCallback? onConfirmTradeRequest;

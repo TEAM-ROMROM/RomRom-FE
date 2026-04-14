@@ -66,25 +66,25 @@ enum ErrorCode {
 
   // TRADE
   alreadyRequestedItem(code: 'ALREADY_REQUESTED_ITEM', koMessage: '이미 요청을 보낸 물품입니다.'),
-  tradeRequestNotFound(code: 'TRADE_REQUEST_NOT_FOUND', koMessage: '거래 요청이 존재하지 않습니다.'),
-  tradeAlreadyProcessed(code: 'TRADE_ALREADY_PROCESSED', koMessage: '거래 요청이 처리된 물품입니다.'),
-  tradeToSelfForbidden(code: 'TRADE_TO_SELF_FORBIDDEN', koMessage: '자신의 물품에 거래 요청을 보낼 수 없습니다.'),
-  tradeAccessForbidden(code: 'TRADE_ACCESS_FORBIDDEN', koMessage: '거래 요청 권한이 없습니다.'),
-  cannotUpdateTradeRequest(code: 'CANNOT_UPDATE_TRADE_REQUEST', koMessage: '거래 요청을 수정할 수 없습니다.'),
+  tradeRequestNotFound(code: 'TRADE_REQUEST_NOT_FOUND', koMessage: '교환 요청이 존재하지 않습니다.'),
+  tradeAlreadyProcessed(code: 'TRADE_ALREADY_PROCESSED', koMessage: '교환 요청이 처리된 물품입니다.'),
+  tradeToSelfForbidden(code: 'TRADE_TO_SELF_FORBIDDEN', koMessage: '자신의 물품에 교환 요청을 보낼 수 없습니다.'),
+  tradeAccessForbidden(code: 'TRADE_ACCESS_FORBIDDEN', koMessage: '교환 요청 권한이 없습니다.'),
+  cannotUpdateTradeRequest(code: 'CANNOT_UPDATE_TRADE_REQUEST', koMessage: '교환 요청을 수정할 수 없습니다.'),
 
   // CHAT
   cannotSendMessageToDeletedChatroom(
     code: 'CANNOT_SEND_MESSAGE_TO_DELETED_CHATROOM',
-    koMessage: '거래요청이 취소되었거나 거래완료된 상태이므로, 메시지를 보낼 수 없습니다.',
+    koMessage: '교환 요청이 취소되었거나 교환 완료된 상태이므로, 메시지를 보낼 수 없습니다.',
   ),
   chatUserStateNotFound(code: 'CHAT_USER_STATE_NOT_FOUND', koMessage: '채팅방 상태를 찾을 수 없습니다.'),
   chatroomNotFound(code: 'CHATROOM_NOT_FOUND', koMessage: '채팅방을 찾을 수 없습니다.'),
   notChatroomMember(code: 'NOT_CHATROOM_MEMBER', koMessage: '채팅방의 멤버만 접근할 수 있는 권한입니다.'),
   cannotCreateSelfChatroom(code: 'CANNOT_CREATE_SELF_CHATROOM', koMessage: '자기 자신과는 채팅방을 생성할 수 없습니다.'),
   invalidSender(code: 'INVALID_SENDER', koMessage: '보낸이 정보가 올바르지 않습니다.'),
-  tradeRequestNotPending(code: 'TRADE_REQUEST_NOT_PENDING', koMessage: '거래 요청이 대기 상태가 아닙니다.'),
-  notTradeRequestReceiver(code: 'NOT_TRADE_REQUEST_RECEIVER', koMessage: '거래 요청을 받은 사람만이 채팅방을 생성할 수 있습니다.'),
-  notTradeRequestSender(code: 'NOT_TRADE_REQUEST_SENDER', koMessage: '상대방 회원이 거래 요청의 당사자가 아닙니다.'),
+  tradeRequestNotPending(code: 'TRADE_REQUEST_NOT_PENDING', koMessage: '교환 요청이 대기 상태가 아닙니다.'),
+  notTradeRequestReceiver(code: 'NOT_TRADE_REQUEST_RECEIVER', koMessage: '교환 요청을 받은 사람만이 채팅방을 생성할 수 있습니다.'),
+  notTradeRequestSender(code: 'NOT_TRADE_REQUEST_SENDER', koMessage: '상대방 회원이 교환 요청의 당사자가 아닙니다.'),
 
   // ITEM LIKES
   selfLikeNotAllowed(code: 'SELF_LIKE_NOT_ALLOWED', koMessage: '내 아이템에는 좋아요를 누를 수 없습니다.'),

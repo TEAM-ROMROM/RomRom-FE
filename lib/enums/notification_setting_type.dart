@@ -15,7 +15,7 @@ extension NotificationSettingTypeExtension on NotificationSettingType {
       case NotificationSettingType.content:
         return '콘텐츠 알림';
       case NotificationSettingType.transaction:
-        return '거래 알림';
+        return '교환 알림';
     }
   }
 
