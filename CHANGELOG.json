@@ -1,11 +1,43 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-13T09:34:53Z",
-    "currentVersion": "1.10.15",
-    "totalReleases": 99,
+    "lastUpdated": "2026-04-15T09:03:18Z",
+    "currentVersion": "1.10.19",
+    "totalReleases": 100,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.19",
+      "project_type": "flutter",
+      "date": "2026-04-15",
+      "pr_number": 778,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 채팅 화면에서 교환 완료 요청 기능 추가\n  * 교환 완료 요청에 대한 수락/거절 처리 추가\n\n* **개선 사항**\n  * 앱 전반에서 \"거래\" 용어를 \"교환\"으로 통일\n  * 채팅 시스템 메시지 디자인 및 색상 개선\n  * 알림함 헤더 텍스트 업데이트\n\n* **기타**\n  * 버전 업데이트 (v1.10.19)\n  * Android App Links 설정 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅 화면에서 교환 완료 요청 기능 추가",
+            "교환 완료 요청에 대한 수락/거절 처리 추가"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "앱 전반에서 \"거래\" 용어를 \"교환\"으로 통일",
+            "채팅 시스템 메시지 디자인 및 색상 개선",
+            "알림함 헤더 텍스트 업데이트"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 업데이트 (v1.10.19)",
+            "Android App Links 설정 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.15",
       "project_type": "flutter",
