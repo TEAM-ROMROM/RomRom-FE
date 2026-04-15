@@ -197,4 +197,72 @@ class ChatApi {
     }
     return null;
   }
+
+  /// 채팅방 교환 완료 요청 API
+  /// POST /api/chat/rooms/trade-completion/request
+  Future<void> requestTradeCompletion({required String chatRoomId}) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/request';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅방 교환 완료 요청 성공: $chatRoomId');
+      },
+    );
+  }
+
+  /// 채팅방 교환 완료 요청 거절 API
+  /// POST /api/chat/rooms/trade-completion/reject
+  Future<void> rejectTradeCompletion({required String chatRoomId}) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/reject';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅방 교환 완료 요청 거절 성공: $chatRoomId');
+      },
+    );
+  }
+
+  /// 채팅방 교환 완료 요청 확인 API
+  /// POST /api/chat/rooms/trade-completion/confirm
+  Future<void> confirmTradeCompletion({required String chatRoomId}) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/confirm';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅방 교환 완료 요청 확인 성공: $chatRoomId');
+      },
+    );
+  }
+
+  /// 채팅방 교환 완료 요청 취소 API
+  /// POST /api/chat/rooms/trade-completion/cancel
+  Future<void> cancelTradeCompletionRequest({required String chatRoomId}) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/cancel';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅방 교환 완료 요청 취소 성공: $chatRoomId');
+      },
+    );
+  }
 }

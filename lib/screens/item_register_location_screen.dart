@@ -96,7 +96,7 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const OnboardingTitleHeader(title: '거래 희망 위치', subtitle: '공개된 공간을 선택하면 안전하게 거래할 수 있어요'),
+          const OnboardingTitleHeader(title: '교환 희망 위치', subtitle: '공개된 공간을 선택하면 안전하게 교환할 수 있어요'),
           Expanded(
             child: Stack(
               children: [

@@ -12,7 +12,7 @@
 ///   final serverValue = selectedStatus.serverName; // API 전송용
 enum ItemStatus {
   available(id: 1, label: '판매중', serverName: 'AVAILABLE'),
-  exchanged(id: 2, label: '거래완료', serverName: 'EXCHANGED');
+  exchanged(id: 2, label: '교환완료', serverName: 'EXCHANGED');
 
   final int id;
   final String label;

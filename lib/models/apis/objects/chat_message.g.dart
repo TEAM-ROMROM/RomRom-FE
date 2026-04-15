@@ -41,4 +41,8 @@ const _$MessageTypeEnumMap = {
   MessageType.image: 'IMAGE',
   MessageType.system: 'SYSTEM',
   MessageType.location: 'LOCATION',
+  MessageType.tradeCompleteRequest: 'TRADE_COMPLETE_REQUEST',
+  MessageType.tradeCompleteRequestCanceled: 'TRADE_COMPLETE_REQUEST_CANCELED',
+  MessageType.tradeCompleteRequestRejected: 'TRADE_COMPLETE_REQUEST_REJECTED',
+  MessageType.tradeCompleted: 'TRADE_COMPLETED',
 };

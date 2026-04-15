@@ -105,7 +105,7 @@ Widget _buildContextMenu({
   required Future<void> Function() onLeaveChatRoomConfirm,
 }) {
   return Padding(
-    padding: EdgeInsets.only(right: 16.0.w, bottom: 8.h),
+    padding: EdgeInsets.only(right: 16.0.w, bottom: 8.h, left: 26.w),
     child: RomRomContextMenu(
       items: [
         ContextMenuItem(

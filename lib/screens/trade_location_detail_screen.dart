@@ -33,7 +33,7 @@ class _TradeLocationDetailScreenState extends State<TradeLocationDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: const CommonAppBar(title: '거래 희망 장소'),
+      appBar: const CommonAppBar(title: '교환 희망 장소'),
       body: Stack(
         children: [
           // 전체 화면 네이버 지도

@@ -382,8 +382,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 },
                 onCancelTap: () async {
                   final result = await context.showDeleteDialog(
-                    title: '거래 요청 취소',
-                    description: '거래 요청을 취소하시겠습니까?',
+                    title: '교환 요청 취소',
+                    description: '교환 요청을 취소하시겠습니까?',
                     confirmText: '확인',
                   );
 
@@ -669,7 +669,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               Row(
                 children: [
                   Text(
-                    '거래완료된 글표시',
+                    '교환완료된 글표시',
                     style: CustomTextStyles.p3.copyWith(
                       color: const Color(0x80FFFFFF),
                       fontWeight: FontWeight.w400,
@@ -803,7 +803,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                               )
                             : TradeStatus.chatting,
                         onMenuTap: () async {
-                          final result = await context.showDeleteDialog(title: '거래 요청 삭제', description: '정말 삭제하시겠습니까?');
+                          final result = await context.showDeleteDialog(title: '교환 요청 삭제', description: '정말 삭제하시겠습니까?');
 
                           if (result == true) {
                             try {

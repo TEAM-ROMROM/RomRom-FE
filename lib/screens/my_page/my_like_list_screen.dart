@@ -273,7 +273,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                               ),
                                               alignment: Alignment.center,
                                               child: Text(
-                                                '거래 완료',
+                                                '교환 완료',
                                                 style: CustomTextStyles.p3.copyWith(
                                                   fontSize: 12.sp,
                                                   fontWeight: FontWeight.w600,
