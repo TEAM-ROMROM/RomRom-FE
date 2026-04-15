@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/message_type.dart';
+import 'package:romrom_fe/models/apis/objects/chat_action_recommendation_payload.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
@@ -21,6 +22,10 @@ class ChatWebSocketService {
 
   // 구독 참조 카운팅 (여러 화면에서 같은 채팅방을 구독할 수 있도록)
   final Map<String, int> _subscriptionRefCounts = {};
+
+  // AI 행동 추천 구독
+  final Map<String, StreamController<ChatActionRecommendationPayload>> _recommendationSubscriptions = {};
+  final Map<String, StompUnsubscribe> _stompRecommendationSubscriptions = {};
 
   // 토큰 갱신 중 중복 실행 방지
   bool _isRefreshingToken = false;
@@ -153,6 +158,9 @@ class ChatWebSocketService {
   void _resubscribeAll() {
     for (var chatRoomId in _subscriptions.keys) {
       _subscribeToRoom(chatRoomId);
+    }
+    for (var chatRoomId in _recommendationSubscriptions.keys) {
+      _subscribeToRecommendations(chatRoomId);
     }
   }
 
@@ -298,6 +306,61 @@ class ChatWebSocketService {
     );
   }
 
+  /// AI 행동 추천 구독 (/user/queue/chat.recommend.{chatRoomId})
+  Stream<ChatActionRecommendationPayload> subscribeToRecommendations(String chatRoomId) {
+    if (_recommendationSubscriptions.containsKey(chatRoomId)) {
+      return _recommendationSubscriptions[chatRoomId]!.stream;
+    }
+
+    final controller = StreamController<ChatActionRecommendationPayload>.broadcast();
+    _recommendationSubscriptions[chatRoomId] = controller;
+
+    if (_isConnected) {
+      _subscribeToRecommendations(chatRoomId);
+    }
+
+    return controller.stream;
+  }
+
+  /// 실제 AI 추천 STOMP 구독 실행
+  void _subscribeToRecommendations(String chatRoomId) {
+    if (_stompClient == null || !_isConnected) return;
+
+    final destination = '/user/queue/chat.recommend.$chatRoomId';
+    debugPrint('[WebSocket] ✅ Subscribing to recommendations: $destination');
+
+    final unsubscribe = _stompClient!.subscribe(
+      destination: destination,
+      callback: (StompFrame frame) {
+        debugPrint('[WebSocket] 💡 추천 Frame 수신 from $destination');
+        if (frame.body == null) return;
+        try {
+          final jsonBody = jsonDecode(frame.body!) as Map<String, dynamic>;
+          debugPrint('[WebSocket]   추천 action: ${jsonBody["action"]}');
+          final payload = ChatActionRecommendationPayload.fromJson(jsonBody);
+          _recommendationSubscriptions[chatRoomId]?.add(payload);
+        } catch (e, st) {
+          debugPrint('[WebSocket]   ❌ 추천 파싱 실패: $e\n$st');
+        }
+      },
+    );
+
+    _stompRecommendationSubscriptions[chatRoomId] = unsubscribe;
+  }
+
+  /// AI 추천 구독 해제
+  void unsubscribeFromRecommendations(String chatRoomId) {
+    try {
+      _stompRecommendationSubscriptions[chatRoomId]?.call();
+      _stompRecommendationSubscriptions.remove(chatRoomId);
+      _recommendationSubscriptions[chatRoomId]?.close();
+      _recommendationSubscriptions.remove(chatRoomId);
+      debugPrint('[WebSocket] ✅ 추천 구독 해제: $chatRoomId');
+    } catch (e) {
+      debugPrint('[WebSocket] 추천 구독 해제 오류: $e');
+    }
+  }
+
   /// 채팅방 구독 해제
   void unsubscribeFromChatRoom(String chatRoomId) {
     try {
@@ -351,11 +414,21 @@ class ChatWebSocketService {
       }
       _stompSubscriptions.clear();
 
+      for (var unsubscribe in _stompRecommendationSubscriptions.values) {
+        unsubscribe();
+      }
+      _stompRecommendationSubscriptions.clear();
+
       // 모든 스트림 컨트롤러 닫기
       for (var controller in _subscriptions.values) {
         await controller.close();
       }
       _subscriptions.clear();
+
+      for (var controller in _recommendationSubscriptions.values) {
+        await controller.close();
+      }
+      _recommendationSubscriptions.clear();
 
       debugPrint('[WebSocket] ✅ Disconnected');
     } catch (e) {

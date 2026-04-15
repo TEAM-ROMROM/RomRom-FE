@@ -23,8 +23,11 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/enums/chat_recommended_action.dart';
+import 'package:romrom_fe/models/apis/objects/chat_action_recommendation_payload.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
+import 'package:romrom_fe/widgets/chat_recommendation_banner.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
 import 'package:romrom_fe/widgets/common/exchange_request_bottom_sheet.dart';
@@ -135,6 +138,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   ChatUserState? _opponentState;
   Timer? _readStatusTimer;
 
+  // AI 행동 추천
+  ChatActionRecommendationPayload? _currentRecommendation;
+  StreamSubscription<ChatActionRecommendationPayload>? _recommendationSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -229,9 +236,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         });
       }
 
+      // AI 행동 추천 구독
+      _recommendationSubscription = _wsService.subscribeToRecommendations(widget.chatRoomId).listen((payload) {
+        if (!mounted) return;
+        debugPrint('[ChatRoom] 추천 수신: action=${payload.action}, reason=${payload.reason}');
+        setState(() {
+          // NONE이면 배너 숨김
+          _currentRecommendation = payload.action == ChatRecommendedAction.none ? null : payload;
+        });
+      });
+
+      // 초기 추천 요청 (WebSocket 구독이 늦게 연결될 수 있어, 초기 로드 시 REST API로 한 번 요청)
       _messageSubscription = _wsService.subscribeToChatRoom(widget.chatRoomId).listen((newMessage) {
         debugPrint(
-          '[ChatRoom] 🔔 메시지 수신: type=${newMessage.type}, id=${newMessage.chatMessageId}, senderId=${newMessage.senderId}',
+          '[ChatRoom] 메시지 수신: type=${newMessage.type}, id=${newMessage.chatMessageId}, senderId=${newMessage.senderId}',
         );
         if (!mounted) return;
         setState(() => _handleIncomingMessage(newMessage));
@@ -651,11 +669,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   void dispose() {
     _messageSubscription?.cancel();
+    _recommendationSubscription?.cancel();
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
     _readStatusTimer?.cancel();
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
+      _wsService.unsubscribeFromRecommendations(chatRoom.chatRoomId!);
     }
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
@@ -760,6 +780,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             children: [
               ChatTradeInfoCard(chatRoom: chatRoom, myMemberId: _myId),
               Expanded(child: _buildMessageList()),
+              if (_currentRecommendation != null)
+                ChatRecommendationBanner(
+                  recommendation: _currentRecommendation!,
+                  onDismiss: () => setState(() => _currentRecommendation = null),
+                  onAction: _buildRecommendationAction(_currentRecommendation!.action),
+                ),
               ChatInputBar(
                 controller: _messageController,
                 isInputDisabled: _isInputDisabled,
@@ -777,6 +803,49 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ),
       ),
     );
+  }
+
+  /// 추천 액션에 맞는 콜백 반환 (불가능한 상태면 null → 배너에서 버튼 숨김)
+  VoidCallback? _buildRecommendationAction(ChatRecommendedAction action) {
+    switch (action) {
+      case ChatRecommendedAction.requestTradeCompletion:
+        return (_isTradeCompleted || _hasActiveTradeRequest || _isInputDisabled)
+            ? null
+            : () {
+                setState(() => _currentRecommendation = null);
+                _onRequestExchange();
+              };
+      case ChatRecommendedAction.cancelTradeCompletionRequest:
+        return _isPendingTradeAction
+            ? null
+            : () {
+                setState(() => _currentRecommendation = null);
+                _onCancelTradeRequest();
+              };
+      case ChatRecommendedAction.rejectTradeCompletionRequest:
+        return _isPendingTradeAction
+            ? null
+            : () {
+                setState(() => _currentRecommendation = null);
+                _onRejectTradeRequest();
+              };
+      case ChatRecommendedAction.confirmTradeCompletion:
+        return _isPendingTradeAction
+            ? null
+            : () {
+                setState(() => _currentRecommendation = null);
+                _onConfirmTradeRequest();
+              };
+      case ChatRecommendedAction.sendLocation:
+        return _isInputDisabled
+            ? null
+            : () {
+                setState(() => _currentRecommendation = null);
+                _onSendLocation();
+              };
+      case ChatRecommendedAction.none:
+        return null;
+    }
   }
 
   Widget _buildMessageList() {
