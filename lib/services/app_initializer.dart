@@ -60,23 +60,25 @@ void _initConsentAndAds() {
           (ConsentForm form) async {
             final status = await ConsentInformation.instance.getConsentStatus();
             if (status == ConsentStatus.required) {
-              form.show((_) => _initMobileAds());
+              form.show((_) async {
+                if (await ConsentInformation.instance.canRequestAds()) _initMobileAds();
+              });
             } else {
-              _initMobileAds();
+              if (await ConsentInformation.instance.canRequestAds()) _initMobileAds();
             }
           },
-          (FormError error) {
+          (FormError error) async {
             debugPrint('[UMP] 동의 폼 로드 실패: ${error.message}');
-            _initMobileAds();
+            if (await ConsentInformation.instance.canRequestAds()) _initMobileAds();
           },
         );
       } else {
-        _initMobileAds();
+        if (await ConsentInformation.instance.canRequestAds()) _initMobileAds();
       }
     },
-    (FormError error) {
+    (FormError error) async {
       debugPrint('[UMP] 동의 정보 업데이트 실패: ${error.message}');
-      _initMobileAds();
+      if (await ConsentInformation.instance.canRequestAds()) _initMobileAds();
     },
   );
 }
