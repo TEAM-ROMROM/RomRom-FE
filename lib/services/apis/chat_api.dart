@@ -100,6 +100,44 @@ class ChatApi {
     return pagedChatRooms;
   }
 
+  /// 특정 물품의 채팅 상대 목록 조회 API
+  /// POST /api/chat/rooms/get/item (itemId 필터)
+  Future<PagedChatRoomDetail> getChatRoomsByItemId({required String itemId, int pageSize = 50}) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/get/item';
+
+    final Map<String, dynamic> fields = {'pageNumber': '0', 'pageSize': pageSize.toString(), 'itemId': itemId};
+
+    final http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {},
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final chatRoomsData = responseData['chatRoomDetailDtoPage'];
+
+      if (chatRoomsData != null) {
+        final content = (chatRoomsData['content'] as List)
+            .map((e) => ChatRoomDetailDto.fromJson(e as Map<String, dynamic>))
+            .toList();
+        final isLast = chatRoomsData['last'] as bool? ?? true;
+        debugPrint('[ChatApi] 물품 채팅 상대 조회 성공: ${content.length}개 (itemId=$itemId)');
+        return PagedChatRoomDetail(
+          content: content,
+          pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
+          last: isLast,
+        );
+      }
+    }
+
+    return PagedChatRoomDetail(
+      content: [],
+      pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
+    );
+  }
+
   /// 채팅방 삭제 API
   /// POST /api/chat/rooms/delete
   Future<void> deleteChatRoom({required String chatRoomId}) async {

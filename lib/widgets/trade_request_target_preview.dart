@@ -18,15 +18,22 @@ class TradeRequestTargetPreview extends StatelessWidget {
 
   /// 태그 목록 (사용감, 거래방식 등)
   final List<String> tags;
+  final Color? backgroundColor;
 
-  const TradeRequestTargetPreview({super.key, this.imageUrl, required this.itemName, required this.tags});
+  const TradeRequestTargetPreview({
+    super.key,
+    this.imageUrl,
+    required this.itemName,
+    required this.tags,
+    this.backgroundColor = AppColors.primaryBlack,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(color: AppColors.primaryBlack, borderRadius: BorderRadius.circular(10.r)),
+      decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(10.r)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

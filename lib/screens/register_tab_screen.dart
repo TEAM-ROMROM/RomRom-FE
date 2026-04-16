@@ -29,6 +29,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
+import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterTabScreen extends StatefulWidget {
@@ -336,7 +337,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
         child: Padding(
           padding: EdgeInsets.only(right: 24.w, bottom: 16.h),
           child: Text(
-            filteredItems.first.itemStatus == ItemStatus.available.serverName
+            _currentTabStatus == MyItemToggleStatus.selling
                 ? '${filteredItems.length}/10개'
                 : '${filteredItems.length}개  ',
             textAlign: TextAlign.right,
@@ -701,13 +702,23 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   /// 상태 변경 확인 대화상자
   Future<void> _showChangeStatusConfirmDialog(Item item) async {
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
-    final title = isToCompleted ? '교환 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
-    final description = isToCompleted ? '교환 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
 
-    final result = await context.showDeleteDialog(title: title, description: description, confirmText: '확인');
-
-    if (result == true) {
-      await _toggleItemStatus(item);
+    if (isToCompleted) {
+      // 교환 완료로 변경: 교환 상대 선택 화면 표시
+      final result = await context.navigateTo<bool>(screen: TradeCompletePartnerSelectScreen(item: item));
+      if (result == true) {
+        await _toggleItemStatus(item);
+      }
+    } else {
+      // 판매중으로 변경: 기존 확인 다이얼로그
+      final result = await context.showDeleteDialog(
+        title: '판매중으로 변경하시겠습니까?',
+        description: '판매중으로 변경하시겠습니까?',
+        confirmText: '확인',
+      );
+      if (result == true) {
+        await _toggleItemStatus(item);
+      }
     }
   }
 
