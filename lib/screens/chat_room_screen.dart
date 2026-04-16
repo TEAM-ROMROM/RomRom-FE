@@ -148,6 +148,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (_isLeaving) return;
     _isLeaving = true;
     try {
+      // API 호출 전 구독 취소: 서버가 system 메시지를 브로드캐스트할 때 내 클라이언트가 수신하지 않도록 방지
+      await _messageSubscription?.cancel();
+      _messageSubscription = null;
       await ChatApi().updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: false);
     } catch (_) {
       debugPrint('채팅방 나가기 처리 실패');
