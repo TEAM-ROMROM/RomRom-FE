@@ -18,15 +18,8 @@ Future<void> initialize() async {
   await initNaverMap(); // 네이버 지도 초기화
   await initGoogleSignIn(); // Google Sign-In 초기화 (v7 필수)
   initKakaoSdk(); // 카카오 sdk 초기화
-  // Google Mobile Ads 초기화 (non-blocking: 광고 초기화 실패가 앱 시작을 막지 않도록)
-  MobileAds.instance
-      .initialize()
-      .then((_) {
-        debugPrint('[AppInit] Google Mobile Ads 초기화 완료');
-      })
-      .catchError((Object e) {
-        debugPrint('[ERROR] Google Mobile Ads 초기화 실패: $e');
-      });
+  // UMP 동의 수집 후 MobileAds 초기화 (non-blocking)
+  _initConsentAndAds();
 }
 
 /// .env 파일 로드
@@ -53,4 +46,49 @@ Future<void> initGoogleSignIn() async {
 /// 카카오 SDK 초기화
 void initKakaoSdk() {
   KakaoSdk.init(nativeAppKey: dotenv.get('KAKAO_NATIVE_APP_KEY'));
+}
+
+/// UMP 동의 수집 후 Google Mobile Ads 초기화
+/// GDPR/CCPA 등 규제 지역에서 개인화 광고 제공 전 사용자 동의 수집 (AdMob 프로그램 정책 필수)
+void _initConsentAndAds() {
+  ConsentInformation.instance.requestConsentInfoUpdate(
+    ConsentRequestParameters(),
+    () async {
+      debugPrint('[UMP] 동의 정보 업데이트 성공');
+      if (await ConsentInformation.instance.isConsentFormAvailable()) {
+        ConsentForm.loadConsentForm(
+          (ConsentForm form) async {
+            final status = await ConsentInformation.instance.getConsentStatus();
+            if (status == ConsentStatus.required) {
+              form.show((_) => _initMobileAds());
+            } else {
+              _initMobileAds();
+            }
+          },
+          (FormError error) {
+            debugPrint('[UMP] 동의 폼 로드 실패: ${error.message}');
+            _initMobileAds();
+          },
+        );
+      } else {
+        _initMobileAds();
+      }
+    },
+    (FormError error) {
+      debugPrint('[UMP] 동의 정보 업데이트 실패: ${error.message}');
+      _initMobileAds();
+    },
+  );
+}
+
+/// Google Mobile Ads 초기화
+void _initMobileAds() {
+  MobileAds.instance
+      .initialize()
+      .then((_) {
+        debugPrint('[AppInit] Google Mobile Ads 초기화 완료');
+      })
+      .catchError((Object e) {
+        debugPrint('[ERROR] Google Mobile Ads 초기화 실패: $e');
+      });
 }
