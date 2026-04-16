@@ -295,7 +295,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
-
                     // 아이템 리스트 슬리버들
                     ..._buildItemSlivers(),
                   ],
@@ -333,6 +332,18 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     final itemCountWithSeparators = filteredItems.length * 2 - 1;
 
     return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(right: 24.w, bottom: 16.h),
+          child: Text(
+            filteredItems.first.itemStatus == ItemStatus.available.serverName
+                ? '${filteredItems.length}/10개'
+                : '${filteredItems.length}개  ',
+            textAlign: TextAlign.right,
+            style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w400),
+          ),
+        ),
+      ),
       SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           if (index.isOdd) {
