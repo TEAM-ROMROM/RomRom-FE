@@ -140,12 +140,12 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
       },
       child: Container(
         margin: EdgeInsets.only(bottom: 16.h, left: 12.w, right: 12.w),
-        padding: EdgeInsets.only(bottom: 14.h, left: 16.w, top: 16.h),
+        padding: EdgeInsets.only(bottom: 14.h, left: 16.w, top: 16.h, right: 16.w),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.1) : AppColors.primaryBlack,
           borderRadius: BorderRadius.circular(8.r),
           border: Border.all(
-            color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.3) : Colors.transparent,
+            color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.3) : AppColors.transparent,
             width: 1.w,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -259,9 +259,34 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
   }
 
   /// 교환 완료 확정 처리
-  void _onConfirm() {
+  Future<void> _onConfirm() async {
     if (_selectedChatRoomId == null || _isConfirming) return;
     setState(() => _isConfirming = true);
-    Navigator.of(context).pop(true);
+    try {
+      await ChatApi().requestTradeCompletion(chatRoomId: _selectedChatRoomId!);
+      if (!mounted) return;
+      await ChatApi().confirmTradeCompletion(chatRoomId: _selectedChatRoomId!);
+      if (!mounted) return;
+      final response = await ChatApi().getChatMessages(chatRoomId: _selectedChatRoomId!, pageNumber: 0, pageSize: 1);
+      if (!mounted) return;
+      final tradeRequestHistoryId = response.chatRoom?.tradeRequestHistory?.tradeRequestHistoryId;
+      if (tradeRequestHistoryId == null) {
+        setState(() => _isConfirming = false);
+        CommonSnackBar.show(context: context, message: '거래 정보를 찾을 수 없습니다.', type: SnackBarType.error);
+        return;
+      }
+      final opponentNickname =
+          _chatRooms.where((r) => r.chatRoomId == _selectedChatRoomId).firstOrNull?.targetMember?.nickname ?? '상대방';
+      Navigator.of(context).pop<Map<String, String>>({
+        'tradeRequestHistoryId': tradeRequestHistoryId,
+        'opponentNickname': opponentNickname,
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isConfirming = false);
+        debugPrint('거래 완료 처리 실패: $e');
+        CommonSnackBar.show(context: context, message: '오류가 발생했습니다.', type: SnackBarType.error);
+      }
+    }
   }
 }

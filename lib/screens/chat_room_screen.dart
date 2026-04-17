@@ -29,6 +29,7 @@ import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
 import 'package:romrom_fe/widgets/common/exchange_request_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
+import 'package:romrom_fe/screens/trade_review_screen.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
@@ -113,6 +114,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 교환 완료 액션 중복 방지
   bool _isPendingTradeAction = false;
+
+  // 후기 화면 중복 진입 방지 (수락자가 이미 진입한 경우 WebSocket tradeCompleted 무시)
+  bool _reviewNavigated = false;
 
   String _errorMessage = '';
   String? _myMemberId;
@@ -251,6 +255,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             message: '상대방이 채팅방을 나갔습니다.',
             onConfirm: () => Navigator.of(context).pop(),
           );
+        }
+
+        // 상대방이 거래 완료를 수락했을 때 요청자에게도 후기 화면 표시
+        if (newMessage.type == MessageType.tradeCompleted && !_reviewNavigated) {
+          _reviewNavigated = true;
+          final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
+          if (tradeRequestHistoryId != null) {
+            context.navigateTo(
+              screen: TradeReviewScreen(
+                tradeRequestHistoryId: tradeRequestHistoryId,
+                opponentNickname: _opponentNickname,
+              ),
+            );
+          }
         }
       });
 
@@ -624,6 +642,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     setState(() => _isPendingTradeAction = true);
     try {
       await ChatApi().confirmTradeCompletion(chatRoomId: widget.chatRoomId);
+      if (!mounted) return;
+      final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
+      if (tradeRequestHistoryId != null) {
+        _reviewNavigated = true;
+        context.navigateTo(
+          screen: TradeReviewScreen(tradeRequestHistoryId: tradeRequestHistoryId, opponentNickname: _opponentNickname),
+        );
+      }
     } catch (e) {
       if (mounted) {
         CommonSnackBar.show(context: context, message: '교환 완료 확인에 실패했습니다: $e', type: SnackBarType.error);
