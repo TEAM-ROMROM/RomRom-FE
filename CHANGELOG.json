@@ -1,11 +1,41 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-15T09:03:18Z",
-    "currentVersion": "1.10.19",
-    "totalReleases": 100,
+    "lastUpdated": "2026-04-17T08:10:03Z",
+    "currentVersion": "1.10.21",
+    "totalReleases": 101,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.21",
+      "project_type": "flutter",
+      "date": "2026-04-17",
+      "pr_number": 785,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **버그 수정**\n  * 채팅방 메시지 수신 안정성 개선\n  * 광고 초기화 프로세스 개선\n\n* **개선**\n  * 광고 동의 절차 및 사용자 경험 개선\n  * 위치 권한 설정 정리\n\n* **기타**\n  * v1.10.21로 업데이트",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "채팅방 메시지 수신 안정성 개선",
+            "광고 초기화 프로세스 개선"
+          ]
+        },
+        "개선": {
+          "title": "개선",
+          "items": [
+            "광고 동의 절차 및 사용자 경험 개선",
+            "위치 권한 설정 정리"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "v1.10.21로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.19",
       "project_type": "flutter",
