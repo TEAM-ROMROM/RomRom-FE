@@ -22,6 +22,7 @@ import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 로그인 버튼
@@ -52,7 +53,8 @@ class _LoginButtonState extends State<LoginButton> {
       barrierColor: AppColors.opacity50Black,
       builder: (_) => const PopScope(
         canPop: false,
-        child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+        // 로그인 처리 중 전체화면 오버레이 스피너
+        child: Center(child: CommonLoadingIndicator()),
       ),
     );
 

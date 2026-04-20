@@ -13,6 +13,7 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 class TermAgreementStep extends StatefulWidget {
   final VoidCallback onNext;
@@ -114,7 +115,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+      return const Center(child: CommonLoadingIndicator());
     }
 
     return Padding(

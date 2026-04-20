@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 const String _kDefaultProfileAsset = 'assets/images/basicProfile.svg';
 
@@ -80,7 +81,7 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
       ),
       child: ClipOval(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CommonLoadingIndicator())
             : _avatarUrl != null && _avatarUrl!.isNotEmpty && _avatarUrl != _kDefaultProfileAsset
             ? CachedImage(imageUrl: _avatarUrl!, fit: BoxFit.cover, errorWidget: _buildDefaultImage())
             : _buildDefaultImage(),

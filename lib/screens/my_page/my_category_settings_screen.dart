@@ -8,6 +8,7 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 선호 카테고리 설정 화면
@@ -69,7 +70,7 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(title: '선호 카테고리 설정', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CommonLoadingIndicator())
           : Padding(
               padding: EdgeInsets.only(right: 24.0.w, left: 24.0.w, top: 56.h),
               child: Column(

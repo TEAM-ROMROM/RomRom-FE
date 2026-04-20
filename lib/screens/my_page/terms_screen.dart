@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/term_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/term_contents.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 이용약관 화면
@@ -53,7 +54,7 @@ class _TermsScreenState extends State<TermsScreen> {
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(title: '이용 약관', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+          ? const Center(child: CommonLoadingIndicator())
           : SingleChildScrollView(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(

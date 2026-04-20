@@ -14,6 +14,7 @@ import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/trade_request_target_preview.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/widgets/skeletons/trade_partner_select_skeleton.dart';
 
 /// 교환 완료 처리 시 교환 상대를 선택하는 화면
 class TradeCompletePartnerSelectScreen extends StatefulWidget {
@@ -69,7 +70,7 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
         children: [
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+                ? const TradePartnerSelectSkeleton()
                 : ListView(
                     children: [
                       _buildItemCard(),

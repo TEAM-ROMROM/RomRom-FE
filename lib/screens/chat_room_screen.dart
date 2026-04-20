@@ -25,6 +25,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
 import 'package:romrom_fe/widgets/common/exchange_request_bottom_sheet.dart';
@@ -672,7 +673,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+        body: Center(child: CommonLoadingIndicator()),
       );
     }
 

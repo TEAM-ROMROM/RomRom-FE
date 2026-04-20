@@ -22,6 +22,7 @@ import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
@@ -289,10 +290,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     // 보낸 요청은 필터링 없이 모든 요청 표시
     if (_sentRequests.isEmpty) {
       return _isLoading
-          ? const SizedBox(
-              height: 500,
-              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
-            )
+          ? const SizedBox(height: 500, child: Center(child: CommonLoadingIndicator()))
           : Container(
               height: 200,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -564,10 +562,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   Widget _buildItemCardsCarousel() {
     if (_itemCards.isEmpty) {
       return _isLoading
-          ? const SizedBox(
-              height: 150,
-              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
-            )
+          ? const SizedBox(height: 150, child: Center(child: CommonLoadingIndicator()))
           : Container(
               height: 326,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -719,10 +714,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
     if (filteredRequests.isEmpty) {
       return _isLoading
-          ? const SizedBox(
-              height: 150,
-              child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
-            )
+          ? const SizedBox(height: 150, child: Center(child: CommonLoadingIndicator()))
           : Container(
               height: 200,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -736,10 +728,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     return _isLoading
-        ? const SizedBox(
-            height: 150,
-            child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
-          )
+        ? const SizedBox(height: 150, child: Center(child: CommonLoadingIndicator()))
         : Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Column(

@@ -18,6 +18,7 @@ import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
@@ -226,7 +227,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+                      ? const Center(child: CommonLoadingIndicator())
                       : _myItemCards.isEmpty
                       ? _buildEmptyState()
                       : _buildTradeRequestStep(),
@@ -397,12 +398,9 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                       highlightColor: requestButtonHighlightColor,
                       splashColor: requestButtonSplashColor,
                       child: Center(
+                        // 요청 중이면 검정 스피너, 아니면 버튼 텍스트
                         child: _isSubmitting
-                            ? SizedBox(
-                                width: 24.w,
-                                height: 24.h,
-                                child: const CircularProgressIndicator(color: AppColors.textColorBlack, strokeWidth: 2),
-                              )
+                            ? const CommonLoadingIndicator(color: AppColors.textColorBlack)
                             : Text('요청하기', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
                       ),
                     ),

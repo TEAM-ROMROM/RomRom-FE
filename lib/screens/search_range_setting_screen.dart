@@ -11,6 +11,7 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/range_slider_widget.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
@@ -72,7 +73,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
       body: _locationNotSet
           ? _buildLocationNotSetView()
           : _currentPosition == null
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+          ? const Center(child: CommonLoadingIndicator())
           : Column(
               children: [
                 Expanded(child: _buildMapSection()),

@@ -30,6 +30,7 @@ import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
@@ -835,19 +836,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   focusNode: _priceFocusNode,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                  // 로딩 중일 때 suffixIcon으로 스피너 표시
+                  // AI 가격 예측 로딩 중 suffixIcon 스피너 표시
                   suffixIcon: _isAiPriceLoading
-                      ? Padding(
-                          padding: EdgeInsets.all(12.w),
-                          child: SizedBox(
-                            width: 10.w,
-                            height: 10.w,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.w,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryYellow),
-                            ),
-                          ),
-                        )
+                      ? const Padding(padding: EdgeInsets.all(12), child: CommonLoadingIndicator(size: 16.0))
                       : null,
                 ),
 

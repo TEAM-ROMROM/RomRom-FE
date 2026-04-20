@@ -18,6 +18,7 @@ import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
 
 /// 알림 화면
@@ -444,7 +445,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     if (_isLoading) {
       return SizedBox(
         height: 300.h,
-        child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+        child: const Center(child: CommonLoadingIndicator()),
       );
     }
 

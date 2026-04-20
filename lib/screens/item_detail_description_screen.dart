@@ -44,6 +44,8 @@ import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/screens/trade_location_detail_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/skeletons/item_detail_skeleton.dart';
 
 class ItemDetailDescriptionScreen extends StatefulWidget {
   final String itemId;
@@ -325,10 +327,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.primaryBlack,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
-      );
+      return const Scaffold(backgroundColor: AppColors.primaryBlack, body: ItemDetailSkeleton());
     }
 
     // 작성자가 탈퇴한 게시글인 경우 별도 화면 표시
@@ -456,13 +455,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                               },
 
                               // 로딩 인디케이터
-                              placeholder: (ctx, url) => const Center(
-                                child: SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
-                                ),
-                              ),
+                              placeholder: (ctx, url) => const Center(child: CommonLoadingIndicator(size: 32.0)),
 
                               // 이미지 없음/로딩 실패 시
                               errorWidget: (ctx, url, err) =>

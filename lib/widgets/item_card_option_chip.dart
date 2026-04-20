@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/item_card_scale_utils.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import '../models/app_colors.dart';
 import '../models/app_theme.dart';
 
@@ -71,12 +72,13 @@ class ItemCardOptionChip extends ConsumerWidget {
           ),
         );
       },
+      // 칩 상태 로딩 중 표시
       loading: () => Container(
         width: 72,
         height: 29,
         alignment: Alignment.center,
         decoration: buildBoxDecoration(AppColors.itemCardOptionChip, BorderRadius.circular(100)),
-        child: const CircularProgressIndicator(strokeWidth: 2),
+        child: const CommonLoadingIndicator(size: 16.0),
       ),
       error: (err, stack) => Container(
         width: 72,

@@ -9,6 +9,7 @@ import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/skeletons/notification_settings_skeleton.dart';
 
 /// 알림 설정 화면
 class NotificationSettingsScreen extends StatefulWidget {
@@ -126,7 +127,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(title: '설정', onBackPressed: () => Navigator.pop(context)),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const NotificationSettingsSkeleton()
           : SingleChildScrollView(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 24.h),

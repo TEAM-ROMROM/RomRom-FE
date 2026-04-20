@@ -14,6 +14,7 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/skeletons/chat_room_list_skeleton.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
@@ -389,9 +390,8 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 20.h),
-                  child: const Center(
-                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                  ),
+                  // 무한 스크롤 추가 로딩 인디케이터
+                  child: const Center(child: CommonLoadingIndicator()),
                 ),
               ),
           ],

@@ -23,6 +23,8 @@ import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/skeletons/my_like_list_skeleton.dart';
 
 class MyLikeListScreen extends StatefulWidget {
   const MyLikeListScreen({super.key});
@@ -159,7 +161,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(title: '좋아요 목록', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
       body: _items.isEmpty && _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+          ? const Padding(padding: EdgeInsets.symmetric(horizontal: 24), child: MyLikeListSkeleton())
           : _items.isEmpty && !_isLoading
           ? EmptyStateView(
               icon: AppIcons.profilelikecount,
@@ -179,15 +181,9 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                 itemBuilder: (context, index) {
                   // ... 기존 itemBuilder 코드 동일
                   if (_hasMoreItems && index == _items.length) {
-                    return Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(color: AppColors.primaryYellow),
-                        ),
-                      ),
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: CommonLoadingIndicator(size: 20)),
                     );
                   }
                   final item = _items[index];

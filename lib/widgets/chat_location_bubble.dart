@@ -11,6 +11,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -160,13 +161,8 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
     if (_mapImageBytes == null) {
       return Container(
         color: AppColors.secondaryBlack2,
-        child: const Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryYellow),
-          ),
-        ),
+        // 지도 이미지 로딩 중 스피너
+        child: const Center(child: CommonLoadingIndicator()),
       );
     }
     return Image.memory(_mapImageBytes!, width: width, height: 176.h, fit: BoxFit.cover);

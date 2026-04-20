@@ -9,6 +9,7 @@ import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -92,7 +93,7 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(title: '차단 관리', showBottomBorder: false, onBackPressed: () => Navigator.pop(context)),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+          ? const Center(child: CommonLoadingIndicator())
           : _blockedMembers.isEmpty
           ? _buildEmptyState()
           : _buildBlockedMembersList(),

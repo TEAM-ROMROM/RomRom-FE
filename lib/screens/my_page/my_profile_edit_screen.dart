@@ -12,6 +12,7 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/profile_sections.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
@@ -262,7 +263,8 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.textColorWhite, width: 1.w),
                   ),
-                  child: const CircularProgressIndicator(color: AppColors.primaryYellow),
+                  // 이미지 업로드 중 스피너
+                  child: const CommonLoadingIndicator(),
                 )
               : UserProfileCircularAvatar(
                   avatarSize: Size(132.w, 132.h),
