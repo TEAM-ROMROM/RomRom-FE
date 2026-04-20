@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 
 import 'package:romrom_fe/enums/item_categories.dart';
-import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -15,6 +14,7 @@ import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -187,31 +187,6 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
     }
   }
 
-  /// 교환 대상 물품의 태그 목록 생성
-  List<String> _getTargetItemTags() {
-    final tags = <String>[];
-
-    // 물품 상태 태그
-    if (widget.targetItem.itemCondition != null) {
-      try {
-        final condition = ItemCondition.fromServerName(widget.targetItem.itemCondition!);
-        tags.add(condition.label);
-      } catch (_) {}
-    }
-
-    // 거래방식 태그
-    if (widget.targetItem.itemTradeOptions != null) {
-      for (final option in widget.targetItem.itemTradeOptions!) {
-        try {
-          final tradeOption = ItemTradeOption.fromServerName(option);
-          tags.add(tradeOption.label);
-        } catch (_) {}
-      }
-    }
-
-    return tags;
-  }
-
   /// AppBar 높이만큼 상단 여백 추가
   Widget _buildAppBarSpacing() {
     return Container(
@@ -322,7 +297,10 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           TradeRequestTargetPreview(
             imageUrl: widget.targetImageUrl,
             itemName: widget.targetItem.itemName ?? '물품',
-            tags: _getTargetItemTags(),
+            tags: itemTagLabels(
+              condition: widget.targetItem.itemCondition,
+              tradeOptions: widget.targetItem.itemTradeOptions,
+            ),
           ),
 
           // 내 물품 카드 영역
