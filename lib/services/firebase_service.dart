@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
+import 'package:romrom_fe/utils/deep_link_router.dart';
 
 class FirebaseService {
   // Foreground 메시지를 UI에서 구독할 수 있도록 브로드캐스트 스트림 제공
@@ -21,8 +23,34 @@ class FirebaseService {
     } catch (_) {}
   }
 
+  /// FCM 메시지 데이터로부터 딥링크 라우팅 처리 (main.dart 콜드 스타트에서도 호출)
+  static void handleFcmNavigationStatic(RemoteMessage message, GlobalKey<NavigatorState> navigatorKey) {
+    final deepLink = message.data['deepLink'] as String?;
+    if (deepLink == null || deepLink.isEmpty) return;
+
+    final notificationTypeRaw = message.data['notificationType'] as String?;
+    NotificationType? notificationType;
+    if (notificationTypeRaw != null) {
+      try {
+        notificationType = NotificationType.fromServerName(notificationTypeRaw);
+      } catch (_) {
+        debugPrint('[FCM] 알 수 없는 notificationType: $notificationTypeRaw');
+      }
+    }
+
+    // navigatorKey가 준비될 때까지 대기 후 라우팅
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = navigatorKey.currentContext;
+      if (context == null) {
+        debugPrint('[FCM] navigatorKey context 없음, 라우팅 스킵');
+        return;
+      }
+      RomRomDeepLinkRouter.open(context, deepLink, notificationType: notificationType);
+    });
+  }
+
   /// 알림 권한 요청 세팅
-  Future<void> setupPushNotifications() async {
+  Future<void> setupPushNotifications({GlobalKey<NavigatorState>? navigatorKey}) async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
     // 알림 권한 요청 (iOS)
@@ -69,8 +97,12 @@ class FirebaseService {
       }
     });
 
+    // 백그라운드 상태에서 알림 탭 시 (앱이 이미 실행 중)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint("[FCM] 알림 클릭 후 앱이 열림: ${message.notification!.title}");
+      debugPrint("[FCM] 알림 클릭 후 앱이 열림: ${message.notification?.title}");
+      if (navigatorKey != null) {
+        handleFcmNavigationStatic(message, navigatorKey);
+      }
     });
   }
 

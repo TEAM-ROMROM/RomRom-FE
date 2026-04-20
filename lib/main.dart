@@ -54,8 +54,8 @@ void main() async {
     sound: true,
   );
 
-  // 알림 권한 요청 설정
-  await FirebaseService().setupPushNotifications();
+  // 알림 권한 요청 + 백그라운드 알림 탭 라우팅 리스너 설정
+  await FirebaseService().setupPushNotifications(navigatorKey: navigatorKey);
 
   // FCM 토큰 갱신 감지 및 자동 저장 설정
   _setupFcmTokenRefreshListener();
@@ -117,6 +117,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     _initAppLinks();
+    _handleInitialFcmMessage();
+  }
+
+  /// 앱이 종료된 상태에서 알림 탭으로 실행된 경우 (콜드 스타트) 라우팅 처리
+  Future<void> _handleInitialFcmMessage() async {
+    try {
+      final message = await FirebaseMessaging.instance.getInitialMessage();
+      if (message == null) return;
+
+      debugPrint('[FCM] 콜드 스타트 알림 탭 감지: ${message.notification?.title}');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FirebaseService.handleFcmNavigationStatic(message, navigatorKey);
+      });
+    } catch (e) {
+      debugPrint('[FCM] getInitialMessage 처리 실패: $e');
+    }
   }
 
   /// app_links: 콜드 스타트 + 포그라운드 딥링크 처리
