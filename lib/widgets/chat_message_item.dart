@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_image_bubble.dart';
 import 'package:romrom_fe/widgets/chat_location_bubble.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 /// 채팅 메시지 아이템 위젯
 /// system / text / image (업로드 중 포함) / 거래 완료 시스템 메시지 모든 타입 처리
@@ -319,13 +320,8 @@ class ChatMessageItem extends StatelessWidget {
             Positioned.fill(
               child: ColoredBox(
                 color: AppColors.primaryBlack.withValues(alpha: 0.5),
-                child: const Center(
-                  child: SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(color: AppColors.primaryYellow),
-                  ),
-                ),
+                // 이미지 업로드 중 오버레이 스피너
+                child: const Center(child: CommonLoadingIndicator(size: 32.0)),
               ),
             ),
           ],

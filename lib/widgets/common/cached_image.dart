@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 /// 캐싱이 적용된 네트워크 이미지 위젯
 ///
@@ -61,13 +61,8 @@ class CachedImage extends StatelessWidget {
       width: width,
       height: height,
       color: AppColors.secondaryBlack1,
-      child: Center(
-        child: SizedBox(
-          width: 20.w,
-          height: 20.w,
-          child: const CircularProgressIndicator(strokeWidth: 2, color: AppColors.opacity40White),
-        ),
-      ),
+      // 이미지 로딩 중 스피너 표시
+      child: const Center(child: CommonLoadingIndicator(color: AppColors.opacity40White, size: 20.0)),
     );
   }
 

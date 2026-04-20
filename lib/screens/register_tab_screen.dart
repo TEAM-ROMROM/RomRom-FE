@@ -19,6 +19,7 @@ import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
@@ -367,7 +368,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 16.h),
-            child: const Center(child: CircularProgressIndicator()),
+            child: const Center(child: CommonLoadingIndicator()),
           ),
         ),
       // 하단 여백 24px

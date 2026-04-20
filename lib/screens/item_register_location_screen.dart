@@ -10,6 +10,7 @@ import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/onboarding_title_header.dart';
 import 'package:shadex/shadex.dart';
@@ -103,7 +104,7 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
                 // 네이버 지도 전체 채우기
                 Positioned.fill(
                   child: _currentPosition == null
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(child: CommonLoadingIndicator())
                       : NaverMap(
                           options: NaverMapViewOptions(
                             initialCameraPosition: NCameraPosition(target: _currentPosition!, zoom: 15),

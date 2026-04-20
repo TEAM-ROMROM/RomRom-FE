@@ -4,6 +4,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 class CompletionButton extends StatelessWidget {
   final bool isEnabled; // 버튼 활성화
@@ -70,15 +71,9 @@ class CompletionButton extends StatelessWidget {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(10.r),
             child: Center(
+              // 로딩 중이면 흰색 스피너, 아니면 버튼 텍스트
               child: isLoading
-                  ? SizedBox(
-                      width: 24.w,
-                      height: 24.h,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.w,
-                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
-                      ),
-                    )
+                  ? const CommonLoadingIndicator.white()
                   : Text(buttonText, style: buttonTextStyle, textAlign: TextAlign.center, softWrap: false),
             ),
           ),

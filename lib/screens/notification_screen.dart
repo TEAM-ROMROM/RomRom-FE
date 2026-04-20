@@ -19,6 +19,7 @@ import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/widgets/common/app_skeleton.dart';
@@ -452,7 +453,14 @@ class _NotificationScreenState extends State<NotificationScreen>
   Widget _buildNotificationList() {
     final notifications = _isRightSelected ? _romromNotifications : _activityNotifications;
 
-    if (notifications.isEmpty && !_isLoading) {
+    if (_isLoading) {
+      return SizedBox(
+        height: 300.h,
+        child: const Center(child: CommonLoadingIndicator()),
+      );
+    }
+
+    if (notifications.isEmpty) {
       return AppFadeSlideIn(
         child: Container(
           height: 300.h,
