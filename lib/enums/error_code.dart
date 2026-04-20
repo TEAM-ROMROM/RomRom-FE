@@ -119,6 +119,9 @@ enum ErrorCode {
   notificationHistoryNotFound(code: 'NOTIFICATION_HISTORY_NOT_FOUND', koMessage: '알림 히스토리를 찾을 수 없습니다.'),
   invalidNotificationHistoryOwner(code: 'INVALID_NOTIFICATION_HISTORY_OWNER', koMessage: '해당 알림의 수신자가 아닙니다.'),
 
+  // ITEM DELETED NOTICE
+  itemDeletedNotice(code: 'ITEM_DELETED_NOTICE', koMessage: '게시글이 삭제되었습니다.'),
+
   // JSON
   unknown(code: 'UNKNOWN', koMessage: '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
 

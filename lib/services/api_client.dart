@@ -6,10 +6,12 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/item_deleted_exception.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/main.dart' show navigatorKey;
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
+import 'package:romrom_fe/screens/item_deleted_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
@@ -29,6 +31,9 @@ class ApiClient {
   /// 동시 다발적 세션 만료(EXPIRED_REFRESH_TOKEN) 시 중복 로그아웃 방지 플래그
   static bool _isSessionExpiredHandling = false;
 
+  /// 게시글 삭제 알림 중복 처리 방지 플래그
+  static bool _isItemDeletedHandling = false;
+
   /// 제재 처리 플래그 리셋 (로그아웃/재로그인 시 호출)
   static void resetSuspendedFlag() {
     _isSuspendedHandling = false;
@@ -37,6 +42,11 @@ class ApiClient {
   /// 세션 만료 처리 플래그 리셋 (재로그인 성공 시 호출)
   static void resetSessionExpiredFlag() {
     _isSessionExpiredHandling = false;
+  }
+
+  /// 게시글 삭제 플래그 리셋 (ItemDeletedScreen 닫을 때 호출)
+  static void resetItemDeletedFlag() {
+    _isItemDeletedHandling = false;
   }
 
   /// 403 SUSPENDED_MEMBER 응답 글로벌 처리
@@ -102,6 +112,35 @@ class ApiClient {
     return null;
   }
 
+  /// ITEM_DELETED_NOTICE 응답 글로벌 처리
+  /// 반환값: ItemDeletedException(감지됨) 또는 null(해당 없음)
+  static ItemDeletedException? _handleItemDeletedResponse(http.Response response) {
+    if (_isItemDeletedHandling) return null;
+    if (response.body.isEmpty) return null;
+    try {
+      final data = jsonDecode(response.body);
+      if (data['errorCode'] == 'ITEM_DELETED_NOTICE') {
+        _isItemDeletedHandling = true;
+        final itemTitle = data['itemTitle'] as String? ?? '';
+        final deleteReason = data['deleteReason'] as String? ?? '';
+        debugPrint('게시글 삭제 알림 감지 (ITEM_DELETED_NOTICE)');
+
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ItemDeletedScreen(itemTitle: itemTitle, deleteReason: deleteReason),
+            ),
+          );
+        }
+        return ItemDeletedException(itemTitle: itemTitle, deleteReason: deleteReason);
+      }
+    } catch (e) {
+      debugPrint('ITEM_DELETED_NOTICE 응답 파싱 실패: $e');
+    }
+    return null;
+  }
+
   /// MultipartRequest 요청 전송 (form-data 형식, 파일 업로드 지원)
   static Future<http.Response> sendMultipartRequest({
     required String url,
@@ -141,6 +180,9 @@ class ApiClient {
       // UGC 필터링 위반 체크 (400 PROHIBITED_CONTENT)
       final ugcViolation = _handleUgcViolationResponse(response);
       if (ugcViolation != null) throw ugcViolation;
+
+      // 게시글 삭제 알림 체크 (ITEM_DELETED_NOTICE)
+      _handleItemDeletedResponse(response);
 
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -241,6 +283,9 @@ class ApiClient {
       // UGC 필터링 위반 체크 (400 PROHIBITED_CONTENT)
       final ugcViolationHttp = _handleUgcViolationResponse(response);
       if (ugcViolationHttp != null) throw ugcViolationHttp;
+
+      // 게시글 삭제 알림 체크 (ITEM_DELETED_NOTICE)
+      _handleItemDeletedResponse(response);
 
       // 성공 응답 처리 (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -414,6 +459,9 @@ class ApiClient {
       if (_handleSuspendedResponse(response) != null) {
         return false;
       }
+
+      // 게시글 삭제 알림 체크 (ITEM_DELETED_NOTICE)
+      _handleItemDeletedResponse(response);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
