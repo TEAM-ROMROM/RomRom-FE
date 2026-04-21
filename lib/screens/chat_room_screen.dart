@@ -320,7 +320,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
       if (widget.autoTriggerExchangeRequest && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _doRequestTradeCompletion();
+          if (!mounted || _isTradeCompleted || _hasActiveTradeRequest) {
+            if (_isTradeCompleted) {
+              CommonSnackBar.show(context: context, message: '이미 교환이 완료된 거래입니다.', type: SnackBarType.info);
+              return;
+            } else if (_hasActiveTradeRequest) {
+              CommonSnackBar.show(context: context, message: '교환 요청이 진행 중입니다.', type: SnackBarType.info);
+              return;
+            }
+          }
+          _doRequestTradeCompletion();
         });
       }
     } catch (e) {
