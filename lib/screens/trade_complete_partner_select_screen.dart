@@ -29,7 +29,6 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
   bool _isLoading = true;
   List<ChatRoomDetailDto> _chatRooms = [];
   String? _selectedChatRoomId;
-  bool _isConfirming = false;
 
   @override
   void initState() {
@@ -37,6 +36,7 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
     _loadChatRooms();
   }
 
+  /// 물품 ID로 채팅방 목록 불러오기
   Future<void> _loadChatRooms() async {
     final itemId = widget.item.itemId;
     if (itemId == null) {
@@ -60,11 +60,17 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
     }
   }
 
+  /// 채팅방으로 이동하여 교환 완료 요청 전송
+  void _onConfirm() {
+    if (_selectedChatRoomId == null) return;
+    Navigator.of(context).pop<String>(_selectedChatRoomId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: const CommonAppBar(title: '교환 완료', showBottomBorder: true),
+      appBar: const CommonAppBar(title: '교환 요청', showBottomBorder: true),
       body: Column(
         children: [
           Expanded(
@@ -98,10 +104,10 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
           Padding(
             padding: EdgeInsets.only(left: 24.w, right: 24.w, bottom: 63.h + MediaQuery.of(context).padding.bottom),
             child: CompletionButton(
-              isEnabled: _selectedChatRoomId != null && !_isConfirming,
-              buttonText: '교환 완료',
-              isLoading: _isConfirming,
-              enabledOnPressed: () => _onConfirm(),
+              isEnabled: _selectedChatRoomId != null,
+              buttonText: '전송하기',
+              isLoading: false,
+              enabledOnPressed: _onConfirm,
             ),
           ),
         ],
@@ -256,37 +262,5 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
         ),
       ),
     );
-  }
-
-  /// 교환 완료 확정 처리
-  Future<void> _onConfirm() async {
-    if (_selectedChatRoomId == null || _isConfirming) return;
-    setState(() => _isConfirming = true);
-    try {
-      await ChatApi().requestTradeCompletion(chatRoomId: _selectedChatRoomId!);
-      if (!mounted) return;
-      await ChatApi().confirmTradeCompletion(chatRoomId: _selectedChatRoomId!);
-      if (!mounted) return;
-      final response = await ChatApi().getChatMessages(chatRoomId: _selectedChatRoomId!, pageNumber: 0, pageSize: 1);
-      if (!mounted) return;
-      final tradeRequestHistoryId = response.chatRoom?.tradeRequestHistory?.tradeRequestHistoryId;
-      if (tradeRequestHistoryId == null) {
-        setState(() => _isConfirming = false);
-        CommonSnackBar.show(context: context, message: '거래 정보를 찾을 수 없습니다.', type: SnackBarType.error);
-        return;
-      }
-      final opponentNickname =
-          _chatRooms.where((r) => r.chatRoomId == _selectedChatRoomId).firstOrNull?.targetMember?.nickname ?? '상대방';
-      Navigator.of(context).pop<Map<String, String>>({
-        'tradeRequestHistoryId': tradeRequestHistoryId,
-        'opponentNickname': opponentNickname,
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isConfirming = false);
-        debugPrint('거래 완료 처리 실패: $e');
-        CommonSnackBar.show(context: context, message: '오류가 발생했습니다.', type: SnackBarType.error);
-      }
-    }
   }
 }

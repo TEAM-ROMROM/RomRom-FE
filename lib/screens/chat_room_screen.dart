@@ -35,8 +35,9 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final String chatRoomId;
+  final bool autoTriggerExchangeRequest;
 
-  const ChatRoomScreen({super.key, required this.chatRoomId});
+  const ChatRoomScreen({super.key, required this.chatRoomId, this.autoTriggerExchangeRequest = false});
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -316,6 +317,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         message: '상대방이 채팅방을 나갔습니다.',
         onConfirm: () => Navigator.of(context).pop(),
       );
+
+      if (widget.autoTriggerExchangeRequest && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _doRequestTradeCompletion();
+        });
+      }
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;

@@ -29,8 +29,8 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
+import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
-import 'package:romrom_fe/screens/trade_review_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterTabScreen extends StatefulWidget {
@@ -705,19 +705,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
 
     if (isToCompleted) {
-      // 교환 완료로 변경: 교환 상대 선택 → 상태 변경 → 후기 화면
-      final result = await context.navigateTo<Map<String, String>>(
-        screen: TradeCompletePartnerSelectScreen(item: item),
-      );
-      if (!mounted || result == null) return;
-      await _toggleItemStatus(item);
-      if (!mounted) return;
-      context.navigateTo(
-        screen: TradeReviewScreen(
-          tradeRequestHistoryId: result['tradeRequestHistoryId']!,
-          opponentNickname: result['opponentNickname']!,
-        ),
-      );
+      // 교환 완료로 변경: 교환 상대 선택 → 해당 채팅방으로 이동 → 채팅방에서 교환 완료 요청 전송
+      final chatRoomId = await context.navigateTo<String>(screen: TradeCompletePartnerSelectScreen(item: item));
+      if (!mounted || chatRoomId == null) return;
+      context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId, autoTriggerExchangeRequest: true));
     } else {
       // 판매중으로 변경: 기존 확인 다이얼로그
       final result = await context.showDeleteDialog(
