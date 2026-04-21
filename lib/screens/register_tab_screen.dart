@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -17,6 +18,7 @@ import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -27,6 +29,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
+import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterTabScreen extends StatefulWidget {
@@ -293,7 +296,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
-
                     // 아이템 리스트 슬리버들
                     ..._buildItemSlivers(),
                   ],
@@ -331,6 +333,18 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     final itemCountWithSeparators = filteredItems.length * 2 - 1;
 
     return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(right: 24.w, bottom: 16.h),
+          child: Text(
+            _currentTabStatus == MyItemToggleStatus.selling
+                ? '${filteredItems.length}/10개'
+                : '${filteredItems.length}개  ',
+            textAlign: TextAlign.right,
+            style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w400),
+          ),
+        ),
+      ),
       SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           if (index.isOdd) {
@@ -426,8 +440,15 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                   ],
                 ),
               ),
-              SizedBox(width: 30.w),
             ],
+          ),
+        ),
+
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: TradeStatusTagWidget(
+            status: item.itemStatus == ItemStatus.exchanged.serverName ? TradeStatus.traded : TradeStatus.pending,
           ),
         ),
 
@@ -681,13 +702,23 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   /// 상태 변경 확인 대화상자
   Future<void> _showChangeStatusConfirmDialog(Item item) async {
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
-    final title = isToCompleted ? '교환 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
-    final description = isToCompleted ? '교환 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
 
-    final result = await context.showDeleteDialog(title: title, description: description, confirmText: '확인');
-
-    if (result == true) {
-      await _toggleItemStatus(item);
+    if (isToCompleted) {
+      // 교환 완료로 변경: 교환 상대 선택 화면 표시
+      final result = await context.navigateTo<bool>(screen: TradeCompletePartnerSelectScreen(item: item));
+      if (result == true) {
+        await _toggleItemStatus(item);
+      }
+    } else {
+      // 판매중으로 변경: 기존 확인 다이얼로그
+      final result = await context.showDeleteDialog(
+        title: '판매중으로 변경하시겠습니까?',
+        description: '판매중으로 변경하시겠습니까?',
+        confirmText: '확인',
+      );
+      if (result == true) {
+        await _toggleItemStatus(item);
+      }
     }
   }
 
