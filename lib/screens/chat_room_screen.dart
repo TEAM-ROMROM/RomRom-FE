@@ -86,7 +86,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       // _messages는 reverse 순서(최신 먼저)
       if (msg.senderId != _myMemberId) continue;
       if (msg.chatMessageId == null) continue;
-      if (state.isPresent) return msg.chatMessageId;
+      // isPresent만으로는 강제종료 후에도 stale true가 유지되므로
+      // isOnline을 함께 확인해서 실제로 채팅방에 있는 경우만 읽음 처리
+      if (state.isPresent && _isOpponentOnline) return msg.chatMessageId;
       final sentAt = msg.createdDate;
       final leftAt = state.leftAt;
       if (sentAt != null && leftAt != null && !sentAt.isAfter(leftAt)) return msg.chatMessageId;
