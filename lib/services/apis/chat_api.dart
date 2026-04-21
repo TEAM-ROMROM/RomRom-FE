@@ -114,27 +114,29 @@ class ChatApi {
       onSuccess: (_) {},
     );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      final chatRoomsData = responseData['chatRoomDetailDtoPage'];
-
-      if (chatRoomsData != null) {
-        final content = (chatRoomsData['content'] as List)
-            .map((e) => ChatRoomDetailDto.fromJson(e as Map<String, dynamic>))
-            .toList();
-        final isLast = chatRoomsData['last'] as bool? ?? true;
-        debugPrint('[ChatApi] 물품 채팅 상대 조회 성공: ${content.length}개 (itemId=$itemId)');
-        return PagedChatRoomDetail(
-          content: content,
-          pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
-          last: isLast,
-        );
-      }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('물품 채팅 상대 조회 실패: ${response.statusCode}');
     }
 
+    final Map<String, dynamic> responseData = jsonDecode(response.body);
+    final chatRoomsData = responseData['chatRoomDetailDtoPage'] as Map<String, dynamic>?;
+    if (chatRoomsData == null) {
+      return PagedChatRoomDetail(
+        content: [],
+        pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
+      );
+    }
+
+    final rawContent = chatRoomsData['content'];
+    final content = rawContent is List
+        ? rawContent.map((e) => ChatRoomDetailDto.fromJson(e as Map<String, dynamic>)).toList()
+        : <ChatRoomDetailDto>[];
+    final isLast = chatRoomsData['last'] as bool? ?? true;
+
     return PagedChatRoomDetail(
-      content: [],
+      content: content,
       pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
+      last: isLast,
     );
   }
 

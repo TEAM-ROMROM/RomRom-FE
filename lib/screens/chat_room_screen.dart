@@ -29,13 +29,15 @@ import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
 import 'package:romrom_fe/widgets/common/exchange_request_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
+import 'package:romrom_fe/screens/trade_review_screen.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final String chatRoomId;
+  final bool autoTriggerExchangeRequest;
 
-  const ChatRoomScreen({super.key, required this.chatRoomId});
+  const ChatRoomScreen({super.key, required this.chatRoomId, this.autoTriggerExchangeRequest = false});
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -113,6 +115,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 교환 완료 액션 중복 방지
   bool _isPendingTradeAction = false;
+
+  // 후기 화면 중복 진입 방지 (수락자가 이미 진입한 경우 WebSocket tradeCompleted 무시)
+  bool _reviewNavigated = false;
 
   String _errorMessage = '';
   String? _myMemberId;
@@ -255,6 +260,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             onConfirm: () => Navigator.of(context).pop(),
           );
         }
+
+        // 상대방이 거래 완료를 수락했을 때 요청자에게도 후기 화면 표시
+        if (newMessage.type == MessageType.tradeCompleted && !_reviewNavigated) {
+          final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
+          if (tradeRequestHistoryId != null) {
+            _reviewNavigated = true;
+            context.navigateTo(
+              screen: TradeReviewScreen(
+                tradeRequestHistoryId: tradeRequestHistoryId,
+                opponentNickname: _opponentNickname,
+              ),
+            );
+          }
+        }
       });
 
       setState(() => _isLoading = false);
@@ -301,6 +320,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         message: '상대방이 채팅방을 나갔습니다.',
         onConfirm: () => Navigator.of(context).pop(),
       );
+
+      if (widget.autoTriggerExchangeRequest && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _isTradeCompleted || _hasActiveTradeRequest) {
+            if (_isTradeCompleted) {
+              CommonSnackBar.show(context: context, message: '이미 교환이 완료된 거래입니다.', type: SnackBarType.info);
+              return;
+            } else if (_hasActiveTradeRequest) {
+              CommonSnackBar.show(context: context, message: '교환 요청이 진행 중입니다.', type: SnackBarType.info);
+              return;
+            }
+          }
+          _doRequestTradeCompletion();
+        });
+      }
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;
@@ -627,6 +661,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     setState(() => _isPendingTradeAction = true);
     try {
       await ChatApi().confirmTradeCompletion(chatRoomId: widget.chatRoomId);
+      if (!mounted) return;
+      final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
+      if (tradeRequestHistoryId != null) {
+        _reviewNavigated = true;
+        context.navigateTo(
+          screen: TradeReviewScreen(tradeRequestHistoryId: tradeRequestHistoryId, opponentNickname: _opponentNickname),
+        );
+      }
     } catch (e) {
       if (mounted) {
         CommonSnackBar.show(context: context, message: '교환 완료 확인에 실패했습니다: $e', type: SnackBarType.error);

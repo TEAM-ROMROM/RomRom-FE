@@ -15,6 +15,8 @@ class TradeApi {
 
   TradeApi._internal();
 
+  final Set<String> _pendingRequests = {};
+
   /// 거래 요청 API
   /// `POST /api/trade/post`
   Future<void> requestTrade(TradeRequest request) async {
@@ -257,5 +259,44 @@ class TradeApi {
     }
 
     return tradeResponse;
+  }
+
+  /// 거래 후기 작성 API
+  /// `POST /api/trade/review/post`
+  Future<void> postTradeReview(TradeRequest request) async {
+    const String url = '${AppUrls.baseUrl}/api/trade/review/post';
+
+    final id = request.tradeRequestHistoryId;
+    if (id == null || id.isEmpty) {
+      throw ArgumentError('tradeRequestHistoryId is required');
+    }
+
+    if (_pendingRequests.contains(id)) return;
+    _pendingRequests.add(id);
+
+    try {
+      final Map<String, dynamic> fields = {
+        'tradeRequestHistoryId': id,
+        if (request.tradeReviewRating != null) 'tradeReviewRating': request.tradeReviewRating!,
+        if (request.tradeReviewTags != null && request.tradeReviewTags!.isNotEmpty)
+          'tradeReviewTags': request.tradeReviewTags!.join(','),
+        if (request.reviewComment != null && request.reviewComment!.isNotEmpty) 'reviewComment': request.reviewComment!,
+      };
+
+      final response = await ApiClient.sendMultipartRequest(
+        url: url,
+        fields: fields,
+        isAuthRequired: true,
+        onSuccess: (_) {},
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('거래 후기 작성 성공');
+      } else {
+        throw Exception('거래 후기 작성 실패: ${response.statusCode}');
+      }
+    } finally {
+      _pendingRequests.remove(id);
+    }
   }
 }
