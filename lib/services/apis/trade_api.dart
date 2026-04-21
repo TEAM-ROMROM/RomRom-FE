@@ -15,6 +15,8 @@ class TradeApi {
 
   TradeApi._internal();
 
+  final Set<String> _pendingRequests = {};
+
   /// 거래 요청 API
   /// `POST /api/trade/post`
   Future<void> requestTrade(TradeRequest request) async {
@@ -269,25 +271,32 @@ class TradeApi {
       throw ArgumentError('tradeRequestHistoryId is required');
     }
 
-    final Map<String, dynamic> fields = {
-      'tradeRequestHistoryId': id,
-      if (request.tradeReviewRating != null) 'tradeReviewRating': request.tradeReviewRating!,
-      if (request.tradeReviewTags != null && request.tradeReviewTags!.isNotEmpty)
-        'tradeReviewTags': request.tradeReviewTags!.join(','),
-      if (request.reviewComment != null && request.reviewComment!.isNotEmpty) 'reviewComment': request.reviewComment!,
-    };
+    if (_pendingRequests.contains(id)) return;
+    _pendingRequests.add(id);
 
-    final response = await ApiClient.sendMultipartRequest(
-      url: url,
-      fields: fields,
-      isAuthRequired: true,
-      onSuccess: (_) {},
-    );
+    try {
+      final Map<String, dynamic> fields = {
+        'tradeRequestHistoryId': id,
+        if (request.tradeReviewRating != null) 'tradeReviewRating': request.tradeReviewRating!,
+        if (request.tradeReviewTags != null && request.tradeReviewTags!.isNotEmpty)
+          'tradeReviewTags': request.tradeReviewTags!.join(','),
+        if (request.reviewComment != null && request.reviewComment!.isNotEmpty) 'reviewComment': request.reviewComment!,
+      };
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      debugPrint('거래 후기 작성 성공');
-    } else {
-      throw Exception('거래 후기 작성 실패: ${response.statusCode}');
+      final response = await ApiClient.sendMultipartRequest(
+        url: url,
+        fields: fields,
+        isAuthRequired: true,
+        onSuccess: (_) {},
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('거래 후기 작성 성공');
+      } else {
+        throw Exception('거래 후기 작성 실패: ${response.statusCode}');
+      }
+    } finally {
+      _pendingRequests.remove(id);
     }
   }
 }

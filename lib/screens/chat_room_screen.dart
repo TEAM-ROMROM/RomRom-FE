@@ -260,9 +260,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
         // 상대방이 거래 완료를 수락했을 때 요청자에게도 후기 화면 표시
         if (newMessage.type == MessageType.tradeCompleted && !_reviewNavigated) {
-          _reviewNavigated = true;
           final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
           if (tradeRequestHistoryId != null) {
+            _reviewNavigated = true;
             context.navigateTo(
               screen: TradeReviewScreen(
                 tradeRequestHistoryId: tradeRequestHistoryId,
