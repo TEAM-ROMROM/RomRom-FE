@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
 import 'package:romrom_fe/enums/trade_review_tag.dart';
@@ -14,6 +13,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:romrom_fe/widgets/trade/rating_option_button.dart';
 
 /// 교환 완료 후 리뷰 작성 화면
 class TradeReviewScreen extends StatefulWidget {
@@ -141,36 +141,10 @@ class _TradeReviewScreenState extends State<TradeReviewScreen> {
 
   /// 만족도 옵션 위젯
   Widget _buildRatingOption(TradeReviewRating rating) {
-    final isSelected = _rating == rating;
-    return GestureDetector(
+    return RatingOptionButton(
+      rating: rating,
+      isSelected: _rating == rating,
       onTap: () => setState(() => _rating = rating),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 010.w),
-        child: Column(
-          children: [
-            Container(
-              width: 90.w,
-              height: 90.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected ? rating.selectedBackgroundColor : AppColors.reviewRatingUnselectedBackground,
-              ),
-              child: Center(
-                child: ClipOval(
-                  child: SvgPicture.asset(isSelected ? rating.selectedImgAsset : rating.unselectedImgAsset),
-                ),
-              ),
-            ),
-            SizedBox(height: 24.h),
-            Text(
-              rating.label,
-              style: CustomTextStyles.h3.copyWith(
-                color: isSelected ? rating.selectedColor : AppColors.reviewRatingUnselected,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
