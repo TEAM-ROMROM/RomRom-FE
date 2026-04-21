@@ -1,11 +1,29 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-17T08:10:03Z",
-    "currentVersion": "1.10.21",
-    "totalReleases": 101,
+    "lastUpdated": "2026-04-21T10:57:41Z",
+    "currentVersion": "1.10.22",
+    "totalReleases": 102,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.22",
+      "project_type": "flutter",
+      "date": "2026-04-21",
+      "pr_number": 800,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 교환 완료 처리 시 거래 상대를 선택할 수 있는 화면 추가\n  * 물품 등록 화면에 등록된 물품 개수 표시 추가\n  * 교환 완료 목록에서 교환 완료 상태 태그 표시 추가",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "교환 완료 처리 시 거래 상대를 선택할 수 있는 화면 추가",
+            "물품 등록 화면에 등록된 물품 개수 표시 추가",
+            "교환 완료 목록에서 교환 완료 상태 태그 표시 추가"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.21",
       "project_type": "flutter",
