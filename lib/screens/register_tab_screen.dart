@@ -29,6 +29,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
+import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -339,7 +340,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
           child: Text(
             _currentTabStatus == MyItemToggleStatus.selling
                 ? '${filteredItems.length}/10개'
-                : '${filteredItems.length}개  ',
+                : '${filteredItems.length}개',
             textAlign: TextAlign.right,
             style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w400),
           ),
@@ -704,11 +705,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
 
     if (isToCompleted) {
-      // 교환 완료로 변경: 교환 상대 선택 화면 표시
-      final result = await context.navigateTo<bool>(screen: TradeCompletePartnerSelectScreen(item: item));
-      if (result == true) {
-        await _toggleItemStatus(item);
-      }
+      // 교환 완료로 변경: 교환 상대 선택 → 해당 채팅방으로 이동 → 채팅방에서 교환 완료 요청 전송
+      final chatRoomId = await context.navigateTo<String>(screen: TradeCompletePartnerSelectScreen(item: item));
+      if (!mounted || chatRoomId == null) return;
+      context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId, autoTriggerExchangeRequest: true));
     } else {
       // 판매중으로 변경: 기존 확인 다이얼로그
       final result = await context.showDeleteDialog(
@@ -751,10 +751,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
       // 성공 시 목록 새로고침
       _loadMyItems(isRefresh: true);
 
-      if (mounted) {
-        final successMessage = _currentTabStatus == MyItemToggleStatus.selling ? '교환 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
+      if (!mounted) return;
 
-        CommonSnackBar.show(context: context, message: successMessage);
+      if (_currentTabStatus != MyItemToggleStatus.selling) {
+        CommonSnackBar.show(context: context, message: '판매중으로 변경되었습니다');
       }
     } catch (e) {
       if (mounted) {

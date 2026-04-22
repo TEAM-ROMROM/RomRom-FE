@@ -14,6 +14,9 @@ TradeRequest _$TradeRequestFromJson(Map<String, dynamic> json) => TradeRequest(
   itemTradeOptions: (json['itemTradeOptions'] as List<dynamic>?)?.map((e) => e as String).toList(),
   pageNumber: (json['pageNumber'] as num?)?.toInt() ?? 0,
   pageSize: (json['pageSize'] as num?)?.toInt() ?? 10,
+  tradeReviewRating: json['tradeReviewRating'] as String?,
+  tradeReviewTags: (json['tradeReviewTags'] as List<dynamic>?)?.map((e) => e as String).toList(),
+  reviewComment: json['reviewComment'] as String?,
 );
 
 Map<String, dynamic> _$TradeRequestToJson(TradeRequest instance) => <String, dynamic>{
@@ -24,4 +27,7 @@ Map<String, dynamic> _$TradeRequestToJson(TradeRequest instance) => <String, dyn
   'itemTradeOptions': instance.itemTradeOptions,
   'pageNumber': instance.pageNumber,
   'pageSize': instance.pageSize,
+  'tradeReviewRating': instance.tradeReviewRating,
+  'tradeReviewTags': instance.tradeReviewTags,
+  'reviewComment': instance.reviewComment,
 };

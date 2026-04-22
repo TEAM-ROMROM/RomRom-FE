@@ -1,11 +1,36 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-21T10:57:41Z",
-    "currentVersion": "1.10.22",
-    "totalReleases": 102,
+    "lastUpdated": "2026-04-22T09:21:44Z",
+    "currentVersion": "1.10.24",
+    "totalReleases": 103,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.24",
+      "project_type": "flutter",
+      "date": "2026-04-22",
+      "pr_number": 801,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 거래 완료 후 상대방을 평가할 수 있는 리뷰 기능 추가\n  * 만족도(별로, 보통, 좋음) 및 거래 태그(친절함, 빠른 응답 등) 선택 기능\n  * 선택적 의견 작성 기능\n  * 단계별 리뷰 작성 인터페이스\n\n* **Chores**\n  * 버전 업데이트 (v1.10.22 → v1.10.24)",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "거래 완료 후 상대방을 평가할 수 있는 리뷰 기능 추가",
+            "만족도(별로, 보통, 좋음) 및 거래 태그(친절함, 빠른 응답 등) 선택 기능",
+            "선택적 의견 작성 기능",
+            "단계별 리뷰 작성 인터페이스"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업데이트 (v1.10.22 → v1.10.24)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.22",
       "project_type": "flutter",

@@ -87,6 +87,16 @@ class AppColors {
   static const Color itemOptionsMenuRedText = Color(0xFFFF5656); // 삭제 텍스트 색상
   static const Color itemOptionsMenuRedIcon = Color(0xFF993333); // 삭제 아이콘 색상
 
+  // 후기 만족도 선택 색상
+  static const Color reviewRatingUnselected = Color(0xFF828289);
+  static const Color reviewRatingUnselectedBackground = Color(0xFF4C4E54); // 만족도 선택 안된 상태 배경색
+  static const Color reviewRatingBad = Color(0xFFFF5656); // 별로예요
+  static const Color reviewRatingGood = Color(0xFFFFC300); // 좋아요
+  static const Color reviewRatingGreat = Color(0xFF00FF85); // 최고에요
+  static const Color reviewRatingBadBackground = Color(0xFFDFBABA); // 별로예요 선택 시 배경
+  static const Color reviewRatingGoodBackground = Color(0xFFDACFAF); // 좋아요 선택 시 배경
+  static const Color reviewRatingGreatBackground = Color(0xFFBDFADD); // 최고에요 선택 시 배경
+
   // 경고 다이얼로그
   static const Color warningRed = Color(0xFFFF5656); // 경고 아이콘 및 버튼 색상
 
