@@ -164,6 +164,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkVersionOnResume();
+      if (DebugConfig.isTestBuild) {
+        DebugOverlayManager().resumeServerLog();
+      }
+    } else if (state == AppLifecycleState.paused) {
+      if (DebugConfig.isTestBuild) {
+        DebugOverlayManager().suspendServerLog();
+      }
     }
   }
 
