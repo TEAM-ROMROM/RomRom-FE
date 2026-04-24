@@ -9,7 +9,7 @@ import 'package:romrom_fe/utils/secured_api_utils.dart';
 
 /// SSE 기반 서버 로그 스트리밍 클라이언트
 class ServerLogClient {
-  static const String _endpoint = '${AppUrls.baseUrl}/api/app/debug/log-stream';
+  static String get _endpoint => '${AppUrls.baseUrl}/api/app/debug/log-stream';
   static const Duration _reconnectDelay = Duration(seconds: 3);
   static const int _maxBufferSize = 1000;
 

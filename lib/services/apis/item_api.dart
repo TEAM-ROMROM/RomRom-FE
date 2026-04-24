@@ -15,7 +15,7 @@ class ItemApi {
   /// 물품 등록 API
   /// `POST /api/item/post`
   Future<ItemResponse> postItem(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/post';
+    final String url = '${AppUrls.baseUrl}/api/item/post';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
@@ -62,7 +62,7 @@ class ItemApi {
   /// 좋아요 등록/취소 API
   /// `POST /api/item/like/post`
   Future<ItemResponse> postLike(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/like/post';
+    final String url = '${AppUrls.baseUrl}/api/item/like/post';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {'itemId': request.itemId};
@@ -83,7 +83,7 @@ class ItemApi {
   /// 물품 리스트 조회 API
   /// `POST /api/item/list/get`
   Future<ItemResponse> getItems(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/list/get';
+    final String url = '${AppUrls.baseUrl}/api/item/list/get';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
@@ -111,7 +111,7 @@ class ItemApi {
   /// 물품 상세 조회 API
   /// `POST /api/item/get`
   Future<ItemResponse> getItemDetail(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/get';
+    final String url = '${AppUrls.baseUrl}/api/item/get';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {'itemId': request.itemId};
@@ -132,7 +132,7 @@ class ItemApi {
   /// 내 물품 목록 조회 API
   /// `POST /api/item/get/my`
   Future<ItemResponse> getMyItems(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/get/my';
+    final String url = '${AppUrls.baseUrl}/api/item/get/my';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
@@ -160,7 +160,7 @@ class ItemApi {
   /// AI 가격 예측 API
   /// `POST /api/item/price/predict`
   Future<int> pricePredict(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/price/predict';
+    final String url = '${AppUrls.baseUrl}/api/item/price/predict';
     int predictedPrice = 0;
 
     final Map<String, dynamic> fields = {
@@ -192,7 +192,7 @@ class ItemApi {
   /// 물품 삭제 API
   /// `POST /api/item/delete`
   Future<void> deleteItem(String itemId) async {
-    const String url = '${AppUrls.baseUrl}/api/item/delete';
+    final String url = '${AppUrls.baseUrl}/api/item/delete';
 
     final Map<String, dynamic> fields = {'itemId': itemId};
 
@@ -209,7 +209,7 @@ class ItemApi {
   /// 물품 수정 API
   /// `POST /api/item/edit`
   Future<void> updateItem(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/edit';
+    final String url = '${AppUrls.baseUrl}/api/item/edit';
 
     final Map<String, dynamic> fields = {
       'itemId': request.itemId,
@@ -253,7 +253,7 @@ class ItemApi {
   /// 물품 거래 상태 변경 API
   /// `POST /api/item/status/update`
   Future<ItemResponse> updateItemStatus(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/status/update';
+    final String url = '${AppUrls.baseUrl}/api/item/status/update';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {'itemId': request.itemId, 'itemStatus': request.itemStatus};
@@ -274,7 +274,7 @@ class ItemApi {
   /// 좋아요 물품 목록 조회
   /// `POST /api/item/like/get`
   Future<ItemResponse> getLikeList(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/like/get';
+    final String url = '${AppUrls.baseUrl}/api/item/like/get';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {

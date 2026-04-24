@@ -20,7 +20,7 @@ class ChatApi {
   /// 채팅방 생성 API
   /// POST /api/chat/rooms/create
   Future<ChatRoom> createChatRoom({required String opponentMemberId, required String tradeRequestHistoryId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/create';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/create';
     late ChatRoom chatRoom;
 
     final Map<String, dynamic> fields = {
@@ -49,7 +49,7 @@ class ChatApi {
   /// 본인 채팅방 목록 조회 API
   /// POST /api/chat/rooms/get
   Future<PagedChatRoomDetail> getChatRooms({int pageNumber = 0, int pageSize = 8}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/get';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/get';
     late PagedChatRoomDetail pagedChatRooms;
 
     final Map<String, dynamic> fields = {'pageNumber': pageNumber.toString(), 'pageSize': pageSize.toString()};
@@ -103,7 +103,7 @@ class ChatApi {
   /// 특정 물품의 채팅 상대 목록 조회 API
   /// POST /api/chat/rooms/get/item (itemId 필터)
   Future<PagedChatRoomDetail> getChatRoomsByItemId({required String itemId, int pageSize = 50}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/get/item';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/get/item';
 
     final Map<String, dynamic> fields = {'pageNumber': '0', 'pageSize': pageSize.toString(), 'itemId': itemId};
 
@@ -143,7 +143,7 @@ class ChatApi {
   /// 채팅방 삭제 API
   /// POST /api/chat/rooms/delete
   Future<void> deleteChatRoom({required String chatRoomId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/delete';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/delete';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
@@ -160,7 +160,7 @@ class ChatApi {
   /// 채팅방 메시지 조회 API
   /// POST /api/chat/rooms/messages/get
   Future<ChatRoomResponse> getChatMessages({required String chatRoomId, int pageNumber = 0, int pageSize = 30}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/messages/get';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/messages/get';
     late ChatRoomResponse chatRoomResponse;
 
     final Map<String, dynamic> fields = {
@@ -194,7 +194,7 @@ class ChatApi {
   /// 특정 채팅방의 읽음 표시 커서 갱신 API
   /// POST /api/chat/rooms/read-cursor/update
   Future<void> updateChatRoomReadCursor({required String chatRoomId, required bool isEntered}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/read-cursor/update';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/read-cursor/update';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId, 'isEntered': isEntered.toString()};
 
@@ -211,7 +211,7 @@ class ChatApi {
   /// 특정 채팅방의 읽음 상태 조회 API
   /// POST /api/chat/rooms/read-status/get
   Future<ChatUserState?> getChatRoomReadStatus({required String chatRoomId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/read-status/get';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/read-status/get';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
@@ -241,7 +241,7 @@ class ChatApi {
   /// 채팅방 교환 완료 요청 API
   /// POST /api/chat/rooms/trade-completion/request
   Future<void> requestTradeCompletion({required String chatRoomId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/request';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/request';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
@@ -258,7 +258,7 @@ class ChatApi {
   /// 채팅방 교환 완료 요청 거절 API
   /// POST /api/chat/rooms/trade-completion/reject
   Future<void> rejectTradeCompletion({required String chatRoomId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/reject';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/reject';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
@@ -275,7 +275,7 @@ class ChatApi {
   /// 채팅방 교환 완료 요청 확인 API
   /// POST /api/chat/rooms/trade-completion/confirm
   Future<void> confirmTradeCompletion({required String chatRoomId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/confirm';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/confirm';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
@@ -292,7 +292,7 @@ class ChatApi {
   /// 채팅방 교환 완료 요청 취소 API
   /// POST /api/chat/rooms/trade-completion/cancel
   Future<void> cancelTradeCompletionRequest({required String chatRoomId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/cancel';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/cancel';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
