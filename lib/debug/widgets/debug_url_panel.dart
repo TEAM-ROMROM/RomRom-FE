@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:romrom_fe/debug/runtime_url_manager.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 class DebugUrlPanel extends StatefulWidget {
   final VoidCallback onClose;
@@ -39,23 +43,22 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
     setState(() => _isLoading = true);
     final url = RuntimeUrlManager.buildPreviewUrl(input);
     await RuntimeUrlManager().setBaseUrl(url);
-    if (mounted) {
-      setState(() {
-        _currentUrl = url;
-        _isLoading = false;
-        _controller.clear();
-      });
-    }
+    await _logoutAndNavigate();
   }
 
   Future<void> _resetToProd() async {
     setState(() => _isLoading = true);
     await RuntimeUrlManager().resetToDefault();
+    await _logoutAndNavigate();
+  }
+
+  /// URL 변경 후 토큰 초기화 + 로그인 화면으로 이동
+  /// PR 서버는 별도 DB라 기존 토큰이 유효하지 않으므로 재로그인 필요
+  Future<void> _logoutAndNavigate() async {
+    await TokenManager().deleteTokens();
     if (mounted) {
-      setState(() {
-        _currentUrl = RuntimeUrlManager().baseUrl;
-        _isLoading = false;
-      });
+      widget.onClose();
+      context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
     }
   }
 
