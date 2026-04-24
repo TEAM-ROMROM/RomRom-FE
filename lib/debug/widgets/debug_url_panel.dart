@@ -69,34 +69,37 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
     return Positioned(
       left: _x,
       top: _y,
-      child: GestureDetector(
-        onPanUpdate: (details) {
-          setState(() {
-            _x = (_x + details.delta.dx).clamp(0.0, screenSize.width - _panelWidth);
-            _y = (_y + details.delta.dy).clamp(0.0, screenSize.height - 200.0);
-          });
-        },
-        child: Container(
-          width: _panelWidth,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBlack.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.secondaryBlack2, width: 1),
-            boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 12, offset: Offset(0, 4))],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const Divider(color: Color(0xFF333333), height: 1),
-              _buildCurrentUrl(),
-              const Divider(color: Color(0xFF333333), height: 1),
-              _buildInputSection(),
-              const SizedBox(height: 8),
-              _buildResetButton(),
-              const SizedBox(height: 12),
-            ],
+      child: Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onPanUpdate: (details) {
+            setState(() {
+              _x = (_x + details.delta.dx).clamp(0.0, screenSize.width - _panelWidth);
+              _y = (_y + details.delta.dy).clamp(0.0, screenSize.height - 200.0);
+            });
+          },
+          child: Container(
+            width: _panelWidth,
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlack.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.secondaryBlack2, width: 1),
+              boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 12, offset: Offset(0, 4))],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const Divider(color: Color(0xFF333333), height: 1),
+                _buildCurrentUrl(),
+                const Divider(color: Color(0xFF333333), height: 1),
+                _buildInputSection(),
+                const SizedBox(height: 8),
+                _buildResetButton(),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),
