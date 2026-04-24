@@ -1,6 +1,8 @@
+import 'package:romrom_fe/debug/runtime_url_manager.dart';
+
 /// 프로젝트 내 URL 관리
 class AppUrls {
-  static const String baseUrl = "https://api.romrom.suhsaechan.kr";
+  static String get baseUrl => RuntimeUrlManager().baseUrl;
   static const String itemShareBaseUrl = "https://romrom-c4008.web.app";
   static const String imageBaseUrl = "https://suh-project.synology.me"; // 이미지 서버 주소
   static const String naverReverseGeoCodeApiUrl =

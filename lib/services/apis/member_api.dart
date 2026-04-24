@@ -15,7 +15,7 @@ class MemberApi {
   /// 하트비트 API (온라인 상태 갱신)
   /// `POST /api/members/heartbeat`
   Future<bool> heartbeat() async {
-    const String url = '${AppUrls.baseUrl}/api/members/heartbeat';
+    final String url = '${AppUrls.baseUrl}/api/members/heartbeat';
     bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
@@ -32,7 +32,7 @@ class MemberApi {
   /// 이용약관 동의 API
   /// `POST /api/members/terms`
   Future<bool> saveTermsAgreement({required bool isMarketingInfoAgreed}) async {
-    const String url = '${AppUrls.baseUrl}/api/members/terms';
+    final String url = '${AppUrls.baseUrl}/api/members/terms';
     bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
@@ -51,7 +51,7 @@ class MemberApi {
   /// 회원 선호 카테고리 저장 API
   /// `POST /api/members/post/category/preferences`
   Future<bool> savePreferredCategories(List<int> preferredCategories) async {
-    const String url = '${AppUrls.baseUrl}/api/members/post/category/preferences';
+    final String url = '${AppUrls.baseUrl}/api/members/post/category/preferences';
     bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
@@ -76,7 +76,7 @@ class MemberApi {
     required String eupMyoenDong,
     String? ri,
   }) async {
-    const String url = '${AppUrls.baseUrl}/api/members/post/location';
+    final String url = '${AppUrls.baseUrl}/api/members/post/location';
 
     final Map<String, dynamic> fields = {
       'longitude': longitude.toString(),
@@ -100,7 +100,7 @@ class MemberApi {
   /// 회원 정보 조회 API
   /// `POST /api/members/get`
   Future<MemberResponse> getMemberInfo() async {
-    const String url = '${AppUrls.baseUrl}/api/members/get';
+    final String url = '${AppUrls.baseUrl}/api/members/get';
     late MemberResponse memberResponse;
 
     await ApiClient.sendMultipartRequest(
@@ -118,7 +118,7 @@ class MemberApi {
   /// 회원 탈퇴 API
   /// `POST /api/members/delete`
   Future<bool> deleteMember() async {
-    const String url = '${AppUrls.baseUrl}/api/members/delete';
+    final String url = '${AppUrls.baseUrl}/api/members/delete';
     bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
@@ -135,7 +135,7 @@ class MemberApi {
   /// 탐색 범위 설정 API
   /// `POST /api/members/post/search-radius`
   Future<bool> saveSearchRadius(double searchRadiusInMeters) async {
-    const String url = '${AppUrls.baseUrl}/api/members/post/search-radius';
+    final String url = '${AppUrls.baseUrl}/api/members/post/search-radius';
     bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
@@ -153,7 +153,7 @@ class MemberApi {
   /// 회원 프로필 변경 API
   /// `POST /api/members/profile/update`
   Future<void> updateMemberProfile(String nickname, String profileUrl) async {
-    const String url = '${AppUrls.baseUrl}/api/members/profile/update';
+    final String url = '${AppUrls.baseUrl}/api/members/profile/update';
 
     await ApiClient.sendMultipartRequest(
       url: url,
@@ -168,7 +168,7 @@ class MemberApi {
   /// 타인 프로필 조회 API
   /// `POST /api/members/get/profile`
   Future<MemberResponse> getMemberProfile(String memberId) async {
-    const String url = '${AppUrls.baseUrl}/api/members/get/profile';
+    final String url = '${AppUrls.baseUrl}/api/members/get/profile';
     late MemberResponse memberResponse;
 
     await ApiClient.sendMultipartRequest(
@@ -187,7 +187,7 @@ class MemberApi {
   /// 차단 회원 목록 조회 API
   /// `POST /api/members/block/get`
   Future<MemberResponse> getBlockedMembers() async {
-    const String url = '${AppUrls.baseUrl}/api/members/block/get';
+    final String url = '${AppUrls.baseUrl}/api/members/block/get';
     late MemberResponse memberResponse;
 
     await ApiClient.sendMultipartRequest(
@@ -205,7 +205,7 @@ class MemberApi {
   /// 회원 차단 API
   /// `POST /api/members/block/post`
   Future<bool> blockMember(String blockTargetMemberId) async {
-    const String url = '${AppUrls.baseUrl}/api/members/block/post';
+    final String url = '${AppUrls.baseUrl}/api/members/block/post';
     bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
@@ -223,7 +223,7 @@ class MemberApi {
   /// 회원 차단 해제 API
   /// `POST /api/members/block/delete`
   Future<bool> unblockMember(String blockTargetMemberId) async {
-    const String url = '${AppUrls.baseUrl}/api/members/block/delete';
+    final String url = '${AppUrls.baseUrl}/api/members/block/delete';
     bool isSuccess = false;
 
     await ApiClient.sendMultipartRequest(
@@ -248,7 +248,7 @@ class MemberApi {
     bool? isContentNotificationAgreed,
     bool? isTradeNotificationAgreed,
   }) async {
-    const String url = '${AppUrls.baseUrl}/api/members/notification/update';
+    final String url = '${AppUrls.baseUrl}/api/members/notification/update';
     late MemberResponse memberResponse;
 
     final Map<String, dynamic> fields = {

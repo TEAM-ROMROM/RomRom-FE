@@ -406,7 +406,7 @@ class ApiClient {
       final refreshToken = await _tokenManager.getRefreshToken();
       if (refreshToken == null) return false;
 
-      const String url = '${AppUrls.baseUrl}/api/auth/reissue';
+      final String url = '${AppUrls.baseUrl}/api/auth/reissue';
 
       var response = await _executeMultipartRequest(url: url, method: 'POST', fields: {'refreshToken': refreshToken});
 

@@ -22,7 +22,7 @@ class AppVersionApi {
   /// `POST /api/app/version/check`
   /// @SecuredApi (HMAC + Timestamp) 인증, JWT 불필요
   Future<AppVersionResponse?> getAppVersion() async {
-    const String url = '${AppUrls.baseUrl}/api/app/version/check';
+    final String url = '${AppUrls.baseUrl}/api/app/version/check';
 
     try {
       final securedHeaders = SecuredApiUtils.generateHeaders();
