@@ -1,4 +1,3 @@
-// lib/debug/runtime_url_manager.dart
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,6 +11,8 @@ class RuntimeUrlManager {
 
   String _currentBaseUrl = _prodUrl;
 
+  final List<void Function(String)> _listeners = [];
+
   String get baseUrl {
     if (!kDebugMode) return _prodUrl;
     return _currentBaseUrl;
@@ -19,6 +20,20 @@ class RuntimeUrlManager {
 
   static String buildPreviewUrl(String prNumber) {
     return 'http://romrom-pr-$prNumber.pr.suhsaechan.kr:8079';
+  }
+
+  void addUrlChangeListener(void Function(String) listener) {
+    _listeners.add(listener);
+  }
+
+  void removeUrlChangeListener(void Function(String) listener) {
+    _listeners.remove(listener);
+  }
+
+  void _notifyListeners(String url) {
+    for (final listener in List.of(_listeners)) {
+      listener(url);
+    }
   }
 
   /// 앱 시작 시 호출 — SharedPreferences에서 저장된 URL 복원
@@ -36,6 +51,7 @@ class RuntimeUrlManager {
     _currentBaseUrl = url;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKey, url);
+    _notifyListeners(url);
   }
 
   Future<void> resetToDefault() async {
@@ -43,6 +59,7 @@ class RuntimeUrlManager {
     _currentBaseUrl = _prodUrl;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefsKey);
+    _notifyListeners(_prodUrl);
   }
 
   bool get isUsingProd => _currentBaseUrl == _prodUrl;

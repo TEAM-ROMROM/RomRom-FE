@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/debug/log_capture.dart';
+import 'package:romrom_fe/debug/runtime_url_manager.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/utils/secured_api_utils.dart';
 
@@ -22,6 +23,13 @@ class ServerLogClient {
   bool _shouldReconnect = false;
   Timer? _reconnectTimer;
 
+  void _onUrlChanged(String _) {
+    if (_shouldReconnect) {
+      _addSystemLog('[서버 로그] URL 변경 감지 — 재연결 중...');
+      _doConnect();
+    }
+  }
+
   /// 현재 버퍼의 로그 목록
   List<CapturedLog> get logs => List.unmodifiable(_buffer);
 
@@ -34,6 +42,7 @@ class ServerLogClient {
   /// SSE 연결 시작
   Future<void> connect() async {
     _shouldReconnect = true;
+    RuntimeUrlManager().addUrlChangeListener(_onUrlChanged);
     await _doConnect();
   }
 
@@ -145,7 +154,10 @@ class ServerLogClient {
 
   /// 연결 종료
   void disconnect({bool permanent = true}) {
-    if (permanent) _shouldReconnect = false;
+    if (permanent) {
+      _shouldReconnect = false;
+      RuntimeUrlManager().removeUrlChangeListener(_onUrlChanged);
+    }
     _reconnectTimer?.cancel();
     _sseSubscription?.cancel();
     _sseSubscription = null;
