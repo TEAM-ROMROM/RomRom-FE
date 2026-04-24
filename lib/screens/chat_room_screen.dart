@@ -13,6 +13,7 @@ import 'package:romrom_fe/screens/chat_location_picker_screen.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
@@ -501,7 +502,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
-          _scrollController.animateTo(0.0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+          _scrollController.animateTo(0.0, duration: AppMotion.normal, curve: AppMotion.entry);
         }
       });
     }

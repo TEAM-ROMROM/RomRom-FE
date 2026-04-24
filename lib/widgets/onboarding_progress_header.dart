@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 /// 온보딩 프로그레스 헤더 위젯
 ///
@@ -83,8 +84,10 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
         children: [
           SizedBox(width: 24.w),
           // 뒤로가기 버튼
-          GestureDetector(
+          AppPressable(
             onTap: widget.onBackPressed ?? () => Navigator.of(context).pop(),
+            scaleDown: AppPressable.scaleIcon,
+            enableRipple: false,
             child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
           ),
           SizedBox(width: 81.w),

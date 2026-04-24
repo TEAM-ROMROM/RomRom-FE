@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 탐색 범위 설정을 위한 커스텀 슬라이더 위젯
@@ -41,11 +42,11 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget> with SingleTicker
     super.initState();
     _currentIndex = widget.selectedIndex;
     _lastHapticIndex = _currentIndex;
-    _animationController = AnimationController(duration: const Duration(milliseconds: 200), vsync: this);
+    _animationController = AnimationController(duration: AppMotion.fast, vsync: this);
     _animation = Tween<double>(
       begin: _currentIndex.toDouble(),
       end: _currentIndex.toDouble(),
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(parent: _animationController, curve: AppMotion.decelerate));
   }
 
   @override
@@ -66,7 +67,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget> with SingleTicker
     _animation = Tween<double>(
       begin: _animation.value,
       end: index.toDouble(),
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(parent: _animationController, curve: AppMotion.decelerate));
     _animationController.forward(from: 0);
     _currentIndex = index;
     _lastHapticIndex = index;

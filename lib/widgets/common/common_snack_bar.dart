@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 class CommonSnackBar {
@@ -115,15 +116,15 @@ class CommonSnackBar {
     final tickerProvider = _OverlayTickerProvider();
 
     animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      reverseDuration: const Duration(milliseconds: 200),
+      duration: AppMotion.normal,
+      reverseDuration: AppMotion.fast,
       vsync: tickerProvider,
     );
 
     final fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: animationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: animationController, curve: AppMotion.standard));
 
     // 위치를 위한 ValueNotifier
     final bottomPosition = ValueNotifier<double>(_baseBottom);
@@ -138,8 +139,8 @@ class CommonSnackBar {
       builder: (context) => ValueListenableBuilder<double>(
         valueListenable: bottomPosition,
         builder: (context, bottom, child) => AnimatedPositioned(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
+          duration: AppMotion.fast,
+          curve: AppMotion.standard,
           bottom: bottom.h,
           left: 24.w,
           right: 24.w,
