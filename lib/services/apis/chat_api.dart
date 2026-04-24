@@ -100,6 +100,46 @@ class ChatApi {
     return pagedChatRooms;
   }
 
+  /// 특정 물품의 채팅 상대 목록 조회 API
+  /// POST /api/chat/rooms/get/item (itemId 필터)
+  Future<PagedChatRoomDetail> getChatRoomsByItemId({required String itemId, int pageSize = 50}) async {
+    const String url = '${AppUrls.baseUrl}/api/chat/rooms/get/item';
+
+    final Map<String, dynamic> fields = {'pageNumber': '0', 'pageSize': pageSize.toString(), 'itemId': itemId};
+
+    final http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {},
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('물품 채팅 상대 조회 실패: ${response.statusCode}');
+    }
+
+    final Map<String, dynamic> responseData = jsonDecode(response.body);
+    final chatRoomsData = responseData['chatRoomDetailDtoPage'] as Map<String, dynamic>?;
+    if (chatRoomsData == null) {
+      return PagedChatRoomDetail(
+        content: [],
+        pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
+      );
+    }
+
+    final rawContent = chatRoomsData['content'];
+    final content = rawContent is List
+        ? rawContent.map((e) => ChatRoomDetailDto.fromJson(e as Map<String, dynamic>)).toList()
+        : <ChatRoomDetailDto>[];
+    final isLast = chatRoomsData['last'] as bool? ?? true;
+
+    return PagedChatRoomDetail(
+      content: content,
+      pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
+      last: isLast,
+    );
+  }
+
   /// 채팅방 삭제 API
   /// POST /api/chat/rooms/delete
   Future<void> deleteChatRoom({required String chatRoomId}) async {

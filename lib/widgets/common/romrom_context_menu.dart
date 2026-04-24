@@ -82,12 +82,12 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(duration: const Duration(milliseconds: 250), vsync: this);
+    _animationController = AnimationController(duration: AppMotion.fast, vsync: this);
 
     final curve = CurvedAnimation(
       parent: _animationController,
       curve: AppMotion.decelerate,
-      reverseCurve: Curves.easeInCubic,
+      reverseCurve: AppMotion.accelerate,
     );
 
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(curve);

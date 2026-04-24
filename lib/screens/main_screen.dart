@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
@@ -131,13 +130,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      body: AnimatedSwitcher(
-        duration: AppMotion.normal,
-        switchInCurve: AppMotion.entry,
-        switchOutCurve: AppMotion.entry,
-        transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-        child: KeyedSubtree(key: ValueKey<int>(_currentTabIndex), child: _navigationTabScreens[_currentTabIndex]),
-      ),
+      body: IndexedStack(index: _currentTabIndex, children: _navigationTabScreens),
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _currentTabIndex,
         onTap: (index) {

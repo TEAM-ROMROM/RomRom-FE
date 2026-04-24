@@ -19,8 +19,6 @@ class FeedNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.
         customOptions: MutableMap<String, Any>?
     ): NativeAdView {
         val nativeAdView = NativeAdView(context)
-        // 배경 클릭 방지 (빈 공간 클릭 금지 정책)
-        nativeAdView.isClickable = false
 
         // ── 광고 배지 ("광고" 텍스트, 최소 15×15px) ──────────────────────
         val adBadge = TextView(context).apply {
@@ -43,7 +41,6 @@ class FeedNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.
         // ── 메인 미디어 (이미지 또는 영상) ───────────────────────────────
         val mediaView = MediaView(context).apply {
             mediaContent = nativeAd.mediaContent
-            isClickable = false // 배경 클릭 방지
         }
         nativeAdView.mediaView = mediaView
 
@@ -80,14 +77,12 @@ class FeedNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.
             setPadding(48, 48, 48, 48)
             setBackgroundColor(android.graphics.Color.parseColor("#1A1A1A"))
             gravity = android.view.Gravity.CENTER_VERTICAL
-            isClickable = false // 배경 클릭 방지
         }
 
         // 상단 행: 아이콘 + 헤드라인 + 광고 배지
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
-            isClickable = false
         }
 
         val iconParams = LinearLayout.LayoutParams(64, 64).apply { rightMargin = 12 }

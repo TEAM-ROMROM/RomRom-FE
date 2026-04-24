@@ -40,6 +40,9 @@ class AppMotion {
   /// 감속 — 컨텍스트 메뉴, 오버레이 (물리적 자연스러움)
   static const Curve decelerate = Curves.easeOutCubic;
 
+  /// 가속 — 오버레이 닫힘, decelerate의 역방향
+  static const Curve accelerate = Curves.easeInCubic;
+
   /// 버튼 눌림 spring back — AppPressable의 복귀 애니메이션
   static const Curve springOut = ElasticOutCurve(0.5);
 

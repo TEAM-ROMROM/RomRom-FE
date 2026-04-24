@@ -279,7 +279,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// 초기 아이템 로드
   /// 결과가 0개이면 recommend → distance → preferredCategory → createdDate 순으로 폴백
   Future<void> _loadInitialItems() async {
-    if (!mounted) return;
+    if (!mounted || _isLoading) return;
 
     setState(() {
       _isLoading = true;

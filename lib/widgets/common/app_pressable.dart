@@ -156,8 +156,9 @@ class _AppPressableState extends State<AppPressable> with SingleTickerProviderSt
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
-      onTap: widget.enabled ? widget.onTap : null,
-      onLongPress: widget.enabled ? widget.onLongPress : null,
+      // enableRipple=true 시 InkWell이 onTap/onLongPress를 처리하므로 GestureDetector에는 등록하지 않음
+      onTap: widget.enableRipple ? null : (widget.enabled ? widget.onTap : null),
+      onLongPress: widget.enableRipple ? null : (widget.enabled ? widget.onLongPress : null),
       behavior: HitTestBehavior.opaque,
       child: Transform.scale(
         scale: _currentScale,

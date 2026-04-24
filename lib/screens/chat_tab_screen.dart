@@ -367,9 +367,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                             });
                           }
 
-                          final refreshed = await Navigator.of(
-                            context,
-                          ).push<bool>(MaterialPageRoute(builder: (_) => ChatRoomScreen(chatRoomId: roomId)));
+                          final refreshed = await context.navigateTo<bool>(screen: ChatRoomScreen(chatRoomId: roomId));
 
                           // 엄격히 true일 때만 새로고침
                           if (refreshed == true) {

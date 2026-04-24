@@ -54,39 +54,32 @@ class CompletionButton extends StatelessWidget {
     // 버튼 문구  결정
     final TextStyle buttonTextStyle = CustomTextStyles.p1.copyWith(color: textColor);
 
-    // 버튼 highlightColor와 splashColor는 backgroundColor를 어둡게 한 색상으로 설정
+    // 버튼 rippleColor는 backgroundColor를 어둡게 한 색상으로 설정
     final Color highlightColor = darkenBlend(backgroundColor);
-    final Color splashColor = highlightColor.withValues(alpha: 0.3);
 
     return Center(
       child: AppPressable(
         onTap: effectiveEnabled ? enabledOnPressed : disabledOnPressed,
         enabled: effectiveEnabled,
         borderRadius: BorderRadius.circular(10.r),
+        rippleColor: highlightColor,
         child: SizedBox(
           width: buttonWidth.w,
           height: buttonHeight.h,
           child: Material(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(10.r),
-            child: InkWell(
-              onTap: effectiveEnabled ? enabledOnPressed : disabledOnPressed,
-              customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-              highlightColor: highlightColor,
-              splashColor: splashColor,
-              borderRadius: BorderRadius.circular(10.r),
-              child: Center(
-                child: isLoading
-                    ? SizedBox(
-                        width: 24.w,
-                        height: 24.h,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.w,
-                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
-                        ),
-                      )
-                    : Text(buttonText, style: buttonTextStyle, textAlign: TextAlign.center, softWrap: false),
-              ),
+            child: Center(
+              child: isLoading
+                  ? SizedBox(
+                      width: 24.w,
+                      height: 24.h,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.w,
+                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
+                      ),
+                    )
+                  : Text(buttonText, style: buttonTextStyle, textAlign: TextAlign.center, softWrap: false),
             ),
           ),
         ),

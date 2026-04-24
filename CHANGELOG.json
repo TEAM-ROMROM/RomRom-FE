@@ -1,11 +1,116 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-13T09:34:53Z",
-    "currentVersion": "1.10.15",
-    "totalReleases": 99,
+    "lastUpdated": "2026-04-22T09:21:44Z",
+    "currentVersion": "1.10.24",
+    "totalReleases": 103,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.24",
+      "project_type": "flutter",
+      "date": "2026-04-22",
+      "pr_number": 801,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 거래 완료 후 상대방을 평가할 수 있는 리뷰 기능 추가\n  * 만족도(별로, 보통, 좋음) 및 거래 태그(친절함, 빠른 응답 등) 선택 기능\n  * 선택적 의견 작성 기능\n  * 단계별 리뷰 작성 인터페이스\n\n* **Chores**\n  * 버전 업데이트 (v1.10.22 → v1.10.24)",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "거래 완료 후 상대방을 평가할 수 있는 리뷰 기능 추가",
+            "만족도(별로, 보통, 좋음) 및 거래 태그(친절함, 빠른 응답 등) 선택 기능",
+            "선택적 의견 작성 기능",
+            "단계별 리뷰 작성 인터페이스"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업데이트 (v1.10.22 → v1.10.24)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.22",
+      "project_type": "flutter",
+      "date": "2026-04-21",
+      "pr_number": 800,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 교환 완료 처리 시 거래 상대를 선택할 수 있는 화면 추가\n  * 물품 등록 화면에 등록된 물품 개수 표시 추가\n  * 교환 완료 목록에서 교환 완료 상태 태그 표시 추가",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "교환 완료 처리 시 거래 상대를 선택할 수 있는 화면 추가",
+            "물품 등록 화면에 등록된 물품 개수 표시 추가",
+            "교환 완료 목록에서 교환 완료 상태 태그 표시 추가"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.21",
+      "project_type": "flutter",
+      "date": "2026-04-17",
+      "pr_number": 785,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **버그 수정**\n  * 채팅방 메시지 수신 안정성 개선\n  * 광고 초기화 프로세스 개선\n\n* **개선**\n  * 광고 동의 절차 및 사용자 경험 개선\n  * 위치 권한 설정 정리\n\n* **기타**\n  * v1.10.21로 업데이트",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "채팅방 메시지 수신 안정성 개선",
+            "광고 초기화 프로세스 개선"
+          ]
+        },
+        "개선": {
+          "title": "개선",
+          "items": [
+            "광고 동의 절차 및 사용자 경험 개선",
+            "위치 권한 설정 정리"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "v1.10.21로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.19",
+      "project_type": "flutter",
+      "date": "2026-04-15",
+      "pr_number": 778,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 채팅 화면에서 교환 완료 요청 기능 추가\n  * 교환 완료 요청에 대한 수락/거절 처리 추가\n\n* **개선 사항**\n  * 앱 전반에서 \"거래\" 용어를 \"교환\"으로 통일\n  * 채팅 시스템 메시지 디자인 및 색상 개선\n  * 알림함 헤더 텍스트 업데이트\n\n* **기타**\n  * 버전 업데이트 (v1.10.19)\n  * Android App Links 설정 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅 화면에서 교환 완료 요청 기능 추가",
+            "교환 완료 요청에 대한 수락/거절 처리 추가"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "앱 전반에서 \"거래\" 용어를 \"교환\"으로 통일",
+            "채팅 시스템 메시지 디자인 및 색상 개선",
+            "알림함 헤더 텍스트 업데이트"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 업데이트 (v1.10.19)",
+            "Android App Links 설정 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.15",
       "project_type": "flutter",
