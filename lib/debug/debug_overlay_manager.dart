@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/debug/server_log_client.dart';
 import 'package:romrom_fe/debug/widgets/debug_log_panel.dart';
 import 'package:romrom_fe/debug/widgets/debug_menu_panel.dart';
 import 'package:romrom_fe/debug/widgets/debug_server_log_panel.dart';
@@ -11,6 +12,9 @@ class DebugOverlayManager {
   static final DebugOverlayManager _instance = DebugOverlayManager._internal();
   factory DebugOverlayManager() => _instance;
   DebugOverlayManager._internal();
+
+  /// 앱 전역 ServerLogClient 싱글톤 — 백그라운드 suspend/resume 제어용
+  final ServerLogClient serverLogClient = ServerLogClient();
 
   GlobalKey<NavigatorState>? _navigatorKey;
   OverlayEntry? _buttonEntry;
@@ -176,8 +180,19 @@ class DebugOverlayManager {
     _isUrlPanelOpen = false;
   }
 
+  /// 앱 백그라운드 진입 시 SSE 연결 중단 (슬롯 반환)
+  void suspendServerLog() {
+    serverLogClient.suspend();
+  }
+
+  /// 앱 포그라운드 복귀 시 SSE 재연결
+  void resumeServerLog() {
+    serverLogClient.resume();
+  }
+
   /// 리소스 정리
   void dispose() {
+    serverLogClient.disconnect();
     _closeMenu();
     _closeLogPanel();
     _closeServerLogPanel();
