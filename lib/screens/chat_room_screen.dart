@@ -44,7 +44,7 @@ class ChatRoomScreen extends StatefulWidget {
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
 }
 
-class _ChatRoomScreenState extends State<ChatRoomScreen> {
+class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObserver {
   final ChatWebSocketService _wsService = ChatWebSocketService();
   final TextEditingController _messageController = TextEditingController();
   bool _hasText = false;
@@ -89,6 +89,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       // _messages는 reverse 순서(최신 먼저)
       if (msg.senderId != _myMemberId) continue;
       if (msg.chatMessageId == null) continue;
+      // WS 실시간 이벤트로 isPresent가 즉시 갱신되므로 그대로 신뢰
+      // 잠금/백그라운드는 lifecycle observer가 isPresent=false로 갱신
       if (state.isPresent) return msg.chatMessageId;
       final sentAt = msg.createdDate;
       final leftAt = state.leftAt;
@@ -139,13 +141,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 상대방 읽음 상태
   ChatUserState? _opponentState;
-  Timer? _readStatusTimer;
+  StreamSubscription<ChatUserState>? _readEventSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadInitialData();
     _messageController.addListener(_onMessageChanged);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // 잠금화면 또는 background 진입 시 퇴장 처리 → isPresent=false
+      unawaited(
+        ChatApi()
+            .updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: false)
+            .catchError((e) => debugPrint('[ChatRoom] paused read-cursor 업데이트 실패: $e')),
+      );
+    } else if (state == AppLifecycleState.resumed) {
+      // foreground 복귀 시 재입장 처리 → isPresent=true
+      unawaited(ChatApi().updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true));
+    }
   }
 
   bool _isLeaving = false;
@@ -297,12 +315,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         }
       }
 
-      // 읽음 상태 주기적 갱신 (5초마다)
-      _readStatusTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-        if (!mounted) return;
-        final state = await ChatApi().getChatRoomReadStatus(chatRoomId: widget.chatRoomId);
-        if (!mounted) return;
+      // 읽음 이벤트 WebSocket 구독 (REST 폴링 대체)
+      _readEventSubscription = _wsService.subscribeToReadEvents(widget.chatRoomId).listen((state) {
+        if (state.memberId == _myMemberId || !mounted) return;
         setState(() => _opponentState = state);
+        debugPrint('[ChatRoom] 읽음 이벤트 수신: isPresent=${state.isPresent}, leftAt=${state.leftAt}');
       });
 
       CommonModal.showOnceAfterFrame(
@@ -696,10 +713,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _messageSubscription?.cancel();
+    _readEventSubscription?.cancel();
+    _wsService.unsubscribeFromReadEvents(widget.chatRoomId);
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
-    _readStatusTimer?.cancel();
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
     }
