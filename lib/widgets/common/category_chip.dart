@@ -43,7 +43,16 @@ class CategoryChip extends StatelessWidget {
           ),
         ),
         SizedBox(height: 8.h),
-        Text(label, style: CustomTextStyles.p2),
+        SizedBox(
+          width: 80.w,
+          child: Text(
+            label,
+            style: CustomTextStyles.p2,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }

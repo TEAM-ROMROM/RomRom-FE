@@ -102,14 +102,20 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
                         setState(() => _isSaving = true);
                         try {
                           final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
-
-                          if (mounted && isSuccess) {
+                          if (!mounted) return;
+                          if (isSuccess) {
                             CommonSnackBar.show(
                               context: context,
                               message: '선호 카테고리가 저장되었습니다',
                               type: SnackBarType.success,
                             );
                             Navigator.pop(context);
+                          } else {
+                            CommonSnackBar.show(
+                              context: context,
+                              message: '카테고리 저장에 실패했습니다. 잠시 후 다시 시도해주세요.',
+                              type: SnackBarType.error,
+                            );
                           }
                         } catch (e) {
                           debugPrint('선호 카테고리 저장 실패: $e');
