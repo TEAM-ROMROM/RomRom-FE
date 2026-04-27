@@ -63,7 +63,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   int _currentVirtualIndex = 0; // 현재 보고 있는 가상 인덱스 (광고 슬롯 판별용)
   final int _pageSize = 10;
   // 초기 로딩 상태
-  bool _isLoading = true;
+  bool _isLoading = false;
   // 추가 아이템 로딩 상태
   bool _isLoadingMore = false;
   // 더 로드할 아이템 여부
