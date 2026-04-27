@@ -149,10 +149,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       // 잠금화면 또는 background 진입 시 퇴장 처리 → isPresent=false
-      ChatApi().updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: false);
+      unawaited(
+        ChatApi()
+            .updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: false)
+            .catchError((e) => debugPrint('[ChatRoom] paused read-cursor 업데이트 실패: $e')),
+      );
     } else if (state == AppLifecycleState.resumed) {
       // foreground 복귀 시 재입장 처리 → isPresent=true
-      ChatApi().updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true);
+      unawaited(ChatApi().updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true));
     }
   }
 
