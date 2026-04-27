@@ -43,8 +43,8 @@ class CompletionButton extends StatelessWidget {
 
     // 버튼 배경 색 결정
     final Color backgroundColor = effectiveEnabled
-        ? enabledBackgroundColor ?? AppColors.primaryYellow
-        : disabledBackgroundColor ?? AppColors.primaryYellow.withValues(alpha: 0.3);
+        ? enabledBackgroundColor ?? AppColors.completionButtonEnabledBackground
+        : disabledBackgroundColor ?? AppColors.completionButtonDisabledBackground;
 
     // 버튼 문구 색 결정
     final Color textColor = effectiveEnabled

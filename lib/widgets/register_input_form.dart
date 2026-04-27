@@ -510,7 +510,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               return StatefulBuilder(
                                 builder: (context, setInnerState) {
                                   return SizedBox(
-                                    height: 502.h,
+                                    height: MediaQuery.of(context).size.height * 0.80,
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -528,16 +528,15 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                           ),
                                         ),
                                         Padding(
-                                          padding: EdgeInsets.only(left: 26.w),
+                                          padding: EdgeInsets.only(left: 26.w, bottom: 12.h),
                                           child: Text(
                                             ItemTextFieldPhrase.category.label,
                                             style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w700),
                                           ),
                                         ),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: Padding(
-                                            padding: EdgeInsets.only(right: 26.w, left: 26.w, top: 24.h),
+                                        Expanded(
+                                          child: SingleChildScrollView(
+                                            padding: EdgeInsets.only(right: 24.w, left: 24.w, top: 24.h, bottom: 12.h),
                                             child: Wrap(
                                               spacing: 8.0.w,
                                               runSpacing: 12.0.h,
@@ -552,6 +551,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                                     });
                                                     Navigator.pop(context);
                                                   },
+                                                  iconPath: category.iconPath,
                                                 );
                                               }).toList(),
                                             ),

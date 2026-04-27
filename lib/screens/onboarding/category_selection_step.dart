@@ -3,12 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 
@@ -30,64 +29,94 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 1.h),
-          // 카테고리 칩 표시
-          Expanded(child: SingleChildScrollView(child: _buildCategoryChips(context))),
+    return Stack(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 1.h),
+              // 카테고리 칩 표시
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: 180.h + MediaQuery.of(context).padding.bottom),
+                  child: _buildCategoryChips(context),
+                ),
+              ),
+            ],
+          ),
+        ),
 
-          // 완료 버튼 - CategoryCompletionButton 위젯으로 변경
-          Padding(
-            padding: EdgeInsets.only(bottom: 63.h + MediaQuery.of(context).padding.bottom),
-            child: Center(
-              child: CompletionButton(
-                isEnabled: isSelectedCategories,
-                isLoading: _isSaving,
-                enabledOnPressed: () async {
-                  if (_isSaving) return;
-                  setState(() => _isSaving = true);
-                  try {
-                    await memberApi.savePreferredCategories(selectedCategories);
+        // 완료 버튼 - CategoryCompletionButton 위젯으로 변경
+        Positioned(
+          left: 24.w,
+          right: 24.w,
+          bottom: 63.h + MediaQuery.of(context).padding.bottom,
+          child: Center(
+            child: CompletionButton(
+              isEnabled: isSelectedCategories,
+              isLoading: _isSaving,
+              enabledOnPressed: () async {
+                if (_isSaving) return;
+                setState(() => _isSaving = true);
+                try {
+                  await memberApi.savePreferredCategories(selectedCategories);
 
-                    // 온보딩 완료 시 코치마크 미표시 상태로 초기화
-                    final userInfo = UserInfo();
-                    await userInfo.getUserInfo();
-                    await userInfo.saveLoginStatus(
-                      isFirstLogin: userInfo.isFirstLogin ?? true,
-                      isFirstItemPosted: userInfo.isFirstItemPosted ?? false,
-                      isItemCategorySaved: true, // 카테고리 저장 완료 상태로 설정
-                      isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
-                      isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
-                      isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
-                      isCoachMarkShown: false, // 명시적으로 false 설정
-                    );
-                    debugPrint('온보딩 완료: isItemCategorySaved=true, isCoachMarkShown=false로 설정됨');
+                  // 온보딩 완료 시 코치마크 미표시 상태로 초기화
+                  final userInfo = UserInfo();
+                  await userInfo.getUserInfo();
+                  await userInfo.saveLoginStatus(
+                    isFirstLogin: userInfo.isFirstLogin ?? true,
+                    isFirstItemPosted: userInfo.isFirstItemPosted ?? false,
+                    isItemCategorySaved: true, // 카테고리 저장 완료 상태로 설정
+                    isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
+                    isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
+                    isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
+                    isCoachMarkShown: false, // 명시적으로 false 설정
+                  );
+                  debugPrint('온보딩 완료: isItemCategorySaved=true, isCoachMarkShown=false로 설정됨');
 
-                    // FCM 토큰 발급 및 저장
-                    await FirebaseService().handleFcmToken();
+                  // FCM 토큰 발급 및 저장
+                  await FirebaseService().handleFcmToken();
 
-                    await RomAuthApi().fetchAndSaveMemberInfo();
-                    widget.onComplete();
-                  } catch (e) {
-                    debugPrint("Error: $e");
-                    if (mounted) {
-                      CommonSnackBar.show(context: context, message: '카테고리 저장에 실패했습니다: $e', type: SnackBarType.error);
-                    }
-                  } finally {
-                    if (mounted) {
-                      setState(() => _isSaving = false);
-                    }
+                  await RomAuthApi().fetchAndSaveMemberInfo();
+                  widget.onComplete();
+                } catch (e) {
+                  debugPrint("Error: $e");
+                  if (mounted) {
+                    CommonSnackBar.show(context: context, message: '카테고리 저장에 실패했습니다: $e', type: SnackBarType.error);
                   }
-                },
-                buttonText: '완료',
+                } finally {
+                  if (mounted) {
+                    setState(() => _isSaving = false);
+                  }
+                }
+              },
+              buttonText: '완료',
+            ),
+          ),
+        ),
+
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: IgnorePointer(
+            child: Container(
+              height: 161.h,
+              width: MediaQuery.of(context).size.width,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0, 1],
+                  colors: [AppColors.primaryBlack.withValues(alpha: 0.0), AppColors.primaryBlack],
+                ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -100,34 +129,11 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
   }
 
   Widget _buildCategoryChip(BuildContext context, ItemCategories category) {
-    final bool isSelected = selectedCategories.contains(category.id);
-
-    return RawChip(
-      label: Text(
-        category.label,
-        style: CustomTextStyles.p2.copyWith(
-          fontSize: adjustedFontSize(context, 14.0),
-          color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
-          wordSpacing: -0.32.w,
-        ),
-      ),
-      labelPadding: EdgeInsets.zero,
-      padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 10.0.h),
-      selected: isSelected,
-      selectedColor: AppColors.primaryYellow,
-      backgroundColor: AppColors.primaryBlack,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
-          strokeAlign: BorderSide.strokeAlignOutside,
-          width: 1.0.w,
-        ),
-        borderRadius: BorderRadiusDirectional.circular(100.r),
-      ),
-      checkmarkColor: Colors.transparent,
-      showCheckmark: false,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      onSelected: (bool selected) => _toggleCategorySelection(category.id, selected),
+    return CategoryChip(
+      label: category.label,
+      isSelected: selectedCategories.contains(category.id),
+      onTap: () => _toggleCategorySelection(category.id, !selectedCategories.contains(category.id)),
+      iconPath: category.iconPath,
     );
   }
 

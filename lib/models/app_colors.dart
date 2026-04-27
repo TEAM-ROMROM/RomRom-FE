@@ -203,4 +203,13 @@ class AppColors {
   // 교환 완료 요청 시스템 메시지
   static const Color exchangeRequestSystemMessageBackground = Color(0x1AFFC300); // 채팅 시스템 메시지 배경색
   static const Color exchangeRequestSystemMessageBorder = Color(0x1AFFC300); // 채팅 시스템 메시지 테두리 색상
+
+  // 카테고리 칩 색상
+  static const Color categoryChipSelected = Color(0x4DFFC300); // 선택된 카테고리 칩 색상
+  static const Color categoryChipUnselected = AppColors.secondaryBlack1; // 선택되지 않은 카테고리 칩 색
+  static const Color categoryChipBorder = Color(0x4DFFC300); // 카테고리 칩 테두리 색상
+
+  // 완료 버튼 배경 색상
+  static const Color completionButtonEnabledBackground = primaryYellow; // 활성화된 완료 버튼 배경색
+  static const Color completionButtonDisabledBackground = Color(0xFF61501B); // 비활성화된 완료
 }
