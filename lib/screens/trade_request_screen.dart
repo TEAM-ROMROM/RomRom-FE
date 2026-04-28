@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 
 import 'package:romrom_fe/enums/item_categories.dart';
-import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -15,6 +14,7 @@ import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -68,6 +68,12 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
   /// API 요청 진행 중 여부
   bool _isSubmitting = false;
 
+  /// 선택한 카드에 대한 거래 요청 존재 여부 (null = 확인 중)
+  bool? _tradeRequestExists;
+
+  /// 거래 요청 존재 여부 확인 중 여부
+  bool _isCheckingExistence = false;
+
   @override
   void initState() {
     super.initState();
@@ -103,9 +109,11 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
       });
 
       // preSelectedCardId가 있으면 해당 카드 찾아서 선택 후 _hasSelectedCard를 true로 설정
+      int initialIndex = 0;
       if (widget.preSelectedCardId != null && items.isNotEmpty) {
         final preSelectedIndex = items.indexWhere((item) => item.itemId == widget.preSelectedCardId);
         if (preSelectedIndex >= 0) {
+          initialIndex = preSelectedIndex;
           setState(() {
             _selectedCardIndex = preSelectedIndex;
             _hasSelectedCard = true;
@@ -117,6 +125,10 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
             }
           });
         }
+      }
+
+      if (items.isNotEmpty) {
+        _checkTradeRequestExistence(initialIndex);
       }
     } catch (e) {
       debugPrint('내 물품 목록 로드 실패: $e');
@@ -150,10 +162,36 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
     }).toList();
   }
 
+  /// 선택한 카드에 거래 요청이 존재하는지 확인
+  Future<void> _checkTradeRequestExistence(int cardIndex) async {
+    if (_myItems.isEmpty) return;
+
+    setState(() {
+      _tradeRequestExists = null;
+      _isCheckingExistence = true;
+    });
+
+    try {
+      final exists = await TradeApi().checkTradeRequestExistence(
+        TradeRequest(takeItemId: widget.targetItem.itemId, giveItemId: _myItems[cardIndex].itemId),
+      );
+
+      if (!mounted) return;
+
+      setState(() => _tradeRequestExists = exists);
+    } catch (e) {
+      debugPrint('거래 요청 존재 여부 확인 실패: $e');
+      if (!mounted) return;
+      setState(() => _tradeRequestExists = false);
+    } finally {
+      if (mounted) setState(() => _isCheckingExistence = false);
+    }
+  }
+
   /// 거래 요청 API 호출
   Future<void> _submitTradeRequest() async {
     if (_selectedTradeOptions.isEmpty) {
-      CommonSnackBar.show(context: context, message: '거래방식을 선택해주세요.', type: SnackBarType.info);
+      CommonSnackBar.show(context: context, message: '교환방식을 선택해주세요.', type: SnackBarType.info);
       return;
     }
 
@@ -170,7 +208,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
       if (!mounted) return;
 
-      CommonSnackBar.show(context: context, message: '거래 요청이 전송되었습니다.', type: SnackBarType.success);
+      CommonSnackBar.show(context: context, message: '교환 요청이 전송되었습니다.', type: SnackBarType.success);
 
       Navigator.pop(context, true);
     } catch (e) {
@@ -185,31 +223,6 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
         setState(() => _isSubmitting = false);
       }
     }
-  }
-
-  /// 교환 대상 물품의 태그 목록 생성
-  List<String> _getTargetItemTags() {
-    final tags = <String>[];
-
-    // 물품 상태 태그
-    if (widget.targetItem.itemCondition != null) {
-      try {
-        final condition = ItemCondition.fromServerName(widget.targetItem.itemCondition!);
-        tags.add(condition.label);
-      } catch (_) {}
-    }
-
-    // 거래방식 태그
-    if (widget.targetItem.itemTradeOptions != null) {
-      for (final option in widget.targetItem.itemTradeOptions!) {
-        try {
-          final tradeOption = ItemTradeOption.fromServerName(option);
-          tags.add(tradeOption.label);
-        } catch (_) {}
-      }
-    }
-
-    return tags;
   }
 
   /// AppBar 높이만큼 상단 여백 추가
@@ -302,8 +315,12 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
   /// 거래방식 선택 및 요청
   Widget _buildTradeRequestStep() {
+    final bool isRequestDisabled = _isSubmitting || _tradeRequestExists == true || _isCheckingExistence;
+
     // 요청하기 버튼 색
-    Color requestButtonColor = _isSubmitting ? AppColors.primaryYellow.withValues(alpha: 0.5) : AppColors.primaryYellow;
+    Color requestButtonColor = isRequestDisabled
+        ? AppColors.primaryYellow.withValues(alpha: 0.5)
+        : AppColors.primaryYellow;
     // 요청하기 버튼 highlightColor
     Color requestButtonHighlightColor = darkenBlend(requestButtonColor);
     Color requestButtonSplashColor = requestButtonHighlightColor.withValues(alpha: 0.3);
@@ -322,7 +339,10 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           TradeRequestTargetPreview(
             imageUrl: widget.targetImageUrl,
             itemName: widget.targetItem.itemName ?? '물품',
-            tags: _getTargetItemTags(),
+            tags: itemTagLabels(
+              condition: widget.targetItem.itemCondition,
+              tradeOptions: widget.targetItem.itemTradeOptions,
+            ),
           ),
 
           // 내 물품 카드 영역
@@ -340,6 +360,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                           itemCount: _myItemCards.length,
                           onPageChanged: (index) {
                             setState(() => _selectedCardIndex = index);
+                            _checkTradeRequestExistence(index);
                           },
                           itemBuilder: (context, index) {
                             return Padding(
@@ -370,16 +391,23 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           SizedBox(height: _hasSelectedCard ? 31.h : 23.h),
 
           // 거래방식 선택 섹션
-          TradeRequestTradeOptionSelector(
-            selectedOptions: _selectedTradeOptions,
-            onChanged: (next) {
-              setState(() {
-                _selectedTradeOptions
-                  ..clear()
-                  ..addAll(next);
-              });
-            },
-          ),
+          if (_tradeRequestExists == true)
+            Container(
+              height: 90.h,
+              alignment: Alignment.center,
+              child: Text('이미 교환을 요청한 물품입니다.', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
+            )
+          else
+            TradeRequestTradeOptionSelector(
+              selectedOptions: _selectedTradeOptions,
+              onChanged: (next) {
+                setState(() {
+                  _selectedTradeOptions
+                    ..clear()
+                    ..addAll(next);
+                });
+              },
+            ),
 
           SizedBox(height: _hasSelectedCard ? 24.h : 16.h),
 
@@ -415,11 +443,11 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                     borderRadius: BorderRadius.circular(10.r),
                     child: InkWell(
                       customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                      onTap: _isSubmitting ? null : _submitTradeRequest,
+                      onTap: isRequestDisabled ? null : _submitTradeRequest,
                       highlightColor: requestButtonHighlightColor,
                       splashColor: requestButtonSplashColor,
                       child: Center(
-                        child: _isSubmitting
+                        child: (_isSubmitting || _isCheckingExistence)
                             ? SizedBox(
                                 width: 24.w,
                                 height: 24.h,

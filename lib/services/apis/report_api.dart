@@ -14,7 +14,7 @@ class ReportApi {
   /// 아이템 신고 API
   /// POST /api/report/item/post
   Future<void> reportItem({required String itemId, required Set<int> itemReportReasons, String? extraComment}) async {
-    const String url = '${AppUrls.baseUrl}/api/report/item/post';
+    final String url = '${AppUrls.baseUrl}/api/report/item/post';
 
     final Map<String, dynamic> fields = {
       'itemId': itemId,
@@ -39,7 +39,7 @@ class ReportApi {
     required Set<int> memberReportReasons,
     String? extraComment,
   }) async {
-    const String url = '${AppUrls.baseUrl}/api/report/member/post';
+    final String url = '${AppUrls.baseUrl}/api/report/member/post';
 
     final Map<String, dynamic> fields = {
       'targetMemberId': targetMemberId,

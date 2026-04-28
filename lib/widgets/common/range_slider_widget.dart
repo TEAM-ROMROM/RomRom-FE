@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 탐색 범위 설정을 위한 커스텀 슬라이더 위젯
@@ -41,11 +42,11 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget> with SingleTicker
     super.initState();
     _currentIndex = widget.selectedIndex;
     _lastHapticIndex = _currentIndex;
-    _animationController = AnimationController(duration: const Duration(milliseconds: 200), vsync: this);
+    _animationController = AnimationController(duration: AppMotion.fast, vsync: this);
     _animation = Tween<double>(
       begin: _currentIndex.toDouble(),
       end: _currentIndex.toDouble(),
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(parent: _animationController, curve: AppMotion.decelerate));
   }
 
   @override
@@ -66,7 +67,7 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget> with SingleTicker
     _animation = Tween<double>(
       begin: _animation.value,
       end: index.toDouble(),
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(parent: _animationController, curve: AppMotion.decelerate));
     _animationController.forward(from: 0);
     _currentIndex = index;
     _lastHapticIndex = index;
@@ -122,28 +123,27 @@ class _RangeSliderWidgetState extends State<RangeSliderWidget> with SingleTicker
         final trackWidth = constraints.maxWidth - (_trackHorizontalPadding.w * 2);
         final segmentWidth = trackWidth / (widget.options.length - 1);
 
-        return SizedBox(
-          height: 76.h,
-          child: AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              final currentValue = _animation.value;
-              final nearestIndex = currentValue.round().clamp(0, widget.options.length - 1);
-              final dotX = _trackHorizontalPadding.w + (currentValue * segmentWidth);
+        return AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            final currentValue = _animation.value;
+            final nearestIndex = currentValue.round().clamp(0, widget.options.length - 1);
+            final dotX = _trackHorizontalPadding.w + (currentValue * segmentWidth);
 
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // 레이블 (큰 원 위 8px)
-                  _buildLabel(nearestIndex, dotX),
-                  // 슬라이더 트랙
-                  _buildSliderTrack(trackWidth),
-                  // 설명 텍스트 (큰 원 아래 8px)
-                  _buildDescription(nearestIndex, dotX),
-                ],
-              );
-            },
-          ),
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 레이블 (큰 원 위 8px)
+                _buildLabel(nearestIndex, dotX),
+                SizedBox(height: 8.h),
+                // 슬라이더 트랙
+                _buildSliderTrack(trackWidth),
+                SizedBox(height: 8.h),
+                // 설명 텍스트 (큰 원 아래 8px)
+                _buildDescription(nearestIndex, dotX),
+              ],
+            );
+          },
         );
       },
     );

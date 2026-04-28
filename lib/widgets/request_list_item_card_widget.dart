@@ -12,6 +12,7 @@ import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 /// 요청 목록 아이템 카드 위젯
 class RequestListItemCardWidget extends StatelessWidget {
@@ -23,6 +24,7 @@ class RequestListItemCardWidget extends StatelessWidget {
   final List<ItemTradeOption> tradeOptions;
   final TradeStatus tradeStatus;
   final VoidCallback onMenuTap;
+  final VoidCallback? onTap;
 
   const RequestListItemCardWidget({
     super.key,
@@ -34,130 +36,141 @@ class RequestListItemCardWidget extends StatelessWidget {
     required this.tradeOptions,
     required this.tradeStatus,
     required this.onMenuTap,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 345.w,
-      height: 70.h,
-      child: Row(
-        children: [
-          // 이미지 (왼쪽, 위, 아래 12px 마진)
-          Padding(
-            padding: EdgeInsets.only(right: 8.w),
-            child: Container(
-              width: 70.w,
-              height: 70.h,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(4.r)),
-              child: ClipRRect(borderRadius: BorderRadius.circular(4.r), child: _buildImage(imageUrl)),
-            ),
-          ),
-          // 정보 영역
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.zero,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // 왼쪽 영역 (제목 + 주소 + 시간 + 거래 옵션 태그)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          // 제목 (7자 제한)
-                          Text(
-                            title.length > 8 ? '${title.substring(0, 8)}...' : title,
-                            style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
-                          ),
-                          if (isNew) ...[
-                            SizedBox(width: 8.w),
-                            SvgPicture.asset('assets/images/redNew.svg', width: 16.w, height: 16.h),
-                          ],
-                        ],
-                      ),
-
-                      SizedBox(height: 8.h),
-
-                      Row(
-                        children: [
-                          // 주소
-                          Text(
-                            address,
-                            style: CustomTextStyles.p3.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.opacity60White,
-                            ),
-                          ),
-                          SizedBox(width: 4.w),
-                          // 중간점
-                          Container(
-                            width: 2.w,
-                            height: 2.h,
-                            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.opacity60White),
-                          ),
-                          SizedBox(width: 4.w),
-                          // 시간
-                          Text(
-                            getTimeAgo(createdDate),
-                            style: CustomTextStyles.p3.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.opacity60White,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 11.h),
-
-                      // 거래 옵션 태그들 (줄바꿈 방지)
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: tradeOptions
-                                .map(
-                                  (option) => Padding(
-                                    padding: EdgeInsets.only(right: 4.w),
-                                    child: RequestManagementTradeOptionTag(option: option),
-                                  ),
-                                )
-                                .toList(),
-                          ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 이미지 + 텍스트 영역 (메뉴 제외한 터치 영역)
+            Expanded(
+              child: AppPressable(
+                onTap: onTap,
+                scaleDown: AppPressable.scaleCard,
+                enableRipple: false,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 이미지
+                    Padding(
+                      padding: EdgeInsets.only(right: 8.w),
+                      child: SizedBox(
+                        width: 70.w,
+                        height: 70.w,
+                        child: Container(
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(4.r)),
+                          child: ClipRRect(borderRadius: BorderRadius.circular(4.r), child: _buildImage(imageUrl)),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    // 왼쪽 텍스트 영역
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              // 제목 (7자 제한)
+                              Text(
+                                title.length > 8 ? '${title.substring(0, 8)}...' : title,
+                                style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
+                              ),
+                              if (isNew) ...[
+                                SizedBox(width: 8.w),
+                                SvgPicture.asset('assets/images/redNew.svg', width: 16.w, height: 16.w),
+                              ],
+                            ],
+                          ),
 
-                  // 오른쪽 메뉴 버튼
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      // 메뉴 아이콘
-                      RomRomContextMenu(
-                        items: [
-                          ContextMenuItem(
-                            id: 'delete',
-                            icon: AppIcons.trash,
-                            iconColor: AppColors.itemOptionsMenuRedIcon,
-                            title: '삭제',
-                            textColor: AppColors.itemOptionsMenuRedText,
-                            onTap: onMenuTap,
+                          const SizedBox(height: 8),
+
+                          Row(
+                            children: [
+                              // 주소
+                              Text(
+                                address,
+                                style: CustomTextStyles.p3.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.opacity60White,
+                                ),
+                              ),
+                              SizedBox(width: 4.w),
+                              // 중간점
+                              Container(
+                                width: 2.w,
+                                height: 2.w,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.opacity60White,
+                                ),
+                              ),
+                              SizedBox(width: 4.w),
+                              // 시간
+                              Text(
+                                getTimeAgo(createdDate),
+                                style: CustomTextStyles.p3.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.opacity60White,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 11),
+
+                          // 거래 옵션 태그들 (줄바꿈 방지)
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: tradeOptions
+                                  .map(
+                                    (option) => Padding(
+                                      padding: EdgeInsets.only(right: 4.w),
+                                      child: RequestManagementTradeOptionTag(option: option),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
                           ),
                         ],
                       ),
-
-                      // 거래 상태 태그
-                      TradeStatusTagWidget(status: tradeStatus),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+
+            // 오른쪽 메뉴 버튼 (AppPressable 밖 — 누를 때 카드 전체 안 줄어듦)
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // 메뉴 아이콘
+                RomRomContextMenu(
+                  items: [
+                    ContextMenuItem(
+                      id: 'delete',
+                      icon: AppIcons.trash,
+                      iconColor: AppColors.itemOptionsMenuRedIcon,
+                      title: '삭제',
+                      textColor: AppColors.itemOptionsMenuRedText,
+                      onTap: onMenuTap,
+                    ),
+                  ],
+                ),
+
+                // 거래 상태 태그
+                TradeStatusTagWidget(status: tradeStatus),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -5,7 +5,7 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -120,7 +120,7 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
       child: ListView.separated(
         physics: const BouncingScrollPhysics(),
         itemCount: _blockedMembers.length,
-        separatorBuilder: (_, __) => Column(
+        separatorBuilder: (_, _) => Column(
           children: [
             SizedBox(height: 16.h), // 아이템 사이 간격
             const Divider(color: AppColors.opacity10White, thickness: 1),
@@ -140,7 +140,7 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
     return GestureDetector(
       onTap: () async {
         if (member.memberId != null) {
-          final result = await context.navigateTo(screen: ProfileScreen(memberId: member.memberId!));
+          final result = await context.navigateTo(screen: MemberProfileScreen(memberId: member.memberId!));
 
           // 프로필 화면에서 차단 상태 변경됐으면 동기화
           if (result != null && result is Map<String, dynamic> && mounted) {

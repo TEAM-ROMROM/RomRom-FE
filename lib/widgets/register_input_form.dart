@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
@@ -15,12 +18,15 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/screens/image_fullscreen_viewer.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
+import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
@@ -44,8 +50,6 @@ class RegisterInputForm extends StatefulWidget {
 
 class _RegisterInputFormState extends State<RegisterInputForm> {
   // 임시 상태 변수들
-  int imageCount = 0;
-  final Set<int> _loadingImageIndices = {}; // 로딩 중인 이미지 인덱스 집합
   ItemCategories? selectedCategory;
   ItemCondition? selectedCondition;
   List<ItemCondition> selectedItemConditionTypes = [];
@@ -81,33 +85,31 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
-  List<XFile> imageFiles = []; // 선택된 이미지 저장
-  List<String> imageUrls = []; // 서버에 업로드된 이미지 URL 저장
+  final List<XFile> _newImageFiles = []; // 새로 선택된 로컬 이미지 파일 (아직 업로드 안 됨)
+  final List<String> _existingImageUrls = []; // 수정 모드: 기존 서버 이미지 URL
 
   // 상품사진 갤러리에서 가져오는 함수
   static const int kMaxImages = 10;
 
-  // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원)
+  /// 전체 이미지 수 (기존 서버 이미지 + 새 로컬 이미지)
+  int get _totalImageCount => _existingImageUrls.length + _newImageFiles.length;
+
+  // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원, 서버 업로드 없음)
   Future<void> onPickImage() async {
     try {
       setState(() {
         _hasImageBeenTouched = true;
       });
 
-      if (imageFiles.length == 10) {
+      final int totalCount = _totalImageCount;
+      if (totalCount >= kMaxImages) {
         if (context.mounted) {
           CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
         }
         return;
       }
-      // 남은 슬록 계산 (최대 10장)
-      final int remain = (kMaxImages - imageFiles.length).clamp(0, kMaxImages);
-      if (remain == 0) {
-        if (context.mounted) {
-          CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
-        }
-        return;
-      }
+
+      final int remain = (kMaxImages - totalCount).clamp(0, kMaxImages);
 
       final List<XFile> picked = await _picker.pickMultiImage(limit: remain);
 
@@ -117,48 +119,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       // 초과 선택 분리
       final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
 
-      // 로딩 인덱스 계산 (추가될 위치 범위)
-      final int startIndex = imageFiles.length;
-      final int endIndexExclusive = startIndex + toAdd.length;
-
       setState(() {
-        // 로딩 인덱스 등록
-        for (int i = startIndex; i < endIndexExclusive; i++) {
-          _loadingImageIndices.add(i);
-        }
-        // 파일 목록에 다중 추가
-        imageFiles.addAll(toAdd);
-        // 카운트 업데이트
-        imageCount = imageFiles.length.clamp(0, kMaxImages);
+        _newImageFiles.addAll(toAdd);
       });
-
-      try {
-        // 여러 장 업로드 (API가 List<XFile> -> List<String> 반환한다고 가정)
-        final List<String> urls = await ImageApi().uploadImages(toAdd);
-
-        if (mounted) {
-          setState(() {
-            // 서버 URL 추가 (개수 불일치 대비하여 안전하게 처리)
-            if (urls.isNotEmpty) {
-              imageUrls.addAll(urls.take(toAdd.length));
-            } else {
-              // 필요 시: 업로드 실패한 항목 처리 로직 추가 가능
-            }
-          });
-        }
-      } catch (e) {
-        if (context.mounted) {
-          CommonSnackBar.show(context: context, message: '이미지 업로드에 실패했습니다: $e', type: SnackBarType.error);
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            for (int i = startIndex; i < endIndexExclusive; i++) {
-              _loadingImageIndices.remove(i);
-            }
-          });
-        }
-      }
     } catch (e) {
       if (context.mounted) {
         CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
@@ -166,46 +129,23 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
     }
   }
 
-  Future<void> onDeleteImage(int index) async {
-    if (index < 0 || index >= imageUrls.length) return;
+  /// 이미지 삭제 (로컬에서만 제거, 서버 호출 없음)
+  void onDeleteImage(int index) {
+    if (index < 0 || index >= _totalImageCount) return;
+
+    final int existingCount = _existingImageUrls.length;
 
     setState(() {
-      _loadingImageIndices.add(index);
       _hasImageBeenTouched = true;
+
+      if (index < existingCount) {
+        // 기존 서버 이미지 삭제
+        _existingImageUrls.removeAt(index);
+      } else {
+        // 새로 추가된 로컬 이미지 삭제
+        _newImageFiles.removeAt(index - existingCount);
+      }
     });
-
-    try {
-      final imageUrl = imageUrls[index];
-
-      // 서버에 업로드된 이미지인지 확인 (예: http로 시작)
-      final isNetwork = imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
-
-      if (isNetwork && imageUrl.isNotEmpty) {
-        try {
-          await ImageApi().deleteImages([imageUrl]);
-        } catch (e) {
-          // 삭제 실패 시 무시하거나 에러 처리
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          imageUrls.removeAt(index);
-          imageFiles.removeAt(index);
-          imageCount = imageUrls.length.clamp(0, 10);
-        });
-      }
-    } catch (e) {
-      if (context.mounted) {
-        CommonSnackBar.show(context: context, message: '이미지 삭제에 실패했습니다: $e', type: SnackBarType.error);
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loadingImageIndices.remove(index);
-        });
-      }
-    }
   }
 
   /// 첫 물건 등록 상태 업데이트
@@ -221,6 +161,18 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
           itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
         ),
       );
+
+      // AI 가격 측정 결과가 0 이하(0, -1 등)인 경우 유효하지 않은 결과로 처리
+      if (predictedPrice <= 0) {
+        setState(() {
+          useAiPrice = false;
+        });
+        if (context.mounted) {
+          CommonSnackBar.show(context: context, message: 'AI가 적정 가격을 측정하지 못했어요. 직접 입력해 주세요.', type: SnackBarType.error);
+        }
+        return;
+      }
+
       // 숫자를 콤마 포함 문자열로 변환
       final formatted = const PriceCommaFormatter().formatEditUpdate(
         const TextEditingValue(),
@@ -282,25 +234,24 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       if (selectedTradeOptions.isNotEmpty) {
         _hasTradeOptionBeenTouched = true;
       }
-      imageUrls = widget.item != null
-          ? widget.item!.itemImages!.map((img) => img.imageUrl ?? '').where((url) => url.isNotEmpty).toList()
-          : [];
-      imageFiles = widget.item!.itemImages != null
-          ? widget.item!.itemImages!
-                .map((img) {
-                  final imageUrl = img.imageUrl ?? '';
-                  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-                    return XFile(imageUrl);
-                  } else if (imageUrl.isNotEmpty) {
-                    return XFile('http://suh-project.synology.me/$imageUrl');
-                  } else {
-                    return null;
-                  }
-                })
-                .whereType<XFile>()
-                .toList()
-          : [];
-      imageCount = imageUrls.length.clamp(0, 10);
+      _existingImageUrls.clear();
+      if (widget.item!.itemImages != null) {
+        _existingImageUrls.addAll(
+          widget.item!.itemImages!
+              .map((img) {
+                final imageUrl = img.imageUrl ?? '';
+                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                  return imageUrl;
+                } else if (imageUrl.isNotEmpty) {
+                  return 'http://suh-project.synology.me/$imageUrl';
+                } else {
+                  return '';
+                }
+              })
+              .where((url) => url.isNotEmpty),
+        );
+      }
+      _newImageFiles.clear();
       _latitude = item?.latitude;
       _longitude = item?.longitude;
       useAiPrice = item?.isAiPredictedPrice ?? false;
@@ -362,7 +313,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         locationController.text.isNotEmpty &&
         _latitude != null &&
         _longitude != null &&
-        imageFiles.isNotEmpty;
+        _totalImageCount > 0;
   }
 
   bool get canUseAiPrice {
@@ -401,27 +352,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (_loadingImageIndices.contains(imageFiles.length - 1))
-                        SizedBox(
-                          width: 24.w,
-                          height: 24.h,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.w,
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
-                          ),
-                        )
-                      else
-                        Column(
-                          children: [
-                            SizedBox(height: 6.h),
-                            Icon(AppIcons.itmeRegisterImage, color: AppColors.opacity60White, size: 18.sp),
-                            SizedBox(height: 4.h),
-                            Text(
-                              '$imageCount/10',
-                              style: CustomTextStyles.p3.copyWith(color: AppColors.opacity40White),
-                            ),
-                          ],
-                        ),
+                      SizedBox(height: 6.h),
+                      Icon(AppIcons.itmeRegisterImage, color: AppColors.opacity60White, size: 18.sp),
+                      SizedBox(height: 4.h),
+                      Text(
+                        '$_totalImageCount/10',
+                        style: CustomTextStyles.p3.copyWith(color: AppColors.opacity40White),
+                      ),
                     ],
                   ),
                 ),
@@ -432,45 +369,68 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   height: 88.h,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    itemCount: imageUrls.length,
-                    separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                    itemCount: _totalImageCount,
+                    separatorBuilder: (_, index) => SizedBox(width: 8.w),
                     padding: EdgeInsets.only(top: 8.h),
                     itemBuilder: (context, index) {
-                      final url = imageUrls[index];
+                      final int existingCount = _existingImageUrls.length;
+                      final bool isExisting = index < existingCount;
+
+                      // 이미지 위젯 결정: 기존 서버 이미지는 CachedImage, 새 로컬 이미지는 Image.file
+                      Widget imageWidget;
+                      if (isExisting) {
+                        imageWidget = CachedImage(
+                          imageUrl: _existingImageUrls[index],
+                          width: 80.w,
+                          height: 80.h,
+                          fit: BoxFit.cover,
+                          errorWidget: Container(
+                            color: AppColors.opacity40White,
+                            child: const Icon(Icons.broken_image, color: AppColors.textColorWhite),
+                          ),
+                        );
+                      } else {
+                        final localFile = _newImageFiles[index - existingCount];
+                        imageWidget = Image.file(
+                          File(localFile.path),
+                          width: 80.w,
+                          height: 80.h,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, error, stackTrace) => Container(
+                            width: 80.w,
+                            height: 80.h,
+                            color: AppColors.opacity40White,
+                            child: const Icon(Icons.broken_image, color: AppColors.textColorWhite),
+                          ),
+                        );
+                      }
+
                       return SizedBox(
                         height: 88.h,
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8.r),
-                              child: _loadingImageIndices.contains(index)
-                                  ? SizedBox(
-                                      width: 24.w,
-                                      height: 24.h,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.w,
-                                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
-                                      ),
-                                    )
-                                  : CachedImage(
-                                      imageUrl: url,
-                                      width: 80.w,
-                                      height: 80.h,
-                                      fit: BoxFit.cover,
-                                      errorWidget: Container(
-                                        color: AppColors.opacity40White,
-                                        child: const Icon(Icons.broken_image, color: AppColors.textColorWhite),
-                                      ),
-                                    ),
+                            GestureDetector(
+                              onTap: () {
+                                context.navigateTo(
+                                  type: NavigationTypes.fadePush,
+                                  screen: ImageFullscreenViewer(
+                                    existingImageUrls: List.unmodifiable(_existingImageUrls),
+                                    newImageFilePaths: _newImageFiles.map((f) => f.path).toList(growable: false),
+                                    initialIndex: index,
+                                  ),
+                                );
+                              },
+                              child: Hero(
+                                tag: 'item_image_$index',
+                                child: ClipRRect(borderRadius: BorderRadius.circular(8.r), child: imageWidget),
+                              ),
                             ),
                             Positioned(
                               top: -8.h,
                               right: -8.w,
                               child: GestureDetector(
-                                onTap: () async {
-                                  await onDeleteImage(index);
-                                },
+                                onTap: () => onDeleteImage(index),
                                 child: Container(
                                   width: 24.w,
                                   height: 24.h,
@@ -495,7 +455,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
             ],
           ),
           // 이미지 에러 메시지
-          if (_hasImageBeenTouched && imageFiles.isEmpty)
+          if (_hasImageBeenTouched && _totalImageCount == 0)
             Padding(
               padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
               child: Row(
@@ -550,7 +510,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               return StatefulBuilder(
                                 builder: (context, setInnerState) {
                                   return SizedBox(
-                                    height: 502.h,
+                                    height: MediaQuery.of(context).size.height * 0.80,
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -568,16 +528,15 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                           ),
                                         ),
                                         Padding(
-                                          padding: EdgeInsets.only(left: 26.w),
+                                          padding: EdgeInsets.only(left: 26.w, bottom: 12.h),
                                           child: Text(
                                             ItemTextFieldPhrase.category.label,
                                             style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w700),
                                           ),
                                         ),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: Padding(
-                                            padding: EdgeInsets.only(right: 26.w, left: 26.w, top: 24.h),
+                                        Expanded(
+                                          child: SingleChildScrollView(
+                                            padding: EdgeInsets.only(right: 24.w, left: 24.w, top: 24.h, bottom: 12.h),
                                             child: Wrap(
                                               spacing: 8.0.w,
                                               runSpacing: 12.0.h,
@@ -592,6 +551,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                                     });
                                                     Navigator.pop(context);
                                                   },
+                                                  iconPath: category.iconPath,
                                                 );
                                               }).toList(),
                                             ),
@@ -924,14 +884,12 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
                 // 등록 완료 버튼
                 IgnorePointer(
-                  ignoring: _isLoading || _loadingImageIndices.isNotEmpty,
+                  ignoring: _isLoading,
                   child: CompletionButton(
                     isEnabled: isFormValid,
+                    isLoading: _isLoading,
                     buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
                     enabledOnPressed: () async {
-                      // 이미지 업로드 중이면 제출 차단 (이중 안전장치)
-                      if (_loadingImageIndices.isNotEmpty) return;
-
                       // 모든 필드 강제 검증
                       if (!isFormValid) {
                         setState(() {
@@ -958,6 +916,19 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         setState(() {
                           _isLoading = true;
                         });
+
+                        // 새 로컬 이미지가 있으면 서버에 업로드
+                        List<String> newImageUrls = [];
+                        if (_newImageFiles.isNotEmpty) {
+                          newImageUrls = await ImageApi().uploadImages(_newImageFiles);
+                          if (newImageUrls.length != _newImageFiles.length) {
+                            throw Exception('일부 이미지 업로드에 실패했습니다 (${newImageUrls.length}/${_newImageFiles.length})');
+                          }
+                        }
+
+                        // 기존 서버 이미지 URL + 새로 업로드된 URL 합치기
+                        final List<String> allImageUrls = [..._existingImageUrls, ...newImageUrls];
+
                         final itemRequest = ItemRequest(
                           itemId: widget.isEditMode ? widget.item?.itemId : null,
                           itemName: titleController.text.trim(),
@@ -969,7 +940,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
                           itemPrice: int.parse(priceController.text.replaceAll(',', '')),
                           itemCustomTags: [],
-                          itemImageUrls: imageUrls,
+                          itemImageUrls: allImageUrls,
                           longitude: _longitude,
                           latitude: _latitude,
                           isAiPredictedPrice: useAiPrice,
@@ -979,7 +950,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           // 수정 모드
                           await ItemApi().updateItem(itemRequest);
                           if (context.mounted) {
-                            Navigator.of(context).pop();
+                            Navigator.of(context).pop({'updated': true});
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         } else {
@@ -1019,6 +990,17 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
+                        }
+                      } on UgcViolationException catch (e) {
+                        if (context.mounted) {
+                          final ugcMessage = e.violatingText.isNotEmpty
+                              ? '\'${e.violatingText}\'이(가) 포함된\n부적절한 표현입니다.\n수정 후 다시 시도해주세요.'
+                              : '부적절한 표현이 포함되어 있습니다.\n수정 후 다시 시도해주세요.';
+                          CommonModal.error(
+                            context: context,
+                            message: ugcMessage,
+                            onConfirm: () => Navigator.of(context).pop(),
+                          );
                         }
                       } catch (e) {
                         if (context.mounted) {

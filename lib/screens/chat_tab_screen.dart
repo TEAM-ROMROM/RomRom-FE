@@ -16,7 +16,7 @@ import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/skeletons/chat_room_list_skeleton.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
 enum LoadMode { initial, paging, refresh }
 
@@ -143,6 +143,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
         chatRoomId: room.chatRoomId,
         targetMember: room.targetMember,
         targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
+        targetItemImageUrl: room.targetItemImageUrl,
         lastMessageContent: message.content ?? '',
         lastMessageTime: message.createdDate ?? DateTime.now(),
         unreadCount: _calculateUnreadCount(room, message),
@@ -298,7 +299,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 16.h),
-                child: Text('채팅', style: CustomTextStyles.h2),
+                child: Text('채팅', style: CustomTextStyles.h1),
               ),
             ),
 
@@ -341,7 +342,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                         onProfileTap: () {
                           final targetMember = chatRoomDetail.targetMember;
                           if (targetMember?.memberId != null) {
-                            context.navigateTo(screen: ProfileScreen(memberId: targetMember!.memberId!));
+                            context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
                           }
                         },
                         onTap: () async {
@@ -366,9 +367,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                             });
                           }
 
-                          final refreshed = await Navigator.of(
-                            context,
-                          ).push<bool>(MaterialPageRoute(builder: (_) => ChatRoomScreen(chatRoomId: roomId)));
+                          final refreshed = await context.navigateTo<bool>(screen: ChatRoomScreen(chatRoomId: roomId));
 
                           // 엄격히 true일 때만 새로고침
                           if (refreshed == true) {

@@ -5,7 +5,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:romrom_fe/models/apis/responses/naver_address_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/location_address.dart';
@@ -19,14 +18,24 @@ class LocationService {
 
   /// 위치 권한 요청
   Future<bool> requestPermission() async {
-    var requestStatus = await Permission.location.request();
-    var status = await Permission.location.status;
+    // geolocator API 사용: permission_handler와 충돌 방지
+    LocationPermission permission = await Geolocator.checkPermission();
 
-    if (requestStatus.isPermanentlyDenied || status.isPermanentlyDenied) {
-      await openAppSettings();
+    if (permission == LocationPermission.deniedForever) {
       return false;
     }
-    return status.isGranted;
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    return permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+  }
+
+  /// 현재 위치 권한 상태 확인 (시스템 팝업 없이)
+  Future<bool> checkPermissionStatus() async {
+    final permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.always || permission == LocationPermission.whileInUse;
   }
 
   /// 현재 위치 좌표 가져오기

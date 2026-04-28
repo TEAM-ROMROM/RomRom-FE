@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
@@ -60,18 +59,22 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final double size = widget.avatarSize.width.w;
+    final double size = widget.avatarSize.width;
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.textColorWhite,
         border: widget.hasBorder
             ? Border.all(
-                color: widget.isDeleteAccount ? AppColors.profileBorderGray : AppColors.profileBorderWhite, // 테두리 색상
-                width: 1.0, // 테두리 두께
+                color: widget.isDeleteAccount
+                    ? AppColors.profileBorderGray
+                    : _avatarUrl == _kDefaultProfileAsset
+                    ? AppColors.opacity60White
+                    : AppColors.profileBorderWhite,
+                width: 1.0,
+                strokeAlign: BorderSide.strokeAlignOutside,
               )
             : null,
       ),

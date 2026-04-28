@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/physics.dart';
@@ -9,7 +10,8 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/widgets/item_card.dart';
+import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
+import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'dart:async';
 
 /// 홈탭 카드 핸드 위젯
@@ -17,7 +19,10 @@ class HomeTabCardHand extends StatefulWidget {
   final Function(String itemId)? onCardDrop;
   final List<Item>? cards;
 
-  const HomeTabCardHand({super.key, this.onCardDrop, this.cards});
+  /// AI 추천 상위 3개 itemId 목록 - 해당 카드에 glow boxShadow 효과 적용
+  final List<String> highlightedItemIds;
+
+  const HomeTabCardHand({super.key, this.onCardDrop, this.cards, this.highlightedItemIds = const []});
 
   @override
   State<HomeTabCardHand> createState() => _HomeTabCardHandState();
@@ -48,7 +53,6 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   // 카드 상태
   String? _hoveredCardId;
   String? _pulledCardId;
-  bool _isCardPulled = false;
   Offset _panStartPosition = Offset.zero;
   Offset _pullOffset = Offset.zero;
 
@@ -60,13 +64,14 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   static const int _initialLoadCount = 7; // 초기 로드 개수
   static const int _loadChunkSize = 3; // 한 번에 로드할 카드 개수
 
-  // 카드 레이아웃 파라미터
-  final double _cardWidth = 80.w;
-  final double _cardHeight = 130.h;
-  final double _pullLift = 80.h; // 카드 뽑을 때 상승 높이
-  final double _baseBottom = 50.h; // 기본 bottom 위치 (네비게이션 바 위)
-  final double _deckRadius = 340.r;
-  final double _deckCenterYOffset = 140.h;
+  // 카드 레이아웃 파라미터 (didChangeDependencies에서 화면 크기 기준으로 초기화)
+  double _cardWidth = 92;
+  double _cardHeight = 137;
+  double _pullLift = 80; // 카드 뽑을 때 상승 높이
+  double _baseBottom = 50; // 기본 bottom 위치 (네비게이션 바 위)
+  double _deckRadius = 340;
+  double _deckCenterYOffset = 140;
+  bool _layoutInitialized = false;
   final double _deckStepAngle = 10 * math.pi / 180;
   final double _deckMaxTilt = 8 * math.pi / 180;
   final int _deckDepth = 8;
@@ -90,6 +95,23 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   late AnimationController _iconAnimationController;
   late Animation<double> _iconAnimation;
 
+  // AI 하이라이트 애니메이션
+  // - glow 펄스: repeat(reverse) 로 밝기 반복
+  // - float: 한 번만 위로 슥 올라오는 단방향 애니메이션
+  late AnimationController _highlightPulseController; // glow 밝기 반복
+  late Animation<double> _highlightPulseAnimation;
+
+  late AnimationController _highlightFloatController; // 위로 슥 올라오는 단방향
+  late Animation<double> _highlightFloatAnimation;
+
+  // AI 추천 카드 재정렬 애니메이션
+  // - _reorderAnimController: 카드가 old 위치 → new 위치로 이동하는 보간 제어
+  // - _preReorderTransforms: 재정렬 직전 각 카드의 transform 스냅샷 (cardId → transform map)
+  late AnimationController _reorderAnimController;
+  late Animation<double> _reorderAnimation;
+  Map<String, Map<String, dynamic>> _preReorderTransforms = {};
+  int _reorderGeneration = 0;
+
   @override
   void initState() {
     super.initState();
@@ -109,8 +131,79 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
     _iconAnimation = Tween<double>(
       begin: 0.0,
-      end: 10.0.h,
+      end: 10.0,
     ).animate(CurvedAnimation(parent: _iconAnimationController, curve: Curves.easeInOut));
+
+    // glow 밝기 반복 (0.5 ~ 1.0 사이를 계속 왔다갔다)
+    _highlightPulseController = AnimationController(duration: const Duration(milliseconds: 1400), vsync: this);
+
+    _highlightPulseAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _highlightPulseController, curve: Curves.easeInOut));
+
+    // float: 0 → -10h 로 한 번만 올라옴 (easeOut으로 자연스럽게 감속)
+    _highlightFloatController = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
+
+    _highlightFloatAnimation = Tween<double>(
+      begin: 0.0,
+      end: -10.0,
+    ).animate(CurvedAnimation(parent: _highlightFloatController, curve: Curves.easeOut));
+
+    // 재정렬 위치 보간 (900ms: 360ms 집결 + 90ms 홀드 + 450ms 팬아웃)
+    _reorderAnimController = AnimationController(duration: const Duration(milliseconds: 900), vsync: this);
+    _reorderAnimation = CurvedAnimation(parent: _reorderAnimController, curve: Curves.linear);
+    _reorderAnimController.addStatusListener((status) {
+      if ((status == AnimationStatus.completed || status == AnimationStatus.dismissed) && mounted) {
+        setState(() => _preReorderTransforms = {});
+      }
+    });
+
+    // highlightedItemIds가 이미 있으면 재정렬 포함 전체 시퀀스 실행
+    if (widget.highlightedItemIds.isNotEmpty) {
+      _highlightPulseController.repeat(reverse: true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _reorderForAiHighlight(widget.highlightedItemIds);
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_layoutInitialized) {
+      // 화면 너비 기준으로 카드 크기 계산 (iPhone 393 기준 비율 유지)
+      final sw = MediaQuery.of(context).size.width;
+      final scale = sw / 393.0;
+      _cardWidth = 92 * scale;
+      _cardHeight = 137 * scale;
+      _pullLift = 80 * scale;
+      _baseBottom = 50 * scale;
+      _deckRadius = 340 * scale;
+      _deckCenterYOffset = 140 * scale;
+      _layoutInitialized = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(HomeTabCardHand oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (!listEquals(widget.highlightedItemIds, oldWidget.highlightedItemIds)) {
+      if (widget.highlightedItemIds.isNotEmpty) {
+        if (!_highlightPulseController.isAnimating) {
+          _highlightPulseController.repeat(reverse: true);
+        }
+        // 재정렬 + orbit 복귀 + float 애니메이션 순서로 실행
+        _reorderForAiHighlight(widget.highlightedItemIds);
+      } else {
+        _highlightPulseController.stop();
+        _highlightPulseController.value = 0.0;
+        // 하이라이트 해제 시 float 슥 내려가기 (600ms easeInOut), 재정렬 애니메이션 역방향
+        _highlightFloatController.animateTo(0.0, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut);
+        _reorderAnimController.reverse();
+      }
+    }
   }
 
   void _initializeAnimations() {
@@ -176,6 +269,83 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     return true;
   }
 
+  /// AI 추천 카드를 덱 앞쪽으로 재정렬하고 애니메이션을 실행한다.
+  ///
+  /// 동작 순서:
+  /// 1. 추천 카드 중 _cards에 없는 것을 _allCards에서 찾아 _cards에 추가
+  /// 2. 현재 카드 위치 스냅샷 저장 (_preReorderTransforms)
+  /// 3. _cards를 [추천카드..., 나머지...] 순으로 재구성
+  /// 4. orbit 중앙 복귀 + 재정렬 보간 동시 시작 (400ms)
+  /// 5. 450ms 후 float 애니메이션 시작
+  void _reorderForAiHighlight(List<String> highlightedItemIds) {
+    if (highlightedItemIds.isEmpty || !mounted) return;
+    if (_allCards.isEmpty) return;
+
+    final generation = ++_reorderGeneration;
+
+    // 카드 7장 이상일 때만 카드 재정렬 + 집결/팬아웃 애니메이션 실행
+    // 7장 미만이면 카드 순서/위치 변경 없이 그 자리에서 float + glow만 적용
+    if (_allCards.length >= 7) {
+      // 1. 추천 카드 중 _cards에 없는 것 강제 로드
+      var workingCards = List<Item>.from(_cards);
+      for (final id in highlightedItemIds) {
+        if (!workingCards.any((c) => c.itemId == id)) {
+          final idx = _allCards.indexWhere((c) => c.itemId == id);
+          if (idx != -1) {
+            workingCards.add(_allCards[idx]);
+          }
+        }
+      }
+
+      // 2. _cards 재정렬: 추천 카드 먼저, 나머지 뒤
+      final highlighted = workingCards.where((c) => highlightedItemIds.contains(c.itemId)).toList();
+      final others = workingCards.where((c) => !highlightedItemIds.contains(c.itemId)).toList();
+      final reordered = [...highlighted, ...others];
+
+      // 3. 카드 인덱스(순서) 변화 여부 확인
+      final currentIds = workingCards.map((c) => c.itemId).toList();
+      final reorderedIds = reordered.map((c) => c.itemId).toList();
+      final orderChanged = !listEquals(currentIds, reorderedIds);
+
+      if (orderChanged) {
+        // 순서가 바뀔 때만: 현재 위치 스냅샷 저장 → 집결/팬아웃 애니메이션 실행
+        final snapshot = <String, Map<String, dynamic>>{};
+        for (int i = 0; i < workingCards.length; i++) {
+          final id = workingCards[i].itemId;
+          if (id != null) {
+            snapshot[id] = _calculateCardTransform(context, i, workingCards.length);
+          }
+        }
+
+        // 재정렬 후 _cards가 _allCards의 연속 슬라이스가 아니므로 lazy load 비활성화
+        setState(() {
+          _preReorderTransforms = snapshot;
+          _cards = reordered;
+          _leftLoadedCount = 0;
+          _rightLoadedCount = 0;
+        });
+
+        // orbit → 첫 번째 카드가 화면 왼쪽 끝에 오도록 + 재정렬 보간 동시 시작 (400ms)
+        final targetOrbit = _getHighlightOrbitAngle(reordered.length);
+        _orbitAccumulated = targetOrbit;
+        _orbitController?.animateTo(targetOrbit, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
+        _reorderAnimController.forward(from: 0.0);
+
+        // 750ms 후 float 시작 (집결+팬아웃 완료 직후)
+        Future.delayed(const Duration(milliseconds: 750), () {
+          if (!mounted || generation != _reorderGeneration) return;
+          _highlightFloatController.forward(from: 0.0);
+        });
+      } else {
+        // 순서 변화 없음: 집결/팬아웃 생략, 그 자리에서 float만 실행
+        _highlightFloatController.forward(from: 0.0);
+      }
+    } else {
+      // 7장 미만: 카드 순서/위치 변경 없이 그 자리에서 float만 실행
+      _highlightFloatController.forward(from: 0.0);
+    }
+  }
+
   // 각도 제한 계산 메서드 추가
   double _getMinOrbitAngle() {
     if (_cards.isEmpty || _cards.length <= 1) return -math.pi / 2;
@@ -193,9 +363,27 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     return -math.pi / 2 + (midIndex * _deckStepAngle);
   }
 
+  /// 재정렬 후 첫 번째 카드(index 0)가 화면 왼쪽 끝에 보이도록 orbit 각도를 역산
+  double _getHighlightOrbitAngle(int totalCards) {
+    if (totalCards <= 0) return -math.pi / 2;
+    final size = MediaQuery.of(context).size;
+    final double centerX = size.width / 2;
+    // index 0 카드 중앙을 화면 왼쪽에서 cardWidth/2 + 8w 위치에 배치 (카드 왼쪽 끝 ≈ 8w)
+    final double targetCardCenterX = _cardWidth / 2 + 8.w;
+    final double dx = targetCardCenterX - centerX; // 음수 (왼쪽)
+    // cos(cardAngle) = dx / deckRadius, 왼쪽(음수)이므로 -acos 사용
+    final double cardAngle0 = -math.acos((dx / _deckRadius).clamp(-1.0, 1.0));
+    final double midIndex = (totalCards - 1) / 2;
+    final double orbitAngle = cardAngle0 + midIndex * _deckStepAngle;
+    return orbitAngle.clamp(_getMinOrbitAngle(), _getMaxOrbitAngle());
+  }
+
   @override
   void dispose() {
     _iconAnimationController.dispose();
+    _highlightPulseController.dispose();
+    _highlightFloatController.dispose();
+    _reorderAnimController.dispose();
     _fanController.dispose();
     _pullController.dispose();
     _orbitController?.dispose();
@@ -205,20 +393,15 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
   // 좌표에서 카드 찾기
   String? _findCardAtPosition(Offset localPosition) {
-    final transforms = List.generate(_cards.length, (index) => _calculateCardTransform(context, index, _cards.length));
-
-    final indexedCards = List.generate(_cards.length, (index) => index)
-      ..sort((a, b) {
-        return (transforms[b]['zIndex'] as int).compareTo(transforms[a]['zIndex'] as int);
-      });
-
-    for (final index in indexedCards) {
-      final transform = transforms[index];
+    // 왼쪽 카드가 위에 있으므로 (reversed로 렌더링됨)
+    // 역순으로 검사하여 위에 있는 카드부터 확인
+    for (int i = _cards.length - 1; i >= 0; i--) {
+      final transform = _calculateCardTransform(context, i, _cards.length);
       final cardCenterX = transform['centerX'] as double;
 
       // 카드 영역 체크 (카드 너비의 절반 범위 내)
       if ((localPosition.dx - cardCenterX).abs() < _cardWidth / 2) {
-        return _cards[index].itemId;
+        return _cards[i].itemId;
       }
     }
 
@@ -245,7 +428,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     final double proximity = 1.0 - (relativeIndex.abs() / (midIndex + 1e-6));
     // 카드가 1개일 때는 tilt를 0으로 설정
     final double tilt = totalCards == 1 ? 0 : _deckMaxTilt * proximity;
-    final int zIndex = ((_deckDepth * proximity) + (totalCards - relativeIndex.abs())).round();
+    final int zIndex = ((_deckDepth * proximity) + (totalCards + relativeIndex)).round();
 
     return {
       'left': cardCenterX - (_cardWidth / 2),
@@ -265,8 +448,18 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     final transform = _calculateCardTransform(context, index, totalCards);
     final bool isPressed = _pressedCardId == cardId;
 
+    // AI 추천 하이라이트 여부
+    final bool isAiHighlighted = cardId != null && widget.highlightedItemIds.contains(cardId);
+
     return AnimatedBuilder(
-      animation: Listenable.merge([_fanAnimation, _pullAnimation]),
+      // float 컨트롤러도 함께 listen
+      animation: Listenable.merge([
+        _fanAnimation,
+        _pullAnimation,
+        _highlightPulseAnimation,
+        _highlightFloatAnimation,
+        _reorderAnimation,
+      ]),
       builder: (context, child) {
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
@@ -279,8 +472,48 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
         double left = lerpDouble(fanOriginLeft, transform['left'] as double, staggeredFanValue)!;
         double top = lerpDouble(fanOriginTop, transform['top'] as double, staggeredFanValue)!;
         double angle = lerpDouble(0.0, transform['angle'] as double, staggeredFanValue)!;
+
+        // ── 재정렬 보간 적용 ─────────────────────────────────────────
+        // 추천 카드 2개 이상: 전체 카드가 중앙 집결(0→0.4) → 겹쳐서 홀드(0.4→0.6) → 팬아웃(0.6→1.0)
+        // 추천 카드 1개: 직선 이동 (집결 애니메이션 생략)
+        if (cardId != null && _preReorderTransforms.containsKey(cardId)) {
+          final oldTransform = _preReorderTransforms[cardId]!;
+          final oldLeft = oldTransform['left'] as double;
+          final oldTop = oldTransform['top'] as double;
+          final oldAngle = oldTransform['angle'] as double;
+          final t = _reorderAnimation.value;
+
+          if (widget.highlightedItemIds.length > 1) {
+            // 집결 기준점: 팬 애니메이션 시작점 (화면 중앙 하단)
+            final gatherX = fanOriginLeft;
+            final gatherY = fanOriginTop;
+            if (t <= 0.4) {
+              // 1단계: 현재 위치 → 중앙 집결 (easeIn, 빠르게 빨려듦)
+              final gatherT = Curves.easeIn.transform(t / 0.4);
+              left = lerpDouble(oldLeft, gatherX, gatherT)!;
+              top = lerpDouble(oldTop, gatherY, gatherT)!;
+              angle = lerpDouble(oldAngle, 0.0, gatherT)!; // 중앙으로 모일 때 1자 정렬
+            } else if (t <= 0.5) {
+              // 2단계: 한 점에 완전히 겹쳐서 홀드
+              left = gatherX;
+              top = gatherY;
+              angle = 0.0; // 1자 정렬 유지
+            } else {
+              // 3단계: 중앙 → 최종 위치 팬아웃 (easeOut, 부드럽게 착지)
+              final expandT = Curves.easeOut.transform((t - 0.5) / 0.5);
+              left = lerpDouble(gatherX, left, expandT)!;
+              top = lerpDouble(gatherY, top, expandT)!;
+              angle = lerpDouble(0.0, angle, expandT)!; // 팬아웃 시 최종 각도로 복귀
+            }
+          } else {
+            // 추천 카드 1개: 직선 이동
+            left = lerpDouble(oldLeft, left, t)!;
+            top = lerpDouble(oldTop, top, t)!;
+          }
+        }
+        // ────────────────────────────────────────────────────────────
+
         double scale = 1.0;
-        double opacity = staggeredFanValue;
 
         if (!isPulled) {
           if (isHovered) {
@@ -299,11 +532,54 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
           const double dragScaleGain = 0.20;
           scale = dragBaseScale + (dragScaleGain * pullValue);
           angle *= (1 - pullValue);
-
-          if (_isCardPulled) {
-            opacity = 1.0 - (pullValue * 0.2);
-          }
         }
+
+        // ── AI 하이라이트 float 적용 ─────────────────────────────────
+        // pulled/hovered 상태에서는 적용하지 않아 기존 드래그 인터랙션과 충돌 없음
+        // _highlightFloatAnimation: 0.0 → -10.h (위로 슥 한 번만 올라옴, easeOut)
+        if (isAiHighlighted && !isPulled && !isHovered) {
+          top += _highlightFloatAnimation.value.h;
+        }
+        // ────────────────────────────────────────────────────────────
+
+        // ── boxShadow 결정 ──────────────────────────────────────────
+        List<BoxShadow> cardBoxShadow;
+
+        if (isAiHighlighted && !isPulled && !isHovered) {
+          // AI 추천 카드: aiCardGradient 색상 기반 glow (펄스 애니메이션)
+          final pulse = _highlightPulseAnimation.value;
+          cardBoxShadow = [
+            BoxShadow(
+              color: AppColors.aiCardGradient[0].withValues(alpha: 0.75 * pulse),
+              offset: Offset((-1).w, (-1).h),
+              blurRadius: 6.r,
+              spreadRadius: 4.r,
+            ),
+            BoxShadow(
+              color: AppColors.aiCardGradient[1].withValues(alpha: 0.7 * pulse),
+              offset: Offset(0, 5.h),
+              blurRadius: 20.r,
+              spreadRadius: 4.r,
+            ),
+            BoxShadow(
+              color: AppColors.aiCardGradient[2].withValues(alpha: 0.65 * pulse),
+              offset: Offset((-3).w, (-3).h),
+              blurRadius: 10.r,
+              spreadRadius: 3.r,
+            ),
+          ];
+        } else {
+          // 기본 / hover / pulled 상태
+          cardBoxShadow = [
+            BoxShadow(
+              color: isHovered || isPulled ? AppColors.primaryBlack.withValues(alpha: 0.3) : AppColors.opacity20Black,
+              blurRadius: isHovered || isPulled ? 20 : 10,
+              spreadRadius: 0,
+              offset: Offset(0, isHovered || isPulled ? 10 : 5),
+            ),
+          ];
+        }
+        // ────────────────────────────────────────────────────────────
 
         return Positioned(
           left: left,
@@ -320,31 +596,30 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
               width: _cardWidth,
               height: _cardHeight,
               decoration: BoxDecoration(
-                // 선택된 카드에 노란색 테두리 추가
-                border: (isHovered || isPulled) ? Border.all(color: AppColors.primaryYellow, width: 2) : null,
-                borderRadius: BorderRadius.circular(4.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: isHovered || isPulled
-                        ? AppColors.primaryBlack.withValues(alpha: 0.3)
-                        : AppColors.opacity20Black,
-                    blurRadius: isHovered || isPulled ? 20 : 10,
-                    spreadRadius: 0,
-                    offset: Offset(0, isHovered || isPulled ? 10 : 5),
-                  ),
-                ],
+                border: (isHovered || isPulled)
+                    ? Border.all(color: AppColors.primaryYellow, width: 2)
+                    : isAiHighlighted
+                    ? Border.all(
+                        color: AppColors.aiCardGradient[1].withValues(alpha: _highlightPulseAnimation.value),
+                        width: 1.5.w,
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(10 * scale * _cardWidth / 219.0),
+                boxShadow: cardBoxShadow,
               ),
-              child: Opacity(
-                opacity: opacity,
-                child: ItemCard(
+              child: RequestManagementItemCardWidget(
+                card: RequestManagementItemCard(
                   itemId: cardId!,
-                  isSmall: true,
-                  itemName: cardData.itemName ?? '아이템',
-                  itemCategoryLabel: ItemCategories.fromServerName(cardData.itemCategory!).label,
-                  itemCardImageUrl: cardData.primaryImageUrl != null
-                      ? cardData.primaryImageUrl!
-                      : 'https://picsum.photos/400/300',
+                  imageUrl: cardData.primaryImageUrl ?? 'https://picsum.photos/400/300',
+                  category: ItemCategories.fromServerName(cardData.itemCategory!).label,
+                  title: cardData.itemName ?? '아이템',
+                  price: cardData.price ?? 0,
+                  likeCount: cardData.likeCount ?? 0,
+                  aiPrice: cardData.isAiPredictedPrice ?? false,
                 ),
+                width: _cardWidth,
+                height: _cardHeight,
+                isActive: true,
               ),
             ),
           ),
@@ -404,6 +679,29 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     final dispX = details.localPosition.dx - _panStartPosition.dx; // → 오른쪽 +
     final dispY = details.localPosition.dy - _panStartPosition.dy; // → 아래로 +
 
+    // 방향 조기 판별: 카드 위에서 시작했고 아직 방향 미결정 상태일 때
+    // 8px 이상 이동하면 수직/수평 의도를 벡터로 판별 → 타이머 상태 무관하게 판별
+    if (_panStartedOnCard && _startCardId != null && !_hasStartedCardDrag) {
+      const double directionThreshold = 8.0;
+      final double totalDisp = math.sqrt(dispX * dispX + dispY * dispY);
+      if (totalDisp >= directionThreshold) {
+        _longPressTimer?.cancel();
+        _longPressTimer = null;
+        // 수직 성분이 수평의 1.5배 이상이면 → 즉시 카드 드래그 모드
+        if (dispY.abs() > dispX.abs() * 1.5) {
+          setState(() {
+            _hasStartedCardDrag = true;
+            _hoveredCardId = _startCardId;
+            _orbitAccumulated = _orbitAngle;
+            _orbitDragStart = _panStartPosition.dx;
+          });
+        } else {
+          // 수평 방향으로 판별 → 카드 드래그 모드 진입 없이 회전 전용
+          setState(() => _panStartedOnCard = false);
+        }
+      }
+    }
+
     // 1) 좌우 = 항상 원호 회전만 (카드 드래그 모드 전까지)
     if (!_hasStartedCardDrag) {
       final double dragDx = details.localPosition.dx - _orbitDragStart;
@@ -439,19 +737,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
     // 2) 카드 드래그는 조건부
     if (_panStartedOnCard && _startCardId != null) {
-      // 드래그 임계치 확인 - 만약 일정 거리 이상 이동하면 롱프레스 타이머 취소
-      const double dragThreshold = 20.0; // px
-      if (_longPressTimer != null && (dispX.abs() > dragThreshold || dispY.abs() > dragThreshold)) {
-        _longPressTimer?.cancel();
-        _longPressTimer = null;
-      }
-
-      // 수직 임계치 통과했고 이미 선택됨
-      const double selectThreshold = 10.0; // px
-      if (_hasStartedCardDrag && dispY.abs() > selectThreshold) {
+      if (_hasStartedCardDrag) {
         setState(() {
-          // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -30px
-          if (_pulledCardId == null && dispY < -30) {
+          // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -15px
+          if (_pulledCardId == null && dispY < -15) {
             _pulledCardId = _hoveredCardId;
             _pullOffset = Offset(dispX, dispY);
             _pullController.forward();
@@ -513,12 +802,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
           widget.onCardDrop!(_pulledCardId!);
           HapticFeedback.heavyImpact();
         }
-        setState(() => _isCardPulled = true);
         Future.delayed(const Duration(milliseconds: 300), () {
           if (!mounted) return;
           setState(() {
             _pulledCardId = null;
-            _isCardPulled = false;
             _pullOffset = Offset.zero;
             _dropShadowT = 0.0; // 그림자 원복
             _wasOverDropZone = false;
@@ -679,7 +966,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                           },
                         ),
                         Text(
-                          "위로 드래그하여\n거래방식 선택하기",
+                          "위로 드래그하여\n교환방식 선택하기",
                           textAlign: TextAlign.center,
                           style: CustomTextStyles.p2.copyWith(height: 1.4),
                         ),
@@ -687,8 +974,8 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                     ),
                   ),
 
-                // 카드들
-                ..._cards.asMap().entries.map((entry) {
+                // 카드들 - 왼쪽 카드가 위로 오도록 역순으로 렌더링
+                ..._cards.asMap().entries.toList().reversed.map((entry) {
                   final index = entry.key;
                   final card = entry.value;
                   return _buildCard(card, index, _cards.length);

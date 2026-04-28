@@ -1,11 +1,849 @@
 {
   "metadata": {
-    "lastUpdated": "2026-03-02T14:27:17Z",
-    "currentVersion": "1.9.45",
-    "totalReleases": 73,
+    "lastUpdated": "2026-04-22T09:21:44Z",
+    "currentVersion": "1.10.24",
+    "totalReleases": 103,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.24",
+      "project_type": "flutter",
+      "date": "2026-04-22",
+      "pr_number": 801,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 거래 완료 후 상대방을 평가할 수 있는 리뷰 기능 추가\n  * 만족도(별로, 보통, 좋음) 및 거래 태그(친절함, 빠른 응답 등) 선택 기능\n  * 선택적 의견 작성 기능\n  * 단계별 리뷰 작성 인터페이스\n\n* **Chores**\n  * 버전 업데이트 (v1.10.22 → v1.10.24)",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "거래 완료 후 상대방을 평가할 수 있는 리뷰 기능 추가",
+            "만족도(별로, 보통, 좋음) 및 거래 태그(친절함, 빠른 응답 등) 선택 기능",
+            "선택적 의견 작성 기능",
+            "단계별 리뷰 작성 인터페이스"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업데이트 (v1.10.22 → v1.10.24)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.22",
+      "project_type": "flutter",
+      "date": "2026-04-21",
+      "pr_number": 800,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 교환 완료 처리 시 거래 상대를 선택할 수 있는 화면 추가\n  * 물품 등록 화면에 등록된 물품 개수 표시 추가\n  * 교환 완료 목록에서 교환 완료 상태 태그 표시 추가",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "교환 완료 처리 시 거래 상대를 선택할 수 있는 화면 추가",
+            "물품 등록 화면에 등록된 물품 개수 표시 추가",
+            "교환 완료 목록에서 교환 완료 상태 태그 표시 추가"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.21",
+      "project_type": "flutter",
+      "date": "2026-04-17",
+      "pr_number": 785,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **버그 수정**\n  * 채팅방 메시지 수신 안정성 개선\n  * 광고 초기화 프로세스 개선\n\n* **개선**\n  * 광고 동의 절차 및 사용자 경험 개선\n  * 위치 권한 설정 정리\n\n* **기타**\n  * v1.10.21로 업데이트",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "채팅방 메시지 수신 안정성 개선",
+            "광고 초기화 프로세스 개선"
+          ]
+        },
+        "개선": {
+          "title": "개선",
+          "items": [
+            "광고 동의 절차 및 사용자 경험 개선",
+            "위치 권한 설정 정리"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "v1.10.21로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.19",
+      "project_type": "flutter",
+      "date": "2026-04-15",
+      "pr_number": 778,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 채팅 화면에서 교환 완료 요청 기능 추가\n  * 교환 완료 요청에 대한 수락/거절 처리 추가\n\n* **개선 사항**\n  * 앱 전반에서 \"거래\" 용어를 \"교환\"으로 통일\n  * 채팅 시스템 메시지 디자인 및 색상 개선\n  * 알림함 헤더 텍스트 업데이트\n\n* **기타**\n  * 버전 업데이트 (v1.10.19)\n  * Android App Links 설정 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅 화면에서 교환 완료 요청 기능 추가",
+            "교환 완료 요청에 대한 수락/거절 처리 추가"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "앱 전반에서 \"거래\" 용어를 \"교환\"으로 통일",
+            "채팅 시스템 메시지 디자인 및 색상 개선",
+            "알림함 헤더 텍스트 업데이트"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 업데이트 (v1.10.19)",
+            "Android App Links 설정 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.15",
+      "project_type": "flutter",
+      "date": "2026-04-13",
+      "pr_number": 769,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 아이템 공유 기능 추가 - 앱 내에서 아이템을 쉽게 공유할 수 있습니다.\n  * 딥링크 지원 - 공유된 링크를 통해 앱의 특정 아이템 페이지로 직접 이동할 수 있습니다.\n\n* **개선 사항**\n  * 앱 버전 v1.10.15로 업데이트되었습니다.",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "아이템 공유 기능 추가 - 앱 내에서 아이템을 쉽게 공유할 수 있습니다.",
+            "딥링크 지원 - 공유된 링크를 통해 앱의 특정 아이템 페이지로 직접 이동할 수 있습니다."
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "앱 버전 v1.10.15로 업데이트되었습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.14",
+      "project_type": "flutter",
+      "date": "2026-04-12",
+      "pr_number": 767,
+      "raw_summary": "## Summary by CodeRabbit\n\n* **버전 업데이트**\n  * 앱 버전을 v1.10.14로 업데이트했습니다.\n\n* **스타일**\n  * 런칭 화면의 배경색을 어두운 톤으로 변경하여 시각적 경험을 개선했습니다.\n\n* **Chores**\n  * iOS 빌드 프로세스의 진단 및 초기화 절차를 강화했습니다.",
+      "parsed_changes": {
+        "버전_업데이트": {
+          "title": "버전 업데이트",
+          "items": [
+            "앱 버전을 v1.10.14로 업데이트했습니다."
+          ]
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": [
+            "런칭 화면의 배경색을 어두운 톤으로 변경하여 시각적 경험을 개선했습니다."
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "iOS 빌드 프로세스의 진단 및 초기화 절차를 강화했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.12",
+      "project_type": "flutter",
+      "date": "2026-04-10",
+      "pr_number": 764,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 채팅에서 위치 공유 메시지 지원 추가\n  * 홈 피드에 네이티브 광고 삽입\n  * AdMob 광고 통합 지원\n\n* **개선 사항**\n  * 채팅 입력창 UI 재설계\n  * 채팅방 목록 아이템 레이아웃 개선\n  * Android APK 빌드 방식 변경\n  * iOS 개발자 도구 설정 최적화\n\n* **기타**\n  * 앱 버전 업데이트 (v1.10.12)\n  * UI 각종 조정 및 스타일 개선",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "채팅에서 위치 공유 메시지 지원 추가",
+            "홈 피드에 네이티브 광고 삽입",
+            "AdMob 광고 통합 지원"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "채팅 입력창 UI 재설계",
+            "채팅방 목록 아이템 레이아웃 개선",
+            "Android APK 빌드 방식 변경",
+            "iOS 개발자 도구 설정 최적화"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "앱 버전 업데이트 (v1.10.12)",
+            "UI 각종 조정 및 스타일 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.0",
+      "project_type": "flutter",
+      "date": "2026-04-01",
+      "pr_number": 746,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트 (v1.10.0)\n\n* **New Features**\n  * 채팅에서 상대방의 메시지 읽음 표시 추가\n  * 소셜 로그인 실패 시 명확한 오류 메시지 제공\n  * 앱 알림 권한 관리 및 설정 기능 강화\n\n* **Bug Fixes**\n  * 앱 재개 시 알림 권한 상태 자동 동기화\n  * 세션 만료 처리 개선\n\n* **Style**\n  * 진행률 표시기 및 사용자 프로필 아바타 시각화 개선",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "채팅에서 상대방의 메시지 읽음 표시 추가",
+            "소셜 로그인 실패 시 명확한 오류 메시지 제공",
+            "앱 알림 권한 관리 및 설정 기능 강화"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "앱 재개 시 알림 권한 상태 자동 동기화",
+            "세션 만료 처리 개선"
+          ]
+        },
+        "style": {
+          "title": "Style",
+          "items": [
+            "진행률 표시기 및 사용자 프로필 아바타 시각화 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.104",
+      "project_type": "flutter",
+      "date": "2026-03-31",
+      "pr_number": 737,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **새로운 기능**\n  * 회원 프로필에 차단 상태 표시 추가\n\n* **개선 사항**\n  * 계정 정지 화면의 UI 레이아웃 및 간격 개선\n  * 프로필 화면의 색상 스타일 업데이트\n  * 로그인 화면의 레이아웃 및 로고 정렬 개선\n\n* **버전**\n  * 앱 버전 1.9.104 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "회원 프로필에 차단 상태 표시 추가"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "계정 정지 화면의 UI 레이아웃 및 간격 개선",
+            "프로필 화면의 색상 스타일 업데이트",
+            "로그인 화면의 레이아웃 및 로고 정렬 개선"
+          ]
+        },
+        "버전": {
+          "title": "버전",
+          "items": [
+            "앱 버전 1.9.104 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.93",
+      "project_type": "flutter",
+      "date": "2026-03-29",
+      "pr_number": 726,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 소셜 로그인 시 이메일이 다른 플랫폼에 이미 등록된 경우를 감지하고 사용자에게 안내 메시지 표시\n  * 테스트 환경에서 디버그 패널 추가로 실시간 로그 조회 및 서버 로그 모니터링 지원\n\n* **개선사항**\n  * 태블릿 및 다양한 화면 크기에 최적화된 반응형 레이아웃 개선\n  * iPhone 기기 설정 추가\n  * 버전 1.9.94로 업그레이드",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "소셜 로그인 시 이메일이 다른 플랫폼에 이미 등록된 경우를 감지하고 사용자에게 안내 메시지 표시",
+            "테스트 환경에서 디버그 패널 추가로 실시간 로그 조회 및 서버 로그 모니터링 지원"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "태블릿 및 다양한 화면 크기에 최적화된 반응형 레이아웃 개선",
+            "iPhone 기기 설정 추가",
+            "버전 1.9.94로 업그레이드"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.87",
+      "project_type": "flutter",
+      "date": "2026-03-27",
+      "pr_number": 714,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 소셜 로그인 시 이메일이 다른 플랫폼으로 이미 등록된 경우를 감지하고 사용자에게 안내 메시지를 표시합니다.\n\n* **Documentation**\n  * 버전 정보를 v1.9.87로 업데이트했습니다.",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "소셜 로그인 시 이메일이 다른 플랫폼으로 이미 등록된 경우를 감지하고 사용자에게 안내 메시지를 표시합니다."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "버전 정보를 v1.9.87로 업데이트했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.87",
+      "project_type": "flutter",
+      "date": "2026-03-26",
+      "pr_number": 712,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 부적절한 콘텐츠 감지 시 사용자 경고 추가\n  * 서비스 약관에 광고 ID 수집 및 활용 관련 조항 추가\n\n* **Bug Fixes**\n  * AI 가격 예측 검증 강화\n  * 콘텐츠 위반 오류 처리 개선\n\n* **Chores**\n  * 앱 버전 업데이트 (v1.9.84 → v1.9.87)",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "부적절한 콘텐츠 감지 시 사용자 경고 추가",
+            "서비스 약관에 광고 ID 수집 및 활용 관련 조항 추가"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "AI 가격 예측 검증 강화",
+            "콘텐츠 위반 오류 처리 개선"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전 업데이트 (v1.9.84 → v1.9.87)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.84",
+      "project_type": "flutter",
+      "date": "2026-03-25",
+      "pr_number": 708,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리즈 노트\n\n* **새로운 기능**\n  * 계정 정지 상태 안내 화면 추가 - 정지 사유 및 기간 표시\n  * 풀스크린 이미지 뷰어 추가 - 확대/축소, 페이지 네비게이션 지원\n\n* **버그 수정**\n  * 이미지 관리 개선 - 기존 및 신규 이미지 상태 관리 정상화\n  * 계정 정지 시 로그인 흐름 안정화\n\n* **UI/UX 개선**\n  * 스낵바 메시지 표시 영역 확대\n  * 로그인 버튼 아이콘 색상 조정",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "계정 정지 상태 안내 화면 추가 - 정지 사유 및 기간 표시",
+            "풀스크린 이미지 뷰어 추가 - 확대/축소, 페이지 네비게이션 지원"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "이미지 관리 개선 - 기존 및 신규 이미지 상태 관리 정상화",
+            "계정 정지 시 로그인 흐름 안정화"
+          ]
+        },
+        "ui_ux_개선": {
+          "title": "UI/UX 개선",
+          "items": [
+            "스낵바 메시지 표시 영역 확대",
+            "로그인 버튼 아이콘 색상 조정"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.82",
+      "project_type": "flutter",
+      "date": "2026-03-24",
+      "pr_number": 706,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 코치 마크 튜토리얼 오버레이 추가: 앱의 주요 기능을 안내하는 5단계 인터랙티브 튜토리얼 화면 구현\n  * 손가락 애니메이션 및 물결 효과 추가로 사용자 시선 유도\n\n* **개선 사항**\n  * 프로필 편집 화면에서 닉네임 편집 흐름 개선\n  * 프로필 이미지 선택 동작 최적화\n  * 사용자 정보 관리 프로세스 개선\n\n* **버전**\n  * v1.9.82로 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "코치 마크 튜토리얼 오버레이 추가: 앱의 주요 기능을 안내하는 5단계 인터랙티브 튜토리얼 화면 구현",
+            "손가락 애니메이션 및 물결 효과 추가로 사용자 시선 유도"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "프로필 편집 화면에서 닉네임 편집 흐름 개선",
+            "프로필 이미지 선택 동작 최적화",
+            "사용자 정보 관리 프로세스 개선"
+          ]
+        },
+        "버전": {
+          "title": "버전",
+          "items": [
+            "v1.9.82로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.78",
+      "project_type": "flutter",
+      "date": "2026-03-20",
+      "pr_number": 700,
+      "raw_summary": "## Summary by CodeRabbit\n\n## v1.9.78 릴리스 노트\n\n* **새로운 기능**\n  * 미읽음 알림 뱃지 표시 추가\n  * iOS에서만 Apple 로그인 버튼 표시 (플랫폼별 최적화)\n  * 카드 드래그 제스처 반응성 개선\n\n* **버전 업데이트**\n  * v1.9.78로 업데이트 (빌드 222)",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "미읽음 알림 뱃지 표시 추가",
+            "iOS에서만 Apple 로그인 버튼 표시 (플랫폼별 최적화)",
+            "카드 드래그 제스처 반응성 개선"
+          ]
+        },
+        "버전_업데이트": {
+          "title": "버전 업데이트",
+          "items": [
+            "v1.9.78로 업데이트 (빌드 222)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.76",
+      "project_type": "flutter",
+      "date": "2026-03-19",
+      "pr_number": 692,
+      "raw_summary": "## Summary by CodeRabbit\n\n## Release Notes v1.9.76\n\n* **New Features**\n  * 로그인 화면에 앱 버전 정보 표시\n  * 마이페이지에 알림 설정 메뉴 추가\n  * 마이페이지에 앱 버전 정보 메뉴 추가\n\n* **Improvements**\n  * 검색 범위 설정 화면의 위치 기반 초기화 로직 개선\n  * 마이페이지 레이아웃 스크롤 기능 강화",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "로그인 화면에 앱 버전 정보 표시",
+            "마이페이지에 알림 설정 메뉴 추가",
+            "마이페이지에 앱 버전 정보 메뉴 추가"
+          ]
+        },
+        "improvements": {
+          "title": "Improvements",
+          "items": [
+            "검색 범위 설정 화면의 위치 기반 초기화 로직 개선",
+            "마이페이지 레이아웃 스크롤 기능 강화"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.75",
+      "project_type": "flutter",
+      "date": "2026-03-19",
+      "pr_number": 686,
+      "raw_summary": "## Summary by CodeRabbit\n\n## v1.9.75 릴리스 노트\n\n* **New Features**\n  * 온보딩 프로세스를 간소화하여 등록 단계 수 감소.\n  * 위치 인증 화면의 사용자 경험 개선.\n\n* **Documentation**\n  * 서비스 이용약관 업데이트: 부적절한 콘텐츠 및 악성 사용에 대한 무관용 원칙 추가, 신고 콘텐츠 24시간 내 검토 및 처리 정책 명시.",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "온보딩 프로세스를 간소화하여 등록 단계 수 감소.",
+            "위치 인증 화면의 사용자 경험 개선."
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "서비스 이용약관 업데이트: 부적절한 콘텐츠 및 악성 사용에 대한 무관용 원칙 추가, 신고 콘텐츠 24시간 내 검토 및 처리 정책 명시."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.74",
+      "project_type": "flutter",
+      "date": "2026-03-17",
+      "pr_number": 684,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **새로운 기능**\n  * 앱 업데이트 확인 및 알림 시스템 추가\n  * 필수 업데이트 필요 시 사용자에게 알리고 앱 스토어로 유도하는 화면 추가\n\n* **Chores**\n  * 앱 버전을 v1.9.74로 업데이트\n  * 모달/다이얼로그 사용 규칙 가이드라인 추가",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "앱 업데이트 확인 및 알림 시스템 추가",
+            "필수 업데이트 필요 시 사용자에게 알리고 앱 스토어로 유도하는 화면 추가"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전을 v1.9.74로 업데이트",
+            "모달/다이얼로그 사용 규칙 가이드라인 추가"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.71",
+      "project_type": "flutter",
+      "date": "2026-03-16",
+      "pr_number": 671,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **신기능**\n  * 알림 탭 처리 및 읽음 상태 관리 개선\n\n* **개선사항**\n  * 첫 물건 등록 버튼 디자인 및 등록 플로우 개선\n  * 채팅 인터페이스 및 메시지 표시 최적화\n  * 채팅 입력창 기능 강화\n\n* **리팩토링**\n  * 채팅방 UI 구성 요소 통합\n  * 알림 API 단순화\n\n* **스타일**\n  * 네비게이션 및 빈 상태 시각 디자인 업데이트",
+      "parsed_changes": {
+        "신기능": {
+          "title": "신기능",
+          "items": [
+            "알림 탭 처리 및 읽음 상태 관리 개선"
+          ]
+        },
+        "개선사항": {
+          "title": "개선사항",
+          "items": [
+            "첫 물건 등록 버튼 디자인 및 등록 플로우 개선",
+            "채팅 인터페이스 및 메시지 표시 최적화",
+            "채팅 입력창 기능 강화"
+          ]
+        },
+        "리팩토링": {
+          "title": "리팩토링",
+          "items": [
+            "채팅방 UI 구성 요소 통합",
+            "알림 API 단순화"
+          ]
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": [
+            "네비게이션 및 빈 상태 시각 디자인 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.67",
+      "project_type": "flutter",
+      "date": "2026-03-12",
+      "pr_number": 662,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **Chores**\n  * 애플리케이션 버전을 1.9.67로 업데이트하고 빌드 번호를 211로 증가시켰습니다.\n  * Google Play Store 배포 구성을 조정했습니다.\n  * 시스템 통합 메타데이터 정보를 추가했습니다.\n  * README 파일의 버전 정보를 동기화했습니다.\n  * 배포 워크플로우 설정을 수정했습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "애플리케이션 버전을 1.9.67로 업데이트하고 빌드 번호를 211로 증가시켰습니다.",
+            "Google Play Store 배포 구성을 조정했습니다.",
+            "시스템 통합 메타데이터 정보를 추가했습니다.",
+            "README 파일의 버전 정보를 동기화했습니다.",
+            "배포 워크플로우 설정을 수정했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.66",
+      "project_type": "flutter",
+      "date": "2026-03-12",
+      "pr_number": 661,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * Play Store 자동 배포 프로세스 개선: 내부 트랙에서 프로덕션으로 직접 승격하는 새로운 자동화 기능 추가.\n\n* **개선 사항**\n  * 버전 업데이트: 1.9.62 → 1.9.66\n  * CI/CD 인프라 업그레이드: 최신 도구 버전 및 macOS 런너로 안정성 강화.\n  * Xcode 버전 업데이트로 빌드 성능 개선.",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "Play Store 자동 배포 프로세스 개선: 내부 트랙에서 프로덕션으로 직접 승격하는 새로운 자동화 기능 추가."
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "버전 업데이트: 1.9.62 → 1.9.66",
+            "CI/CD 인프라 업그레이드: 최신 도구 버전 및 macOS 런너로 안정성 강화.",
+            "Xcode 버전 업데이트로 빌드 성능 개선."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.63",
+      "project_type": "flutter",
+      "date": "2026-03-12",
+      "pr_number": 659,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **Chores**\n  * 버전을 1.9.63으로 업데이트했습니다.\n  * Google Play Store 배포 프로세스를 간소화했습니다.\n  * 문서 및 버전 정보를 최신화했습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전을 1.9.63으로 업데이트했습니다.",
+            "Google Play Store 배포 프로세스를 간소화했습니다.",
+            "문서 및 버전 정보를 최신화했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.62",
+      "project_type": "flutter",
+      "date": "2026-03-12",
+      "pr_number": 657,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **개선 사항**\n  * 채팅방 화면 UI를 정제하여 더 깔끔한 레이아웃 제공\n  * 시스템 메시지 표시 방식 개선으로 가독성 향상\n  * 위치 권한 처리 로직 안정화 및 일관성 개선\n\n* **기타**\n  * 버전 1.9.62로 업데이트",
+      "parsed_changes": {
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "채팅방 화면 UI를 정제하여 더 깔끔한 레이아웃 제공",
+            "시스템 메시지 표시 방식 개선으로 가독성 향상",
+            "위치 권한 처리 로직 안정화 및 일관성 개선"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "버전 1.9.62로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.60",
+      "project_type": "flutter",
+      "date": "2026-03-11",
+      "pr_number": 644,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * Apple Sign In 지원: Apple 계정으로 간편하게 로그인할 수 있습니다.\n  * 계정 삭제 기능: 사용자가 언제든지 계정을 삭제할 수 있습니다.\n\n* **개선 사항**\n  * iOS 기기에서만 Apple 로그인 옵션이 표시되도록 최적화했습니다.\n  * 로그인 인터페이스의 색상과 텍스트 스타일이 개선되었습니다.\n  * 인증 프로세스가 간소화되고 최적화되었습니다.\n\n* **버전 업데이트**\n  * 앱 버전이 1.9.60으로 업그레이드되었습니다.",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "Apple Sign In 지원: Apple 계정으로 간편하게 로그인할 수 있습니다.",
+            "계정 삭제 기능: 사용자가 언제든지 계정을 삭제할 수 있습니다."
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "iOS 기기에서만 Apple 로그인 옵션이 표시되도록 최적화했습니다.",
+            "로그인 인터페이스의 색상과 텍스트 스타일이 개선되었습니다.",
+            "인증 프로세스가 간소화되고 최적화되었습니다."
+          ]
+        },
+        "버전_업데이트": {
+          "title": "버전 업데이트",
+          "items": [
+            "앱 버전이 1.9.60으로 업그레이드되었습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.59",
+      "project_type": "flutter",
+      "date": "2026-03-10",
+      "pr_number": 641,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트 v1.9.59\n\n* **새로운 기능**\n  * 위치 권한 요청 및 처리 흐름 통합\n  * 분할 화면 모드 지원 추가\n  * 위치 권한 상태 확인 기능 추가\n\n* **버그 수정**\n  * 권한 거부 후 앱 재개 시 위치 재시도 로직 구현\n  * null 안전성 개선 및 폴백 처리 강화\n\n* **UI/UX 개선**\n  * 모달 다이얼로그 레이아웃 최적화\n  * 범위 슬라이더 및 스켈레톤 로딩 화면 개선\n  * 네비게이션 바 패딩 조정\n  * iPad 및 대형 기기 대응 UI 가이드라인 추가\n\n* **최적화**\n  * 반응형 디자인 구조 개선",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "위치 권한 요청 및 처리 흐름 통합",
+            "분할 화면 모드 지원 추가",
+            "위치 권한 상태 확인 기능 추가"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "권한 거부 후 앱 재개 시 위치 재시도 로직 구현",
+            "null 안전성 개선 및 폴백 처리 강화"
+          ]
+        },
+        "ui_ux_개선": {
+          "title": "UI/UX 개선",
+          "items": [
+            "모달 다이얼로그 레이아웃 최적화",
+            "범위 슬라이더 및 스켈레톤 로딩 화면 개선",
+            "네비게이션 바 패딩 조정",
+            "iPad 및 대형 기기 대응 UI 가이드라인 추가"
+          ]
+        },
+        "최적화": {
+          "title": "최적화",
+          "items": [
+            "반응형 디자인 구조 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.57",
+      "project_type": "flutter",
+      "date": "2026-03-09",
+      "pr_number": 640,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * Google 계정으로 로그인 지원 추가\n  * 시스템 메시지 모달 표시 기능 추가\n\n* **버그 수정**\n  * 메시지 전송 타임아웃 처리 개선\n  * 메시지 전송 중 입력 비활성화 동작 수정\n  * 대화 상대 탈퇴 시 메시지 입력 상태 개선\n\n* **스타일**\n  * 카드 디자인 및 이미지 레이아웃 개선",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "Google 계정으로 로그인 지원 추가",
+            "시스템 메시지 모달 표시 기능 추가"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "메시지 전송 타임아웃 처리 개선",
+            "메시지 전송 중 입력 비활성화 동작 수정",
+            "대화 상대 탈퇴 시 메시지 입력 상태 개선"
+          ]
+        },
+        "스타일": {
+          "title": "스타일",
+          "items": [
+            "카드 디자인 및 이미지 레이아웃 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.53",
+      "project_type": "flutter",
+      "date": "2026-03-09",
+      "pr_number": 629,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새로운 기능**\n  * 이미지 메시지 일괄 처리 및 URL 가져오기 기능 추가\n  * 최대 5개 이미지 선택 제한\n\n* **개선 사항**\n  * WebSocket 연결 안정성 향상 및 자동 토큰 갱신 기능\n  * 메시지 매칭 로직 정확도 개선\n\n* **Chores**\n  * 버전 업데이트 (v1.9.53)\n  * Android 빌드 도구 의존성 업데이트",
+      "parsed_changes": {
+        "새로운_기능": {
+          "title": "새로운 기능",
+          "items": [
+            "이미지 메시지 일괄 처리 및 URL 가져오기 기능 추가",
+            "최대 5개 이미지 선택 제한"
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "WebSocket 연결 안정성 향상 및 자동 토큰 갱신 기능",
+            "메시지 매칭 로직 정확도 개선"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "버전 업데이트 (v1.9.53)",
+            "Android 빌드 도구 의존성 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.51",
+      "project_type": "flutter",
+      "date": "2026-03-08",
+      "pr_number": 625,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트 v1.9.51\n\n* **Chores**\n  * 애플리케이션이 v1.9.51로 업데이트되었습니다.\n\n* **Bug Fixes**\n  * 불필요한 카메라 권한이 제거되었습니다.\n  * 위치 서비스 권한 설명이 앱의 기능을 정확하게 반영하도록 업데이트되었습니다.\n  * 사진 라이브러리 권한 설명이 업데이트되었습니다.\n\n* **Refactor**\n  * 앱 시작 화면의 애니메이션 성능이 개선되었습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "애플리케이션이 v1.9.51로 업데이트되었습니다."
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "불필요한 카메라 권한이 제거되었습니다.",
+            "위치 서비스 권한 설명이 앱의 기능을 정확하게 반영하도록 업데이트되었습니다.",
+            "사진 라이브러리 권한 설명이 업데이트되었습니다."
+          ]
+        },
+        "refactor": {
+          "title": "Refactor",
+          "items": [
+            "앱 시작 화면의 애니메이션 성능이 개선되었습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.49",
+      "project_type": "flutter",
+      "date": "2026-03-05",
+      "pr_number": 619,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * Google 및 Kakao 소셜 로그인 흐름 개선 (Firebase 인증 통합)\n  * 로그인 중 로딩 오버레이 추가\n  * Kakao 로그인 시 앱 미설치 상태 처리\n\n* **Bug Fixes**\n  * 회원 위치 데이터 전송 안정성 개선\n  * 알림 시스템 호출 방식 수정\n\n* **Updates**\n  * 버전 1.9.49로 업그레이드\n  * 주요 의존성 업데이트 (Google Sign-in, Firebase Auth 등)",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "Google 및 Kakao 소셜 로그인 흐름 개선 (Firebase 인증 통합)",
+            "로그인 중 로딩 오버레이 추가",
+            "Kakao 로그인 시 앱 미설치 상태 처리"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "회원 위치 데이터 전송 안정성 개선",
+            "알림 시스템 호출 방식 수정"
+          ]
+        },
+        "updates": {
+          "title": "Updates",
+          "items": [
+            "버전 1.9.49로 업그레이드",
+            "주요 의존성 업데이트 (Google Sign-in, Firebase Auth 등)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.9.48",
+      "project_type": "flutter",
+      "date": "2026-03-03",
+      "pr_number": 614,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 새 기능\n* AI 기반 추천 아이템 목록 조회 및 카드 재정렬 기능 추가\n* 피드 아이템의 AI 분석 정렬 버튼 추가\n\n## 개선 사항\n* 스크롤 반응성 개선 (유휴 대기 시간 단축: 0.7s → 0.5s)\n* 새로고침 동작 및 스크롤 물리 최적화\n* 카드 레이아웃 및 시각적 요소 개선\n\n## 문서\n* 버전 업데이트 (v1.9.45 → v1.9.48)",
+      "parsed_changes": {
+        "ai_기반_추천_아이템_목록_조회_및_카드_재정렬_기능_추가": {
+          "title": "AI 기반 추천 아이템 목록 조회 및 카드 재정렬 기능 추가",
+          "items": []
+        },
+        "피드_아이템의_ai_분석_정렬_버튼_추가": {
+          "title": "피드 아이템의 AI 분석 정렬 버튼 추가",
+          "items": []
+        },
+        "스크롤_반응성_개선__유휴_대기_시간_단축__0_7s___0_5s": {
+          "title": "스크롤 반응성 개선 (유휴 대기 시간 단축: 0.7s → 0.5s)",
+          "items": []
+        },
+        "새로고침_동작_및_스크롤_물리_최적화": {
+          "title": "새로고침 동작 및 스크롤 물리 최적화",
+          "items": []
+        },
+        "카드_레이아웃_및_시각적_요소_개선": {
+          "title": "카드 레이아웃 및 시각적 요소 개선",
+          "items": []
+        },
+        "버전_업데이트__v1_9_45___v1_9_48": {
+          "title": "버전 업데이트 (v1.9.45 → v1.9.48)",
+          "items": []
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.9.45",
       "project_type": "flutter",

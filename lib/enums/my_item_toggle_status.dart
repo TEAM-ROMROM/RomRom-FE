@@ -1,7 +1,7 @@
 /// 내 물건 탭 토글 상태 enum
 enum MyItemToggleStatus {
   selling(id: 1, label: '판매 중', serverName: 'AVAILABLE'),
-  completed(id: 2, label: '거래 완료', serverName: 'EXCHANGED');
+  completed(id: 2, label: '교환 완료', serverName: 'EXCHANGED');
 
   final int id;
   final String label;

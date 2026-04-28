@@ -1,11 +1,16 @@
 import 'dart:io';
+import 'package:animations/animations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
+import 'package:romrom_fe/models/app_urls.dart';
+import 'package:share_plus/share_plus.dart';
 import '../widgets/common/common_modal.dart';
+import 'package:romrom_fe/utils/device_type.dart';
 
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
@@ -37,34 +42,97 @@ extension NavigationExtension on BuildContext {
         return Navigator.pushAndRemoveUntil<T>(this, createRoute(screen, routeSettings), predicate ?? (route) => false);
 
       case NavigationTypes.fadeTransition:
+        // 800ms → 400ms 단축 (AppMotion.slow)
         return Navigator.pushAndRemoveUntil<T>(
           this,
           PageRouteBuilder<T>(
             pageBuilder: (context, animation, secondaryAnimation) => screen,
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
-                opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                opacity: CurvedAnimation(parent: animation, curve: AppMotion.standard),
                 child: child,
               );
             },
-            transitionDuration: const Duration(milliseconds: 800),
-            reverseTransitionDuration: const Duration(milliseconds: 300),
+            transitionDuration: AppMotion.slow,
+            reverseTransitionDuration: AppMotion.normal,
             settings: routeSettings,
           ),
           predicate ?? (route) => false,
         );
 
       case NavigationTypes.clearStackImmediate:
+        // 즉시 전환 → 400ms fade 전환으로 개선 (딱딱함 제거)
         return Navigator.pushAndRemoveUntil<T>(
           this,
           PageRouteBuilder<T>(
             pageBuilder: (context, animation, secondaryAnimation) => screen,
-            // transitionsBuilder 미지정: 기본 동작(child 그대로 반환)으로 전환 없이 즉시 표시
-            transitionDuration: Duration.zero,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(parent: animation, curve: AppMotion.entry),
+                child: child,
+              );
+            },
+            transitionDuration: AppMotion.slow,
             reverseTransitionDuration: Duration.zero,
             settings: routeSettings,
           ),
           predicate ?? (route) => false,
+        );
+
+      case NavigationTypes.fadePush:
+        return Navigator.push<T>(
+          this,
+          PageRouteBuilder<T>(
+            pageBuilder: (context, animation, secondaryAnimation) => screen,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(parent: animation, curve: AppMotion.decelerate),
+                child: child,
+              );
+            },
+            transitionDuration: AppMotion.normal,
+            reverseTransitionDuration: AppMotion.fast,
+            settings: routeSettings,
+          ),
+        );
+
+      case NavigationTypes.slideUp:
+        // 아래에서 위로 슬라이드 — 모달/바텀시트 느낌
+        return Navigator.push<T>(
+          this,
+          PageRouteBuilder<T>(
+            pageBuilder: (context, animation, secondaryAnimation) => screen,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(parent: animation, curve: AppMotion.decelerate));
+              return SlideTransition(position: slide, child: child);
+            },
+            transitionDuration: AppMotion.normal,
+            reverseTransitionDuration: AppMotion.fast,
+            settings: routeSettings,
+          ),
+        );
+
+      case NavigationTypes.sharedAxisHorizontal:
+        // 수평 SharedAxis — 리스트→상세 전환
+        return Navigator.push<T>(
+          this,
+          PageRouteBuilder<T>(
+            pageBuilder: (context, animation, secondaryAnimation) => screen,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return SharedAxisTransition(
+                animation: animation,
+                secondaryAnimation: secondaryAnimation,
+                transitionType: SharedAxisTransitionType.horizontal,
+                child: child,
+              );
+            },
+            transitionDuration: AppMotion.slow,
+            reverseTransitionDuration: AppMotion.normal,
+            settings: routeSettings,
+          ),
         );
     }
   }
@@ -72,9 +140,7 @@ extension NavigationExtension on BuildContext {
 
 /// 화면 크기에 따라 폰트 크기를 조정하는 함수
 double adjustedFontSize(BuildContext context, double spSize) {
-  final shortestSide = MediaQuery.of(context).size.shortestSide;
-  if (shortestSide > 600) {
-    // 태블릿 크기 기준
+  if (isTablet) {
     return (spSize * 0.8).sp; // 태블릿에서는 80% 크기로 조정
   } else {
     return spSize.sp;
@@ -182,4 +248,27 @@ String getLastActivityTime(DateTime? lastActiveAt) {
 // 색상을 어둡게 만드는 함수(버튼 highlight용)
 Color darkenBlend(Color c) {
   return Color.alphaBlend(AppColors.opacity20Black, c);
+}
+
+/// 아이템 공유
+/// itemId를 받아 공유 시트를 띄움
+Future<void> shareItem({required String itemId, Rect? sharePositionOrigin}) async {
+  final url = Uri.parse('${AppUrls.itemShareBaseUrl}/item').replace(queryParameters: {'itemId': itemId}).toString();
+  final text = url;
+  try {
+    debugPrint('[Share]: sharing itemId=$itemId url=$url origin=$sharePositionOrigin');
+    await Share.share(text, sharePositionOrigin: sharePositionOrigin);
+    debugPrint('[Share]: share completed for itemId=$itemId');
+  } catch (e, st) {
+    debugPrint('[Share]: share failed for itemId=$itemId - $e\n$st');
+    rethrow;
+  }
+}
+
+/// 공백 단위로만 줄바꿈을 허용하는 String 확장
+/// 단어 내부 문자 사이에 Word Joiner(\u2060)를 삽입하여 단어 중간 줄바꿈을 방지
+extension StringWordWrapExtension on String {
+  String get noBreak {
+    return replaceAllMapped(RegExp(r'[^\s]+'), (match) => match.group(0)!.characters.join('\u2060'));
+  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 /// 온보딩 프로그레스 헤더 위젯
 ///
@@ -83,8 +84,10 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
         children: [
           SizedBox(width: 24.w),
           // 뒤로가기 버튼
-          GestureDetector(
+          AppPressable(
             onTap: widget.onBackPressed ?? () => Navigator.of(context).pop(),
+            scaleDown: AppPressable.scaleIcon,
+            enableRipple: false,
             child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
           ),
           SizedBox(width: 81.w),
@@ -132,7 +135,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
                 // 활성화 선 (애니메이션)
                 Container(
                   height: 1.h,
-                  width: MediaQuery.of(context).size.width * lineProgress * 0.2,
+                  width: MediaQuery.of(context).size.width * lineProgress,
                   color: AppColors.primaryYellow,
                 ),
               ],
@@ -153,10 +156,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
         width: 24.w,
         height: 24.h,
         decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primaryYellow),
-        child: Padding(
-          padding: EdgeInsets.all(6.w),
-          child: Icon(AppIcons.onboardingProgressCheck, size: 9.sp, color: AppColors.textColorBlack),
-        ),
+        child: Icon(AppIcons.onboardingProgressCheck, size: 20.sp, color: AppColors.textColorBlack),
       );
     }
 

@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/navigation_tab_items.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -14,20 +14,25 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double bottomPadding = Platform.isIOS ? 52.h + MediaQuery.of(context).padding.bottom : 70.h;
+    // iOS: 홈 인디케이터 영역 반영, Android: 고정값 (기존 동작 유지)
+    final double bottomPadding = Platform.isIOS ? MediaQuery.of(context).padding.bottom : 0;
     return Container(
       width: MediaQuery.of(context).size.width,
-      // 기본 높이 + 시스템 네비게이션 영역 패딩
-      height: bottomPadding,
       decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
         border: Border(top: BorderSide(color: AppColors.opacity10Black, width: 1)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: NavigationTabItems.values
-            .map((tab) => _buildNavItem(context, tab.index, tab.iconData, tab.title))
-            .toList(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: NavigationTabItems.values
+                .map((tab) => _buildNavItem(context, tab.index, tab.iconData, tab.title))
+                .toList(),
+          ),
+          SizedBox(height: bottomPadding),
+        ],
       ),
     );
   }
@@ -35,21 +40,24 @@ class CustomBottomNavigationBar extends StatelessWidget {
   Widget _buildNavItem(BuildContext context, int index, IconData icon, String label) {
     final bool isSelected = selectedIndex == index;
 
-    return InkWell(
+    return AppPressable(
       onTap: () => onTap(index),
+      scaleDown: AppPressable.scaleIcon,
+      enableRipple: false,
       child: SizedBox(
         width: MediaQuery.of(context).size.width / 5,
         child: Padding(
-          padding: EdgeInsets.only(top: 12.h),
+          padding: const EdgeInsets.only(top: 12, bottom: 12),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // 아이콘 (선택됨: 흰색, 선택 안됨: 회색)
               Icon(
                 icon,
                 color: isSelected ? AppColors.textColorWhite : AppColors.bottomNavigationDisableIcon,
-                size: 24.sp,
+                size: 24,
               ),
-              SizedBox(height: 8.h), // 아이콘과 텍스트 사이 간격
+              const SizedBox(height: 8), // 아이콘과 텍스트 사이 간격
               // 텍스트 (선택됨: 흰색, 선택 안됨: 회색)
               Text(
                 label,

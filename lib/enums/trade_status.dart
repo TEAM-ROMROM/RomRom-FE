@@ -1,7 +1,7 @@
 /// 거래 상태 태그 ENUM
 enum TradeStatus {
   pending(label: '대기', serverName: 'PENDING'),
-  traded(label: '거래 완료', serverName: 'TRADED'),
+  traded(label: '교환 완료', serverName: 'TRADED'),
   canceled(label: '취소', serverName: 'CANCELED'),
   chatting(label: '채팅 중', serverName: 'CHATTING');
 

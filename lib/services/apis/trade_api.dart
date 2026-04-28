@@ -15,10 +15,12 @@ class TradeApi {
 
   TradeApi._internal();
 
+  final Set<String> _pendingRequests = {};
+
   /// 거래 요청 API
   /// `POST /api/trade/post`
   Future<void> requestTrade(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/post';
+    final String url = '${AppUrls.baseUrl}/api/trade/post';
 
     final Map<String, dynamic> fields = {
       'takeItemId': request.takeItemId,
@@ -40,7 +42,7 @@ class TradeApi {
   /// 거래 요청 취소 API
   /// `POST /api/trade/delete`
   Future<void> cancelTradeRequest(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/delete';
+    final String url = '${AppUrls.baseUrl}/api/trade/delete';
 
     final id = request.tradeRequestHistoryId;
     if (id == null || id.isEmpty) {
@@ -62,7 +64,7 @@ class TradeApi {
   /// 받은 거래 요청 목록 조회 API
   /// `POST /api/trade/get/received`
   Future<PagedTradeRequestHistory> getReceivedTradeRequests(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get/received';
+    final String url = '${AppUrls.baseUrl}/api/trade/get/received';
     late PagedTradeRequestHistory tradeResponse;
 
     final Map<String, dynamic> fields = {'takeItemId': request.takeItemId};
@@ -90,7 +92,7 @@ class TradeApi {
   /// 보낸 거래 요청 목록 조회 API
   /// `POST /api/trade/get/sent`
   Future<PagedTradeRequestHistory> getSentTradeRequests(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get/sent';
+    final String url = '${AppUrls.baseUrl}/api/trade/get/sent';
     late PagedTradeRequestHistory tradeResponse;
 
     final Map<String, dynamic> fields = {'giveItemId': request.giveItemId};
@@ -118,7 +120,7 @@ class TradeApi {
   /// 거래율 기준 정렬된 목록 조회 API
   /// `POST /api/trade/get/rate`
   Future<TradeResponse> getSortedTradeRate(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get/rate';
+    final String url = '${AppUrls.baseUrl}/api/trade/get/rate';
     late TradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {
@@ -150,7 +152,7 @@ class TradeApi {
   /// 거래 요청 상세 조회 API
   /// `POST /api/trade/get`
   Future<TradeResponse> getDetailedTradeRequest(TradeRequestHistory request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get';
+    final String url = '${AppUrls.baseUrl}/api/trade/get';
     late TradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {'tradeRequestHistoryId': request.tradeRequestHistoryId};
@@ -178,7 +180,7 @@ class TradeApi {
   /// 거래 완료로 변경 API
   /// `POST /api/trade/accept`
   Future<void> updateTradeStatusAccept(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/accept';
+    final String url = '${AppUrls.baseUrl}/api/trade/accept';
 
     final id = request.tradeRequestHistoryId;
     if (id == null || id.isEmpty) {
@@ -206,7 +208,7 @@ class TradeApi {
   /// 거래 요청 존재 여부 반환 API
   /// `POST /api/trade/check`
   Future<bool> checkTradeRequestExistence(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/check';
+    final String url = '${AppUrls.baseUrl}/api/trade/check';
     late TradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {'takeItemId': request.takeItemId, 'giveItemId': request.giveItemId};
@@ -229,5 +231,72 @@ class TradeApi {
     }
 
     return tradeResponse.tradeRequestHistoryExists ?? false;
+  }
+
+  /// 물품 AI 추천 정렬
+  /// `POST /api/trade/get/recommend`
+  Future<TradeResponse> getAiRecommendItemList(TradeRequest request) async {
+    final String url = '${AppUrls.baseUrl}/api/trade/get/recommend';
+    late TradeResponse tradeResponse;
+
+    final Map<String, dynamic> fields = {'takeItemId': request.takeItemId};
+
+    http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        // 여기서는 호출되지 않음 - 아래에서 직접 처리
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      tradeResponse = TradeResponse.fromJson(responseData);
+      debugPrint('물품 AI 추천 정렬 요청 성공');
+    } else {
+      throw Exception('물품 AI 추천 정렬 요청 실패: ${response.statusCode}');
+    }
+
+    return tradeResponse;
+  }
+
+  /// 거래 후기 작성 API
+  /// `POST /api/trade/review/post`
+  Future<void> postTradeReview(TradeRequest request) async {
+    final String url = '${AppUrls.baseUrl}/api/trade/review/post';
+
+    final id = request.tradeRequestHistoryId;
+    if (id == null || id.isEmpty) {
+      throw ArgumentError('tradeRequestHistoryId is required');
+    }
+
+    if (_pendingRequests.contains(id)) return;
+    _pendingRequests.add(id);
+
+    try {
+      final Map<String, dynamic> fields = {
+        'tradeRequestHistoryId': id,
+        if (request.tradeReviewRating != null) 'tradeReviewRating': request.tradeReviewRating!,
+        if (request.tradeReviewTags != null && request.tradeReviewTags!.isNotEmpty)
+          'tradeReviewTags': request.tradeReviewTags!.join(','),
+        if (request.reviewComment != null && request.reviewComment!.isNotEmpty) 'reviewComment': request.reviewComment!,
+      };
+
+      final response = await ApiClient.sendMultipartRequest(
+        url: url,
+        fields: fields,
+        isAuthRequired: true,
+        onSuccess: (_) {},
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('거래 후기 작성 성공');
+      } else {
+        throw Exception('거래 후기 작성 실패: ${response.statusCode}');
+      }
+    } finally {
+      _pendingRequests.remove(id);
+    }
   }
 }

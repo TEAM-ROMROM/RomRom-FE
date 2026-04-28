@@ -29,7 +29,8 @@ class AppColors {
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
-  static const Color google = Color(0xFFF3F4F4); // 구글 배경
+  static const Color google = Color(0xFFFFFFFF); // 구글 배경
+  static const Color apple = Color(0xFFFFFFFF); // 애플 배경
 
   // 동네 인증하기 화면
   static const Color locationVerificationAreaLabel = Color(0x4CFFFFFF); // 흰색, opacity 30%
@@ -41,7 +42,7 @@ class AppColors {
   static const Color bottomNavigationDisableIcon = Color(0xFF676767); // 하단 네비게이션바 비활성화 아이콘
 
   // 물품 카드
-  static final Color itemCardBackground = const Color(0xFFFFFFFF).withValues(alpha: 0.8); // 물품 카드 배경 색상
+  static const Color itemCardBackground = Color(0xFFFFFFFF); // 물품 카드 배경 색상
   static final Color itemCardBorder = const Color(0xFFFFFFFF).withValues(alpha: 0.6); // 물품 카드 테두리 색상
   static const Color itemCardShadow = Color(0x26000000); // 물품 카드 그림자 색상 , 검정색, opacity 15%
   static const Color itemCardNameText = Color(0xFF131419); // 물품 카드 텍스트 색상
@@ -86,6 +87,16 @@ class AppColors {
   static const Color itemOptionsMenuRedText = Color(0xFFFF5656); // 삭제 텍스트 색상
   static const Color itemOptionsMenuRedIcon = Color(0xFF993333); // 삭제 아이콘 색상
 
+  // 후기 만족도 선택 색상
+  static const Color reviewRatingUnselected = Color(0xFF828289);
+  static const Color reviewRatingUnselectedBackground = Color(0xFF4C4E54); // 만족도 선택 안된 상태 배경색
+  static const Color reviewRatingBad = Color(0xFFFF5656); // 별로예요
+  static const Color reviewRatingGood = Color(0xFFFFC300); // 좋아요
+  static const Color reviewRatingGreat = Color(0xFF00FF85); // 최고에요
+  static const Color reviewRatingBadBackground = Color(0xFFDFBABA); // 별로예요 선택 시 배경
+  static const Color reviewRatingGoodBackground = Color(0xFFDACFAF); // 좋아요 선택 시 배경
+  static const Color reviewRatingGreatBackground = Color(0xFFBDFADD); // 최고에요 선택 시 배경
+
   // 경고 다이얼로그
   static const Color warningRed = Color(0xFFFF5656); // 경고 아이콘 및 버튼 색상
 
@@ -125,6 +136,13 @@ class AppColors {
     Color(0xFF9858F2), // 보라 테두리(Gradient 2)
     Color(0xFFF258F2), // 핑크 테두리(Gradient 3)
     Color(0xFFF25893), // 다홍 테두리(Gradient 4)
+  ];
+
+  // ai 카드 그라데이션
+  static const List<Color> aiCardGradient = [
+    Color(0xFFF258F2), // 핑크 테두리(Gradient 1)
+    Color(0xB39858F2), // 보라 테두리(Gradient 2)
+    Color(0xB35889F2), // 파란 테두리(Gradient 3)
   ];
 
   // 홈 피드 - blackGradient container 그라데이션
@@ -170,4 +188,28 @@ class AppColors {
   static const Color chatUnreadBadge = Color(0xFFFF3E3E); // 읽지 않은 메시지 뱃지
   static const Color chatActiveStatus = Color(0xFF30CF00); // 활성 상태 색상 (초록색)
   static const Color chatInactiveStatus = Color(0xFFFF3E3E); // 비활성 상태 색상 (빨간색)
+
+  // 코치마크 화면
+  static const Color cardDragContainer = Color(0xFF4F4F50); // 카드 드래그 시 중간 컨테이너 배경색
+
+  // 상대 프로필 화면
+  static const Color isBlockedStatusText = Color(0xFF993333); // 차단된 회원 text 색상
+
+  // 채팅 알림 유도 바텀시트 - 채팅 미리보기
+  static const Color notificationBottomSheetChattingContainerBottom = Color(0xFF282933); // 채팅 미리보기 하단 컨테이너 배경색
+  static const Color notificationBottomSheetChattingContainerMiddle = Color(0xFF34353D); // 채팅 미리보기 중간 컨테이너 배경색
+  static const Color notificationBottomSheetChattingContainerTop = Color(0xFF4C4E54); // 채팅 미리보기 상단 컨테이너 배경색
+
+  // 교환 완료 요청 시스템 메시지
+  static const Color exchangeRequestSystemMessageBackground = Color(0x1AFFC300); // 채팅 시스템 메시지 배경색
+  static const Color exchangeRequestSystemMessageBorder = Color(0x1AFFC300); // 채팅 시스템 메시지 테두리 색상
+
+  // 카테고리 칩 색상
+  static const Color categoryChipSelected = Color(0x4DFFC300); // 선택된 카테고리 칩 색상
+  static const Color categoryChipUnselected = AppColors.secondaryBlack1; // 선택되지 않은 카테고리 칩 색
+  static const Color categoryChipBorder = Color(0x4DFFC300); // 카테고리 칩 테두리 색상
+
+  // 완료 버튼 배경 색상
+  static const Color completionButtonEnabledBackground = primaryYellow; // 활성화된 완료 버튼 배경색
+  static const Color completionButtonDisabledBackground = Color(0xFF61501B); // 비활성화된 완료
 }

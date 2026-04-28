@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
@@ -23,6 +24,7 @@ class SentRequestItemCard extends StatelessWidget {
   final TradeStatus? tradeStatus;
   final VoidCallback? onEditTap;
   final VoidCallback? onCancelTap;
+  final VoidCallback? onTap;
 
   const SentRequestItemCard({
     super.key,
@@ -36,19 +38,25 @@ class SentRequestItemCard extends StatelessWidget {
     this.tradeStatus,
     this.onEditTap,
     this.onCancelTap,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 361.w,
-      height: 191.h,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
-      child: Column(
-        children: [
-          _buildTopImageSection(), // 상단 이미지 영역
-          _buildBottomInfoSection(context), // 하단 정보 영역
-        ],
+    return AppPressable(
+      onTap: onTap,
+      scaleDown: AppPressable.scaleCard,
+      enableRipple: false,
+      borderRadius: BorderRadius.circular(10.r),
+      child: Container(
+        width: 361.w,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
+        child: Column(
+          children: [
+            _buildTopImageSection(), // 상단 이미지 영역
+            _buildBottomInfoSection(context), // 하단 정보 영역
+          ],
+        ),
       ),
     );
   }
@@ -73,25 +81,23 @@ class SentRequestItemCard extends StatelessWidget {
 
   /// 하단 정보 영역
   Widget _buildBottomInfoSection(BuildContext context) {
-    return Expanded(
-      child: Stack(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTitle(),
-                SizedBox(height: 8.h),
-                _buildLocationAndTime(),
-                const Spacer(),
-                _buildTagsAndStatus(),
-              ],
-            ),
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTitle(),
+              SizedBox(height: 8.h),
+              _buildLocationAndTime(),
+              const SizedBox(height: 12),
+              _buildTagsAndStatus(),
+            ],
           ),
-          if (tradeStatus != TradeStatus.traded) _buildMenuIcon(),
-        ],
-      ),
+        ),
+        if (tradeStatus != TradeStatus.traded) _buildMenuIcon(),
+      ],
     );
   }
 

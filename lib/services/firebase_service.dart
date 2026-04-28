@@ -4,7 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/services/notification_service.dart';
+import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 
 class FirebaseService {
@@ -45,10 +45,10 @@ class FirebaseService {
         if (notification != null && android != null) {
           // flutter_local_notifications 이용 (use shared initialized plugin)
           await flutterLocalNotificationsPlugin.show(
-            notification.hashCode,
-            notification.title,
-            notification.body,
-            const NotificationDetails(
+            id: notification.hashCode,
+            title: notification.title,
+            body: notification.body,
+            notificationDetails: const NotificationDetails(
               android: AndroidNotificationDetails(
                 'high_importance_channel',
                 'High Importance Notifications',

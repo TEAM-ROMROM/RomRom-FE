@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 3개 탭 토글 스위치 위젯
@@ -71,7 +72,7 @@ class TripleToggleSwitch extends StatelessWidget {
                               color: AppColors.transparent,
                               alignment: Alignment.center,
                               child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 300),
+                                duration: AppMotion.normal,
                                 style: CustomTextStyles.p2.copyWith(
                                   color: selectedIndex == 0 ? AppColors.textColorWhite : AppColors.opacity50White,
                                 ),
@@ -89,7 +90,7 @@ class TripleToggleSwitch extends StatelessWidget {
                               color: AppColors.transparent,
                               alignment: Alignment.center,
                               child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 300),
+                                duration: AppMotion.normal,
                                 style: CustomTextStyles.p2.copyWith(
                                   color: selectedIndex == 1 ? AppColors.textColorWhite : AppColors.opacity50White,
                                 ),
@@ -107,7 +108,7 @@ class TripleToggleSwitch extends StatelessWidget {
                               color: AppColors.transparent,
                               alignment: Alignment.center,
                               child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 300),
+                                duration: AppMotion.normal,
                                 style: CustomTextStyles.p2.copyWith(
                                   color: selectedIndex == 2 ? AppColors.textColorWhite : AppColors.opacity50White,
                                 ),

@@ -4,17 +4,22 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
+import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -23,8 +28,12 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
+import 'package:romrom_fe/screens/chat_room_screen.dart';
+import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterTabScreen extends StatefulWidget {
   const RegisterTabScreen({super.key});
@@ -50,6 +59,9 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   // 물품 등록 제한
   static const int _maxAvailableItemCount = 10;
 
+  // FAB 중복 탭 방지
+  bool _isFabProcessing = false;
+
   // 토글 상태
   MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.selling;
   late AnimationController _toggleAnimationController;
@@ -60,11 +72,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     super.initState();
 
     // 토글 애니메이션 초기화
-    _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this);
     _toggleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
     _loadMyItems();
     _scrollController.addListener(_scrollListener);
@@ -223,8 +235,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     // 기존 타이머 취소
     _scrollTimer?.cancel();
 
-    // 스크롤이 멈춘 후 0.3초 후에 스크롤이 끝났다고 판단
-    _scrollTimer = Timer(const Duration(milliseconds: 700), () {
+    // 스크롤이 멈춘 후 0.5초 후에 스크롤이 끝났다고 판단
+    _scrollTimer = Timer(const Duration(milliseconds: 500), () {
       setState(() {
         _isScrolling = false;
       });
@@ -256,10 +268,17 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
               child: RefreshIndicator(
                 color: AppColors.primaryYellow,
                 backgroundColor: AppColors.transparent,
-                onRefresh: () => _loadMyItems(isRefresh: true),
+                displacement: MediaQuery.of(context).padding.top + 58.h + 62.h,
+                onRefresh: () async {
+                  try {
+                    await _loadMyItems(isRefresh: true);
+                  } finally {
+                    if (mounted) setState(() => _isScrolling = false);
+                  }
+                },
                 child: CustomScrollView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                   slivers: [
                     SliverPersistentHeader(
                       pinned: true,
@@ -271,7 +290,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                           onLeftTap: () => _onToggleChanged(MyItemToggleStatus.selling),
                           onRightTap: () => _onToggleChanged(MyItemToggleStatus.completed),
                           leftText: '판매 중',
-                          rightText: '거래 완료',
+                          rightText: '교환 완료',
                         ),
                         statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
                         toolbarHeight: 58.h,
@@ -280,7 +299,6 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                         enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                       ),
                     ),
-
                     // 아이템 리스트 슬리버들
                     ..._buildItemSlivers(),
                   ],
@@ -318,6 +336,18 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     final itemCountWithSeparators = filteredItems.length * 2 - 1;
 
     return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(right: 24.w, bottom: 16.h),
+          child: Text(
+            _currentTabStatus == MyItemToggleStatus.selling
+                ? '${filteredItems.length}/10개'
+                : '${filteredItems.length}개',
+            textAlign: TextAlign.right,
+            style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w400),
+          ),
+        ),
+      ),
       SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           if (index.isOdd) {
@@ -362,103 +392,109 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
 
     final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : 'Unknown';
 
-    return SizedBox(
-      height: 90.h,
-      child: Stack(
-        children: [
-          GestureDetector(
-            onTap: () => _navigateToItemDetail(item),
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // 이미지 썸네일
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4.r),
-                  child: SizedBox(
-                    width: 90.w,
-                    height: 90.h,
-                    child: item.itemId != null
-                        ? Hero(tag: 'itemImage_${item.itemId}_0', child: _buildImage(imageUrl))
-                        : _buildImage(imageUrl),
-                  ),
+    return Stack(
+      children: [
+        AppPressable(
+          onTap: () => _navigateToItemDetail(item),
+          scaleDown: AppPressable.scaleCard,
+          enableRipple: false,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 이미지 썸네일
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4.r),
+                child: SizedBox(
+                  width: 90.w,
+                  height: 90.w,
+                  child: item.itemId != null
+                      ? Hero(tag: 'itemImage_${item.itemId}_0', child: _buildImage(imageUrl))
+                      : _buildImage(imageUrl),
                 ),
-                SizedBox(width: 16.h),
+              ),
+              SizedBox(width: 16.h),
 
-                // 텍스트 영역
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item.itemName ?? '물품명 없음',
-                        style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 6.h),
-                      Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
-                      SizedBox(height: 12.h),
-                      Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
-                      SizedBox(height: 10.h),
-                      Row(
-                        children: [
-                          Icon(AppIcons.itemRegisterHeart, size: 14.sp, color: AppColors.opacity60White),
-                          SizedBox(width: 4.w),
-                          Text(
-                            '${item.likeCount ?? 0}',
-                            style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              // 텍스트 영역
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.itemName ?? '물품명 없음',
+                      style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 6.h),
+                    Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
+                    SizedBox(height: 12.h),
+                    Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
+                    SizedBox(height: 10.h),
+                    Row(
+                      children: [
+                        Icon(AppIcons.itemRegisterHeart, size: 14.sp, color: AppColors.opacity60White),
+                        SizedBox(width: 4.w),
+                        Text(
+                          '${item.likeCount ?? 0}',
+                          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                SizedBox(width: 30.w),
+              ),
+            ],
+          ),
+        ),
+
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: TradeStatusTagWidget(
+            status: item.itemStatus == ItemStatus.exchanged.serverName ? TradeStatus.traded : TradeStatus.pending,
+          ),
+        ),
+
+        // 더보기 버튼
+        Positioned(
+          top: 0,
+          right: 0,
+          child: SizedBox(
+            width: 30.w,
+            height: 30.h,
+            child: RomRomContextMenu(
+              items: [
+                ContextMenuItem(
+                  id: 'changeTradeStatus',
+                  contextIcon: AppIcons.dotsVerticalSmall,
+                  icon: AppIcons.change,
+                  title: _currentTabStatus == MyItemToggleStatus.selling ? '교환 완료로 변경' : '판매중으로 변경',
+                  onTap: () => _showChangeStatusConfirmDialog(item),
+                  showDividerAfter: true,
+                ),
+                ContextMenuItem(
+                  id: 'edit',
+                  contextIcon: AppIcons.dotsVerticalSmall,
+                  icon: AppIcons.edit,
+                  title: '수정',
+                  onTap: () => _navigateToEditItem(item),
+                  showDividerAfter: true,
+                ),
+                ContextMenuItem(
+                  id: 'delete',
+                  contextIcon: AppIcons.dotsVerticalSmall,
+                  icon: AppIcons.trash,
+                  iconColor: AppColors.itemOptionsMenuRedIcon,
+                  title: '삭제',
+                  textColor: AppColors.itemOptionsMenuRedText,
+                  onTap: () => _showDeleteConfirmDialog(item),
+                ),
               ],
             ),
           ),
-
-          // 더보기 버튼
-          Positioned(
-            top: 0,
-            right: 0,
-            child: SizedBox(
-              width: 30.w,
-              height: 30.h,
-              child: RomRomContextMenu(
-                items: [
-                  ContextMenuItem(
-                    id: 'changeTradeStatus',
-                    contextIcon: AppIcons.dotsVerticalSmall,
-                    icon: AppIcons.change,
-                    title: _currentTabStatus == MyItemToggleStatus.selling ? '거래완료로 변경' : '판매중으로 변경',
-                    onTap: () => _showChangeStatusConfirmDialog(item),
-                    showDividerAfter: true,
-                  ),
-                  ContextMenuItem(
-                    id: 'edit',
-                    contextIcon: AppIcons.dotsVerticalSmall,
-                    icon: AppIcons.edit,
-                    title: '수정',
-                    onTap: () => _navigateToEditItem(item),
-                    showDividerAfter: true,
-                  ),
-                  ContextMenuItem(
-                    id: 'delete',
-                    contextIcon: AppIcons.dotsVerticalSmall,
-                    icon: AppIcons.trash,
-                    iconColor: AppColors.itemOptionsMenuRedIcon,
-                    title: '삭제',
-                    textColor: AppColors.itemOptionsMenuRedText,
-                    onTap: () => _showDeleteConfirmDialog(item),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -471,103 +507,120 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
       child: IgnorePointer(
         ignoring: _isScrolling,
         child: AnimatedScale(
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.fast,
           scale: _isScrolling ? 0.0 : 1.0,
-          curve: Curves.easeInOut,
+          curve: AppMotion.standard,
           child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
+            duration: AppMotion.fast,
             opacity: _isScrolling ? 0.0 : 1.0,
             child: Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primaryYellow,
-                  borderRadius: BorderRadius.circular(100.r),
-                  boxShadow: const [BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4))],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(100.r),
-                    onTap: () async {
-                      // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
-                      try {
-                        final countResponse = await ItemApi().getMyItems(
-                          ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
-                        );
-                        final totalCount =
-                            countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
+              child: AppPressable(
+                scaleDown: AppPressable.scaleButton,
+                enableRipple: false,
+                borderRadius: BorderRadius.circular(100.r),
+                onTap: () async {
+                  if (_isFabProcessing) return;
+                  setState(() => _isFabProcessing = true);
+                  try {
+                    // 위치 미등록 시 위치 등록 화면으로 이동
+                    final userInfo = UserInfo();
+                    if (userInfo.isMemberLocationSaved != true) {
+                      final locationResult = await context.navigateTo<bool>(
+                        screen: const MyLocationVerificationScreen(),
+                      );
+                      if (!mounted) return;
+                      if (locationResult != true) return;
+                      userInfo.isMemberLocationSaved = true;
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('isMemberLocationSaved', true);
+                    }
 
-                        if (totalCount >= _maxAvailableItemCount) {
-                          if (mounted) {
-                            CommonSnackBar.show(
-                              context: context,
-                              message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
-                              type: SnackBarType.error,
-                            );
-                          }
-                          return;
-                        }
-                      } catch (e) {
-                        debugPrint('물품 개수 확인 실패: $e');
+                    // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
+                    try {
+                      final countResponse = await ItemApi().getMyItems(
+                        ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
+                      );
+                      final totalCount =
+                          countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
+
+                      if (totalCount >= _maxAvailableItemCount) {
                         if (mounted) {
                           CommonSnackBar.show(
                             context: context,
-                            message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
+                            message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
                             type: SnackBarType.error,
                           );
                         }
                         return;
                       }
-
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ItemRegisterScreen(
-                            onClose: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ),
-                      );
-
-                      debugPrint('====================================');
-                      debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
-                      debugPrint('result type: ${result.runtimeType}');
-                      if (result is Map<String, dynamic>) {
-                        debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
-                        debugPrint('  - itemId: ${result['itemId']}');
-                      }
-                      debugPrint('====================================');
-
-                      // 등록 화면에서 돌아온 뒤 목록 새로고침
-                      _loadMyItems(isRefresh: true);
-
-                      // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
-                      if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
-                        debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
-                        _navigateToHomeAndShowCoachMark();
-                      } else {
-                        debugPrint(
-                          '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
+                    } catch (e) {
+                      debugPrint('물품 개수 확인 실패: $e');
+                      if (mounted) {
+                        CommonSnackBar.show(
+                          context: context,
+                          message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
+                          type: SnackBarType.error,
                         );
                       }
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 15.h),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(AppIcons.addItemPlus, size: 16.sp, color: AppColors.primaryBlack),
-                          SizedBox(width: 8.w),
-                          Text(
-                            '등록하기',
-                            style: CustomTextStyles.h3.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textColorBlack,
-                            ),
-                          ),
-                        ],
+                      return;
+                    }
+
+                    final result = await context.navigateTo(
+                      screen: ItemRegisterScreen(
+                        onClose: () {
+                          Navigator.pop(context);
+                        },
                       ),
+                    );
+
+                    if (!mounted) return;
+
+                    debugPrint('====================================');
+                    debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
+                    debugPrint('result type: ${result.runtimeType}');
+                    if (result is Map<String, dynamic>) {
+                      debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
+                      debugPrint('  - itemId: ${result['itemId']}');
+                    }
+                    debugPrint('====================================');
+
+                    // 등록 화면에서 돌아온 뒤 목록 새로고침
+                    _loadMyItems(isRefresh: true);
+
+                    // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
+                    if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+                      debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
+                      _navigateToHomeAndShowCoachMark();
+                    } else {
+                      debugPrint(
+                        '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isFabProcessing = false);
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryYellow,
+                    borderRadius: BorderRadius.circular(100.r),
+                    boxShadow: const [BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4))],
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 15.h),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(AppIcons.addItemPlus, size: 16.sp, color: AppColors.primaryBlack),
+                        SizedBox(width: 8.w),
+                        Text(
+                          '등록하기',
+                          style: CustomTextStyles.h3.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textColorBlack,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -652,13 +705,22 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
   /// 상태 변경 확인 대화상자
   Future<void> _showChangeStatusConfirmDialog(Item item) async {
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
-    final title = isToCompleted ? '거래 완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
-    final description = isToCompleted ? '거래완료로 변경하시겠습니까?' : '판매중으로 변경하시겠습니까?';
 
-    final result = await context.showDeleteDialog(title: title, description: description, confirmText: '확인');
-
-    if (result == true) {
-      await _toggleItemStatus(item);
+    if (isToCompleted) {
+      // 교환 완료로 변경: 교환 상대 선택 → 해당 채팅방으로 이동 → 채팅방에서 교환 완료 요청 전송
+      final chatRoomId = await context.navigateTo<String>(screen: TradeCompletePartnerSelectScreen(item: item));
+      if (!mounted || chatRoomId == null) return;
+      context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId, autoTriggerExchangeRequest: true));
+    } else {
+      // 판매중으로 변경: 기존 확인 다이얼로그
+      final result = await context.showDeleteDialog(
+        title: '판매중으로 변경하시겠습니까?',
+        description: '판매중으로 변경하시겠습니까?',
+        confirmText: '확인',
+      );
+      if (result == true) {
+        await _toggleItemStatus(item);
+      }
     }
   }
 
@@ -691,10 +753,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
       // 성공 시 목록 새로고침
       _loadMyItems(isRefresh: true);
 
-      if (mounted) {
-        final successMessage = _currentTabStatus == MyItemToggleStatus.selling ? '거래 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
+      if (!mounted) return;
 
-        CommonSnackBar.show(context: context, message: successMessage);
+      if (_currentTabStatus != MyItemToggleStatus.selling) {
+        CommonSnackBar.show(context: context, message: '판매중으로 변경되었습니다');
       }
     } catch (e) {
       if (mounted) {

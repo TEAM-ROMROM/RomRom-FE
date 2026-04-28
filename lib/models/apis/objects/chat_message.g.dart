@@ -16,6 +16,9 @@ ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
   content: json['content'] as String?,
   imageUrls: (json['imageUrls'] as List<dynamic>?)?.map((e) => e as String).toList(),
   type: $enumDecodeNullable(_$MessageTypeEnumMap, json['type']),
+  isProfanityDetected: json['isProfanityDetected'] as bool?,
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) => <String, dynamic>{
@@ -28,6 +31,18 @@ Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) => <String, dynam
   'content': instance.content,
   'imageUrls': instance.imageUrls,
   'type': _$MessageTypeEnumMap[instance.type],
+  'isProfanityDetected': instance.isProfanityDetected,
+  'latitude': instance.latitude,
+  'longitude': instance.longitude,
 };
 
-const _$MessageTypeEnumMap = {MessageType.text: 'TEXT', MessageType.image: 'IMAGE', MessageType.system: 'SYSTEM'};
+const _$MessageTypeEnumMap = {
+  MessageType.text: 'TEXT',
+  MessageType.image: 'IMAGE',
+  MessageType.system: 'SYSTEM',
+  MessageType.location: 'LOCATION',
+  MessageType.tradeCompleteRequest: 'TRADE_COMPLETE_REQUEST',
+  MessageType.tradeCompleteRequestCanceled: 'TRADE_COMPLETE_REQUEST_CANCELED',
+  MessageType.tradeCompleteRequestRejected: 'TRADE_COMPLETE_REQUEST_REJECTED',
+  MessageType.tradeCompleted: 'TRADE_COMPLETED',
+};

@@ -3,14 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
+import 'package:shadex/shadex.dart';
 
 class LocationVerificationStep extends StatefulWidget {
   final VoidCallback onNext;
@@ -24,13 +27,15 @@ class LocationVerificationStep extends StatefulWidget {
 class _LocationVerificationStepState extends State<LocationVerificationStep> {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
-  String currentAddress = '';
-  String siDo = '';
-  String siGunGu = '';
-  String eupMyoenDong = '';
-  String? ri;
+  LocationAddress? _selectedAddress;
+  NLatLng? _selectedPosition;
   bool _isVerifying = false;
-  final Completer<NaverMapController> mapControllerCompleter = Completer();
+  bool _hasLocationPermission = false;
+  int _addressUpdateToken = 0;
+  final Completer<NaverMapController> _mapControllerCompleter = Completer();
+
+  // 대한민국 중심 좌표 (전국이 보이는 줌 레벨용)
+  static const NLatLng _koreaCenter = NLatLng(36.5, 127.5);
 
   @override
   void initState() {
@@ -38,161 +43,165 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
     _initializeLocation();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_currentPosition == null) {
-      return const Center(child: CircularProgressIndicator());
+  Future<void> _initializeLocation() async {
+    final hasPermission = await _locationService.requestPermission();
+    if (!hasPermission) {
+      // 권한 없음 → 전국 지도에서 핀으로 선택
+      if (mounted) setState(() => _hasLocationPermission = false);
+      return;
     }
+    if (mounted) setState(() => _hasLocationPermission = true);
 
-    return Column(
-      children: [
-        // 맵 영역
-        Expanded(
-          flex: 350,
-          child: Stack(
-            children: [
-              NaverMap(
-                options: NaverMapViewOptions(
-                  initialCameraPosition: NCameraPosition(target: _currentPosition!, zoom: 15),
-                  logoAlign: NLogoAlign.leftBottom,
-                  logoMargin: NEdgeInsets.fromEdgeInsets(EdgeInsets.only(left: 24.w, bottom: 20.h)),
-                  indoorEnable: true,
-                  locationButtonEnable: false,
-                  consumeSymbolTapEvents: false,
-                ),
-                forceGesture: false,
-                onMapReady: (controller) async {
-                  if (!mapControllerCompleter.isCompleted) {
-                    mapControllerCompleter.complete(controller);
-                  }
-                  await getAddressByNaverApi(_currentPosition!);
-                  await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
-                },
-              ),
-              // 현재 위치 버튼
-              Positioned(
-                bottom: 48.h,
-                left: 24.w,
-                child: CurrentLocationButton(
-                  onTap: () async {
-                    final controller = await mapControllerCompleter.future;
-                    await controller.setLocationTrackingMode(NLocationTrackingMode.follow);
-                  },
-                  iconSize: 24.h,
-                ),
-              ),
-            ],
-          ),
-        ),
+    final position = await _locationService.getCurrentPosition();
+    if (mounted && position != null) {
+      final latLng = _locationService.positionToLatLng(position);
+      setState(() {
+        _currentPosition = latLng;
+      });
+      // 지도 컨트롤러가 준비됐으면 현재 위치로 카메라 이동
+      _mapControllerCompleter.future.then((controller) {
+        if (!mounted) return;
+        controller.updateCamera(NCameraUpdate.fromCameraPosition(NCameraPosition(target: latLng, zoom: 15)));
+        controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+      });
+      await _updateAddress(latLng);
+    } else if (mounted) {
+      setState(() {});
+    }
+  }
 
-        // 위치 정보 및 버튼 영역
-        Expanded(
-          flex: 285,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(height: 20.0.h),
-                Text('현재 위치가 $currentAddress 이내에 있어요', style: CustomTextStyles.p2),
-                SizedBox(height: 16.0.h),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 12.0.h),
-                  decoration: BoxDecoration(
-                    color: AppColors.locationVerificationAreaLabel,
-                    borderRadius: BorderRadius.circular(100.0.r),
-                  ),
-                  child: Text("$siDo $siGunGu $eupMyoenDong", style: CustomTextStyles.p2),
-                ),
-                Expanded(child: Container()),
-                // 완료 버튼 - CategoryCompletionButton 위젯으로 변경
-                Padding(
-                  padding: EdgeInsets.only(bottom: 63.h + MediaQuery.of(context).padding.bottom),
-                  child: Center(
-                    child: CompletionButton(
-                      isEnabled: true,
-                      isLoading: _isVerifying,
-                      enabledOnPressed: () => _onVerifyLocationPressed(),
-                      buttonText: '위치 인증하기',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+  Future<void> _updateAddress(NLatLng position) async {
+    final token = ++_addressUpdateToken;
+    final address = await _locationService.getAddressFromCoordinates(position);
+    if (mounted && address != null && token == _addressUpdateToken) {
+      setState(() {
+        _selectedPosition = position;
+        _selectedAddress = address;
+      });
+    }
   }
 
   Future<void> _onVerifyLocationPressed() async {
-    if (_isVerifying) return;
+    if (_isVerifying || _selectedAddress == null || _selectedPosition == null) return;
     setState(() => _isVerifying = true);
     try {
-      if (_currentPosition != null) {
-        // 위치 정보가 비어있는지 확인
-        if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
-          await getAddressByNaverApi(_currentPosition!);
-
-          if (!mounted) return;
-          if (siDo.isEmpty || siGunGu.isEmpty || eupMyoenDong.isEmpty) {
-            CommonSnackBar.show(context: context, message: '위치 정보를 가져오지 못했습니다. 다시 시도해주세요.', type: SnackBarType.info);
-            return;
-          }
-        }
-
-        await MemberApi().saveMemberLocation(
-          longitude: _currentPosition!.longitude,
-          latitude: _currentPosition!.latitude,
-          siDo: siDo,
-          siGunGu: siGunGu,
-          eupMyoenDong: eupMyoenDong,
-          ri: ri,
-        );
-
-        // 다음 단계로 이동
-        widget.onNext();
-      }
+      await MemberApi().saveMemberLocation(
+        longitude: _selectedPosition!.longitude,
+        latitude: _selectedPosition!.latitude,
+        siDo: _selectedAddress!.siDo,
+        siGunGu: _selectedAddress!.siGunGu,
+        eupMyoenDong: _selectedAddress!.eupMyoenDong,
+        ri: _selectedAddress!.ri,
+      );
+      widget.onNext();
     } catch (e) {
       if (!mounted) return;
       CommonSnackBar.show(context: context, message: '위치 저장에 실패했습니다: $e', type: SnackBarType.error);
     } finally {
-      if (mounted) {
-        setState(() => _isVerifying = false);
-      }
+      if (mounted) setState(() => _isVerifying = false);
     }
   }
 
-  // 위치 초기화 통합 메서드
-  Future<void> _initializeLocation() async {
-    final hasPermission = await _locationService.requestPermission();
-    if (!hasPermission) return;
+  @override
+  Widget build(BuildContext context) {
+    final initialTarget = _currentPosition ?? _koreaCenter;
+    final initialZoom = _currentPosition != null ? 15.0 : 6.5;
 
-    final position = await _locationService.getCurrentPosition();
-    if (position != null) {
-      setState(() {
-        _currentPosition = _locationService.positionToLatLng(position);
-      });
-    }
-  }
+    return Stack(
+      children: [
+        // 지도 전체 채우기
+        Positioned.fill(
+          child: NaverMap(
+            options: NaverMapViewOptions(
+              initialCameraPosition: NCameraPosition(target: initialTarget, zoom: initialZoom),
+              logoAlign: NLogoAlign.leftBottom,
+              logoMargin: NEdgeInsets.fromEdgeInsets(const EdgeInsets.only(left: 24, bottom: 137)),
+              indoorEnable: true,
+              locationButtonEnable: false,
+            ),
+            onMapReady: (controller) {
+              if (!_mapControllerCompleter.isCompleted) {
+                _mapControllerCompleter.complete(controller);
+                if (_currentPosition != null) {
+                  controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+                }
+              }
+            },
+            onCameraIdle: () async {
+              final controller = await _mapControllerCompleter.future;
+              final cameraPos = await controller.getCameraPosition();
+              await _updateAddress(cameraPos.target);
+            },
+          ),
+        ),
 
-  // 주소 정보 로드 메서드
-  Future<void> _loadAddressInfo(NLatLng position) async {
-    final addressInfo = await _locationService.getAddressFromCoordinates(position);
+        // 중앙 핀
+        Center(
+          child: Container(
+            margin: EdgeInsets.only(bottom: 40.h),
+            child: Shadex(
+              shadowColor: AppColors.opacity20Black,
+              shadowBlurRadius: 2.0,
+              shadowOffset: const Offset(2, 2),
+              child: SvgPicture.asset('assets/images/location-pin.svg'),
+            ),
+          ),
+        ),
 
-    if (addressInfo != null) {
-      setState(() {
-        siDo = addressInfo.siDo;
-        siGunGu = addressInfo.siGunGu;
-        eupMyoenDong = addressInfo.eupMyoenDong;
-        ri = addressInfo.ri;
-        currentAddress = addressInfo.currentAddress;
-      });
-    }
-  }
+        // 현재 위치 버튼 (권한 있을 때만 표시)
+        if (_hasLocationPermission)
+          Positioned(
+            bottom: 160.h,
+            left: 24.w,
+            child: CurrentLocationButton(
+              onTap: () async {
+                final controller = await _mapControllerCompleter.future;
+                final position = await _locationService.getCurrentPosition();
+                if (position != null) {
+                  final newPos = _locationService.positionToLatLng(position);
+                  await controller.updateCamera(
+                    NCameraUpdate.fromCameraPosition(NCameraPosition(target: newPos, zoom: 15)),
+                  );
+                  controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+                  if (mounted) setState(() => _currentPosition = newPos);
+                  await _updateAddress(newPos);
+                }
+              },
+              iconSize: 24.h,
+            ),
+          ),
 
-  // NaverMap에서 주소 가져오는 메서드를 새 메서드로 호출
-  Future<void> getAddressByNaverApi(NLatLng position) async {
-    await _loadAddressInfo(position);
+        // 하단 주소 + 버튼 영역
+        Positioned(
+          left: 24.w,
+          right: 24.w,
+          bottom: 57.h,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_selectedAddress != null)
+                Container(
+                  margin: EdgeInsets.only(bottom: 12.h),
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.locationVerificationAreaLabel,
+                    borderRadius: BorderRadius.circular(100.r),
+                  ),
+                  child: Text(
+                    '${_selectedAddress!.siDo} ${_selectedAddress!.siGunGu} ${_selectedAddress!.eupMyoenDong}',
+                    style: CustomTextStyles.p2,
+                  ),
+                ),
+              CompletionButton(
+                isEnabled: _selectedAddress != null,
+                isLoading: _isVerifying,
+                buttonText: '이 위치로 등록하기',
+                enabledOnPressed: _onVerifyLocationPressed,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

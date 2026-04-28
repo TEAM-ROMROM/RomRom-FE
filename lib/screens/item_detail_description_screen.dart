@@ -41,7 +41,7 @@ import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/screens/trade_location_detail_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
 
@@ -81,6 +81,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   late final ValueNotifier<bool> isLikedVN;
   late final ValueNotifier<int> likeCountVN;
   bool _likeInFlight = false;
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool isLoading = true;
@@ -248,7 +249,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       await itemApi.updateItemStatus(request);
 
       if (mounted) {
-        final successMessage = item.itemStatus == ItemStatus.available.serverName ? '거래 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
+        final successMessage = item.itemStatus == ItemStatus.available.serverName ? '교환 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
 
         CommonSnackBar.show(context: context, message: successMessage);
 
@@ -290,6 +291,25 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
         );
       }
       return false;
+    }
+  }
+
+  void _popWithLikeResult() {
+    Navigator.of(context).pop(<String, dynamic>{'isLiked': isLikedVN.value, 'likeCount': likeCountVN.value});
+  }
+
+  Future<void> _shareItem() async {
+    final itemId = item?.itemId;
+    if (itemId == null) return;
+    try {
+      final RenderBox? box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      final Rect? origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+      debugPrint('ItemDetail: sharing itemId=$itemId origin=$origin');
+      await shareItem(itemId: itemId, sharePositionOrigin: origin);
+      debugPrint('ItemDetail: share completed for itemId=$itemId');
+    } catch (e, st) {
+      debugPrint('ItemDetail: share failed for itemId=$itemId - $e\n$st');
+      if (mounted) CommonSnackBar.show(context: context, message: '공유에 실패했습니다.', type: SnackBarType.error);
     }
   }
 
@@ -393,557 +413,594 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
 
     String formattedPrice = formatPrice(item!.price ?? 0);
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // 전체 화면 콘텐츠
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                /// 배경 이미지 (가로 스와이프 가능)
-                Stack(
-                  children: [
-                    SizedBox(
-                      height: widget.imageSize.height,
-                      width: widget.imageSize.width,
-                      child: PageView.builder(
-                        itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1, // ← 최소 1페이지
-                        controller: pageController,
-                        onPageChanged: (i) => currentIndexVN.value = i,
-                        itemBuilder: (context, i) {
-                          final hasImages = imageUrls.isNotEmpty;
-                          final safeIndex = hasImages ? i : 0;
-                          final String heroBaseId = 'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
-
-                          return PhotoViewerMultipleImage(
-                            // 이미지가 없으면 더미 URL을 넘겨서 로딩 실패 → errorWidget 호출
-                            imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
-                            index: safeIndex,
-                            id: heroBaseId + safeIndex.toString(),
-                            onPageChanged: (idx) {
-                              currentIndexVN.value = idx;
-                              if (pageController.hasClients) {
-                                final now = pageController.page?.round();
-                                if (now != idx) {
-                                  pageController.jumpToPage(idx); // 닫기 전에 목적지 미리 맞추기
-                                }
-                              }
-                            },
-
-                            // 로딩 인디케이터
-                            placeholder: (ctx, url) => const Center(
-                              child: SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
-                              ),
-                            ),
-
-                            // 이미지 없음/로딩 실패 시
-                            errorWidget: (ctx, url, err) =>
-                                Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
-                          );
-                        },
-                      ),
-                    ),
-
-                    /// 이미지 인디케이터
-                    Positioned(
-                      bottom: 24.h,
-                      left: 0,
-                      right: 0,
-                      child: ValueListenableBuilder<int>(
-                        valueListenable: currentIndexVN,
-                        builder: (_, current, __) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              imageUrls.length,
-                              (index) => Container(
-                                width: 6.w,
-                                height: 6.w,
-                                margin: EdgeInsets.symmetric(horizontal: 4.w),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    IgnorePointer(
-                      ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
-                      child: SizedBox(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_likeInFlight) _popWithLikeResult();
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // 전체 화면 콘텐츠
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  /// 배경 이미지 (가로 스와이프 가능)
+                  Stack(
+                    children: [
+                      SizedBox(
                         height: widget.imageSize.height,
                         width: widget.imageSize.width,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: AppColors.itemDetailBlackGradient, // 검정색 그라데이션
-                              stops: const [0.0, 0.15, 0.60, 1.0],
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
+                        child: PageView.builder(
+                          itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1, // ← 최소 1페이지
+                          controller: pageController,
+                          onPageChanged: (i) => currentIndexVN.value = i,
+                          itemBuilder: (context, i) {
+                            final hasImages = imageUrls.isNotEmpty;
+                            final safeIndex = hasImages ? i : 0;
+                            final String heroBaseId = 'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
+
+                            return PhotoViewerMultipleImage(
+                              // 이미지가 없으면 더미 URL을 넘겨서 로딩 실패 → errorWidget 호출
+                              imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
+                              index: safeIndex,
+                              id: heroBaseId + safeIndex.toString(),
+                              onPageChanged: (idx) {
+                                currentIndexVN.value = idx;
+                                if (pageController.hasClients) {
+                                  final now = pageController.page?.round();
+                                  if (now != idx) {
+                                    pageController.jumpToPage(idx); // 닫기 전에 목적지 미리 맞추기
+                                  }
+                                }
+                              },
+
+                              // 로딩 인디케이터
+                              placeholder: (ctx, url) => const Center(
+                                child: SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
+                                ),
+                              ),
+
+                              // 이미지 없음/로딩 실패 시
+                              errorWidget: (ctx, url, err) =>
+                                  Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
+                            );
+                          },
+                        ),
+                      ),
+
+                      /// 이미지 인디케이터
+                      Positioned(
+                        bottom: 24.h,
+                        left: 0,
+                        right: 0,
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: currentIndexVN,
+                          builder: (_, current, _) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                imageUrls.length,
+                                (index) => Container(
+                                  width: 6.w,
+                                  height: 6.w,
+                                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      IgnorePointer(
+                        ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
+                        child: SizedBox(
+                          height: widget.imageSize.height,
+                          width: widget.imageSize.width,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: AppColors.itemDetailBlackGradient, // 검정색 그라데이션
+                                stops: const [0.0, 0.15, 0.60, 1.0],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
-                    /// 거래완료 오버레이 (검정 50%)
-                    if (item?.itemStatus == ItemStatus.exchanged.serverName)
-                      IgnorePointer(
-                        child: Container(
-                          height: widget.imageSize.height,
-                          width: widget.imageSize.width,
-                          color: AppColors.opacity50Black,
+                      /// 거래완료 오버레이 (검정 50%)
+                      if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                        IgnorePointer(
+                          child: Container(
+                            height: widget.imageSize.height,
+                            width: widget.imageSize.width,
+                            color: AppColors.opacity50Black,
+                          ),
                         ),
-                      ),
 
-                    /// 거래완료 글라스모피즘 배지 (이미지 중앙)
-                    if (item?.itemStatus == ItemStatus.exchanged.serverName)
-                      Positioned.fill(
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4.r),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                              child: Container(
-                                width: 122.w,
-                                height: 47.h,
-                                decoration: BoxDecoration(
-                                  color: AppColors.opacity10White,
-                                  borderRadius: BorderRadius.circular(4.r),
-                                  border: Border.all(color: AppColors.textColorWhite, width: 1.w),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '거래 완료',
-                                  style: CustomTextStyles.p1.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textColorWhite,
+                      /// 거래완료 글라스모피즘 배지 (이미지 중앙)
+                      if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                        Positioned.fill(
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4.r),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                child: Container(
+                                  width: 122.w,
+                                  height: 47.h,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.opacity10White,
+                                    borderRadius: BorderRadius.circular(4.r),
+                                    border: Border.all(color: AppColors.textColorWhite, width: 1.w),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '교환 완료',
+                                    style: CustomTextStyles.p1.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textColorWhite,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
+                    ],
+                  ),
 
-                /// 아이템 설명 영역
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.w),
-                  child: Column(
-                    children: [
-                      /// 사용자 프사, 위치, 닉네임, 좋아요 수
-                      Container(
-                        width: double.infinity,
-                        margin: EdgeInsets.symmetric(vertical: 16.h),
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                if (item?.member?.memberId != null) {
-                                  context.navigateTo(screen: ProfileScreen(memberId: item!.member!.memberId!));
-                                }
-                              },
-                              child: UserProfileCircularAvatar(
-                                avatarSize: const Size(40, 40),
-                                profileUrl: item?.member?.profileUrl,
-                                isDeleteAccount: item?.member?.accountStatus == AccountStatus.deleteAccount.serverName,
+                  /// 아이템 설명 영역
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    child: Column(
+                      children: [
+                        /// 사용자 프사, 위치, 닉네임, 좋아요 수
+                        Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.symmetric(vertical: 16.h),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  if (item?.member?.memberId != null) {
+                                    context.navigateTo(screen: MemberProfileScreen(memberId: item!.member!.memberId!));
+                                  }
+                                },
+                                child: UserProfileCircularAvatar(
+                                  avatarSize: const Size(40, 40),
+                                  profileUrl: item?.member?.profileUrl,
+                                  isDeleteAccount:
+                                      item?.member?.accountStatus == AccountStatus.deleteAccount.serverName,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: 10.w),
-                            GestureDetector(
-                              onTap: () {
-                                if (item?.member?.memberId != null) {
-                                  context.navigateTo(screen: ProfileScreen(memberId: item!.member!.memberId!));
-                                }
-                              },
-                              child: Container(
-                                constraints: !widget.isMyItem && widget.isRequestManagement
-                                    ? BoxConstraints(maxWidth: 120.w)
-                                    : null, // 최대 너비 설정
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item?.member?.nickname ?? '알 수 없음',
-                                      style: CustomTextStyles.p2,
-                                      overflow: TextOverflow.ellipsis,
+                              SizedBox(width: 10.w),
+                              GestureDetector(
+                                onTap: () {
+                                  if (item?.member?.memberId != null) {
+                                    context.navigateTo(screen: MemberProfileScreen(memberId: item!.member!.memberId!));
+                                  }
+                                },
+                                child: Container(
+                                  constraints: !widget.isMyItem && widget.isRequestManagement
+                                      ? BoxConstraints(maxWidth: 120.w)
+                                      : null, // 최대 너비 설정
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item?.member?.nickname ?? '알 수 없음',
+                                        style: CustomTextStyles.p2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      SizedBox(height: 8.h),
+                                      Text(
+                                        memberLocationName,
+                                        style: CustomTextStyles.p3.copyWith(
+                                          color: AppColors.lightGray.withValues(alpha: 0.7),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              Column(
+                                children: [
+                                  SizedBox.square(
+                                    dimension: 32.w,
+                                    child: OverflowBox(
+                                      maxWidth: 56.w,
+                                      maxHeight: 56.w,
+                                      child: Material(
+                                        color: AppColors.transparent,
+                                        shape: const CircleBorder(),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: InkResponse(
+                                          onTap: _toggleLike,
+                                          radius: 18.w,
+                                          customBorder: const CircleBorder(),
+                                          highlightColor: AppColors.buttonHighlightColorGray,
+                                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                                          child: ValueListenableBuilder<bool>(
+                                            valueListenable: isLikedVN,
+                                            builder: (_, liked, _) {
+                                              return SizedBox.square(
+                                                dimension: 56.w, // 리플/터치 캔버스
+                                                child: Center(
+                                                  child: SizedBox.square(
+                                                    dimension: 30.w,
+                                                    child: SvgPicture.asset(
+                                                      liked
+                                                          ? 'assets/images/like-heart-icon.svg'
+                                                          : 'assets/images/dislike-heart-icon.svg',
+                                                      width: 30.w,
+                                                      height: 30.h,
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    SizedBox(height: 8.h),
-                                    Text(
-                                      memberLocationName,
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  ValueListenableBuilder<int>(
+                                    valueListenable: likeCountVN,
+                                    builder: (_, likeCount, _) {
+                                      return Text(likeCount.toString(), style: CustomTextStyles.p2);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        Divider(color: AppColors.opacity20White, height: 1.h),
+
+                        /// 물품 정보 및 설명
+                        Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.symmetric(vertical: 16.h),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RichText(
+                                text: TextSpan(
+                                  text: '${_getCategoryName(item?.itemCategory)} · ',
+                                  style: CustomTextStyles.p3.copyWith(
+                                    color: AppColors.opacity50White,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: _formatDateTime(item?.createdDate),
                                       style: CustomTextStyles.p3.copyWith(
-                                        color: AppColors.lightGray.withValues(alpha: 0.7),
+                                        color: AppColors.opacity50White,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                            const Spacer(),
-                            Column(
-                              children: [
-                                SizedBox.square(
-                                  dimension: 32.w,
-                                  child: OverflowBox(
-                                    maxWidth: 56.w,
-                                    maxHeight: 56.w,
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      shape: const CircleBorder(),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: InkResponse(
-                                        onTap: _toggleLike,
-                                        radius: 18.w,
-                                        customBorder: const CircleBorder(),
-                                        highlightColor: AppColors.buttonHighlightColorGray,
-                                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                                        child: ValueListenableBuilder<bool>(
-                                          valueListenable: isLikedVN,
-                                          builder: (_, liked, __) {
-                                            return SizedBox.square(
-                                              dimension: 56.w, // 리플/터치 캔버스
-                                              child: Center(
-                                                child: SizedBox.square(
-                                                  dimension: 30.w,
-                                                  child: SvgPicture.asset(
-                                                    liked
-                                                        ? 'assets/images/like-heart-icon.svg'
-                                                        : 'assets/images/dislike-heart-icon.svg',
-                                                    width: 30.w,
-                                                    height: 30.h,
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
+                              SizedBox(height: 10.h),
+                              Text(item?.itemName ?? '제목 없음', style: CustomTextStyles.h3),
+                              SizedBox(height: 16.h),
+                              Row(
+                                children: [
+                                  if (item?.itemCondition != null)
+                                    ItemDetailConditionTag(
+                                      condition: ItemCondition.fromServerName(item!.itemCondition!).label,
+                                    ),
+                                  SizedBox(width: 4.w),
+                                  if (item?.itemTradeOptions?.isNotEmpty == true)
+                                    Expanded(
+                                      child: Wrap(
+                                        spacing: 4.w,
+                                        children: [
+                                          ...item!.itemTradeOptions!.map(
+                                            (option) => ItemDetailTradeOptionTag(option: _getTradeOptionName(option)),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ),
-                                ),
-                                SizedBox(height: 2.h),
-                                ValueListenableBuilder<int>(
-                                  valueListenable: likeCountVN,
-                                  builder: (_, likeCount, __) {
-                                    return Text(likeCount.toString(), style: CustomTextStyles.p2);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      Divider(color: AppColors.opacity20White, height: 1.h),
-
-                      /// 물품 정보 및 설명
-                      Container(
-                        width: double.infinity,
-                        margin: EdgeInsets.symmetric(vertical: 16.h),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            RichText(
-                              text: TextSpan(
-                                text: '${_getCategoryName(item?.itemCategory)} · ',
-                                style: CustomTextStyles.p3.copyWith(
-                                  color: AppColors.opacity50White,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: _formatDateTime(item?.createdDate),
-                                    style: CustomTextStyles.p3.copyWith(
-                                      color: AppColors.opacity50White,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
                                 ],
                               ),
-                            ),
-                            SizedBox(height: 10.h),
-                            Text(item?.itemName ?? '제목 없음', style: CustomTextStyles.h3),
-                            SizedBox(height: 16.h),
-                            Row(
-                              children: [
-                                if (item?.itemCondition != null)
-                                  ItemDetailConditionTag(
-                                    condition: ItemCondition.fromServerName(item!.itemCondition!).label,
+                              SizedBox(height: 16.h),
+                              Row(
+                                children: [
+                                  Text(
+                                    '$formattedPrice원',
+                                    style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
                                   ),
-                                SizedBox(width: 4.w),
-                                if (item?.itemTradeOptions?.isNotEmpty == true)
-                                  Expanded(
-                                    child: Wrap(
-                                      spacing: 4.w,
-                                      children: [
-                                        ...item!.itemTradeOptions!.map(
-                                          (option) => ItemDetailTradeOptionTag(option: _getTradeOptionName(option)),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            SizedBox(height: 16.h),
-                            Row(
-                              children: [
-                                Text(
-                                  '$formattedPrice원',
-                                  style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                SizedBox(width: 8.w),
-                                if (item?.isAiPredictedPrice == true) const AiBadgeWidget(),
-                              ],
-                            ),
-                            SizedBox(height: 24.h),
-                            Text(
-                              item?.itemDescription ?? '설명이 없습니다.',
-                              style: CustomTextStyles.p2.copyWith(height: 1.4),
-                            ),
-                          ],
+                                  SizedBox(width: 8.w),
+                                  if (item?.isAiPredictedPrice == true) const AiBadgeWidget(),
+                                ],
+                              ),
+                              SizedBox(height: 24.h),
+                              Text(
+                                item?.itemDescription ?? '설명이 없습니다.',
+                                style: CustomTextStyles.p2.copyWith(height: 1.4),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
 
-                      Divider(color: AppColors.opacity20White, height: 1.h),
+                        Divider(color: AppColors.opacity20White, height: 1.h),
 
-                      /// 거래 희망 장소
-                      Container(
-                        width: double.infinity,
-                        margin: EdgeInsets.only(top: 16.h, bottom: 120.h),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '거래희망장소',
-                              style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600, height: 1.4),
-                            ),
-                            SizedBox(height: 8.h),
-                            Row(
-                              children: [
-                                Icon(AppIcons.location, size: 13.sp, color: AppColors.opacity80White),
-                                SizedBox(width: 4.w),
-                                Text(locationName, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                            SizedBox(height: 16.h),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 200.h,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4.r),
-                                child: NaverMap(
-                                  key: ValueKey('detail_map_${widget.itemId}'),
-                                  forceGesture: true,
-                                  options: NaverMapViewOptions(
-                                    initialCameraPosition: NCameraPosition(
-                                      target: NLatLng(item?.latitude ?? 37.5666, item?.longitude ?? 126.9784),
-                                      zoom: 15,
+                        /// 거래 희망 장소
+                        Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.only(top: 16.h, bottom: 120.h),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '교환희망장소',
+                                style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600, height: 1.4),
+                              ),
+                              SizedBox(height: 8.h),
+                              Row(
+                                children: [
+                                  Icon(AppIcons.location, size: 13.sp, color: AppColors.opacity80White),
+                                  SizedBox(width: 4.w),
+                                  Text(locationName, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              SizedBox(height: 16.h),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 200.h,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  child: NaverMap(
+                                    key: ValueKey('detail_map_${widget.itemId}'),
+                                    forceGesture: true,
+                                    options: NaverMapViewOptions(
+                                      initialCameraPosition: NCameraPosition(
+                                        target: NLatLng(item?.latitude ?? 37.5666, item?.longitude ?? 126.9784),
+                                        zoom: 15,
+                                      ),
+                                      scrollGesturesEnable: false,
+                                      zoomGesturesEnable: false,
                                     ),
-                                    scrollGesturesEnable: false,
-                                    zoomGesturesEnable: false,
-                                  ),
-                                  onMapReady: (controller) {
-                                    if (item?.latitude != null && item?.longitude != null) {
-                                      controller.addOverlay(
-                                        NMarker(
-                                          id: 'item_location',
-                                          position: NLatLng(item!.latitude!, item!.longitude!),
-                                          icon: const NOverlayImage.fromAssetImage(
-                                            "assets/images/location-pin-icon.png",
+                                    onMapReady: (controller) {
+                                      if (item?.latitude != null && item?.longitude != null) {
+                                        controller.addOverlay(
+                                          NMarker(
+                                            id: 'item_location',
+                                            position: NLatLng(item!.latitude!, item!.longitude!),
+                                            icon: const NOverlayImage.fromAssetImage(
+                                              "assets/images/location-pin-icon.png",
+                                            ),
+                                            size: NSize(33.w, 47.h),
                                           ),
-                                          size: NSize(33.w, 47.h),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  // 지도 탭 시 거래 희망 장소 상세 페이지로 이동
-                                  onMapTapped: (point, latLng) {
-                                    if (item?.latitude != null && item?.longitude != null) {
-                                      context.navigateTo(
-                                        screen: TradeLocationDetailScreen(
-                                          latitude: item!.latitude!,
-                                          longitude: item!.longitude!,
-                                        ),
-                                      );
-                                    }
-                                  },
+                                        );
+                                      }
+                                    },
+                                    // 지도 탭 시 거래 희망 장소 상세 페이지로 이동
+                                    onMapTapped: (point, latLng) {
+                                      if (item?.latitude != null && item?.longitude != null) {
+                                        context.navigateTo(
+                                          screen: TradeLocationDetailScreen(
+                                            latitude: item!.latitude!,
+                                            longitude: item!.longitude!,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          /// 상단 고정 버튼들
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8.h,
-            left: 24.w,
-            child: SizedBox.square(
-              dimension: 32.w,
-              child: OverflowBox(
-                maxWidth: 56.w,
-                maxHeight: 56.w,
-                child: Material(
-                  color: Colors.transparent,
-                  clipBehavior: Clip.antiAlias,
-                  shape: const CircleBorder(),
-                  child: InkResponse(
-                    onTap: () async {
-                      // 뒤로갈 때 좋아요가 취소된 상태면 목록에 반영되도록 정보 반환
-                      if (isLikedVN.value == false) {
-                        Navigator.of(context).pop(widget.itemId);
-                      } else {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    radius: 18.w,
-                    customBorder: const CircleBorder(),
-                    highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                    splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                    child: SizedBox.square(
-                      dimension: 56.w,
-                      child: Center(
-                        child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+            /// 상단 고정 버튼들
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8.h,
+              left: 24.w,
+              child: SizedBox.square(
+                dimension: 32.w,
+                child: OverflowBox(
+                  maxWidth: 56.w,
+                  maxHeight: 56.w,
+                  child: Material(
+                    color: Colors.transparent,
+                    clipBehavior: Clip.antiAlias,
+                    shape: const CircleBorder(),
+                    child: InkResponse(
+                      onTap: _popWithLikeResult,
+                      radius: 18.w,
+                      customBorder: const CircleBorder(),
+                      highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                      splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                      child: SizedBox.square(
+                        dimension: 56.w,
+                        child: Center(
+                          child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8.h,
-            right: 16.w,
-            child: !widget.isMyItem
-                ? ReportMenuButton(
-                    onReportPressed: () async {
-                      final bool? reported = await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ReportScreen(itemId: widget.itemId)),
-                      );
-
-                      if (reported == true && mounted) {
-                        await CommonModal.success(
-                          context: context,
-                          message: '신고가 접수되었습니다.',
-                          onConfirm: () {
-                            Navigator.of(context).pop();
-                            Navigator.of(context).pop();
-                          },
-                        );
-                      }
-                    },
-                  )
-                : RomRomContextMenu(
-                    items: [
-                      ContextMenuItem(
-                        id: 'changeTradeStatus',
-                        icon: AppIcons.change,
-                        title: item?.itemStatus == ItemStatus.available.serverName ? '거래완료로 변경' : '판매중으로 변경',
-                        onTap: () async {
-                          await _toggleItemStatus(item!);
-                        },
-                        showDividerAfter: true,
-                      ),
-                      ContextMenuItem(
-                        id: 'edit',
-                        icon: AppIcons.edit,
-                        title: '수정',
-                        onTap: () {
-                          context.navigateTo(
-                            screen: ItemModificationScreen(
-                              itemId: item?.itemId!,
-                              onClose: () {
-                                Navigator.pop(context);
-                              },
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8.h,
+              right: 16.w,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox.square(
+                    key: _shareButtonKey,
+                    dimension: 32.w,
+                    child: OverflowBox(
+                      maxWidth: 56.w,
+                      maxHeight: 56.w,
+                      child: Material(
+                        color: Colors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkResponse(
+                          onTap: _shareItem,
+                          radius: 18.w,
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: SizedBox.square(
+                            dimension: 56.w,
+                            child: Center(
+                              child: Icon(AppIcons.share, size: 30.sp, color: AppColors.textColorWhite),
                             ),
-                          );
-                        },
-                        showDividerAfter: true,
-                      ),
-                      ContextMenuItem(
-                        id: 'delete',
-                        icon: AppIcons.trash,
-                        iconColor: AppColors.itemOptionsMenuRedIcon,
-                        title: '삭제',
-                        textColor: AppColors.itemOptionsMenuRedText,
-                        onTap: () async {
-                          final result = await context.showDeleteDialog(title: '물품 삭제', description: '정말 삭제하시겠습니까?');
-
-                          if (result == true) {
-                            final deleted = await _deleteItem(item!);
-                            if (deleted && mounted) {
-                              Navigator.of(context).pop(true);
-                            }
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-          ),
-          widget.isChatAccessAllowed || widget.isTradeRequestAllowed
-              ? Positioned(
-                  bottom: 0,
-                  child: Container(
-                    height: 113.h,
-                    width: MediaQuery.of(context).size.width,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: AppColors.itemDetailBottomBlackGradient, // 검정색 그라데이션
-                        stops: const [0.0, 1.0],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                )
-              : Container(), // 오버레이 그레디언트
-          widget.isChatAccessAllowed
-              ? Positioned(
-                  bottom: Platform.isAndroid ? 28.h : 49.h,
-                  left: 0,
-                  right: 0,
-                  child: CustomFloatingButton(
-                    isEnabled: true,
-                    enabledOnPressed: _handleChatButtonPressed,
-                    buttonText: '채팅하기',
-                    buttonWidth: 346,
-                    buttonHeight: 56,
-                  ),
-                )
-              : const SizedBox(),
-          widget.isTradeRequestAllowed
-              ? Positioned(
-                  bottom: Platform.isAndroid ? 28.h : 49.h,
-                  left: 0,
-                  right: 0,
-                  child: CustomFloatingButton(
-                    isEnabled: true,
-                    enabledOnPressed: _navigateToRequestScreen,
-                    buttonText: '요청하기',
-                    buttonWidth: 346,
-                    buttonHeight: 56,
-                  ),
-                )
-              : const SizedBox(),
-        ],
+                  SizedBox(width: 12.w),
+                  !widget.isMyItem
+                      ? ReportMenuButton(
+                          onReportPressed: () async {
+                            final bool? reported = await context.navigateTo(
+                              screen: ReportScreen(itemId: widget.itemId),
+                            );
+
+                            if (reported == true && mounted) {
+                              await CommonModal.success(
+                                context: context,
+                                message: '신고가 접수되었습니다.',
+                                onConfirm: () {
+                                  Navigator.of(context).pop();
+                                  _popWithLikeResult();
+                                },
+                              );
+                            }
+                          },
+                        )
+                      : RomRomContextMenu(
+                          items: [
+                            ContextMenuItem(
+                              id: 'changeTradeStatus',
+                              icon: AppIcons.change,
+                              title: item?.itemStatus == ItemStatus.available.serverName ? '교환완료로 변경' : '판매중으로 변경',
+                              onTap: () async {
+                                await _toggleItemStatus(item!);
+                              },
+                              showDividerAfter: true,
+                            ),
+                            ContextMenuItem(
+                              id: 'edit',
+                              icon: AppIcons.edit,
+                              title: '수정',
+                              onTap: () async {
+                                final result = await context.navigateTo<Map<String, dynamic>>(
+                                  screen: ItemModificationScreen(
+                                    itemId: item?.itemId!,
+                                    onClose: () {
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                );
+                                if (result != null && result['updated'] == true && mounted) {
+                                  _loadItemDetail();
+                                }
+                              },
+                              showDividerAfter: true,
+                            ),
+                            ContextMenuItem(
+                              id: 'delete',
+                              icon: AppIcons.trash,
+                              iconColor: AppColors.itemOptionsMenuRedIcon,
+                              title: '삭제',
+                              textColor: AppColors.itemOptionsMenuRedText,
+                              onTap: () async {
+                                final result = await context.showDeleteDialog(
+                                  title: '물품 삭제',
+                                  description: '정말 삭제하시겠습니까?',
+                                );
+
+                                if (result == true) {
+                                  final deleted = await _deleteItem(item!);
+                                  if (deleted && mounted) {
+                                    Navigator.of(context).pop(true);
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                ],
+              ),
+            ),
+            widget.isChatAccessAllowed || widget.isTradeRequestAllowed
+                ? Positioned(
+                    bottom: 0,
+                    child: Container(
+                      height: 113.h,
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: AppColors.itemDetailBottomBlackGradient, // 검정색 그라데이션
+                          stops: const [0.0, 1.0],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  )
+                : Container(), // 오버레이 그레디언트
+            widget.isChatAccessAllowed
+                ? Positioned(
+                    bottom: Platform.isAndroid ? 28.h : 49.h,
+                    left: 0,
+                    right: 0,
+                    child: CustomFloatingButton(
+                      isEnabled: true,
+                      enabledOnPressed: _handleChatButtonPressed,
+                      buttonText: '채팅하기',
+                      buttonWidth: 346,
+                      buttonHeight: 56,
+                    ),
+                  )
+                : const SizedBox(),
+            widget.isTradeRequestAllowed
+                ? Positioned(
+                    bottom: Platform.isAndroid ? 28.h : 49.h,
+                    left: 0,
+                    right: 0,
+                    child: CustomFloatingButton(
+                      isEnabled: true,
+                      enabledOnPressed: _navigateToRequestScreen,
+                      buttonText: '요청하기',
+                      buttonWidth: 346,
+                      buttonHeight: 56,
+                    ),
+                  )
+                : const SizedBox(),
+          ],
+        ),
       ),
     );
   }

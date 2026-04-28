@@ -21,7 +21,7 @@ class TradeRequestTradeOptionSelector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '거래방식 선택',
+            '교환방식 선택',
             style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500, color: AppColors.opacity50White),
           ),
           SizedBox(height: 8.h),

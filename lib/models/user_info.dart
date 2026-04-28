@@ -130,8 +130,8 @@ class UserInfo {
   }
 
   /// 기본 사용자 정보 저장 (소셜 로그인용)
-  Future<void> saveUserInfo(String? name, String? email, String? profileImageUrl) async {
-    await saveMemberInfo(nickname: name, email: email, profileUrl: profileImageUrl);
+  Future<void> saveUserInfo(String? name, String? email) async {
+    await saveMemberInfo(nickname: name, email: email);
   }
 
   /// 온보딩 및 약관 동의 상태 저장
@@ -226,14 +226,13 @@ class UserInfo {
 
   /// 온보딩이 필요한지 확인
   bool get needsOnboarding {
-    return isRequiredTermsAgreed != true || isMemberLocationSaved != true || isItemCategorySaved != true;
+    return isRequiredTermsAgreed != true || isItemCategorySaved != true;
   }
 
   /// 다음 온보딩 단계 결정
   int get nextOnboardingStep {
     if (isRequiredTermsAgreed != true) return 1; // 이용약관 동의
-    if (isMemberLocationSaved != true) return 2; // 위치 인증
-    if (isItemCategorySaved != true) return 3; // 카테고리 선택
+    if (isItemCategorySaved != true) return 2; // 카테고리 선택
     return 1; // 기본값
   }
 
@@ -265,7 +264,17 @@ class UserInfo {
 
   // === 데이터 삭제 메서드 ===
 
-  /// 로그아웃 시 정보 삭제 (isCoachMarkShown 제외)
+  /// 회원탈퇴 시 호출: isCoachMarkShown 포함 모든 사용자 정보 삭제
+  /// 재가입 시 코치마크가 다시 표시되어야 하므로 전체 초기화
+  Future<void> clearAllUserInfo() async {
+    await clearUserInfoExceptIsCoachMarkShown();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('isCoachMarkShown');
+    await prefs.remove('isFirstMainScreen');
+    isCoachMarkShown = null;
+  }
+
+  /// 로그아웃 시 호출: isCoachMarkShown은 유지 (같은 사용자가 다시 로그인)
   Future<void> clearUserInfoExceptIsCoachMarkShown() async {
     final prefs = await SharedPreferences.getInstance();
 

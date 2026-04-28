@@ -1,11 +1,17 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
+import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/email_already_registered_exception.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/models/apis/responses/auth_response.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/services/apis/social_logout_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
@@ -20,45 +26,83 @@ class RomAuthApi {
 
   final TokenManager _tokenManager = TokenManager();
 
-  /// POST : `/api/auth/sign-in` 소셜 로그인
-  Future<void> signInWithSocial({required String socialPlatform}) async {
-    const String url = '${AppUrls.baseUrl}/api/auth/sign-in';
+  Future<Map<String, dynamic>> _getClientInfo() async {
+    final platform = Platform.isIOS ? 'ios' : 'android';
+    final locale = Platform.localeName.replaceAll('_', '-');
+
+    String appVersion = 'unknown';
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      appVersion = packageInfo.version;
+    } catch (_) {}
+
+    String deviceModel = 'unknown';
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceModel = iosInfo.utsname.machine;
+      } else if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceModel = androidInfo.model;
+      }
+    } catch (_) {}
+
+    return {'platform': platform, 'appVersion': appVersion, 'deviceModel': deviceModel, 'locale': locale};
+  }
+
+  /// POST : `/api/auth/login` 소셜 로그인
+  /// 정지 계정인 경우 AccountSuspendedException throw
+  /// 정상 계정인 경우 토큰 저장 후 정상 반환
+  Future<void> signInWithSocial({required String firebaseIdToken, required String providerId}) async {
+    final String url = '${AppUrls.baseUrl}/api/auth/login';
 
     try {
       // 사용자 정보 불러옴
       var userInfo = UserInfo();
       await userInfo.getUserInfo();
 
-      // 요청 파라미터 준비 (플랫폼, 유저 정보)
-      Map<String, dynamic> fields = {'socialPlatform': socialPlatform};
+      // 클라이언트 정보 수집
+      final clientInfo = await _getClientInfo();
 
-      // 사용자 정보 직접 추가 (null이 아닌 값만)
-      if (userInfo.email?.isNotEmpty == true) {
-        fields['email'] = userInfo.email;
-      }
-      if (userInfo.nickname?.isNotEmpty == true) {
-        fields['nickname'] = userInfo.nickname;
-      }
-      if (userInfo.profileUrl?.isNotEmpty == true) {
-        fields['profileUrl'] = userInfo.profileUrl;
-      }
+      // 요청 body 준비
+      final Map<String, dynamic> body = {
+        'firebaseIdToken': firebaseIdToken,
+        'providerId': providerId,
+        'profile': {
+          if (userInfo.email?.isNotEmpty == true) 'email': userInfo.email,
+          if (userInfo.nickname?.isNotEmpty == true) 'displayName': userInfo.nickname,
+          if (userInfo.profileUrl?.isNotEmpty == true) 'photoUrl': userInfo.profileUrl,
+        },
+        'client': clientInfo,
+      };
 
-      // HTTP 요청
-      http.Response response = await ApiClient.sendMultipartRequest(
+      // HTTP 요청 (JSON)
+      http.Response response = await ApiClient.sendHttpRequest(
         url: url,
         method: 'POST',
-        fields: fields,
-        isAuthRequired: false, // 소셜 로그인은 인증이 필요하지 않음
-        onSuccess: (responseData) {
-          // 콜백은 호출되지 않고 있지만 일단 유지
-        },
+        body: body,
+        isAuthRequired: false,
+        onSuccess: (_) {},
       );
 
       // 응답을 직접 처리
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final authResponse = AuthResponse.fromJson(responseData);
 
-        // 로컬 저장소에 토큰 저장
+        // 정지 계정인 경우: 토큰 저장하지 않고 예외 throw
+        if (authResponse.accountStatus == AccountStatus.suspendedAccount.serverName) {
+          debugPrint('정지된 계정입니다. 제재 사유: ${authResponse.suspendReason}');
+          throw AccountSuspendedException(
+            suspendReason: authResponse.suspendReason ?? '',
+            suspendedUntil: authResponse.suspendedUntil ?? '',
+          );
+        }
+
+        // 정상 계정: 제재 플래그 + 세션 만료 플래그 리셋 후 토큰 저장
+        ApiClient.resetSuspendedFlag();
+        ApiClient.resetSessionExpiredFlag();
         String accessToken = responseData[TokenKeys.accessToken.name];
         String refreshToken = responseData[TokenKeys.refreshToken.name];
 
@@ -74,9 +118,20 @@ class RomAuthApi {
           isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
           isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
         );
+
+        return; // 정상 계정
+      } else if (response.statusCode == 409) {
+        // 동일 이메일이 다른 소셜 플랫폼으로 이미 가입된 경우
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        final String registeredSocialPlatform = errorData['registeredSocialPlatform'] ?? '';
+        throw EmailAlreadyRegisteredException(registeredSocialPlatform: registeredSocialPlatform);
       } else {
         throw Exception('소셜 로그인 실패: ${response.statusCode}, ${response.body}');
       }
+    } on AccountSuspendedException {
+      rethrow; // 제재 예외는 LoginButton에서 처리
+    } on EmailAlreadyRegisteredException {
+      rethrow; // 이메일 중복 예외는 LoginButton에서 처리
     } catch (error) {
       throw Exception('Error during sign-in: $error');
     }
@@ -167,10 +222,18 @@ class RomAuthApi {
     }
   }
 
-  /// POST : `/api/auth/logout` 로그아웃
-  Future<void> logoutWithSocial(BuildContext context) async {
-    // 로그아웃 시 회원 정보 캐시 삭제
+  /// POST : `/api/auth/logout` 서버 로그아웃 API 호출
+  Future<void> logout() async {
     await MemberManager.clearMemberInfo();
-    await SocialLogoutService().logout(context);
+    final String url = '${AppUrls.baseUrl}/api/auth/logout';
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {
+        TokenKeys.accessToken.name: await _tokenManager.getAccessToken(),
+        TokenKeys.refreshToken.name: await _tokenManager.getRefreshToken(),
+      },
+      isAuthRequired: true,
+      onSuccess: (_) {},
+    );
   }
 }

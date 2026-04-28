@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/objects/api_pageable.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
+import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/api_client.dart';
@@ -19,7 +20,7 @@ class ChatApi {
   /// 채팅방 생성 API
   /// POST /api/chat/rooms/create
   Future<ChatRoom> createChatRoom({required String opponentMemberId, required String tradeRequestHistoryId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/create';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/create';
     late ChatRoom chatRoom;
 
     final Map<String, dynamic> fields = {
@@ -48,7 +49,7 @@ class ChatApi {
   /// 본인 채팅방 목록 조회 API
   /// POST /api/chat/rooms/get
   Future<PagedChatRoomDetail> getChatRooms({int pageNumber = 0, int pageSize = 8}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/get';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/get';
     late PagedChatRoomDetail pagedChatRooms;
 
     final Map<String, dynamic> fields = {'pageNumber': pageNumber.toString(), 'pageSize': pageSize.toString()};
@@ -99,10 +100,50 @@ class ChatApi {
     return pagedChatRooms;
   }
 
+  /// 특정 물품의 채팅 상대 목록 조회 API
+  /// POST /api/chat/rooms/get/item (itemId 필터)
+  Future<PagedChatRoomDetail> getChatRoomsByItemId({required String itemId, int pageSize = 50}) async {
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/get/item';
+
+    final Map<String, dynamic> fields = {'pageNumber': '0', 'pageSize': pageSize.toString(), 'itemId': itemId};
+
+    final http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {},
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('물품 채팅 상대 조회 실패: ${response.statusCode}');
+    }
+
+    final Map<String, dynamic> responseData = jsonDecode(response.body);
+    final chatRoomsData = responseData['chatRoomDetailDtoPage'] as Map<String, dynamic>?;
+    if (chatRoomsData == null) {
+      return PagedChatRoomDetail(
+        content: [],
+        pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
+      );
+    }
+
+    final rawContent = chatRoomsData['content'];
+    final content = rawContent is List
+        ? rawContent.map((e) => ChatRoomDetailDto.fromJson(e as Map<String, dynamic>)).toList()
+        : <ChatRoomDetailDto>[];
+    final isLast = chatRoomsData['last'] as bool? ?? true;
+
+    return PagedChatRoomDetail(
+      content: content,
+      pageable: ApiPageable(pageSize: pageSize, pageNumber: 0),
+      last: isLast,
+    );
+  }
+
   /// 채팅방 삭제 API
   /// POST /api/chat/rooms/delete
   Future<void> deleteChatRoom({required String chatRoomId}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/delete';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/delete';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
 
@@ -119,7 +160,7 @@ class ChatApi {
   /// 채팅방 메시지 조회 API
   /// POST /api/chat/rooms/messages/get
   Future<ChatRoomResponse> getChatMessages({required String chatRoomId, int pageNumber = 0, int pageSize = 30}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/messages/get';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/messages/get';
     late ChatRoomResponse chatRoomResponse;
 
     final Map<String, dynamic> fields = {
@@ -153,7 +194,7 @@ class ChatApi {
   /// 특정 채팅방의 읽음 표시 커서 갱신 API
   /// POST /api/chat/rooms/read-cursor/update
   Future<void> updateChatRoomReadCursor({required String chatRoomId, required bool isEntered}) async {
-    const String url = '${AppUrls.baseUrl}/api/chat/rooms/read-cursor/update';
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/read-cursor/update';
 
     final Map<String, dynamic> fields = {'chatRoomId': chatRoomId, 'isEntered': isEntered.toString()};
 
@@ -163,6 +204,104 @@ class ChatApi {
       isAuthRequired: true,
       onSuccess: (_) {
         isEntered ? debugPrint('채팅방 입장 처리 성공: $chatRoomId') : debugPrint('채팅방 퇴장 처리 성공: $chatRoomId');
+      },
+    );
+  }
+
+  /// 특정 채팅방의 읽음 상태 조회 API
+  /// POST /api/chat/rooms/read-status/get
+  Future<ChatUserState?> getChatRoomReadStatus({required String chatRoomId}) async {
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/read-status/get';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    final http.Response response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('상대방 읽음 상태 조회 성공: $chatRoomId');
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      try {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final opponentStateJson = responseData['opponentState'];
+        if (opponentStateJson != null) {
+          return ChatUserState.fromJson(opponentStateJson as Map<String, dynamic>);
+        }
+      } catch (e) {
+        debugPrint('읽음 상태 파싱 실패: $e');
+      }
+    }
+    return null;
+  }
+
+  /// 채팅방 교환 완료 요청 API
+  /// POST /api/chat/rooms/trade-completion/request
+  Future<void> requestTradeCompletion({required String chatRoomId}) async {
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/request';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅방 교환 완료 요청 성공: $chatRoomId');
+      },
+    );
+  }
+
+  /// 채팅방 교환 완료 요청 거절 API
+  /// POST /api/chat/rooms/trade-completion/reject
+  Future<void> rejectTradeCompletion({required String chatRoomId}) async {
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/reject';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅방 교환 완료 요청 거절 성공: $chatRoomId');
+      },
+    );
+  }
+
+  /// 채팅방 교환 완료 요청 확인 API
+  /// POST /api/chat/rooms/trade-completion/confirm
+  Future<void> confirmTradeCompletion({required String chatRoomId}) async {
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/confirm';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅방 교환 완료 요청 확인 성공: $chatRoomId');
+      },
+    );
+  }
+
+  /// 채팅방 교환 완료 요청 취소 API
+  /// POST /api/chat/rooms/trade-completion/cancel
+  Future<void> cancelTradeCompletionRequest({required String chatRoomId}) async {
+    final String url = '${AppUrls.baseUrl}/api/chat/rooms/trade-completion/cancel';
+
+    final Map<String, dynamic> fields = {'chatRoomId': chatRoomId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅방 교환 완료 요청 취소 성공: $chatRoomId');
       },
     );
   }

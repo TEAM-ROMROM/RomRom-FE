@@ -3,9 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -70,58 +69,93 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
       appBar: CommonAppBar(title: '선호 카테고리 설정', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: EdgeInsets.only(right: 24.0.w, left: 24.0.w, top: 56.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 1.h),
-                  // 카테고리 칩 표시
-                  SingleChildScrollView(child: _buildCategoryChips(context)),
-                  Expanded(child: Container()),
+          : Stack(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(right: 24.0.w, left: 24.0.w, top: 16.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 1.h),
+                      // 카테고리 칩 표시
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.only(bottom: 180.h + MediaQuery.of(context).padding.bottom),
+                          child: _buildCategoryChips(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-                  // 저장하기 버튼
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 76.h + MediaQuery.of(context).padding.bottom),
-                    child: Center(
-                      child: CompletionButton(
-                        isEnabled: isSelectedCategories,
-                        isLoading: _isSaving,
-                        enabledOnPressed: () async {
-                          if (_isSaving) return;
-                          setState(() => _isSaving = true);
-                          try {
-                            final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
-
-                            if (mounted && isSuccess) {
-                              CommonSnackBar.show(
-                                context: context,
-                                message: '선호 카테고리가 저장되었습니다',
-                                type: SnackBarType.success,
-                              );
-                              Navigator.pop(context);
-                            }
-                          } catch (e) {
-                            debugPrint('선호 카테고리 저장 실패: $e');
-                            if (mounted) {
-                              CommonSnackBar.show(
-                                context: context,
-                                message: '카테고리 저장에 실패했습니다: $e',
-                                type: SnackBarType.error,
-                              );
-                            }
-                          } finally {
-                            if (mounted) {
-                              setState(() => _isSaving = false);
-                            }
+                // 저장하기 버튼
+                Positioned(
+                  left: 24.0.w,
+                  right: 24.0.w,
+                  bottom: 76.h + MediaQuery.of(context).padding.bottom,
+                  child: Center(
+                    child: CompletionButton(
+                      isEnabled: isSelectedCategories,
+                      isLoading: _isSaving,
+                      enabledOnPressed: () async {
+                        if (_isSaving) return;
+                        setState(() => _isSaving = true);
+                        try {
+                          final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
+                          if (!mounted) return;
+                          if (isSuccess) {
+                            CommonSnackBar.show(
+                              context: context,
+                              message: '선호 카테고리가 저장되었습니다',
+                              type: SnackBarType.success,
+                            );
+                            Navigator.pop(context);
+                          } else {
+                            CommonSnackBar.show(
+                              context: context,
+                              message: '카테고리 저장에 실패했습니다. 잠시 후 다시 시도해주세요.',
+                              type: SnackBarType.error,
+                            );
                           }
-                        },
-                        buttonText: '저장하기',
+                        } catch (e) {
+                          debugPrint('선호 카테고리 저장 실패: $e');
+                          if (mounted) {
+                            CommonSnackBar.show(
+                              context: context,
+                              message: '카테고리 저장에 실패했습니다: $e',
+                              type: SnackBarType.error,
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isSaving = false);
+                          }
+                        }
+                      },
+                      buttonText: '저장하기',
+                    ),
+                  ),
+                ),
+
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      height: 161.h,
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: [0, 1],
+                          colors: [AppColors.primaryBlack.withValues(alpha: 0.0), AppColors.primaryBlack],
+                        ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
     );
   }
@@ -135,34 +169,11 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
   }
 
   Widget _buildCategoryChip(BuildContext context, ItemCategories category) {
-    final bool isSelected = selectedCategories.contains(category.id);
-
-    return RawChip(
-      label: Text(
-        category.label,
-        style: CustomTextStyles.p2.copyWith(
-          fontSize: adjustedFontSize(context, 14.0),
-          color: isSelected ? AppColors.textColorBlack : AppColors.textColorWhite,
-          wordSpacing: -0.32.w,
-        ),
-      ),
-      labelPadding: EdgeInsets.zero,
-      padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 10.0.h),
-      selected: isSelected,
-      selectedColor: AppColors.primaryYellow,
-      backgroundColor: AppColors.primaryBlack,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: isSelected ? AppColors.primaryYellow : AppColors.textColorWhite,
-          strokeAlign: BorderSide.strokeAlignOutside,
-          width: 1.0.w,
-        ),
-        borderRadius: BorderRadiusDirectional.circular(100.r),
-      ),
-      checkmarkColor: Colors.transparent,
-      showCheckmark: false,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      onSelected: (bool selected) => _toggleCategorySelection(category.id, selected),
+    return CategoryChip(
+      label: category.label,
+      isSelected: selectedCategories.contains(category.id),
+      onTap: () => _toggleCategorySelection(category.id, !selectedCategories.contains(category.id)),
+      iconPath: category.iconPath,
     );
   }
 

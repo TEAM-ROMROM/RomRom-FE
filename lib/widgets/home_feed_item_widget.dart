@@ -6,14 +6,16 @@ import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
-import 'package:romrom_fe/widgets/home_feed_item_tag_chips.dart';
+import 'package:romrom_fe/widgets/home_feed_ai_sort_button.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -22,8 +24,9 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/screens/profile/profile_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
@@ -31,7 +34,10 @@ class HomeFeedItemWidget extends StatefulWidget {
   final HomeFeedItem item;
   final bool showBlur;
 
-  const HomeFeedItemWidget({super.key, required this.item, required this.showBlur});
+  /// AI 추천 버튼 탭 시 추천 itemId 상위 3개를 전달하는 콜백
+  final void Function(List<String> itemIds)? onAiRecommend;
+
+  const HomeFeedItemWidget({super.key, required this.item, required this.showBlur, this.onAiRecommend});
 
   @override
   State<HomeFeedItemWidget> createState() => _HomeFeedItemWidgetState();
@@ -44,6 +50,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
   late bool _isLiked;
   late int _likeCount;
   bool _isLiking = false; // 좋아요 API 중복 호출 방지
+  bool _isAiLoading = false; // AI 추천 API 호출 중 여부
+  bool _isAiButtonActive = false; // AI 추천 버튼 활성화F
 
   @override
   void initState() {
@@ -76,6 +84,46 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     }
   }
 
+  /// AI 추천 버튼 탭 핸들러 (on/off 토글)
+  Future<void> _handleAiSortTap() async {
+    // 토글 OFF: 이미 활성화된 경우 하이라이트 해제
+    if (_isAiButtonActive) {
+      setState(() => _isAiButtonActive = false);
+      widget.onAiRecommend?.call([]);
+      return;
+    }
+
+    if (_isAiLoading || widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) return;
+
+    setState(() {
+      _isAiLoading = true;
+      _isAiButtonActive = true;
+    });
+    try {
+      debugPrint('AI 물품 정렬 리스트 요청');
+      final response = await TradeApi().getAiRecommendItemList(TradeRequest(takeItemId: widget.item.itemUuid));
+
+      // 상위 3개 itemId 추출
+      final items = response.itemPage?.content ?? [];
+      final topIds = items.take(3).map((item) => item.itemId).whereType<String>().toList();
+
+      debugPrint('AI 추천 상위 3개 itemId: $topIds, ${items.length}');
+
+      // 상위 컴포넌트로 전달
+      if (mounted) {
+        widget.onAiRecommend?.call(topIds);
+      }
+    } catch (e) {
+      debugPrint('AI 추천 요청 실패: $e');
+      // 실패 시 버튼 비활성화
+      if (mounted) setState(() => _isAiButtonActive = false);
+    } finally {
+      if (mounted) {
+        setState(() => _isAiLoading = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
     pageController.dispose();
@@ -92,7 +140,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final navigationBarHeight = 100.h; // 네비게이션바 높이 (80.h)
     final availableHeight = screenHeight - bottomPadding - navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
-    final registerBlurTextTopPosition = 205.h;
+    final registerBlurTextTopPosition = 191.h;
 
     return Container(
       height: screenHeight,
@@ -115,9 +163,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                 children: [
                   // 이미지와 그라디언트
                   Positioned.fill(
-                    child: GestureDetector(
+                    child: AppPressable(
+                      scaleDown: AppPressable.scaleCard,
+                      enableRipple: false,
                       onTap: () async {
-                        final resultIndex = await Navigator.push(
+                        final result = await Navigator.push<dynamic>(
                           context,
                           MaterialPageRoute(
                             builder: (_) => ItemDetailDescriptionScreen(
@@ -132,11 +182,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             ),
                           ),
                         );
-                        if (resultIndex != null && resultIndex is int) {
+                        if (result is Map<String, dynamic> && mounted) {
                           setState(() {
-                            _currentImageIndex = resultIndex;
+                            _isLiked = result['isLiked'] as bool? ?? _isLiked;
+                            _likeCount = result['likeCount'] as int? ?? _likeCount;
                           });
-                          pageController.jumpToPage(_currentImageIndex);
                         }
                       },
                       child: Hero(
@@ -164,8 +214,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                   if (widget.showBlur)
                     Positioned.fill(
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-                        child: Container(color: AppColors.opacity10Black),
+                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        child: Container(color: AppColors.opacity80Black),
                       ),
                     ),
                 ],
@@ -176,7 +226,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           // 이미지 인디케이터 (하단 점)
           if (!widget.showBlur)
             Positioned(
-              bottom: 220.h,
+              bottom: 236.h,
               left: 0,
               right: 0,
               child: Row(
@@ -200,7 +250,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           if (!widget.showBlur)
             Positioned(
               right: 33.w,
-              bottom: 216.h,
+              bottom: 232.h,
               child: Column(
                 children: [
                   SizedBox.square(
@@ -286,7 +336,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 92.h,
+            bottom: 110.h,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Row(
@@ -367,12 +417,16 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         // 프로필 이미지
-                        GestureDetector(
+                        AppPressable(
+                          scaleDown: AppPressable.scaleIcon,
+                          enableRipple: false,
                           onTap: widget.showBlur
                               ? null
                               : () {
                                   if (widget.item.authorMemberId != null) {
-                                    context.navigateTo(screen: ProfileScreen(memberId: widget.item.authorMemberId!));
+                                    context.navigateTo(
+                                      screen: MemberProfileScreen(memberId: widget.item.authorMemberId!),
+                                    );
                                   }
                                 },
                           child: ClipOval(
@@ -389,7 +443,11 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
 
                         SizedBox(height: 14.h),
 
-                        HomeFeedAiTag(isActive: _useAiPrice),
+                        // AI 추천 버튼 - 로딩 중일 때 비활성화
+                        HomeFeedAiSortButton(
+                          isActive: _isAiButtonActive,
+                          onTap: _isAiLoading ? null : _handleAiSortTap,
+                        ),
                       ],
                     ),
                   ),
@@ -406,20 +464,16 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  RichText(
-                    text: TextSpan(
-                      style: CustomTextStyles.h3.copyWith(color: Colors.white),
-                      children: [
-                        TextSpan(
-                          text: '내 물건을 등록',
-                          style: CustomTextStyles.h1.copyWith(color: AppColors.primaryYellow, height: 1.3),
-                        ),
-                        TextSpan(text: '하고\n물건을 교환해보세요!', style: CustomTextStyles.h1.copyWith(height: 1.3)),
-                      ],
+                  Text(
+                    '교환을 시작하려면\n먼저 나의 물건을 등록해 주세요!',
+                    textAlign: TextAlign.center,
+                    style: CustomTextStyles.h2.copyWith(
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.015,
+                      height: 1.3,
                     ),
                   ),
-                  SizedBox(height: 56.h),
-                  SvgPicture.asset('assets/images/first-item-post-box.svg', width: 133.w),
+                  Image.asset('assets/images/romrom-empty-box.png', width: screenWidth),
                 ],
               ),
             ),

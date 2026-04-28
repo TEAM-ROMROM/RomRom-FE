@@ -175,7 +175,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 itemCount: _items.length + (_hasMoreItems ? 1 : 0),
-                separatorBuilder: (_, __) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
+                separatorBuilder: (_, _) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
                 itemBuilder: (context, index) {
                   // ... 기존 itemBuilder 코드 동일
                   if (_hasMoreItems && index == _items.length) {
@@ -211,15 +211,14 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                         ),
                       );
 
-                      // 상세에서 itemId 반환하면 목록에서 제거
-                      if (result != null && result is String) {
-                        final String removedId = result;
-                        if (removedId.isNotEmpty && mounted) {
+                      // 좋아요 취소 시 목록에서 제거
+                      if (result is Map<String, dynamic> && mounted) {
+                        final isLiked = result['isLiked'] as bool? ?? true;
+                        if (!isLiked) {
                           setState(() {
-                            _items.removeWhere((it) => it.itemId == removedId);
+                            _items.removeWhere((it) => it.itemId == itemId);
                           });
                         }
-                        return;
                       }
                     },
                     child: Container(
@@ -274,7 +273,7 @@ class _MyLikeListScreenState extends State<MyLikeListScreen> {
                                               ),
                                               alignment: Alignment.center,
                                               child: Text(
-                                                '거래 완료',
+                                                '교환 완료',
                                                 style: CustomTextStyles.p3.copyWith(
                                                   fontSize: 12.sp,
                                                   fontWeight: FontWeight.w600,

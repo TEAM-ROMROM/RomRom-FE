@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
+import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
+import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
@@ -21,6 +23,14 @@ class ChatWebSocketService {
   // 구독 참조 카운팅 (여러 화면에서 같은 채팅방을 구독할 수 있도록)
   final Map<String, int> _subscriptionRefCounts = {};
 
+  // 읽음 이벤트 구독 (/sub/chat.read.{chatRoomId})
+  final Map<String, StreamController<ChatUserState>> _readSubscriptions = {};
+  final Map<String, StompUnsubscribe> _stompReadSubscriptions = {};
+  final Map<String, int> _readSubscriptionRefCounts = {};
+
+  // 토큰 갱신 중 중복 실행 방지
+  bool _isRefreshingToken = false;
+
   final TokenManager _tokenManager = TokenManager();
 
   /// 연결 상태 확인
@@ -28,8 +38,10 @@ class ChatWebSocketService {
 
   ///  STOMP 연결
   Future<void> connect() async {
-    if (_isConnected) {
-      debugPrint('[WebSocket] Already connected');
+    // _stompClient != null 이면 이미 연결 중이거나 재연결 대기 중
+    // 이 경우 새 StompClient를 생성하면 중복 세션 문제가 발생하므로 early return
+    if (_isConnected || _stompClient != null) {
+      debugPrint('[WebSocket] Already connected or connecting');
       return;
     }
 
@@ -103,6 +115,11 @@ class ChatWebSocketService {
     debugPrint('[WebSocket] ❌ STOMP Error');
     debugPrint('[WebSocket] Headers: ${frame.headers}');
     debugPrint('[WebSocket] Body: ${frame.body}');
+    // STOMP 에러 수신 즉시 연결 상태를 false로 설정
+    // _onDisconnect 보다 먼저 처리하여 에러 발생 후 메시지 전송 시도를 차단
+    _isConnected = false;
+    // 토큰 만료로 인한 인증 오류일 수 있으므로 재발급 후 재연결 시도
+    _refreshTokenAndReconnect();
   }
 
   /// WebSocket 에러 콜백
@@ -111,10 +128,40 @@ class ChatWebSocketService {
     _isConnected = false;
   }
 
+  /// 토큰 재발급 후 WebSocket 재연결
+  Future<void> _refreshTokenAndReconnect() async {
+    if (_isRefreshingToken) return;
+    _isRefreshingToken = true;
+
+    try {
+      debugPrint('[WebSocket] 토큰 재발급 시도...');
+
+      // auto-reconnect가 구 토큰으로 재시도하지 않도록 먼저 비활성화
+      _stompClient?.deactivate();
+      _stompClient = null;
+      _isConnected = false;
+
+      final success = await RomAuthApi().refreshAccessToken();
+      if (success) {
+        debugPrint('[WebSocket] 토큰 재발급 성공 - WebSocket 재연결');
+        await connect();
+      } else {
+        debugPrint('[WebSocket] 토큰 재발급 실패 (refresh 토큰 만료)');
+      }
+    } catch (e) {
+      debugPrint('[WebSocket] 토큰 재발급 및 재연결 실패: $e');
+    } finally {
+      _isRefreshingToken = false;
+    }
+  }
+
   /// 기존 구독 재연결
   void _resubscribeAll() {
     for (var chatRoomId in _subscriptions.keys) {
       _subscribeToRoom(chatRoomId);
+    }
+    for (var chatRoomId in _readSubscriptions.keys) {
+      _subscribeToReadRoom(chatRoomId);
     }
   }
 
@@ -143,6 +190,75 @@ class ChatWebSocketService {
     return controller.stream;
   }
 
+  /// 읽음 이벤트 구독 (/sub/chat.read.{chatRoomId})
+  Stream<ChatUserState> subscribeToReadEvents(String chatRoomId) {
+    _readSubscriptionRefCounts[chatRoomId] = (_readSubscriptionRefCounts[chatRoomId] ?? 0) + 1;
+    debugPrint(
+      '[WebSocket] Subscribe to read events $chatRoomId (refCount: ${_readSubscriptionRefCounts[chatRoomId]})',
+    );
+
+    if (_readSubscriptions.containsKey(chatRoomId)) {
+      return _readSubscriptions[chatRoomId]!.stream;
+    }
+
+    final controller = StreamController<ChatUserState>.broadcast();
+    _readSubscriptions[chatRoomId] = controller;
+
+    if (_isConnected) {
+      _subscribeToReadRoom(chatRoomId);
+    }
+
+    return controller.stream;
+  }
+
+  /// 읽음 이벤트 구독 해제
+  void unsubscribeFromReadEvents(String chatRoomId) {
+    try {
+      final currentCount = _readSubscriptionRefCounts[chatRoomId] ?? 0;
+      if (currentCount <= 0) return;
+
+      _readSubscriptionRefCounts[chatRoomId] = currentCount - 1;
+      final newCount = _readSubscriptionRefCounts[chatRoomId]!;
+      debugPrint('[WebSocket] Unsubscribe from read events $chatRoomId (refCount: $newCount)');
+
+      if (newCount <= 0) {
+        _readSubscriptionRefCounts.remove(chatRoomId);
+        _stompReadSubscriptions[chatRoomId]?.call();
+        _stompReadSubscriptions.remove(chatRoomId);
+        _readSubscriptions[chatRoomId]?.close();
+        _readSubscriptions.remove(chatRoomId);
+        debugPrint('[WebSocket] ✅ Fully unsubscribed from read events $chatRoomId');
+      }
+    } catch (e) {
+      debugPrint('[WebSocket] Read unsubscribe error: $e');
+    }
+  }
+
+  /// 실제 읽음 이벤트 토픽 구독 실행
+  void _subscribeToReadRoom(String chatRoomId) {
+    if (_stompClient == null || !_isConnected) return;
+
+    final destination = '/sub/chat.read.$chatRoomId';
+    debugPrint('[WebSocket] ✅ Subscribing to: $destination');
+
+    final unsubscribe = _stompClient!.subscribe(
+      destination: destination,
+      callback: (StompFrame frame) {
+        if (frame.body == null) return;
+        try {
+          final jsonBody = jsonDecode(frame.body!);
+          final state = ChatUserState.fromJson(jsonBody);
+          debugPrint('[WebSocket] 📨 Read event: isPresent=${state.isPresent}, leftAt=${state.leftAt}');
+          _readSubscriptions[chatRoomId]?.add(state);
+        } catch (e) {
+          debugPrint('[WebSocket] Read event 파싱 실패: $e');
+        }
+      },
+    );
+
+    _stompReadSubscriptions[chatRoomId] = unsubscribe;
+  }
+
   /// 실제 채팅방 구독 실행
   void _subscribeToRoom(String chatRoomId) {
     if (_stompClient == null || !_isConnected) {
@@ -156,10 +272,20 @@ class ChatWebSocketService {
     final unsubscribe = _stompClient!.subscribe(
       destination: destination,
       callback: (StompFrame frame) {
-        if (frame.body == null) return;
+        debugPrint('[WebSocket] 📨 Frame 수신 from $destination');
+        if (kDebugMode) {
+          debugPrint('[WebSocket]   headers(keys): ${frame.headers.keys.toList()}');
+          debugPrint('[WebSocket]   bodyLength: ${frame.body?.length ?? 0}');
+        }
+
+        if (frame.body == null) {
+          debugPrint('[WebSocket]   ⚠️ body가 null → 무시');
+          return;
+        }
 
         try {
           final jsonBody = jsonDecode(frame.body!);
+          debugPrint('[WebSocket]   type 필드: ${jsonBody["type"]}');
 
           // 1) STOMP 헤더 timestamp(ms) → DateTime
           DateTime? headerTs;
@@ -188,10 +314,18 @@ class ChatWebSocketService {
 
           // 모델로 변환
           final message = ChatMessage.fromJson(jsonBody).copyWith(createdDate: finalCreated);
+          if (kDebugMode) {
+            debugPrint('[WebSocket]   → 파싱 완료: type=${message.type}, hasId=${message.chatMessageId != null}');
+          }
 
           _subscriptions[chatRoomId]?.add(message);
-        } catch (e) {
-          debugPrint('[WebSocket] Failed to parse message: $e');
+          debugPrint('[WebSocket]   → StreamController 전달 완료');
+        } catch (e, st) {
+          debugPrint('[WebSocket]   ❌ 파싱 실패: $e');
+          if (kDebugMode) {
+            debugPrint('[WebSocket]   rawBodyLength: ${frame.body?.length ?? 0}');
+            debugPrint('[WebSocket]   $st');
+          }
         }
       },
     );
@@ -205,9 +339,14 @@ class ChatWebSocketService {
     required String content,
     MessageType type = MessageType.text,
     List<String>? imageUrls,
+    double? latitude,
+    double? longitude,
   }) {
     if (type == MessageType.image && (imageUrls == null || imageUrls.isEmpty)) {
       throw Exception('imageUrls is required for image messages');
+    }
+    if (type == MessageType.location && (latitude == null || longitude == null)) {
+      throw Exception('latitude and longitude are required for location messages');
     }
     if (!_isConnected || _stompClient == null) {
       debugPrint('[WebSocket] Cannot send message: Not connected');
@@ -220,9 +359,13 @@ class ChatWebSocketService {
       'type': type.toString().split('.').last.toUpperCase(),
     };
 
-    // IMAGE 타입인 경우 imageUrls 추가
     if (type == MessageType.image && imageUrls != null) {
       payload['imageUrls'] = imageUrls;
+    }
+
+    if (type == MessageType.location) {
+      payload['latitude'] = latitude;
+      payload['longitude'] = longitude;
     }
 
     debugPrint('[WebSocket] Sending message to /app/chat.send\n$payload');
@@ -286,11 +429,22 @@ class ChatWebSocketService {
       }
       _stompSubscriptions.clear();
 
+      for (var unsubscribe in _stompReadSubscriptions.values) {
+        unsubscribe();
+      }
+      _stompReadSubscriptions.clear();
+
       // 모든 스트림 컨트롤러 닫기
       for (var controller in _subscriptions.values) {
         await controller.close();
       }
       _subscriptions.clear();
+
+      for (var controller in _readSubscriptions.values) {
+        await controller.close();
+      }
+      _readSubscriptions.clear();
+      _readSubscriptionRefCounts.clear();
 
       debugPrint('[WebSocket] ✅ Disconnected');
     } catch (e) {

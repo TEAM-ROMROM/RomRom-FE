@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/device_type.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 /// 공통 모달 위젯
 /// 팩토리 메서드 패턴으로 success, error, confirm 타입 지원
@@ -52,6 +55,15 @@ class CommonModal extends StatelessWidget {
     });
   }
 
+  /// 모달 등장 애니메이션: fade + scale (0.92→1.0)
+  static Widget _buildTransition(Widget child, Animation<double> animation) {
+    final curvedAnim = CurvedAnimation(parent: animation, curve: AppMotion.decelerate);
+    return FadeTransition(
+      opacity: curvedAnim,
+      child: ScaleTransition(scale: Tween<double>(begin: 0.92, end: 1.0).animate(curvedAnim), child: child),
+    );
+  }
+
   /// 성공 모달 (노란색 체크 아이콘, 1버튼)
   static Future<void> success({
     required BuildContext context,
@@ -59,11 +71,14 @@ class CommonModal extends StatelessWidget {
     String buttonText = '확인',
     required VoidCallback onConfirm,
   }) {
-    return showDialog(
+    return showGeneralDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: AppColors.dialogBarrier,
-      builder: (_) => CommonModal._(
+      barrierLabel: '',
+      transitionDuration: AppMotion.slow,
+      transitionBuilder: (context0, animation, secondaryAnimation0, child) => _buildTransition(child, animation),
+      pageBuilder: (context0, animation0, secondaryAnimation0) => CommonModal._(
         icon: AppIcons.onboardingProgressCheck,
         iconColor: AppColors.primaryYellow,
         iconBackgroundColor: AppColors.primaryYellow.withValues(alpha: 0.2),
@@ -83,11 +98,14 @@ class CommonModal extends StatelessWidget {
     String buttonText = '확인',
     required VoidCallback onConfirm,
   }) {
-    return showDialog(
+    return showGeneralDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: AppColors.dialogBarrier,
-      builder: (_) => CommonModal._(
+      barrierLabel: '',
+      transitionDuration: AppMotion.slow,
+      transitionBuilder: (context0, animation, secondaryAnimation0, child) => _buildTransition(child, animation),
+      pageBuilder: (context0, animation0, secondaryAnimation0) => CommonModal._(
         icon: AppIcons.warning,
         iconColor: AppColors.warningRed,
         iconBackgroundColor: AppColors.warningRed.withValues(alpha: 0.2),
@@ -110,11 +128,14 @@ class CommonModal extends StatelessWidget {
     required VoidCallback onCancel,
     required VoidCallback onConfirm,
   }) {
-    return showDialog<bool>(
+    return showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
       barrierColor: AppColors.dialogBarrier,
-      builder: (_) => CommonModal._(
+      barrierLabel: '',
+      transitionDuration: AppMotion.slow,
+      transitionBuilder: (context0, animation, secondaryAnimation0, child) => _buildTransition(child, animation),
+      pageBuilder: (context0, animation0, secondaryAnimation0) => CommonModal._(
         icon: AppIcons.warning,
         iconColor: AppColors.warningRed,
         iconBackgroundColor: AppColors.warningRed.withValues(alpha: 0.2),
@@ -137,10 +158,10 @@ class CommonModal extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       elevation: 0,
       backgroundColor: AppColors.secondaryBlack1,
-      insetPadding: EdgeInsets.symmetric(horizontal: 40.w),
+      insetPadding: EdgeInsets.symmetric(horizontal: isTablet ? 200 : 40.w),
       child: Container(
         width: 312.w,
-        height: 206.h,
+        constraints: BoxConstraints(maxWidth: 312.w),
         decoration: BoxDecoration(
           color: AppColors.secondaryBlack1,
           borderRadius: BorderRadius.circular(8.r),
@@ -149,12 +170,13 @@ class CommonModal extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(24.0.w),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // 아이콘
               Center(
                 child: Container(
-                  width: 40.w,
-                  height: 40.h,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(color: iconBackgroundColor, shape: BoxShape.circle),
                   alignment: Alignment.center,
                   child: Icon(icon, size: 40.sp, color: iconColor),
@@ -171,7 +193,7 @@ class CommonModal extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const Spacer(),
+              SizedBox(height: 24.h),
               // 버튼
               isTwoButton ? _buildTwoButtons() : _buildSingleButton(),
             ],
@@ -185,20 +207,17 @@ class CommonModal extends StatelessWidget {
   Widget _buildSingleButton() {
     return SizedBox(
       width: 264.w,
-      height: 44.h,
-      child: Material(
-        color: confirmButtonColor,
+      height: 44,
+      child: AppPressable(
+        onTap: onConfirm,
         borderRadius: BorderRadius.circular(10.r),
-        child: InkWell(
-          onTap: onConfirm,
-          highlightColor: darkenBlend(confirmButtonColor),
-          splashColor: darkenBlend(confirmButtonColor).withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(10.r),
-          child: Center(
-            child: Text(
-              confirmText,
-              style: CustomTextStyles.p1.copyWith(color: confirmTextColor, fontWeight: FontWeight.w700),
-            ),
+        rippleColor: darkenBlend(confirmButtonColor),
+        child: Container(
+          decoration: BoxDecoration(color: confirmButtonColor, borderRadius: BorderRadius.circular(10.r)),
+          alignment: Alignment.center,
+          child: Text(
+            confirmText,
+            style: CustomTextStyles.p1.copyWith(color: confirmTextColor, fontWeight: FontWeight.w700),
           ),
         ),
       ),
@@ -211,18 +230,19 @@ class CommonModal extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // 취소 버튼
-        SizedBox(
-          width: 128.w,
-          height: 44.h,
-          child: Material(
-            color: AppColors.opacity30PrimaryBlack,
-            borderRadius: BorderRadius.circular(10.r),
-            child: InkWell(
+        Expanded(
+          child: SizedBox(
+            height: 44,
+            child: AppPressable(
               onTap: onCancel,
-              highlightColor: AppColors.opacity30PrimaryBlack,
-              splashColor: darkenBlend(AppColors.opacity30PrimaryBlack).withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(10.r),
-              child: Center(
+              rippleColor: darkenBlend(AppColors.opacity30PrimaryBlack),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.opacity30PrimaryBlack,
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                alignment: Alignment.center,
                 child: Text(cancelText!, style: CustomTextStyles.p1, textAlign: TextAlign.center),
               ),
             ),
@@ -230,18 +250,16 @@ class CommonModal extends StatelessWidget {
         ),
         SizedBox(width: 8.w),
         // 확인/삭제/나가기 버튼
-        SizedBox(
-          width: 128.w,
-          height: 44.h,
-          child: Material(
-            color: confirmButtonColor,
-            borderRadius: BorderRadius.circular(10.r),
-            child: InkWell(
+        Expanded(
+          child: SizedBox(
+            height: 44,
+            child: AppPressable(
               onTap: onConfirm,
-              highlightColor: darkenBlend(confirmButtonColor),
-              splashColor: darkenBlend(confirmButtonColor).withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(10.r),
-              child: Center(
+              rippleColor: darkenBlend(confirmButtonColor),
+              child: Container(
+                decoration: BoxDecoration(color: confirmButtonColor, borderRadius: BorderRadius.circular(10.r)),
+                alignment: Alignment.center,
                 child: Text(confirmText, style: CustomTextStyles.p1, textAlign: TextAlign.center),
               ),
             ),
