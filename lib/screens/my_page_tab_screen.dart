@@ -20,6 +20,7 @@ import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 class MyPageTabScreen extends StatefulWidget {
@@ -179,7 +180,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
   /// 닉네임 박스 위젯
   Widget _buildNicknameBox() {
-    return GestureDetector(
+    return AppPressable(
       onTap: () async {
         final result = await context.navigateTo<bool>(screen: const MyProfileEditScreen());
 
@@ -187,6 +188,8 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
           await _loadUserInfo();
         }
       },
+      scaleDown: AppPressable.scaleCard,
+      enableRipple: false,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.only(left: 16, right: 18, top: 16, bottom: 16),
@@ -264,9 +267,10 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   }) {
     final bool hasTrailingText = trailingText != null && trailingText.isNotEmpty;
 
-    return InkWell(
+    return AppPressable(
       onTap: hasTrailingText ? null : onTap,
-      borderRadius: BorderRadius.circular(10.r),
+      scaleDown: AppPressable.scaleCard,
+      enableRipple: false,
       child: Container(
         height: 60.h,
         padding: EdgeInsets.only(left: 16.w, right: 18.w),

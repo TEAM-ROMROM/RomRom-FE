@@ -20,6 +20,7 @@ import 'package:romrom_fe/services/apis/trade_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
@@ -62,7 +63,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   int _currentVirtualIndex = 0; // 현재 보고 있는 가상 인덱스 (광고 슬롯 판별용)
   final int _pageSize = 10;
   // 초기 로딩 상태
-  bool _isLoading = true;
+  bool _isLoading = false;
   // 추가 아이템 로딩 상태
   bool _isLoadingMore = false;
   // 더 로드할 아이템 여부
@@ -278,7 +279,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// 초기 아이템 로드
   /// 결과가 0개이면 recommend → distance → preferredCategory → createdDate 순으로 폴백
   Future<void> _loadInitialItems() async {
-    if (!mounted) return;
+    if (!mounted || _isLoading) return;
 
     setState(() {
       _isLoading = true;
@@ -527,9 +528,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2));
     }
+    return _buildContent();
+  }
 
+  Widget _buildContent() {
     // 피드 아이템이 없을 때 메시지 표시
     if (_feedItems.isEmpty) {
       return Center(
@@ -538,13 +542,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           children: [
             Text('물품이 없습니다.', style: CustomTextStyles.h3),
             const SizedBox(height: 16),
-            Material(
-              color: AppColors.primaryYellow,
-              borderRadius: BorderRadius.circular(4.r),
-              child: InkWell(
-                onTap: _loadInitialItems,
-                highlightColor: darkenBlend(AppColors.primaryYellow),
-                splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+            AppPressable(
+              onTap: _loadInitialItems,
+              scaleDown: AppPressable.scaleButton,
+              enableRipple: false,
+              child: Material(
+                color: AppColors.primaryYellow,
                 borderRadius: BorderRadius.circular(4.r),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -628,57 +631,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                       clipBehavior: Clip.antiAlias,
                       child: InkResponse(
                         onTap: () async {
-                          debugPrint(
-                            'HomeTab: share button tapped (index=$_currentFeedIndex, total=${_feedItems.length})',
-                          );
-                          if (_feedItems.isEmpty || _currentFeedIndex >= _feedItems.length) return;
-                          final item = _feedItems[_currentFeedIndex];
-                          final itemId = item.itemUuid;
-                          if (itemId == null) {
-                            debugPrint('HomeTab: share aborted - itemId is null');
-                            return;
-                          }
-                          debugPrint('HomeTab: sharing itemId=$itemId');
-                          try {
-                            // iPad/popover용 anchor(sharePositionOrigin)를 제공
-                            final RenderBox box = context.findRenderObject() as RenderBox;
-                            final Rect origin = box.localToGlobal(Offset.zero) & box.size;
-                            debugPrint('HomeTab: share origin=$origin');
-                            await shareItem(itemId: itemId, sharePositionOrigin: origin);
-                            debugPrint('HomeTab: share completed for itemId=$itemId');
-                          } catch (e, st) {
-                            debugPrint('HomeTab: share failed for itemId=$itemId - $e\n$st');
-                            if (mounted) {
-                              CommonSnackBar.show(context: context, message: '공유에 실패했습니다.', type: SnackBarType.error);
-                            }
-                          }
-                        },
-                        radius: 18.w,
-                        customBorder: const CircleBorder(),
-                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                        child: SizedBox.square(
-                          dimension: 56.w,
-                          child: Center(
-                            child: Icon(AppIcons.share, size: 30.w, color: AppColors.textColorWhite),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                SizedBox.square(
-                  dimension: 32.w,
-                  child: OverflowBox(
-                    maxWidth: 56.w,
-                    maxHeight: 56.w,
-                    child: Material(
-                      color: AppColors.transparent,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkResponse(
-                        onTap: () async {
                           await context.navigateTo(screen: const NotificationScreen());
                           if (!mounted) return;
                           _loadUnreadNotificationStatus();
@@ -738,7 +690,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             right: 0,
             bottom: 24.h,
             child: Center(
-              child: GestureDetector(
+              child: AppPressable(
                 onTap: () async {
                   final result = await context.navigateTo<Map<String, dynamic>>(
                     screen: ItemRegisterScreen(
@@ -753,6 +705,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     showCoachMark();
                   }
                 },
+                scaleDown: AppPressable.scaleButton,
+                enableRipple: false,
                 child: Container(
                   width: 123.w,
                   height: 48.h,

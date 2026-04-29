@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -45,8 +46,10 @@ class ChatRoomListItem extends StatelessWidget {
     final double profileAvatarSize = 22.w;
     final bool isDeletedAccount = accountStatus == AccountStatus.deleteAccount.serverName;
 
-    return GestureDetector(
+    return AppPressable(
       onTap: onTap,
+      scaleDown: AppPressable.scaleCard,
+      enableRipple: false,
       child: Container(
         color: AppColors.transparent,
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),

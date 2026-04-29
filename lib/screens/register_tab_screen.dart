@@ -18,6 +18,7 @@ import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
@@ -27,6 +28,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
@@ -70,11 +72,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     super.initState();
 
     // 토글 애니메이션 초기화
-    _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this);
     _toggleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
     _loadMyItems();
     _scrollController.addListener(_scrollListener);
@@ -392,9 +394,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
 
     return Stack(
       children: [
-        GestureDetector(
+        AppPressable(
           onTap: () => _navigateToItemDetail(item),
-          behavior: HitTestBehavior.opaque,
+          scaleDown: AppPressable.scaleCard,
+          enableRipple: false,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -504,121 +507,120 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
       child: IgnorePointer(
         ignoring: _isScrolling,
         child: AnimatedScale(
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.fast,
           scale: _isScrolling ? 0.0 : 1.0,
-          curve: Curves.easeInOut,
+          curve: AppMotion.standard,
           child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
+            duration: AppMotion.fast,
             opacity: _isScrolling ? 0.0 : 1.0,
             child: Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primaryYellow,
-                  borderRadius: BorderRadius.circular(100.r),
-                  boxShadow: const [BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4))],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(100.r),
-                    onTap: () async {
-                      if (_isFabProcessing) return;
-                      setState(() => _isFabProcessing = true);
-                      try {
-                        // 위치 미등록 시 위치 등록 화면으로 이동
-                        final userInfo = UserInfo();
-                        if (userInfo.isMemberLocationSaved != true) {
-                          final locationResult = await context.navigateTo<bool>(
-                            screen: const MyLocationVerificationScreen(),
-                          );
-                          if (!mounted) return;
-                          if (locationResult != true) return;
-                          userInfo.isMemberLocationSaved = true;
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.setBool('isMemberLocationSaved', true);
-                        }
+              child: AppPressable(
+                scaleDown: AppPressable.scaleButton,
+                enableRipple: false,
+                borderRadius: BorderRadius.circular(100.r),
+                onTap: () async {
+                  if (_isFabProcessing) return;
+                  setState(() => _isFabProcessing = true);
+                  try {
+                    // 위치 미등록 시 위치 등록 화면으로 이동
+                    final userInfo = UserInfo();
+                    if (userInfo.isMemberLocationSaved != true) {
+                      final locationResult = await context.navigateTo<bool>(
+                        screen: const MyLocationVerificationScreen(),
+                      );
+                      if (!mounted) return;
+                      if (locationResult != true) return;
+                      userInfo.isMemberLocationSaved = true;
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('isMemberLocationSaved', true);
+                    }
 
-                        // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
-                        try {
-                          final countResponse = await ItemApi().getMyItems(
-                            ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
-                          );
-                          final totalCount =
-                              countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
+                    // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
+                    try {
+                      final countResponse = await ItemApi().getMyItems(
+                        ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
+                      );
+                      final totalCount =
+                          countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
 
-                          if (totalCount >= _maxAvailableItemCount) {
-                            if (mounted) {
-                              CommonSnackBar.show(
-                                context: context,
-                                message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
-                                type: SnackBarType.error,
-                              );
-                            }
-                            return;
-                          }
-                        } catch (e) {
-                          debugPrint('물품 개수 확인 실패: $e');
-                          if (mounted) {
-                            CommonSnackBar.show(
-                              context: context,
-                              message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
-                              type: SnackBarType.error,
-                            );
-                          }
-                          return;
-                        }
-
-                        final result = await context.navigateTo(
-                          screen: ItemRegisterScreen(
-                            onClose: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        );
-
-                        if (!mounted) return;
-
-                        debugPrint('====================================');
-                        debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
-                        debugPrint('result type: ${result.runtimeType}');
-                        if (result is Map<String, dynamic>) {
-                          debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
-                          debugPrint('  - itemId: ${result['itemId']}');
-                        }
-                        debugPrint('====================================');
-
-                        // 등록 화면에서 돌아온 뒤 목록 새로고침
-                        _loadMyItems(isRefresh: true);
-
-                        // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
-                        if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
-                          debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
-                          _navigateToHomeAndShowCoachMark();
-                        } else {
-                          debugPrint(
-                            '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
+                      if (totalCount >= _maxAvailableItemCount) {
+                        if (mounted) {
+                          CommonSnackBar.show(
+                            context: context,
+                            message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
+                            type: SnackBarType.error,
                           );
                         }
-                      } finally {
-                        if (mounted) setState(() => _isFabProcessing = false);
+                        return;
                       }
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 15.h),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(AppIcons.addItemPlus, size: 16.sp, color: AppColors.primaryBlack),
-                          SizedBox(width: 8.w),
-                          Text(
-                            '등록하기',
-                            style: CustomTextStyles.h3.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textColorBlack,
-                            ),
-                          ),
-                        ],
+                    } catch (e) {
+                      debugPrint('물품 개수 확인 실패: $e');
+                      if (mounted) {
+                        CommonSnackBar.show(
+                          context: context,
+                          message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
+                          type: SnackBarType.error,
+                        );
+                      }
+                      return;
+                    }
+
+                    final result = await context.navigateTo(
+                      screen: ItemRegisterScreen(
+                        onClose: () {
+                          Navigator.pop(context);
+                        },
                       ),
+                    );
+
+                    if (!mounted) return;
+
+                    debugPrint('====================================');
+                    debugPrint('ItemRegisterScreen에서 돌아옴: result=$result');
+                    debugPrint('result type: ${result.runtimeType}');
+                    if (result is Map<String, dynamic>) {
+                      debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
+                      debugPrint('  - itemId: ${result['itemId']}');
+                    }
+                    debugPrint('====================================');
+
+                    // 등록 화면에서 돌아온 뒤 목록 새로고침
+                    _loadMyItems(isRefresh: true);
+
+                    // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
+                    if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+                      debugPrint('첫 물건 등록 확인! 홈 탭으로 이동 시작...');
+                      _navigateToHomeAndShowCoachMark();
+                    } else {
+                      debugPrint(
+                        '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isFabProcessing = false);
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryYellow,
+                    borderRadius: BorderRadius.circular(100.r),
+                    boxShadow: const [BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4))],
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 15.h),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(AppIcons.addItemPlus, size: 16.sp, color: AppColors.primaryBlack),
+                        SizedBox(width: 8.w),
+                        Text(
+                          '등록하기',
+                          style: CustomTextStyles.h3.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textColorBlack,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

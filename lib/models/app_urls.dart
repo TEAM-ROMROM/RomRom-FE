@@ -1,6 +1,8 @@
+import 'package:romrom_fe/debug/runtime_url_manager.dart';
+
 /// 프로젝트 내 URL 관리
 class AppUrls {
-  static const String baseUrl = "https://api.romrom.suhsaechan.kr";
+  static String get baseUrl => RuntimeUrlManager().baseUrl;
   static const String itemShareBaseUrl = "https://romrom-c4008.web.app";
   static const String imageBaseUrl = "https://suh-project.synology.me"; // 이미지 서버 주소
   static const String naverReverseGeoCodeApiUrl =
@@ -9,6 +11,6 @@ class AppUrls {
 
   // 스토어 URL
   static const String androidStoreUrl = "https://play.google.com/store/apps/details?id=com.alom.romrom&hl=ko";
-  // TODO: iOS 앱 심사 통과 후 실제 App Store URL로 교체
-  static const String iosStoreUrl = "https://apps.apple.com/kr/iphone/today";
+  static const String iosStoreUrl =
+      "https://apps.apple.com/kr/app/%EB%A1%AC%EB%A1%AC-romrom-%ED%98%81%EC%8B%A0%EC%A0%81%EC%9D%B8-%EB%AC%BC%EB%AC%BC%EA%B5%90%ED%99%98/id6748823976";
 }
