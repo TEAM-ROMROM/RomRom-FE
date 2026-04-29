@@ -672,8 +672,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
 
-        // 하단 고정 카드 덱 - 광고 슬롯에서는 숨김
-        if (!_isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
+        // 하단 고정 카드 덱
+        if (!_isBlurShown)
           Positioned(
             left: 0,
             right: 0,
