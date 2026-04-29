@@ -28,6 +28,8 @@ import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
 import 'package:romrom_fe/widgets/sent_request_item_card.dart';
+import 'package:romrom_fe/enums/request_sort_type.dart';
+import 'package:romrom_fe/widgets/common/request_sort_bottom_sheet.dart';
 
 class RequestManagementTabScreen extends StatefulWidget {
   const RequestManagementTabScreen({super.key});
@@ -65,6 +67,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   // 완료된 요청 표시 여부
   bool _showCompletedRequests = false;
+
+  // 정렬 상태 (받은 요청 / 보낸 요청 각각 독립)
+  RequestSortType _receivedSortType = RequestSortType.latest;
+  RequestSortType _sentSortType = RequestSortType.latest;
 
   // 테스트용 샘플 데이터
   final List<RequestManagementItemCard> _itemCards = [];
@@ -286,8 +292,38 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
   }
 
-  /// 보낸 요청 목록
+  /// 보낸 요청 목록 (정렬 버튼 + 목록)
   Widget _buildSentRequestsList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // 정렬 버튼 행 (항상 표시)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 16, 8),
+          child: GestureDetector(
+            onTap: () => RequestSortBottomSheet.show(
+              context: context,
+              currentSort: _sentSortType,
+              onSelected: (selected) => setState(() => _sentSortType = selected),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_sentSortType.label, style: CustomTextStyles.p3.copyWith(color: AppColors.primaryYellow)),
+                const SizedBox(width: 2),
+                const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryYellow, size: 14),
+              ],
+            ),
+          ),
+        ),
+        // 기존 목록/빈상태/로딩
+        _buildSentListBody(),
+      ],
+    );
+  }
+
+  /// 보낸 요청 목록 본체
+  Widget _buildSentListBody() {
     // 보낸 요청은 필터링 없이 모든 요청 표시
     if (_sentRequests.isEmpty) {
       return _isLoading
@@ -671,9 +707,28 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   height: 1.0,
                 ),
               ),
-              // 완료된 요청 필터 토글
+              // 정렬 버튼 + 완료된 요청 필터 토글
               Row(
                 children: [
+                  // 정렬 버튼 (신규)
+                  GestureDetector(
+                    onTap: () => RequestSortBottomSheet.show(
+                      context: context,
+                      currentSort: _receivedSortType,
+                      onSelected: (selected) => setState(() => _receivedSortType = selected),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          _receivedSortType.label,
+                          style: CustomTextStyles.p3.copyWith(color: AppColors.primaryYellow),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryYellow, size: 14),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Text(
                     '교환 완료된 글표시',
                     style: CustomTextStyles.p3.copyWith(
