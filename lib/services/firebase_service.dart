@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:romrom_fe/enums/notification_type.dart';
+import 'package:romrom_fe/main.dart' show navigatorKey;
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
+import 'package:romrom_fe/utils/deep_link_router.dart';
 
 class FirebaseService {
   // Foreground 메시지를 UI에서 구독할 수 있도록 브로드캐스트 스트림 제공
@@ -69,9 +72,35 @@ class FirebaseService {
       }
     });
 
+    // 백그라운드 상태에서 알림 탭으로 앱이 열린 경우
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint("[FCM] 알림 클릭 후 앱이 열림: ${message.notification!.title}");
+      debugPrint("[FCM] 알림 클릭 후 앱이 열림: ${message.data}");
+      _routeFromFcmData(message.data);
     });
+  }
+
+  /// FCM data 페이로드에서 deepLink + notificationType을 파싱해 라우팅
+  static void _routeFromFcmData(Map<String, dynamic> data) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    final deepLink = data['deepLink'] as String?;
+    if (deepLink == null || deepLink.isEmpty) return;
+
+    final uri = Uri.tryParse(deepLink);
+    if (uri == null) return;
+
+    NotificationType? notificationType;
+    final typeRaw = data['notificationType'] as String?;
+    if (typeRaw != null) {
+      try {
+        notificationType = NotificationType.fromServerName(typeRaw);
+      } catch (_) {
+        debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
+      }
+    }
+
+    RomRomDeepLinkRouter.openFromUri(context, uri, notificationType: notificationType);
   }
 
   /// FCM 토큰 발급 및 갱신
