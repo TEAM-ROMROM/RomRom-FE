@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:romrom_fe/enums/navigation_tab_items.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -39,8 +40,10 @@ class CustomBottomNavigationBar extends StatelessWidget {
   Widget _buildNavItem(BuildContext context, int index, IconData icon, String label) {
     final bool isSelected = selectedIndex == index;
 
-    return InkWell(
+    return AppPressable(
       onTap: () => onTap(index),
+      scaleDown: AppPressable.scaleIcon,
+      enableRipple: false,
       child: SizedBox(
         width: MediaQuery.of(context).size.width / 5,
         child: Padding(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/onboarding_steps.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/category_selection_step.dart';
 import 'package:romrom_fe/screens/onboarding/term_agreement_step.dart';
@@ -45,11 +46,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       setState(() {
         _currentStep += 1;
       });
-      _pageController.animateToPage(
-        _currentStep - 1,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      _pageController.animateToPage(_currentStep - 1, duration: AppMotion.normal, curve: AppMotion.standard);
     }
   }
 
@@ -59,11 +56,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       setState(() {
         _currentStep -= 1;
       });
-      _pageController.animateToPage(
-        _currentStep - 1,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      _pageController.animateToPage(_currentStep - 1, duration: AppMotion.normal, curve: AppMotion.standard);
     } else {
       // 첫 페이지에서 뒤로가기 시 로그아웃 처리 후 로그인 화면으로 이동
       final AuthService authService = AuthService();

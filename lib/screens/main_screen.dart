@@ -130,7 +130,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      body: _navigationTabScreens[_currentTabIndex],
+      body: IndexedStack(index: _currentTabIndex, children: _navigationTabScreens),
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _currentTabIndex,
         onTap: (index) {

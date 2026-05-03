@@ -18,7 +18,7 @@ class NotificationApi {
   /// FCM 토큰 저장 API
   /// `POST /api/notification/post/token`
   Future<void> saveFcmToken({required String fcmToken}) async {
-    const String url = '${AppUrls.baseUrl}/api/notification/post/token';
+    final String url = '${AppUrls.baseUrl}/api/notification/post/token';
 
     // 디바이스 타입 자동 감지 (IOS 또는 ANDROID)
     final String deviceType = Platform.isIOS ? 'IOS' : 'ANDROID';
@@ -38,7 +38,7 @@ class NotificationApi {
   /// 알림 읽음 처리
   /// `POST /api/notification/update/read`
   Future<void> updateNotificationsAsRead(String notificationHistoryId) async {
-    const String url = '${AppUrls.baseUrl}/api/notification/update/read';
+    final String url = '${AppUrls.baseUrl}/api/notification/update/read';
 
     final Map<String, dynamic> fields = {
       'notificationHistoryId': notificationHistoryId, // 읽음 처리할 알림 ID(단건)
@@ -57,7 +57,7 @@ class NotificationApi {
   /// 모든 알림 읽음 처리
   /// `POST /api/notification/update/all/read`
   Future<void> updateAllNotificationsAsRead() async {
-    const String url = '${AppUrls.baseUrl}/api/notification/update/all/read';
+    final String url = '${AppUrls.baseUrl}/api/notification/update/all/read';
     await ApiClient.sendMultipartRequest(
       url: url,
       isAuthRequired: true,
@@ -70,7 +70,7 @@ class NotificationApi {
   /// 안읽은 알림 개수 조회
   /// `POST /api/notification/get/un-read/count`
   Future<NotificationHistoryResponse?> getUnreadNotificationCount() async {
-    const String url = '${AppUrls.baseUrl}/api/notification/get/un-read/count';
+    final String url = '${AppUrls.baseUrl}/api/notification/get/un-read/count';
     NotificationHistoryResponse? notificationResponse;
 
     await ApiClient.sendMultipartRequest(
@@ -95,7 +95,7 @@ class NotificationApi {
   /// 사용자 알림 목록 조회
   /// `POST /api/notification/get/notifications`
   Future<NotificationHistoryResponse> getUserNotifications(NotificationHistoryRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/notification/get/notifications';
+    final String url = '${AppUrls.baseUrl}/api/notification/get/notifications';
 
     late NotificationHistoryResponse notificationResponse;
 
@@ -123,7 +123,7 @@ class NotificationApi {
   /// 알림 삭제
   /// `POST /api/notification/delete`
   Future<void> deleteNotification(NotificationHistoryRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/notification/delete';
+    final String url = '${AppUrls.baseUrl}/api/notification/delete';
 
     final Map<String, dynamic> fields = {'notificationHistoryId': request.notificationHistoryId};
 
@@ -140,7 +140,7 @@ class NotificationApi {
   /// 전체 알림 삭제
   /// `POST /api/notification/delete/all`
   Future<void> deleteAllNotifications() async {
-    const String url = '${AppUrls.baseUrl}/api/notification/delete/all';
+    final String url = '${AppUrls.baseUrl}/api/notification/delete/all';
     await ApiClient.sendMultipartRequest(
       url: url,
       isAuthRequired: true,

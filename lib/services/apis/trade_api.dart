@@ -20,7 +20,7 @@ class TradeApi {
   /// 거래 요청 API
   /// `POST /api/trade/post`
   Future<void> requestTrade(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/post';
+    final String url = '${AppUrls.baseUrl}/api/trade/post';
 
     final Map<String, dynamic> fields = {
       'takeItemId': request.takeItemId,
@@ -42,7 +42,7 @@ class TradeApi {
   /// 거래 요청 취소 API
   /// `POST /api/trade/delete`
   Future<void> cancelTradeRequest(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/delete';
+    final String url = '${AppUrls.baseUrl}/api/trade/delete';
 
     final id = request.tradeRequestHistoryId;
     if (id == null || id.isEmpty) {
@@ -64,7 +64,7 @@ class TradeApi {
   /// 받은 거래 요청 목록 조회 API
   /// `POST /api/trade/get/received`
   Future<PagedTradeRequestHistory> getReceivedTradeRequests(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get/received';
+    final String url = '${AppUrls.baseUrl}/api/trade/get/received';
     late PagedTradeRequestHistory tradeResponse;
 
     final Map<String, dynamic> fields = {'takeItemId': request.takeItemId};
@@ -92,7 +92,7 @@ class TradeApi {
   /// 보낸 거래 요청 목록 조회 API
   /// `POST /api/trade/get/sent`
   Future<PagedTradeRequestHistory> getSentTradeRequests(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get/sent';
+    final String url = '${AppUrls.baseUrl}/api/trade/get/sent';
     late PagedTradeRequestHistory tradeResponse;
 
     final Map<String, dynamic> fields = {'giveItemId': request.giveItemId};
@@ -120,7 +120,7 @@ class TradeApi {
   /// 거래율 기준 정렬된 목록 조회 API
   /// `POST /api/trade/get/rate`
   Future<TradeResponse> getSortedTradeRate(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get/rate';
+    final String url = '${AppUrls.baseUrl}/api/trade/get/rate';
     late TradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {
@@ -152,7 +152,7 @@ class TradeApi {
   /// 거래 요청 상세 조회 API
   /// `POST /api/trade/get`
   Future<TradeResponse> getDetailedTradeRequest(TradeRequestHistory request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get';
+    final String url = '${AppUrls.baseUrl}/api/trade/get';
     late TradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {'tradeRequestHistoryId': request.tradeRequestHistoryId};
@@ -180,7 +180,7 @@ class TradeApi {
   /// 거래 완료로 변경 API
   /// `POST /api/trade/accept`
   Future<void> updateTradeStatusAccept(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/accept';
+    final String url = '${AppUrls.baseUrl}/api/trade/accept';
 
     final id = request.tradeRequestHistoryId;
     if (id == null || id.isEmpty) {
@@ -208,7 +208,7 @@ class TradeApi {
   /// 거래 요청 존재 여부 반환 API
   /// `POST /api/trade/check`
   Future<bool> checkTradeRequestExistence(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/check';
+    final String url = '${AppUrls.baseUrl}/api/trade/check';
     late TradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {'takeItemId': request.takeItemId, 'giveItemId': request.giveItemId};
@@ -236,7 +236,7 @@ class TradeApi {
   /// 물품 AI 추천 정렬
   /// `POST /api/trade/get/recommend`
   Future<TradeResponse> getAiRecommendItemList(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/get/recommend';
+    final String url = '${AppUrls.baseUrl}/api/trade/get/recommend';
     late TradeResponse tradeResponse;
 
     final Map<String, dynamic> fields = {'takeItemId': request.takeItemId};
@@ -264,7 +264,7 @@ class TradeApi {
   /// 거래 후기 작성 API
   /// `POST /api/trade/review/post`
   Future<void> postTradeReview(TradeRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/trade/review/post';
+    final String url = '${AppUrls.baseUrl}/api/trade/review/post';
 
     final id = request.tradeRequestHistoryId;
     if (id == null || id.isEmpty) {

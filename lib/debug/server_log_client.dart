@@ -4,13 +4,15 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/debug/log_capture.dart';
+import 'package:romrom_fe/debug/runtime_url_manager.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/utils/secured_api_utils.dart';
 
 /// SSE 기반 서버 로그 스트리밍 클라이언트
 class ServerLogClient {
-  static const String _endpoint = '${AppUrls.baseUrl}/api/app/debug/log-stream';
+  static String get _endpoint => '${AppUrls.baseUrl}/api/app/debug/log-stream';
   static const Duration _reconnectDelay = Duration(seconds: 3);
+  static const Duration _reconnectDelayOnCapacityExceeded = Duration(seconds: 15);
   static const int _maxBufferSize = 1000;
 
   final List<CapturedLog> _buffer = [];
@@ -21,6 +23,13 @@ class ServerLogClient {
   bool _isConnected = false;
   bool _shouldReconnect = false;
   Timer? _reconnectTimer;
+
+  void _onUrlChanged(String _) {
+    if (_shouldReconnect) {
+      _addSystemLog('[서버 로그] URL 변경 감지 — 재연결 중...');
+      _doConnect();
+    }
+  }
 
   /// 현재 버퍼의 로그 목록
   List<CapturedLog> get logs => List.unmodifiable(_buffer);
@@ -34,6 +43,7 @@ class ServerLogClient {
   /// SSE 연결 시작
   Future<void> connect() async {
     _shouldReconnect = true;
+    RuntimeUrlManager().addUrlChangeListener(_onUrlChanged);
     await _doConnect();
   }
 
@@ -51,6 +61,14 @@ class ServerLogClient {
       _httpClient = http.Client();
       final response = await _httpClient!.send(request);
 
+      if (response.statusCode == 503) {
+        // 구독자 수 초과 — BE 슬롯이 해제될 때까지 대기 후 재시도
+        final body = await response.stream.bytesToString();
+        _addSystemLog('[서버 로그] 구독자 수 초과 (503) — ${_reconnectDelayOnCapacityExceeded.inSeconds}초 후 재시도');
+        debugPrint('[ServerLogClient] 503 body: $body');
+        _scheduleReconnect(delay: _reconnectDelayOnCapacityExceeded);
+        return;
+      }
       if (response.statusCode != 200) {
         final body = await response.stream.bytesToString();
         _addSystemLog('[서버 로그] 연결 실패: ${response.statusCode} $body');
@@ -130,12 +148,26 @@ class ServerLogClient {
     _addLog(CapturedLog(time: DateTime.now(), message: message));
   }
 
-  void _scheduleReconnect() {
+  void _scheduleReconnect({Duration? delay}) {
     if (!_shouldReconnect) return;
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(_reconnectDelay, () {
+    _reconnectTimer = Timer(delay ?? _reconnectDelay, () {
       if (_shouldReconnect) _doConnect();
     });
+  }
+
+  /// 백그라운드 진입 시 연결 일시 중단 (슬롯 반환)
+  void suspend() {
+    disconnect(permanent: false);
+    _addSystemLog('[서버 로그] 백그라운드 전환 — 연결 중단');
+  }
+
+  /// 포그라운드 복귀 시 연결 재개
+  void resume() {
+    if (_shouldReconnect) {
+      _addSystemLog('[서버 로그] 포그라운드 복귀 — 재연결 중...');
+      _doConnect();
+    }
   }
 
   /// 버퍼 비우기
@@ -145,7 +177,10 @@ class ServerLogClient {
 
   /// 연결 종료
   void disconnect({bool permanent = true}) {
-    if (permanent) _shouldReconnect = false;
+    if (permanent) {
+      _shouldReconnect = false;
+      RuntimeUrlManager().removeUrlChangeListener(_onUrlChanged);
+    }
     _reconnectTimer?.cancel();
     _sseSubscription?.cancel();
     _sseSubscription = null;
