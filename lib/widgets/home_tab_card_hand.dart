@@ -198,6 +198,24 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   void didUpdateWidget(HomeTabCardHand oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    // dragEnabled가 true→false로 바뀌면 진행 중인 제스처 상태 전부 정리
+    if (oldWidget.dragEnabled && !widget.dragEnabled) {
+      _longPressTimer?.cancel();
+      _longPressTimer = null;
+      _pullController.reverse();
+      setState(() {
+        _panStartedOnCard = false;
+        _startCardId = null;
+        _hasStartedCardDrag = false;
+        _pressedCardId = null;
+        _hoveredCardId = null;
+        _pulledCardId = null;
+        _pullOffset = Offset.zero;
+        _dropShadowT = 0.0;
+        _wasOverDropZone = false;
+      });
+    }
+
     if (!listEquals(widget.highlightedItemIds, oldWidget.highlightedItemIds)) {
       if (widget.highlightedItemIds.isNotEmpty) {
         if (!_highlightPulseController.isAnimating) {
