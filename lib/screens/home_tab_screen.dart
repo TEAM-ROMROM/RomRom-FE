@@ -682,6 +682,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               cards: _myCards,
               onCardDrop: _handleCardDrop,
               highlightedItemIds: _aiHighlightedItemIds,
+              dragEnabled: !_isAdAtVirtualIndex(_currentVirtualIndex),
             ),
           )
         else if (!_isAdAtVirtualIndex(_currentVirtualIndex))
