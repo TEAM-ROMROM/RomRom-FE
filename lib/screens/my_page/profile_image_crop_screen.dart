@@ -14,10 +14,9 @@ import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 프로필 이미지 크롭 화면
-/// - 직사각형 프레임을 드래그로 이미지 위에서 이동
-/// - 직사각형 꼭지점 드래그로 크기 조정
-/// - 직사각형 축소 후 2초 뒤 해당 영역에 맞춰 이미지 자동 줌인
-/// - 원(지름 = 직사각형 가로)이 직사각형 내부 중앙에 표시
+/// - 이미지는 원본 비율 그대로 표시
+/// - 초기 rect = 전체 사진 크기, 핸들로 rect 크기/위치 조정
+/// - 원(지름 = min(rectW, rectH))이 rect 중앙에 표시
 /// - 저장 시 원 영역 기준으로 정사각형 이미지 반환
 class ProfileImageCropScreen extends StatefulWidget {
   const ProfileImageCropScreen({super.key, required this.imageFile});
@@ -32,17 +31,17 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
   ui.Image? _image;
   double _imageScale = 1.0;
   double _baseImageScale = 1.0;
-  double _cropSize = 0.0;
+  double _cropW = 0.0;
+  double _cropH = 0.0;
   int _prevPointerCount = 0;
   bool _isDraggingHandle = false;
 
-  // 이동/리사이즈 가능한 직사각형 (cropSize 좌표계)
+  // 이동/리사이즈 가능한 직사각형 (초기값 = 전체 사진 크기)
   double _rectLeft = 0;
   double _rectTop = 0;
   double _rectW = 0;
   double _rectH = 0;
 
-  // 자동 줌인 애니메이션
   late final AnimationController _zoomController;
   Timer? _autoZoomTimer;
 
@@ -76,7 +75,12 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
         setState(() {
           _image = frame.image;
           _imageScale = _minScale;
-          if (_cropSize > 0) _initRect(_cropSize);
+          // _cropW/_cropH를 초기화해서 LayoutBuilder postFrameCallback이
+          // 올바른 이미지 비율로 _initRect()를 호출하도록 함
+          _cropW = 0;
+          _cropH = 0;
+          _rectW = 0;
+          _rectH = 0;
         });
       }
     } catch (e) {
@@ -87,46 +91,44 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
     }
   }
 
-  double _displayW(double cropSize) => cropSize * _imageScale;
-
-  double _displayH(double cropSize) {
-    if (_image == null) return cropSize * _imageScale;
-    return _displayW(cropSize) * (_image!.height.toDouble() / _image!.width.toDouble());
+  double get _imageAspect {
+    if (_image == null) return 1.0;
+    return _image!.height.toDouble() / _image!.width.toDouble();
   }
 
-  double _imgLeft(double cropSize) => (cropSize - _displayW(cropSize)) / 2;
+  double _displayW() => _cropW * _imageScale;
+  double _displayH() => _displayW() * _imageAspect;
+  double _imgLeft() => (_cropW - _displayW()) / 2;
+  double _imgTop() => (_cropH - _displayH()) / 2;
 
-  double _imgTop(double cropSize) => (cropSize - _displayH(cropSize)) / 2;
-
-  // cropSize 내 이미지가 실제로 보이는 영역 (landscape처럼 이미지가 view보다 짧을 때 흑색 영역 제외)
-  _VisibleArea _visibleArea(double cropSize) {
-    final iL = _imgLeft(cropSize);
-    final iT = _imgTop(cropSize);
-    final dW = _displayW(cropSize);
-    final dH = _displayH(cropSize);
+  _VisibleArea get _visibleArea {
+    final iL = _imgLeft();
+    final iT = _imgTop();
+    final dW = _displayW();
+    final dH = _displayH();
     return _VisibleArea(
       left: math.max(0.0, iL),
       top: math.max(0.0, iT),
-      right: math.min(cropSize, iL + dW),
-      bottom: math.min(cropSize, iT + dH),
+      right: math.min(_cropW, iL + dW),
+      bottom: math.min(_cropH, iT + dH),
     );
   }
 
-  void _initRect(double cropSize) {
+  // 초기 rect = 전체 사진 크기
+  void _initRect() {
     if (_image == null) return;
-    final va = _visibleArea(cropSize);
-    final size = math.min(va.width, va.height);
-    _rectW = size;
-    _rectH = size;
-    _rectLeft = va.left + (va.width - size) / 2;
-    _rectTop = va.top + (va.height - size) / 2;
+    final va = _visibleArea;
+    _rectW = va.width;
+    _rectH = va.height;
+    _rectLeft = va.left;
+    _rectTop = va.top;
   }
 
-  void _clampRect(double cropSize) {
+  void _clampRect() {
     if (_image == null) return;
-    final va = _visibleArea(cropSize);
+    final va = _visibleArea;
     _rectW = _rectW.clamp(_minRectSize, va.width);
-    _rectH = _rectH.clamp(_rectW, va.height);
+    _rectH = _rectH.clamp(_minRectSize, va.height);
     _rectLeft = _rectLeft.clamp(va.left, va.right - _rectW);
     _rectTop = _rectTop.clamp(va.top, va.bottom - _rectH);
   }
@@ -138,7 +140,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
     _prevPointerCount = details.pointerCount;
   }
 
-  void _onScaleUpdate(ScaleUpdateDetails details, double cropSize) {
+  void _onScaleUpdate(ScaleUpdateDetails details) {
     if (_image == null || _isDraggingHandle) return;
 
     if (details.pointerCount != _prevPointerCount) {
@@ -151,22 +153,17 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
       setState(() {
         _rectLeft += details.focalPointDelta.dx;
         _rectTop += details.focalPointDelta.dy;
-        _clampRect(cropSize);
+        _clampRect();
       });
     } else {
       setState(() {
         _imageScale = (_baseImageScale * details.scale).clamp(_minScale, _maxScale);
-        _clampRect(cropSize);
+        _clampRect();
       });
     }
   }
 
-  void _onResizeCorner({
-    required DragUpdateDetails details,
-    required double cropSize,
-    required bool moveLeft,
-    required bool moveTop,
-  }) {
+  void _onResizeCorner({required DragUpdateDetails details, required bool moveLeft, required bool moveTop}) {
     setState(() {
       final dx = details.delta.dx;
       final dy = details.delta.dy;
@@ -179,43 +176,39 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
         }
       } else {
         final newW = _rectW + dx;
-        if (newW >= _minRectSize) {
-          _rectW = newW;
-        }
+        if (newW >= _minRectSize) _rectW = newW;
       }
 
       if (moveTop) {
         final newH = _rectH - dy;
-        if (newH >= _rectW) {
+        if (newH >= _minRectSize) {
           _rectTop += dy;
           _rectH = newH;
         }
       } else {
         final newH = _rectH + dy;
-        if (newH >= _rectW) {
-          _rectH = newH;
-        }
+        if (newH >= _minRectSize) _rectH = newH;
       }
 
-      _clampRect(cropSize);
+      _clampRect();
     });
   }
 
   // ── 크롭 저장 ──
 
   Future<void> _onConfirm() async {
-    if (_image == null || _cropSize == 0.0 || _rectW == 0.0) return;
+    if (_image == null || _cropW == 0.0 || _rectW == 0.0) return;
 
     final imageW = _image!.width.toDouble();
     final imageH = _image!.height.toDouble();
-    final dW = _displayW(_cropSize);
-    final iL = _imgLeft(_cropSize);
-    final iT = _imgTop(_cropSize);
+    final dW = _displayW();
+    final iL = _imgLeft();
+    final iT = _imgTop();
 
-    // 원: 직사각형 가로 = 지름, 직사각형 안에서 수직 중앙
-    final circleLeft = _rectLeft;
-    final circleTop = _rectTop + (_rectH - _rectW) / 2;
-    final circleDiam = _rectW;
+    // 원: min(rectW, rectH)을 지름으로, rect 중앙에 위치
+    final circleDiam = math.min(_rectW, _rectH);
+    final circleLeft = _rectLeft + (_rectW - circleDiam) / 2;
+    final circleTop = _rectTop + (_rectH - circleDiam) / 2;
 
     final scaleRatio = imageW / dW;
     final srcLeft = ((circleLeft - iL) * scaleRatio).clamp(0.0, imageW);
@@ -256,7 +249,6 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: AppColors.textColorBlack,
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(
         title: '프로필 사진 수정',
@@ -283,45 +275,59 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
     );
   }
 
-  /// 크롭 영역 위에 이동/리사이즈 가능한 직사각형과 원 오버레이 표시
   Widget _buildCropArea() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 외부 SizedBox 크기: 핸들이 경계를 넘어 보일 공간 확보
-        final outerSize = constraints.maxWidth - 32.w;
-        // 이미지/오버레이 실제 크기: 핸들 반지름(handleSize/2)만큼 사방 여백
-        final innerSize = outerSize - _handleSize;
+        final maxInnerW = constraints.maxWidth - 32.w - _handleSize;
+        final maxInnerH = constraints.maxHeight - _handleSize;
 
-        if (_cropSize != innerSize) {
+        double innerW, innerH;
+        if (_image != null) {
+          final ratio = _imageAspect;
+          innerW = maxInnerW;
+          innerH = innerW * ratio;
+          if (innerH > maxInnerH) {
+            innerH = maxInnerH;
+            innerW = innerH / ratio;
+          }
+        } else {
+          innerW = maxInnerW;
+          innerH = maxInnerW;
+        }
+
+        final outerW = innerW + _handleSize;
+        final outerH = innerH + _handleSize;
+
+        if (_cropW != innerW || _cropH != innerH) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             setState(() {
-              _cropSize = innerSize;
-              if (_image != null) _initRect(innerSize);
+              _cropW = innerW;
+              _cropH = innerH;
+              if (_image != null) _initRect();
             });
           });
         }
 
         return Center(
           child: SizedBox(
-            width: outerSize,
-            height: outerSize,
+            width: outerW,
+            height: outerH,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // 이미지 + 오버레이: handleSize/2 패딩으로 내부 영역 축소
                 Padding(
                   padding: const EdgeInsets.all(_handleSize / 2),
                   child: GestureDetector(
                     onScaleStart: _onScaleStart,
-                    onScaleUpdate: (details) => _onScaleUpdate(details, innerSize),
+                    onScaleUpdate: (details) => _onScaleUpdate(details),
                     child: ClipRect(
                       child: Stack(
                         children: [
-                          _buildImageLayer(innerSize),
+                          _buildImageLayer(),
                           if (_rectW > 0)
                             CustomPaint(
-                              size: Size(innerSize, innerSize),
+                              size: Size(innerW, innerH),
                               painter: _CropOverlayPainter(
                                 rectLeft: _rectLeft,
                                 rectTop: _rectTop,
@@ -334,8 +340,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
                     ),
                   ),
                 ),
-                // 핸들: 외부 Stack 좌표계 (handleSize/2 오프셋 적용)
-                if (_rectW > 0) _buildHandles(innerSize),
+                if (_rectW > 0) _buildHandles(),
               ],
             ),
           ),
@@ -344,50 +349,43 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
     );
   }
 
-  Widget _buildImageLayer(double cropSize) {
+  Widget _buildImageLayer() {
     if (_image == null) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
     }
     return Center(
       child: RawImage(
         image: _image,
-        width: _displayW(cropSize),
-        height: _displayH(cropSize),
+        width: _displayW(),
+        height: _displayH(),
         fit: BoxFit.fill,
         filterQuality: FilterQuality.high,
       ),
     );
   }
 
-  Widget _buildHandles(double innerSize) {
-    // 핸들 위치: 내부 좌표(innerSize 기준) + handleSize/2 오프셋 → 외부 Stack 좌표계
+  Widget _buildHandles() {
     const o = _handleSize / 2;
     return Stack(
       children: [
-        _buildHandle(_rectLeft + o, _rectTop + o, innerSize, moveLeft: true, moveTop: true),
-        _buildHandle(_rectLeft + _rectW + o, _rectTop + o, innerSize, moveLeft: false, moveTop: true),
-        _buildHandle(_rectLeft + o, _rectTop + _rectH + o, innerSize, moveLeft: true, moveTop: false),
-        _buildHandle(_rectLeft + _rectW + o, _rectTop + _rectH + o, innerSize, moveLeft: false, moveTop: false),
+        _buildHandle(_rectLeft + o, _rectTop + o, moveLeft: true, moveTop: true),
+        _buildHandle(_rectLeft + _rectW + o, _rectTop + o, moveLeft: false, moveTop: true),
+        _buildHandle(_rectLeft + o, _rectTop + _rectH + o, moveLeft: true, moveTop: false),
+        _buildHandle(_rectLeft + _rectW + o, _rectTop + _rectH + o, moveLeft: false, moveTop: false),
       ],
     );
   }
 
-  /// 직사각형 꼭지점 드래그용 핸들
-  Widget _buildHandle(double x, double y, double cropSize, {required bool moveLeft, required bool moveTop}) {
+  Widget _buildHandle(double x, double y, {required bool moveLeft, required bool moveTop}) {
     return Positioned(
       left: x - _handleSize / 2,
       top: y - _handleSize / 2,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onPanStart: (_) => setState(() => _isDraggingHandle = true),
-        onPanUpdate: (details) =>
-            _onResizeCorner(details: details, cropSize: cropSize, moveLeft: moveLeft, moveTop: moveTop),
-        onPanEnd: (_) {
-          setState(() => _isDraggingHandle = false);
-        },
-        onPanCancel: () {
-          setState(() => _isDraggingHandle = false);
-        },
+        onPanUpdate: (details) => _onResizeCorner(details: details, moveLeft: moveLeft, moveTop: moveTop),
+        onPanEnd: (_) => setState(() => _isDraggingHandle = false),
+        onPanCancel: () => setState(() => _isDraggingHandle = false),
         child: SizedBox(
           width: _handleSize,
           height: _handleSize,
@@ -413,9 +411,8 @@ class _VisibleArea {
 }
 
 /// 크롭 오버레이 Painter
-/// - 원 외부: 반투명 검정 오버레이
-/// - 직사각형 테두리 및 원 테두리 흰색 선
-/// - 원 내부: rule of thirds 격자선
+/// - rect 내부(원 외부): 반투명 검정 오버레이
+/// - rect 테두리, 원 테두리, 원 내부 rule of thirds 격자선
 class _CropOverlayPainter extends CustomPainter {
   final double rectLeft;
   final double rectTop;
@@ -426,18 +423,18 @@ class _CropOverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final circleRadius = rectW / 2;
+    final circleRadius = math.min(rectW, rectH) / 2;
     final circleCenter = Offset(rectLeft + rectW / 2, rectTop + rectH / 2);
 
-    // 원 외부 반투명 오버레이
+    // rect 내부(원 외부) 반투명 오버레이
     final overlayPaint = Paint()..color = AppColors.opacity40PrimaryBlack;
     final overlayPath = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRect(Rect.fromLTWH(rectLeft, rectTop, rectW, rectH))
       ..addOval(Rect.fromCircle(center: circleCenter, radius: circleRadius))
       ..fillType = PathFillType.evenOdd;
     canvas.drawPath(overlayPath, overlayPaint);
 
-    // 직사각형 테두리
+    // rect 테두리
     final borderPaint = Paint()
       ..color = AppColors.textColorWhite
       ..style = PaintingStyle.stroke
@@ -475,12 +472,6 @@ class _CropOverlayPainter extends CustomPainter {
 }
 
 /// 꼭지점 핸들 Painter
-/// - 외곽 12×12 정사각형, 내부 9×9 정사각형 구멍
-/// - 구멍은 직사각형 안쪽(중심 방향) 꼭지점에 위치
-///   좌상단 핸들 → 구멍 우하단 (holeAtRight=true, holeAtBottom=true)
-///   우상단 핸들 → 구멍 좌하단 (holeAtRight=false, holeAtBottom=true)
-///   좌하단 핸들 → 구멍 우상단 (holeAtRight=true, holeAtBottom=false)
-///   우하단 핸들 → 구멍 좌상단 (holeAtRight=false, holeAtBottom=false)
 class _CornerHandlePainter extends CustomPainter {
   final bool holeAtRight;
   final bool holeAtBottom;
@@ -492,7 +483,6 @@ class _CornerHandlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 12×12 도형을 중앙 정렬
     final offsetX = (size.width - _shapeSize) / 2;
     final offsetY = (size.height - _shapeSize) / 2;
     final holeX = offsetX + (holeAtRight ? _shapeSize - _holeSize : 0.0);
