@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
@@ -35,6 +36,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
   double _cropH = 0.0;
   int _prevPointerCount = 0;
   bool _isDraggingHandle = false;
+  bool _isSaving = false;
 
   // 이동/리사이즈 가능한 직사각형 (초기값 = 전체 사진 크기)
   double _rectLeft = 0;
@@ -213,50 +215,62 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
   // ── 크롭 저장 ──
 
   Future<void> _onConfirm() async {
+    if (_isSaving) return;
     if (_image == null || _cropW == 0.0 || _rectW == 0.0) return;
+    _isSaving = true;
 
-    final imageW = _image!.width.toDouble();
-    final imageH = _image!.height.toDouble();
-    final dW = _displayW();
-    final iL = _imgLeft();
-    final iT = _imgTop();
+    try {
+      final imageW = _image!.width.toDouble();
+      final imageH = _image!.height.toDouble();
+      final dW = _displayW();
+      final iL = _imgLeft();
+      final iT = _imgTop();
 
-    // 원: min(rectW, rectH)을 지름으로, rect 중앙에 위치
-    final circleDiam = math.min(_rectW, _rectH);
-    final circleLeft = _rectLeft + (_rectW - circleDiam) / 2;
-    final circleTop = _rectTop + (_rectH - circleDiam) / 2;
+      // 원: min(rectW, rectH)을 지름으로, rect 중앙에 위치
+      final circleDiam = math.min(_rectW, _rectH);
+      final circleLeft = _rectLeft + (_rectW - circleDiam) / 2;
+      final circleTop = _rectTop + (_rectH - circleDiam) / 2;
 
-    final scaleRatio = imageW / dW;
-    final srcLeft = ((circleLeft - iL) * scaleRatio).clamp(0.0, imageW);
-    final srcTop = ((circleTop - iT) * scaleRatio).clamp(0.0, imageH);
-    final srcSize = (circleDiam * scaleRatio).clamp(0.0, math.min(imageW - srcLeft, imageH - srcTop));
+      final scaleRatio = imageW / dW;
+      final srcLeft = ((circleLeft - iL) * scaleRatio).clamp(0.0, imageW);
+      final srcTop = ((circleTop - iT) * scaleRatio).clamp(0.0, imageH);
+      final srcSize = (circleDiam * scaleRatio).clamp(0.0, math.min(imageW - srcLeft, imageH - srcTop));
 
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final paint = Paint()..filterQuality = FilterQuality.high;
-    canvas.drawImageRect(
-      _image!,
-      Rect.fromLTWH(srcLeft, srcTop, srcSize.toDouble(), srcSize.toDouble()),
-      Rect.fromLTWH(0, 0, _outputSize.toDouble(), _outputSize.toDouble()),
-      paint,
-    );
-    final picture = recorder.endRecording();
-    final outputImage = await picture.toImage(_outputSize, _outputSize);
-    final byteData = await outputImage.toByteData(format: ui.ImageByteFormat.png);
-    if (byteData == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이미지 처리에 실패했습니다. 다시 시도해주세요.')));
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paint = Paint()..filterQuality = FilterQuality.high;
+      canvas.drawImageRect(
+        _image!,
+        Rect.fromLTWH(srcLeft, srcTop, srcSize.toDouble(), srcSize.toDouble()),
+        Rect.fromLTWH(0, 0, _outputSize.toDouble(), _outputSize.toDouble()),
+        paint,
+      );
+      final picture = recorder.endRecording();
+      final outputImage = await picture.toImage(_outputSize, _outputSize);
+      final byteData = await outputImage.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(ErrorUtils.getErrorMessage('이미지 처리에 실패했습니다. 다시 시도해주세요.'))));
+        }
+        return;
       }
-      return;
-    }
 
-    final Uint8List pngBytes = byteData.buffer.asUint8List();
-    final tempDir = await getTemporaryDirectory();
-    final tempFile = File('${tempDir.path}/profile_crop_${DateTime.now().millisecondsSinceEpoch}.png');
-    await tempFile.writeAsBytes(pngBytes);
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/profile_crop_${DateTime.now().millisecondsSinceEpoch}.png');
+      await tempFile.writeAsBytes(pngBytes);
 
-    if (mounted) {
-      Navigator.of(context).pop(XFile(tempFile.path));
+      if (mounted) {
+        Navigator.of(context).pop(XFile(tempFile.path));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ErrorUtils.getErrorMessage(e))));
+      }
+    } finally {
+      _isSaving = false;
     }
   }
 
