@@ -12,6 +12,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/debug/debug_config.dart';
 import 'package:romrom_fe/debug/debug_overlay_manager.dart';
 import 'package:romrom_fe/debug/runtime_url_manager.dart';
+import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/firebase_options.dart';
@@ -122,6 +123,43 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     _initAppLinks();
+    _initFcmInitialMessage();
+  }
+
+  /// 앱이 종료된 상태에서 알림 탭으로 실행된 경우 (콜드 스타트) 라우팅 처리
+  Future<void> _initFcmInitialMessage() async {
+    try {
+      final message = await FirebaseMessaging.instance.getInitialMessage();
+      if (message == null) return;
+
+      debugPrint('[FCM] 콜드 스타트 초기 메시지: ${message.data}');
+
+      final deepLink = message.data['deepLink'] as String?;
+      if (deepLink == null || deepLink.isEmpty) return;
+
+      final uri = Uri.tryParse(deepLink);
+      if (uri == null) return;
+
+      NotificationType? notificationType;
+      final typeRaw = message.data['notificationType'] as String?;
+      if (typeRaw != null) {
+        try {
+          notificationType = NotificationType.fromServerName(typeRaw);
+        } catch (_) {
+          debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
+        }
+      }
+
+      // navigatorKey는 build() 이후에 준비되므로 postFrameCallback 사용
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          RomRomDeepLinkRouter.openFromUri(context, uri, notificationType: notificationType);
+        }
+      });
+    } catch (e) {
+      debugPrint('[FCM] 콜드 스타트 초기 메시지 처리 실패: $e');
+    }
   }
 
   /// app_links: 콜드 스타트 + 포그라운드 딥링크 처리
