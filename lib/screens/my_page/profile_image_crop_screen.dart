@@ -48,8 +48,10 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
   static const double _minScale = 1.0;
   static const double _maxScale = 5.0;
   static const double _minRectSize = 60.0;
-  static const double _handleSize = 12.0;
   static const int _outputSize = 500;
+
+  static const double _handleVisualSize = 18.0; // 실제 보이는 핸들
+  static const double _handleHitSize = 40.0; // 터치 영역
 
   @override
   void initState() {
@@ -278,8 +280,8 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
   Widget _buildCropArea() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxInnerW = constraints.maxWidth - 32.w - _handleSize;
-        final maxInnerH = constraints.maxHeight - _handleSize;
+        final maxInnerW = constraints.maxWidth - _handleHitSize;
+        final maxInnerH = constraints.maxHeight - _handleHitSize;
 
         double innerW, innerH;
         if (_image != null) {
@@ -295,8 +297,8 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
           innerH = maxInnerW;
         }
 
-        final outerW = innerW + _handleSize;
-        final outerH = innerH + _handleSize;
+        final outerW = innerW + _handleHitSize;
+        final outerH = innerH + _handleHitSize;
 
         if (_cropW != innerW || _cropH != innerH) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -317,26 +319,24 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
               clipBehavior: Clip.none,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(_handleSize / 2),
+                  padding: const EdgeInsets.all(_handleHitSize / 2),
                   child: GestureDetector(
                     onScaleStart: _onScaleStart,
                     onScaleUpdate: (details) => _onScaleUpdate(details),
-                    child: ClipRect(
-                      child: Stack(
-                        children: [
-                          _buildImageLayer(),
-                          if (_rectW > 0)
-                            CustomPaint(
-                              size: Size(innerW, innerH),
-                              painter: _CropOverlayPainter(
-                                rectLeft: _rectLeft,
-                                rectTop: _rectTop,
-                                rectW: _rectW,
-                                rectH: _rectH,
-                              ),
+                    child: Stack(
+                      children: [
+                        _buildImageLayer(),
+                        if (_rectW > 0)
+                          CustomPaint(
+                            size: Size(innerW, innerH),
+                            painter: _CropOverlayPainter(
+                              rectLeft: _rectLeft,
+                              rectTop: _rectTop,
+                              rectW: _rectW,
+                              rectH: _rectH,
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -365,32 +365,45 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
   }
 
   Widget _buildHandles() {
-    const o = _handleSize / 2;
-    return Stack(
-      children: [
-        _buildHandle(_rectLeft + o, _rectTop + o, moveLeft: true, moveTop: true),
-        _buildHandle(_rectLeft + _rectW + o, _rectTop + o, moveLeft: false, moveTop: true),
-        _buildHandle(_rectLeft + o, _rectTop + _rectH + o, moveLeft: true, moveTop: false),
-        _buildHandle(_rectLeft + _rectW + o, _rectTop + _rectH + o, moveLeft: false, moveTop: false),
-      ],
+    const o = _handleHitSize / 2;
+    return Positioned.fill(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _buildHandle(_rectLeft + o, _rectTop + o, moveLeft: true, moveTop: true),
+          _buildHandle(_rectLeft + _rectW + o, _rectTop + o, moveLeft: false, moveTop: true),
+          _buildHandle(_rectLeft + o, _rectTop + _rectH + o, moveLeft: true, moveTop: false),
+          _buildHandle(_rectLeft + _rectW + o, _rectTop + _rectH + o, moveLeft: false, moveTop: false),
+        ],
+      ),
     );
   }
 
   Widget _buildHandle(double x, double y, {required bool moveLeft, required bool moveTop}) {
     return Positioned(
-      left: x - _handleSize / 2,
-      top: y - _handleSize / 2,
+      left: x - _handleHitSize / 2,
+      top: y - _handleHitSize / 2,
+
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onPanStart: (_) => setState(() => _isDraggingHandle = true),
+        onPanStart: (_) {
+          setState(() => _isDraggingHandle = true);
+        },
         onPanUpdate: (details) => _onResizeCorner(details: details, moveLeft: moveLeft, moveTop: moveTop),
         onPanEnd: (_) => setState(() => _isDraggingHandle = false),
         onPanCancel: () => setState(() => _isDraggingHandle = false),
-        child: SizedBox(
-          width: _handleSize,
-          height: _handleSize,
-          child: CustomPaint(
-            painter: _CornerHandlePainter(holeAtRight: moveLeft, holeAtBottom: moveTop),
+        child: Container(
+          width: _handleHitSize,
+          height: _handleHitSize,
+          decoration: const BoxDecoration(color: AppColors.transparent, shape: BoxShape.circle),
+          child: Center(
+            child: SizedBox(
+              width: _handleVisualSize,
+              height: _handleVisualSize,
+              child: CustomPaint(
+                painter: _CornerHandlePainter(holeAtRight: moveLeft, holeAtBottom: moveTop),
+              ),
+            ),
           ),
         ),
       ),
@@ -423,52 +436,58 @@ class _CropOverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(rectLeft, rectTop, rectW, rectH);
+
     final circleRadius = math.min(rectW, rectH) / 2;
     final circleCenter = Offset(rectLeft + rectW / 2, rectTop + rectH / 2);
 
     // rect 내부(원 외부) 반투명 오버레이
     final overlayPaint = Paint()..color = AppColors.opacity40PrimaryBlack;
+
     final overlayPath = Path()
-      ..addRect(Rect.fromLTWH(rectLeft, rectTop, rectW, rectH))
+      ..addRect(rect)
       ..addOval(Rect.fromCircle(center: circleCenter, radius: circleRadius))
       ..fillType = PathFillType.evenOdd;
+
     canvas.drawPath(overlayPath, overlayPaint);
+
+    // 격자선: rect 전체 기준 3등분
+    final gridPaint = Paint()
+      ..color = AppColors.textColorWhite
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    // 세로선 2개
+    for (int i = 1; i <= 2; i++) {
+      final x = rectLeft + rectW * i / 3;
+      canvas.drawLine(Offset(x, rectTop), Offset(x, rectTop + rectH), gridPaint);
+    }
+
+    // 가로선 2개
+    for (int i = 1; i <= 2; i++) {
+      final y = rectTop + rectH * i / 3;
+      canvas.drawLine(Offset(rectLeft, y), Offset(rectLeft + rectW, y), gridPaint);
+    }
 
     // rect 테두리
     final borderPaint = Paint()
       ..color = AppColors.textColorWhite
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.5;
-    canvas.drawRect(Rect.fromLTWH(rectLeft, rectTop, rectW, rectH), borderPaint);
+
+    canvas.drawRect(rect, borderPaint);
 
     // 원 테두리
     canvas.drawCircle(circleCenter, circleRadius, borderPaint);
-
-    // rule of thirds 격자선 (원 내부)
-    final gridPaint = Paint()
-      ..color = AppColors.textColorWhite
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-
-    canvas.save();
-    canvas.clipPath(Path()..addOval(Rect.fromCircle(center: circleCenter, radius: circleRadius)));
-    for (int i = 1; i <= 2; i++) {
-      final x = circleCenter.dx - circleRadius + (circleRadius * 2 * i / 3);
-      canvas.drawLine(Offset(x, circleCenter.dy - circleRadius), Offset(x, circleCenter.dy + circleRadius), gridPaint);
-    }
-    for (int i = 1; i <= 2; i++) {
-      final y = circleCenter.dy - circleRadius + (circleRadius * 2 * i / 3);
-      canvas.drawLine(Offset(circleCenter.dx - circleRadius, y), Offset(circleCenter.dx + circleRadius, y), gridPaint);
-    }
-    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _CropOverlayPainter oldDelegate) =>
-      oldDelegate.rectLeft != rectLeft ||
-      oldDelegate.rectTop != rectTop ||
-      oldDelegate.rectW != rectW ||
-      oldDelegate.rectH != rectH;
+  bool shouldRepaint(covariant _CropOverlayPainter oldDelegate) {
+    return rectLeft != oldDelegate.rectLeft ||
+        rectTop != oldDelegate.rectTop ||
+        rectW != oldDelegate.rectW ||
+        rectH != oldDelegate.rectH;
+  }
 }
 
 /// 꼭지점 핸들 Painter
@@ -478,13 +497,14 @@ class _CornerHandlePainter extends CustomPainter {
 
   const _CornerHandlePainter({required this.holeAtRight, required this.holeAtBottom});
 
-  static const double _shapeSize = 12.0;
-  static const double _holeSize = 9.0;
+  static const double _shapeSize = 16.0;
+  static const double _holeSize = 12.0;
+  static const double _gapSize = _shapeSize - _holeSize;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final offsetX = (size.width - _shapeSize) / 2;
-    final offsetY = (size.height - _shapeSize) / 2;
+    final offsetX = (size.width - _shapeSize) / 2 + (holeAtRight ? _gapSize : -_gapSize);
+    final offsetY = (size.height - _shapeSize) / 2 + (holeAtBottom ? _gapSize : -_gapSize);
     final holeX = offsetX + (holeAtRight ? _shapeSize - _holeSize : 0.0);
     final holeY = offsetY + (holeAtBottom ? _shapeSize - _holeSize : 0.0);
 
