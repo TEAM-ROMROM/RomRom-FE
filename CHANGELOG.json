@@ -1,11 +1,29 @@
 {
   "metadata": {
-    "lastUpdated": "2026-04-29T13:43:28Z",
-    "currentVersion": "1.10.34",
-    "totalReleases": 104,
+    "lastUpdated": "2026-05-05T08:38:59Z",
+    "currentVersion": "1.10.36",
+    "totalReleases": 105,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.36",
+      "project_type": "flutter",
+      "date": "2026-05-05",
+      "pr_number": 822,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 마이페이지에서 로그인 계정(이메일)과 연결 플랫폼 정보 확인 가능\n  * 광고 화면에서도 아이템 카드 덱이 항상 표시됨\n  * 광고 화면에서 카드 덱 드래그 비활성화로 광고 시청 경험 개선",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "마이페이지에서 로그인 계정(이메일)과 연결 플랫폼 정보 확인 가능",
+            "광고 화면에서도 아이템 카드 덱이 항상 표시됨",
+            "광고 화면에서 카드 덱 드래그 비활성화로 광고 시청 경험 개선"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.34",
       "project_type": "flutter",
