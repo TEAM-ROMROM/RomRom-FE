@@ -6,7 +6,7 @@ import 'package:romrom_fe/enums/chat_room_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
-import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
@@ -14,6 +14,7 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/skeletons/chat_room_list_skeleton.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
@@ -30,6 +31,8 @@ class ChatTabScreen extends StatefulWidget {
 
 class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
+  bool _isScrolled = false; //
+  Timer? _scrollTimer;
   final ChatApi _chatApi = ChatApi();
   final ChatWebSocketService _wsService = ChatWebSocketService();
 
@@ -271,6 +274,22 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 1) {
       _loadChatRooms(mode: LoadMode.paging);
     }
+
+    // 스크롤 타이머 리셋
+    _scrollTimer?.cancel();
+    _scrollTimer = Timer(const Duration(milliseconds: 100), () {
+      // 스크롤이 멈췄을 때의 처리
+    });
+
+    if (_scrollController.offset > 50 && !_isScrolled) {
+      setState(() {
+        _isScrolled = true;
+      });
+    } else if (_scrollController.offset <= 50 && _isScrolled) {
+      setState(() {
+        _isScrolled = false;
+      });
+    }
   }
 
   /// 필터링된 채팅방 목록 반환
@@ -291,107 +310,116 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // 정적 제목
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 16.h),
-                child: Text('채팅', style: CustomTextStyles.h1),
-              ),
-            ),
-
-            // 토글 스위치
-            SliverToBoxAdapter(
-              child: TripleToggleSwitch(
-                animation: _toggleAnimation,
-                selectedIndex: _selectedTabIndex,
-                onFirstTap: () => _onTabChanged(0),
-                onSecondTap: () => _onTabChanged(1),
-                onThirdTap: () => _onTabChanged(2),
-                firstText: '전체',
-                secondText: '보낸 요청',
-                thirdText: '받은 요청',
-              ),
-            ),
-
-            // 초기 로딩: 스켈레톤 표시
-            if (_initialLoading && _chatRoomsDetail.isEmpty) const ChatRoomListSkeletonSliver(itemCount: 5),
-
-            // 데이터 있을 때: 채팅방 리스트
-            if (_chatRoomsDetail.isNotEmpty)
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final chatRoomDetail = _getFilteredChatRooms()[index];
-
-                  return Column(
-                    children: [
-                      ChatRoomListItem(
-                        accountStatus: chatRoomDetail.targetMember?.accountStatus,
-                        profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
-                        memberId: chatRoomDetail.targetMember?.memberId,
-                        nickname: chatRoomDetail.targetMember?.nickname ?? '',
-                        location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
-                        timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
-                        messagePreview: chatRoomDetail.lastMessageContent ?? '',
-                        unreadCount: chatRoomDetail.unreadCount ?? 0,
-                        targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
-                        isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
-                        onProfileTap: () {
-                          final targetMember = chatRoomDetail.targetMember;
-                          if (targetMember?.memberId != null) {
-                            context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
-                          }
-                        },
-                        onTap: () async {
-                          debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
-
-                          // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
-                          final roomId = chatRoomDetail.chatRoomId!;
-                          final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
-
-                          if (roomIndex != -1) {
-                            setState(() {
-                              final room = _chatRoomsDetail[roomIndex];
-                              _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
-                                chatRoomId: room.chatRoomId,
-                                targetMember: room.targetMember,
-                                targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
-                                lastMessageContent: room.lastMessageContent,
-                                lastMessageTime: room.lastMessageTime,
-                                unreadCount: 0, // 읽음 처리
-                                chatRoomType: room.chatRoomType,
-                              );
-                            });
-                          }
-
-                          final refreshed = await context.navigateTo<bool>(screen: ChatRoomScreen(chatRoomId: roomId));
-
-                          // 엄격히 true일 때만 새로고침
-                          if (refreshed == true) {
-                            _loadChatRooms(mode: LoadMode.refresh);
-                          }
-                        },
-                      ),
-                      SizedBox(height: 8.h),
-                    ],
-                  );
-                }, childCount: _getFilteredChatRooms().length),
-              ),
-
-            // 추가 페이지 로딩: 작은 인디케이터 (무한 스크롤)
-            if ((_pagingLoading || _prefetchLoading) && _chatRoomsDetail.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20.h),
-                  child: const Center(
-                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+        top: false,
+        child: RefreshIndicator(
+          color: AppColors.primaryYellow,
+          backgroundColor: AppColors.transparent,
+          displacement: MediaQuery.of(context).padding.top + 58.h + 62.h,
+          onRefresh: () => _loadChatRooms(mode: LoadMode.refresh),
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: GlassHeaderDelegate(
+                  headerTitle: '채팅',
+                  toggle: TripleToggleSwitch(
+                    animation: _toggleAnimation,
+                    selectedIndex: _selectedTabIndex,
+                    onFirstTap: () => _onTabChanged(0),
+                    onSecondTap: () => _onTabChanged(1),
+                    onThirdTap: () => _onTabChanged(2),
+                    firstText: '전체',
+                    secondText: '보낸 요청',
+                    thirdText: '받은 요청',
                   ),
+                  statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
+                  toolbarHeight: 58.h,
+                  toggleHeight: 62.h,
+                  expandedExtra: 16.h, // 큰 제목/여백
+                  enableBlur: _isScrolled, // 스크롤 시 더 진해지게
                 ),
               ),
-          ],
+
+              // 초기 로딩: 스켈레톤 표시
+              if (_initialLoading && _chatRoomsDetail.isEmpty) const ChatRoomListSkeletonSliver(itemCount: 5),
+
+              // 데이터 있을 때: 채팅방 리스트
+              if (_chatRoomsDetail.isNotEmpty)
+                SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final chatRoomDetail = _getFilteredChatRooms()[index];
+
+                    return Column(
+                      children: [
+                        ChatRoomListItem(
+                          accountStatus: chatRoomDetail.targetMember?.accountStatus,
+                          profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
+                          memberId: chatRoomDetail.targetMember?.memberId,
+                          nickname: chatRoomDetail.targetMember?.nickname ?? '',
+                          location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
+                          timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
+                          messagePreview: chatRoomDetail.lastMessageContent ?? '',
+                          unreadCount: chatRoomDetail.unreadCount ?? 0,
+                          targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
+                          isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
+                          onProfileTap: () {
+                            final targetMember = chatRoomDetail.targetMember;
+                            if (targetMember?.memberId != null) {
+                              context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
+                            }
+                          },
+                          onTap: () async {
+                            debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
+
+                            // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
+                            final roomId = chatRoomDetail.chatRoomId!;
+                            final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
+
+                            if (roomIndex != -1) {
+                              setState(() {
+                                final room = _chatRoomsDetail[roomIndex];
+                                _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
+                                  chatRoomId: room.chatRoomId,
+                                  targetMember: room.targetMember,
+                                  targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
+                                  lastMessageContent: room.lastMessageContent,
+                                  lastMessageTime: room.lastMessageTime,
+                                  unreadCount: 0, // 읽음 처리
+                                  chatRoomType: room.chatRoomType,
+                                );
+                              });
+                            }
+
+                            final refreshed = await context.navigateTo<bool>(
+                              screen: ChatRoomScreen(chatRoomId: roomId),
+                            );
+
+                            // 엄격히 true일 때만 새로고침
+                            if (refreshed == true) {
+                              _loadChatRooms(mode: LoadMode.refresh);
+                            }
+                          },
+                        ),
+                        SizedBox(height: 8.h),
+                      ],
+                    );
+                  }, childCount: _getFilteredChatRooms().length),
+                ),
+
+              // 추가 페이지 로딩: 작은 인디케이터 (무한 스크롤)
+              if ((_pagingLoading || _prefetchLoading) && _chatRoomsDetail.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.h),
+                    child: const Center(
+                      child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
