@@ -7,7 +7,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
-import 'package:romrom_fe/main.dart' show navigatorKey;
+import 'package:romrom_fe/utils/app_navigator.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';

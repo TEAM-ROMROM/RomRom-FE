@@ -20,7 +20,9 @@ import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/app_navigator.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 
@@ -74,9 +76,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       if (!mounted) return;
 
       if (nextScreen is LoginScreen) {
+        ColdStartDeepLinkData.clear(); // 미인증 상태 → 딥링크 데이터 폐기
         await _playLoginTransitionAnimation();
       } else {
         context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition);
+        // MainScreen 이동 후 콜드 스타트 FCM/AppLinks 딥링크 처리
+        // (pushAndRemoveUntil이 완료된 다음 프레임에 navigatorKey로 push)
+        if (nextScreen is MainScreen && ColdStartDeepLinkData.hasPending) {
+          final pendingUri = ColdStartDeepLinkData.pendingUri!;
+          final pendingType = ColdStartDeepLinkData.pendingNotificationType;
+          ColdStartDeepLinkData.clear();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final ctx = navigatorKey.currentContext;
+            if (ctx != null) {
+              RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType);
+            }
+          });
+        }
       }
     } catch (e, st) {
       debugPrint('[SplashScreen] 초기화 실패: $e\n$st');

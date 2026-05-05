@@ -26,6 +26,7 @@ import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/local_notification_service.dart';
+import 'package:romrom_fe/utils/app_navigator.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/device_type.dart';
@@ -92,9 +93,6 @@ void _setupFcmTokenRefreshListener() {
   firebaseService.setupTokenRefreshListener(notificationApi);
 }
 
-/// 앱 전역 navigatorKey (ApiClient 등에서 글로벌 네비게이션에 사용)
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 /// 앱의 루트 위젯
 class MyApp extends StatefulWidget {
   final bool isGestureMode;
@@ -127,6 +125,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   /// 앱이 종료된 상태에서 알림 탭으로 실행된 경우 (콜드 스타트) 라우팅 처리
+  ///
+  /// 즉시 라우팅하지 않고 [ColdStartDeepLinkData]에 저장한다.
+  /// SplashScreen이 MainScreen으로 이동 완료 후 해당 데이터로 라우팅하여
+  /// SplashScreen의 pushAndRemoveUntil 이 딥링크 화면을 덮어쓰는 race condition을 방지한다.
   Future<void> _initFcmInitialMessage() async {
     try {
       final message = await FirebaseMessaging.instance.getInitialMessage();
@@ -150,13 +152,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         }
       }
 
-      // navigatorKey는 build() 이후에 준비되므로 postFrameCallback 사용
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final context = navigatorKey.currentContext;
-        if (context != null) {
-          RomRomDeepLinkRouter.openFromUri(context, uri, notificationType: notificationType);
-        }
-      });
+      ColdStartDeepLinkData.setPending(uri, notificationType: notificationType);
     } catch (e) {
       debugPrint('[FCM] 콜드 스타트 초기 메시지 처리 실패: $e');
     }
@@ -165,15 +161,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   /// app_links: 콜드 스타트 + 포그라운드 딥링크 처리
   Future<void> _initAppLinks() async {
     // 콜드 스타트: 앱이 링크로 열린 경우
+    // FCM과 동일하게 즉시 라우팅하지 않고 SplashScreen 이동 완료 후 처리
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final context = navigatorKey.currentContext;
-          if (context != null) {
-            RomRomDeepLinkRouter.openFromUri(context, initialUri);
-          }
-        });
+        ColdStartDeepLinkData.setPending(initialUri);
       }
     } catch (e) {
       debugPrint('[AppLinks] 초기 링크 처리 실패: $e');
