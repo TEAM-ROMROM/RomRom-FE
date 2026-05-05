@@ -20,7 +20,6 @@ import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/app_navigator.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
