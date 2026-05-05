@@ -81,6 +81,8 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   late final ValueNotifier<int> currentIndexVN;
   late final ValueNotifier<bool> isLikedVN;
   late final ValueNotifier<int> likeCountVN;
+  // 위로 오버스크롤 시 이미지 영역 확장량
+  final ValueNotifier<double> _expandVN = ValueNotifier(0.0);
   // 스크롤 offset → parallax 이미지 top 위치 계산
   final ValueNotifier<double> _scrollOffsetVN = ValueNotifier(0.0);
   bool _likeInFlight = false;
@@ -114,6 +116,18 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     // imageHeight 범위 내 offset만 추적 (이미지 영역 벗어나면 더 이상 변화 없음)
     final offset = _scrollController.offset.clamp(0.0, widget.imageSize.height);
     _scrollOffsetVN.value = offset;
+  }
+
+  // depth=0: 최상위 ScrollView만 감지 (PageView 가로 스크롤 무시)
+  bool _onScrollNotification(ScrollNotification n) {
+    if (!mounted) return false;
+    if (n.depth != 0) return false;
+    if (n is OverscrollNotification && n.overscroll < 0) {
+      _expandVN.value = (_expandVN.value - n.overscroll).clamp(0.0, 150.0);
+    } else if (n is ScrollEndNotification) {
+      _expandVN.value = 0.0;
+    }
+    return false;
   }
 
   Future<void> _loadItemDetail() async {
@@ -329,6 +343,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _scrollOffsetVN.dispose();
+    _expandVN.dispose();
     currentIndexVN.dispose();
     pageController.dispose();
     isLikedVN.dispose();
@@ -436,402 +451,400 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
         body: Stack(
           children: [
             // 전체 화면 콘텐츠
-            SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  /// 배경 이미지 - parallax: 스크롤 시 이미지가 느리게 올라가며 확대 효과
-                  SizedBox(
-                    height: widget.imageSize.height,
-                    width: widget.imageSize.width,
-                    child: ClipRect(
-                      child: ValueListenableBuilder<double>(
-                        valueListenable: _scrollOffsetVN,
-                        builder: (context, offset, child) {
-                          // 이미지는 30% 크게 렌더링, parallax 계수 0.4로 느리게 올라감
-                          return Stack(
-                            children: [
-                              Positioned(
-                                top: -offset * 0.4,
-                                left: 0,
-                                right: 0,
-                                height: widget.imageSize.height * 1.3,
-                                child: child!,
-                              ),
-                            ],
-                          );
-                        },
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            PageView.builder(
-                              itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1,
-                              controller: pageController,
-                              onPageChanged: (i) => currentIndexVN.value = i,
-                              itemBuilder: (context, i) {
-                                final hasImages = imageUrls.isNotEmpty;
-                                final safeIndex = hasImages ? i : 0;
-                                final String heroBaseId =
-                                    'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
+            NotificationListener<ScrollNotification>(
+              onNotification: _onScrollNotification,
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: [
+                    /// 배경 이미지 — 위로 오버스크롤 시 이미지 확장 (당근마켓 UX)
+                    ValueListenableBuilder<double>(
+                      valueListenable: _expandVN,
+                      builder: (context, expand, child) {
+                        return AnimatedContainer(
+                          duration: expand == 0.0 ? const Duration(milliseconds: 300) : Duration.zero,
+                          curve: Curves.easeOut,
+                          height: widget.imageSize.height + expand,
+                          width: widget.imageSize.width,
+                          child: child,
+                        );
+                      },
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          PageView.builder(
+                            itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1,
+                            controller: pageController,
+                            onPageChanged: (i) => currentIndexVN.value = i,
+                            itemBuilder: (context, i) {
+                              final hasImages = imageUrls.isNotEmpty;
+                              final safeIndex = hasImages ? i : 0;
+                              final String heroBaseId = 'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
 
-                                return PhotoViewerMultipleImage(
-                                  imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
-                                  index: safeIndex,
-                                  id: heroBaseId + safeIndex.toString(),
-                                  onPageChanged: (idx) {
-                                    currentIndexVN.value = idx;
-                                    if (pageController.hasClients) {
-                                      final now = pageController.page?.round();
-                                      if (now != idx) pageController.jumpToPage(idx);
-                                    }
-                                  },
-                                  placeholder: (ctx, url) => const Center(
-                                    child: SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
-                                    ),
+                              return PhotoViewerMultipleImage(
+                                imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
+                                index: safeIndex,
+                                id: heroBaseId + safeIndex.toString(),
+                                onPageChanged: (idx) {
+                                  currentIndexVN.value = idx;
+                                  if (pageController.hasClients) {
+                                    final now = pageController.page?.round();
+                                    if (now != idx) pageController.jumpToPage(idx);
+                                  }
+                                },
+                                placeholder: (ctx, url) => const Center(
+                                  child: SizedBox(
+                                    width: 32,
+                                    height: 32,
+                                    child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
                                   ),
-                                  errorWidget: (ctx, url, err) =>
-                                      Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
-                                );
-                              },
-                            ),
+                                ),
+                                errorWidget: (ctx, url, err) =>
+                                    Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
+                              );
+                            },
+                          ),
 
-                            // 그라데이션 오버레이
-                            IgnorePointer(
-                              ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: AppColors.itemDetailBlackGradient,
-                                    stops: const [0.0, 0.15, 0.60, 1.0],
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
+                          // 그라데이션 오버레이
+                          IgnorePointer(
+                            ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: AppColors.itemDetailBlackGradient,
+                                  stops: const [0.0, 0.15, 0.60, 1.0],
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          /// 거래완료 오버레이 (검정 50%)
+                          if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                            IgnorePointer(child: Container(color: AppColors.opacity50Black)),
+
+                          /// 거래완료 글라스모피즘 배지
+                          if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                            Positioned.fill(
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                    child: Container(
+                                      width: 122.w,
+                                      height: 47.h,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.opacity10White,
+                                        borderRadius: BorderRadius.circular(4.r),
+                                        border: Border.all(color: AppColors.textColorWhite, width: 1.w),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        '교환 완료',
+                                        style: CustomTextStyles.p1.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textColorWhite,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
+                        ],
+                      ),
+                    ),
 
-                            /// 거래완료 오버레이 (검정 50%)
-                            if (item?.itemStatus == ItemStatus.exchanged.serverName)
-                              IgnorePointer(child: Container(color: AppColors.opacity50Black)),
+                    /// 이미지 인디케이터 (ClipRect 밖 — parallax 영향 없음)
+                    if (imageUrls.length > 1)
+                      Padding(
+                        padding: EdgeInsets.only(top: 12.h),
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: currentIndexVN,
+                          builder: (_, current, _) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                imageUrls.length,
+                                (index) => Container(
+                                  width: 6.w,
+                                  height: 6.w,
+                                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
 
-                            /// 거래완료 글라스모피즘 배지
-                            if (item?.itemStatus == ItemStatus.exchanged.serverName)
-                              Positioned.fill(
-                                child: Align(
-                                  alignment: Alignment.center,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(4.r),
-                                    child: BackdropFilter(
-                                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                                      child: Container(
-                                        width: 122.w,
-                                        height: 47.h,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.opacity10White,
-                                          borderRadius: BorderRadius.circular(4.r),
-                                          border: Border.all(color: AppColors.textColorWhite, width: 1.w),
+                    /// 아이템 설명 영역
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24.w),
+                      child: Column(
+                        children: [
+                          /// 사용자 프사, 위치, 닉네임, 좋아요 수
+                          Container(
+                            width: double.infinity,
+                            margin: EdgeInsets.symmetric(vertical: 16.h),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    if (item?.member?.memberId != null) {
+                                      context.navigateTo(
+                                        screen: MemberProfileScreen(memberId: item!.member!.memberId!),
+                                      );
+                                    }
+                                  },
+                                  child: UserProfileCircularAvatar(
+                                    avatarSize: const Size(40, 40),
+                                    profileUrl: item?.member?.profileUrl,
+                                    isDeleteAccount:
+                                        item?.member?.accountStatus == AccountStatus.deleteAccount.serverName,
+                                  ),
+                                ),
+                                SizedBox(width: 10.w),
+                                GestureDetector(
+                                  onTap: () {
+                                    if (item?.member?.memberId != null) {
+                                      context.navigateTo(
+                                        screen: MemberProfileScreen(memberId: item!.member!.memberId!),
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    constraints: !widget.isMyItem && widget.isRequestManagement
+                                        ? BoxConstraints(maxWidth: 120.w)
+                                        : null, // 최대 너비 설정
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item?.member?.nickname ?? '알 수 없음',
+                                          style: CustomTextStyles.p2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          '교환 완료',
-                                          style: CustomTextStyles.p1.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.textColorWhite,
+                                        SizedBox(height: 8.h),
+                                        Text(
+                                          memberLocationName,
+                                          style: CustomTextStyles.p3.copyWith(
+                                            color: AppColors.lightGray.withValues(alpha: 0.7),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Column(
+                                  children: [
+                                    SizedBox.square(
+                                      dimension: 32.w,
+                                      child: OverflowBox(
+                                        maxWidth: 56.w,
+                                        maxHeight: 56.w,
+                                        child: Material(
+                                          color: AppColors.transparent,
+                                          shape: const CircleBorder(),
+                                          clipBehavior: Clip.antiAlias,
+                                          child: InkResponse(
+                                            onTap: _toggleLike,
+                                            radius: 18.w,
+                                            customBorder: const CircleBorder(),
+                                            highlightColor: AppColors.buttonHighlightColorGray,
+                                            splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                                            child: ValueListenableBuilder<bool>(
+                                              valueListenable: isLikedVN,
+                                              builder: (_, liked, _) {
+                                                return SizedBox.square(
+                                                  dimension: 56.w, // 리플/터치 캔버스
+                                                  child: Center(
+                                                    child: SizedBox.square(
+                                                      dimension: 30.w,
+                                                      child: SvgPicture.asset(
+                                                        liked
+                                                            ? 'assets/images/like-heart-icon.svg'
+                                                            : 'assets/images/dislike-heart-icon.svg',
+                                                        width: 30.w,
+                                                        height: 30.h,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
+                                    SizedBox(height: 2.h),
+                                    ValueListenableBuilder<int>(
+                                      valueListenable: likeCountVN,
+                                      builder: (_, likeCount, _) {
+                                        return Text(likeCount.toString(), style: CustomTextStyles.p2);
+                                      },
+                                    ),
+                                  ],
                                 ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  /// 이미지 인디케이터 (ClipRect 밖 — parallax 영향 없음)
-                  if (imageUrls.length > 1)
-                    Padding(
-                      padding: EdgeInsets.only(top: 12.h),
-                      child: ValueListenableBuilder<int>(
-                        valueListenable: currentIndexVN,
-                        builder: (_, current, _) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              imageUrls.length,
-                              (index) => Container(
-                                width: 6.w,
-                                height: 6.w,
-                                margin: EdgeInsets.symmetric(horizontal: 4.w),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
-                                ),
-                              ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
-                    ),
+                          ),
 
-                  /// 아이템 설명 영역
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24.w),
-                    child: Column(
-                      children: [
-                        /// 사용자 프사, 위치, 닉네임, 좋아요 수
-                        Container(
-                          width: double.infinity,
-                          margin: EdgeInsets.symmetric(vertical: 16.h),
-                          child: Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  if (item?.member?.memberId != null) {
-                                    context.navigateTo(screen: MemberProfileScreen(memberId: item!.member!.memberId!));
-                                  }
-                                },
-                                child: UserProfileCircularAvatar(
-                                  avatarSize: const Size(40, 40),
-                                  profileUrl: item?.member?.profileUrl,
-                                  isDeleteAccount:
-                                      item?.member?.accountStatus == AccountStatus.deleteAccount.serverName,
-                                ),
-                              ),
-                              SizedBox(width: 10.w),
-                              GestureDetector(
-                                onTap: () {
-                                  if (item?.member?.memberId != null) {
-                                    context.navigateTo(screen: MemberProfileScreen(memberId: item!.member!.memberId!));
-                                  }
-                                },
-                                child: Container(
-                                  constraints: !widget.isMyItem && widget.isRequestManagement
-                                      ? BoxConstraints(maxWidth: 120.w)
-                                      : null, // 최대 너비 설정
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                          Divider(color: AppColors.opacity20White, height: 1.h),
+
+                          /// 물품 정보 및 설명
+                          Container(
+                            width: double.infinity,
+                            margin: EdgeInsets.symmetric(vertical: 16.h),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                RichText(
+                                  text: TextSpan(
+                                    text: '${_getCategoryName(item?.itemCategory)} · ',
+                                    style: CustomTextStyles.p3.copyWith(
+                                      color: AppColors.opacity50White,
+                                      fontWeight: FontWeight.w400,
+                                    ),
                                     children: [
-                                      Text(
-                                        item?.member?.nickname ?? '알 수 없음',
-                                        style: CustomTextStyles.p2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      SizedBox(height: 8.h),
-                                      Text(
-                                        memberLocationName,
+                                      TextSpan(
+                                        text: _formatDateTime(item?.createdDate),
                                         style: CustomTextStyles.p3.copyWith(
-                                          color: AppColors.lightGray.withValues(alpha: 0.7),
+                                          color: AppColors.opacity50White,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                              const Spacer(),
-                              Column(
-                                children: [
-                                  SizedBox.square(
-                                    dimension: 32.w,
-                                    child: OverflowBox(
-                                      maxWidth: 56.w,
-                                      maxHeight: 56.w,
-                                      child: Material(
-                                        color: AppColors.transparent,
-                                        shape: const CircleBorder(),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: InkResponse(
-                                          onTap: _toggleLike,
-                                          radius: 18.w,
-                                          customBorder: const CircleBorder(),
-                                          highlightColor: AppColors.buttonHighlightColorGray,
-                                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                                          child: ValueListenableBuilder<bool>(
-                                            valueListenable: isLikedVN,
-                                            builder: (_, liked, _) {
-                                              return SizedBox.square(
-                                                dimension: 56.w, // 리플/터치 캔버스
-                                                child: Center(
-                                                  child: SizedBox.square(
-                                                    dimension: 30.w,
-                                                    child: SvgPicture.asset(
-                                                      liked
-                                                          ? 'assets/images/like-heart-icon.svg'
-                                                          : 'assets/images/dislike-heart-icon.svg',
-                                                      width: 30.w,
-                                                      height: 30.h,
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
+                                SizedBox(height: 10.h),
+                                Text(item?.itemName ?? '제목 없음', style: CustomTextStyles.h3),
+                                SizedBox(height: 16.h),
+                                Row(
+                                  children: [
+                                    if (item?.itemCondition != null)
+                                      ItemDetailConditionTag(
+                                        condition: ItemCondition.fromServerName(item!.itemCondition!).label,
+                                      ),
+                                    SizedBox(width: 4.w),
+                                    if (item?.itemTradeOptions?.isNotEmpty == true)
+                                      Expanded(
+                                        child: Wrap(
+                                          spacing: 4.w,
+                                          children: [
+                                            ...item!.itemTradeOptions!.map(
+                                              (option) => ItemDetailTradeOptionTag(option: _getTradeOptionName(option)),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 2.h),
-                                  ValueListenableBuilder<int>(
-                                    valueListenable: likeCountVN,
-                                    builder: (_, likeCount, _) {
-                                      return Text(likeCount.toString(), style: CustomTextStyles.p2);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Divider(color: AppColors.opacity20White, height: 1.h),
-
-                        /// 물품 정보 및 설명
-                        Container(
-                          width: double.infinity,
-                          margin: EdgeInsets.symmetric(vertical: 16.h),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              RichText(
-                                text: TextSpan(
-                                  text: '${_getCategoryName(item?.itemCategory)} · ',
-                                  style: CustomTextStyles.p3.copyWith(
-                                    color: AppColors.opacity50White,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                                  ],
+                                ),
+                                SizedBox(height: 16.h),
+                                Row(
                                   children: [
-                                    TextSpan(
-                                      text: _formatDateTime(item?.createdDate),
-                                      style: CustomTextStyles.p3.copyWith(
-                                        color: AppColors.opacity50White,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                    Text(
+                                      '$formattedPrice원',
+                                      style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    if (item?.isAiPredictedPrice == true) const AiBadgeWidget(),
+                                  ],
+                                ),
+                                SizedBox(height: 24.h),
+                                Text(
+                                  item?.itemDescription ?? '설명이 없습니다.',
+                                  style: CustomTextStyles.p2.copyWith(height: 1.4),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Divider(color: AppColors.opacity20White, height: 1.h),
+
+                          /// 거래 희망 장소
+                          Container(
+                            width: double.infinity,
+                            margin: EdgeInsets.only(top: 16.h, bottom: 120.h),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '교환희망장소',
+                                  style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600, height: 1.4),
+                                ),
+                                SizedBox(height: 8.h),
+                                Row(
+                                  children: [
+                                    Icon(AppIcons.location, size: 13.sp, color: AppColors.opacity80White),
+                                    SizedBox(width: 4.w),
+                                    Text(
+                                      locationName,
+                                      style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600),
                                     ),
                                   ],
                                 ),
-                              ),
-                              SizedBox(height: 10.h),
-                              Text(item?.itemName ?? '제목 없음', style: CustomTextStyles.h3),
-                              SizedBox(height: 16.h),
-                              Row(
-                                children: [
-                                  if (item?.itemCondition != null)
-                                    ItemDetailConditionTag(
-                                      condition: ItemCondition.fromServerName(item!.itemCondition!).label,
-                                    ),
-                                  SizedBox(width: 4.w),
-                                  if (item?.itemTradeOptions?.isNotEmpty == true)
-                                    Expanded(
-                                      child: Wrap(
-                                        spacing: 4.w,
-                                        children: [
-                                          ...item!.itemTradeOptions!.map(
-                                            (option) => ItemDetailTradeOptionTag(option: _getTradeOptionName(option)),
-                                          ),
-                                        ],
+                                SizedBox(height: 16.h),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 200.h,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4.r),
+                                    child: NaverMap(
+                                      key: ValueKey('detail_map_${widget.itemId}'),
+                                      forceGesture: true,
+                                      options: NaverMapViewOptions(
+                                        initialCameraPosition: NCameraPosition(
+                                          target: NLatLng(item?.latitude ?? 37.5666, item?.longitude ?? 126.9784),
+                                          zoom: 15,
+                                        ),
+                                        scrollGesturesEnable: false,
+                                        zoomGesturesEnable: false,
                                       ),
-                                    ),
-                                ],
-                              ),
-                              SizedBox(height: 16.h),
-                              Row(
-                                children: [
-                                  Text(
-                                    '$formattedPrice원',
-                                    style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  if (item?.isAiPredictedPrice == true) const AiBadgeWidget(),
-                                ],
-                              ),
-                              SizedBox(height: 24.h),
-                              Text(
-                                item?.itemDescription ?? '설명이 없습니다.',
-                                style: CustomTextStyles.p2.copyWith(height: 1.4),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Divider(color: AppColors.opacity20White, height: 1.h),
-
-                        /// 거래 희망 장소
-                        Container(
-                          width: double.infinity,
-                          margin: EdgeInsets.only(top: 16.h, bottom: 120.h),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '교환희망장소',
-                                style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600, height: 1.4),
-                              ),
-                              SizedBox(height: 8.h),
-                              Row(
-                                children: [
-                                  Icon(AppIcons.location, size: 13.sp, color: AppColors.opacity80White),
-                                  SizedBox(width: 4.w),
-                                  Text(locationName, style: CustomTextStyles.p2.copyWith(fontWeight: FontWeight.w600)),
-                                ],
-                              ),
-                              SizedBox(height: 16.h),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 200.h,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4.r),
-                                  child: NaverMap(
-                                    key: ValueKey('detail_map_${widget.itemId}'),
-                                    forceGesture: true,
-                                    options: NaverMapViewOptions(
-                                      initialCameraPosition: NCameraPosition(
-                                        target: NLatLng(item?.latitude ?? 37.5666, item?.longitude ?? 126.9784),
-                                        zoom: 15,
-                                      ),
-                                      scrollGesturesEnable: false,
-                                      zoomGesturesEnable: false,
-                                    ),
-                                    onMapReady: (controller) {
-                                      if (item?.latitude != null && item?.longitude != null) {
-                                        controller.addOverlay(
-                                          NMarker(
-                                            id: 'item_location',
-                                            position: NLatLng(item!.latitude!, item!.longitude!),
-                                            icon: const NOverlayImage.fromAssetImage(
-                                              "assets/images/location-pin-icon.png",
+                                      onMapReady: (controller) {
+                                        if (item?.latitude != null && item?.longitude != null) {
+                                          controller.addOverlay(
+                                            NMarker(
+                                              id: 'item_location',
+                                              position: NLatLng(item!.latitude!, item!.longitude!),
+                                              icon: const NOverlayImage.fromAssetImage(
+                                                "assets/images/location-pin-icon.png",
+                                              ),
+                                              size: NSize(33.w, 47.h),
                                             ),
-                                            size: NSize(33.w, 47.h),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    // 지도 탭 시 거래 희망 장소 상세 페이지로 이동
-                                    onMapTapped: (point, latLng) {
-                                      if (item?.latitude != null && item?.longitude != null) {
-                                        context.navigateTo(
-                                          screen: TradeLocationDetailScreen(
-                                            latitude: item!.latitude!,
-                                            longitude: item!.longitude!,
-                                          ),
-                                        );
-                                      }
-                                    },
+                                          );
+                                        }
+                                      },
+                                      // 지도 탭 시 거래 희망 장소 상세 페이지로 이동
+                                      onMapTapped: (point, latLng) {
+                                        if (item?.latitude != null && item?.longitude != null) {
+                                          context.navigateTo(
+                                            screen: TradeLocationDetailScreen(
+                                              latitude: item!.latitude!,
+                                              longitude: item!.longitude!,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
