@@ -27,7 +27,7 @@ class ProfileImageCropScreen extends StatefulWidget {
   State<ProfileImageCropScreen> createState() => _ProfileImageCropScreenState();
 }
 
-class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with SingleTickerProviderStateMixin {
+class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with TickerProviderStateMixin {
   ui.Image? _image;
   double _imageScale = 1.0;
   double _baseImageScale = 1.0;
@@ -44,6 +44,8 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
 
   late final AnimationController _zoomController;
   Timer? _autoZoomTimer;
+  late final AnimationController _gridController;
+  late final Animation<double> _gridOpacity;
 
   static const double _minScale = 1.0;
   static const double _maxScale = 5.0;
@@ -58,11 +60,23 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
     super.initState();
     _loadImage();
     _zoomController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _gridController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 160),
+      reverseDuration: const Duration(milliseconds: 180),
+    );
+
+    _gridOpacity = CurvedAnimation(
+      parent: _gridController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
   }
 
   @override
   void dispose() {
     _autoZoomTimer?.cancel();
+    _gridController.dispose();
     _zoomController.dispose();
     _image?.dispose();
     super.dispose();
@@ -334,6 +348,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
                               rectTop: _rectTop,
                               rectW: _rectW,
                               rectH: _rectH,
+                              gridOpacity: _gridOpacity,
                             ),
                           ),
                       ],
@@ -388,10 +403,18 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Si
         behavior: HitTestBehavior.opaque,
         onPanStart: (_) {
           setState(() => _isDraggingHandle = true);
+          _gridController.forward();
         },
         onPanUpdate: (details) => _onResizeCorner(details: details, moveLeft: moveLeft, moveTop: moveTop),
-        onPanEnd: (_) => setState(() => _isDraggingHandle = false),
-        onPanCancel: () => setState(() => _isDraggingHandle = false),
+        onPanEnd: (_) {
+          setState(() => _isDraggingHandle = false);
+          _gridController.reverse();
+        },
+        onPanCancel: () {
+          setState(() => _isDraggingHandle = false);
+          _gridController.reverse();
+        },
+
         child: Container(
           width: _handleHitSize,
           height: _handleHitSize,
@@ -431,8 +454,15 @@ class _CropOverlayPainter extends CustomPainter {
   final double rectTop;
   final double rectW;
   final double rectH;
+  final Animation<double> gridOpacity;
 
-  const _CropOverlayPainter({required this.rectLeft, required this.rectTop, required this.rectW, required this.rectH});
+  const _CropOverlayPainter({
+    required this.rectLeft,
+    required this.rectTop,
+    required this.rectW,
+    required this.rectH,
+    required this.gridOpacity,
+  }) : super(repaint: gridOpacity);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -451,22 +481,27 @@ class _CropOverlayPainter extends CustomPainter {
 
     canvas.drawPath(overlayPath, overlayPaint);
 
+    // 격자선: 핸들 드래그 중에만 fade-in / fade-out
+    final opacity = gridOpacity.value;
+
     // 격자선: rect 전체 기준 3등분
-    final gridPaint = Paint()
-      ..color = AppColors.textColorWhite
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
+    if (opacity > 0.01) {
+      final gridPaint = Paint()
+        ..color = AppColors.textColorWhite.withValues(alpha: opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.5;
 
-    // 세로선 2개
-    for (int i = 1; i <= 2; i++) {
-      final x = rectLeft + rectW * i / 3;
-      canvas.drawLine(Offset(x, rectTop), Offset(x, rectTop + rectH), gridPaint);
-    }
+      // 세로선 2개
+      for (int i = 1; i <= 2; i++) {
+        final x = rectLeft + rectW * i / 3;
+        canvas.drawLine(Offset(x, rectTop), Offset(x, rectTop + rectH), gridPaint);
+      }
 
-    // 가로선 2개
-    for (int i = 1; i <= 2; i++) {
-      final y = rectTop + rectH * i / 3;
-      canvas.drawLine(Offset(rectLeft, y), Offset(rectLeft + rectW, y), gridPaint);
+      // 가로선 2개
+      for (int i = 1; i <= 2; i++) {
+        final y = rectTop + rectH * i / 3;
+        canvas.drawLine(Offset(rectLeft, y), Offset(rectLeft + rectW, y), gridPaint);
+      }
     }
 
     // rect 테두리
