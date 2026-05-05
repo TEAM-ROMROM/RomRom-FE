@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// 캐싱이 적용된 네트워크 이미지 위젯
 ///
@@ -55,14 +55,12 @@ class CachedImage extends StatelessWidget {
     return image;
   }
 
-  /// 기본 로딩 플레이스홀더
+  /// 기본 로딩 플레이스홀더 — shimmer 효과
   Widget _buildDefaultPlaceholder() {
-    return Container(
-      width: width,
-      height: height,
-      color: AppColors.secondaryBlack1,
-      // 이미지 로딩 중 스피너 표시
-      child: const Center(child: CommonLoadingIndicator(color: AppColors.opacity40White, size: 20.0)),
+    return Skeletonizer(
+      enabled: true,
+      effect: const ShimmerEffect(baseColor: AppColors.opacity10White, highlightColor: AppColors.opacity30White),
+      child: Container(width: width, height: height, color: AppColors.secondaryBlack1),
     );
   }
 
