@@ -36,6 +36,8 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   String? _profileUrl;
   String? _accountStatus;
   String _appVersion = '';
+  String? _loginEmail;
+  String? _socialPlatform;
 
   @override
   void initState() {
@@ -61,6 +63,10 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
           // 계정 상태
           _accountStatus = memberResponse.member?.accountStatus;
 
+          // 로그인 계정 정보
+          _loginEmail = _maskEmail(memberResponse.member?.email);
+          _socialPlatform = _platformDisplayName(memberResponse.member?.socialPlatform);
+
           // 위치 정보 (주소 조합)
           final location = memberResponse.memberLocation;
           if (location != null) {
@@ -75,6 +81,33 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
     } catch (e) {
       debugPrint('사용자 정보 로드 실패: $e');
       // 기본값 유지
+    }
+  }
+
+  /// 이메일 마스킹: "abc@gmail.com" → "ab***@gmail.com" (@앞 2자 유지, 나머지 ***)
+  String? _maskEmail(String? email) {
+    if (email == null || email.isEmpty) return null;
+    final atIndex = email.indexOf('@');
+    if (atIndex <= 0) return email;
+    final local = email.substring(0, atIndex);
+    final domain = email.substring(atIndex);
+    if (local.length <= 2) return '$local***$domain';
+    return '${local.substring(0, 2)}***$domain';
+  }
+
+  /// socialPlatform 서버값(KAKAO/APPLE/GOOGLE) → 한글 표시명
+  String? _platformDisplayName(String? platform) {
+    switch (platform?.toUpperCase()) {
+      case 'KAKAO':
+        return '카카오 로그인';
+      case 'APPLE':
+        return 'Apple 로그인';
+      case 'GOOGLE':
+        return '구글 로그인';
+      case 'NAVER':
+        return '네이버 로그인';
+      default:
+        return platform;
     }
   }
 
@@ -168,6 +201,8 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 onTap: () {},
                 trailingText: _appVersion.isNotEmpty ? 'v$_appVersion' : '',
               ),
+              if (_loginEmail != null) _MenuItem(label: '로그인 계정', onTap: () {}, trailingText: _loginEmail),
+              if (_socialPlatform != null) _MenuItem(label: '연결 플랫폼', onTap: () {}, trailingText: _socialPlatform),
               _MenuItem(label: '로그아웃', onTap: () => AuthService().logout(context), isDestructive: true),
               _MenuItem(label: '회원탈퇴', onTap: () => _handleDeleteMemberButtonTap(context), isDestructive: true),
             ]),
