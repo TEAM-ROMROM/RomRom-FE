@@ -77,9 +77,12 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
 
 class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScreen> {
   late PageController pageController;
+  late final ScrollController _scrollController;
   late final ValueNotifier<int> currentIndexVN;
   late final ValueNotifier<bool> isLikedVN;
   late final ValueNotifier<int> likeCountVN;
+  // 스크롤 offset → parallax 이미지 top 위치 계산
+  final ValueNotifier<double> _scrollOffsetVN = ValueNotifier(0.0);
   bool _likeInFlight = false;
   final GlobalKey _shareButtonKey = GlobalKey();
 
@@ -102,7 +105,15 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     pageController = PageController(initialPage: widget.currentImageIndex);
     isLikedVN = ValueNotifier<bool>(false);
     likeCountVN = ValueNotifier<int>(0);
+    _scrollController = ScrollController()..addListener(_onScroll);
     _loadItemDetail();
+  }
+
+  void _onScroll() {
+    if (!mounted) return;
+    // imageHeight 범위 내 offset만 추적 (이미지 영역 벗어나면 더 이상 변화 없음)
+    final offset = _scrollController.offset.clamp(0.0, widget.imageSize.height);
+    _scrollOffsetVN.value = offset;
   }
 
   Future<void> _loadItemDetail() async {
@@ -315,6 +326,9 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _scrollOffsetVN.dispose();
     currentIndexVN.dispose();
     pageController.dispose();
     isLikedVN.dispose();
@@ -423,142 +437,147 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
           children: [
             // 전체 화면 콘텐츠
             SingleChildScrollView(
+              controller: _scrollController,
               child: Column(
                 children: [
-                  /// 배경 이미지 (가로 스와이프 가능)
-                  Stack(
-                    children: [
-                      SizedBox(
-                        height: widget.imageSize.height,
-                        width: widget.imageSize.width,
-                        child: PageView.builder(
-                          itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1, // ← 최소 1페이지
-                          controller: pageController,
-                          onPageChanged: (i) => currentIndexVN.value = i,
-                          itemBuilder: (context, i) {
-                            final hasImages = imageUrls.isNotEmpty;
-                            final safeIndex = hasImages ? i : 0;
-                            final String heroBaseId = 'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
-
-                            return PhotoViewerMultipleImage(
-                              // 이미지가 없으면 더미 URL을 넘겨서 로딩 실패 → errorWidget 호출
-                              imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
-                              index: safeIndex,
-                              id: heroBaseId + safeIndex.toString(),
-                              onPageChanged: (idx) {
-                                currentIndexVN.value = idx;
-                                if (pageController.hasClients) {
-                                  final now = pageController.page?.round();
-                                  if (now != idx) {
-                                    pageController.jumpToPage(idx); // 닫기 전에 목적지 미리 맞추기
-                                  }
-                                }
-                              },
-
-                              // 로딩 인디케이터
-                              placeholder: (ctx, url) => const Center(
-                                child: SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
-                                ),
+                  /// 배경 이미지 - parallax: 스크롤 시 이미지가 느리게 올라가며 확대 효과
+                  SizedBox(
+                    height: widget.imageSize.height,
+                    width: widget.imageSize.width,
+                    child: ClipRect(
+                      child: ValueListenableBuilder<double>(
+                        valueListenable: _scrollOffsetVN,
+                        builder: (context, offset, child) {
+                          // 이미지는 30% 크게 렌더링, parallax 계수 0.4로 느리게 올라감
+                          return Stack(
+                            children: [
+                              Positioned(
+                                top: -offset * 0.4,
+                                left: 0,
+                                right: 0,
+                                height: widget.imageSize.height * 1.3,
+                                child: child!,
                               ),
+                            ],
+                          );
+                        },
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            PageView.builder(
+                              itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1,
+                              controller: pageController,
+                              onPageChanged: (i) => currentIndexVN.value = i,
+                              itemBuilder: (context, i) {
+                                final hasImages = imageUrls.isNotEmpty;
+                                final safeIndex = hasImages ? i : 0;
+                                final String heroBaseId =
+                                    'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
 
-                              // 이미지 없음/로딩 실패 시
-                              errorWidget: (ctx, url, err) =>
-                                  Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
-                            );
-                          },
-                        ),
-                      ),
+                                return PhotoViewerMultipleImage(
+                                  imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
+                                  index: safeIndex,
+                                  id: heroBaseId + safeIndex.toString(),
+                                  onPageChanged: (idx) {
+                                    currentIndexVN.value = idx;
+                                    if (pageController.hasClients) {
+                                      final now = pageController.page?.round();
+                                      if (now != idx) pageController.jumpToPage(idx);
+                                    }
+                                  },
+                                  placeholder: (ctx, url) => const Center(
+                                    child: SizedBox(
+                                      width: 32,
+                                      height: 32,
+                                      child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
+                                    ),
+                                  ),
+                                  errorWidget: (ctx, url, err) =>
+                                      Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
+                                );
+                              },
+                            ),
 
-                      /// 이미지 인디케이터
-                      Positioned(
-                        bottom: 24.h,
-                        left: 0,
-                        right: 0,
-                        child: ValueListenableBuilder<int>(
-                          valueListenable: currentIndexVN,
-                          builder: (_, current, _) {
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(
-                                imageUrls.length,
-                                (index) => Container(
-                                  width: 6.w,
-                                  height: 6.w,
-                                  margin: EdgeInsets.symmetric(horizontal: 4.w),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
+                            // 그라데이션 오버레이
+                            IgnorePointer(
+                              ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: AppColors.itemDetailBlackGradient,
+                                    stops: const [0.0, 0.15, 0.60, 1.0],
+                                    begin: Alignment.bottomCenter,
+                                    end: Alignment.topCenter,
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      IgnorePointer(
-                        ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
-                        child: SizedBox(
-                          height: widget.imageSize.height,
-                          width: widget.imageSize.width,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: AppColors.itemDetailBlackGradient, // 검정색 그라데이션
-                                stops: const [0.0, 0.15, 0.60, 1.0],
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
                               ),
                             ),
-                          ),
-                        ),
-                      ),
 
-                      /// 거래완료 오버레이 (검정 50%)
-                      if (item?.itemStatus == ItemStatus.exchanged.serverName)
-                        IgnorePointer(
-                          child: Container(
-                            height: widget.imageSize.height,
-                            width: widget.imageSize.width,
-                            color: AppColors.opacity50Black,
-                          ),
-                        ),
+                            /// 거래완료 오버레이 (검정 50%)
+                            if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                              IgnorePointer(child: Container(color: AppColors.opacity50Black)),
 
-                      /// 거래완료 글라스모피즘 배지 (이미지 중앙)
-                      if (item?.itemStatus == ItemStatus.exchanged.serverName)
-                        Positioned.fill(
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4.r),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                                child: Container(
-                                  width: 122.w,
-                                  height: 47.h,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.opacity10White,
-                                    borderRadius: BorderRadius.circular(4.r),
-                                    border: Border.all(color: AppColors.textColorWhite, width: 1.w),
-                                  ),
+                            /// 거래완료 글라스모피즘 배지
+                            if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                              Positioned.fill(
+                                child: Align(
                                   alignment: Alignment.center,
-                                  child: Text(
-                                    '교환 완료',
-                                    style: CustomTextStyles.p1.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textColorWhite,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4.r),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                      child: Container(
+                                        width: 122.w,
+                                        height: 47.h,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.opacity10White,
+                                          borderRadius: BorderRadius.circular(4.r),
+                                          border: Border.all(color: AppColors.textColorWhite, width: 1.w),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '교환 완료',
+                                          style: CustomTextStyles.p1.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textColorWhite,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
+                          ],
                         ),
-                    ],
+                      ),
+                    ),
                   ),
+
+                  /// 이미지 인디케이터 (ClipRect 밖 — parallax 영향 없음)
+                  if (imageUrls.length > 1)
+                    Padding(
+                      padding: EdgeInsets.only(top: 12.h),
+                      child: ValueListenableBuilder<int>(
+                        valueListenable: currentIndexVN,
+                        builder: (_, current, _) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              imageUrls.length,
+                              (index) => Container(
+                                width: 6.w,
+                                height: 6.w,
+                                margin: EdgeInsets.symmetric(horizontal: 4.w),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
 
                   /// 아이템 설명 영역
                   Padding(
