@@ -347,7 +347,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   width: 80.w,
                   height: 80.h,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.r),
+                    borderRadius: BorderRadius.circular(10.r),
                     border: Border.all(color: AppColors.opacity40White, width: 1.5.w),
                   ),
                   child: Column(
@@ -424,7 +424,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               },
                               child: Hero(
                                 tag: 'item_image_$index',
-                                child: ClipRRect(borderRadius: BorderRadius.circular(8.r), child: imageWidget),
+                                child: ClipRRect(borderRadius: BorderRadius.circular(10.r), child: imageWidget),
                               ),
                             ),
                             Positioned(
