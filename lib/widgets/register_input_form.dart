@@ -870,7 +870,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       );
                     },
                   ),
-                  spacing: 32,
                 ),
 
                 // 등록 완료 버튼

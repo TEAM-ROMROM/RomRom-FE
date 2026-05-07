@@ -282,7 +282,7 @@ class RegisterCustomLabeledField extends StatelessWidget {
   final Widget field;
   final double spacing;
 
-  const RegisterCustomLabeledField({super.key, required this.label, required this.field, this.spacing = 24});
+  const RegisterCustomLabeledField({super.key, required this.label, required this.field, this.spacing = 32});
 
   @override
   Widget build(BuildContext context) {
