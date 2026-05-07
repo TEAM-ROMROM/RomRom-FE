@@ -91,6 +91,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType);
             }
           });
+        } else {
+          ColdStartDeepLinkData.clear(); // 온보딩 등 비대상 화면 → 딥링크 데이터 폐기
         }
       }
     } catch (e, st) {

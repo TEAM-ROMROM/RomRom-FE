@@ -18,8 +18,11 @@ class ColdStartDeepLinkData {
   static NotificationType? get pendingNotificationType => _pendingNotificationType;
 
   static void setPending(Uri uri, {NotificationType? notificationType}) {
+    if (_pendingUri != null && notificationType == null) {
+      return; // 이미 딥링크가 존재하는데 알림이 아닌 링크가 들어온 경우 무시 (알림 > 일반 링크 우선순위)
+    }
     _pendingUri = uri;
-    _pendingNotificationType = notificationType;
+    _pendingNotificationType = notificationType ?? _pendingNotificationType; // 알림이 없는 경우 기존 알림 타입 유지
   }
 
   static void clear() {
