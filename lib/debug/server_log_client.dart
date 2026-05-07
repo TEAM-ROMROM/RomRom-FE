@@ -103,13 +103,26 @@ class ServerLogClient {
   }
 
   String _sseDataBuffer = '';
+  String _sseEventType = '';
 
   void _onSseLine(String line) {
-    if (line.startsWith('data:')) {
+    if (line.startsWith('event:')) {
+      // SSE 이벤트 타입 저장 (connected, heartbeat 등)
+      _sseEventType = line.substring(6).trim();
+    } else if (line.startsWith('data:')) {
       _sseDataBuffer = line.substring(5).trim();
     } else if (line.isEmpty && _sseDataBuffer.isNotEmpty) {
-      _parseAndAddLog(_sseDataBuffer);
+      final eventType = _sseEventType;
+      final data = _sseDataBuffer;
+      _sseEventType = '';
       _sseDataBuffer = '';
+
+      if (eventType == 'connected' || data == 'connected') {
+        // BE 연결 수립 확인 이벤트 — 시스템 로그로만 표시, JSON 파싱 불필요
+        _addSystemLog('[서버 로그] 서버 연결 확인됨');
+        return;
+      }
+      _parseAndAddLog(data);
     }
   }
 
@@ -188,5 +201,6 @@ class ServerLogClient {
     _httpClient = null;
     _isConnected = false;
     _sseDataBuffer = '';
+    _sseEventType = '';
   }
 }
