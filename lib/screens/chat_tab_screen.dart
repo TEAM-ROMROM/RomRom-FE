@@ -52,7 +52,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
   bool _pagingLoading = false; // 스크롤 바닥 로딩용
   bool _prefetchLoading = false; // 초기 자동 프리패치(추가 페이지 당기는 중) 표시용
 
-  bool get _isAnyLoading => _initialLoading || _pagingLoading || _prefetchLoading;
+  final Set<String> _pendingRequests = {};
 
   bool _hasMore = true;
   int _currentPage = 0;
@@ -185,8 +185,12 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
   Future<void> _loadChatRooms({LoadMode mode = LoadMode.paging}) async {
     final isRefresh = (mode == LoadMode.refresh);
     final isPaging = (mode == LoadMode.paging);
+    final requestKey = isPaging ? 'paging_$_currentPage' : mode.name;
 
-    if (_isAnyLoading || (!_hasMore && !isRefresh)) return;
+    if (_pendingRequests.contains(requestKey)) return;
+    if (!_hasMore && !isRefresh) return;
+
+    _pendingRequests.add(requestKey);
 
     setState(() {
       if (isPaging) {
@@ -267,6 +271,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
           _prefetchLoading = false;
         });
       }
+      _pendingRequests.remove(requestKey);
     }
   }
 
@@ -309,6 +314,8 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final filteredRooms = _getFilteredChatRooms();
+
     return Scaffold(
       body: SafeArea(
         top: false,
@@ -350,7 +357,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
               if (_chatRoomsDetail.isNotEmpty)
                 SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    final chatRoomDetail = _getFilteredChatRooms()[index];
+                    final chatRoomDetail = filteredRooms[index];
 
                     return Column(
                       children: [
@@ -410,7 +417,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                         SizedBox(height: 8.h),
                       ],
                     );
-                  }, childCount: _getFilteredChatRooms().length),
+                  }, childCount: filteredRooms.length),
                 ),
 
               // 추가 페이지 로딩: 작은 인디케이터 (무한 스크롤)
