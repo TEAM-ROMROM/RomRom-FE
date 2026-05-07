@@ -12,6 +12,9 @@ import 'package:share_plus/share_plus.dart';
 import '../widgets/common/common_modal.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 
+/// 앱 전역 navigatorKey (ApiClient, FirebaseService 등에서 글로벌 네비게이션에 사용)
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 /// Navigator 메서드와 대상 screen을 인자로 받는 확장 함수
 extension NavigationExtension on BuildContext {
   /// 네비게이션 메서드
