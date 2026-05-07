@@ -4,7 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
-import 'package:romrom_fe/main.dart' show navigatorKey;
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';

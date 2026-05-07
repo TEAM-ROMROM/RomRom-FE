@@ -5,6 +5,32 @@ import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 
+/// 콜드 스타트 딥링크 대기 데이터 (FCM / app_links 공용)
+///
+/// 앱 종료 상태에서 알림/링크로 진입 시 SplashScreen 내비게이션이 완료된 후
+/// 딥링크 화면으로 이동하기 위해 임시 저장한다.
+class ColdStartDeepLinkData {
+  static Uri? _pendingUri;
+  static NotificationType? _pendingNotificationType;
+
+  static bool get hasPending => _pendingUri != null;
+  static Uri? get pendingUri => _pendingUri;
+  static NotificationType? get pendingNotificationType => _pendingNotificationType;
+
+  static void setPending(Uri uri, {NotificationType? notificationType}) {
+    if (_pendingUri != null && notificationType == null) {
+      return; // 이미 딥링크가 존재하는데 알림이 아닌 링크가 들어온 경우 무시 (알림 > 일반 링크 우선순위)
+    }
+    _pendingUri = uri;
+    _pendingNotificationType = notificationType ?? _pendingNotificationType; // 알림이 없는 경우 기존 알림 타입 유지
+  }
+
+  static void clear() {
+    _pendingUri = null;
+    _pendingNotificationType = null;
+  }
+}
+
 class RomRomDeepLinkRouter {
   static const String _hostingDomain = 'romrom-c4008.web.app';
 

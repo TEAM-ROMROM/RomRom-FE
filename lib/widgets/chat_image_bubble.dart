@@ -5,6 +5,7 @@ import 'package:photo_viewer/photo_viewer.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 double _gapBase = 2.0;
 
@@ -151,9 +152,8 @@ Widget chatImageBubble(BuildContext context, ChatMessage message) {
           fadeInDuration: Duration.zero,
           fadeOutDuration: Duration.zero,
           placeholderFadeInDuration: Duration.zero,
-          placeholder: (_, _) => const Center(
-            child: SizedBox(width: 32, height: 32, child: CircularProgressIndicator(color: AppColors.primaryYellow)),
-          ),
+          // 이미지 로딩 중 스피너
+          placeholder: (_, _) => const Center(child: CommonLoadingIndicator(size: 32.0)),
           errorWidget: (_, _, _) => const Center(child: ErrorImagePlaceholder()),
         );
       }).toList(),
@@ -171,11 +171,10 @@ Widget chatImageBubble(BuildContext context, ChatMessage message) {
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
         placeholderFadeInDuration: Duration.zero,
+        // 셀 이미지 로딩 중 스피너
         placeholder: (_, _) => const ColoredBox(
           color: AppColors.opacity10White,
-          child: Center(
-            child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.primaryYellow)),
-          ),
+          child: Center(child: CommonLoadingIndicator()),
         ),
         errorWidget: (_, _, _) => const Center(child: ErrorImagePlaceholder()),
       ),
