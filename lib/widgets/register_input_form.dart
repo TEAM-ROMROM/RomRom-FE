@@ -849,7 +849,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   field: RegisterCustomTextField(
                     readOnly: true,
                     phrase: ItemTextFieldPhrase.location,
-                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.textColorWhite, size: 18.w),
+                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
                     controller: locationController,
                     forceValidate: _forceValidateAll,
                     onTap: () async {
