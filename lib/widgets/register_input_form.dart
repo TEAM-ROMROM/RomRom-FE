@@ -428,20 +428,20 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               ),
                             ),
                             Positioned(
-                              top: -8.h,
-                              right: -8.w,
+                              top: -6.h,
+                              right: -6.h,
                               child: GestureDetector(
                                 onTap: () => onDeleteImage(index),
                                 child: Container(
-                                  width: 24.w,
-                                  height: 24.h,
+                                  width: 22.h,
+                                  height: 22.h,
                                   decoration: const BoxDecoration(
                                     color: AppColors.itemPictureRemoveButtonBackground,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.zero,
-                                    child: Icon(AppIcons.cancel, color: AppColors.primaryBlack, size: 16.sp),
+                                    child: Icon(AppIcons.cancel, color: AppColors.textColorBlack, size: 12.sp),
                                   ),
                                 ),
                               ),
