@@ -11,6 +11,7 @@ import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:shadex/shadex.dart';
 
@@ -97,7 +98,7 @@ class _ChatLocationPickerScreenState extends State<ChatLocationPickerScreen> {
                 // 네이버 지도
                 Positioned.fill(
                   child: _currentPosition == null
-                      ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+                      ? const Center(child: CommonLoadingIndicator())
                       : NaverMap(
                           options: NaverMapViewOptions(
                             initialCameraPosition: NCameraPosition(target: _currentPosition!, zoom: 15),
