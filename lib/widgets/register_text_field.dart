@@ -17,7 +17,7 @@ class RegisterCustomTextFieldLabel extends StatelessWidget {
       child: label == ItemTextFieldPhrase.tradeOption.label
           ? Row(
               children: [
-                Text(label, style: CustomTextStyles.p1),
+                Text(label, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
                 SizedBox(width: 8.w),
                 Text(
                   ItemTextFieldPhrase.tradeOption.hintText,
@@ -25,7 +25,7 @@ class RegisterCustomTextFieldLabel extends StatelessWidget {
                 ),
               ],
             )
-          : Text(label, style: CustomTextStyles.p1),
+          : Text(label, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
     );
   }
 }
