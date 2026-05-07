@@ -7,8 +7,10 @@ import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/my_page/profile_image_crop_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -33,11 +35,12 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
   bool _hasImageBeenTouched = false;
   bool _showProfileSaveButton = false;
   bool _isProfileEdited = false;
+  bool _isSaving = false;
   bool _isEditingNickname = false;
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
-  XFile? imageFile; // 선택된 이미지 저장
+  XFile? imageFile; // 갤러리에서 선택한 이미지 파일
   String imageUrl = ''; // 서버에 업로드된 이미지 URL 저장
 
   // nickname 수정 컨트롤러
@@ -97,6 +100,19 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         return;
       }
 
+      // 커스텀 크롭 화면으로 이동
+      if (!mounted) return;
+      final XFile? croppedFile = await context.navigateTo<XFile>(screen: ProfileImageCropScreen(imageFile: picked));
+
+      // navigateTo 완료 후 위젯이 dispose된 경우 대비
+      if (!mounted) return;
+
+      // 사용자가 크롭 화면에서 취소
+      if (croppedFile == null) {
+        debugPrint('프로필 이미지 크롭 취소');
+        return;
+      }
+
       setState(() {
         _hasImageBeenTouched = true;
         _showProfileSaveButton = true;
@@ -104,17 +120,13 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
       });
 
       try {
-        // 여러 장 업로드 (API가 List<XFile> -> List<String> 반환한다고 가정)
-        final List<String> urls = await ImageApi().uploadImages([picked]);
+        final List<String> urls = await ImageApi().uploadImages([croppedFile]);
 
         if (mounted) {
           setState(() {
-            // 서버 URL 추가 (개수 불일치 대비하여 안전하게 처리)
             if (urls.isNotEmpty) {
               imageUrl = urls.first;
               _isProfileEdited = true;
-            } else {
-              // 필요 시: 업로드 실패한 항목 처리 로직 추가 가능
             }
           });
           debugPrint('프로필 이미지 변경 성공: $imageUrl');
@@ -127,6 +139,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
         if (mounted) {
           setState(() {
             _hasImageBeenTouched = false;
+            if (!_isProfileEdited) _showProfileSaveButton = false;
           });
         }
       }
@@ -168,7 +181,9 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
               padding: EdgeInsets.only(right: 24.0.w),
               child: GestureDetector(
                 onTap: () async {
+                  if (_isSaving) return;
                   if (_isProfileEdited && (_nickname.isNotEmpty)) {
+                    setState(() => _isSaving = true);
                     try {
                       await MemberApi().updateMemberProfile(nicknameController.text, imageUrl);
                       if (context.mounted) {
@@ -197,6 +212,10 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                           message: ErrorUtils.getErrorMessage(e),
                           type: SnackBarType.error,
                         );
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isSaving = false);
                       }
                     }
                   }

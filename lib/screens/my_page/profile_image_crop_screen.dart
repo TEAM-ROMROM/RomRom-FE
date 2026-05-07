@@ -1,0 +1,571 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common_app_bar.dart';
+
+/// 프로필 이미지 크롭 화면
+/// - 이미지는 원본 비율 그대로 표시
+/// - 초기 rect = 전체 사진 크기, 핸들로 rect 크기/위치 조정
+/// - 원(지름 = min(rectW, rectH))이 rect 중앙에 표시
+/// - 저장 시 원 영역 기준으로 정사각형 이미지 반환
+class ProfileImageCropScreen extends StatefulWidget {
+  const ProfileImageCropScreen({super.key, required this.imageFile});
+
+  final XFile imageFile;
+
+  @override
+  State<ProfileImageCropScreen> createState() => _ProfileImageCropScreenState();
+}
+
+class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with TickerProviderStateMixin {
+  ui.Image? _image;
+  double _imageScale = 1.0;
+  double _baseImageScale = 1.0;
+  double _cropW = 0.0;
+  double _cropH = 0.0;
+  int _prevPointerCount = 0;
+  bool _isDraggingHandle = false;
+  bool _isSaving = false;
+
+  // 이동/리사이즈 가능한 직사각형 (초기값 = 전체 사진 크기)
+  double _rectLeft = 0;
+  double _rectTop = 0;
+  double _rectW = 0;
+  double _rectH = 0;
+
+  late final AnimationController _zoomController;
+  Timer? _autoZoomTimer;
+  late final AnimationController _gridController;
+  late final Animation<double> _gridOpacity;
+
+  static const double _minScale = 1.0;
+  static const double _maxScale = 5.0;
+  static const double _minRectSize = 60.0;
+  static const int _outputSize = 500;
+
+  static const double _handleVisualSize = 18.0; // 실제 보이는 핸들
+  static const double _handleHitSize = 40.0; // 터치 영역
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImage();
+    _zoomController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _gridController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 160),
+      reverseDuration: const Duration(milliseconds: 180),
+    );
+
+    _gridOpacity = CurvedAnimation(
+      parent: _gridController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _autoZoomTimer?.cancel();
+    _gridController.dispose();
+    _zoomController.dispose();
+    _image?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadImage() async {
+    try {
+      final bytes = await widget.imageFile.readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      if (mounted) {
+        setState(() {
+          _image = frame.image;
+          _imageScale = _minScale;
+          // _cropW/_cropH를 초기화해서 LayoutBuilder postFrameCallback이
+          // 올바른 이미지 비율로 _initRect()를 호출하도록 함
+          _cropW = 0;
+          _cropH = 0;
+          _rectW = 0;
+          _rectH = 0;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이미지를 불러오는 데 실패했습니다.')));
+        Navigator.of(context).pop(null);
+      }
+    }
+  }
+
+  double get _imageAspect {
+    if (_image == null) return 1.0;
+    return _image!.height.toDouble() / _image!.width.toDouble();
+  }
+
+  double _displayW() => _cropW * _imageScale;
+  double _displayH() => _displayW() * _imageAspect;
+  double _imgLeft() => (_cropW - _displayW()) / 2;
+  double _imgTop() => (_cropH - _displayH()) / 2;
+
+  _VisibleArea get _visibleArea {
+    final iL = _imgLeft();
+    final iT = _imgTop();
+    final dW = _displayW();
+    final dH = _displayH();
+    return _VisibleArea(
+      left: math.max(0.0, iL),
+      top: math.max(0.0, iT),
+      right: math.min(_cropW, iL + dW),
+      bottom: math.min(_cropH, iT + dH),
+    );
+  }
+
+  // 초기 rect = 전체 사진 크기
+  void _initRect() {
+    if (_image == null) return;
+    final va = _visibleArea;
+    _rectW = va.width;
+    _rectH = va.height;
+    _rectLeft = va.left;
+    _rectTop = va.top;
+  }
+
+  void _clampRect() {
+    if (_image == null) return;
+    final va = _visibleArea;
+    _rectW = _rectW.clamp(_minRectSize, va.width);
+    _rectH = _rectH.clamp(_minRectSize, va.height);
+    _rectLeft = _rectLeft.clamp(va.left, va.right - _rectW);
+    _rectTop = _rectTop.clamp(va.top, va.bottom - _rectH);
+  }
+
+  // ── 제스처 ──
+
+  void _onScaleStart(ScaleStartDetails details) {
+    _baseImageScale = _imageScale;
+    _prevPointerCount = details.pointerCount;
+  }
+
+  void _onScaleUpdate(ScaleUpdateDetails details) {
+    if (_image == null || _isDraggingHandle) return;
+
+    if (details.pointerCount != _prevPointerCount) {
+      _baseImageScale = _imageScale;
+      _prevPointerCount = details.pointerCount;
+      return;
+    }
+
+    if (details.pointerCount == 1) {
+      setState(() {
+        _rectLeft += details.focalPointDelta.dx;
+        _rectTop += details.focalPointDelta.dy;
+        _clampRect();
+      });
+    } else {
+      setState(() {
+        _imageScale = (_baseImageScale * details.scale).clamp(_minScale, _maxScale);
+        _clampRect();
+      });
+    }
+  }
+
+  void _onResizeCorner({required DragUpdateDetails details, required bool moveLeft, required bool moveTop}) {
+    setState(() {
+      final dx = details.delta.dx;
+      final dy = details.delta.dy;
+
+      if (moveLeft) {
+        final newW = _rectW - dx;
+        if (newW >= _minRectSize) {
+          _rectLeft += dx;
+          _rectW = newW;
+        }
+      } else {
+        final newW = _rectW + dx;
+        if (newW >= _minRectSize) _rectW = newW;
+      }
+
+      if (moveTop) {
+        final newH = _rectH - dy;
+        if (newH >= _minRectSize) {
+          _rectTop += dy;
+          _rectH = newH;
+        }
+      } else {
+        final newH = _rectH + dy;
+        if (newH >= _minRectSize) _rectH = newH;
+      }
+
+      _clampRect();
+    });
+  }
+
+  // ── 크롭 저장 ──
+
+  Future<void> _onConfirm() async {
+    if (_isSaving) return;
+    if (_image == null || _cropW == 0.0 || _rectW == 0.0) return;
+    _isSaving = true;
+
+    try {
+      final imageW = _image!.width.toDouble();
+      final imageH = _image!.height.toDouble();
+      final dW = _displayW();
+      final iL = _imgLeft();
+      final iT = _imgTop();
+
+      // 원: min(rectW, rectH)을 지름으로, rect 중앙에 위치
+      final circleDiam = math.min(_rectW, _rectH);
+      final circleLeft = _rectLeft + (_rectW - circleDiam) / 2;
+      final circleTop = _rectTop + (_rectH - circleDiam) / 2;
+
+      final scaleRatio = imageW / dW;
+      final srcLeft = ((circleLeft - iL) * scaleRatio).clamp(0.0, imageW);
+      final srcTop = ((circleTop - iT) * scaleRatio).clamp(0.0, imageH);
+      final srcSize = (circleDiam * scaleRatio).clamp(0.0, math.min(imageW - srcLeft, imageH - srcTop));
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paint = Paint()..filterQuality = FilterQuality.high;
+      canvas.drawImageRect(
+        _image!,
+        Rect.fromLTWH(srcLeft, srcTop, srcSize.toDouble(), srcSize.toDouble()),
+        Rect.fromLTWH(0, 0, _outputSize.toDouble(), _outputSize.toDouble()),
+        paint,
+      );
+      final picture = recorder.endRecording();
+      final outputImage = await picture.toImage(_outputSize, _outputSize);
+      final byteData = await outputImage.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(ErrorUtils.getErrorMessage('이미지 처리에 실패했습니다. 다시 시도해주세요.'))));
+        }
+        return;
+      }
+
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/profile_crop_${DateTime.now().millisecondsSinceEpoch}.png');
+      await tempFile.writeAsBytes(pngBytes);
+
+      if (mounted) {
+        Navigator.of(context).pop(XFile(tempFile.path));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ErrorUtils.getErrorMessage(e))));
+      }
+    } finally {
+      _isSaving = false;
+    }
+  }
+
+  // ── 빌드 ──
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.primaryBlack,
+      appBar: CommonAppBar(
+        title: '프로필 사진 수정',
+        showBottomBorder: true,
+        onBackPressed: () => Navigator.pop(context),
+        actions: [
+          AppPressable(
+            onTap: () => _onConfirm(),
+            child: Padding(
+              padding: EdgeInsets.all(6.0.w),
+              child: Text('저장', style: CustomTextStyles.h2.copyWith(color: AppColors.primaryYellow)),
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(child: _buildCropArea()),
+            SizedBox(height: 32.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCropArea() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxInnerW = constraints.maxWidth - _handleHitSize;
+        final maxInnerH = constraints.maxHeight - _handleHitSize;
+
+        double innerW, innerH;
+        if (_image != null) {
+          final ratio = _imageAspect;
+          innerW = maxInnerW;
+          innerH = innerW * ratio;
+          if (innerH > maxInnerH) {
+            innerH = maxInnerH;
+            innerW = innerH / ratio;
+          }
+        } else {
+          innerW = maxInnerW;
+          innerH = maxInnerW;
+        }
+
+        final outerW = innerW + _handleHitSize;
+        final outerH = innerH + _handleHitSize;
+
+        if (_cropW != innerW || _cropH != innerH) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() {
+              _cropW = innerW;
+              _cropH = innerH;
+              if (_image != null) _initRect();
+            });
+          });
+        }
+
+        return Center(
+          child: SizedBox(
+            width: outerW,
+            height: outerH,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(_handleHitSize / 2),
+                  child: GestureDetector(
+                    onScaleStart: _onScaleStart,
+                    onScaleUpdate: (details) => _onScaleUpdate(details),
+                    child: Stack(
+                      children: [
+                        _buildImageLayer(),
+                        if (_rectW > 0)
+                          CustomPaint(
+                            size: Size(innerW, innerH),
+                            painter: _CropOverlayPainter(
+                              rectLeft: _rectLeft,
+                              rectTop: _rectTop,
+                              rectW: _rectW,
+                              rectH: _rectH,
+                              gridOpacity: _gridOpacity,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_rectW > 0) _buildHandles(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildImageLayer() {
+    if (_image == null) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+    }
+    return Center(
+      child: RawImage(
+        image: _image,
+        width: _displayW(),
+        height: _displayH(),
+        fit: BoxFit.fill,
+        filterQuality: FilterQuality.high,
+      ),
+    );
+  }
+
+  Widget _buildHandles() {
+    const o = _handleHitSize / 2;
+    return Positioned.fill(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _buildHandle(_rectLeft + o, _rectTop + o, moveLeft: true, moveTop: true),
+          _buildHandle(_rectLeft + _rectW + o, _rectTop + o, moveLeft: false, moveTop: true),
+          _buildHandle(_rectLeft + o, _rectTop + _rectH + o, moveLeft: true, moveTop: false),
+          _buildHandle(_rectLeft + _rectW + o, _rectTop + _rectH + o, moveLeft: false, moveTop: false),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHandle(double x, double y, {required bool moveLeft, required bool moveTop}) {
+    return Positioned(
+      left: x - _handleHitSize / 2,
+      top: y - _handleHitSize / 2,
+
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanStart: (_) {
+          setState(() => _isDraggingHandle = true);
+          _gridController.forward();
+        },
+        onPanUpdate: (details) => _onResizeCorner(details: details, moveLeft: moveLeft, moveTop: moveTop),
+        onPanEnd: (_) {
+          setState(() => _isDraggingHandle = false);
+          _gridController.reverse();
+        },
+        onPanCancel: () {
+          setState(() => _isDraggingHandle = false);
+          _gridController.reverse();
+        },
+
+        child: Container(
+          width: _handleHitSize,
+          height: _handleHitSize,
+          decoration: const BoxDecoration(color: AppColors.transparent, shape: BoxShape.circle),
+          child: Center(
+            child: SizedBox(
+              width: _handleVisualSize,
+              height: _handleVisualSize,
+              child: CustomPaint(
+                painter: _CornerHandlePainter(holeAtRight: moveLeft, holeAtBottom: moveTop),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VisibleArea {
+  final double left;
+  final double top;
+  final double right;
+  final double bottom;
+
+  const _VisibleArea({required this.left, required this.top, required this.right, required this.bottom});
+
+  double get width => right - left;
+  double get height => bottom - top;
+}
+
+/// 크롭 오버레이 Painter
+/// - rect 내부(원 외부): 반투명 검정 오버레이
+/// - rect 테두리, 원 테두리, 원 내부 rule of thirds 격자선
+class _CropOverlayPainter extends CustomPainter {
+  final double rectLeft;
+  final double rectTop;
+  final double rectW;
+  final double rectH;
+  final Animation<double> gridOpacity;
+
+  const _CropOverlayPainter({
+    required this.rectLeft,
+    required this.rectTop,
+    required this.rectW,
+    required this.rectH,
+    required this.gridOpacity,
+  }) : super(repaint: gridOpacity);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(rectLeft, rectTop, rectW, rectH);
+
+    final circleRadius = math.min(rectW, rectH) / 2;
+    final circleCenter = Offset(rectLeft + rectW / 2, rectTop + rectH / 2);
+
+    // rect 내부(원 외부) 반투명 오버레이
+    final overlayPaint = Paint()..color = AppColors.opacity40PrimaryBlack;
+
+    final overlayPath = Path()
+      ..addRect(rect)
+      ..addOval(Rect.fromCircle(center: circleCenter, radius: circleRadius))
+      ..fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(overlayPath, overlayPaint);
+
+    // 격자선: 핸들 드래그 중에만 fade-in / fade-out
+    final opacity = gridOpacity.value;
+
+    // 격자선: rect 전체 기준 3등분
+    if (opacity > 0.01) {
+      final gridPaint = Paint()
+        ..color = AppColors.textColorWhite.withValues(alpha: opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.5;
+
+      // 세로선 2개
+      for (int i = 1; i <= 2; i++) {
+        final x = rectLeft + rectW * i / 3;
+        canvas.drawLine(Offset(x, rectTop), Offset(x, rectTop + rectH), gridPaint);
+      }
+
+      // 가로선 2개
+      for (int i = 1; i <= 2; i++) {
+        final y = rectTop + rectH * i / 3;
+        canvas.drawLine(Offset(rectLeft, y), Offset(rectLeft + rectW, y), gridPaint);
+      }
+    }
+
+    // rect 테두리
+    final borderPaint = Paint()
+      ..color = AppColors.textColorWhite
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    canvas.drawRect(rect, borderPaint);
+
+    // 원 테두리
+    canvas.drawCircle(circleCenter, circleRadius, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CropOverlayPainter oldDelegate) {
+    return rectLeft != oldDelegate.rectLeft ||
+        rectTop != oldDelegate.rectTop ||
+        rectW != oldDelegate.rectW ||
+        rectH != oldDelegate.rectH;
+  }
+}
+
+/// 꼭지점 핸들 Painter
+class _CornerHandlePainter extends CustomPainter {
+  final bool holeAtRight;
+  final bool holeAtBottom;
+
+  const _CornerHandlePainter({required this.holeAtRight, required this.holeAtBottom});
+
+  static const double _shapeSize = 16.0;
+  static const double _holeSize = 12.0;
+  static const double _gapSize = _shapeSize - _holeSize;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final offsetX = (size.width - _shapeSize) / 2 + (holeAtRight ? _gapSize : -_gapSize);
+    final offsetY = (size.height - _shapeSize) / 2 + (holeAtBottom ? _gapSize : -_gapSize);
+    final holeX = offsetX + (holeAtRight ? _shapeSize - _holeSize : 0.0);
+    final holeY = offsetY + (holeAtBottom ? _shapeSize - _holeSize : 0.0);
+
+    final paint = Paint()..color = AppColors.textColorWhite;
+    final path = Path()
+      ..addRect(Rect.fromLTWH(offsetX, offsetY, _shapeSize, _shapeSize))
+      ..addRect(Rect.fromLTWH(holeX, holeY, _holeSize, _holeSize))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CornerHandlePainter old) =>
+      old.holeAtRight != holeAtRight || old.holeAtBottom != holeAtBottom;
+}
