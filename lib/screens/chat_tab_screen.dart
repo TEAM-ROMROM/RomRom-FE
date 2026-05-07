@@ -376,7 +376,8 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                             debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
 
                             // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
-                            final roomId = chatRoomDetail.chatRoomId!;
+                            final roomId = chatRoomDetail.chatRoomId;
+                            if (roomId == null) return;
                             final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
 
                             if (roomIndex != -1) {
@@ -386,6 +387,8 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                                   chatRoomId: room.chatRoomId,
                                   targetMember: room.targetMember,
                                   targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
+                                  targetItemImageUrl: room.targetItemImageUrl,
+                                  myItemImageUrl: room.myItemImageUrl,
                                   lastMessageContent: room.lastMessageContent,
                                   lastMessageTime: room.lastMessageTime,
                                   unreadCount: 0, // 읽음 처리
