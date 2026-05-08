@@ -14,12 +14,12 @@ class RegisterOptionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chipColor = isSelected ? AppColors.primaryYellow : AppColors.itemCardOptionChip.withValues(alpha: 0.6);
+    final chipColor = isSelected ? AppColors.primaryYellow : AppColors.secondaryBlack1;
     final chipRadius = BorderRadius.circular(100.r);
 
     final textStyle = CustomTextStyles.p2.copyWith(
       fontWeight: FontWeight.w600,
-      color: isSelected ? AppColors.primaryBlack : AppColors.textColorWhite.withValues(alpha: 0.6),
+      color: isSelected ? AppColors.primaryBlack : AppColors.opacity60White,
     );
 
     final horizontalPadding = itemOption.length >= 4 ? 8.w : 20.w;
