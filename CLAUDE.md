@@ -121,6 +121,43 @@ bash tool/full_check.sh
 - `lib/models/app_colors.dart` - 색상 상수 정의
 - `lib/widgets/common/common_modal.dart` - 공통 모달 위젯
 
+## 표준 작업 Flow (AgenticFlow)
+
+이슈 기반 작업 시 **무조건 이 순서**를 따른다. 관련 issue: [#836](https://github.com/TEAM-ROMROM/RomRom-FE/issues/836)
+
+### Phase 1 — 이슈 + 워크트리
+- **신규 이슈**: `/cassiiopeia:issue` (이슈 작성·등록·브랜치명 계산·worktree 옵션까지 한 방)
+- **이슈 이미 있고 브랜치만 분리**: `/cassiiopeia:init-worktree`
+- **긴급 버그 등 신속 대응 케이스**: worktree 생성 생략 가능 (main 또는 메인 작업 디렉터리에서 바로 진행)
+
+### Phase 2 — 설계 (무조건 superpowers)
+- `/superpowers:brainstorming` — 요구사항 명확화 → 디자인 → spec 문서 작성
+- `/superpowers:writing-plans` — plan 문서 작성 (Task 단위로 분해)
+
+### Phase 3 — 구현
+- `/superpowers:subagent-driven-development` — Task별 implementer + spec reviewer + quality reviewer 디스패치
+
+### Phase 4 — Commit + PR
+- `/cassiiopeia:commit` — 사용자 승인 후 commit. push는 사용자 명시 요청 시
+- `/cassiiopeia:github` — PR 생성
+
+### Phase 5 — 빌드 + QA
+- `/cassiiopeia:github` — 이슈에 `@suh-lab app build` 댓글 추가
+- `/cassiiopeia:testcase` — 테스트케이스 MD 작성
+- `/cassiiopeia:github` — 테스트케이스 이슈 댓글로 게시
+
+### Phase 6 — main 머지 후 배포
+- `/cassiiopeia:changelog-deploy` — main push + deploy PR 생성 + 릴리스 노트 작성 + automerge
+
+### 절대 규칙 — Skill 우회 금지
+- **GitHub 작업** (이슈/PR/댓글) → 무조건 `/cassiiopeia:github` 거치기. `gh`/`curl`/`Invoke-RestMethod` 직접 호출 금지
+- **Commit** → 무조건 `/cassiiopeia:commit` 거치기. `git commit` 직접 호출 금지
+- **설계/구현** → 무조건 superpowers 3-skill 체인 (`brainstorming` → `writing-plans` → `subagent-driven-development`) 거치기. 바로 코드 작성 금지
+
+### 본 flow 미적용 예외
+- 단순 typo 수정 / 1줄 변경 같은 trivial fix는 brainstorming/plan 생략 가능. 단 commit/push/PR/댓글은 skill 거치기
+- 긴급 버그는 worktree 생성 생략 가능
+
 ## Git 커밋 규칙
 
 ### ⛔ 절대 자동 커밋 금지 (가장 중요한 규칙)
