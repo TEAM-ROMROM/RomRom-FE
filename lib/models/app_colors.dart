@@ -4,6 +4,7 @@ class AppColors {
   // 공통
   static const Color primaryBlack = Color(0xFF1D1E27);
   static const Color opacity30PrimaryBlack = Color(0x4D1D1E27); // 30% 불투명도 primaryBlack
+  static const Color opacity40PrimaryBlack = Color(0x661D1E27); // 40% 불투명도 primaryBlack
   static const Color opacity90PrimaryBlack = Color(0xE61D1E27); // 90% 불투명도 primaryBlack
   static const Color primaryYellow = Color(0xFFFFC300);
   static const Color secondaryBlack1 = Color(0xFF34353D);
@@ -114,7 +115,7 @@ class AppColors {
   static const Color toggleSwitchIndicatorShadow = Color(0x40000000); // 검은색, opacity 25%
   static const Color aiSuggestionContainerBackground = Color(0x4DCF7DFF); // ai 추천 가격 태그 배경색
   // 물품 사진
-  static const Color itemPictureRemoveButtonBackground = Color(0xFFD2D2D2); // 물품 사진 삭제 버튼 배경색
+  static const Color itemPictureRemoveButtonBackground = Color(0xFFFFFFFF); // 물품 사진 삭제 버튼 배경색
 
   // 물품 상세 화면
   // 물품 사진오버레이 그레디언트

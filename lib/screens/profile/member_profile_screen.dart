@@ -12,6 +12,7 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/profile_sections.dart';
@@ -192,7 +193,7 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+        body: Center(child: CommonLoadingIndicator()),
       );
     }
 

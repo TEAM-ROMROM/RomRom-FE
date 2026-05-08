@@ -17,7 +17,7 @@ class RegisterCustomTextFieldLabel extends StatelessWidget {
       child: label == ItemTextFieldPhrase.tradeOption.label
           ? Row(
               children: [
-                Text(label, style: CustomTextStyles.p1),
+                Text(label, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
                 SizedBox(width: 8.w),
                 Text(
                   ItemTextFieldPhrase.tradeOption.hintText,
@@ -25,7 +25,7 @@ class RegisterCustomTextFieldLabel extends StatelessWidget {
                 ),
               ],
             )
-          : Text(label, style: CustomTextStyles.p1),
+          : Text(label, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -282,7 +282,7 @@ class RegisterCustomLabeledField extends StatelessWidget {
   final Widget field;
   final double spacing;
 
-  const RegisterCustomLabeledField({super.key, required this.label, required this.field, this.spacing = 24});
+  const RegisterCustomLabeledField({super.key, required this.label, required this.field, this.spacing = 32});
 
   @override
   Widget build(BuildContext context) {

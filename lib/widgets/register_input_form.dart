@@ -30,6 +30,7 @@ import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
@@ -346,7 +347,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   width: 80.w,
                   height: 80.h,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.r),
+                    borderRadius: BorderRadius.circular(10.r),
                     border: Border.all(color: AppColors.opacity40White, width: 1.5.w),
                   ),
                   child: Column(
@@ -423,24 +424,24 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               },
                               child: Hero(
                                 tag: 'item_image_$index',
-                                child: ClipRRect(borderRadius: BorderRadius.circular(8.r), child: imageWidget),
+                                child: ClipRRect(borderRadius: BorderRadius.circular(10.r), child: imageWidget),
                               ),
                             ),
                             Positioned(
-                              top: -8.h,
-                              right: -8.w,
+                              top: -6.h,
+                              right: -6.h,
                               child: GestureDetector(
                                 onTap: () => onDeleteImage(index),
                                 child: Container(
-                                  width: 24.w,
-                                  height: 24.h,
+                                  width: 22.h,
+                                  height: 22.h,
                                   decoration: const BoxDecoration(
                                     color: AppColors.itemPictureRemoveButtonBackground,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.zero,
-                                    child: Icon(AppIcons.cancel, color: AppColors.primaryBlack, size: 16.sp),
+                                    child: Icon(AppIcons.cancel, color: AppColors.textColorBlack, size: 12.sp),
                                   ),
                                 ),
                               ),
@@ -835,19 +836,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   focusNode: _priceFocusNode,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                  // 로딩 중일 때 suffixIcon으로 스피너 표시
+                  // AI 가격 예측 로딩 중 suffixIcon 스피너 표시
                   suffixIcon: _isAiPriceLoading
-                      ? Padding(
-                          padding: EdgeInsets.all(12.w),
-                          child: SizedBox(
-                            width: 10.w,
-                            height: 10.w,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.w,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryYellow),
-                            ),
-                          ),
-                        )
+                      ? const Padding(padding: EdgeInsets.all(12), child: CommonLoadingIndicator(size: 16.0))
                       : null,
                 ),
 
@@ -858,7 +849,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   field: RegisterCustomTextField(
                     readOnly: true,
                     phrase: ItemTextFieldPhrase.location,
-                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.textColorWhite, size: 18.w),
+                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
                     controller: locationController,
                     forceValidate: _forceValidateAll,
                     onTap: () async {
@@ -879,7 +870,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       );
                     },
                   ),
-                  spacing: 32,
                 ),
 
                 // 등록 완료 버튼

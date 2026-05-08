@@ -38,6 +38,8 @@ import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
 import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
 /// 홈 탭 화면
 class HomeTabScreen extends StatefulWidget {
@@ -528,7 +530,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2));
+      return const HomeFeedSkeleton();
     }
     return _buildContent();
   }
@@ -593,7 +595,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               itemBuilder: (context, index) {
                 // 로딩 인디케이터 (맨 끝)
                 if (index >= _virtualItemCount) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+                  return const Center(child: CommonLoadingIndicator());
                 }
                 // 광고 슬롯
                 if (_isAdAtVirtualIndex(index)) {

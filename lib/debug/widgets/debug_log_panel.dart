@@ -93,7 +93,7 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
     _applyFilters();
   }
 
-  void _copyLogs() {
+  Future<void> _copyLogs() async {
     final text = _filteredLogs
         .map((log) {
           final time =
@@ -103,11 +103,17 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
           return '$time ${log.message}';
         })
         .join('\n');
-    Clipboard.setData(ClipboardData(text: text));
-    setState(() => _showCopiedFeedback = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) setState(() => _showCopiedFeedback = false);
-    });
+    try {
+      // 클립보드 쓰기 완료 후 피드백 표시 (await 없으면 복사 전에 UI 업데이트됨)
+      await Clipboard.setData(ClipboardData(text: text));
+      if (!mounted) return;
+      setState(() => _showCopiedFeedback = true);
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) setState(() => _showCopiedFeedback = false);
+      });
+    } catch (_) {
+      // 복사 실패 시 피드백 없이 조용히 종료
+    }
   }
 
   @override
