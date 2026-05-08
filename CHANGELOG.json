@@ -1,11 +1,40 @@
 {
   "metadata": {
-    "lastUpdated": "2026-05-05T08:38:59Z",
-    "currentVersion": "1.10.36",
-    "totalReleases": 105,
+    "lastUpdated": "2026-05-08T00:31:30Z",
+    "currentVersion": "1.10.45",
+    "totalReleases": 106,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.45",
+      "project_type": "flutter",
+      "date": "2026-05-08",
+      "pr_number": 834,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 물건 등록 페이지 디자인 개선\n  * 프로필 사진 편집 UI 추가\n  * 채팅방 목록 새로고침 기능 추가\n  * 알림 탭 시 해당 화면으로 자동 이동\n  * 로딩 디자인 통일\n\n* **버그 수정**\n  * 채팅방 목록이 다시 불러와지지 않던 현상 해결\n  * 채팅방 내 일부 사진이 표시되지 않던 문제 해결\n  * 갤럭시에서 프로필 이미지가 깨지던 현상 해결\n  * 알림 진입 시 잘못된 화면 이동 문제 해결",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "물건 등록 페이지 디자인 개선",
+            "프로필 사진 편집 UI 추가",
+            "채팅방 목록 새로고침 기능 추가",
+            "알림 탭 시 해당 화면으로 자동 이동",
+            "로딩 디자인 통일"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "채팅방 목록이 다시 불러와지지 않던 현상 해결",
+            "채팅방 내 일부 사진이 표시되지 않던 문제 해결",
+            "갤럭시에서 프로필 이미지가 깨지던 현상 해결",
+            "알림 진입 시 잘못된 화면 이동 문제 해결"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.36",
       "project_type": "flutter",
