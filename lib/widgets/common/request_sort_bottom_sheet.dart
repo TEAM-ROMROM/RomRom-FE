@@ -27,6 +27,7 @@ class _RequestSortSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.primaryBlack,
@@ -34,22 +35,29 @@ class _RequestSortSheet extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 12),
           // 드래그 핸들
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(color: AppColors.opacity30White, borderRadius: BorderRadius.circular(2)),
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(color: AppColors.opacity30White, borderRadius: BorderRadius.circular(2)),
+            ),
           ),
           const SizedBox(height: 16),
-          // "정렬" 레이블
-          Text('정렬', style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White)),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0x1AFFFFFF)),
-          // 옵션 목록
+          // "정렬" 제목 — 좌측 정렬, 굵게
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Text(
+              '정렬',
+              style: CustomTextStyles.p1.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w600),
+            ),
+          ),
+          // 옵션 목록 — 디바이더 없음
           ...RequestSortType.values.map((type) => _buildOption(context, type)),
-          const SizedBox(height: 16),
+          SizedBox(height: 16 + bottomInset),
         ],
       ),
     );
@@ -63,10 +71,7 @@ class _RequestSortSheet extends StatelessWidget {
         Navigator.pop(context);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF), width: 1)),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

@@ -26,6 +26,7 @@ class AppColors {
   static const Color opacity80Black = Color(0xCC000000); // 80% 불투명도 검정
 
   static const Color opacity20PrimaryYellow = Color(0x33FFC300);
+  static const Color opacity50PrimaryYellow = Color(0x80FFC300);
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경

@@ -297,23 +297,12 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // 정렬 버튼 행 (항상 표시)
+        // 정렬 칩 행 (항상 표시)
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 0, 16, 8),
-          child: GestureDetector(
-            onTap: () => RequestSortBottomSheet.show(
-              context: context,
-              currentSort: _sentSortType,
-              onSelected: (selected) => setState(() => _sentSortType = selected),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_sentSortType.label, style: CustomTextStyles.p3.copyWith(color: AppColors.primaryYellow)),
-                const SizedBox(width: 2),
-                const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryYellow, size: 14),
-              ],
-            ),
+          child: _buildSortChip(
+            currentSort: _sentSortType,
+            onChanged: (selected) => setState(() => _sentSortType = selected),
           ),
         ),
         // 기존 목록/빈상태/로딩
@@ -707,30 +696,16 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   height: 1.0,
                 ),
               ),
-              // 정렬 버튼 + 완료된 요청 필터 토글
+              // 정렬 칩 (보더 pill) + 완료 표시 토글
               Row(
                 children: [
-                  // 정렬 버튼 (신규)
-                  GestureDetector(
-                    onTap: () => RequestSortBottomSheet.show(
-                      context: context,
-                      currentSort: _receivedSortType,
-                      onSelected: (selected) => setState(() => _receivedSortType = selected),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          _receivedSortType.label,
-                          style: CustomTextStyles.p3.copyWith(color: AppColors.primaryYellow),
-                        ),
-                        const SizedBox(width: 2),
-                        const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryYellow, size: 14),
-                      ],
-                    ),
+                  _buildSortChip(
+                    currentSort: _receivedSortType,
+                    onChanged: (selected) => setState(() => _receivedSortType = selected),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    '교환 완료된 글표시',
+                    '완료 표시',
                     style: CustomTextStyles.p3.copyWith(
                       color: const Color(0x80FFFFFF),
                       fontWeight: FontWeight.w400,
@@ -756,6 +731,31 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 정렬 칩 (보더 pill 스타일)
+  Widget _buildSortChip({required RequestSortType currentSort, required ValueChanged<RequestSortType> onChanged}) {
+    return GestureDetector(
+      onTap: () => RequestSortBottomSheet.show(context: context, currentSort: currentSort, onSelected: onChanged),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.opacity50PrimaryYellow, width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              currentSort.label,
+              style: CustomTextStyles.p3.copyWith(color: AppColors.primaryYellow, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryYellow, size: 14),
+          ],
+        ),
       ),
     );
   }
