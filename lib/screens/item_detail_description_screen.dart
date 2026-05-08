@@ -77,7 +77,7 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   State<ItemDetailDescriptionScreen> createState() => _ItemDetailDescriptionScreenState();
 }
 
-class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScreen> {
+class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScreen> with SingleTickerProviderStateMixin {
   late PageController pageController;
   late final ValueNotifier<int> currentIndexVN;
   late final ValueNotifier<bool> isLikedVN;
@@ -89,7 +89,10 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<double> _stretchScaleVN = ValueNotifier<double>(1.0);
   static const double _stretchThreshold = 100.0;
-  static const double _maxStretchScale = 0.2;
+  static const Duration _returnAnimDuration = Duration(milliseconds: 300);
+  late final AnimationController _returnAnim;
+  double _scaleAtRelease = 1.0;
+  double _cachedMaxScale = 1.0;
 
   bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool isLoading = true;
@@ -110,8 +113,28 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     pageController = PageController(initialPage: widget.currentImageIndex);
     isLikedVN = ValueNotifier<bool>(false);
     likeCountVN = ValueNotifier<int>(0);
+    _returnAnim = AnimationController(vsync: this, duration: _returnAnimDuration);
+    _returnAnim.addListener(_onReturnAnimTick);
     _scrollController.addListener(_onScroll);
     _loadItemDetail();
+  }
+
+  void _onReturnAnimTick() {
+    final t = Curves.easeOutCubic.transform(_returnAnim.value);
+    _stretchScaleVN.value = _scaleAtRelease + (1.0 - _scaleAtRelease) * t;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _cachedMaxScale = _computeMaxScale();
+  }
+
+  double _computeMaxScale() {
+    final topGap = MediaQuery.of(context).padding.top;
+    final imageH = widget.imageSize.height;
+    if (imageH <= 0) return 1.0;
+    return 1.0 + (topGap / imageH);
   }
 
   Future<void> _loadItemDetail() async {
@@ -322,18 +345,27 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     }
   }
 
-  /// ScrollController 리스너. 음수 overscroll에 비례해 [_stretchScaleVN] 값을 1.0~1.2 사이로 갱신한다.
-  /// pixels >= 0일 때는 1.0을 강제해 정상 스크롤 영역에서 효과가 발생하지 않게 한다.
+  /// ScrollController 리스너. 음수 overscroll에 비례해 [_stretchScaleVN] 값을 갱신하고
+  /// pixels >= 0 진입 시 spring 애니메이션으로 1.0 복귀시킨다.
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final pixels = _scrollController.position.pixels;
+
     if (pixels >= 0) {
-      if (_stretchScaleVN.value != 1.0) _stretchScaleVN.value = 1.0;
+      // 손 뗀 직후: scale > 1.0 이고 애니메이션 진행 중이 아닐 때만 시작
+      if (_stretchScaleVN.value > 1.0 && !_returnAnim.isAnimating) {
+        _scaleAtRelease = _stretchScaleVN.value;
+        _returnAnim.forward(from: 0.0);
+      }
       return;
     }
+
+    // 당기는 중: 애니메이션이 돌고 있으면 멈추고 즉시 반영
+    if (_returnAnim.isAnimating) _returnAnim.stop();
+
     final overscroll = -pixels;
     final progress = (overscroll / _stretchThreshold).clamp(0.0, 1.0);
-    _stretchScaleVN.value = 1.0 + progress * _maxStretchScale;
+    _stretchScaleVN.value = 1.0 + progress * (_cachedMaxScale - 1.0);
   }
 
   @override
@@ -344,6 +376,8 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     likeCountVN.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _returnAnim.removeListener(_onReturnAnimTick);
+    _returnAnim.dispose();
     _stretchScaleVN.dispose();
     super.dispose();
   }
@@ -454,7 +488,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                   ValueListenableBuilder<double>(
                     valueListenable: _stretchScaleVN,
                     builder: (_, scale, child) {
-                      return Transform.scale(scale: scale, alignment: Alignment.center, child: child);
+                      return Transform.scale(scale: scale, alignment: Alignment.bottomCenter, child: child);
                     },
                     child: Stack(
                       children: [
