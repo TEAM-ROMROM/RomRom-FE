@@ -157,6 +157,7 @@ bash tool/full_check.sh
 ### 본 flow 미적용 예외
 - 단순 typo 수정 / 1줄 변경 같은 trivial fix는 brainstorming/plan 생략 가능. 단 commit/push/PR/댓글은 skill 거치기
 - 긴급 버그는 worktree 생성 생략 가능
+- **메타성 / 문서성 변경** (CLAUDE.md, 리포트, plan/spec md, commands·skill 정리, 문서 오타 수정 등 앱 동작 영향 없는 변경)은 **Phase 5 생략** — `@suh-lab app build` 댓글 불필요, 테스트케이스 작성 불필요. Phase 4 commit/PR까지만 처리
 
 ## Git 커밋 규칙
 
