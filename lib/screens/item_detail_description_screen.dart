@@ -88,11 +88,9 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   // 이미지 stretch 효과
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<double> _stretchScaleVN = ValueNotifier<double>(1.0);
-  static const double _stretchThreshold = 100.0;
   static const Duration _returnAnimDuration = Duration(milliseconds: 300);
   late final AnimationController _returnAnim;
   double _scaleAtRelease = 1.0;
-  double _cachedMaxScale = 1.0;
 
   bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool isLoading = true;
@@ -122,19 +120,6 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   void _onReturnAnimTick() {
     final t = Curves.easeOutCubic.transform(_returnAnim.value);
     _stretchScaleVN.value = _scaleAtRelease + (1.0 - _scaleAtRelease) * t;
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _cachedMaxScale = _computeMaxScale();
-  }
-
-  double _computeMaxScale() {
-    final topGap = MediaQuery.of(context).padding.top;
-    final imageH = widget.imageSize.height;
-    if (imageH <= 0) return 1.0;
-    return 1.0 + (topGap / imageH);
   }
 
   Future<void> _loadItemDetail() async {
@@ -345,7 +330,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     }
   }
 
-  /// ScrollController 리스너. 음수 overscroll에 비례해 [_stretchScaleVN] 값을 갱신하고
+  /// ScrollController 리스너. 당긴 픽셀 양과 이미지가 위로 늘어나는 픽셀 양을 1:1 매핑한다.
   /// pixels >= 0 진입 시 spring 애니메이션으로 1.0 복귀시킨다.
   void _onScroll() {
     if (!_scrollController.hasClients) return;
@@ -364,8 +349,9 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     if (_returnAnim.isAnimating) _returnAnim.stop();
 
     final overscroll = -pixels;
-    final progress = (overscroll / _stretchThreshold).clamp(0.0, 1.0);
-    _stretchScaleVN.value = 1.0 + progress * (_cachedMaxScale - 1.0);
+    final imageH = widget.imageSize.height;
+    if (imageH <= 0) return;
+    _stretchScaleVN.value = 1.0 + overscroll / imageH;
   }
 
   @override
