@@ -15,7 +15,7 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
-import 'package:romrom_fe/widgets/profile_sections.dart';
+import 'package:romrom_fe/widgets/profile/profile_sections.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 /// 멤버 프로필 조회 화면
