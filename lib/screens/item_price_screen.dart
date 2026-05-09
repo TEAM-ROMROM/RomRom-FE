@@ -18,6 +18,7 @@ import 'package:romrom_fe/widgets/register_text_field.dart';
 /// 가격(int)을 pop으로 반환. 0 반환 시 취소로 간주.
 class ItemPriceScreen extends StatefulWidget {
   final int initialPrice;
+  final bool initialIsAiRecommended; // 재진입 시 AI 토글 상태 복원
   final String itemName;
   final String itemDescription;
   final String? itemCondition; // ItemCondition.serverName
@@ -25,6 +26,7 @@ class ItemPriceScreen extends StatefulWidget {
   const ItemPriceScreen({
     super.key,
     required this.initialPrice,
+    this.initialIsAiRecommended = false,
     required this.itemName,
     required this.itemDescription,
     this.itemCondition,
@@ -38,8 +40,10 @@ class _ItemPriceScreenState extends State<ItemPriceScreen> {
   late final TextEditingController _priceController;
   late final FocusNode _priceFocusNode;
 
-  bool _useAiPrice = false;
+  late bool _useAiPrice;
   bool _isAiPriceLoading = false;
+  // 직접 수정 감지용 — AI가 채운 가격값 저장
+  String _aiFilledPriceText = '';
 
   bool get _isFormValid {
     final text = _priceController.text.replaceAll(',', '').trim();
@@ -63,6 +67,7 @@ class _ItemPriceScreenState extends State<ItemPriceScreen> {
     super.initState();
     _priceFocusNode = FocusNode();
     _priceController = TextEditingController();
+    _useAiPrice = widget.initialIsAiRecommended;
 
     // 기존 가격이 있으면 초기값 세팅
     if (widget.initialPrice > 0) {
@@ -71,18 +76,35 @@ class _ItemPriceScreenState extends State<ItemPriceScreen> {
         TextEditingValue(text: widget.initialPrice.toString()),
       );
       _priceController.value = formatted;
+      // AI 추천 상태로 진입했으면 해당 가격을 AI 채움 값으로 기억
+      if (widget.initialIsAiRecommended) {
+        _aiFilledPriceText = formatted.text;
+      }
     }
 
-    _priceController.addListener(() => setState(() {}));
+    _priceController.addListener(_onPriceChanged);
 
-    // 진입 즉시 키보드 올라오게 포커스 요청
+    // 진입 즉시 숫자 키패드 올라오게 포커스 요청
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _priceFocusNode.requestFocus();
     });
   }
 
+  void _onPriceChanged() {
+    // AI 추천 가격이 채워진 상태에서 사용자가 직접 수정하면 AI 토글 OFF
+    if (_useAiPrice && !_isAiPriceLoading && _priceController.text != _aiFilledPriceText) {
+      setState(() {
+        _useAiPrice = false;
+        _aiFilledPriceText = '';
+      });
+    } else {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
+    _priceController.removeListener(_onPriceChanged);
     _priceFocusNode.dispose();
     _priceController.dispose();
     super.dispose();
@@ -111,7 +133,10 @@ class _ItemPriceScreenState extends State<ItemPriceScreen> {
         const TextEditingValue(),
         TextEditingValue(text: predictedPrice.toString()),
       );
-      setState(() => _priceController.value = formatted);
+      setState(() {
+        _priceController.value = formatted;
+        _aiFilledPriceText = formatted.text; // 직접 수정 감지 기준값 저장
+      });
 
       if (mounted) {
         CommonSnackBar.show(context: context, message: 'AI로 적정 가격을 추천해드렸어요!');
@@ -219,6 +244,7 @@ class _ItemPriceScreenState extends State<ItemPriceScreen> {
                   SizedBox(height: 16.h),
                   RegisterCustomTextField(
                     phrase: ItemTextFieldPhrase.price,
+                    hintTextOverride: '가격을 입력해 주세요',
                     prefixText: '₩',
                     maxLength: 11,
                     keyboardType: TextInputType.number,

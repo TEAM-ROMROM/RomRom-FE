@@ -671,6 +671,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       final result = await context.navigateTo<(int, bool)>(
                         screen: ItemPriceScreen(
                           initialPrice: currentPrice,
+                          initialIsAiRecommended: _isAiRecommendedPrice,
                           itemName: titleController.text,
                           itemDescription: descriptionController.text,
                           itemCondition: selectedItemConditionTypes.isNotEmpty

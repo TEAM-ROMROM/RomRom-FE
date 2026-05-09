@@ -46,6 +46,7 @@ class RegisterCustomTextField extends StatefulWidget {
   final FocusNode? focusNode; // 외부에서 전달 시 포커스 체인 제어
   final TextInputAction? textInputAction;
   final void Function(String)? onFieldSubmitted;
+  final String? hintTextOverride; // phrase.hintText 대신 사용할 힌트 텍스트
 
   const RegisterCustomTextField({
     super.key,
@@ -62,6 +63,7 @@ class RegisterCustomTextField extends StatefulWidget {
     this.focusNode,
     this.textInputAction,
     this.onFieldSubmitted,
+    this.hintTextOverride,
   });
 
   @override
@@ -143,7 +145,7 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                     style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
                     cursorColor: AppColors.textColorWhite,
                     decoration: InputDecoration(
-                      hintText: widget.phrase.hintText,
+                      hintText: widget.hintTextOverride ?? widget.phrase.hintText,
                       filled: true,
                       fillColor: shouldShowError ? AppColors.errorContainer : AppColors.opacity10White,
                       border: shouldShowError ? errorBorder : inputBorder,
@@ -193,7 +195,7 @@ class _RegisterCustomTextFieldState extends State<RegisterCustomTextField> {
                       style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, height: 1.4),
                       cursorColor: AppColors.textColorWhite,
                       decoration: InputDecoration(
-                        hintText: widget.phrase.hintText,
+                        hintText: widget.hintTextOverride ?? widget.phrase.hintText,
                         filled: true,
                         fillColor: shouldShowError ? AppColors.errorContainer : AppColors.opacity10White,
                         border: shouldShowError ? errorBorder : inputBorder,
