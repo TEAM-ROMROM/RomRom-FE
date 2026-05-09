@@ -250,16 +250,7 @@ class _ItemPriceScreenState extends State<ItemPriceScreen> {
                     keyboardType: TextInputType.number,
                     controller: _priceController,
                     focusNode: _priceFocusNode,
-                    readOnly: _isAiPriceLoading, // AI 로딩 중에만 readOnly — AI 추천 상태에서도 탭 시 수동 편집 가능
-                    onTap: _useAiPrice && !_isAiPriceLoading
-                        ? () {
-                            // AI 추천 상태에서 필드 탭 → 토글 자동 OFF, 현재 가격 유지하며 편집 가능
-                            setState(() {
-                              _useAiPrice = false;
-                              _aiFilledPriceText = '';
-                            });
-                          }
-                        : null,
+                    readOnly: _isAiPriceLoading, // AI 로딩 중에만 readOnly
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                     suffixIcon: _isAiPriceLoading
