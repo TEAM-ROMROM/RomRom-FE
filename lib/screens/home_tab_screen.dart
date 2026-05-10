@@ -681,6 +681,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             right: 0,
             bottom: -130.h,
             child: HomeTabCardHand(
+              key: const ValueKey('home_card_hand'),
               cards: _myCards,
               onCardDrop: _handleCardDrop,
               highlightedItemIds: _aiHighlightedItemIds,
