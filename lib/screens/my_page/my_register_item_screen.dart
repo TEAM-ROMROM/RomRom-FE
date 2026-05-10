@@ -14,6 +14,7 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -361,15 +362,28 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 이미지 썸네일
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4.r),
-                child: SizedBox(
-                  width: 90.w,
-                  height: 90.w,
-                  child: item.itemId != null
-                      ? Hero(tag: 'itemImage_${item.itemId}_0', child: _buildImage(imageUrl))
-                      : _buildImage(imageUrl),
-                ),
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4.r),
+                    child: SizedBox(
+                      width: 100.w,
+                      height: 100.w,
+                      child: item.itemId != null
+                          ? Hero(tag: 'itemImage_${item.itemId}_0', child: _buildImage(imageUrl))
+                          : _buildImage(imageUrl),
+                    ),
+                  ),
+                  Positioned(
+                    right: 4.w,
+                    bottom: 4.h,
+                    child: TradeStatusTagWidget(
+                      status: item.itemStatus == ItemStatus.exchanged.serverName
+                          ? TradeStatus.traded
+                          : TradeStatus.pending,
+                    ),
+                  ),
+                ],
               ),
               SizedBox(width: 16.h),
 
@@ -390,7 +404,10 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
                       children: [
                         Text(
                           item.displayLocation,
-                          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+                          style: CustomTextStyles.p3.copyWith(
+                            color: AppColors.opacity60White,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         Container(
                           margin: EdgeInsets.symmetric(horizontal: 4.w),
@@ -398,12 +415,26 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
                           height: 4.w,
                           decoration: const BoxDecoration(color: AppColors.opacity60White, shape: BoxShape.circle),
                         ),
-                        Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
+                        Text(
+                          uploadTime,
+                          style: CustomTextStyles.p3.copyWith(
+                            color: AppColors.opacity60White,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
-                    SizedBox(height: 12.h),
-                    Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
-                    SizedBox(height: 10.h),
+                    // SizedBox(height: 12.h),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: item.isAiPredictedPrice! ? 6.h : 8.h),
+                      child: Row(
+                        children: [
+                          if (item.isAiPredictedPrice!) const AiBadgeWidget(),
+                          if (item.isAiPredictedPrice!) SizedBox(width: 6.w),
+                          Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
+                        ],
+                      ),
+                    ),
                     Row(
                       children: item.itemTradeOptions!
                           .map(
@@ -418,14 +449,6 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
                 ),
               ),
             ],
-          ),
-        ),
-
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: TradeStatusTagWidget(
-            status: item.itemStatus == ItemStatus.exchanged.serverName ? TradeStatus.traded : TradeStatus.pending,
           ),
         ),
       ],
