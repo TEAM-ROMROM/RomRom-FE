@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
@@ -19,6 +20,7 @@ import 'package:romrom_fe/widgets/home_feed_ai_sort_button.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/providers/item_like_provider.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
@@ -30,7 +32,7 @@ import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
 /// 홈 피드 아이템 위젯
 /// 각 아이템의 상세 정보를 표시하는 위젯
-class HomeFeedItemWidget extends StatefulWidget {
+class HomeFeedItemWidget extends ConsumerStatefulWidget {
   final HomeFeedItem item;
   final bool showBlur;
 
@@ -40,26 +42,33 @@ class HomeFeedItemWidget extends StatefulWidget {
   const HomeFeedItemWidget({super.key, required this.item, required this.showBlur, this.onAiRecommend});
 
   @override
-  State<HomeFeedItemWidget> createState() => _HomeFeedItemWidgetState();
+  ConsumerState<HomeFeedItemWidget> createState() => _HomeFeedItemWidgetState();
 }
 
-class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
+class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
   int _currentImageIndex = 0;
   late PageController pageController;
   late bool _useAiPrice; // AI 가격 여부
-  late bool _isLiked;
-  late int _likeCount;
-  bool _isLiking = false; // 좋아요 API 중복 호출 방지
   bool _isAiLoading = false; // AI 추천 API 호출 중 여부
   bool _isAiButtonActive = false; // AI 추천 버튼 활성화F
+  // _isLiked, _likeCount, _isLiking 제거됨 - itemLikeProvider 캐시로 일원화
 
   @override
   void initState() {
     super.initState();
     pageController = PageController(initialPage: _currentImageIndex);
     _useAiPrice = widget.item.aiPrice; // AI 가격 여부
-    _isLiked = widget.item.isLiked;
-    _likeCount = widget.item.likeCount;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final id = widget.item.itemUuid;
+      if (id != null && id.isNotEmpty) {
+        ref
+            .read(itemLikeProvider.notifier)
+            .seed(itemId: id, isLiked: widget.item.isLiked, likeCount: widget.item.likeCount);
+      }
+    });
+
     _fetchItemLikeStatus();
   }
 
@@ -72,13 +81,19 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
       final itemApi = ItemApi();
       final response = await itemApi.getItemDetail(ItemRequest(itemId: widget.item.itemUuid));
 
-      if (mounted) {
-        setState(() {
-          _useAiPrice = response.item?.isAiPredictedPrice ?? false;
-          _isLiked = response.isLiked == true;
-          _likeCount = response.item?.likeCount ?? widget.item.likeCount;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _useAiPrice = response.item?.isAiPredictedPrice ?? false;
+      });
+      final id = widget.item.itemUuid!;
+      ref
+          .read(itemLikeProvider.notifier)
+          .seed(
+            itemId: id,
+            isLiked: response.isLiked == true,
+            likeCount: response.item?.likeCount ?? widget.item.likeCount,
+            force: true,
+          );
     } catch (e) {
       debugPrint('좋아요 상태 조회 실패: $e');
     }
@@ -136,6 +151,18 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
     String formattedDate = formatDate(widget.item.date);
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+
+    final id = widget.item.itemUuid;
+    final liked = ref.watch(
+      itemLikeProvider.select(
+        (s) => (id != null && id.isNotEmpty) ? (s[id]?.isLiked ?? widget.item.isLiked) : widget.item.isLiked,
+      ),
+    );
+    final likeCount = ref.watch(
+      itemLikeProvider.select(
+        (s) => (id != null && id.isNotEmpty) ? (s[id]?.likeCount ?? widget.item.likeCount) : widget.item.likeCount,
+      ),
+    );
     // 네비게이션바 && 상태바 높이 : 실제 사용 가능 높이 계산
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final navigationBarHeight = 100.h; // 네비게이션바 높이 (80.h)
@@ -167,7 +194,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                       scaleDown: AppPressable.scaleCard,
                       enableRipple: false,
                       onTap: () async {
-                        final result = await Navigator.push<dynamic>(
+                        await Navigator.push<void>(
                           context,
                           MaterialPageRoute(
                             builder: (_) => ItemDetailDescriptionScreen(
@@ -182,12 +209,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                             ),
                           ),
                         );
-                        if (result is Map<String, dynamic> && mounted) {
-                          setState(() {
-                            _isLiked = result['isLiked'] as bool? ?? _isLiked;
-                            _likeCount = result['likeCount'] as int? ?? _likeCount;
-                          });
-                        }
+                        // 캐시(itemLikeProvider)로 좋아요 상태가 자동 전파됨
                       },
                       child: Hero(
                         tag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
@@ -266,10 +288,8 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                           radius: 18.w,
                           containedInkWell: false,
                           onTap: () async {
-                            // 연타 방지 및 유효성 검사
-                            if (_isLiking || widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {
-                              return;
-                            }
+                            final id = widget.item.itemUuid;
+                            if (id == null || id.isEmpty) return;
 
                             // 내가 작성한 게시글인지 확인
                             final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
@@ -284,26 +304,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               return;
                             }
 
-                            setState(() => _isLiking = true);
-                            try {
-                              final itemApi = ItemApi();
-                              final response = await itemApi.postLike(ItemRequest(itemId: widget.item.itemUuid));
-                              if (!mounted) return;
-                              setState(() {
-                                _isLiked = response.isLiked == true;
-                                if (response.item?.likeCount != null) {
-                                  _likeCount = response.item?.likeCount ?? _likeCount;
-                                } else {
-                                  _likeCount = _isLiked ? _likeCount + 1 : (_likeCount > 0 ? _likeCount - 1 : 0);
-                                }
-                              });
-                            } catch (e) {
-                              debugPrint('좋아요 실패: $e');
-                            } finally {
-                              if (mounted) {
-                                setState(() => _isLiking = false);
-                              }
-                            }
+                            await ref.read(itemLikeProvider.notifier).toggle(id);
                           },
                           customBorder: const CircleBorder(),
                           highlightColor: AppColors.buttonHighlightColorGray,
@@ -314,9 +315,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                               child: SizedBox.square(
                                 dimension: 30.w,
                                 child: SvgPicture.asset(
-                                  _isLiked
-                                      ? 'assets/images/like-heart-icon.svg'
-                                      : 'assets/images/dislike-heart-icon.svg',
+                                  liked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg',
                                   fit: BoxFit.contain,
                                 ),
                               ),
@@ -327,7 +326,7 @@ class _HomeFeedItemWidgetState extends State<HomeFeedItemWidget> {
                     ),
                   ),
                   SizedBox(height: 2.h),
-                  Text(_likeCount.toString(), style: CustomTextStyles.p2),
+                  Text(likeCount.toString(), style: CustomTextStyles.p2),
                 ],
               ),
             ),
