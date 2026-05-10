@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
-import 'package:romrom_fe/widgets/common/cached_image.dart';
-import 'package:romrom_fe/widgets/common/app_pressable.dart';
-import 'package:romrom_fe/widgets/common/loading_indicator.dart';
-import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
-import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
-import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'dart:async';
-import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
-
 import 'package:romrom_fe/models/app_motion.dart';
+import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/screens/item_detail_description_screen.dart';
+import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
+import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
+import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
+import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 
 class MyRegisterItemScreen extends StatefulWidget {
   const MyRegisterItemScreen({super.key});
@@ -35,19 +34,27 @@ class MyRegisterItemScreen extends StatefulWidget {
 
 class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  bool _isScrolled = false; //
-  bool _isLoading = true;
-  bool _isLoadingMore = false;
-  bool _hasMoreItems = true;
-  Timer? _scrollTimer;
+  // 탭별 데이터
+  final List<Item> _sellingItems = [];
+  final List<Item> _completedItems = [];
 
-  // 내 물품 데이터
-  final List<Item> _myItems = [];
-  int _currentPage = 0;
+  int _sellingPage = 0;
+  int _completedPage = 0;
+  bool _hasMoreSelling = true;
+  bool _hasMoreCompleted = true;
+
+  bool _isLoadingSelling = false;
+  bool _isLoadingCompleted = false;
+  bool _isLoadingMoreSelling = false;
+  bool _isLoadingMoreCompleted = false;
+
   final int _pageSize = 20;
 
+  // 전체 탭 getter
+  List<Item> get _allItems => [..._sellingItems, ..._completedItems];
+
   // 토글 상태
-  MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.selling;
+  MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.all;
   late AnimationController _toggleAnimationController;
   late Animation<double> _toggleAnimation;
 
@@ -56,13 +63,10 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
     super.initState();
 
     // 토글 애니메이션 초기화
-    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this);
-    _toggleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this, upperBound: 2.0);
+    _toggleAnimation = _toggleAnimationController;
 
-    _loadMyItems();
+    _loadAllTabs();
     _scrollController.addListener(_scrollListener);
   }
 
@@ -71,61 +75,90 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _toggleAnimationController.dispose();
-    _scrollTimer?.cancel();
     super.dispose();
   }
 
-  /// 내 물품 목록 로드 (초기 로딩)
-  Future<void> _loadMyItems({bool isRefresh = false}) async {
-    debugPrint('_loadMyItems 호출됨: isRefresh=$isRefresh, _isLoading=$_isLoading');
+  /// selling/completed 두 탭을 병렬 로드
+  Future<void> _loadAllTabs({bool isRefresh = false}) async {
+    await Future.wait([
+      _loadTabItems(MyItemToggleStatus.selling, isRefresh: isRefresh),
+      _loadTabItems(MyItemToggleStatus.completed, isRefresh: isRefresh),
+    ]);
+  }
 
-    // 초기 로딩이 아닌 경우에만 중복 호출 방지
-    if (!isRefresh && _isLoading && _myItems.isNotEmpty) {
-      debugPrint('중복 로딩 방지로 return');
-      return;
-    }
+  /// 탭별 공통 로딩 함수
+  Future<void> _loadTabItems(MyItemToggleStatus tab, {bool isRefresh = false}) async {
+    assert(tab != MyItemToggleStatus.all, '_loadTabItems은 all 탭을 직접 호출하지 않음');
+
+    final isSelling = tab == MyItemToggleStatus.selling;
+    final isLoading = isSelling ? _isLoadingSelling : _isLoadingCompleted;
+    final isLoadingMore = isSelling ? _isLoadingMoreSelling : _isLoadingMoreCompleted;
+    final items = isSelling ? _sellingItems : _completedItems;
+
+    if (!isRefresh && isLoading && items.isNotEmpty) return;
+    if (!isRefresh && isLoadingMore) return;
 
     setState(() {
       if (isRefresh) {
-        _currentPage = 0;
-        _hasMoreItems = true;
-        _myItems.clear();
+        if (isSelling) {
+          _sellingPage = 0;
+          _hasMoreSelling = true;
+          _sellingItems.clear();
+          _isLoadingSelling = true;
+        } else {
+          _completedPage = 0;
+          _hasMoreCompleted = true;
+          _completedItems.clear();
+          _isLoadingCompleted = true;
+        }
+      } else {
+        if (isSelling) {
+          _isLoadingSelling = true;
+        } else {
+          _isLoadingCompleted = true;
+        }
       }
-      _isLoading = true;
     });
 
     try {
       final itemApi = ItemApi();
+      final currentPage = isSelling ? _sellingPage : _completedPage;
       final request = ItemRequest(
-        pageNumber: isRefresh ? 0 : _currentPage,
+        pageNumber: isRefresh ? 0 : currentPage,
         pageSize: _pageSize,
-        itemStatus: _currentTabStatus.serverName,
+        itemStatus: tab.serverName,
       );
 
       final response = await itemApi.getMyItems(request);
       final newItems = response.itemPage?.content ?? [];
+      await Future.wait(newItems.map((item) => item.resolveAndCacheAddress()));
 
       if (mounted) {
         setState(() {
-          if (isRefresh) {
-            _myItems.clear();
-            _currentPage = 0;
+          if (isSelling) {
+            _sellingItems.addAll(newItems);
+            _hasMoreSelling = newItems.length == _pageSize;
+            _isLoadingSelling = false;
+          } else {
+            _completedItems.addAll(newItems);
+            _hasMoreCompleted = newItems.length == _pageSize;
+            _isLoadingCompleted = false;
           }
-
-          _myItems.addAll(newItems);
-          _hasMoreItems = newItems.length == _pageSize;
-          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          if (isSelling) {
+            _isLoadingSelling = false;
+          } else {
+            _isLoadingCompleted = false;
+          }
         });
 
         CommonSnackBar.show(
           context: context,
-          message: '내 물품 목록 로드 실패: ${ErrorUtils.getErrorMessage(e)}',
+          message: '물품 목록 로드 실패: ${ErrorUtils.getErrorMessage(e)}',
           type: SnackBarType.error,
         );
       }
@@ -134,35 +167,67 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
 
   /// 더 많은 물품 로드 (페이징)
   Future<void> _loadMoreItems() async {
-    if (_isLoadingMore || !_hasMoreItems || _isLoading) return;
+    switch (_currentTabStatus) {
+      case MyItemToggleStatus.all:
+        if (_hasMoreSelling && !_isLoadingMoreSelling) {
+          await _loadMoreTab(MyItemToggleStatus.selling);
+        }
+        if (_hasMoreCompleted && !_isLoadingMoreCompleted) {
+          await _loadMoreTab(MyItemToggleStatus.completed);
+        }
+      case MyItemToggleStatus.selling:
+        if (_hasMoreSelling && !_isLoadingMoreSelling) {
+          await _loadMoreTab(MyItemToggleStatus.selling);
+        }
+      case MyItemToggleStatus.completed:
+        if (_hasMoreCompleted && !_isLoadingMoreCompleted) {
+          await _loadMoreTab(MyItemToggleStatus.completed);
+        }
+    }
+  }
+
+  Future<void> _loadMoreTab(MyItemToggleStatus tab) async {
+    final isSelling = tab == MyItemToggleStatus.selling;
 
     setState(() {
-      _isLoadingMore = true;
+      if (isSelling) {
+        _isLoadingMoreSelling = true;
+      } else {
+        _isLoadingMoreCompleted = true;
+      }
     });
 
     try {
       final itemApi = ItemApi();
-      final request = ItemRequest(
-        pageNumber: _currentPage + 1,
-        pageSize: _pageSize,
-        itemStatus: _currentTabStatus.serverName,
-      );
+      final nextPage = (isSelling ? _sellingPage : _completedPage) + 1;
+      final request = ItemRequest(pageNumber: nextPage, pageSize: _pageSize, itemStatus: tab.serverName);
 
       final response = await itemApi.getMyItems(request);
       final newItems = response.itemPage?.content ?? [];
 
       if (mounted) {
         setState(() {
-          _myItems.addAll(newItems);
-          _currentPage++;
-          _hasMoreItems = newItems.length == _pageSize;
-          _isLoadingMore = false;
+          if (isSelling) {
+            _sellingItems.addAll(newItems);
+            _sellingPage = nextPage;
+            _hasMoreSelling = newItems.length == _pageSize;
+            _isLoadingMoreSelling = false;
+          } else {
+            _completedItems.addAll(newItems);
+            _completedPage = nextPage;
+            _hasMoreCompleted = newItems.length == _pageSize;
+            _isLoadingMoreCompleted = false;
+          }
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoadingMore = false;
+          if (isSelling) {
+            _isLoadingMoreSelling = false;
+          } else {
+            _isLoadingMoreCompleted = false;
+          }
         });
 
         CommonSnackBar.show(
@@ -175,126 +240,73 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
   }
 
   void _scrollListener() {
-    // 무한 스크롤 처리
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _loadMoreItems();
-    }
-
-    // 기존 타이머 취소
-    _scrollTimer?.cancel();
-
-    if (_scrollController.offset > 50 && !_isScrolled) {
-      setState(() {
-        _isScrolled = true;
-      });
-    } else if (_scrollController.offset <= 50 && _isScrolled) {
-      setState(() {
-        _isScrolled = false;
-      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: AppColors.transparent),
-      child: Scaffold(
-        backgroundColor: AppColors.primaryBlack,
-        extendBodyBehindAppBar: true,
-        body: Stack(
-          children: [
-            // === 콘텐츠 ===
-            SafeArea(
-              top: false,
-              child: RefreshIndicator(
-                color: AppColors.primaryYellow,
-                backgroundColor: AppColors.transparent,
-                displacement: MediaQuery.of(context).padding.top + 58.h + 62.h,
-                onRefresh: () async {
-                  try {
-                    await _loadMyItems(isRefresh: true);
-                  } finally {
-                    // 새로고침 완료 후 타이머로 스크롤 상태 업데이트 (0.5초 딜레이)
-                    _scrollTimer = Timer(const Duration(milliseconds: 500), () {
-                      if (_scrollController.hasClients) {
-                        final isNowScrolled = _scrollController.offset > 50;
-                        if (isNowScrolled != _isScrolled) {
-                          setState(() {
-                            _isScrolled = isNowScrolled;
-                          });
-                        }
-                      }
-                    });
-                  }
-                },
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                  slivers: [
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: GlassHeaderDelegate(
-                        headerTitle: '나의 등록된 물건',
-                        toggle: GlassHeaderToggleBuilder.buildDefaultToggle(
-                          animation: _toggleAnimation,
-                          isRightSelected: _currentTabStatus == MyItemToggleStatus.completed,
-                          onLeftTap: () => _onToggleChanged(MyItemToggleStatus.selling),
-                          onRightTap: () => _onToggleChanged(MyItemToggleStatus.completed),
-                          leftText: '판매 중',
-                          rightText: '교환 완료',
-                        ),
-                        statusBarHeight: MediaQuery.of(context).padding.top, // ★ 꼭 전달
-                        toolbarHeight: 58.h,
-                        toggleHeight: 62.h,
-                        expandedExtra: 16.h, // 큰 제목/여백
-                        enableBlur: _isScrolled, // 스크롤 시 더 진해지게
-                      ),
-                    ),
-                    // 아이템 리스트 슬리버들
-                    ..._buildItemSlivers(),
-                  ],
-                ),
-              ),
-            ),
-          ],
+    return Scaffold(
+      backgroundColor: AppColors.primaryBlack,
+      appBar: CommonAppBar(
+        title: '나의 등록된 물건',
+        appBarHeight: 120.h,
+        bottomWidgets: PreferredSize(
+          preferredSize: Size.fromHeight(62.h),
+          child: TripleToggleSwitch(
+            animation: _toggleAnimation,
+            selectedIndex: _currentTabStatus.id,
+            onFirstTap: () => _onToggleChanged(MyItemToggleStatus.all),
+            onSecondTap: () => _onToggleChanged(MyItemToggleStatus.selling),
+            onThirdTap: () => _onToggleChanged(MyItemToggleStatus.completed),
+            firstText: '전체',
+            secondText: '등록 물건',
+            thirdText: '교환 완료',
+          ),
+        ),
+      ),
+      body: RefreshIndicator(
+        color: AppColors.primaryYellow,
+        backgroundColor: AppColors.transparent,
+        onRefresh: () => _loadAllTabs(isRefresh: true),
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          slivers: [..._buildItemSlivers()],
         ),
       ),
     );
   }
 
   List<Widget> _buildItemSlivers() {
-    if (_isLoading && _myItems.isEmpty) {
+    final isLoading = _isLoadingSelling || _isLoadingCompleted;
+
+    if (isLoading && _sellingItems.isEmpty && _completedItems.isEmpty) {
       return const [RegisterTabSkeletonSliver()];
     }
 
-    final filteredItems = _myItems.where((item) {
-      return item.itemStatus == _currentTabStatus.serverName;
-    }).toList();
+    final displayItems = switch (_currentTabStatus) {
+      MyItemToggleStatus.all => _allItems,
+      MyItemToggleStatus.selling => _sellingItems,
+      MyItemToggleStatus.completed => _completedItems,
+    };
 
-    if (filteredItems.isEmpty) {
-      return [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _buildEmptyState(), // 여기엔 ListView 같은 스크롤 위젯 넣지 않기
-        ),
-      ];
+    if (displayItems.isEmpty) {
+      return [SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())];
     }
 
-    // separator interleave: item, divider, item, divider...
-    final itemCountWithSeparators = filteredItems.length * 2 - 1;
+    final hasMore = switch (_currentTabStatus) {
+      MyItemToggleStatus.all => _hasMoreSelling || _hasMoreCompleted,
+      MyItemToggleStatus.selling => _hasMoreSelling,
+      MyItemToggleStatus.completed => _hasMoreCompleted,
+    };
+
+    final itemCountWithSeparators = displayItems.length * 2 - 1;
 
     return [
       SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.only(right: 24.w, bottom: 16.h),
-          child: Text(
-            _currentTabStatus == MyItemToggleStatus.selling
-                ? '${filteredItems.length}/10개'
-                : '${filteredItems.length}개',
-            textAlign: TextAlign.right,
-            style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w400),
-          ),
-        ),
+        child: Padding(padding: EdgeInsets.only(bottom: 16.h)),
       ),
       SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
@@ -304,21 +316,20 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
               child: Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h),
             );
           }
-          final item = filteredItems[index ~/ 2];
+          final item = displayItems[index ~/ 2];
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.0.w),
             child: _buildItemTile(item, index ~/ 2),
           );
         }, childCount: itemCountWithSeparators),
       ),
-      if (_hasMoreItems)
+      if (hasMore)
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 16.h),
             child: const Center(child: CommonLoadingIndicator()),
           ),
         ),
-      // 하단 여백 24px
       SliverToBoxAdapter(child: SizedBox(height: 24.h)),
     ];
   }
@@ -375,19 +386,33 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 6.h),
-                    Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
+                    Row(
+                      children: [
+                        Text(
+                          item.displayLocation,
+                          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+                        ),
+                        Container(
+                          margin: EdgeInsets.symmetric(horizontal: 4.w),
+                          width: 4.w,
+                          height: 4.w,
+                          decoration: const BoxDecoration(color: AppColors.opacity60White, shape: BoxShape.circle),
+                        ),
+                        Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
+                      ],
+                    ),
                     SizedBox(height: 12.h),
                     Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
                     SizedBox(height: 10.h),
                     Row(
-                      children: [
-                        Icon(AppIcons.itemRegisterHeart, size: 14.sp, color: AppColors.opacity60White),
-                        SizedBox(width: 4.w),
-                        Text(
-                          '${item.likeCount ?? 0}',
-                          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
-                        ),
-                      ],
+                      children: item.itemTradeOptions!
+                          .map(
+                            (option) => Padding(
+                              padding: EdgeInsets.only(right: 4.w),
+                              child: RequestManagementTradeOptionTag(option: ItemTradeOption.fromServerName(option)),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ],
                 ),
@@ -409,19 +434,9 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
 
   /// 토글 상태 변경
   void _onToggleChanged(MyItemToggleStatus newStatus) {
-    if (_currentTabStatus != newStatus) {
-      if (newStatus == MyItemToggleStatus.completed) {
-        _toggleAnimationController.forward();
-      } else {
-        _toggleAnimationController.reverse();
-      }
-
-      setState(() {
-        _currentTabStatus = newStatus;
-      });
-
-      _loadMyItems(isRefresh: true);
-    }
+    if (_currentTabStatus == newStatus) return;
+    setState(() => _currentTabStatus = newStatus);
+    _toggleAnimationController.animateTo(newStatus.id.toDouble(), duration: AppMotion.normal, curve: Curves.easeInOut);
   }
 
   /// 이미지 로드 위젯
@@ -453,7 +468,7 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
 
     // 상태 변경 또는 삭제 후 목록 새로고침
     if (result == true) {
-      _loadMyItems(isRefresh: true);
+      _loadAllTabs(isRefresh: true);
     }
   }
 }
