@@ -299,4 +299,28 @@ class TradeApi {
       _pendingRequests.remove(id);
     }
   }
+
+  /// 거래 후기 조회 API
+  /// `POST /api/trade/review/get`
+  Future<TradeResponse> getTradeReview(TradeRequest request) async {
+    final String url = '${AppUrls.baseUrl}/api/trade/review/get';
+    late TradeResponse tradeResponse;
+
+    final Map<String, dynamic> fields = {
+      'pageNumber': request.pageNumber.toString(),
+      'pageSize': request.pageSize.toString(),
+      'memberId': request.member?.memberId,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        tradeResponse = TradeResponse.fromJson(responseData);
+        debugPrint('거래 후기 조회 성공');
+      },
+    );
+    return tradeResponse;
+  }
 }
