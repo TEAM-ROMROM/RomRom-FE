@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -14,19 +16,16 @@ import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 /// 차단 관리 화면
-class BlockManagementScreen extends StatefulWidget {
+class BlockManagementScreen extends ConsumerStatefulWidget {
   const BlockManagementScreen({super.key});
 
   @override
-  State<BlockManagementScreen> createState() => _BlockManagementScreenState();
+  ConsumerState<BlockManagementScreen> createState() => _BlockManagementScreenState();
 }
 
-class _BlockManagementScreenState extends State<BlockManagementScreen> {
+class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
   List<Member> _blockedMembers = [];
   bool _isLoading = true;
-
-  /// 페이지 내에서 차단 해제된 멤버 ID 추적 (버튼 상태 토글용)
-  final Set<String> _unblockedMemberIds = {};
 
   @override
   void initState() {
@@ -45,6 +44,9 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
           _blockedMembers = response.members ?? [];
           _isLoading = false;
         });
+
+        final ids = (response.members ?? []).map((m) => m.memberId).whereType<String>().toSet();
+        ref.read(memberBlockProvider.notifier).seed(ids, force: true);
       }
     } catch (e) {
       debugPrint('차단 회원 목록 로드 실패: $e');
@@ -57,35 +59,11 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
     }
   }
 
-  /// 차단 해제 처리 - SnackBar 없이 버튼 상태만 변경
-  Future<void> _handleUnblock(String memberId) async {
-    try {
-      final success = await MemberApi().unblockMember(memberId);
-      if (success && mounted) {
-        setState(() => _unblockedMemberIds.add(memberId));
-      }
-    } catch (e) {
-      debugPrint('차단 해제 실패: $e');
-      if (mounted) {
-        CommonSnackBar.show(context: context, message: '차단 해제에 실패했습니다', type: SnackBarType.error);
-      }
-    }
-  }
+  /// 차단 해제 처리 - 캐시에 위임
+  Future<void> _handleUnblock(String memberId) => ref.read(memberBlockProvider.notifier).setBlocked(memberId, false);
 
-  /// 다시 차단하기 처리
-  Future<void> _handleBlock(String memberId) async {
-    try {
-      final success = await MemberApi().blockMember(memberId);
-      if (success && mounted) {
-        setState(() => _unblockedMemberIds.remove(memberId));
-      }
-    } catch (e) {
-      debugPrint('차단 실패: $e');
-      if (mounted) {
-        CommonSnackBar.show(context: context, message: '차단에 실패했습니다', type: SnackBarType.error);
-      }
-    }
-  }
+  /// 다시 차단하기 처리 - 캐시에 위임
+  Future<void> _handleBlock(String memberId) => ref.read(memberBlockProvider.notifier).setBlocked(memberId, true);
 
   @override
   Widget build(BuildContext context) {
@@ -141,21 +119,9 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
     return GestureDetector(
       onTap: () async {
         if (member.memberId != null) {
-          final result = await context.navigateTo(screen: MemberProfileScreen(memberId: member.memberId!));
-
-          // 프로필 화면에서 차단 상태 변경됐으면 동기화
-          if (result != null && result is Map<String, dynamic> && mounted) {
-            final memberId = result['memberId'] as String;
-            final isBlocked = result['isBlocked'] as bool;
-
-            setState(() {
-              if (isBlocked) {
-                _unblockedMemberIds.remove(memberId);
-              } else {
-                _unblockedMemberIds.add(memberId);
-              }
-            });
-          }
+          // 프로필 화면 차단 상태 동기화는 memberBlockProvider 캐시로 자동 전파됨.
+          // 캐시 사용 안 하면 result 기반 동기화가 필요하지만, 현재 이 PR 스코프 외.
+          await context.navigateTo(screen: MemberProfileScreen(memberId: member.memberId!));
         }
       },
       child: Container(
@@ -197,7 +163,8 @@ class _BlockManagementScreenState extends State<BlockManagementScreen> {
 
   /// 차단/차단 해제 버튼 (상태에 따라 디자인 변경)
   Widget _buildBlockButton(String memberId) {
-    final isUnblocked = _unblockedMemberIds.contains(memberId);
+    final isCurrentlyBlocked = ref.watch(memberBlockProvider.select((s) => s.contains(memberId)));
+    final isUnblocked = !isCurrentlyBlocked;
 
     return GestureDetector(
       onTap: () => isUnblocked ? _handleBlock(memberId) : _handleUnblock(memberId),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photo_viewer/photo_viewer.dart';
@@ -24,6 +25,7 @@ import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/providers/item_like_provider.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -47,7 +49,7 @@ import 'package:romrom_fe/screens/trade_request_screen.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/skeletons/item_detail_skeleton.dart';
 
-class ItemDetailDescriptionScreen extends StatefulWidget {
+class ItemDetailDescriptionScreen extends ConsumerStatefulWidget {
   final String itemId;
   final Size imageSize;
   final int currentImageIndex;
@@ -74,15 +76,13 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   });
 
   @override
-  State<ItemDetailDescriptionScreen> createState() => _ItemDetailDescriptionScreenState();
+  ConsumerState<ItemDetailDescriptionScreen> createState() => _ItemDetailDescriptionScreenState();
 }
 
-class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScreen> with SingleTickerProviderStateMixin {
+class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescriptionScreen>
+    with SingleTickerProviderStateMixin {
   late PageController pageController;
   late final ValueNotifier<int> currentIndexVN;
-  late final ValueNotifier<bool> isLikedVN;
-  late final ValueNotifier<int> likeCountVN;
-  bool _likeInFlight = false;
   final GlobalKey _shareButtonKey = GlobalKey();
 
   // 이미지 stretch 효과
@@ -109,8 +109,6 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     super.initState();
     currentIndexVN = ValueNotifier<int>(widget.currentImageIndex);
     pageController = PageController(initialPage: widget.currentImageIndex);
-    isLikedVN = ValueNotifier<bool>(false);
-    likeCountVN = ValueNotifier<int>(0);
     _returnAnim = AnimationController(vsync: this, duration: _returnAnimDuration);
     _returnAnim.addListener(_onReturnAnimTick);
     _scrollController.addListener(_onScroll);
@@ -138,8 +136,6 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       setState(() {
         item = response.item;
         itemImages = item?.itemImages;
-        isLikedVN.value = (response.isLiked == true);
-        likeCountVN.value = item?.likeCount ?? 0;
 
         imageUrls =
             itemImages
@@ -160,6 +156,14 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
 
         isLoading = false;
       });
+
+      // 캐시 시드 (force=true: 서버 최신값 우선)
+      final id = item?.itemId;
+      if (id != null && id.isNotEmpty) {
+        ref
+            .read(itemLikeProvider.notifier)
+            .seed(itemId: id, isLiked: response.isLiked == true, likeCount: item?.likeCount ?? 0, force: true);
+      }
     } catch (e) {
       debugPrint('물품 상세 정보 로드 실패: $e');
       if (!mounted) return;
@@ -312,7 +316,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   }
 
   void _popWithLikeResult() {
-    Navigator.of(context).pop(<String, dynamic>{'isLiked': isLikedVN.value, 'likeCount': likeCountVN.value});
+    Navigator.of(context).pop();
   }
 
   Future<void> _shareItem() async {
@@ -358,8 +362,6 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   void dispose() {
     currentIndexVN.dispose();
     pageController.dispose();
-    isLikedVN.dispose();
-    likeCountVN.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _returnAnim.removeListener(_onReturnAnimTick);
@@ -459,7 +461,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && !_likeInFlight) _popWithLikeResult();
+        if (!didPop) _popWithLikeResult();
       },
       child: Scaffold(
         body: Stack(
@@ -678,9 +680,15 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                           customBorder: const CircleBorder(),
                                           highlightColor: AppColors.buttonHighlightColorGray,
                                           splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                                          child: ValueListenableBuilder<bool>(
-                                            valueListenable: isLikedVN,
-                                            builder: (_, liked, _) {
+                                          child: Builder(
+                                            builder: (context) {
+                                              final id = item?.itemId;
+                                              final liked = ref.watch(
+                                                itemLikeProvider.select(
+                                                  (s) =>
+                                                      (id != null && id.isNotEmpty) ? (s[id]?.isLiked ?? false) : false,
+                                                ),
+                                              );
                                               return SizedBox.square(
                                                 dimension: 56.w, // 리플/터치 캔버스
                                                 child: Center(
@@ -703,9 +711,14 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                     ),
                                   ),
                                   SizedBox(height: 2.h),
-                                  ValueListenableBuilder<int>(
-                                    valueListenable: likeCountVN,
-                                    builder: (_, likeCount, _) {
+                                  Builder(
+                                    builder: (context) {
+                                      final id = item?.itemId;
+                                      final likeCount = ref.watch(
+                                        itemLikeProvider.select(
+                                          (s) => (id != null && id.isNotEmpty) ? (s[id]?.likeCount ?? 0) : 0,
+                                        ),
+                                      );
                                       return Text(likeCount.toString(), style: CustomTextStyles.p2);
                                     },
                                   ),
@@ -1068,9 +1081,9 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   }
 
   Future<void> _toggleLike() async {
-    if (_likeInFlight) return;
+    final id = item?.itemId;
+    if (id == null || id.isEmpty) return;
 
-    // 내가 작성한 게시글인지 확인
     final isCurrentMember = await MemberManager.isCurrentMember(item?.member?.memberId);
     if (isCurrentMember) {
       if (mounted) {
@@ -1079,31 +1092,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       return;
     }
 
-    _likeInFlight = true;
-    final prevLiked = isLikedVN.value;
-    final prevCount = likeCountVN.value;
-
-    // 1) 빠른 UI 업데이트
-    isLikedVN.value = !prevLiked;
-    likeCountVN.value = prevLiked ? (prevCount > 0 ? prevCount - 1 : 0) : (prevCount + 1);
-
-    try {
-      final itemApi = ItemApi();
-      final req = ItemRequest(itemId: item!.itemId);
-      final res = await itemApi.postLike(req);
-
-      // 2) 서버 결과로 보정(서버-클라 불일치 대비)
-      if (!mounted) return;
-      isLikedVN.value = (res.isLiked == true);
-      likeCountVN.value = res.item?.likeCount ?? likeCountVN.value;
-    } catch (e) {
-      debugPrint('좋아요 실패: $e');
-      // 3) 실패 롤백
-      isLikedVN.value = prevLiked;
-      likeCountVN.value = prevCount;
-    } finally {
-      _likeInFlight = false;
-    }
+    await ref.read(itemLikeProvider.notifier).toggle(id);
   }
 
   /// 채팅하기 버튼 핸들러
