@@ -6,8 +6,10 @@ import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/screens/my_page/my_register_item_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
@@ -52,25 +54,30 @@ class _MyExchangeSectionState extends State<MyExchangeSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(left: 16.w, top: 16.h, bottom: 20.h),
-      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('교환 물건', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
-              Padding(
-                padding: EdgeInsets.only(right: 16.0.w),
-                child: Icon(AppIcons.detailView, size: 16.w, color: AppColors.opacity30White),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          _buildContent(),
-        ],
+    return AppPressable(
+      onTap: () {
+        context.navigateTo(screen: const MyRegisterItemScreen());
+      },
+      child: Container(
+        padding: EdgeInsets.only(left: 16.w, top: 16.h, bottom: 20.h),
+        decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('교환 물건', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
+                Padding(
+                  padding: EdgeInsets.only(right: 16.0.w),
+                  child: Icon(AppIcons.detailView, size: 16.w, color: AppColors.opacity30White),
+                ),
+              ],
+            ),
+            SizedBox(height: 19.h),
+            _buildContent(),
+          ],
+        ),
       ),
     );
   }
