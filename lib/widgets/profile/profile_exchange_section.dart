@@ -43,18 +43,17 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
   /// 내 교환 물건 로드
   Future<void> _loadMyItems() async {
     try {
+      final List<Item> items;
       if (widget.memberId != null) {
-        // TODO: 타인 교환 물건 조회 API 개발 후 구현
-        if (mounted) setState(() => _isLoading = false);
-        _notifyLoaded();
-        return;
+        final res = await ItemApi().getMemberItems(ItemRequest(memberId: widget.memberId));
+        items = res.itemPage?.content ?? [];
+      } else {
+        final (availableRes, exchangedRes) = await (
+          ItemApi().getMyItems(ItemRequest(itemStatus: ItemStatus.available.serverName, pageNumber: 0, pageSize: 20)),
+          ItemApi().getMyItems(ItemRequest(itemStatus: ItemStatus.exchanged.serverName, pageNumber: 0, pageSize: 20)),
+        ).wait;
+        items = <Item>[...availableRes.itemPage?.content ?? [], ...exchangedRes.itemPage?.content ?? []];
       }
-      final (availableRes, exchangedRes) = await (
-        ItemApi().getMyItems(ItemRequest(itemStatus: ItemStatus.available.serverName, pageNumber: 0, pageSize: 20)),
-        ItemApi().getMyItems(ItemRequest(itemStatus: ItemStatus.exchanged.serverName, pageNumber: 0, pageSize: 20)),
-      ).wait;
-
-      final items = <Item>[...availableRes.itemPage?.content ?? [], ...exchangedRes.itemPage?.content ?? []];
       await Future.wait(items.map((item) => item.resolveAndCacheAddress()));
       if (mounted) {
         setState(() {
