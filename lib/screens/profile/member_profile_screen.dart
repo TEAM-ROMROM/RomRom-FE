@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/member_report_screen.dart';
-import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
@@ -37,6 +38,11 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
   bool _isBlockedUser = false;
   bool _blockStatusChanged = false;
   bool _deleteModalShown = false;
+
+  // 내 프로필 인라인 편집 상태
+  bool _showSaveButton = false;
+  bool _isProfileEdited = false;
+  bool _isSaving = false;
 
   String _accountStatus = '';
   String _nickname = '';
@@ -132,15 +138,34 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     }
   }
 
-  Future<void> _navigateToEditScreen() async {
-    final result = await context.navigateTo(screen: const MyProfileEditScreen());
+  /// 내 프로필 저장
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
+    if (!_isProfileEdited || _nickname.isEmpty) return;
 
-    // 수정 후 돌아왔을 때 정보 새로고침
-    if (result == true && mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-      await _loadProfileData();
+    setState(() => _isSaving = true);
+    try {
+      await MemberApi().updateMemberProfile(_nickname, _profileUrl);
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '프로필이 업데이트되었습니다.', type: SnackBarType.success);
+        setState(() {
+          _showSaveButton = false;
+          _isProfileEdited = false;
+        });
+      }
+    } on UgcViolationException catch (e) {
+      if (mounted) {
+        final ugcMessage = e.violatingText.isNotEmpty
+            ? '\'${e.violatingText}\'이(가) 포함된\n부적절한 표현입니다.\n수정 후 다시 시도해주세요.'
+            : '부적절한 표현이 포함되어 있습니다.\n수정 후 다시 시도해주세요.';
+        CommonModal.error(context: context, message: ugcMessage, onConfirm: () => Navigator.of(context).pop());
+      }
+    } catch (e) {
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -167,8 +192,22 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     }
   }
 
-  /// 뒤로가기 처리 - 차단 상태 변경 시 결과 반환
+  /// 뒤로가기 처리 - 미저장 변경 확인 후 차단 상태 변경 시 결과 반환
   void _handleBackPressed() {
+    if (_isMyProfile && _isProfileEdited) {
+      CommonModal.confirm(
+        context: context,
+        message: '변경 사항이 저장되지 않았습니다.\n저장하지 않고 나가시겠습니까?',
+        confirmText: '나가기',
+        cancelText: '취소',
+        onCancel: () => Navigator.of(context).pop(),
+        onConfirm: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+        },
+      );
+      return;
+    }
     if (_blockStatusChanged) {
       Navigator.pop(context, {'memberId': widget.memberId, 'isBlocked': _isBlockedUser});
     } else {
@@ -234,7 +273,26 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
         appBar: CommonAppBar(
           title: '프로필',
           showBottomBorder: true,
-          actions: _isMyProfile ? null : [_buildProfileMenu()],
+          actions: _isMyProfile
+              ? (_showSaveButton
+                    ? [
+                        Padding(
+                          padding: EdgeInsets.only(right: 24.0.w),
+                          child: GestureDetector(
+                            onTap: _handleSave,
+                            child: Text(
+                              '저장',
+                              style: CustomTextStyles.h2.copyWith(
+                                color: _isProfileEdited && _nickname.isNotEmpty
+                                    ? AppColors.primaryYellow
+                                    : AppColors.secondaryBlack2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ]
+                    : null)
+              : [_buildProfileMenu()],
           onBackPressed: () => _handleBackPressed(),
         ),
         body: SingleChildScrollView(
@@ -244,12 +302,31 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
               runSpacing: 16.h,
               children: [
                 ProfileOverviewSection(
-                  isEditable: false,
+                  isEditable: _isMyProfile,
                   nickname: _nickname,
                   imageUrl: _profileUrl,
                   location: _location,
                   receivedLikes: _totalLikeCount,
                   accountStatus: _accountStatus,
+                  onShowSaveButton: _isMyProfile ? () => setState(() => _showSaveButton = true) : null,
+                  onUploadFailed: _isMyProfile
+                      ? () {
+                          if (!_isProfileEdited) setState(() => _showSaveButton = false);
+                        }
+                      : null,
+                  onImageUploaded: _isMyProfile
+                      ? (url) => setState(() {
+                          _profileUrl = url;
+                          _isProfileEdited = true;
+                        })
+                      : null,
+                  onNicknameChanged: _isMyProfile
+                      ? (nickname) => setState(() {
+                          _nickname = nickname;
+                          _isProfileEdited = true;
+                          _showSaveButton = true;
+                        })
+                      : null,
                 ),
                 if (!_isMyProfile && _isBlockedUser)
                   Center(
@@ -257,27 +334,9 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
                   ),
                 ProfileExchangeSection(memberId: _isMyProfile ? null : widget.memberId),
                 ProfileReviewSection(memberId: _isMyProfile ? null : widget.memberId),
-                if (_isMyProfile) _buildEditButton(),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  /// 프로필 수정 버튼 (내 프로필인 경우만)
-  Widget _buildEditButton() {
-    return GestureDetector(
-      onTap: _navigateToEditScreen,
-      child: Container(
-        width: double.infinity,
-        height: 48.h,
-        decoration: BoxDecoration(color: AppColors.primaryYellow, borderRadius: BorderRadius.circular(10.r)),
-        alignment: Alignment.center,
-        child: Text(
-          '프로필 수정',
-          style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
         ),
       ),
     );
