@@ -13,8 +13,8 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
+import 'package:romrom_fe/widgets/skeletons/profile_screen_skeleton.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/profile/profile_exchange_section.dart';
 import 'package:romrom_fe/widgets/profile/profile_overview_section.dart';
@@ -43,6 +43,11 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
   bool _showSaveButton = false;
   bool _isProfileEdited = false;
   bool _isSaving = false;
+
+  // 섹션 로딩 조율
+  bool _exchangeLoaded = false;
+  bool _reviewLoaded = false;
+  bool get _showContent => !_isLoading && _exchangeLoaded && _reviewLoaded;
 
   String _accountStatus = '';
   String _nickname = '';
@@ -231,10 +236,7 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.primaryBlack,
-        body: Center(child: CommonLoadingIndicator()),
-      );
+      return const Scaffold(backgroundColor: AppColors.primaryBlack, body: ProfileScreenSkeleton());
     }
 
     if (_hasError) {
@@ -295,48 +297,63 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
               : [_buildProfileMenu()],
           onBackPressed: () => _handleBackPressed(),
         ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: Wrap(
-              runSpacing: 16.h,
-              children: [
-                ProfileOverviewSection(
-                  isEditable: _isMyProfile,
-                  nickname: _nickname,
-                  imageUrl: _profileUrl,
-                  location: _location,
-                  receivedLikes: _totalLikeCount,
-                  accountStatus: _accountStatus,
-                  onShowSaveButton: _isMyProfile ? () => setState(() => _showSaveButton = true) : null,
-                  onUploadFailed: _isMyProfile
-                      ? () {
-                          if (!_isProfileEdited) setState(() => _showSaveButton = false);
-                        }
-                      : null,
-                  onImageUploaded: _isMyProfile
-                      ? (url) => setState(() {
-                          _profileUrl = url;
-                          _isProfileEdited = true;
-                        })
-                      : null,
-                  onNicknameChanged: _isMyProfile
-                      ? (nickname) => setState(() {
-                          _nickname = nickname;
-                          _isProfileEdited = true;
-                          _showSaveButton = true;
-                        })
-                      : null,
-                ),
-                if (!_isMyProfile && _isBlockedUser)
-                  Center(
-                    child: Text('차단됨', style: CustomTextStyles.p2.copyWith(color: AppColors.isBlockedStatusText)),
-                  ),
-                ProfileExchangeSection(memberId: _isMyProfile ? null : widget.memberId),
-                ProfileReviewSection(memberId: _isMyProfile ? null : widget.memberId),
-              ],
+        body: Stack(
+          children: [
+            Offstage(offstage: !_showContent, child: _buildProfileContent()),
+            if (!_showContent) const ProfileScreenSkeleton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileContent() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        child: Wrap(
+          runSpacing: 16.h,
+          children: [
+            ProfileOverviewSection(
+              isEditable: _isMyProfile,
+              nickname: _nickname,
+              imageUrl: _profileUrl,
+              location: _location,
+              receivedLikes: _totalLikeCount,
+              accountStatus: _accountStatus,
+              onShowSaveButton: _isMyProfile ? () => setState(() => _showSaveButton = true) : null,
+              onUploadFailed: _isMyProfile
+                  ? () {
+                      if (!_isProfileEdited) setState(() => _showSaveButton = false);
+                    }
+                  : null,
+              onImageUploaded: _isMyProfile
+                  ? (url) => setState(() {
+                      _profileUrl = url;
+                      _isProfileEdited = true;
+                    })
+                  : null,
+              onNicknameChanged: _isMyProfile
+                  ? (nickname) => setState(() {
+                      _nickname = nickname;
+                      _isProfileEdited = true;
+                      _showSaveButton = true;
+                    })
+                  : null,
             ),
-          ),
+            if (!_isMyProfile && _isBlockedUser)
+              Center(
+                child: Text('차단됨', style: CustomTextStyles.p2.copyWith(color: AppColors.isBlockedStatusText)),
+              ),
+            ProfileExchangeSection(
+              memberId: _isMyProfile ? null : widget.memberId,
+              onLoaded: () => setState(() => _exchangeLoaded = true),
+            ),
+            ProfileReviewSection(
+              memberId: _isMyProfile ? null : widget.memberId,
+              onLoaded: () => setState(() => _reviewLoaded = true),
+            ),
+          ],
         ),
       ),
     );

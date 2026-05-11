@@ -15,8 +15,9 @@ import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 class ProfileExchangeSection extends StatefulWidget {
   final String? memberId;
+  final VoidCallback? onLoaded;
 
-  const ProfileExchangeSection({super.key, this.memberId});
+  const ProfileExchangeSection({super.key, this.memberId, this.onLoaded});
 
   @override
   State<ProfileExchangeSection> createState() => _ProfileExchangeSectionState();
@@ -25,11 +26,18 @@ class ProfileExchangeSection extends StatefulWidget {
 class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
   List<Item> _items = [];
   bool _isLoading = true;
+  bool _calledOnLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _loadMyItems();
+  }
+
+  void _notifyLoaded() {
+    if (_calledOnLoaded) return;
+    _calledOnLoaded = true;
+    widget.onLoaded?.call();
   }
 
   /// 내 교환 물건 로드
@@ -38,6 +46,7 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
       if (widget.memberId != null) {
         // TODO: 타인 교환 물건 조회 API 개발 후 구현
         if (mounted) setState(() => _isLoading = false);
+        _notifyLoaded();
         return;
       }
       final (availableRes, exchangedRes) = await (
@@ -56,6 +65,8 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
     } catch (e) {
       debugPrint('내 교환 물건 로드 실패: $e');
       if (mounted) setState(() => _isLoading = false);
+    } finally {
+      _notifyLoaded();
     }
   }
 

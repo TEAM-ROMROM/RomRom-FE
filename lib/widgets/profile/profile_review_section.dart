@@ -21,8 +21,9 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 class ProfileReviewSection extends StatefulWidget {
   final String? memberId;
+  final VoidCallback? onLoaded;
 
-  const ProfileReviewSection({super.key, this.memberId});
+  const ProfileReviewSection({super.key, this.memberId, this.onLoaded});
 
   @override
   State<ProfileReviewSection> createState() => _ProfileReviewSectionState();
@@ -54,6 +55,7 @@ class _ProfileReviewSectionState extends State<ProfileReviewSection> {
       if (mounted) setState(() => _reviews = []);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+      widget.onLoaded?.call();
     }
   }
 
