@@ -1,8 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
 import 'package:romrom_fe/enums/trade_review_tag.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
@@ -12,6 +14,8 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -27,6 +31,7 @@ class ProfileReviewSection extends StatefulWidget {
 class _ProfileReviewSectionState extends State<ProfileReviewSection> {
   List<TradeReview> _reviews = [];
   bool _isLoading = true;
+  final Map<String, String> _fetchedAddresses = {};
 
   @override
   void initState() {
@@ -43,11 +48,32 @@ class _ProfileReviewSectionState extends State<ProfileReviewSection> {
       if (mounted) {
         setState(() => _reviews = response.tradeReviewPage?.content ?? []);
       }
+      await _fetchMissingAddresses();
     } catch (e) {
       debugPrint('거래 후기 로드 실패: $e');
       if (mounted) setState(() => _reviews = []);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchMissingAddresses() async {
+    for (final review in _reviews) {
+      final member = review.reviewerMember;
+      if (member == null) continue;
+      if (member.locationAddress != null && member.locationAddress!.isNotEmpty) continue;
+      final lat = member.latitude;
+      final lng = member.longitude;
+      final id = member.memberId;
+      if (lat == null || lng == null || id == null) continue;
+      try {
+        final address = await LocationService().getAddressFromCoordinates(NLatLng(lat, lng));
+        if (address != null && mounted) {
+          setState(() => _fetchedAddresses[id] = LocationUtils.formatMediumAddress(address));
+        }
+      } catch (e) {
+        debugPrint('주소 변환 실패 ($id): $e');
+      }
     }
   }
 
@@ -216,6 +242,16 @@ class _ProfileReviewSectionState extends State<ProfileReviewSection> {
     );
   }
 
+  String _resolveLocationAddress(Member? member) {
+    if (member == null) return '(알 수 없음)';
+    if (member.locationAddress != null && member.locationAddress!.isNotEmpty) {
+      return member.locationAddress!;
+    }
+    final id = member.memberId;
+    if (id != null && _fetchedAddresses.containsKey(id)) return _fetchedAddresses[id]!;
+    return '(알 수 없음)';
+  }
+
   Widget _buildRatingCountColumn(TradeReviewRating rating, int count) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -265,10 +301,17 @@ class _ProfileReviewSectionState extends State<ProfileReviewSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(review.reviewerMember?.nickname ?? '(알 수 없음)', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
+              Text(
+                review.reviewerMember?.nickname == null
+                    ? '(알 수 없음)'
+                    : review.reviewerMember?.accountStatus == AccountStatus.deleteAccount.serverName
+                    ? '(탈퇴) ${review.reviewerMember!.nickname!}'
+                    : review.reviewerMember!.nickname!,
+                style: CustomTextStyles.p2.copyWith(fontSize: 13.sp),
+              ),
               SizedBox(height: 6.h),
               Text(
-                review.reviewerMember?.locationAddress ?? '(알 수 없음)',
+                _resolveLocationAddress(review.reviewerMember),
                 style: CustomTextStyles.p2.copyWith(fontSize: 11.sp, color: AppColors.opacity60White),
               ),
               if (review.reviewComment != null && review.reviewComment!.isNotEmpty) ...[
