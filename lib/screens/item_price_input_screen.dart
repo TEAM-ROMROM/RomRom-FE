@@ -49,11 +49,15 @@ class _ItemPriceInputScreenState extends State<ItemPriceInputScreen> {
   void initState() {
     super.initState();
     _useAiPrice = widget.initialUseAiPrice;
-    final formatted = const PriceCommaFormatter().formatEditUpdate(
-      const TextEditingValue(),
-      TextEditingValue(text: widget.initialPrice.toString()),
-    );
-    _priceController = TextEditingController.fromValue(formatted);
+    if (widget.initialPrice > 0) {
+      final formatted = const PriceCommaFormatter().formatEditUpdate(
+        const TextEditingValue(),
+        TextEditingValue(text: widget.initialPrice.toString()),
+      );
+      _priceController = TextEditingController.fromValue(formatted);
+    } else {
+      _priceController = TextEditingController();
+    }
   }
 
   @override
@@ -124,37 +128,41 @@ class _ItemPriceInputScreenState extends State<ItemPriceInputScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CommonAppBar(title: '적정 가격'),
-      body: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 16.h),
-              _AiPriceCard(
-                useAiPrice: _useAiPrice,
-                isLoading: _isAiPriceLoading,
-                canUseAiPrice: widget.canUseAiPrice,
-                onChanged: _onToggleChanged,
-                onTapWhenDisabled: _onToggleTapWhenDisabled,
-              ),
-              SizedBox(height: 16.h),
-              _PriceTextField(
-                controller: _priceController,
-                readOnly: _useAiPrice || _isAiPriceLoading,
-                isLoading: _isAiPriceLoading,
-                onChanged: (_) => setState(() {}),
-              ),
-              const Spacer(),
-              CompletionButton(
-                isEnabled: _isConfirmEnabled,
-                isLoading: _isAiPriceLoading,
-                buttonText: '완료',
-                enabledOnPressed: _onConfirm,
-              ),
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 16.h),
-            ],
+      body: GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 16.h),
+                _AiPriceCard(
+                  useAiPrice: _useAiPrice,
+                  isLoading: _isAiPriceLoading,
+                  canUseAiPrice: widget.canUseAiPrice,
+                  onChanged: _onToggleChanged,
+                  onTapWhenDisabled: _onToggleTapWhenDisabled,
+                ),
+                SizedBox(height: 16.h),
+                _PriceTextField(
+                  controller: _priceController,
+                  readOnly: _useAiPrice || _isAiPriceLoading,
+                  isLoading: _isAiPriceLoading,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const Spacer(),
+                CompletionButton(
+                  isEnabled: _isConfirmEnabled,
+                  isLoading: _isAiPriceLoading,
+                  buttonText: '완료',
+                  enabledOnPressed: _onConfirm,
+                ),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 24.h),
+              ],
+            ),
           ),
         ),
       ),
@@ -294,6 +302,8 @@ class _PriceTextField extends StatelessWidget {
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
+                hintText: '0',
+                hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity40White),
                 suffixIcon: isLoading
                     ? const Padding(padding: EdgeInsets.only(left: 8), child: CommonLoadingIndicator(size: 16.0))
                     : null,

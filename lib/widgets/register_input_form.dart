@@ -28,7 +28,9 @@ import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/screens/item_price_input_screen.dart';
+import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
@@ -582,7 +584,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                        padding: EdgeInsets.only(top: 8.0.h),
                         child: Wrap(
                           spacing: 8.w,
                           runSpacing: 8.w,
@@ -627,7 +629,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                        padding: EdgeInsets.only(top: 8.0.h),
                         child: Wrap(
                           spacing: 8.w,
                           children: ItemTradeOption.values
@@ -673,7 +675,39 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     keyboardType: TextInputType.number,
                     controller: priceController,
                     forceValidate: _forceValidateAll,
-                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
+                    suffixIcon: useAiPrice
+                        ? Padding(
+                            padding: EdgeInsets.only(right: 12.w),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryBlack,
+                                    borderRadius: BorderRadius.circular(4.r),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SvgPicture.asset('assets/images/ai-recommend-price-star.svg', height: 14.h),
+                                      SizedBox(width: 2.w),
+                                      GradientText(
+                                        text: 'AI 추천 가격',
+                                        style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w600),
+                                        gradient: const LinearGradient(
+                                          colors: AppColors.aiGradient,
+                                          stops: [0.0, 0.35, 0.7, 1.0],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
+                              ],
+                            ),
+                          )
+                        : Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
                     onTap: () async {
                       final initialPrice = int.tryParse(priceController.text.replaceAll(',', '')) ?? 0;
                       await context.navigateTo(
@@ -705,7 +739,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 ),
 
                 // 거래 희망 위치 필드
-                SizedBox(height: 24.h),
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.location.label,
                   field: RegisterCustomTextField(
