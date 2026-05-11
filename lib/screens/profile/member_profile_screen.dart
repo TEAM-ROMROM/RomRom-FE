@@ -15,8 +15,9 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
-import 'package:romrom_fe/widgets/profile/profile_sections.dart';
-import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/widgets/profile/profile_exchange_section.dart';
+import 'package:romrom_fe/widgets/profile/profile_overview_section.dart';
+import 'package:romrom_fe/widgets/profile/profile_review_section.dart';
 
 /// 멤버 프로필 조회 화면
 /// 내 프로필이면 "프로필 수정" 버튼 표시, 타인 프로필이면 읽기 전용
@@ -238,65 +239,30 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
         ),
         body: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Wrap(
+              runSpacing: 16.h,
               children: [
-                SizedBox(height: 56.h),
-
-                // 프로필 이미지
-                _buildProfileImageSection(),
-
-                SizedBox(height: 24.h),
-
-                // 닉네임
-                _buildNicknameSection(),
-
-                SizedBox(height: 8.h),
-
-                // 차단여부
-                _buildBlockedStatusSection(),
-
-                SizedBox(height: 52.h),
-
-                // 위치 섹션
-                ProfileInfoSection(label: '위치', value: _location),
-
-                SizedBox(height: 16.h),
-
-                // 받은 좋아요 수 섹션
-                ProfileLikesSection(likeCount: _totalLikeCount),
-
-                // 내 프로필인 경우 수정 버튼
-                if (_isMyProfile) ...[SizedBox(height: 40.h), _buildEditButton()],
+                ProfileOverviewSection(
+                  isEditable: false,
+                  nickname: _nickname,
+                  imageUrl: _profileUrl,
+                  location: _location,
+                  receivedLikes: _totalLikeCount,
+                  accountStatus: _accountStatus,
+                ),
+                if (!_isMyProfile && _isBlockedUser)
+                  Center(
+                    child: Text('차단됨', style: CustomTextStyles.p2.copyWith(color: AppColors.isBlockedStatusText)),
+                  ),
+                ProfileExchangeSection(memberId: _isMyProfile ? null : widget.memberId),
+                ProfileReviewSection(memberId: _isMyProfile ? null : widget.memberId),
+                if (_isMyProfile) _buildEditButton(),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  /// 프로필 이미지 섹션
-  Widget _buildProfileImageSection() {
-    return UserProfileCircularAvatar(
-      avatarSize: Size(132.w, 132.h),
-      profileUrl: _profileUrl.isNotEmpty ? _profileUrl : null,
-      hasBorder: true,
-      isDeleteAccount: _accountStatus == AccountStatus.deleteAccount.serverName,
-    );
-  }
-
-  /// 닉네임 섹션
-  Widget _buildNicknameSection() {
-    return Text(_nickname, style: CustomTextStyles.h2, textAlign: TextAlign.center);
-  }
-
-  /// 차단 여부 섹션
-  Widget _buildBlockedStatusSection() {
-    return Text(
-      _isBlockedUser ? '차단됨' : '',
-      style: CustomTextStyles.p2.copyWith(color: AppColors.isBlockedStatusText),
-      textAlign: TextAlign.center,
     );
   }
 

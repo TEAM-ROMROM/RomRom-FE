@@ -4,9 +4,9 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/widgets/profile/my_exchange_section.dart';
-import 'package:romrom_fe/widgets/profile/my_profile_overview_section.dart';
-import 'package:romrom_fe/widgets/profile/my_review_section.dart';
+import 'package:romrom_fe/widgets/profile/profile_exchange_section.dart';
+import 'package:romrom_fe/widgets/profile/profile_overview_section.dart';
+import 'package:romrom_fe/widgets/profile/profile_review_section.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
@@ -149,7 +149,7 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
           child: Wrap(
             runSpacing: 16.h,
             children: [
-              MyProfileOverviewSection(
+              ProfileOverviewSection(
                 nickname: _nickname,
                 imageUrl: _imageUrl,
                 location: _location,
@@ -169,8 +169,8 @@ class _MyProfileEditScreenState extends State<MyProfileEditScreen> {
                   _showProfileSaveButton = true;
                 }),
               ),
-              const MyExchangeSection(),
-              const MyReviewSection(),
+              const ProfileExchangeSection(),
+              const ProfileReviewSection(),
             ],
           ),
         ),

@@ -15,14 +15,16 @@ import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-class MyReviewSection extends StatefulWidget {
-  const MyReviewSection({super.key});
+class ProfileReviewSection extends StatefulWidget {
+  final String? memberId;
+
+  const ProfileReviewSection({super.key, this.memberId});
 
   @override
-  State<MyReviewSection> createState() => _MyReviewSectionState();
+  State<ProfileReviewSection> createState() => _ProfileReviewSectionState();
 }
 
-class _MyReviewSectionState extends State<MyReviewSection> {
+class _ProfileReviewSectionState extends State<ProfileReviewSection> {
   List<TradeReview> _reviews = [];
   bool _isLoading = true;
 
@@ -34,7 +36,7 @@ class _MyReviewSectionState extends State<MyReviewSection> {
 
   Future<void> _loadReviews() async {
     try {
-      final memberId = await UserInfo().getCurrentMemberId();
+      final memberId = widget.memberId ?? await UserInfo().getCurrentMemberId();
       final response = await TradeApi().getTradeReview(
         TradeRequest(member: Member(memberId: memberId), pageNumber: 0, pageSize: 10),
       );

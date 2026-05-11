@@ -13,35 +13,37 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-class MyProfileOverviewSection extends StatefulWidget {
+class ProfileOverviewSection extends StatefulWidget {
   final String nickname;
   final String imageUrl;
   final String location;
   final int receivedLikes;
   final String accountStatus;
-  final VoidCallback onShowSaveButton;
-  final VoidCallback onUploadFailed;
-  final void Function(String imageUrl) onImageUploaded;
-  final void Function(String nickname) onNicknameChanged;
+  final bool isEditable;
+  final VoidCallback? onShowSaveButton;
+  final VoidCallback? onUploadFailed;
+  final void Function(String imageUrl)? onImageUploaded;
+  final void Function(String nickname)? onNicknameChanged;
 
-  const MyProfileOverviewSection({
+  const ProfileOverviewSection({
     super.key,
     required this.nickname,
     required this.imageUrl,
     required this.location,
     required this.receivedLikes,
     required this.accountStatus,
-    required this.onShowSaveButton,
-    required this.onUploadFailed,
-    required this.onImageUploaded,
-    required this.onNicknameChanged,
+    this.isEditable = true,
+    this.onShowSaveButton,
+    this.onUploadFailed,
+    this.onImageUploaded,
+    this.onNicknameChanged,
   });
 
   @override
-  State<MyProfileOverviewSection> createState() => _MyProfileOverviewSectionState();
+  State<ProfileOverviewSection> createState() => _ProfileOverviewSectionState();
 }
 
-class _MyProfileOverviewSectionState extends State<MyProfileOverviewSection> {
+class _ProfileOverviewSectionState extends State<ProfileOverviewSection> {
   bool _hasImageBeenTouched = false;
   bool _isEditingNickname = false;
   String _nickname = '';
@@ -62,7 +64,7 @@ class _MyProfileOverviewSectionState extends State<MyProfileOverviewSection> {
   }
 
   @override
-  void didUpdateWidget(MyProfileOverviewSection oldWidget) {
+  void didUpdateWidget(ProfileOverviewSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.nickname != widget.nickname && !_isEditingNickname) {
       _nickname = widget.nickname;
@@ -102,24 +104,24 @@ class _MyProfileOverviewSectionState extends State<MyProfileOverviewSection> {
         _hasImageBeenTouched = true;
         imageFile = picked;
       });
-      widget.onShowSaveButton();
+      widget.onShowSaveButton?.call();
 
       try {
         final List<String> urls = await ImageApi().uploadImages([croppedFile]);
         if (mounted) {
           if (urls.isNotEmpty) {
             setState(() => _imageUrl = urls.first);
-            widget.onImageUploaded(urls.first);
+            widget.onImageUploaded?.call(urls.first);
             debugPrint('프로필 이미지 변경 성공: $_imageUrl');
           } else {
-            widget.onUploadFailed();
+            widget.onUploadFailed?.call();
           }
         }
       } catch (e) {
         if (context.mounted) {
           CommonSnackBar.show(context: context, message: '이미지 업로드에 실패했습니다: $e', type: SnackBarType.error);
         }
-        if (mounted) widget.onUploadFailed();
+        if (mounted) widget.onUploadFailed?.call();
       } finally {
         if (mounted) setState(() => _hasImageBeenTouched = false);
       }
@@ -142,6 +144,14 @@ class _MyProfileOverviewSectionState extends State<MyProfileOverviewSection> {
 
   /// 프로필 이미지 섹션
   Widget _buildProfileImageSection() {
+    if (!widget.isEditable) {
+      return UserProfileCircularAvatar(
+        avatarSize: Size(70.w, 70.h),
+        profileUrl: _imageUrl,
+        hasBorder: true,
+        isDeleteAccount: widget.accountStatus == AccountStatus.deleteAccount.serverName,
+      );
+    }
     return GestureDetector(
       onTap: _onPickImage,
       child: Stack(
@@ -184,6 +194,11 @@ class _MyProfileOverviewSectionState extends State<MyProfileOverviewSection> {
   /// 닉네임 섹션 (편집 모드에서는 TextField, 일반 모드에서는 텍스트 + 편집 아이콘)
   Widget _buildNicknameSection() {
     final TextStyle style = CustomTextStyles.h2;
+
+    if (!widget.isEditable) {
+      return Text(_nickname, style: style);
+    }
+
     final double textW = _measureTextWidth(context, _nickname, style);
     final double gap = 8.w;
     final double iconW = 24.w;
@@ -224,7 +239,7 @@ class _MyProfileOverviewSectionState extends State<MyProfileOverviewSection> {
                             onTap: () {
                               nicknameController.clear();
                               setState(() => _nickname = '');
-                              widget.onNicknameChanged('');
+                              widget.onNicknameChanged?.call('');
                             },
                             child: Container(
                               width: 16.w,
@@ -243,7 +258,7 @@ class _MyProfileOverviewSectionState extends State<MyProfileOverviewSection> {
                         }),
                         onChanged: (value) {
                           setState(() => _nickname = value);
-                          widget.onNicknameChanged(value);
+                          widget.onNicknameChanged?.call(value);
                         },
                       ),
                     ),
@@ -277,7 +292,7 @@ class _MyProfileOverviewSectionState extends State<MyProfileOverviewSection> {
             child: GestureDetector(
               onTap: () {
                 setState(() => _isEditingNickname = true);
-                widget.onShowSaveButton();
+                widget.onShowSaveButton?.call();
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) FocusScope.of(context).requestFocus(nicknameFocusNode);
                 });

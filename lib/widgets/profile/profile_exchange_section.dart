@@ -13,14 +13,16 @@ import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
-class MyExchangeSection extends StatefulWidget {
-  const MyExchangeSection({super.key});
+class ProfileExchangeSection extends StatefulWidget {
+  final String? memberId;
+
+  const ProfileExchangeSection({super.key, this.memberId});
 
   @override
-  State<MyExchangeSection> createState() => _MyExchangeSectionState();
+  State<ProfileExchangeSection> createState() => _ProfileExchangeSectionState();
 }
 
-class _MyExchangeSectionState extends State<MyExchangeSection> {
+class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
   List<Item> _items = [];
   bool _isLoading = true;
 
@@ -33,6 +35,11 @@ class _MyExchangeSectionState extends State<MyExchangeSection> {
   /// 내 교환 물건 로드
   Future<void> _loadMyItems() async {
     try {
+      if (widget.memberId != null) {
+        // TODO: 타인 교환 물건 조회 API 개발 후 구현
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
       final (availableRes, exchangedRes) = await (
         ItemApi().getMyItems(ItemRequest(itemStatus: ItemStatus.available.serverName, pageNumber: 0, pageSize: 20)),
         ItemApi().getMyItems(ItemRequest(itemStatus: ItemStatus.exchanged.serverName, pageNumber: 0, pageSize: 20)),
@@ -56,6 +63,7 @@ class _MyExchangeSectionState extends State<MyExchangeSection> {
   Widget build(BuildContext context) {
     return AppPressable(
       onTap: () {
+        if (widget.memberId != null) return; // 타인 프로필에서는 등록 화면 진입 막기
         context.navigateTo(screen: const MyRegisterItemScreen());
       },
       child: Container(
