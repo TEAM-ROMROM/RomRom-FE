@@ -205,6 +205,7 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
 
       final response = await itemApi.getMyItems(request);
       final newItems = response.itemPage?.content ?? [];
+      await Future.wait(newItems.map((item) => item.resolveAndCacheAddress()));
 
       if (mounted) {
         setState(() {
@@ -283,7 +284,7 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
   List<Widget> _buildItemSlivers() {
     final isLoading = _isLoadingSelling || _isLoadingCompleted;
 
-    if (isLoading && _sellingItems.isEmpty && _completedItems.isEmpty) {
+    if (isLoading) {
       return const [RegisterTabSkeletonSliver()];
     }
 
@@ -349,7 +350,8 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
   /// 실제 데이터 아이템 타일
   Widget _buildItemTile(Item item, int index) {
     final imageUrl = item.primaryImageUrl != null ? item.primaryImageUrl! : 'https://picsum.photos/400/300';
-
+    final isAiPredictedPrice = item.isAiPredictedPrice ?? false;
+    final tradeOptions = item.itemTradeOptions ?? const <String>[];
     final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : 'Unknown';
 
     return Stack(
@@ -426,17 +428,17 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
                     ),
                     // SizedBox(height: 12.h),
                     Padding(
-                      padding: EdgeInsets.symmetric(vertical: item.isAiPredictedPrice! ? 6.h : 8.h),
+                      padding: EdgeInsets.symmetric(vertical: isAiPredictedPrice ? 6.h : 8.h),
                       child: Row(
                         children: [
-                          if (item.isAiPredictedPrice!) const AiBadgeWidget(),
-                          if (item.isAiPredictedPrice!) SizedBox(width: 6.w),
+                          if (isAiPredictedPrice) const AiBadgeWidget(),
+                          if (isAiPredictedPrice) SizedBox(width: 6.w),
                           Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
                         ],
                       ),
                     ),
                     Row(
-                      children: item.itemTradeOptions!
+                      children: tradeOptions
                           .map(
                             (option) => Padding(
                               padding: EdgeInsets.only(right: 4.w),
@@ -475,17 +477,14 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
   Future<void> _navigateToItemDetail(Item item) async {
     if (item.itemId == null) return;
 
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ItemDetailDescriptionScreen(
-          itemId: item.itemId!,
-          imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-          currentImageIndex: 0,
-          heroTag: 'itemImage_${item.itemId}_0', // ← 인덱스 포함
-          isMyItem: true,
-          isRequestManagement: false,
-        ),
+    final result = await context.navigateTo(
+      screen: ItemDetailDescriptionScreen(
+        itemId: item.itemId!,
+        imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+        currentImageIndex: 0,
+        heroTag: 'itemImage_${item.itemId}_0', // ← 인덱스 포함
+        isMyItem: true,
+        isRequestManagement: false,
       ),
     );
 

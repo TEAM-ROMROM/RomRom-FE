@@ -309,10 +309,10 @@ class TradeApi {
     final Map<String, dynamic> fields = {
       'pageNumber': request.pageNumber.toString(),
       'pageSize': request.pageSize.toString(),
-      'memberId': request.member?.memberId,
+      if (request.member?.memberId != null) 'memberId': request.member!.memberId!,
     };
 
-    await ApiClient.sendMultipartRequest(
+    final response = await ApiClient.sendMultipartRequest(
       url: url,
       fields: fields,
       isAuthRequired: true,
@@ -321,6 +321,15 @@ class TradeApi {
         debugPrint('거래 후기 조회 성공');
       },
     );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      tradeResponse = TradeResponse.fromJson(responseData);
+      debugPrint('거래 후기 조회 성공');
+    } else {
+      throw Exception('거래 후기 조회 실패: ${response.statusCode}');
+    }
+
     return tradeResponse;
   }
 }

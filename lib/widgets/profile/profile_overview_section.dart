@@ -169,7 +169,7 @@ class _ProfileOverviewSectionState extends State<ProfileOverviewSection> {
                   child: const CommonLoadingIndicator(),
                 )
               : UserProfileCircularAvatar(
-                  avatarSize: Size(70.w, 70.h),
+                  avatarSize: Size(70.w, 70.w),
                   profileUrl: _imageUrl,
                   hasBorder: true,
                   isDeleteAccount: widget.accountStatus == AccountStatus.deleteAccount.serverName,
@@ -243,7 +243,7 @@ class _ProfileOverviewSectionState extends State<ProfileOverviewSection> {
                             },
                             child: Container(
                               width: 16.w,
-                              height: 16.h,
+                              height: 16.w,
                               decoration: const BoxDecoration(color: AppColors.secondaryBlack2, shape: BoxShape.circle),
                               child: Center(
                                 child: Icon(AppIcons.cancel, size: 11.sp, color: AppColors.textColorWhite),
@@ -299,7 +299,7 @@ class _ProfileOverviewSectionState extends State<ProfileOverviewSection> {
               },
               child: Container(
                 width: 24.w,
-                height: 24.h,
+                height: 24.w,
                 decoration: const BoxDecoration(color: AppColors.secondaryBlack2, shape: BoxShape.circle),
                 child: Center(
                   child: Icon(AppIcons.edit, size: 16.sp, color: AppColors.textColorWhite),

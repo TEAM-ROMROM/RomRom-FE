@@ -160,10 +160,7 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
                               color: AppColors.secondaryBlack1,
                               borderRadius: BorderRadius.circular(4.r),
                             ),
-                            child: Text(
-                              item.itemStatus == ItemStatus.available.serverName ? '판매중' : '거래완료',
-                              style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
-                            ),
+                            child: Text('거래완료', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500)),
                           ),
                         ),
                     ],
