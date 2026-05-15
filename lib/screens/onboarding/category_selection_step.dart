@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
@@ -85,7 +86,11 @@ class _CategorySelectionStepState extends State<CategorySelectionStep> {
                 } catch (e) {
                   debugPrint("Error: $e");
                   if (mounted) {
-                    CommonSnackBar.show(context: context, message: '카테고리 저장에 실패했습니다: $e', type: SnackBarType.error);
+                    CommonSnackBar.show(
+                      context: context,
+                      message: ErrorUtils.getErrorMessage(e),
+                      type: SnackBarType.error,
+                    );
                   }
                 } finally {
                   if (mounted) {

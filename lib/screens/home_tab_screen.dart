@@ -20,6 +20,7 @@ import 'package:romrom_fe/services/apis/trade_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
@@ -330,7 +331,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       await widget.onLoaded?.call();
 
       if (!mounted) return;
-      CommonSnackBar.show(context: context, message: '피드 로딩 실패: $e', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 
@@ -362,7 +363,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _isLoadingMore = false;
       });
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '추가 피드 로딩 실패: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }
@@ -521,7 +522,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     } catch (e) {
       if (!mounted) return;
       debugPrint('거래 요청 확인 오류: $e');
-      CommonSnackBar.show(context: context, message: '교환 요청 확인에 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 
