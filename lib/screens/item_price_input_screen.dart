@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
@@ -70,7 +71,11 @@ class _ItemPriceInputScreenState extends State<ItemPriceInputScreen> {
 
   bool get _isConfirmEnabled => _currentPrice > 0 && !_isAiPriceLoading;
 
+  final Set<String> _pendingRequests = <String>{};
+
   Future<void> _measureAiPrice() async {
+    if (_pendingRequests.contains('pricePredict')) return;
+    _pendingRequests.add('pricePredict');
     setState(() => _isAiPriceLoading = true);
     try {
       final predictedPrice = await ItemApi().pricePredict(
@@ -100,7 +105,7 @@ class _ItemPriceInputScreenState extends State<ItemPriceInputScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) setState(() => _isAiPriceLoading = false);
