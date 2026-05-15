@@ -25,6 +25,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
@@ -335,103 +336,108 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
           final takeItem = request.takeItem;
           final giveItem = request.giveItem;
 
-          return Padding(
-            padding: EdgeInsets.only(bottom: 16.h),
-            child: SentRequestItemCard(
-              onTap: () {
-                // 교환 완료 상태면 삭제 처리
-                if (request.tradeStatus == TradeStatus.traded.serverName) {
-                  TradeApi()
-                      .cancelTradeRequest(TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId))
-                      .then((_) {
-                        if (mounted) {
-                          setState(() {
-                            _sentRequests.removeWhere((e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId);
-                          });
-                          CommonSnackBar.show(context: context, message: '삭제되었습니다.');
-                        }
-                      })
-                      .catchError((e) {
-                        debugPrint('교환 완료 항목 삭제 실패: $e');
-                        if (mounted) {
-                          CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
-                        }
-                      });
-                  return;
-                }
-                // 기존 로직: 상세 페이지 이동
-                context.navigateTo(
-                  screen: ItemDetailDescriptionScreen(
-                    itemId: takeItem.itemId!,
-                    // 내가 요청 보낸 카드로 이동
-                    imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-                    currentImageIndex: 0,
-                    heroTag: 'itemImage_${takeItem.itemId!}_0',
-                    // ← 인덱스 포함
-                    isMyItem: false,
-                    isRequestManagement: true,
-                    tradeRequestHistoryId: request.tradeRequestHistoryId,
-                    isChatAccessAllowed: false, // 보낸요청 = 채팅 불가
-                  ),
-                );
-              },
-              myItemImageUrl: giveItem.imageUrlList.isNotEmpty
-                  ? giveItem.imageUrlList.first
-                  : 'https://picsum.photos/400/300',
-              otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
-                  ? takeItem.imageUrlList.first
-                  : 'https://picsum.photos/400/300',
-              otherUserProfileUrl: takeItem.member?.profileUrl ?? '',
-              title: takeItem.itemName ?? ' ',
-              location: takeItem.address ?? '주소 미등록',
-              createdDate: takeItem.createdDate ?? DateTime.now(),
-              tradeOptions: takeItem.itemTradeOptions != null
-                  ? takeItem.itemTradeOptions!
-                        .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
-                        .toList()
-                  : [],
-              tradeStatus: request.tradeStatus != null
-                  ? TradeStatus.values.firstWhere(
-                      (e) => e.serverName == request.tradeStatus,
-                      orElse: () => TradeStatus.chatting,
-                    )
-                  : TradeStatus.chatting,
-              onEditTap: () {
-                context.navigateTo(
-                  screen: ItemModificationScreen(
-                    itemId: giveItem.itemId,
-                    onClose: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                );
-              },
-              onCancelTap: () async {
-                final result = await context.showDeleteDialog(
-                  title: '교환 요청 취소',
-                  description: '교환 요청을 취소하시겠습니까?',
-                  confirmText: '확인',
-                );
+          return AppFadeSlideIn(
+            delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 16.h),
+              child: SentRequestItemCard(
+                onTap: () {
+                  // 교환 완료 상태면 삭제 처리
+                  if (request.tradeStatus == TradeStatus.traded.serverName) {
+                    TradeApi()
+                        .cancelTradeRequest(TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId))
+                        .then((_) {
+                          if (mounted) {
+                            setState(() {
+                              _sentRequests.removeWhere(
+                                (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
+                              );
+                            });
+                            CommonSnackBar.show(context: context, message: '삭제되었습니다.');
+                          }
+                        })
+                        .catchError((e) {
+                          debugPrint('교환 완료 항목 삭제 실패: $e');
+                          if (mounted) {
+                            CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
+                          }
+                        });
+                    return;
+                  }
+                  // 기존 로직: 상세 페이지 이동
+                  context.navigateTo(
+                    screen: ItemDetailDescriptionScreen(
+                      itemId: takeItem.itemId!,
+                      // 내가 요청 보낸 카드로 이동
+                      imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                      currentImageIndex: 0,
+                      heroTag: 'itemImage_${takeItem.itemId!}_0',
+                      // ← 인덱스 포함
+                      isMyItem: false,
+                      isRequestManagement: true,
+                      tradeRequestHistoryId: request.tradeRequestHistoryId,
+                      isChatAccessAllowed: false, // 보낸요청 = 채팅 불가
+                    ),
+                  );
+                },
+                myItemImageUrl: giveItem.imageUrlList.isNotEmpty
+                    ? giveItem.imageUrlList.first
+                    : 'https://picsum.photos/400/300',
+                otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
+                    ? takeItem.imageUrlList.first
+                    : 'https://picsum.photos/400/300',
+                otherUserProfileUrl: takeItem.member?.profileUrl ?? '',
+                title: takeItem.itemName ?? ' ',
+                location: takeItem.address ?? '주소 미등록',
+                createdDate: takeItem.createdDate ?? DateTime.now(),
+                tradeOptions: takeItem.itemTradeOptions != null
+                    ? takeItem.itemTradeOptions!
+                          .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
+                          .toList()
+                    : [],
+                tradeStatus: request.tradeStatus != null
+                    ? TradeStatus.values.firstWhere(
+                        (e) => e.serverName == request.tradeStatus,
+                        orElse: () => TradeStatus.chatting,
+                      )
+                    : TradeStatus.chatting,
+                onEditTap: () {
+                  context.navigateTo(
+                    screen: ItemModificationScreen(
+                      itemId: giveItem.itemId,
+                      onClose: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                },
+                onCancelTap: () async {
+                  final result = await context.showDeleteDialog(
+                    title: '교환 요청 취소',
+                    description: '교환 요청을 취소하시겠습니까?',
+                    confirmText: '확인',
+                  );
 
-                if (result == true) {
-                  try {
-                    await TradeApi().cancelTradeRequest(
-                      TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                    );
-                    if (mounted) {
-                      setState(() {
-                        _sentRequests.removeAt(index);
-                      });
-                      CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
-                    }
-                  } catch (e) {
-                    debugPrint('요청 취소 실패: $e');
-                    if (mounted) {
-                      CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다', type: SnackBarType.error);
+                  if (result == true) {
+                    try {
+                      await TradeApi().cancelTradeRequest(
+                        TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
+                      );
+                      if (mounted) {
+                        setState(() {
+                          _sentRequests.removeAt(index);
+                        });
+                        CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
+                      }
+                    } catch (e) {
+                      debugPrint('요청 취소 실패: $e');
+                      if (mounted) {
+                        CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다', type: SnackBarType.error);
+                      }
                     }
                   }
-                }
-              },
+                },
+              ),
             ),
           );
         }),
@@ -797,91 +803,98 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 final request = filteredRequests[index];
                 final giveItem = request.giveItem;
 
-                return Column(
-                  children: [
-                    RequestListItemCardWidget(
-                      imageUrl: giveItem.imageUrlList.isNotEmpty
-                          ? giveItem.imageUrlList.first
-                          : 'https://picsum.photos/400/300',
-                      title: giveItem.itemName ?? ' ',
-                      address: giveItem.address!,
-                      createdDate: giveItem.createdDate!,
-                      isNew: request.isNew ?? false,
-                      tradeOptions: giveItem.itemTradeOptions != null
-                          ? giveItem.itemTradeOptions!
-                                .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
-                                .toList()
-                          : [],
-                      tradeStatus: request.tradeStatus != null
-                          ? TradeStatus.values.firstWhere(
-                              (e) => e.serverName == request.tradeStatus,
-                              orElse: () => TradeStatus.chatting,
-                            )
-                          : TradeStatus.chatting,
-                      onTap: () {
-                        TradeApi()
-                            .getDetailedTradeRequest(request)
-                            .then((detailedRequest) {
+                return AppFadeSlideIn(
+                  delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
+                  child: Column(
+                    children: [
+                      RequestListItemCardWidget(
+                        imageUrl: giveItem.imageUrlList.isNotEmpty
+                            ? giveItem.imageUrlList.first
+                            : 'https://picsum.photos/400/300',
+                        title: giveItem.itemName ?? ' ',
+                        address: giveItem.address!,
+                        createdDate: giveItem.createdDate!,
+                        isNew: request.isNew ?? false,
+                        tradeOptions: giveItem.itemTradeOptions != null
+                            ? giveItem.itemTradeOptions!
+                                  .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
+                                  .toList()
+                            : [],
+                        tradeStatus: request.tradeStatus != null
+                            ? TradeStatus.values.firstWhere(
+                                (e) => e.serverName == request.tradeStatus,
+                                orElse: () => TradeStatus.chatting,
+                              )
+                            : TradeStatus.chatting,
+                        onTap: () {
+                          TradeApi()
+                              .getDetailedTradeRequest(request)
+                              .then((detailedRequest) {
+                                if (mounted) {
+                                  setState(() {
+                                    // isNew 상태 갱신
+                                    final targetIndex = _receivedRequests.indexWhere(
+                                      (r) =>
+                                          r.tradeRequestHistoryId ==
+                                          detailedRequest.tradeRequestHistory?.tradeRequestHistoryId,
+                                    );
+                                    if (targetIndex != -1 && detailedRequest.tradeRequestHistory != null) {
+                                      _receivedRequests[targetIndex].isNew = detailedRequest.tradeRequestHistory!.isNew;
+                                    }
+                                  });
+                                }
+                              })
+                              .catchError((e) {
+                                debugPrint('교환 요청 상세 조회 실패: $e');
+                              });
+                          context.navigateTo(
+                            screen: ItemDetailDescriptionScreen(
+                              itemId: giveItem.itemId!,
+                              // 요청 받은 카드로 이동
+                              imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                              currentImageIndex: 0,
+                              heroTag: 'itemImage_${request.giveItem.itemId!}_0',
+                              // ← 인덱스 포함
+                              isMyItem: false,
+                              isRequestManagement: true,
+                              tradeRequestHistoryId: request.tradeRequestHistoryId,
+                              isChatAccessAllowed: true, // 받은요청 = 채팅 가능
+                            ),
+                          );
+                        },
+                        onMenuTap: () async {
+                          final result = await context.showDeleteDialog(title: '교환 요청 삭제', description: '정말 삭제하시겠습니까?');
+
+                          if (result == true) {
+                            try {
+                              await TradeApi().cancelTradeRequest(
+                                TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
+                              );
                               if (mounted) {
                                 setState(() {
-                                  // isNew 상태 갱신
-                                  final targetIndex = _receivedRequests.indexWhere(
-                                    (r) =>
-                                        r.tradeRequestHistoryId ==
-                                        detailedRequest.tradeRequestHistory?.tradeRequestHistoryId,
+                                  _receivedRequests.removeWhere(
+                                    (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
                                   );
-                                  if (targetIndex != -1 && detailedRequest.tradeRequestHistory != null) {
-                                    _receivedRequests[targetIndex].isNew = detailedRequest.tradeRequestHistory!.isNew;
-                                  }
                                 });
+                                CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
                               }
-                            })
-                            .catchError((e) {
-                              debugPrint('교환 요청 상세 조회 실패: $e');
-                            });
-                        context.navigateTo(
-                          screen: ItemDetailDescriptionScreen(
-                            itemId: giveItem.itemId!,
-                            // 요청 받은 카드로 이동
-                            imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-                            currentImageIndex: 0,
-                            heroTag: 'itemImage_${request.giveItem.itemId!}_0',
-                            // ← 인덱스 포함
-                            isMyItem: false,
-                            isRequestManagement: true,
-                            tradeRequestHistoryId: request.tradeRequestHistoryId,
-                            isChatAccessAllowed: true, // 받은요청 = 채팅 가능
-                          ),
-                        );
-                      },
-                      onMenuTap: () async {
-                        final result = await context.showDeleteDialog(title: '교환 요청 삭제', description: '정말 삭제하시겠습니까?');
-
-                        if (result == true) {
-                          try {
-                            await TradeApi().cancelTradeRequest(
-                              TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                            );
-                            if (mounted) {
-                              setState(() {
-                                _receivedRequests.removeWhere(
-                                  (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
+                            } catch (e) {
+                              debugPrint('요청 취소 실패: $e');
+                              if (mounted) {
+                                CommonSnackBar.show(
+                                  context: context,
+                                  message: '요청 삭제에 실패했습니다',
+                                  type: SnackBarType.error,
                                 );
-                              });
-                              CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
-                            }
-                          } catch (e) {
-                            debugPrint('요청 취소 실패: $e');
-                            if (mounted) {
-                              CommonSnackBar.show(context: context, message: '요청 삭제에 실패했습니다', type: SnackBarType.error);
+                              }
                             }
                           }
-                        }
-                      },
-                    ),
-                    if (index < filteredRequests.length - 1)
-                      Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h),
-                  ],
+                        },
+                      ),
+                      if (index < filteredRequests.length - 1)
+                        Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h),
+                    ],
+                  ),
                 );
               }),
             ),

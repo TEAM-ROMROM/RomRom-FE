@@ -5,7 +5,9 @@ import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
@@ -108,7 +110,10 @@ class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
         ),
         itemBuilder: (context, index) {
           final member = _blockedMembers[index];
-          return _buildBlockedMemberItem(member);
+          return AppFadeSlideIn(
+            delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
+            child: _buildBlockedMemberItem(member),
+          );
         },
       ),
     );
