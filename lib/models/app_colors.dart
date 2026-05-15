@@ -114,7 +114,7 @@ class AppColors {
   // 물품 등록 화면
   // 물품 교환 AI 추천 가격 토글 Switch
   static const Color toggleSwitchIndicatorShadow = Color(0x40000000); // 검은색, opacity 25%
-  static const Color aiSuggestionContainerBackground = Color(0x4DCF7DFF); // ai 추천 가격 태그 배경색
+  static const Color aiSuggestionContainerBackground = Color(0x1ACF7DFF); // ai 추천 가격 태그 배경색
   // 물품 사진
   static const Color itemPictureRemoveButtonBackground = Color(0xFFFFFFFF); // 물품 사진 삭제 버튼 배경색
 
