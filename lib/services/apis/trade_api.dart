@@ -299,4 +299,37 @@ class TradeApi {
       _pendingRequests.remove(id);
     }
   }
+
+  /// 거래 후기 조회 API
+  /// `POST /api/trade/review/get`
+  Future<TradeResponse> getTradeReview(TradeRequest request) async {
+    final String url = '${AppUrls.baseUrl}/api/trade/review/get';
+    late TradeResponse tradeResponse;
+
+    final Map<String, dynamic> fields = {
+      'pageNumber': request.pageNumber.toString(),
+      'pageSize': request.pageSize.toString(),
+      if (request.member?.memberId != null) 'memberId': request.member!.memberId!,
+    };
+
+    final response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        tradeResponse = TradeResponse.fromJson(responseData);
+        debugPrint('거래 후기 조회 성공');
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      tradeResponse = TradeResponse.fromJson(responseData);
+      debugPrint('거래 후기 조회 성공');
+    } else {
+      throw Exception('거래 후기 조회 실패: ${response.statusCode}');
+    }
+
+    return tradeResponse;
+  }
 }
