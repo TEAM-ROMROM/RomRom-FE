@@ -781,6 +781,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             right: 0,
             height: MediaQuery.of(context).padding.top,
             child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: () {
                 if (_currentVirtualIndex != 0) {
                   _pageController.animateToPage(
