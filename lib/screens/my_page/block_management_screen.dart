@@ -12,6 +12,7 @@ import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -56,7 +57,7 @@ class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
         setState(() {
           _isLoading = false;
         });
-        CommonSnackBar.show(context: context, message: '차단 목록을 불러오는데 실패했습니다', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }

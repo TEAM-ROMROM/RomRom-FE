@@ -22,6 +22,7 @@ import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
@@ -137,7 +138,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       if (!mounted) return;
 
       if (!mounted) return;
-      CommonSnackBar.show(context: context, message: '피드 로딩 실패: $e', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
     setState(() {
       _isLoading = false;
@@ -432,7 +433,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                     } catch (e) {
                       debugPrint('요청 취소 실패: $e');
                       if (mounted) {
-                        CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다', type: SnackBarType.error);
+                        CommonSnackBar.show(
+                          context: context,
+                          message: ErrorUtils.getErrorMessage(e),
+                          type: SnackBarType.error,
+                        );
                       }
                     }
                   }
@@ -883,7 +888,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                               if (mounted) {
                                 CommonSnackBar.show(
                                   context: context,
-                                  message: '요청 삭제에 실패했습니다',
+                                  message: ErrorUtils.getErrorMessage(e),
                                   type: SnackBarType.error,
                                 );
                               }

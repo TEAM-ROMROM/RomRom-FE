@@ -97,7 +97,7 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
           _isLoading = false;
           _hasError = true;
         });
-        CommonSnackBar.show(context: context, message: '프로필을 불러오는데 실패했습니다', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }
