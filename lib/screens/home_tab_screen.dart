@@ -77,6 +77,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   bool _hasUnreadNotification = false;
   // 미확인 알림 조회 중복 요청 방지
   bool _isLoadingUnreadNotification = false;
+  // 당겨서 새로고침 진행 중 여부 (스켈레톤 표시 방지용)
+  bool _isPullRefreshing = false;
   // 오버레이 엔트리
   OverlayEntry? _overlayEntry;
 
@@ -284,9 +286,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   Future<void> _loadInitialItems() async {
     if (!mounted || _isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (!_isPullRefreshing) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     const fallbackOrder = [
       ItemSortField.recommended,
@@ -322,16 +326,38 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _hasMoreItems = items.isNotEmpty;
         _isLoading = false;
       });
-      await widget.onLoaded?.call();
+      if (!_isPullRefreshing) {
+        await widget.onLoaded?.call();
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
-      await widget.onLoaded?.call();
+      if (!_isPullRefreshing) {
+        await widget.onLoaded?.call();
+      }
 
       if (!mounted) return;
       CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+    }
+  }
+
+  /// 당겨서 새로고침 — RefreshIndicator onRefresh 콜백
+  Future<void> _onPullRefresh() async {
+    if (_isLoading) return;
+    setState(() {
+      _isPullRefreshing = true;
+      _currentPage = 0;
+      _currentFeedIndex = 0;
+      _currentVirtualIndex = 0;
+      _aiHighlightedItemIds = [];
+      _hasMoreItems = true;
+    });
+    _pageController.jumpToPage(0);
+    await _loadInitialItems();
+    if (mounted) {
+      setState(() => _isPullRefreshing = false);
     }
   }
 
@@ -563,179 +589,212 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       );
     }
 
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (ScrollNotification scrollInfo) {
-              if (!_isLoadingMore && _hasMoreItems && scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
-                _loadMoreItems();
-              }
-              return false;
-            },
-            child: PageView.builder(
-              scrollDirection: Axis.vertical,
-              controller: _pageController,
-              // 블러가 활성화된 경우 스와이프(스크롤) 동작을 비활성화해 첫 화면 고정
-              physics: _isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
-              itemCount: _virtualItemCount + (_hasMoreItems ? 1 : 0),
-              onPageChanged: (index) {
-                // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
-                if (!_isBlurShown) {
-                  setState(() {
-                    _currentVirtualIndex = index;
-                    // 광고 슬롯이 아닐 때만 현재 피드 인덱스 갱신
-                    if (index < _virtualItemCount && !_isAdAtVirtualIndex(index)) {
-                      _currentFeedIndex = _feedIndexAtVirtualIndex(index);
-                    }
-                    // 피드 변경 시 AI 하이라이트 초기화 (로딩 인디케이터 페이지 포함)
-                    _aiHighlightedItemIds = [];
-                  });
+    return RefreshIndicator(
+      onRefresh: _onPullRefresh,
+      color: AppColors.primaryYellow,
+      backgroundColor: AppColors.transparent,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification scrollInfo) {
+                if (!_isLoadingMore &&
+                    _hasMoreItems &&
+                    scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+                  _loadMoreItems();
                 }
+                return false;
               },
-              itemBuilder: (context, index) {
-                // 로딩 인디케이터 (맨 끝)
-                if (index >= _virtualItemCount) {
-                  return const Center(child: CommonLoadingIndicator());
-                }
-                // 광고 슬롯
-                if (_isAdAtVirtualIndex(index)) {
-                  return const NativeAdWidget();
-                }
-                // 일반 피드 아이템
-                final feedIndex = _feedIndexAtVirtualIndex(index);
-                return HomeFeedItemWidget(
-                  item: _feedItems[feedIndex],
-                  showBlur: _isBlurShown,
-                  // AI 추천 결과를 HomeTabScreen으로 전달
-                  onAiRecommend: _onAiRecommend,
-                );
-              },
+              child: PageView.builder(
+                scrollDirection: Axis.vertical,
+                controller: _pageController,
+                // 블러가 활성화된 경우 스와이프(스크롤) 동작을 비활성화해 첫 화면 고정
+                physics: _isBlurShown
+                    ? const NeverScrollableScrollPhysics()
+                    : const PageScrollPhysics(parent: BouncingScrollPhysics()),
+                itemCount: _virtualItemCount + (_hasMoreItems ? 1 : 0),
+                onPageChanged: (index) {
+                  // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
+                  if (!_isBlurShown) {
+                    setState(() {
+                      _currentVirtualIndex = index;
+                      // 광고 슬롯이 아닐 때만 현재 피드 인덱스 갱신
+                      if (index < _virtualItemCount && !_isAdAtVirtualIndex(index)) {
+                        _currentFeedIndex = _feedIndexAtVirtualIndex(index);
+                      }
+                      // 피드 변경 시 AI 하이라이트 초기화 (로딩 인디케이터 페이지 포함)
+                      _aiHighlightedItemIds = [];
+                    });
+                  }
+                },
+                itemBuilder: (context, index) {
+                  // 로딩 인디케이터 (맨 끝)
+                  if (index >= _virtualItemCount) {
+                    return const Center(child: CommonLoadingIndicator());
+                  }
+                  // 광고 슬롯
+                  if (_isAdAtVirtualIndex(index)) {
+                    return const NativeAdWidget();
+                  }
+                  // 일반 피드 아이템
+                  final feedIndex = _feedIndexAtVirtualIndex(index);
+                  return HomeFeedItemWidget(
+                    item: _feedItems[feedIndex],
+                    showBlur: _isBlurShown,
+                    // AI 추천 결과를 HomeTabScreen으로 전달
+                    onAiRecommend: _onAiRecommend,
+                  );
+                },
+              ),
             ),
           ),
-        ),
 
-        // 알림 아이콘 및 메뉴 버튼 - 광고 슬롯에서는 숨김
-        if (!_isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
-          Positioned(
-            right: 16.w,
-            top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox.square(
-                  dimension: 32.w,
-                  child: OverflowBox(
-                    maxWidth: 56.w,
-                    maxHeight: 56.w,
-                    child: Material(
-                      color: AppColors.transparent,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkResponse(
-                        onTap: () async {
-                          await context.navigateTo(screen: const NotificationScreen());
-                          if (!mounted) return;
-                          _loadUnreadNotificationStatus();
-                        },
-                        radius: 18.w,
-                        customBorder: const CircleBorder(),
-                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                        child: SizedBox.square(
-                          dimension: 56.w,
-                          child: Center(
-                            child: _hasUnreadNotification
-                                ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
-                                : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
+          // 알림 아이콘 및 메뉴 버튼 - 광고 슬롯에서는 숨김
+          if (!_isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
+            Positioned(
+              right: 16.w,
+              top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox.square(
+                    dimension: 32.w,
+                    child: OverflowBox(
+                      maxWidth: 56.w,
+                      maxHeight: 56.w,
+                      child: Material(
+                        color: AppColors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkResponse(
+                          onTap: () async {
+                            await context.navigateTo(screen: const NotificationScreen());
+                            if (!mounted) return;
+                            _loadUnreadNotificationStatus();
+                          },
+                          radius: 18.w,
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: SizedBox.square(
+                            dimension: 56.w,
+                            child: Center(
+                              child: _hasUnreadNotification
+                                  ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
+                                  : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(width: 10.w),
-                ReportMenuButton(
-                  onReportPressed: () async {
-                    if (_feedItems.isEmpty) return;
-                    final currentItem = _feedItems[_currentFeedIndex];
-                    final bool? reported = await context.navigateTo(
-                      screen: ReportScreen(itemId: currentItem.itemUuid ?? ''),
-                    );
-                    if (reported == true && mounted) {
-                      await CommonModal.success(
-                        context: context,
-                        message: '신고가 접수되었습니다.',
-                        onConfirm: () => Navigator.of(context).pop(),
+                  SizedBox(width: 10.w),
+                  ReportMenuButton(
+                    onReportPressed: () async {
+                      if (_feedItems.isEmpty) return;
+                      final currentItem = _feedItems[_currentFeedIndex];
+                      final bool? reported = await context.navigateTo(
+                        screen: ReportScreen(itemId: currentItem.itemUuid ?? ''),
                       );
+                      if (reported == true && mounted) {
+                        await CommonModal.success(
+                          context: context,
+                          message: '신고가 접수되었습니다.',
+                          onConfirm: () => Navigator.of(context).pop(),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+          // 하단 고정 카드 덱
+          if (!_isBlurShown)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: -130.h,
+              child: HomeTabCardHand(
+                key: const ValueKey('home_card_hand'),
+                cards: _myCards,
+                onCardDrop: _handleCardDrop,
+                highlightedItemIds: _aiHighlightedItemIds,
+                dragEnabled: !_isAdAtVirtualIndex(_currentVirtualIndex),
+              ),
+            )
+          else if (!_isAdAtVirtualIndex(_currentVirtualIndex))
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 24.h,
+              child: Center(
+                child: AppPressable(
+                  onTap: () async {
+                    final result = await context.navigateTo<Map<String, dynamic>>(
+                      screen: ItemRegisterScreen(
+                        onClose: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                    );
+                    if (!mounted) return;
+                    if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+                      _loadMyCards();
+                      showCoachMark();
                     }
                   },
-                ),
-              ],
-            ),
-          ),
-
-        // 하단 고정 카드 덱
-        if (!_isBlurShown)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: -130.h,
-            child: HomeTabCardHand(
-              key: const ValueKey('home_card_hand'),
-              cards: _myCards,
-              onCardDrop: _handleCardDrop,
-              highlightedItemIds: _aiHighlightedItemIds,
-              dragEnabled: !_isAdAtVirtualIndex(_currentVirtualIndex),
-            ),
-          )
-        else if (!_isAdAtVirtualIndex(_currentVirtualIndex))
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 24.h,
-            child: Center(
-              child: AppPressable(
-                onTap: () async {
-                  final result = await context.navigateTo<Map<String, dynamic>>(
-                    screen: ItemRegisterScreen(
-                      onClose: () {
-                        Navigator.pop(context);
-                      },
+                  scaleDown: AppPressable.scaleButton,
+                  enableRipple: false,
+                  child: Container(
+                    width: 123.w,
+                    height: 48.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryYellow,
+                      borderRadius: BorderRadius.circular(100),
+                      boxShadow: const [
+                        BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4)),
+                      ],
                     ),
-                  );
-                  if (!mounted) return;
-                  if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
-                    _loadMyCards();
-                    showCoachMark();
-                  }
-                },
-                scaleDown: AppPressable.scaleButton,
-                enableRipple: false,
-                child: Container(
-                  width: 123.w,
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryYellow,
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: const [BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4))],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add, size: 24.sp, color: AppColors.primaryBlack),
-                      SizedBox(width: 4.w),
-                      Text(
-                        '등록하기',
-                        style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
-                      ),
-                    ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add, size: 24.sp, color: AppColors.primaryBlack),
+                        SizedBox(width: 4.w),
+                        Text(
+                          '등록하기',
+                          style: CustomTextStyles.h3.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryBlack,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
+          // SafeArea(top) 탭 → 첫 번째 슬롯으로 스크롤
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: MediaQuery.of(context).padding.top,
+            child: GestureDetector(
+              onTap: () {
+                if (_currentVirtualIndex != 0) {
+                  _pageController.animateToPage(
+                    0,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              },
+              child: const SizedBox.expand(),
+            ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
