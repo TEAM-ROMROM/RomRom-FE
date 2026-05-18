@@ -8,6 +8,7 @@ import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
+import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
@@ -319,9 +320,12 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
             );
           }
           final item = displayItems[index ~/ 2];
-          return Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-            child: _buildItemTile(item, index ~/ 2),
+          return AppFadeSlideIn(
+            delay: Duration(milliseconds: (index ~/ 2) * AppMotion.staggerDelayMs),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+              child: _buildItemTile(item, index ~/ 2),
+            ),
           );
         }, childCount: itemCountWithSeparators),
       ),

@@ -7,7 +7,9 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
+import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
@@ -359,63 +361,66 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final chatRoomDetail = filteredRooms[index];
 
-                    return Column(
-                      children: [
-                        ChatRoomListItem(
-                          accountStatus: chatRoomDetail.targetMember?.accountStatus,
-                          profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
-                          memberId: chatRoomDetail.targetMember?.memberId,
-                          nickname: chatRoomDetail.targetMember?.nickname ?? '',
-                          location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
-                          timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
-                          messagePreview: chatRoomDetail.lastMessageContent ?? '',
-                          unreadCount: chatRoomDetail.unreadCount ?? 0,
-                          targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
-                          myItemImageUrl: chatRoomDetail.myItemImageUrl,
-                          isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
-                          onProfileTap: () {
-                            final targetMember = chatRoomDetail.targetMember;
-                            if (targetMember?.memberId != null) {
-                              context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
-                            }
-                          },
-                          onTap: () async {
-                            debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
+                    return AppFadeSlideIn(
+                      delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
+                      child: Column(
+                        children: [
+                          ChatRoomListItem(
+                            accountStatus: chatRoomDetail.targetMember?.accountStatus,
+                            profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
+                            memberId: chatRoomDetail.targetMember?.memberId,
+                            nickname: chatRoomDetail.targetMember?.nickname ?? '',
+                            location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
+                            timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
+                            messagePreview: chatRoomDetail.lastMessageContent ?? '',
+                            unreadCount: chatRoomDetail.unreadCount ?? 0,
+                            targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
+                            myItemImageUrl: chatRoomDetail.myItemImageUrl,
+                            isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
+                            onProfileTap: () {
+                              final targetMember = chatRoomDetail.targetMember;
+                              if (targetMember?.memberId != null) {
+                                context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
+                              }
+                            },
+                            onTap: () async {
+                              debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
 
-                            // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
-                            final roomId = chatRoomDetail.chatRoomId;
-                            if (roomId == null) return;
-                            final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
+                              // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
+                              final roomId = chatRoomDetail.chatRoomId;
+                              if (roomId == null) return;
+                              final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
 
-                            if (roomIndex != -1) {
-                              setState(() {
-                                final room = _chatRoomsDetail[roomIndex];
-                                _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
-                                  chatRoomId: room.chatRoomId,
-                                  targetMember: room.targetMember,
-                                  targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
-                                  targetItemImageUrl: room.targetItemImageUrl,
-                                  myItemImageUrl: room.myItemImageUrl,
-                                  lastMessageContent: room.lastMessageContent,
-                                  lastMessageTime: room.lastMessageTime,
-                                  unreadCount: 0, // 읽음 처리
-                                  chatRoomType: room.chatRoomType,
-                                );
-                              });
-                            }
+                              if (roomIndex != -1) {
+                                setState(() {
+                                  final room = _chatRoomsDetail[roomIndex];
+                                  _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
+                                    chatRoomId: room.chatRoomId,
+                                    targetMember: room.targetMember,
+                                    targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
+                                    targetItemImageUrl: room.targetItemImageUrl,
+                                    myItemImageUrl: room.myItemImageUrl,
+                                    lastMessageContent: room.lastMessageContent,
+                                    lastMessageTime: room.lastMessageTime,
+                                    unreadCount: 0, // 읽음 처리
+                                    chatRoomType: room.chatRoomType,
+                                  );
+                                });
+                              }
 
-                            final refreshed = await context.navigateTo<bool>(
-                              screen: ChatRoomScreen(chatRoomId: roomId),
-                            );
+                              final refreshed = await context.navigateTo<bool>(
+                                screen: ChatRoomScreen(chatRoomId: roomId),
+                              );
 
-                            // 엄격히 true일 때만 새로고침
-                            if (refreshed == true) {
-                              _loadChatRooms(mode: LoadMode.refresh);
-                            }
-                          },
-                        ),
-                        SizedBox(height: 8.h),
-                      ],
+                              // 엄격히 true일 때만 새로고침
+                              if (refreshed == true) {
+                                _loadChatRooms(mode: LoadMode.refresh);
+                              }
+                            },
+                          ),
+                          SizedBox(height: 8.h),
+                        ],
+                      ),
                     );
                   }, childCount: filteredRooms.length),
                 ),

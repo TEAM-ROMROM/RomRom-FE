@@ -12,7 +12,9 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
@@ -217,13 +219,13 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
                   }
                   final item = _items[index];
 
-                  return GestureDetector(
-                    onTap: () async {
-                      final itemId = item.itemId;
-                      await Navigator.push<void>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ItemDetailDescriptionScreen(
+                  return AppFadeSlideIn(
+                    delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
+                    child: GestureDetector(
+                      onTap: () async {
+                        final itemId = item.itemId;
+                        await context.navigateTo(
+                          screen: ItemDetailDescriptionScreen(
                             itemId: itemId,
                             imageSize: Size(MediaQuery.of(context).size.width, 400.h),
                             currentImageIndex: 0,
@@ -232,141 +234,141 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
                             isRequestManagement: false,
                             isTradeRequestAllowed: true,
                           ),
-                        ),
-                      );
-                      // 좋아요 취소 시 목록에서 제거되는 로직은 ref.listen 이 처리.
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 8.h),
-                      decoration: const BoxDecoration(color: AppColors.transparent),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 썸네일 (Hero 적용)
-                          Hero(
-                            tag: item.heroTag,
-                            transitionOnUserGestures: true,
-                            createRectTween: (begin, end) => MaterialRectArcTween(begin: begin, end: end),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8.r),
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    width: 70.w,
-                                    height: 70.w,
-                                    color: AppColors.opacity10White,
-                                    child: item.imageUrl.isEmpty
-                                        ? const Icon(
-                                            Icons.photo_size_select_actual_rounded,
-                                            color: AppColors.opacity40White,
-                                          )
-                                        : CachedImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
-                                  ),
-
-                                  /// 거래완료 오버레이 (검정 50%)
-                                  if (item.itemStatus == ItemStatus.exchanged.serverName)
-                                    IgnorePointer(
-                                      child: Container(width: 70.w, height: 70.w, color: AppColors.opacity50Black),
+                        );
+                        // 좋아요 취소 시 목록에서 제거되는 로직은 ref.listen 이 처리.
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 8.h),
+                        decoration: const BoxDecoration(color: AppColors.transparent),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 썸네일 (Hero 적용)
+                            Hero(
+                              tag: item.heroTag,
+                              transitionOnUserGestures: true,
+                              createRectTween: (begin, end) => MaterialRectArcTween(begin: begin, end: end),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8.r),
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: 70.w,
+                                      height: 70.w,
+                                      color: AppColors.opacity10White,
+                                      child: item.imageUrl.isEmpty
+                                          ? const Icon(
+                                              Icons.photo_size_select_actual_rounded,
+                                              color: AppColors.opacity40White,
+                                            )
+                                          : CachedImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
                                     ),
 
-                                  /// 거래완료 글라스모피즘 배지 (이미지 중앙)
-                                  if (item.itemStatus == ItemStatus.exchanged.serverName)
-                                    Positioned.fill(
-                                      child: Align(
-                                        alignment: Alignment.center,
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(4.r),
-                                          child: BackdropFilter(
-                                            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                                            child: Container(
-                                              width: 50.w,
-                                              height: 20.h,
-                                              decoration: BoxDecoration(
-                                                color: AppColors.opacity10White,
-                                                borderRadius: BorderRadius.circular(4.r),
-                                                border: Border.all(color: AppColors.textColorWhite, width: 1.w),
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Text(
-                                                '교환 완료',
-                                                style: CustomTextStyles.p3.copyWith(
-                                                  fontSize: 12.sp,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.textColorWhite,
+                                    /// 거래완료 오버레이 (검정 50%)
+                                    if (item.itemStatus == ItemStatus.exchanged.serverName)
+                                      IgnorePointer(
+                                        child: Container(width: 70.w, height: 70.w, color: AppColors.opacity50Black),
+                                      ),
+
+                                    /// 거래완료 글라스모피즘 배지 (이미지 중앙)
+                                    if (item.itemStatus == ItemStatus.exchanged.serverName)
+                                      Positioned.fill(
+                                        child: Align(
+                                          alignment: Alignment.center,
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(4.r),
+                                            child: BackdropFilter(
+                                              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                              child: Container(
+                                                width: 50.w,
+                                                height: 20.h,
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.opacity10White,
+                                                  borderRadius: BorderRadius.circular(4.r),
+                                                  border: Border.all(color: AppColors.textColorWhite, width: 1.w),
+                                                ),
+                                                alignment: Alignment.center,
+                                                child: Text(
+                                                  '교환 완료',
+                                                  style: CustomTextStyles.p3.copyWith(
+                                                    fontSize: 12.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.textColorWhite,
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            // 정보
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 8.h),
+                                  Text(
+                                    item.location,
+                                    style: CustomTextStyles.p3.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.opacity60White,
                                     ),
+                                  ),
+                                  SizedBox(height: 11.h),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Wrap(
+                                        spacing: 8.w,
+                                        runSpacing: 6.h,
+                                        children: [
+                                          // tags 배열을 (condition, options...) 구조로 가정
+                                          if (item.tags.isNotEmpty)
+                                            // 첫 번째는 condition
+                                            ItemDetailConditionTag(condition: item.tags.first),
+                                          // 나머지는 trade option들
+                                          ...item.tags.skip(1).map((opt) => ItemDetailTradeOptionTag(option: opt)),
+                                        ],
+                                      ),
+                                      // 좋아요 버튼 (아이콘+원)
+                                      GestureDetector(
+                                        onTap: () async {
+                                          await ref.read(itemLikeProvider.notifier).toggle(item.itemId);
+                                          // 실패 시 SnackBar는 itemLikeProvider에서 자동 표시. 성공 시 ref.listen이 항목 제거.
+                                        },
+                                        child: Center(
+                                          child: Builder(
+                                            builder: (context) {
+                                              final liked = ref.watch(
+                                                itemLikeProvider.select((s) => s[item.itemId]?.isLiked ?? item.isLiked),
+                                              );
+                                              return Icon(
+                                                liked ? AppIcons.itemRegisterHeart : AppIcons.profilelikecount,
+                                                color: AppColors.textColorWhite,
+                                                size: 24.sp,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
-                          ),
-                          SizedBox(width: 12.w),
-                          // 정보
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.title,
-                                  style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: 8.h),
-                                Text(
-                                  item.location,
-                                  style: CustomTextStyles.p3.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.opacity60White,
-                                  ),
-                                ),
-                                SizedBox(height: 11.h),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Wrap(
-                                      spacing: 8.w,
-                                      runSpacing: 6.h,
-                                      children: [
-                                        // tags 배열을 (condition, options...) 구조로 가정
-                                        if (item.tags.isNotEmpty)
-                                          // 첫 번째는 condition
-                                          ItemDetailConditionTag(condition: item.tags.first),
-                                        // 나머지는 trade option들
-                                        ...item.tags.skip(1).map((opt) => ItemDetailTradeOptionTag(option: opt)),
-                                      ],
-                                    ),
-                                    // 좋아요 버튼 (아이콘+원)
-                                    GestureDetector(
-                                      onTap: () async {
-                                        await ref.read(itemLikeProvider.notifier).toggle(item.itemId);
-                                        // 실패 시 SnackBar는 itemLikeProvider에서 자동 표시. 성공 시 ref.listen이 항목 제거.
-                                      },
-                                      child: Center(
-                                        child: Builder(
-                                          builder: (context) {
-                                            final liked = ref.watch(
-                                              itemLikeProvider.select((s) => s[item.itemId]?.isLiked ?? item.isLiked),
-                                            );
-                                            return Icon(
-                                              liked ? AppIcons.itemRegisterHeart : AppIcons.profilelikecount,
-                                              color: AppColors.textColorWhite,
-                                              size: 24.sp,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
