@@ -11,6 +11,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/onboarding/term_detail_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
@@ -101,7 +102,7 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
     } catch (e) {
       debugPrint('약관 동의 처리 실패: $e');
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '오류가 발생했습니다. 다시 시도해주세요.', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) {

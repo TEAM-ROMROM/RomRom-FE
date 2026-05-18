@@ -137,7 +137,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
       setState(() => _isLoading = false);
 
-      CommonSnackBar.show(context: context, message: '물품 목록을 불러오는데 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 

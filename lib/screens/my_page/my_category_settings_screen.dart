@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
@@ -123,7 +124,7 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
                           if (mounted) {
                             CommonSnackBar.show(
                               context: context,
-                              message: '카테고리 저장에 실패했습니다: $e',
+                              message: ErrorUtils.getErrorMessage(e),
                               type: SnackBarType.error,
                             );
                           }

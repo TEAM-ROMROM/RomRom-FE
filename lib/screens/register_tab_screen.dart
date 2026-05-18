@@ -559,7 +559,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                       if (mounted) {
                         CommonSnackBar.show(
                           context: context,
-                          message: '물품 개수 확인에 실패했습니다. 다시 시도해주세요.',
+                          message: ErrorUtils.getErrorMessage(e),
                           type: SnackBarType.error,
                         );
                       }

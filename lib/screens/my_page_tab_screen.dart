@@ -10,11 +10,11 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_like_list_screen.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
-import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
 import 'package:romrom_fe/screens/my_page/terms_screen.dart';
 import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
@@ -31,6 +31,7 @@ class MyPageTabScreen extends StatefulWidget {
 }
 
 class _MyPageTabScreenState extends State<MyPageTabScreen> {
+  String _memberId = '';
   String _nickname = '닉네임';
   String _location = '위치정보 없음';
   String? _profileUrl;
@@ -54,6 +55,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
       if (mounted) {
         setState(() {
+          // memberId
+          _memberId = memberResponse.member?.memberId ?? '';
+
           // 닉네임
           _nickname = memberResponse.member?.nickname ?? '닉네임';
 
@@ -217,7 +221,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   Widget _buildNicknameBox() {
     return AppPressable(
       onTap: () async {
-        final result = await context.navigateTo<bool>(screen: const MyProfileEditScreen());
+        final result = await context.navigateTo<bool>(screen: MemberProfileScreen(memberId: _memberId));
 
         if (result == true) {
           await _loadUserInfo();

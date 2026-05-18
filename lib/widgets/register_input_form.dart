@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -29,12 +28,14 @@ import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:romrom_fe/screens/item_price_input_screen.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
-import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 /// 물품 등록 입력 폼 위젯
@@ -59,7 +60,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   double? _latitude;
   double? _longitude;
   LocationAddress? _selectedAddress;
-  bool _isAiPriceLoading = false; // AI 가격 예측 로딩 상태
 
   // 처음 포커스 받았는지 추적을 위한 변수
   bool _hasConditionBeenTouched = false;
@@ -125,7 +125,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       });
     } catch (e) {
       if (context.mounted) {
-        CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }
@@ -147,54 +147,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         _newImageFiles.removeAt(index - existingCount);
       }
     });
-  }
-
-  /// 첫 물건 등록 상태 업데이트
-
-  // ai 가격 측정 함수
-  Future<void> _measureAiPrice() async {
-    setState(() => _isAiPriceLoading = true); // 로딩 시작
-    try {
-      final predictedPrice = await ItemApi().pricePredict(
-        ItemRequest(
-          itemName: titleController.text.trim(),
-          itemDescription: descriptionController.text.trim(),
-          itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
-        ),
-      );
-
-      // AI 가격 측정 결과가 0 이하(0, -1 등)인 경우 유효하지 않은 결과로 처리
-      if (predictedPrice <= 0) {
-        setState(() {
-          useAiPrice = false;
-        });
-        if (context.mounted) {
-          CommonSnackBar.show(context: context, message: 'AI가 적정 가격을 측정하지 못했어요. 직접 입력해 주세요.', type: SnackBarType.error);
-        }
-        return;
-      }
-
-      // 숫자를 콤마 포함 문자열로 변환
-      final formatted = const PriceCommaFormatter().formatEditUpdate(
-        const TextEditingValue(),
-        TextEditingValue(text: predictedPrice.toString()),
-      );
-
-      setState(() {
-        priceController.value = formatted;
-      });
-
-      if (context.mounted) {
-        CommonSnackBar.show(context: context, message: 'AI로 적정 가격을 추천해드렸어요!');
-      }
-    } catch (e) {
-      // 에러 처리 (스낵바 표시 등)
-      if (context.mounted) {
-        CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e', type: SnackBarType.error);
-      }
-    } finally {
-      if (mounted) setState(() => _isAiPriceLoading = false); // 로딩 종료
-    }
   }
 
   Future<void> _initControllers() async {
@@ -633,7 +585,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                        padding: EdgeInsets.only(top: 8.0.h),
                         child: Wrap(
                           spacing: 8.w,
                           runSpacing: 8.w,
@@ -678,7 +630,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                        padding: EdgeInsets.only(top: 8.0.h),
                         child: Wrap(
                           spacing: 8.w,
                           children: ItemTradeOption.values
@@ -713,137 +665,81 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   ),
                 ),
 
-                // AI 추천 가격 안내
-                Container(
-                  height: 58.h,
-                  margin: EdgeInsets.only(bottom: 24.h),
-                  padding: EdgeInsets.only(left: 12.w, right: 23.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.aiSuggestionContainerBackground,
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(4.r),
-                          border: Border.all(
-                            color: AppColors.textColorWhite,
-                            width: 0.5.w,
-                            strokeAlign: BorderSide.strokeAlignInside,
-                          ),
-                        ),
-                        child: GradientText(
-                          text: 'AI 추천 가격',
-                          style: CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
-                          gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: Text(
-                          ItemTextFieldPhrase.price.hintText,
-                          style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500, height: 1.4),
-                          maxLines: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // AI 가격 추천 스위치
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(ItemTextFieldPhrase.price.label, style: CustomTextStyles.p1),
-                    const Spacer(),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.aiSuggestionContainerBackground,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: GradientText(
-                        text: 'AI 추천 가격',
-                        style: CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
-                        gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
-                      ),
-                    ),
-                    SizedBox(width: 4.w),
-                    AnimatedToggleSwitch.dual(
-                      current: useAiPrice,
-                      first: false,
-                      second: true,
-                      spacing: 2.0.w,
-                      height: 20.h,
-                      style: ToggleStyle(
-                        indicatorColor: AppColors.textColorWhite,
-                        borderRadius: BorderRadius.all(Radius.circular(100.r)),
-                        indicatorBoxShadow: [
-                          const BoxShadow(
-                            color: AppColors.toggleSwitchIndicatorShadow,
-                            offset: Offset(-1, 0),
-                            blurRadius: 2,
-                          ),
-                        ],
-                      ),
-                      indicatorSize: Size(18.w, 18.h),
-                      borderWidth: 0,
-                      padding: EdgeInsets.all(1.w),
-                      onTap: canUseAiPrice
-                          ? null
-                          : (b) {
-                              // 조건이 안 맞으면 스낵바로 안내
-                              if (context.mounted) {
-                                CommonSnackBar.show(
-                                  context: context,
-                                  message: 'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요',
-                                  type: SnackBarType.info,
+                // 적정 가격 필드
+                RegisterCustomLabeledField(
+                  label: ItemTextFieldPhrase.price.label,
+                  field: RegisterCustomTextField(
+                    phrase: ItemTextFieldPhrase.price,
+                    prefixText: '₩',
+                    readOnly: true,
+                    maxLength: 11,
+                    keyboardType: TextInputType.number,
+                    controller: priceController,
+                    forceValidate: _forceValidateAll,
+                    suffixIcon: useAiPrice
+                        ? Padding(
+                            padding: EdgeInsets.only(right: 12.w),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryBlack,
+                                    borderRadius: BorderRadius.circular(4.r),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SvgPicture.asset('assets/images/ai-recommend-price-star.svg', height: 14.h),
+                                      SizedBox(width: 2.w),
+                                      GradientText(
+                                        text: 'AI 추천 가격',
+                                        style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w600),
+                                        gradient: const LinearGradient(
+                                          colors: AppColors.aiGradient,
+                                          stops: [0.0, 0.35, 0.7, 1.0],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
+                              ],
+                            ),
+                          )
+                        : Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
+                    onTap: () async {
+                      final initialPrice = int.tryParse(priceController.text.replaceAll(',', '')) ?? 0;
+                      await context.navigateTo(
+                        type: NavigationTypes.slideUp,
+                        screen: ItemPriceInputScreen(
+                          initialPrice: initialPrice,
+                          initialUseAiPrice: useAiPrice,
+                          canUseAiPrice: canUseAiPrice,
+                          itemName: titleController.text,
+                          itemDescription: descriptionController.text,
+                          itemCondition: selectedItemConditionTypes.isNotEmpty
+                              ? selectedItemConditionTypes.first.serverName
+                              : null,
+                          onPriceSelected: (price, aiUsed) {
+                            if (mounted) {
+                              setState(() {
+                                useAiPrice = aiUsed;
+                                priceController.value = const PriceCommaFormatter().formatEditUpdate(
+                                  const TextEditingValue(),
+                                  TextEditingValue(text: price.toString()),
                                 );
-                              }
-                              return;
-                            }, // 비활성화
-                      onChanged: canUseAiPrice
-                          ? (b) {
-                              setState(() => useAiPrice = b as bool);
-                              if ((b as bool) && canUseAiPrice) {
-                                _measureAiPrice();
-                              }
+                              });
                             }
-                          : null, // 비활성화
-                      styleBuilder: (b) => ToggleStyle(
-                        backgroundGradient: b
-                            ? const LinearGradient(colors: AppColors.aiGradient)
-                            : const LinearGradient(colors: [AppColors.opacity40White, AppColors.opacity40White]),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 8.w),
-                // 가격 필드
-                RegisterCustomTextField(
-                  phrase: ItemTextFieldPhrase.price,
-                  prefixText: '₩',
-                  readOnly: useAiPrice || _isAiPriceLoading, // 로딩 중에도 readOnly
-                  maxLength: 11,
-                  keyboardType: TextInputType.number,
-                  controller: priceController,
-                  forceValidate: _forceValidateAll,
-                  focusNode: _priceFocusNode,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                  // AI 가격 예측 로딩 중 suffixIcon 스피너 표시
-                  suffixIcon: _isAiPriceLoading
-                      ? const Padding(padding: EdgeInsets.all(12), child: CommonLoadingIndicator(size: 16.0))
-                      : null,
+                          },
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
                 // 거래 희망 위치 필드
-                SizedBox(height: 24.h),
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.location.label,
                   field: RegisterCustomTextField(

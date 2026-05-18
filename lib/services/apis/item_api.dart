@@ -129,6 +129,27 @@ class ItemApi {
     return itemResponse;
   }
 
+  /// memberId 기반 회원 등록 물품 조회 API
+  /// `POST /api/item/get/member`
+  Future<ItemResponse> getMemberItems(ItemRequest request) async {
+    final String url = '${AppUrls.baseUrl}/api/item/get/member';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {'memberId': request.memberId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('memberId 기반 회원 등록 물품 조회 성공: ${itemResponse.item?.latitude}, ${itemResponse.item?.longitude}');
+      },
+    );
+
+    return itemResponse;
+  }
+
   /// 내 물품 목록 조회 API
   /// `POST /api/item/get/my`
   Future<ItemResponse> getMyItems(ItemRequest request) async {

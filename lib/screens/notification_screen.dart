@@ -15,6 +15,7 @@ import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
@@ -221,7 +222,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     } catch (e) {
       debugPrint('알림 데이터 로드 실패: $e');
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '알림 데이터를 불러오는 데 실패했습니다.', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) {
@@ -260,7 +261,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       CommonSnackBar.show(context: context, message: '모든 알림이 삭제되었습니다.', type: SnackBarType.success);
     } catch (e) {
       if (!mounted) return;
-      CommonSnackBar.show(context: context, message: '알림 삭제에 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 
@@ -323,7 +324,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     } catch (e) {
       debugPrint('알림 설정 변경 실패: $e');
       if (!mounted) return;
-      CommonSnackBar.show(context: context, message: '알림 설정 변경에 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     } finally {
       if (mounted) {
         setState(() {
@@ -346,7 +347,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     } catch (e) {
       debugPrint('딥링크 이동 실패: $e');
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '화면 이동에 실패했습니다.', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) {
@@ -369,7 +370,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       CommonSnackBar.show(context: context, message: '알림이 삭제되었습니다.', type: SnackBarType.success);
     } catch (e) {
       debugPrint('알림 삭제 실패: $e');
-      CommonSnackBar.show(context: context, message: '알림 삭제에 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 

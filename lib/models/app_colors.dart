@@ -27,6 +27,7 @@ class AppColors {
   static const Color opacity80Black = Color(0xCC000000); // 80% 불투명도 검정
 
   static const Color opacity20PrimaryYellow = Color(0x33FFC300);
+  static const Color opacity50PrimaryYellow = Color(0x80FFC300);
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
@@ -82,7 +83,7 @@ class AppColors {
 
   // 프로필 이미지 테두리 및 배경
   static const Color profileBorderGray = Color(0xFF77787D); // 프로필 이미지 테두리 색상 - 기본 프로필
-  static const Color profileBorderWhite = Color(0xFFFFFFFF); // 프로필 이미지 테두리 색상 - 기본 프로필 외
+  static const Color profileBorderWhite = Color(0x66FFFFFF); // 프로필 이미지 테두리 색상 - 기본 프로필 외
 
   // 아이템 옵션 메뉴
   static const Color itemOptionsMenuRedText = Color(0xFFFF5656); // 삭제 텍스트 색상
@@ -113,7 +114,7 @@ class AppColors {
   // 물품 등록 화면
   // 물품 교환 AI 추천 가격 토글 Switch
   static const Color toggleSwitchIndicatorShadow = Color(0x40000000); // 검은색, opacity 25%
-  static const Color aiSuggestionContainerBackground = Color(0x4DCF7DFF); // ai 추천 가격 태그 배경색
+  static const Color aiSuggestionContainerBackground = Color(0x1ACF7DFF); // ai 추천 가격 태그 배경색
   // 물품 사진
   static const Color itemPictureRemoveButtonBackground = Color(0xFFFFFFFF); // 물품 사진 삭제 버튼 배경색
 

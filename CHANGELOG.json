@@ -1,11 +1,29 @@
 {
   "metadata": {
-    "lastUpdated": "2026-05-08T00:31:30Z",
-    "currentVersion": "1.10.45",
-    "totalReleases": 106,
+    "lastUpdated": "2026-05-18T07:02:39Z",
+    "currentVersion": "1.10.57",
+    "totalReleases": 107,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.57",
+      "project_type": "flutter",
+      "date": "2026-05-18",
+      "pr_number": 856,
+      "raw_summary": "## Summary by CodeRabbit\n\n# 릴리스 노트\n\n* **Chores**\n  * 내부 개발 워크플로우 및 명령 구조 재정렬\n  * 테스트 및 빌드 환경 설정 업데이트\n  * 버전 업데이트 (v1.10.36 → v1.10.45)\n\n**참고:** 이 릴리스는 주로 개발 인프라 정리와 내부 프로세스 개선으로 구성되어 있습니다.\n\n[![Review Change Stack](https://storage.googleapis.com/coderabbit_public_assets/review-stack-in-coderabbit-ui.svg)](https://app.coderabbit.ai/change-stack/TEAM-ROMROM/RomRom-FE/pull/856?utm_source=github_walkthrough&utm_medium=github&utm_campaign=change_stack)",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "내부 개발 워크플로우 및 명령 구조 재정렬",
+            "테스트 및 빌드 환경 설정 업데이트",
+            "버전 업데이트 (v1.10.36 → v1.10.45)"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.45",
       "project_type": "flutter",
