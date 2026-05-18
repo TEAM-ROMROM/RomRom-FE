@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -56,7 +57,7 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        CommonSnackBar.show(context: context, message: '채팅 목록을 불러오지 못했습니다.', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }

@@ -576,12 +576,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
             _messages.removeWhere((m) => m.chatMessageId == localId);
             _uploadingLocalIds.remove(localId);
           });
-          CommonSnackBar.show(context: context, message: '이미지 전송에 실패했습니다: $e', type: SnackBarType.error);
+          CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
         }
       }
     } catch (e) {
       if (context.mounted) {
-        CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) _isPickingImage = false;
@@ -654,7 +654,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
       await ChatApi().cancelTradeCompletionRequest(chatRoomId: widget.chatRoomId);
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) setState(() => _isPendingTradeAction = false);
@@ -668,7 +668,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
       await ChatApi().rejectTradeCompletion(chatRoomId: widget.chatRoomId);
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '거절에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) setState(() => _isPendingTradeAction = false);
@@ -690,7 +690,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
       }
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '교환 완료 확인에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) setState(() => _isPendingTradeAction = false);

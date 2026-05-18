@@ -7,6 +7,7 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
@@ -174,7 +175,7 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
                           if (mounted) {
                             CommonSnackBar.show(
                               context: context,
-                              message: '위치 등록에 실패했습니다: $e',
+                              message: ErrorUtils.getErrorMessage(e),
                               type: SnackBarType.error,
                             );
                           }
