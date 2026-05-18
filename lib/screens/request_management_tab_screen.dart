@@ -425,7 +425,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                       );
                       if (mounted) {
                         setState(() {
-                          _sentRequests.removeAt(index);
+                          _sentRequests.removeWhere((e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId);
                         });
                         CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
                       }
@@ -812,8 +812,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                             ? giveItem.imageUrlList.first
                             : 'https://picsum.photos/400/300',
                         title: giveItem.itemName ?? ' ',
-                        address: giveItem.address!,
-                        createdDate: giveItem.createdDate!,
+                        address: giveItem.address ?? '주소 미등록',
+                        createdDate: giveItem.createdDate ?? DateTime.now(),
                         isNew: request.isNew ?? false,
                         tradeOptions: giveItem.itemTradeOptions != null
                             ? giveItem.itemTradeOptions!

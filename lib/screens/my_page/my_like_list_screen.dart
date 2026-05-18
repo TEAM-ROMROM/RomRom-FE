@@ -224,18 +224,15 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
                     child: GestureDetector(
                       onTap: () async {
                         final itemId = item.itemId;
-                        await Navigator.push<void>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ItemDetailDescriptionScreen(
-                              itemId: itemId,
-                              imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-                              currentImageIndex: 0,
-                              heroTag: 'itemImage_${itemId}_0',
-                              isMyItem: false,
-                              isRequestManagement: false,
-                              isTradeRequestAllowed: true,
-                            ),
+                        await context.navigateTo(
+                          screen: ItemDetailDescriptionScreen(
+                            itemId: itemId,
+                            imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+                            currentImageIndex: 0,
+                            heroTag: 'itemImage_${itemId}_0',
+                            isMyItem: false,
+                            isRequestManagement: false,
+                            isTradeRequestAllowed: true,
                           ),
                         );
                         // 좋아요 취소 시 목록에서 제거되는 로직은 ref.listen 이 처리.
