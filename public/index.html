@@ -1,237 +1,463 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>롬롬(romrom) - 가치를 교환하는 새로운 방법</title>
+    <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/variable/pretendardvariable.css" />
-    <link rel="stylesheet" href="/css/style.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/variable/pretendardvariable.css"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
     <script src="/app-config.js"></script>
 
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand:       '#FACC15',
-                        textMain:    '#000000',
-                        textMuted:   '#868e96',
-                        surface:     '#f8f9fa',
-                        borderLight: '#f1f3f5',
-                    },
-                    fontFamily: { sans: ['Pretendard Variable', 'sans-serif'] },
-                    letterSpacing: { tightest: '-.06em' },
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: "#FACC15",
+              textMain: "#000000",
+              textMuted: "#868e96",
+              surface: "#f8f9fa",
+              borderLight: "#f1f3f5",
+            },
+            fontFamily: { sans: ["Pretendard Variable", "sans-serif"] },
+            letterSpacing: { tightest: "-.06em" },
+          },
+        },
+      };
     </script>
 
-    <!-- 딥링크 처리: itemId 파라미터 있을 때 앱 열기 시도 → 미설치 시 스토어 이동 -->
+    <!-- 딥링크 처리 -->
     <script>
-        (function () {
-            var ua          = navigator.userAgent.toLowerCase();
-            var isAndroid   = ua.indexOf('android') > -1;
-            var isIOS       = /iphone|ipad|ipod/.test(ua);
-            var isMobile    = isAndroid || isIOS;
-            var itemId      = new URLSearchParams(window.location.search).get('itemId');
-            var cfg         = window.APP_CONFIG || {};
-            var androidUrl  = cfg.androidStoreUrl || 'https://play.google.com/store/apps/details?id=com.alom.romrom';
-            var iosUrl      = cfg.iosStoreUrl     || 'https://apps.apple.com/kr/app/id6748823976';
+      (function () {
+        var ua = navigator.userAgent.toLowerCase();
+        var isAndroid = ua.indexOf("android") > -1;
+        var isIOS = /iphone|ipad|ipod/.test(ua);
+        var isMobile = isAndroid || isIOS;
+        var itemId = new URLSearchParams(window.location.search).get("itemId");
+        var cfg = window.APP_CONFIG || {};
+        var androidUrl =
+          cfg.androidStoreUrl ||
+          "https://play.google.com/store/apps/details?id=com.alom.romrom";
+        var iosUrl =
+          cfg.iosStoreUrl || "https://apps.apple.com/kr/app/id6748823976";
 
-            if (itemId && isMobile) {
-                window.location = 'romrom://item/detail?itemId=' + encodeURIComponent(itemId);
-                setTimeout(function () {
-                    window.location = isIOS ? iosUrl : androidUrl;
-                }, 1500);
-            }
+        if (itemId && isMobile) {
+          window.location =
+            "romrom://item/detail?itemId=" + encodeURIComponent(itemId);
+          setTimeout(function () {
+            window.location = isIOS ? iosUrl : androidUrl;
+          }, 1500);
+        }
 
-            window._romrom = { isMobile: isMobile, isIOS: isIOS, androidUrl: androidUrl, iosUrl: iosUrl };
-        })();
+        window._romrom = { isMobile, isIOS, androidUrl, iosUrl };
+      })();
     </script>
-</head>
-<body class="font-sans">
 
+    <!-- 다크모드 플래시 방지 (렌더 전 초기화) -->
+    <script>
+      (function () {
+        var saved = localStorage.getItem("romrom-theme");
+        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (saved === "dark" || (!saved && prefersDark)) {
+          document.documentElement.classList.add("dark");
+        }
+        document.documentElement.classList.add("no-dark-transition");
+      })();
+    </script>
+  </head>
+  <body class="font-sans">
     <!-- 네비게이션 -->
-    <nav class="fixed top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 h-16 flex justify-between items-center">
-            <a href="#">
-                <img src="/images/romrom.svg" alt="romrom" class="h-5 w-auto" />
-            </a>
-            <button class="js-download-trigger btn-highlight bg-textMain text-white px-4 py-2 rounded-full hover:bg-brand hover:text-black transition-colors text-xs font-bold tracking-wide">
-                앱 다운로드
-            </button>
+    <nav class="fixed top-0 left-0 w-full z-50 glass-nav">
+      <div
+        class="max-w-7xl mx-auto px-8 sm:px-10 lg:px-16 h-20 flex justify-between items-center"
+      >
+        <a href="#">
+          <img src="/images/romrom.svg" alt="romrom" class="h-7 w-auto" />
+        </a>
+        <div class="flex items-center gap-3">
+          <button id="theme-toggle" aria-label="테마 전환">
+            <i id="theme-icon" class="fa-solid fa-moon"></i>
+          </button>
+          <button
+            class="js-download-trigger btn-highlight bg-textMain text-white px-6 py-2.5 rounded-full hover:bg-brand hover:text-black transition-colors text-sm font-bold tracking-wide"
+          >
+            앱 다운로드
+          </button>
         </div>
+      </div>
     </nav>
 
     <!-- 히어로 섹션 -->
-    <section class="pt-28 pb-20 px-6 sm:px-8 lg:px-12 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-10 lg:gap-14 min-h-[80vh]">
-        <div class="flex-1 text-center lg:text-left z-10 flex flex-col items-center lg:items-start">
-            <span class="text-brand font-bold tracking-widest text-[10px] uppercase mb-3 block fade-up">
-                Hybrid Barter Platform
-            </span>
-            <h1 class="text-3xl md:text-4xl lg:text-[3rem] font-black tracking-tightest leading-[1.33] lg:leading-[1.24] mb-5 fade-up delay-100">
-                <span class="highlight-yellow">물물교환</span>,<br>모든 것이 가치가 되다
-            </h1>
-            <p class="text-textMuted text-sm md:text-base max-w-sm leading-relaxed mb-8 font-medium fade-up delay-200">
-                안 쓰는 물건, 나의 재능, 현금을 자유롭게 섞어<br>원하는 가치와 교환해보세요.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto fade-up delay-200">
-                <button class="js-download-trigger flex items-center justify-center gap-2.5 bg-surface text-textMain px-6 py-3 rounded-full font-bold text-sm border border-borderLight shadow-sm hover:bg-white transition-colors whitespace-nowrap" data-store="appstore">
-                    <i class="fa-brands fa-apple text-[18px] text-black" aria-hidden="true"></i>
-                    App Store
-                </button>
-                <button class="js-download-trigger flex items-center justify-center gap-2.5 bg-surface text-textMain px-6 py-3 rounded-full font-bold text-sm border border-borderLight shadow-sm hover:bg-white transition-colors whitespace-nowrap" data-store="googleplay">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
-                        <defs>
-                            <linearGradient id="playGradient" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%"   stop-color="#34A853" />
-                                <stop offset="45%"  stop-color="#4285F4" />
-                                <stop offset="70%"  stop-color="#FBBC05" />
-                                <stop offset="100%" stop-color="#EA4335" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M4 2.5L20 12L4 21.5V2.5Z" fill="url(#playGradient)" />
-                    </svg>
-                    Google Play
-                </button>
-            </div>
+    <section class="snap-section hero-section w-full relative overflow-hidden">
+      <div class="hero-spotlight"></div>
+      <div
+        class="pt-36 pb-24 px-8 sm:px-10 lg:px-16 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-14 lg:gap-20 min-h-screen relative z-10"
+      >
+        <div
+          class="flex-1 text-center lg:text-left z-10 flex flex-col items-center lg:items-start"
+        >
+          <span
+            class="text-brand font-bold tracking-widest text-xs uppercase mb-4 block fade-up"
+          >
+            Hybrid Barter Platform
+          </span>
+          <h1
+            class="text-4xl md:text-5xl lg:text-[4.5rem] font-black tracking-tightest leading-[1.25] mb-7 fade-up delay-100"
+          >
+            <span class="highlight-yellow">물물교환</span>,<br />모든 것이
+            가치가 되다
+          </h1>
+          <p
+            class="text-textMuted text-base md:text-lg max-w-md leading-relaxed mb-10 font-medium fade-up delay-200"
+          >
+            안 쓰는 물건, 나의 재능, 현금을 자유롭게 섞어<br />원하는 가치와
+            교환해보세요.
+          </p>
+          <div
+            class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto fade-up delay-200"
+          >
+            <button
+              class="js-download-trigger flex items-center justify-center gap-3 bg-surface text-textMain px-8 py-4 rounded-full font-bold text-base border border-borderLight shadow-sm hover:bg-white transition-colors whitespace-nowrap"
+              data-store="appstore"
+            >
+              <i
+                class="fa-brands fa-apple text-[22px] text-black"
+                aria-hidden="true"
+              ></i>
+              App Store
+            </button>
+            <button
+              class="js-download-trigger flex items-center justify-center gap-3 bg-surface text-textMain px-8 py-4 rounded-full font-bold text-base border border-borderLight shadow-sm hover:bg-white transition-colors whitespace-nowrap"
+              data-store="googleplay"
+            >
+              <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                <defs>
+                  <linearGradient id="playGradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#34A853" />
+                    <stop offset="45%" stop-color="#4285F4" />
+                    <stop offset="70%" stop-color="#FBBC05" />
+                    <stop offset="100%" stop-color="#EA4335" />
+                  </linearGradient>
+                </defs>
+                <path d="M4 2.5L20 12L4 21.5V2.5Z" fill="url(#playGradient)" />
+              </svg>
+              Google Play
+            </button>
+          </div>
         </div>
-
-        <div class="flex-1 flex justify-center lg:justify-end lg:pr-10 w-full z-10 fade-up delay-100">
-            <img src="/images/hero-mockup.png" alt="롬롬 앱 목업"
-                 class="w-[80vw] max-w-[360px] lg:max-w-[520px] drop-shadow-[0_25px_60px_rgba(0,0,0,0.12)]" />
+        <div
+          class="flex-1 flex justify-center lg:justify-end lg:pr-6 w-full z-10 fade-up delay-100"
+        >
+          <img
+            src="/images/hero-mockup.png"
+            alt="롬롬 앱 목업"
+            data-parallax
+            class="w-[85vw] max-w-[440px] lg:max-w-[640px] drop-shadow-[0_25px_60px_rgba(0,0,0,0.12)]"
+          />
         </div>
+      </div>
     </section>
 
-    <!-- 기능 소개 섹션 -->
-    <section class="py-20 px-6 sm:px-8 lg:px-12 border-t border-borderLight overflow-hidden">
-        <div class="max-w-7xl mx-auto">
-
-            <!-- Feature 01: 하이브리드 교환 -->
-            <div class="flex flex-col lg:flex-row items-center gap-10 lg:gap-16 mb-40">
-                <div class="flex-1 fade-up">
-                    <span class="text-brand font-black text-4xl block mb-3 section-number">01</span>
-                    <h2 class="text-2xl lg:text-3xl font-black tracking-tight mb-4 section-title">경계를 허무는<br>하이브리드 교환</h2>
-                    <p class="text-textMuted text-base leading-relaxed font-medium">
-                        원하는 물건의 가치에 미치지 못한다면 나의 소장품에 재능이나 현금을 더해보세요.<br>
-                        롬롬에서는 모든 것이 거래의 단위가 됩니다.
-                    </p>
-                </div>
-                <div class="flex-1 w-full flex justify-center lg:justify-end lg:pr-6 fade-up delay-100">
-                    <img src="/images/feature-hybrid-exchange.png" alt="하이브리드 교환 기능"
-                         class="w-full max-w-[520px] rounded-[1.75rem] soft-glow" />
-                </div>
-            </div>
-
-            <div class="section-sep my-14"></div>
-
-            <!-- Feature 02: 롬롬 AI -->
-            <div class="flex flex-col lg:flex-row items-center gap-10 lg:gap-16 mb-24">
-                <div class="flex-1 fade-up">
-                    <span class="text-brand font-black text-4xl block mb-3 section-number">02</span>
-                    <h2 class="text-2xl lg:text-3xl font-black tracking-tight mb-4 section-title">스마트한 거래의 기준,<br>롬롬 AI</h2>
-                    <p class="text-textMuted text-base leading-relaxed font-medium">
-                        롬롬 AI가 분석한 데이터로 가장 완벽한 교환을 경험하세요.
-                    </p>
-                </div>
-                <div class="flex-1 w-full flex justify-center lg:justify-end lg:pr-6 fade-up delay-100">
-                    <div class="w-full max-w-[520px] flex flex-col sm:flex-row gap-5 justify-center">
-                        <div class="flex-1 flex flex-col items-center">
-                            <img src="/images/feature-ai-price.png" alt="AI 적정 가격 추천"
-                                 class="w-full max-w-[190px] mx-auto rounded-[1.5rem] soft-glow border border-borderLight mb-3" />
-                            <div class="text-center max-w-[240px]">
-                                <h3 class="font-black text-base mb-1">적정 가격 추천</h3>
-                                <p class="text-textMuted text-xs leading-relaxed font-medium">사진 한 장으로 가장 합리적인 시세를 도출합니다.</p>
-                            </div>
-                        </div>
-                        <div class="flex-1 flex flex-col items-center">
-                            <img src="/images/feature-ai-recommend.png" alt="AI 교환 추천"
-                                 class="w-full max-w-[190px] mx-auto rounded-[1.5rem] soft-glow border border-borderLight mb-3" />
-                            <div class="text-center max-w-[240px]">
-                                <h3 class="font-black text-base mb-1">교환 추천</h3>
-                                <p class="text-textMuted text-xs leading-relaxed font-medium">상호 니즈를 분석하여 최적의 조합을 제안합니다.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feature 03: 쇼츠형 탐색 -->
-            <div class="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-                <div class="flex-1 fade-up">
-                    <span class="text-brand font-black text-4xl block mb-3 section-number">03</span>
-                    <h2 class="text-2xl lg:text-3xl font-black tracking-tight mb-4 section-title">흐름을 끊지 않는<br>쇼츠형 탐색</h2>
-                    <p class="text-textMuted text-base leading-relaxed font-medium">
-                        숏폼 콘텐츠를 시청하듯 위아래로 가볍게 스와이프하며<br>나에게 꼭 맞는 교환 대상을 발견하세요.
-                    </p>
-                </div>
-                <div class="flex-1 w-full flex justify-center fade-up delay-100">
-                    <img src="/images/feature-shorts.png" alt="쇼츠형 탐색 기능"
-                         class="w-[220px] h-auto rounded-2xl soft-glow" />
-                </div>
-            </div>
-
+    <!-- Feature 01: 하이브리드 교환 -->
+    <section
+      class="snap-section flex items-center border-t border-borderLight px-8 sm:px-10 lg:px-16"
+    >
+      <div
+        class="max-w-7xl mx-auto w-full flex flex-col lg:flex-row items-center gap-14 lg:gap-20 py-24"
+      >
+        <div class="flex-1">
+          <span
+            class="text-brand font-black text-6xl block mb-4 section-number anim-number"
+            >01</span
+          >
+          <h2
+            class="text-3xl lg:text-4xl font-black tracking-tight mb-5 section-title"
+          >
+            <span class="anim-heading-wrap"
+              ><span class="anim-heading-line">경계를 허무는</span></span
+            >
+            <span class="anim-heading-wrap"
+              ><span class="anim-heading-line delay-80"
+                >하이브리드 교환</span
+              ></span
+            >
+          </h2>
+          <p
+            class="text-textMuted text-lg leading-relaxed font-medium anim-desc"
+          >
+            원하는 물건의 가치에 미치지 못한다면 나의 소장품에 재능이나 현금을
+            더해보세요.<br />롬롬에서는 모든 것이 거래의 단위가 됩니다.
+          </p>
         </div>
+        <div
+          class="flex-1 w-full flex justify-center lg:justify-end fade-up delay-100"
+        >
+          <img
+            src="/images/feature-hybrid-exchange.png"
+            alt="하이브리드 교환 기능"
+            data-parallax
+            class="w-full max-w-[620px] rounded-[1.75rem] soft-glow"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature 02: 롬롬 AI -->
+    <section
+      class="snap-section flex items-center border-t border-borderLight px-8 sm:px-10 lg:px-16"
+    >
+      <div
+        class="max-w-7xl mx-auto w-full flex flex-col lg:flex-row items-center gap-14 lg:gap-20 py-24"
+      >
+        <div class="flex-1">
+          <span
+            class="text-brand font-black text-6xl block mb-4 section-number anim-number"
+            >02</span
+          >
+          <h2
+            class="text-3xl lg:text-4xl font-black tracking-tight mb-5 section-title"
+          >
+            <span class="anim-heading-wrap"
+              ><span class="anim-heading-line"
+                >스마트한 거래의 기준,</span
+              ></span
+            >
+            <span class="anim-heading-wrap"
+              ><span class="anim-heading-line delay-80">롬롬 AI</span></span
+            >
+          </h2>
+          <p
+            class="text-textMuted text-lg leading-relaxed font-medium anim-desc"
+          >
+            롬롬 AI가 분석한 데이터로 가장 완벽한 교환을 경험하세요.
+          </p>
+        </div>
+        <div
+          class="flex-1 w-full flex justify-center lg:justify-end fade-up delay-100"
+        >
+          <div
+            class="w-full max-w-[580px] flex flex-col sm:flex-row gap-8 justify-center"
+          >
+            <div class="flex-1 flex flex-col items-center">
+              <img
+                src="/images/feature-ai-price.png"
+                alt="AI 적정 가격 추천"
+                data-parallax
+                class="w-full max-w-[240px] mx-auto rounded-[1.5rem] soft-glow border border-borderLight mb-4"
+              />
+              <div class="text-center max-w-[260px]">
+                <h3 class="font-black text-lg mb-2">적정 가격 추천</h3>
+                <p class="text-textMuted text-sm leading-relaxed font-medium">
+                  사진 한 장으로 가장 합리적인 시세를 도출합니다.
+                </p>
+              </div>
+            </div>
+            <div class="flex-1 flex flex-col items-center">
+              <img
+                src="/images/feature-ai-recommend.png"
+                alt="AI 교환 추천"
+                data-parallax
+                class="w-full max-w-[240px] mx-auto rounded-[1.5rem] soft-glow border border-borderLight mb-4"
+              />
+              <div class="text-center max-w-[260px]">
+                <h3 class="font-black text-lg mb-2">교환 추천</h3>
+                <p class="text-textMuted text-sm leading-relaxed font-medium">
+                  상호 니즈를 분석하여 최적의 조합을 제안합니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature 03: 쇼츠형 탐색 -->
+    <section
+      class="snap-section flex items-center border-t border-borderLight px-8 sm:px-10 lg:px-16"
+    >
+      <div
+        class="max-w-7xl mx-auto w-full flex flex-col lg:flex-row items-center gap-14 lg:gap-20 py-24"
+      >
+        <div class="flex-1">
+          <span
+            class="text-brand font-black text-6xl block mb-4 section-number anim-number"
+            >03</span
+          >
+          <h2
+            class="text-3xl lg:text-4xl font-black tracking-tight mb-5 section-title"
+          >
+            <span class="anim-heading-wrap"
+              ><span class="anim-heading-line">흐름을 끊지 않는</span></span
+            >
+            <span class="anim-heading-wrap"
+              ><span class="anim-heading-line delay-80">쇼츠형 탐색</span></span
+            >
+          </h2>
+          <p
+            class="text-textMuted text-lg leading-relaxed font-medium anim-desc"
+          >
+            숏폼 콘텐츠를 시청하듯 위아래로 가볍게 스와이프하며<br />나에게 꼭
+            맞는 교환 대상을 발견하세요.
+          </p>
+        </div>
+        <div class="flex-1 w-full flex justify-center fade-up delay-100">
+          <img
+            src="/images/feature-shorts.png"
+            alt="쇼츠형 탐색 기능"
+            data-parallax
+            class="w-[280px] h-auto rounded-2xl soft-glow"
+          />
+        </div>
+      </div>
     </section>
 
     <!-- CTA 섹션 -->
-    <section class="py-24 px-6 sm:px-8 lg:px-12 bg-surface text-center fade-up">
-        <h2 class="text-3xl md:text-4xl font-black tracking-tighter mb-5 text-textMain">
-            물물교환의 새로운 기준, 롬롬
-        </h2>
-        <p class="text-textMuted text-base mb-10 font-medium">지금 바로 교환을 시작하세요.</p>
-        <button class="js-download-trigger btn-highlight bg-textMain text-white px-8 py-3.5 rounded-full font-bold text-base hover:bg-brand hover:text-black transition-colors">
-            앱 다운로드
-        </button>
+    <section
+      class="snap-section flex flex-col items-center justify-center bg-surface text-center px-8 fade-up"
+    >
+      <h2
+        class="text-4xl md:text-5xl font-black tracking-tighter mb-6 text-textMain"
+      >
+        물물교환의 새로운 기준, 롬롬
+      </h2>
+      <p class="text-textMuted text-lg mb-12 font-medium">
+        지금 바로 교환을 시작하세요.
+      </p>
+      <button
+        class="js-download-trigger btn-highlight bg-textMain text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-brand hover:text-black transition-colors"
+      >
+        앱 다운로드
+      </button>
     </section>
 
-    <!-- 다운로드 모달 (데스크탑 전용) -->
-    <div id="download-modal" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
-        <div class="absolute inset-0 bg-black/40"></div>
-        <div class="relative w-full h-full flex items-center justify-center px-6">
-            <div id="download-modal-card" class="w-full max-w-[640px] bg-white rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] p-8 sm:p-10">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-black">모바일에서만 이용 가능해요</h3>
-                    <button id="download-modal-close" class="w-9 h-9 rounded-full border border-borderLight flex items-center justify-center text-textMuted hover:text-textMain" aria-label="닫기">
-                        ×
-                    </button>
-                </div>
-                <p class="text-textMuted text-sm mb-8">휴대전화로 스캔하거나 이미지를 저장해 스토어에서 앱을 받아주세요.</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="download-modal-grid">
-                    <div class="download-qr flex flex-col items-center text-center" data-store="appstore">
-                        <img src="/images/qr-appstore.png" alt="App Store QR" class="w-44 h-44 object-contain" />
-                        <span class="mt-3 text-sm font-bold">App Store</span>
-                    </div>
-                    <div class="download-qr flex flex-col items-center text-center" data-store="googleplay">
-                        <img src="/images/qr-googleplay.png" alt="Google Play QR" class="w-44 h-44 object-contain" />
-                        <span class="mt-3 text-sm font-bold">Google Play</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- 푸터 -->
-    <footer class="py-10 px-6 sm:px-8 lg:px-12 bg-white border-t border-borderLight fade-up">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-5">
-            <img src="/images/romrom.svg" alt="romrom" class="h-5 w-auto" />
-            <div class="flex gap-5 text-[11px] md:text-xs text-textMuted font-bold">
-                <a href="https://jasper-organ-4fb.notion.site/32124dde98fb801599cbc8555d9b62e0" class="hover:text-textMain transition-colors" target="_blank" rel="noopener noreferrer">이용약관</a>
-                <a href="https://jasper-organ-4fb.notion.site/32124dde98fb8016ae64ca031526b237" class="hover:text-textMain transition-colors" target="_blank" rel="noopener noreferrer">개인정보처리방침</a>
-                <a href="#" class="hover:text-textMain transition-colors">고객지원</a>
-                <a href="https://github.com/TEAM-ROMROM" class="hover:text-textMain transition-colors inline-flex items-center gap-1" target="_blank" rel="noopener noreferrer">
-                    <i class="fa-brands fa-github"></i> GitHub
-                </a>
-            </div>
+    <footer
+      class="snap-section flex flex-col justify-center bg-white border-t border-borderLight px-8 sm:px-10 lg:px-16 fade-up"
+      style="min-height: auto; scroll-snap-align: start"
+    >
+      <div class="max-w-7xl mx-auto w-full py-12">
+        <div
+          class="flex flex-col md:flex-row justify-between items-center gap-5"
+        >
+          <img src="/images/romrom.svg" alt="romrom" class="h-7 w-auto" />
+          <div class="flex gap-6 text-xs md:text-sm text-textMuted font-bold">
+            <a
+              href="https://jasper-organ-4fb.notion.site/32124dde98fb801599cbc8555d9b62e0"
+              class="hover:text-textMain transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+              >이용약관</a
+            >
+            <a
+              href="https://jasper-organ-4fb.notion.site/32124dde98fb8016ae64ca031526b237"
+              class="hover:text-textMain transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+              >개인정보처리방침</a
+            >
+            <a href="#" class="hover:text-textMain transition-colors"
+              >고객지원</a
+            >
+            <a
+              href="https://github.com/TEAM-ROMROM"
+              class="hover:text-textMain transition-colors inline-flex items-center gap-1"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <i class="fa-brands fa-github"></i> GitHub
+            </a>
+          </div>
         </div>
-        <div class="max-w-7xl mx-auto mt-6 text-center md:text-left text-[11px] text-textMuted font-medium">
-            © 2026 Team ROMROM. All rights reserved.
+        <div
+          class="mt-6 text-center md:text-left text-xs text-textMuted font-medium"
+        >
+          © 2026 Team ROMROM. All rights reserved.
         </div>
+      </div>
     </footer>
 
+    <!-- 다운로드 모달 (데스크탑 전용) -->
+    <div
+      id="download-modal"
+      class="fixed inset-0 z-[60] hidden"
+      aria-hidden="true"
+    >
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="relative w-full h-full flex items-center justify-center px-6">
+        <div
+          id="download-modal-card"
+          class="w-full max-w-[640px] bg-white rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] p-8 sm:p-10"
+        >
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-black">모바일에서만 이용 가능해요</h3>
+            <button
+              id="download-modal-close"
+              class="w-9 h-9 rounded-full border border-borderLight flex items-center justify-center text-textMuted hover:text-textMain"
+              aria-label="닫기"
+            >
+              ×
+            </button>
+          </div>
+          <p class="text-textMuted text-sm mb-8">
+            휴대전화로 스캔하거나 이미지를 저장해 스토어에서 앱을 받아주세요.
+          </p>
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 gap-6"
+            id="download-modal-grid"
+          >
+            <div
+              class="download-qr flex flex-col items-center text-center"
+              data-store="appstore"
+            >
+              <img
+                src="/images/qr-appstore.png"
+                alt="App Store QR"
+                class="w-44 h-44 object-contain"
+              />
+              <span class="mt-3 text-sm font-bold">App Store</span>
+            </div>
+            <div
+              class="download-qr flex flex-col items-center text-center"
+              data-store="googleplay"
+            >
+              <img
+                src="/images/qr-googleplay.png"
+                alt="Google Play QR"
+                class="w-44 h-44 object-contain"
+              />
+              <span class="mt-3 text-sm font-bold">Google Play</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="/js/main.js"></script>
-</body>
+
+    <!-- Motion One: 섹션별 이미지 패럴랙스 -->
+    <script type="module">
+      import {
+        animate,
+        scroll,
+      } from "https://cdn.jsdelivr.net/npm/motion@latest/dist/motion.js";
+
+      document.querySelectorAll("[data-parallax]").forEach((el) => {
+        scroll(animate(el, { y: ["-16%", "16%"] }, { ease: "linear" }), {
+          target: el,
+        });
+      });
+    </script>
+  </body>
 </html>

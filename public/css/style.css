@@ -1,62 +1,412 @@
+html {
+  scroll-snap-type: y mandatory;
+}
+
 body {
-    background-color: #ffffff;
-    color: #000000;
-    -webkit-font-smoothing: antialiased;
-    word-break: keep-all;
+  background-color: #ffffff;
+  color: #000000;
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+}
+
+.snap-section {
+  scroll-snap-align: start;
+  min-height: 100vh;
+}
+
+/* 히어로 스포트라이트 빔 */
+.hero-spotlight {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.95);
+  width: 160%;
+  height: 130%;
+  background: radial-gradient(
+    ellipse 50% 55% at 50% 5%,
+    rgb(250, 204, 21) 0%,
+    rgba(253, 224, 71, 0.22) 30%,
+    rgba(254, 249, 195, 0.08) 58%,
+    transparent 80%
+  );
+  pointer-events: none;
+  z-index: 0;
+  animation: spotlight-beam 5s ease-in-out infinite;
+}
+
+@keyframes spotlight-beam {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: translateX(-50%) scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.08);
+  }
 }
 
 /* 텍스트 강조 밑줄 */
 .highlight-yellow {
-    position: relative;
-    display: inline-block;
-    z-index: 1;
-    padding-bottom: 0.05em;
-    background-image: linear-gradient(transparent 60%, #FACC15 0);
-    background-size: 100% 0.32em;
-    background-repeat: no-repeat;
-    background-position: 0 85%;
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+  padding-bottom: 0.05em;
+  background-image: linear-gradient(transparent 60%, #facc15 0);
+  background-size: 100% 0.32em;
+  background-repeat: no-repeat;
+  background-position: 0 85%;
 }
 
 /* 스크롤 페이드업 애니메이션 */
 .fade-up {
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .fade-up.in-view {
-    opacity: 1;
-    transform: translateY(0);
+  opacity: 1;
+  transform: translateY(0);
 }
-.delay-100 { transition-delay: 100ms; }
-.delay-200 { transition-delay: 200ms; }
+.delay-100 {
+  transition-delay: 100ms;
+}
+.delay-200 {
+  transition-delay: 200ms;
+}
 
 .soft-glow {
-    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.12);
 }
 
 .section-sep {
-    height: 1px;
-    background: linear-gradient(90deg, transparent 0%, #f1f3f5 15%, #f1f3f5 85%, transparent 100%);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #f1f3f5 15%,
+    #f1f3f5 85%,
+    transparent 100%
+  );
 }
 
 .btn-highlight {
-    position: relative;
-    overflow: hidden;
+  position: relative;
+  overflow: hidden;
 }
 .btn-highlight::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 12%;
-    right: 12%;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.5);
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.5);
 }
 
-.section-number { letter-spacing: -0.02em; }
-.section-title  { letter-spacing: -0.02em; line-height: 1.25; }
+.section-number {
+  letter-spacing: -0.02em;
+}
+.section-title {
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+/* =====================
+   기능 소개 텍스트 애니메이션
+   ===================== */
+
+/* 섹션 번호 (01/02/03) — 아래서 올라오며 등장 */
+.anim-number {
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-number.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 제목 — 라인별 커튼 리빌 */
+.anim-heading-wrap {
+  display: block;
+  overflow: hidden;
+}
+.anim-heading-line {
+  display: block;
+  transform: translateY(110%);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-heading-line.in-view {
+  transform: translateY(0);
+}
+.anim-heading-line.delay-80 {
+  transition-delay: 80ms;
+}
+.anim-heading-line.delay-160 {
+  transition-delay: 160ms;
+}
+
+/* 설명 텍스트 — 제목 이후 등장 */
+.anim-desc {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s,
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+}
+.anim-desc.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5),
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 20px 10px rgba(255, 255, 255, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+}
+
+.glass-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    transparent,
+    rgba(255, 255, 255, 0.3)
+  );
+}
 
 @media (prefers-reduced-motion: reduce) {
-    .fade-up { opacity: 1; transform: none; transition: none; }
-    .delay-100, .delay-200 { transition-delay: 0ms; }
+  .fade-up {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .delay-100,
+  .delay-200 {
+    transition-delay: 0ms;
+  }
+}
+
+/* =====================
+   히어로 섹션 배경
+   ===================== */
+.hero-section {
+  background: radial-gradient(
+    ellipse 80% 60% at 70% 40%,
+    #fef9c3 0%,
+    #ffffff 70%
+  );
+}
+
+/* =====================
+   다크모드 토글 버튼
+   ===================== */
+#theme-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #e5e7eb;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s;
+}
+#theme-toggle:hover {
+  background: #f3f4f6;
+}
+html.dark #theme-toggle {
+  border-color: #252a35;
+  color: #edeef0;
+}
+html.dark #theme-toggle:hover {
+  background: #1a1e27;
+}
+
+/* =====================
+   다크모드 FOUC 방지
+   ===================== */
+html.no-dark-transition,
+html.no-dark-transition * {
+  transition: none !important;
+}
+
+/* =====================
+   다크모드 전환 트랜지션
+   ===================== */
+body,
+.glass-nav,
+.hero-section,
+section.snap-section,
+footer,
+#download-modal-card,
+.border-borderLight,
+.hero-spotlight {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+/* =====================
+   다크 모드
+   ===================== */
+html.dark body {
+  background-color: #0d0f12;
+  color: #edeef0;
+}
+
+/* 히어로 섹션 배경 */
+html.dark .hero-section {
+  background: radial-gradient(
+    ellipse 80% 60% at 70% 40%,
+    rgba(234, 179, 8, 0.12) 0%,
+    #0d0f12 70%
+  );
+}
+
+/* 스포트라이트 — 다크모드에서 더 은은하게 */
+html.dark .hero-spotlight {
+  opacity: 0.45;
+}
+
+/* 네비게이션 */
+html.dark .glass-nav {
+  background: rgba(13, 15, 18, 0.82);
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05),
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* 텍스트 */
+html.dark .text-textMain {
+  color: #edeef0;
+}
+html.dark .text-textMuted {
+  color: #8892a4;
+}
+html.dark .text-black {
+  color: #edeef0;
+}
+
+/* 배경 */
+html.dark .bg-white {
+  background-color: #0d0f12;
+}
+html.dark .bg-surface {
+  background-color: #161a20;
+}
+html.dark .bg-textMain {
+  background-color: #edeef0;
+}
+html.dark .bg-textMain.text-white {
+  color: #0d0f12;
+}
+
+/* hover */
+html.dark .hover\:bg-white:hover {
+  background-color: #1a1e27;
+}
+html.dark .hover\:text-textMain:hover {
+  color: #edeef0;
+}
+
+/* 보더 */
+html.dark .border-borderLight {
+  border-color: #252a35;
+}
+
+/* 섹션 */
+html.dark section.snap-section {
+  background-color: #0d0f12;
+}
+html.dark footer.snap-section {
+  background-color: #0d0f12;
+}
+
+/* 이미지 그림자 강화 */
+html.dark [data-parallax] {
+  filter: drop-shadow(0 25px 60px rgba(0, 0, 0, 0.5));
+}
+html.dark .soft-glow {
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.5);
+}
+
+
+
+/* 모달 */
+html.dark #download-modal-card {
+  background-color: #161a20;
+}
+html.dark #download-modal-card h3 {
+  color: #edeef0;
+}
+html.dark #download-modal-card p {
+  color: #8892a4;
+}
+html.dark #download-modal-card span.font-bold {
+  color: #edeef0;
+}
+html.dark #download-modal-close {
+  border-color: #252a35;
+  color: #8892a4;
+}
+html.dark #download-modal-close:hover {
+  color: #edeef0;
 }
