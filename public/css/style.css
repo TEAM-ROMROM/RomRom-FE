@@ -1,0 +1,62 @@
+body {
+    background-color: #ffffff;
+    color: #000000;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+}
+
+/* 텍스트 강조 밑줄 */
+.highlight-yellow {
+    position: relative;
+    display: inline-block;
+    z-index: 1;
+    padding-bottom: 0.05em;
+    background-image: linear-gradient(transparent 60%, #FACC15 0);
+    background-size: 100% 0.32em;
+    background-repeat: no-repeat;
+    background-position: 0 85%;
+}
+
+/* 스크롤 페이드업 애니메이션 */
+.fade-up {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fade-up.in-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+.delay-100 { transition-delay: 100ms; }
+.delay-200 { transition-delay: 200ms; }
+
+.soft-glow {
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.12);
+}
+
+.section-sep {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #f1f3f5 15%, #f1f3f5 85%, transparent 100%);
+}
+
+.btn-highlight {
+    position: relative;
+    overflow: hidden;
+}
+.btn-highlight::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12%;
+    right: 12%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.section-number { letter-spacing: -0.02em; }
+.section-title  { letter-spacing: -0.02em; line-height: 1.25; }
+
+@media (prefers-reduced-motion: reduce) {
+    .fade-up { opacity: 1; transform: none; transition: none; }
+    .delay-100, .delay-200 { transition-delay: 0ms; }
+}
