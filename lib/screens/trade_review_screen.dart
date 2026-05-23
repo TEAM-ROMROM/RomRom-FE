@@ -11,6 +11,8 @@ import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/services/app_review_service.dart';
+import 'package:romrom_fe/widgets/common/app_review_popup.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/trade/rating_option_button.dart';
@@ -55,6 +57,18 @@ class _TradeReviewScreenState extends State<TradeReviewScreen> {
               : _commentController.text.trim(),
         ),
       );
+      if (!mounted) return;
+
+      // 거래 완료 횟수 기록 및 리뷰 팝업 조건 체크
+      final reviewService = AppReviewService();
+      await reviewService.onTradeComplete();
+
+      if (!mounted) return;
+
+      if (await reviewService.shouldShow(tradeTriggered: true)) {
+        if (mounted) await AppReviewPopup.show(context, reviewService);
+      }
+
       if (!mounted) return;
       context.navigateTo(
         screen: const MainScreen(),

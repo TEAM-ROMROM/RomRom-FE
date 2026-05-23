@@ -8,6 +8,8 @@ import 'package:romrom_fe/screens/my_page_tab_screen.dart';
 import 'package:romrom_fe/screens/register_tab_screen.dart';
 import 'package:romrom_fe/screens/request_management_tab_screen.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
+import 'package:romrom_fe/services/app_review_service.dart';
+import 'package:romrom_fe/widgets/common/app_review_popup.dart';
 import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 
 /// 메인 화면
@@ -41,6 +43,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await _syncNotificationPermissionToBackend();
+      await AppReviewService().onAppLaunch();
     });
   }
 
@@ -125,19 +128,37 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// 앱 종료 시도 시 리뷰 팝업 조건 체크
+  Future<void> _onWillPop() async {
+    final service = AppReviewService();
+    if (await service.shouldShow(tradeTriggered: false)) {
+      if (mounted) {
+        await AppReviewPopup.show(context, service);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      extendBody: false,
-      body: IndexedStack(index: _currentTabIndex, children: _navigationTabScreens),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        selectedIndex: _currentTabIndex,
-        onTap: (index) {
-          setState(() {
-            _currentTabIndex = index;
-          });
-        },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _onWillPop();
+        if (mounted) Navigator.of(context).pop(result);
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        extendBody: false,
+        body: IndexedStack(index: _currentTabIndex, children: _navigationTabScreens),
+        bottomNavigationBar: CustomBottomNavigationBar(
+          selectedIndex: _currentTabIndex,
+          onTap: (index) {
+            setState(() {
+              _currentTabIndex = index;
+            });
+          },
+        ),
       ),
     );
   }
