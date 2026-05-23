@@ -119,6 +119,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _syncNotificationPermissionToBackend();
+      _tryShowReviewPopup();
+    }
+  }
+
+  /// 앱 복귀 시 리뷰 팝업 조건 체크 (iOS/Android 공통)
+  Future<void> _tryShowReviewPopup() async {
+    final service = AppReviewService();
+    if (await service.shouldShow(tradeTriggered: false)) {
+      if (mounted) await AppReviewPopup.show(context, service);
     }
   }
 
@@ -128,37 +137,19 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// 앱 종료 시도 시 리뷰 팝업 조건 체크
-  Future<void> _onWillPop() async {
-    final service = AppReviewService();
-    if (await service.shouldShow(tradeTriggered: false)) {
-      if (mounted) {
-        await AppReviewPopup.show(context, service);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        await _onWillPop();
-        if (mounted) Navigator.of(context).pop(result);
-      },
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        extendBody: false,
-        body: IndexedStack(index: _currentTabIndex, children: _navigationTabScreens),
-        bottomNavigationBar: CustomBottomNavigationBar(
-          selectedIndex: _currentTabIndex,
-          onTap: (index) {
-            setState(() {
-              _currentTabIndex = index;
-            });
-          },
-        ),
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      extendBody: false,
+      body: IndexedStack(index: _currentTabIndex, children: _navigationTabScreens),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: _currentTabIndex,
+        onTap: (index) {
+          setState(() {
+            _currentTabIndex = index;
+          });
+        },
       ),
     );
   }

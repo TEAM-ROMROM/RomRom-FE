@@ -145,11 +145,4 @@ class AppReviewService {
       debugPrint('[AppReview] 스토어 링크 열기 실패: $e');
     }
   }
-
-  /// [별로예요] / [나중에] / 닫기 — 14일 쿨타임만 기록
-  Future<void> markDismissed() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_kLastShown, DateTime.now().millisecondsSinceEpoch);
-    debugPrint('[AppReview] 닫기 기록 (14일 쿨타임)');
-  }
 }
