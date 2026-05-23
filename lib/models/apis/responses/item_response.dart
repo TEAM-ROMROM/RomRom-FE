@@ -11,8 +11,9 @@ class ItemResponse {
   final ItemPage? itemPage;
   final bool? isLiked;
   final bool? isFirstItemPosted;
+  final List<String>? recommendedCategories;
 
-  ItemResponse({this.item, this.itemPage, this.isLiked, this.isFirstItemPosted});
+  ItemResponse({this.item, this.itemPage, this.isLiked, this.isFirstItemPosted, this.recommendedCategories});
 
   factory ItemResponse.fromJson(Map<String, dynamic> json) => _$ItemResponseFromJson(json);
   Map<String, dynamic> toJson() => _$ItemResponseToJson(this);

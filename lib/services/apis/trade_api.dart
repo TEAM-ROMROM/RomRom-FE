@@ -332,4 +332,57 @@ class TradeApi {
 
     return tradeResponse;
   }
+
+  /// 거래 요청 거절 API
+  /// `POST /api/trade/reject`
+  Future<void> rejectTradeRequest(String tradeRequestHistoryId) async {
+    final String url = '${AppUrls.baseUrl}/api/trade/reject';
+
+    if (tradeRequestHistoryId.isEmpty) {
+      throw ArgumentError('tradeRequestHistoryId is required');
+    }
+
+    final Map<String, dynamic> fields = {'tradeRequestHistoryId': tradeRequestHistoryId};
+
+    final response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {},
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      debugPrint('거래 요청 거절 성공: $tradeRequestHistoryId');
+    } else {
+      throw Exception('거래 요청 거절 실패: ${response.statusCode}');
+    }
+  }
+
+  /// 거래 요청 수정 API
+  /// `POST /api/trade/update`
+  Future<void> updateTradeRequest(String tradeRequestHistoryId, List<String> itemTradeOptions) async {
+    final String url = '${AppUrls.baseUrl}/api/trade/update';
+
+    if (tradeRequestHistoryId.isEmpty) {
+      throw ArgumentError('tradeRequestHistoryId is required');
+    }
+
+    final Map<String, dynamic> fields = {
+      'tradeRequestHistoryId': tradeRequestHistoryId,
+      if (itemTradeOptions.isNotEmpty) 'itemTradeOptions': itemTradeOptions.join(','),
+    };
+
+    final response = await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {},
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      debugPrint('거래 요청 수정 성공: $tradeRequestHistoryId');
+    } else {
+      throw Exception('거래 요청 수정 실패: ${response.statusCode}');
+    }
+  }
 }
