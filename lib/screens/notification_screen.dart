@@ -340,6 +340,9 @@ class _NotificationScreenState extends State<NotificationScreen>
       await NotificationApi().updateNotificationsAsRead(notification.id);
     } catch (e) {
       debugPrint('알림 읽음 처리 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+      }
     }
     if (!mounted) return;
     try {

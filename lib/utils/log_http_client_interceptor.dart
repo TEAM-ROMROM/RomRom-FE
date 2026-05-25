@@ -6,6 +6,10 @@ import 'package:http/http.dart' as http;
 class LoggingHttpClient extends http.BaseClient {
   final http.Client _inner;
 
+  /// 기본 HTTP 요청 타임아웃 (10초)
+  /// 파일 업로드 등 장시간 작업은 별도 클라이언트 사용 권장
+  static const Duration defaultTimeout = Duration(seconds: 10);
+
   LoggingHttpClient(this._inner);
 
   String _prettyJson(dynamic json) {
@@ -53,8 +57,19 @@ class LoggingHttpClient extends http.BaseClient {
     }
 
     try {
-      // 실제 요청 전송
-      final streamedResponse = await _inner.send(request);
+      // 실제 요청 전송 (타임아웃 적용)
+      final streamedResponse = await _inner
+          .send(request)
+          .timeout(
+            defaultTimeout,
+            onTimeout: () {
+              final duration = DateTime.now().difference(startTime).inMilliseconds;
+              debugPrint("[${_formatTime(DateTime.now())}] [Timeout] ${request.url} [uid: $requestId]");
+              debugPrint("   [Duration] ${duration}ms (${defaultTimeout.inSeconds}s 초과)");
+              debugPrint("====================================");
+              throw TimeoutException('HTTP 타임아웃: ${request.url}', defaultTimeout);
+            },
+          );
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
       // 전체 응답 본문 읽기
