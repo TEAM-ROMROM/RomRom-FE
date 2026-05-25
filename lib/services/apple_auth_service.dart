@@ -188,10 +188,16 @@ class AppleAuthService {
         throw EmailAlreadyRegisteredException(registeredSocialPlatform: '');
       }
       debugPrint('애플 로그인 실패: $e');
-      return false;
+      rethrow; // 실패는 위로 전파 → LoginButton에서 SnackBar 표시
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return false; // 사용자 취소는 조용히 처리
+      }
+      debugPrint('애플 로그인 실패: $e');
+      rethrow; // 취소 외 오류는 위로 전파 → LoginButton에서 SnackBar 표시
     } catch (error) {
       debugPrint('애플 로그인 실패: $error');
-      return false;
+      rethrow; // 실패는 위로 전파 → LoginButton에서 SnackBar 표시
     }
   }
 

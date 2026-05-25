@@ -22,7 +22,9 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -73,11 +75,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       debugPrint('[SplashScreen] 초기화 타임아웃 (${_splashTimeout.inSeconds}초) — 로그인 화면으로 이동');
       if (!mounted) return;
       await _playLoginTransitionAnimation();
+      _showNetworkErrorSnackBar();
     } catch (e, st) {
       debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
       if (!mounted) return;
       await _playLoginTransitionAnimation();
+      // 네트워크 관련 오류(연결 불가, 타임아웃)일 때만 SnackBar 표시
+      if (e is SocketException || e is TimeoutException) {
+        _showNetworkErrorSnackBar();
+      }
     }
+  }
+
+  void _showNetworkErrorSnackBar() {
+    if (!mounted) return;
+    CommonSnackBar.show(context: context, message: '서버 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.', type: SnackBarType.error);
   }
 
   Future<void> _runInitFlow() async {

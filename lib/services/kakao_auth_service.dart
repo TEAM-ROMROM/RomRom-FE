@@ -135,14 +135,13 @@ class KakaoAuthService {
         throw EmailAlreadyRegisteredException(registeredSocialPlatform: '');
       }
       debugPrint('카카오톡으로 로그인 실패: $e');
-      return false;
+      rethrow; // 실패는 위로 전파 → LoginButton에서 SnackBar 표시
     } catch (error) {
       debugPrint('카카오톡으로 로그인 실패: $error');
-
       if (error is PlatformException && error.code == 'CANCELED') {
-        return false; // 사용자가 로그인 취소 시 false 반환
+        return false; // 사용자 취소는 조용히 처리
       }
-      return false; // 카카오 계정 로그인 폴백 제거 (aud 불일치 방지)
+      rethrow; // 취소 외 오류는 위로 전파 → LoginButton에서 SnackBar 표시
     }
   }
 

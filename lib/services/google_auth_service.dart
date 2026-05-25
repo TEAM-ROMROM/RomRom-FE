@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart' hide UserInfo;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:romrom_fe/enums/login_platforms.dart';
@@ -80,10 +81,14 @@ class GoogleAuthService {
         throw EmailAlreadyRegisteredException(registeredSocialPlatform: '');
       }
       debugPrint('구글로 로그인 실패: $e');
-      return false;
+      rethrow; // 실패는 위로 전파 → LoginButton에서 SnackBar 표시
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');
-      return false;
+      // google_sign_in: 사용자 취소 시 PlatformException(code: 'sign_in_canceled') 발생
+      if (error is PlatformException && error.code == 'sign_in_canceled') {
+        return false; // 사용자 취소는 조용히 처리
+      }
+      rethrow; // 취소 외 오류는 위로 전파 → LoginButton에서 SnackBar 표시
     }
   }
 
