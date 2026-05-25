@@ -1,7 +1,7 @@
 # 🎯 ROMROM - AI 기반 스마트 중고거래 플랫폼
 
 <!-- AUTO-VERSION-SECTION: DO NOT EDIT MANUALLY -->
-## 최신 버전 : v1.10.57 (2026-05-18)
+## 최신 버전 : v1.10.60 (2026-05-25)
 
 [전체 업데이트 내역 보기](CHANGELOG.md)
 
