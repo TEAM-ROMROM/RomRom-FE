@@ -84,7 +84,11 @@ class GoogleAuthService {
       rethrow; // 실패는 위로 전파 → LoginButton에서 SnackBar 표시
     } catch (error) {
       debugPrint('구글로 로그인 실패: $error');
-      // google_sign_in: 사용자 취소 시 PlatformException(code: 'sign_in_canceled') 발생
+      // google_sign_in 7.x: 사용자 취소 시 GoogleSignInException(code: canceled) 발생
+      if (error is GoogleSignInException && error.code == GoogleSignInExceptionCode.canceled) {
+        return false; // 사용자 취소는 조용히 처리
+      }
+      // google_sign_in 6.x 폴백: 사용자 취소 시 PlatformException(code: 'sign_in_canceled') 발생
       if (error is PlatformException && error.code == 'sign_in_canceled') {
         return false; // 사용자 취소는 조용히 처리
       }

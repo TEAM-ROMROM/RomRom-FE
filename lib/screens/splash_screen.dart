@@ -40,6 +40,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late Animation<double> _loginUIFadeAnim;
   bool _showLoginUI = false;
   bool _loginTransitionStarted = false;
+  bool _aborted = false;
 
   @override
   void initState() {
@@ -73,11 +74,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       await _runInitFlow().timeout(_splashTimeout);
     } on TimeoutException {
       debugPrint('[SplashScreen] 초기화 타임아웃 (${_splashTimeout.inSeconds}초) — 로그인 화면으로 이동');
+      _aborted = true; // _runInitFlow()가 백그라운드에서 완료되더라도 navigation/딥링크 차단
+      ColdStartDeepLinkData.clear(); // 중단 시 대기 중인 딥링크 폐기
       if (!mounted) return;
       await _playLoginTransitionAnimation();
       _showNetworkErrorSnackBar();
     } catch (e, st) {
       debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
+      _aborted = true; // _runInitFlow()가 백그라운드에서 완료되더라도 navigation/딥링크 차단
+      ColdStartDeepLinkData.clear(); // 중단 시 대기 중인 딥링크 폐기
       if (!mounted) return;
       await _playLoginTransitionAnimation();
       // 네트워크 관련 오류(연결 불가, 타임아웃)일 때만 SnackBar 표시
@@ -94,12 +99,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   Future<void> _runInitFlow() async {
     final updateType = await AppVersionApi().checkUpdateType();
+    // _aborted: timeout 또는 오류로 _initAndNavigate()가 이미 로그인 화면을 표시한 경우
+    if (_aborted) return;
     if (updateType == UpdateType.force && mounted) {
       context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
       return;
     }
 
     final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
+    if (_aborted) return; // Future.wait 대기 중 타임아웃이 발생했을 수 있음
     final nextScreen = results[0]! as Widget;
 
     if (!mounted) return;
@@ -116,6 +124,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         final pendingType = ColdStartDeepLinkData.pendingNotificationType;
         ColdStartDeepLinkData.clear();
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_aborted) return; // 프레임 콜백 실행 전 중단됐을 경우 딥링크 라우팅 차단
           final ctx = navigatorKey.currentContext;
           if (ctx != null) {
             RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType);
@@ -211,6 +220,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       await FirebaseService().handleFcmToken();
       return MainScreen(key: MainScreen.globalKey);
     } catch (e) {
+      // 네트워크 예외는 재throw → _initAndNavigate()의 catch에서 SnackBar 표시
+      if (e is SocketException || e is TimeoutException) rethrow;
       debugPrint('[SplashScreen] 사용자 정보 로드 실패: $e');
       return const LoginScreen();
     }
