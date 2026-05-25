@@ -21,7 +21,6 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/app_update_screen.dart';
 import 'package:romrom_fe/screens/splash_screen.dart';
 import 'package:romrom_fe/services/apis/app_version_api.dart';
-import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
@@ -63,9 +62,6 @@ void main() async {
   // 알림 권한 요청 설정
   await FirebaseService().setupPushNotifications();
 
-  // FCM 토큰 갱신 감지 및 자동 저장 설정
-  _setupFcmTokenRefreshListener();
-
   // 시스템 오버레이 색상 설정
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(systemNavigationBarColor: AppColors.primaryBlack, statusBarColor: Colors.transparent),
@@ -82,14 +78,6 @@ void main() async {
   }
 
   runApp(ProviderScope(child: MyApp(isGestureMode: isGestureMode)));
-}
-
-/// FCM 토큰 갱신 감지 및 자동 저장 설정
-void _setupFcmTokenRefreshListener() {
-  final firebaseService = FirebaseService();
-  final notificationApi = NotificationApi();
-
-  firebaseService.setupTokenRefreshListener(notificationApi);
 }
 
 /// 앱의 루트 위젯

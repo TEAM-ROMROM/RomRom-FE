@@ -56,6 +56,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
   List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSubscription;
 
+  // 교환 완료 요청 낙관적 업데이트용 로컬 임시 메시지 ID
+  String? _latestLocalTradeRequestId;
+
   // 낙관적 로컬 메시지(서버 응답 대기)
   final Map<String, ChatMessage> _pendingLocalMessages = {};
 
@@ -415,6 +418,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
         _messages.insert(0, fixedServer);
       }
     } else {
+      // 교환 완료 요청 WS 에코 도착: 낙관적 로컬 메시지를 실제 서버 메시지로 교체
+      if (newMessage.type == MessageType.tradeCompleteRequest && newMessage.senderId == _myMemberId) {
+        final localId = _latestLocalTradeRequestId;
+        if (localId != null) {
+          _messages.removeWhere((m) => m.chatMessageId == localId);
+          _latestLocalTradeRequestId = null;
+          debugPrint('[ChatRoom] 교환 완료 요청 WS 에코 수신 → 로컬 임시 메시지 교체');
+        }
+      }
+
       // WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API로 보완
       if (newMessage.type == MessageType.image && (newMessage.imageUrls == null || newMessage.imageUrls!.isEmpty)) {
         final tempId = 'ws_img_${DateTime.now().microsecondsSinceEpoch}';
@@ -537,11 +550,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
 
       final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}';
       setState(() {
+        final localTradeRequestId = 'local_trade_request_${DateTime.now().microsecondsSinceEpoch}';
+        _latestLocalTradeRequestId = localTradeRequestId;
         _messages.insert(
           0,
           ChatMessage(
             chatRoomId: widget.chatRoomId,
-            chatMessageId: localId,
+            chatMessageId: localTradeRequestId,
             senderId: _myMemberId,
             createdDate: DateTime.now(),
             content: '사진을 보냈습니다.',
@@ -635,8 +650,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
     ChatApi()
         .requestTradeCompletion(chatRoomId: widget.chatRoomId)
         .then((_) {
-          debugPrint('[ChatRoom] 교환 완료 요청 API 성공 → 이후 WebSocket 브로드캐스트 대기 중...');
-          if (mounted) setState(() => _isPendingTradeAction = false);
+          debugPrint('[ChatRoom] 교환 완료 요청 API 성공');
+          if (!mounted) return;
+          setState(() {
+            _isPendingTradeAction = false;
+            // 낙관적 업데이트: 백엔드 WS 브로드캐스트가 요청자에게 도달하지 않는 경우를 대비해
+            // REST API 성공 즉시 로컬 메시지를 삽입해 요청 카드를 표시한다.
+            // WS 에코가 나중에 도착하면 _handleIncomingMessage에서 이 로컬 메시지를 교체한다.
+            final latestMyRequestIndex = _messages.indexWhere(
+              (m) => m.type == MessageType.tradeCompleteRequest && m.senderId == _myMemberId,
+            );
+            final alreadyReceived = latestMyRequestIndex != -1 && _isActiveTradeRequest(latestMyRequestIndex);
+            if (!alreadyReceived) {
+              _messages.insert(
+                0,
+                ChatMessage(
+                  chatRoomId: widget.chatRoomId,
+                  chatMessageId: _latestLocalTradeRequestId,
+                  senderId: _myMemberId,
+                  createdDate: DateTime.now(),
+                  type: MessageType.tradeCompleteRequest,
+                ),
+              );
+            }
+          });
         })
         .catchError((e) {
           debugPrint('[ChatRoom] 교환 완료 요청 API 실패: $e');
