@@ -61,44 +61,57 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     unawaited(_initAndNavigate());
   }
 
+  /// 스플래시 초기화 전체 타임아웃 (15초)
+  /// 개별 HTTP 요청 타임아웃(10초)이 1차 방어, 이 값은 2차 안전망
+  static const Duration _splashTimeout = Duration(seconds: 15);
+
   Future<void> _initAndNavigate() async {
     try {
-      final updateType = await AppVersionApi().checkUpdateType();
-      if (updateType == UpdateType.force && mounted) {
-        context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
-        return;
-      }
-
-      final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
-      final nextScreen = results[0]! as Widget;
-
+      // timeout() onTimeout 미제공 시 TimeoutException을 자동으로 throw
+      await _runInitFlow().timeout(_splashTimeout);
+    } on TimeoutException {
+      debugPrint('[SplashScreen] 초기화 타임아웃 (${_splashTimeout.inSeconds}초) — 로그인 화면으로 이동');
       if (!mounted) return;
-
-      if (nextScreen is LoginScreen) {
-        ColdStartDeepLinkData.clear(); // 미인증 상태 → 딥링크 데이터 폐기
-        await _playLoginTransitionAnimation();
-      } else {
-        context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition);
-        // MainScreen 이동 후 콜드 스타트 FCM/AppLinks 딥링크 처리
-        // (pushAndRemoveUntil이 완료된 다음 프레임에 navigatorKey로 push)
-        if (nextScreen is MainScreen && ColdStartDeepLinkData.hasPending) {
-          final pendingUri = ColdStartDeepLinkData.pendingUri!;
-          final pendingType = ColdStartDeepLinkData.pendingNotificationType;
-          ColdStartDeepLinkData.clear();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final ctx = navigatorKey.currentContext;
-            if (ctx != null) {
-              RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType);
-            }
-          });
-        } else {
-          ColdStartDeepLinkData.clear(); // 온보딩 등 비대상 화면 → 딥링크 데이터 폐기
-        }
-      }
+      await _playLoginTransitionAnimation();
     } catch (e, st) {
       debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
       if (!mounted) return;
       await _playLoginTransitionAnimation();
+    }
+  }
+
+  Future<void> _runInitFlow() async {
+    final updateType = await AppVersionApi().checkUpdateType();
+    if (updateType == UpdateType.force && mounted) {
+      context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+      return;
+    }
+
+    final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
+    final nextScreen = results[0]! as Widget;
+
+    if (!mounted) return;
+
+    if (nextScreen is LoginScreen) {
+      ColdStartDeepLinkData.clear(); // 미인증 상태 → 딥링크 데이터 폐기
+      await _playLoginTransitionAnimation();
+    } else {
+      context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition);
+      // MainScreen 이동 후 콜드 스타트 FCM/AppLinks 딥링크 처리
+      // (pushAndRemoveUntil이 완료된 다음 프레임에 navigatorKey로 push)
+      if (nextScreen is MainScreen && ColdStartDeepLinkData.hasPending) {
+        final pendingUri = ColdStartDeepLinkData.pendingUri!;
+        final pendingType = ColdStartDeepLinkData.pendingNotificationType;
+        ColdStartDeepLinkData.clear();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = navigatorKey.currentContext;
+          if (ctx != null) {
+            RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType);
+          }
+        });
+      } else {
+        ColdStartDeepLinkData.clear(); // 온보딩 등 비대상 화면 → 딥링크 데이터 폐기
+      }
     }
   }
 
