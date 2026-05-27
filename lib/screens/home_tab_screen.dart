@@ -17,6 +17,8 @@ import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/services/app_event_bus.dart';
+import 'package:romrom_fe/events/trade_completed_event.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -89,6 +91,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 내 카드 목록 (나중에 API에서 가져올 예정)
   List<Item> _myCards = [];
 
+  // 거래완료 이벤트 구독 (거래완료 시 내 카드 목록 재조회)
+  StreamSubscription<TradeCompletedEvent>? _tradeCompletedSub;
+
   @override
   void initState() {
     super.initState();
@@ -96,10 +101,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     _loadMyCards();
     _checkFirstMainScreen();
     unawaited(_loadUnreadNotificationStatus());
+    // 거래완료 시 내 카드 목록 재조회 (거래완료된 물건은 AVAILABLE 필터에서 자동 제외됨)
+    _tradeCompletedSub = AppEventBus.instance.on<TradeCompletedEvent>().listen((_) {
+      if (mounted) _loadMyCards();
+    });
   }
 
   @override
   void dispose() {
+    _tradeCompletedSub?.cancel();
     _removeCoachMarkOverlay();
     _pageController.dispose();
     super.dispose();

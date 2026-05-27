@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
@@ -13,6 +15,8 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/services/app_event_bus.dart';
+import 'package:romrom_fe/events/trade_completed_event.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
@@ -60,6 +64,9 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
   late AnimationController _toggleAnimationController;
   late Animation<double> _toggleAnimation;
 
+  // 거래완료 이벤트 구독 (거래완료 시 판매중/거래완료 탭 재조회)
+  StreamSubscription<TradeCompletedEvent>? _tradeCompletedSub;
+
   @override
   void initState() {
     super.initState();
@@ -70,10 +77,15 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
 
     _loadAllTabs();
     _scrollController.addListener(_scrollListener);
+    // 거래완료 시 양쪽 탭 재조회 (거래완료된 물건이 판매중 → 거래완료로 이동 반영)
+    _tradeCompletedSub = AppEventBus.instance.on<TradeCompletedEvent>().listen((_) {
+      if (mounted) _loadAllTabs(isRefresh: true);
+    });
   }
 
   @override
   void dispose() {
+    _tradeCompletedSub?.cancel();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _toggleAnimationController.dispose();

@@ -12,6 +12,14 @@ Flutter 기반 중고거래 플랫폼. iOS/Android 전용 (웹 불필요).
 - Git: 사용자 허락 없이 절대 커밋 금지
 
 ## UI 패턴 규칙
+- **공유 상태 갱신 (상태관리 — 필수)**: 한 화면의 액션(예: 채팅방 거래완료)이 **다른 화면이 들고 있는 목록/상태**(예: 홈 카드 덱·요청관리·마이페이지의 내 물건)에 영향을 주면, 그 화면들은 반드시 갱신되어야 한다. 다음을 지킨다.
+  - **`MainScreen`은 `IndexedStack`이라 5개 탭이 항상 메모리에 생존한다** (`main_screen.dart`). 탭 전환은 `initState`를 다시 실행하지 않는다. 따라서 `initState`에서 1회만 로드하는 데이터는 다른 탭의 변경을 반영하지 못하고 **stale**해진다. "이 데이터는 앱이 떠 있는 동안 절대 안 바뀐다"가 확실한 경우에만 `initState` 1회 로드를 쓴다.
+  - **바뀔 수 있는 공유 데이터는 전역 이벤트 버스로 갱신을 전파한다**: 단일 버스 `lib/services/app_event_bus.dart`(`AppEventBus`)와 타입 기반 이벤트(`lib/events/`의 `AppEvent` 하위 클래스)를 쓴다. 상태를 바꾸는 지점(API 성공/WebSocket 수신 직후)에서 `AppEventBus.instance.emit(const TradeCompletedEvent())`처럼 이벤트를 **발행**하고, 그 데이터를 보여주는 화면은 `initState`에서 **구독**해(`AppEventBus.instance.on<TradeCompletedEvent>().listen(...)`) 자신의 로드 함수를 재호출한다. `dispose`에서 `StreamSubscription.cancel()` 필수. **새 이벤트는 버스를 고치지 말고 `lib/events/`에 `AppEvent` 하위 클래스 파일만 추가**한다 (enum을 `lib/enums/`에 개별 파일로 두는 것과 동일한 컨벤션).
+  - **목록 필터는 서버에 맡기고, 변경 시 재조회한다**: 클라이언트에서 항목을 수동으로 제거하지 말 것. 예) `getMyItems(itemStatus: AVAILABLE)`는 거래완료(EXCHANGED) 물건을 서버가 알아서 제외하므로, **재조회만 하면** 로컬 조작 없이 정확히 갱신된다.
+  - **`GlobalKey`로 다른 화면의 메서드를 직접 호출하지 말 것**(예: A화면이 `B.globalKey.currentState.someMethod()` 호출). 화면 간 결합이 강해지고 깨지기 쉽다. 이벤트 버스 구독으로 대체한다.
+  - **새 기능을 만들기 전에 "이 데이터를 누가 소유하고, 누가 구독하나"를 먼저 정한다.** 거래완료 카드 미갱신 버그(이슈 #875)가 이 규칙으로 정리되었다.
+  - **새 이벤트 추가 / 구독 현황 / 4단계 레시피 → 상세: `.claude/instructions/state-management.md`** (버스는 절대 수정하지 말고 `lib/events/`에 이벤트 클래스만 추가). 설계 참고: `docs/superpowers/specs/2026-05-27-trade-completion-home-card-refresh-design.md`
+
 - **API 중복 요청 방지**: 버튼/액션에서 API를 호출할 때 `Set<T> _pendingRequests` 패턴으로 진행 중인 요청 추적. 요청 시작 시 Set에 추가, `finally`에서 제거. 이미 Set에 있으면 early return.
 
 - **iPad/대형기기 대응 (필수)**: 디자인 기준은 iPhone (393x852)이지만, iPad에서도 정상 동작해야 함.
@@ -58,6 +66,7 @@ Future<void> _onToggle(NotificationType type) async {
 ## 모듈별 상세 가이드
 | 작업 | 참조 파일 |
 |------|----------|
+| 상태관리 (화면 간 공유 상태 갱신, 이벤트 버스) | `.claude/instructions/state-management.md` |
 | 코드 스타일 & 예시 | `.claude/instructions/code-style.md` |
 | 빌드, 린트, 포매팅 | `.claude/instructions/build-lint.md` |
 | 프로젝트 구조 | `.claude/instructions/project-structure.md` |

@@ -22,6 +22,8 @@ import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
+import 'package:romrom_fe/services/app_event_bus.dart';
+import 'package:romrom_fe/events/trade_completed_event.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
@@ -286,6 +288,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
 
         // 상대방이 거래 완료를 수락했을 때 요청자에게도 후기 화면 표시
         if (newMessage.type == MessageType.tradeCompleted && !_reviewNavigated) {
+          // 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건 목록을 재조회하도록 알림
+          AppEventBus.instance.emit(const TradeCompletedEvent());
           final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
           if (tradeRequestHistoryId != null) {
             _reviewNavigated = true;
@@ -717,6 +721,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
     setState(() => _isPendingTradeAction = true);
     try {
       await ChatApi().confirmTradeCompletion(chatRoomId: widget.chatRoomId);
+      // 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건 목록을 재조회하도록 알림
+      AppEventBus.instance.emit(const TradeCompletedEvent());
       if (!mounted) return;
       final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
       if (tradeRequestHistoryId != null) {
