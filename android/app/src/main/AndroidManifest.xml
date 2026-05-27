@@ -16,12 +16,14 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- 카메라 촬영 권한 (image_picker 카메라 소스) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <!-- 갤러리/이미지 접근 권한 (image_picker)
          Android 13+(API 33)에서는 image_picker가 시스템 Photo Picker를 자동 사용하므로
          READ_MEDIA_IMAGES 등 광범위 미디어 권한이 불필요하다.
          READ_MEDIA_IMAGES를 선언하면 Google Play가 'Photo and Video Permissions Declaration'
-         제출을 강제해 업로드가 차단되므로(이슈 #871), Photo Picker 방식으로 전환하며 권한을 제거한다.
-         image_picker 플러그인 manifest가 머지로 권한을 다시 주입하지 못하도록 tools:node="remove"로 명시 제거.
+         제출을 강제해 업로드가 차단되므로(이슈 #871), tools:node="remove"로 명시 제거.
          Android 12 이하(maxSdkVersion=32) 호환을 위해 READ_EXTERNAL_STORAGE만 유지한다. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
         tools:node="remove"/>

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/image_pick_source.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
@@ -34,9 +35,11 @@ import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
+import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
 
 /// 물품 등록 입력 폼 위젯
 /// 물품 등록 화면에서 사용되는 입력 폼 위젯
@@ -86,6 +89,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
+  // 소스 선택 바텀시트~촬영/선택 완료까지 진행 중 가드 (더블탭 방지)
+  bool _isPickingSource = false;
   final List<XFile> _newImageFiles = []; // 새로 선택된 로컬 이미지 파일 (아직 업로드 안 됨)
   final List<String> _existingImageUrls = []; // 수정 모드: 기존 서버 이미지 URL
 
@@ -95,38 +100,58 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   /// 전체 이미지 수 (기존 서버 이미지 + 새 로컬 이미지)
   int get _totalImageCount => _existingImageUrls.length + _newImageFiles.length;
 
-  // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원, 서버 업로드 없음)
+  // 상품사진 추가: 소스(촬영/앨범) 선택 후 처리
   Future<void> onPickImage() async {
-    try {
-      setState(() {
-        _hasImageBeenTouched = true;
-      });
+    if (_isPickingSource) return; // 중복 진입 방지
 
-      final int totalCount = _totalImageCount;
-      if (totalCount >= kMaxImages) {
-        if (context.mounted) {
-          CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
-        }
-        return;
+    setState(() {
+      _hasImageBeenTouched = true;
+    });
+
+    final int totalCount = _totalImageCount;
+    if (totalCount >= kMaxImages) {
+      if (context.mounted) {
+        CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
       }
+      return;
+    }
 
-      final int remain = (kMaxImages - totalCount).clamp(0, kMaxImages);
+    final ImagePickSource? source = await showImageSourceBottomSheet(context);
+    if (source == null) return; // 바텀시트 취소
 
-      final List<XFile> picked = await _picker.pickMultiImage(limit: remain);
+    _isPickingSource = true;
+    try {
+      switch (source) {
+        case ImagePickSource.camera:
+          if (!context.mounted) return;
+          final bool granted = await ensureCameraPermission(context);
+          if (!granted) return;
 
-      // 사용자가 취소했거나 선택 없음
-      if (picked.isEmpty) return;
+          final XFile? shot = await _picker.pickImage(source: ImageSource.camera);
+          if (shot == null) return; // 촬영 취소
 
-      // 초과 선택 분리
-      final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
+          if (!mounted) return;
+          setState(() {
+            _newImageFiles.add(shot);
+          });
 
-      setState(() {
-        _newImageFiles.addAll(toAdd);
-      });
+        case ImagePickSource.gallery:
+          final int remain = (kMaxImages - _totalImageCount).clamp(0, kMaxImages);
+          final List<XFile> picked = await _picker.pickMultiImage(limit: remain);
+          if (picked.isEmpty) return; // 선택 없음/취소
+
+          final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
+          if (!mounted) return;
+          setState(() {
+            _newImageFiles.addAll(toAdd);
+          });
+      }
     } catch (e) {
       if (context.mounted) {
         CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
+    } finally {
+      if (mounted) _isPickingSource = false;
     }
   }
 
