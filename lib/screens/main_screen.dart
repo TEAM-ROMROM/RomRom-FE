@@ -8,6 +8,8 @@ import 'package:romrom_fe/screens/my_page_tab_screen.dart';
 import 'package:romrom_fe/screens/register_tab_screen.dart';
 import 'package:romrom_fe/screens/request_management_tab_screen.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
+import 'package:romrom_fe/services/app_review_service.dart';
+import 'package:romrom_fe/widgets/common/app_review_popup.dart';
 import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 
 /// 메인 화면
@@ -41,6 +43,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await _syncNotificationPermissionToBackend();
+      await AppReviewService().onAppLaunch();
     });
   }
 
@@ -116,6 +119,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _syncNotificationPermissionToBackend();
+      _tryShowReviewPopup();
+    }
+  }
+
+  /// 앱 복귀 시 리뷰 팝업 조건 체크 (iOS/Android 공통)
+  Future<void> _tryShowReviewPopup() async {
+    final service = AppReviewService();
+    if (await service.shouldShow(tradeTriggered: false)) {
+      if (mounted) await AppReviewPopup.show(context, service);
     }
   }
 

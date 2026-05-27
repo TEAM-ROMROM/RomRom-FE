@@ -721,7 +721,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    '완료 표시',
+                    '완료 포함',
                     style: CustomTextStyles.p3.copyWith(
                       color: const Color(0x80FFFFFF),
                       fontWeight: FontWeight.w400,
@@ -784,11 +784,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     }
 
     // 받은 요청인 경우 - 로드된 데이터 사용
-    // 완료 여부에 따른 필터링
+    // 완료 표시 OFF: 진행 중만, ON: 진행 중 + 완료 전체
     final filteredRequests = _receivedRequests.where((request) {
       final status = request.tradeStatus;
       if (_showCompletedRequests) {
-        return status == TradeStatus.traded.serverName;
+        return true; // 완료 포함 전체 표시
       } else {
         return status != TradeStatus.traded.serverName;
       }
@@ -801,10 +801,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
               height: 200,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Center(
-                child: Text(
-                  _showCompletedRequests ? '완료된 요청이 없습니다' : '진행 중인 요청이 없습니다',
-                  style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
-                ),
+                child: Text('진행 중인 요청이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
               ),
             );
     }

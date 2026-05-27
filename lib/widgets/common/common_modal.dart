@@ -118,8 +118,9 @@ class CommonModal extends StatelessWidget {
     );
   }
 
-  /// 확인 모달 (빨간색 경고 아이콘, 2버튼)
+  /// 확인 모달 (2버튼)
   /// confirmText를 통해 '삭제', '나가기', '탈퇴' 등 커스텀 가능
+  /// icon/iconColor/confirmButtonColor 미지정 시 기본 경고(빨간색) 스타일 적용
   static Future<bool?> confirm({
     required BuildContext context,
     required String message,
@@ -127,7 +128,15 @@ class CommonModal extends StatelessWidget {
     String confirmText = '확인',
     required VoidCallback onCancel,
     required VoidCallback onConfirm,
+    IconData? icon,
+    Color? iconColor,
+    Color? confirmButtonColor,
+    Color? confirmTextColor,
   }) {
+    final resolvedIcon = icon ?? AppIcons.warning;
+    final resolvedIconColor = iconColor ?? AppColors.warningRed;
+    final resolvedConfirmButtonColor = confirmButtonColor ?? AppColors.warningRed;
+    final resolvedConfirmTextColor = confirmTextColor ?? AppColors.textColorWhite;
     return showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -136,14 +145,14 @@ class CommonModal extends StatelessWidget {
       transitionDuration: AppMotion.slow,
       transitionBuilder: (context0, animation, secondaryAnimation0, child) => _buildTransition(child, animation),
       pageBuilder: (context0, animation0, secondaryAnimation0) => CommonModal._(
-        icon: AppIcons.warning,
-        iconColor: AppColors.warningRed,
-        iconBackgroundColor: AppColors.warningRed.withValues(alpha: 0.2),
+        icon: resolvedIcon,
+        iconColor: resolvedIconColor,
+        iconBackgroundColor: resolvedIconColor.withValues(alpha: 0.2),
         message: message,
         cancelText: cancelText,
         confirmText: confirmText,
-        confirmButtonColor: AppColors.warningRed,
-        confirmTextColor: AppColors.textColorWhite,
+        confirmButtonColor: resolvedConfirmButtonColor,
+        confirmTextColor: resolvedConfirmTextColor,
         onCancel: onCancel,
         onConfirm: onConfirm,
       ),
