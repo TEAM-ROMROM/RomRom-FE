@@ -705,9 +705,14 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     ),
                   );
                   if (!mounted) return;
-                  if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+                  if (result is Map<String, dynamic>) {
+                    // 등록 후엔 첫 물건 여부와 무관하게 항상 내 물건 목록을 갱신해야
+                    // 블러/등록 안내가 즉시 사라진다 (두 번째 이후 등록 시 갱신 누락 버그 수정)
                     _loadMyCards();
-                    showCoachMark();
+                    // 코치마크는 첫 물건 등록 시에만 표시
+                    if (result['isFirstItemPosted'] == true) {
+                      showCoachMark();
+                    }
                   }
                 },
                 scaleDown: AppPressable.scaleButton,
