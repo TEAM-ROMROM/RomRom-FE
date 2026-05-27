@@ -52,6 +52,7 @@ dependencies:
   share_plus: ^10.1.4
   url_launcher: ^6.3.2
   cached_network_image: ^3.4.1
+  flutter_linkify: ^6.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
