@@ -21,6 +21,8 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/services/app_event_bus.dart';
+import 'package:romrom_fe/events/trade_completed_event.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -82,6 +84,9 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   final List<TradeRequestHistory> _receivedRequests = [];
   final List<TradeRequestHistory> _sentRequests = [];
 
+  // 거래완료 이벤트 구독 (거래완료 시 내 물건/요청 목록 재조회)
+  StreamSubscription<TradeCompletedEvent>? _tradeCompletedSub;
+
   @override
   void initState() {
     super.initState();
@@ -95,6 +100,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
     _loadInitialItems();
+    // 거래완료 시 목록 재조회 (거래완료된 물건은 AVAILABLE 필터에서 자동 제외됨)
+    _tradeCompletedSub = AppEventBus.instance.on<TradeCompletedEvent>().listen((_) {
+      if (mounted) _loadInitialItems(isRefresh: true);
+    });
   }
 
   @override
@@ -452,6 +461,7 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   @override
   void dispose() {
+    _tradeCompletedSub?.cancel();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _scrollTimer?.cancel();

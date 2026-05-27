@@ -68,6 +68,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
   final Map<String, StreamSubscription<ChatMessage>> _roomSubscriptions = {};
   String? _myMemberId;
 
+  // 재연결 이벤트 구독
+  StreamSubscription<void>? _reconnectSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -102,6 +105,12 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
 
       // WebSocket 연결
       await _wsService.connect();
+
+      // 재연결 시 목록 갱신 (단절 동안 변경된 lastMessage/unreadCount 복구)
+      _reconnectSubscription = _wsService.onReconnected.listen((_) {
+        if (!mounted) return;
+        _loadChatRooms(mode: LoadMode.refresh);
+      });
 
       // 채팅방 목록이 로드되면 각 채팅방을 구독
       // _loadChatRooms 완료 후 _subscribeToAllRooms 호출
@@ -449,6 +458,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
       _wsService.unsubscribeFromChatRoom(entry.key);
     }
     _roomSubscriptions.clear();
+    _reconnectSubscription?.cancel();
 
     // WebSocket은 싱글톤이므로 여기서 disconnect하지 않음
     // (다른 화면에서도 사용 중일 수 있음)

@@ -31,6 +31,15 @@ class ChatWebSocketService {
   // 토큰 갱신 중 중복 실행 방지
   bool _isRefreshingToken = false;
 
+  // 최초 연결 이후 재연결 여부 판단 (true면 _onConnect가 재연결로 간주)
+  bool _hasConnectedBefore = false;
+
+  // 재연결 시 화면이 메시지 재동기화를 트리거하도록 알리는 브로드캐스트 스트림
+  final StreamController<void> _reconnectController = StreamController<void>.broadcast();
+
+  /// 재연결 이벤트 스트림. 화면은 이를 구독해 getChatMessages 재조회를 수행한다.
+  Stream<void> get onReconnected => _reconnectController.stream;
+
   final TokenManager _tokenManager = TokenManager();
 
   /// 연결 상태 확인
@@ -101,6 +110,16 @@ class ChatWebSocketService {
 
     // 기존 구독 재연결
     _resubscribeAll();
+
+    // 최초 연결이 아니라면(= 재연결) 화면에 재동기화 신호를 보낸다.
+    // 단절 구간에 브로드캐스트되어 유실된 메시지를 REST 재조회로 복구하기 위함.
+    if (_hasConnectedBefore) {
+      debugPrint('[WebSocket] 🔁 재연결 감지 → onReconnected 방송');
+      if (!_reconnectController.isClosed) {
+        _reconnectController.add(null);
+      }
+    }
+    _hasConnectedBefore = true;
   }
 
   /// 연결 해제 콜백
@@ -309,8 +328,10 @@ class ChatWebSocketService {
             payloadTs = DateTime.fromMillisecondsSinceEpoch(jsonBody['clientSentAt'], isUtc: true).toLocal();
           }
 
-          // 3) 최종 시간 확정: 헤더 → 페이로드 → 지금
-          final finalCreated = headerTs ?? payloadTs ?? DateTime.now();
+          // 3) 최종 시간 확정: 헤더 → 페이로드 (둘 다 없으면 null 유지)
+          // DateTime.now() 폴백을 쓰면 지연 수신 메시지가 '수신 시각'으로 밀려 표시되므로 제거.
+          // 시각 출처가 없으면 null로 두고, 재연결 동기화 시 서버 createdDate로 교정된다.
+          final finalCreated = headerTs ?? payloadTs;
 
           // 모델로 변환
           final message = ChatMessage.fromJson(jsonBody).copyWith(createdDate: finalCreated);

@@ -22,6 +22,8 @@ import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
+import 'package:romrom_fe/services/app_event_bus.dart';
+import 'package:romrom_fe/events/trade_completed_event.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
@@ -34,6 +36,70 @@ import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
 import 'package:romrom_fe/screens/trade_review_screen.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+
+/// 재연결 동기화용 메시지 병합 (순수 함수, 테스트 대상).
+///
+/// [current]는 화면의 현재 목록(reverse 정렬: index 0 = 최신).
+/// [serverMessages]는 getChatMessages 재조회 결과.
+///
+/// 규칙:
+/// - 서버 메시지 중 [current]에 chatMessageId가 없는 것만 추가
+/// - 이미 있으면 서버 버전으로 교체 (시각 등 교정)
+/// - 낙관적 로컬 메시지(id가 'local_'/'uploading_'/'ws_img_'/'local_trade_request_' 접두)는 서버에 없어도 보존
+/// - 결과는 createdDate 내림차순(최신 먼저), null은 맨 뒤
+List<ChatMessage> mergeServerMessages({required List<ChatMessage> current, required List<ChatMessage> serverMessages}) {
+  bool isLocalOptimistic(String? id) =>
+      id != null &&
+      (id.startsWith('local_') ||
+          id.startsWith('uploading_') ||
+          id.startsWith('ws_img_') ||
+          id.startsWith('local_trade_request_'));
+
+  final serverById = <String, ChatMessage>{
+    for (final m in serverMessages)
+      if (m.chatMessageId != null) m.chatMessageId!: m,
+  };
+
+  final merged = <ChatMessage>[];
+
+  // 1) 현재 목록 순회: 서버에 있으면 서버 버전으로 교체, 낙관적 로컬은 보존, 그 외 유지
+  final keptIds = <String>{};
+  for (final m in current) {
+    final id = m.chatMessageId;
+    if (id != null && serverById.containsKey(id)) {
+      merged.add(serverById[id]!);
+      keptIds.add(id);
+    } else if (isLocalOptimistic(id)) {
+      merged.add(m);
+    } else if (id != null) {
+      merged.add(m);
+      keptIds.add(id);
+    } else {
+      merged.add(m);
+    }
+  }
+
+  // 2) 서버 메시지 중 아직 추가되지 않은 것 추가
+  for (final m in serverMessages) {
+    final id = m.chatMessageId;
+    if (id != null && !keptIds.contains(id)) {
+      merged.add(m);
+      keptIds.add(id);
+    }
+  }
+
+  // 3) createdDate 내림차순 정렬, null은 맨 뒤
+  merged.sort((a, b) {
+    final da = a.createdDate;
+    final db = b.createdDate;
+    if (da == null && db == null) return 0;
+    if (da == null) return 1;
+    if (db == null) return -1;
+    return db.compareTo(da);
+  });
+
+  return merged;
+}
 
 class ChatRoomScreen extends StatefulWidget {
   final String chatRoomId;
@@ -55,6 +121,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
 
   List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSubscription;
+
+  // 재연결 동기화 중복 실행 방지
+  bool _isResyncing = false;
+  // 재연결 이벤트 구독
+  StreamSubscription<void>? _reconnectSubscription;
 
   // 교환 완료 요청 낙관적 업데이트용 로컬 임시 메시지 ID
   String? _latestLocalTradeRequestId;
@@ -286,6 +357,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
 
         // 상대방이 거래 완료를 수락했을 때 요청자에게도 후기 화면 표시
         if (newMessage.type == MessageType.tradeCompleted && !_reviewNavigated) {
+          // 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건 목록을 재조회하도록 알림
+          AppEventBus.instance.emit(const TradeCompletedEvent());
           final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
           if (tradeRequestHistoryId != null) {
             _reviewNavigated = true;
@@ -324,6 +397,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
         if (state.memberId == _myMemberId || !mounted) return;
         setState(() => _opponentState = state);
         debugPrint('[ChatRoom] 읽음 이벤트 수신: isPresent=${state.isPresent}, leftAt=${state.leftAt}');
+      });
+
+      // WebSocket 재연결 시 메시지 재동기화 (단절 구간 유실 복구)
+      _reconnectSubscription = _wsService.onReconnected.listen((_) {
+        _resyncMessages();
       });
 
       CommonModal.showOnceAfterFrame(
@@ -365,6 +443,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
         _errorMessage = ErrorUtils.getErrorMessage(e);
         _isLoading = false;
       });
+    }
+  }
+
+  /// 재연결 시 호출: 서버에서 최신 메시지를 재조회해 유실분을 병합한다.
+  Future<void> _resyncMessages() async {
+    if (_isResyncing || !mounted) return;
+    _isResyncing = true;
+    try {
+      final response = await ChatApi().getChatMessages(chatRoomId: widget.chatRoomId, pageNumber: 0, pageSize: 50);
+      if (!mounted) return;
+      final serverMessages = response.messages?.content ?? [];
+      setState(() {
+        _messages = mergeServerMessages(current: _messages, serverMessages: serverMessages);
+      });
+      debugPrint('[ChatRoom] 🔁 재연결 동기화 완료: 서버 ${serverMessages.length}건 병합');
+    } catch (e) {
+      // 백그라운드 동기화이므로 사용자에게 노출하지 않음. 다음 재연결 때 재시도.
+      debugPrint('[ChatRoom] 재연결 동기화 실패(무시): $e');
+    } finally {
+      _isResyncing = false;
     }
   }
 
@@ -445,8 +543,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
     final content = _messageController.text.trim();
     if (content.isEmpty || _isSendingMessage || _isInputDisabled) return;
 
-    setState(() => _isSendingMessage = true);
+    // 낙관적 삽입: WS 에코를 기다리지 않고 즉시 화면에 표시한다.
+    // 연결이 끊긴 상태에서도 내 메시지는 바로 보이고, WS 에코 도착 시
+    // _handleIncomingMessage의 매칭 로직이 실제 서버 메시지로 교체한다.
+    final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
+    final localMsg = ChatMessage(
+      chatRoomId: widget.chatRoomId,
+      chatMessageId: localId,
+      senderId: _myMemberId,
+      createdDate: DateTime.now(),
+      content: content,
+      type: MessageType.text,
+    );
+
+    setState(() {
+      _isSendingMessage = true;
+      _messages.insert(0, localMsg);
+      _pendingLocalMessages[localId] = localMsg;
+    });
     _messageController.clear();
+    _scrollToBottom();
 
     _sendMessageTimeoutTimer?.cancel();
     _sendMessageTimeoutTimer = Timer(const Duration(seconds: 10), () {
@@ -717,6 +833,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
     setState(() => _isPendingTradeAction = true);
     try {
       await ChatApi().confirmTradeCompletion(chatRoomId: widget.chatRoomId);
+      // 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건 목록을 재조회하도록 알림
+      AppEventBus.instance.emit(const TradeCompletedEvent());
       if (!mounted) return;
       final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
       if (tradeRequestHistoryId != null) {
@@ -754,6 +872,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
     WidgetsBinding.instance.removeObserver(this);
     _messageSubscription?.cancel();
     _readEventSubscription?.cancel();
+    _reconnectSubscription?.cancel();
     _wsService.unsubscribeFromReadEvents(widget.chatRoomId);
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
