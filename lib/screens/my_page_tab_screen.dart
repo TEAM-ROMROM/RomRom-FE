@@ -132,8 +132,11 @@ class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
               _MenuItem(
                 label: '내 위치인증',
                 icon: AppIcons.location,
-                onTap: () {
-                  context.navigateTo(screen: const MyLocationVerificationScreen());
+                onTap: () async {
+                  final result = await context.navigateTo<bool>(screen: const MyLocationVerificationScreen());
+                  if (result == true) {
+                    ref.read(memberProfileProvider.notifier).reload();
+                  }
                 },
               ),
               _MenuItem(
