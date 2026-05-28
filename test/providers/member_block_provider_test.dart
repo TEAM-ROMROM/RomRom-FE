@@ -42,7 +42,7 @@ void main() {
       final n = container.read(memberBlockProvider.notifier);
       n.seed({'A', 'B'});
       final f = n.setBlocked('A', false);
-      expect(container.read(memberBlockProvider).contains('A'), isFalse);
+      expect(container.read(memberBlockProvider).isBlocked('A'), isFalse);
       await f;
       expect(fake.unblockCalls, 1);
     });
@@ -52,7 +52,7 @@ void main() {
       n.seed({'A'});
       fake.throwOnUnblock = true;
       await n.setBlocked('A', false);
-      expect(container.read(memberBlockProvider).contains('A'), isTrue);
+      expect(container.read(memberBlockProvider).isBlocked('A'), isTrue);
     });
 
     test('서버 응답이 false인 경우도 롤백', () async {
@@ -60,14 +60,14 @@ void main() {
       n.seed({'A'});
       fake.unblockReturn = false;
       await n.setBlocked('A', false);
-      expect(container.read(memberBlockProvider).contains('A'), isTrue);
+      expect(container.read(memberBlockProvider).isBlocked('A'), isTrue);
     });
 
     test('차단 추가 setBlocked(true)는 즉시 Set에 추가', () async {
       final n = container.read(memberBlockProvider.notifier);
       n.seed({});
       final f = n.setBlocked('B', true);
-      expect(container.read(memberBlockProvider).contains('B'), isTrue);
+      expect(container.read(memberBlockProvider).isBlocked('B'), isTrue);
       await f;
       expect(fake.blockCalls, 1);
     });
