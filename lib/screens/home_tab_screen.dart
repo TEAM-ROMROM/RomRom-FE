@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -276,6 +277,10 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         _feedItems
           ..clear()
           ..addAll(feedItems);
+        _adVirtualIndices.clear();
+        _adVirtualIndicesSorted.clear();
+        _nextAdAfterFeedIndex = _adFreeCount;
+        _scheduleAdsForNewItems();
         _hasMoreItems = items.isNotEmpty;
         _isLoading = false;
       });
@@ -324,6 +329,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
 
       setState(() {
         _feedItems.addAll(newItems);
+        _scheduleAdsForNewItems();
         // 리셋 후에도 비어 있으면 전체 물품이 0개 → 순환할 게 없으므로 중단
         _hasMoreItems = content.isNotEmpty;
         _isLoadingMore = false;
@@ -339,34 +345,41 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   }
 
   // ─── 광고 삽입 로직 ─────────────────────────────────────────────
-  // 처음 3개는 광고 없음, 이후 매 3슬롯마다 [아이템, 아이템, 광고] 패턴
-  static const int _adFreeCount = 3; // 초반 광고 없는 아이템 수
-  static const int _adInterval = 3; // 아이템 2개 + 광고 1개 = 3슬롯
+  // 처음 5개는 광고 없음, 이후 8~11개마다 광고 1개 (랜덤 간격)
+  static const int _adFreeCount = 5;
+  static const int _adMinInterval = 8;
+  static const int _adMaxInterval = 11;
 
-  /// 실제 피드 아이템 수를 기준으로 광고 포함 가상 총 슬롯 수 계산
-  int get _virtualItemCount {
-    final count = _feedItems.length;
-    if (count <= _adFreeCount) return count;
-    final remaining = count - _adFreeCount;
-    final fullGroups = remaining ~/ (_adInterval - 1); // 아이템 2개씩 묶음
-    final leftover = remaining % (_adInterval - 1);
-    return _adFreeCount + fullGroups * _adInterval + leftover;
-  }
+  final Set<int> _adVirtualIndices = {}; // O(1) 광고 슬롯 조회용
+  final List<int> _adVirtualIndicesSorted = []; // adsBefore 계산을 위한 정렬 리스트
+  int _nextAdAfterFeedIndex = _adFreeCount; // 다음 광고를 배치할 실제 피드 아이템 인덱스
+  final Random _random = Random();
+
+  /// 광고 포함 가상 총 슬롯 수
+  int get _virtualItemCount => _feedItems.length + _adVirtualIndices.length;
 
   /// 해당 가상 인덱스가 광고 슬롯인지 여부
-  bool _isAdAtVirtualIndex(int vi) {
-    if (vi < _adFreeCount) return false;
-    final offset = vi - _adFreeCount;
-    return offset % _adInterval == _adInterval - 1; // 매 3번째 슬롯 (index 2, 5, 8...)
-  }
+  bool _isAdAtVirtualIndex(int vi) => _adVirtualIndices.contains(vi);
 
   /// 가상 인덱스 → 실제 피드 아이템 인덱스 변환 (광고 슬롯에서 호출 금지)
   int _feedIndexAtVirtualIndex(int vi) {
-    if (vi < _adFreeCount) return vi;
-    final offset = vi - _adFreeCount;
-    final group = offset ~/ _adInterval;
-    final posInGroup = offset % _adInterval;
-    return _adFreeCount + group * (_adInterval - 1) + posInGroup;
+    int adsBefore = 0;
+    for (final ai in _adVirtualIndicesSorted) {
+      if (ai > vi) break;
+      adsBefore++;
+    }
+    return vi - adsBefore;
+  }
+
+  /// 새 피드 아이템이 추가된 후 광고 슬롯 위치를 랜덤으로 스케줄링.
+  /// _feedItems 갱신 직후 setState 내에서 호출해야 함.
+  void _scheduleAdsForNewItems() {
+    while (_nextAdAfterFeedIndex < _feedItems.length) {
+      final vi = _nextAdAfterFeedIndex + _adVirtualIndices.length;
+      _adVirtualIndices.add(vi);
+      _adVirtualIndicesSorted.add(vi); // 오름차순 보장 (vi는 단조 증가)
+      _nextAdAfterFeedIndex += _adMinInterval + _random.nextInt(_adMaxInterval - _adMinInterval + 1);
+    }
   }
   // ────────────────────────────────────────────────────────────────
 
