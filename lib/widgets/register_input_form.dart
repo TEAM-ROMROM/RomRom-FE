@@ -23,6 +23,7 @@ import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
@@ -92,6 +93,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   // 소스 선택 바텀시트~촬영/선택 완료까지 진행 중 가드 (더블탭 방지)
   bool _isPickingSource = false;
   final List<XFile> _newImageFiles = []; // 새로 선택된 로컬 이미지 파일 (아직 업로드 안 됨)
+  // _newImageFiles와 인덱스 1:1로 정렬되는 백그라운드 압축 Future 리스트.
+  // 선택 시 add, 삭제 시 같은 index를 removeAt, 등록 시 index로 수거.
+  // (path를 key로 쓰면 동일 파일 재선택 시 충돌하므로 인덱스 정렬 리스트를 쓴다.)
+  final List<Future<XFile>> _compressing = [];
   final List<String> _existingImageUrls = []; // 수정 모드: 기존 서버 이미지 URL
 
   // 상품사진 갤러리에서 가져오는 함수
@@ -133,6 +138,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
           if (!mounted) return;
           setState(() {
             _newImageFiles.add(shot);
+            _compressing.add(ImageCompressor.toWebp(shot));
           });
 
         case ImagePickSource.gallery:
@@ -144,6 +150,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
           if (!mounted) return;
           setState(() {
             _newImageFiles.addAll(toAdd);
+            _compressing.addAll(toAdd.map(ImageCompressor.toWebp));
           });
       }
     } catch (e) {
@@ -168,8 +175,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         // 기존 서버 이미지 삭제
         _existingImageUrls.removeAt(index);
       } else {
-        // 새로 추가된 로컬 이미지 삭제
-        _newImageFiles.removeAt(index - existingCount);
+        // 새로 추가된 로컬 이미지 삭제 (압축 리스트도 같은 index 제거 → 결과 버림)
+        final localIndex = index - existingCount;
+        _newImageFiles.removeAt(localIndex);
+        _compressing.removeAt(localIndex);
       }
     });
   }
@@ -230,6 +239,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         );
       }
       _newImageFiles.clear();
+      _compressing.clear();
       _latitude = item?.latitude;
       _longitude = item?.longitude;
       useAiPrice = item?.isAiPredictedPrice ?? false;
@@ -828,12 +838,16 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           _isLoading = true;
                         });
 
-                        // 새 로컬 이미지가 있으면 서버에 업로드
+                        // 새 로컬 이미지가 있으면 압축본을 수거해 서버에 업로드
                         List<String> newImageUrls = [];
                         if (_newImageFiles.isNotEmpty) {
-                          newImageUrls = await ImageApi().uploadImages(_newImageFiles);
-                          if (newImageUrls.length != _newImageFiles.length) {
-                            throw Exception('일부 이미지 업로드에 실패했습니다 (${newImageUrls.length}/${_newImageFiles.length})');
+                          // 선택 시 시작한 백그라운드 압축을 순서 보존하여 수거.
+                          // _compressing은 _newImageFiles와 인덱스 1:1이라 그대로 await.
+                          // 보통 이미 완료되어 대기 0, 미완료분만 짧게 대기.
+                          final List<XFile> compressed = await Future.wait(_compressing);
+                          newImageUrls = await ImageApi().uploadImages(compressed);
+                          if (newImageUrls.length != compressed.length) {
+                            throw Exception('일부 이미지 업로드에 실패했습니다 (${newImageUrls.length}/${compressed.length})');
                           }
                         }
 
@@ -917,7 +931,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         if (context.mounted) {
                           CommonSnackBar.show(
                             context: context,
-                            message: '물품 $modeText에 실패했습니다: $e',
+                            message: ErrorUtils.getErrorMessage(e),
                             type: SnackBarType.error,
                           );
                         }
