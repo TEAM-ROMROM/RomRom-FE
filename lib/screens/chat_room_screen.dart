@@ -17,6 +17,7 @@ import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
+import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
@@ -667,14 +668,13 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> with WidgetsBin
       if (picked.isEmpty) return;
 
       final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}';
+      _latestLocalTradeRequestId = localId;
       setState(() {
-        final localTradeRequestId = 'local_trade_request_${DateTime.now().microsecondsSinceEpoch}';
-        _latestLocalTradeRequestId = localTradeRequestId;
         _messages.insert(
           0,
           ChatMessage(
             chatRoomId: widget.chatRoomId,
-            chatMessageId: localTradeRequestId,
+            chatMessageId: localId,
             senderId: _myMemberId,
             createdDate: DateTime.now(),
             content: '사진을 보냈습니다.',
@@ -687,7 +687,8 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> with WidgetsBin
       _scrollToBottom();
 
       try {
-        final uploadedImageUrls = await ImageApi().uploadImages(picked);
+        final compressed = await Future.wait(picked.map(ImageCompressor.toWebp));
+        final uploadedImageUrls = await ImageApi().uploadImages(compressed);
         if (!mounted) return;
 
         setState(() {
