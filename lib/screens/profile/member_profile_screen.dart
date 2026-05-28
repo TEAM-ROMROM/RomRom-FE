@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
@@ -7,7 +8,9 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/screens/member_report_screen.dart';
+import 'package:romrom_fe/states/member_profile_state.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -22,16 +25,16 @@ import 'package:romrom_fe/widgets/profile/profile_review_section.dart';
 
 /// 멤버 프로필 조회 화면
 /// 내 프로필이면 "프로필 수정" 버튼 표시, 타인 프로필이면 읽기 전용
-class MemberProfileScreen extends StatefulWidget {
+class MemberProfileScreen extends ConsumerStatefulWidget {
   final String memberId;
 
   const MemberProfileScreen({super.key, required this.memberId});
 
   @override
-  State<MemberProfileScreen> createState() => _MemberProfileScreenState();
+  ConsumerState<MemberProfileScreen> createState() => _MemberProfileScreenState();
 }
 
-class _MemberProfileScreenState extends State<MemberProfileScreen> {
+class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   bool _isMyProfile = false;
@@ -49,6 +52,7 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
   bool _reviewLoaded = false;
   bool get _showContent => !_isLoading && _exchangeLoaded && _reviewLoaded;
 
+  // 표시 데이터 (타인 분기는 로컬 state, 본인 분기는 provider에서 파생)
   String _accountStatus = '';
   String _nickname = '';
   String _profileUrl = '';
@@ -67,10 +71,10 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
       _isMyProfile = await UserInfo().isSameMember(widget.memberId);
 
       if (_isMyProfile) {
-        // 내 프로필이면 API로 최신 정보 조회
-        await _loadMyProfileFromApi();
+        // 본인: provider 값을 로컬 편집 state에 복사
+        _syncFromProvider();
       } else {
-        // 타인 프로필이면 API로 정보 조회
+        // 타인: 기존 직접 API 조회 유지
         await _loadOtherProfileFromApi();
       }
 
@@ -102,29 +106,52 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     }
   }
 
-  Future<void> _loadMyProfileFromApi() async {
-    final memberApi = MemberApi();
-    final memberResponse = await memberApi.getMemberInfo();
+  /// 본인 분기: provider 현재 값을 로컬 편집 state로 동기화.
+  /// provider가 아직 로딩 중이면 reload 후 재시도.
+  void _syncFromProvider() {
+    final profileState = ref.read(memberProfileProvider);
 
-    if (mounted) {
-      setState(() {
-        _accountStatus = memberResponse.member?.accountStatus ?? '';
-        _nickname = memberResponse.member?.nickname ?? '닉네임';
-        _profileUrl = memberResponse.member?.profileUrl ?? '';
-        _totalLikeCount = memberResponse.member?.totalLikeCount ?? 0;
-
-        final location = memberResponse.memberLocation;
-        if (location != null) {
-          final siGunGu = location.siGunGu ?? '';
-          final eupMyoenDong = location.eupMyoenDong ?? '';
-          final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
-          _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
-        }
-      });
+    if (profileState.hasValue && profileState.value != null) {
+      final s = profileState.value!;
+      _applyProfileState(s);
+    } else {
+      // provider가 아직 data 없으면 reload 후 값을 읽는다
+      ref
+          .read(memberProfileProvider.notifier)
+          .reload()
+          .then((_) {
+            if (!mounted) return;
+            final s = ref.read(memberProfileProvider).value;
+            if (s != null) {
+              setState(() => _applyProfileState(s));
+            }
+          })
+          .catchError((e) {
+            debugPrint('memberProfileProvider reload 실패: $e');
+            if (mounted) {
+              setState(() => _hasError = true);
+              CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+            }
+          });
     }
   }
 
-  /// 타인 프로필 API 조회
+  void _applyProfileState(MemberProfileState state) {
+    _accountStatus = state.member?.accountStatus ?? '';
+    _nickname = state.member?.nickname ?? '닉네임';
+    _profileUrl = state.member?.profileUrl ?? '';
+    _totalLikeCount = state.member?.totalLikeCount ?? 0;
+
+    final loc = state.location;
+    if (loc != null) {
+      final siGunGu = loc.siGunGu ?? '';
+      final eupMyoenDong = loc.eupMyoenDong ?? '';
+      final combined = '$siGunGu $eupMyoenDong'.trim();
+      _location = combined.isNotEmpty ? combined : '위치정보 없음';
+    }
+  }
+
+  /// 타인 프로필 API 조회 (기존 그대로 유지)
   Future<void> _loadOtherProfileFromApi() async {
     final memberApi = MemberApi();
     final memberResponse = await memberApi.getMemberProfile(widget.memberId);
@@ -143,14 +170,14 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     }
   }
 
-  /// 내 프로필 저장
+  /// 내 프로필 저장 — provider.updateProfile 경유로 캐시 자동 갱신
   Future<void> _handleSave() async {
     if (_isSaving) return;
     if (!_isProfileEdited || _nickname.isEmpty) return;
 
     setState(() => _isSaving = true);
     try {
-      await MemberApi().updateMemberProfile(_nickname, _profileUrl);
+      await ref.read(memberProfileProvider.notifier).updateProfile(nickname: _nickname, profileUrl: _profileUrl);
       if (mounted) {
         CommonSnackBar.show(context: context, message: '프로필이 업데이트되었습니다.', type: SnackBarType.success);
         setState(() {
@@ -174,7 +201,7 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     }
   }
 
-  /// 차단/차단해제 토글 처리
+  /// 차단/차단해제 토글 처리 (타인 전용, 그대로 유지)
   Future<void> _handleBlockToggle() async {
     final memberApi = MemberApi();
     bool success;
