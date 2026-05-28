@@ -1,5 +1,4 @@
 // lib/repositories/chat_repository.dart
-import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 

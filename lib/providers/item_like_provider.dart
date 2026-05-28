@@ -3,6 +3,8 @@
 /// 종류: 동기 Notifier (optimistic + _inFlight dedup) — 즉시 반영 후 서버 응답으로 확정, 실패 시 prev 롤백.
 /// 4-레이어 표준: lib/repositories/item_repository.dart + lib/providers/item_repository_provider.dart
 ///               + lib/states/item_like_state.dart + 이 파일.
+library;
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
