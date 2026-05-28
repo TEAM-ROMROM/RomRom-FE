@@ -331,6 +331,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           ..clear()
           ..addAll(feedItems);
         _adVirtualIndices.clear();
+        _adVirtualIndicesSorted.clear();
         _nextAdAfterFeedIndex = _adFreeCount;
         _scheduleAdsForNewItems();
         _hasMoreItems = items.isNotEmpty;
@@ -402,7 +403,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   static const int _adMinInterval = 8;
   static const int _adMaxInterval = 11;
 
-  final List<int> _adVirtualIndices = []; // 광고가 삽입될 가상 인덱스 목록 (오름차순)
+  final Set<int> _adVirtualIndices = {}; // O(1) 광고 슬롯 조회용
+  final List<int> _adVirtualIndicesSorted = []; // adsBefore 계산을 위한 정렬 리스트
   int _nextAdAfterFeedIndex = _adFreeCount; // 다음 광고를 배치할 실제 피드 아이템 인덱스
   final Random _random = Random();
 
@@ -415,7 +417,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// 가상 인덱스 → 실제 피드 아이템 인덱스 변환 (광고 슬롯에서 호출 금지)
   int _feedIndexAtVirtualIndex(int vi) {
     int adsBefore = 0;
-    for (final ai in _adVirtualIndices) {
+    for (final ai in _adVirtualIndicesSorted) {
       if (ai > vi) break;
       adsBefore++;
     }
@@ -426,7 +428,9 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// _feedItems 갱신 직후 setState 내에서 호출해야 함.
   void _scheduleAdsForNewItems() {
     while (_nextAdAfterFeedIndex < _feedItems.length) {
-      _adVirtualIndices.add(_nextAdAfterFeedIndex + _adVirtualIndices.length);
+      final vi = _nextAdAfterFeedIndex + _adVirtualIndices.length;
+      _adVirtualIndices.add(vi);
+      _adVirtualIndicesSorted.add(vi); // 오름차순 보장 (vi는 단조 증가)
       _nextAdAfterFeedIndex += _adMinInterval + _random.nextInt(_adMaxInterval - _adMinInterval + 1);
     }
   }
@@ -509,10 +513,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       debugPrint('내 카드 로딩 완료: ${myItems.length}개, 블러 표시: ${myItems.isEmpty}');
     } catch (e) {
       debugPrint('내 카드 로딩 실패: $e');
-      // 테스트용 더미 데이터
-      setState(() {
-        // FIXME : 테스트용더미데이텅
-      });
+      if (mounted) {
+        setState(() {
+          _isBlurShown = _myCards.isEmpty;
+        });
+      }
     }
   }
 
