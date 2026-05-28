@@ -1,6 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// 이미지를 WebP로 압축하는 공통 유틸.
@@ -20,7 +21,8 @@ class ImageCompressor {
   static Future<XFile> toWebp(XFile source) async {
     try {
       final dir = await getTemporaryDirectory();
-      final fileName = 'cmp_${DateTime.now().microsecondsSinceEpoch}.webp';
+      final nonce = Random().nextInt(1 << 32);
+      final fileName = 'cmp_${DateTime.now().microsecondsSinceEpoch}_$nonce.webp';
       final targetPath = '${dir.path}/$fileName';
 
       final XFile? result = await FlutterImageCompress.compressAndGetFile(

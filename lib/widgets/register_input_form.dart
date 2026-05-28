@@ -931,7 +931,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         if (context.mounted) {
                           CommonSnackBar.show(
                             context: context,
-                            message: '물품 $modeText에 실패했습니다: $e',
+                            message: ErrorUtils.getErrorMessage(e),
                             type: SnackBarType.error,
                           );
                         }
