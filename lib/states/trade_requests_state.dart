@@ -15,12 +15,15 @@ class TradeRequestsState {
 
   const TradeRequestsState({this.currentTakeItemId, this.received = const [], this.sent = const []});
 
+  // ignore: avoid_init_to_null
+  static const _absent = Object();
+
   TradeRequestsState copyWith({
-    String? currentTakeItemId,
+    Object? currentTakeItemId = _absent,
     List<TradeRequestHistory>? received,
     List<TradeRequestHistory>? sent,
   }) => TradeRequestsState(
-    currentTakeItemId: currentTakeItemId ?? this.currentTakeItemId,
+    currentTakeItemId: currentTakeItemId == _absent ? this.currentTakeItemId : currentTakeItemId as String?,
     received: received ?? this.received,
     sent: sent ?? this.sent,
   );

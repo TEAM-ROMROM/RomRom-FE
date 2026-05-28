@@ -54,6 +54,9 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
   // 로딩 상태
   bool _isLoading = false;
 
+  // 카드 전환 중 레이스 방지: 진행 중인 받은요청 로드 키
+  String? _pendingReceivedKey;
+
   // 스크롤 상태 관리
   bool _isScrolled = false;
 
@@ -170,21 +173,21 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
   }
 
   /// 현재 선택된 카드의 받은 요청 목록 로드 — provider에 위임.
+  /// 카드 전환 레이스: 요청 시작 시 현재 카드 ID를 _pendingReceivedKey에 기록하고,
+  /// 응답 도착 시 키가 달라졌으면 결과를 버려 이전 카드 응답이 덮어쓰는 현상을 방지.
   Future<void> _loadReceivedRequestsForCurrentCard() async {
     if (!mounted) return;
 
+    if (_itemCards.isEmpty || _currentCardIndex < 0 || _currentCardIndex >= _itemCards.length) {
+      await ref.read(tradeRequestsProvider.notifier).loadReceived('');
+      return;
+    }
+
+    final takeItemId = _itemCards[_currentCardIndex].itemId;
+    _pendingReceivedKey = takeItemId;
+
     setState(() => _isLoading = true);
     try {
-      if (_itemCards.isEmpty || _currentCardIndex < 0 || _currentCardIndex >= _itemCards.length) {
-        // 카드 없음 — 받은요청 비움
-        await ref.read(tradeRequestsProvider.notifier).loadReceived('');
-        return;
-      }
-
-      final currentCard = _itemCards[_currentCardIndex];
-      final takeItemId = currentCard.itemId;
-
-      // 서버에서 목록 가져오기 (provider가 state 갱신)
       final received = await TradeApi().getReceivedTradeRequests(
         TradeRequest(takeItemId: takeItemId, pageNumber: 0, pageSize: 10),
       );
@@ -200,12 +203,12 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
         );
       }
 
-      if (!mounted) return;
-      // provider state 갱신
+      // 카드 전환 레이스: 이 응답이 현재 카드 기준인지 확인
+      if (!mounted || _pendingReceivedKey != takeItemId) return;
       ref.read(tradeRequestsProvider.notifier).setReceived(takeItemId: takeItemId, received: list);
     } catch (e, st) {
       debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e\n$st');
-      if (!mounted) return;
+      if (!mounted || _pendingReceivedKey != takeItemId) return;
       ref.read(tradeRequestsProvider.notifier).setReceived(received: const []);
     } finally {
       if (mounted) setState(() => _isLoading = false);

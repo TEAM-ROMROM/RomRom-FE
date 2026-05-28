@@ -77,7 +77,7 @@ class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection>
     // 타인 프로필(memberId != null)은 myItemsProvider와 무관하므로 건드리지 않는다.
     if (widget.memberId == null) {
       ref.listen(myItemsProvider, (prev, next) {
-        if (mounted && next.hasValue) _loadMyItems();
+        if (mounted && next.hasValue && !_isLoading) _loadMyItems();
       });
     }
 

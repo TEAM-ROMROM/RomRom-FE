@@ -87,10 +87,11 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
 
       await _wsService.connect();
 
-      // 재연결 시 목록 갱신 (단절 동안 변경된 lastMessage/unreadCount 복구)
+      // 재연결 시 기존 구독 맵 초기화 후 목록 갱신 + 재구독
+      // reload()만 호출하면 _roomSubscriptions가 남아 새 세션 방 구독을 건너뛰므로 _triggerReload() 사용
       _reconnectSubscription = _wsService.onReconnected.listen((_) {
         if (!mounted) return;
-        ref.read(chatRoomsProvider.notifier).reload();
+        _triggerReload();
       });
     } catch (e) {
       debugPrint('채팅방 목록 WebSocket 초기화 실패: $e');

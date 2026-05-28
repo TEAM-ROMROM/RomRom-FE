@@ -207,6 +207,7 @@ class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
   }) {
     return AppPressable(
       onTap: () async {
+        if (memberId.isEmpty) return;
         final result = await context.navigateTo<bool>(screen: MemberProfileScreen(memberId: memberId));
 
         if (result == true) {

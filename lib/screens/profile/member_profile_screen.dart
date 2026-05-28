@@ -71,8 +71,8 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
       _isMyProfile = await UserInfo().isSameMember(widget.memberId);
 
       if (_isMyProfile) {
-        // 본인: provider 값을 로컬 편집 state에 복사
-        _syncFromProvider();
+        // 본인: provider 값을 로컬 편집 state에 복사 (reload 완료 후 isLoading=false 처리)
+        await _syncFromProvider();
       } else {
         // 타인: 기존 직접 API 조회 유지
         await _loadOtherProfileFromApi();
@@ -108,31 +108,24 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
 
   /// 본인 분기: provider 현재 값을 로컬 편집 state로 동기화.
   /// provider가 아직 로딩 중이면 reload 후 재시도.
-  void _syncFromProvider() {
+  Future<void> _syncFromProvider() async {
     final profileState = ref.read(memberProfileProvider);
 
     if (profileState.hasValue && profileState.value != null) {
-      final s = profileState.value!;
-      _applyProfileState(s);
+      _applyProfileState(profileState.value!);
     } else {
-      // provider가 아직 data 없으면 reload 후 값을 읽는다
-      ref
-          .read(memberProfileProvider.notifier)
-          .reload()
-          .then((_) {
-            if (!mounted) return;
-            final s = ref.read(memberProfileProvider).value;
-            if (s != null) {
-              setState(() => _applyProfileState(s));
-            }
-          })
-          .catchError((e) {
-            debugPrint('memberProfileProvider reload 실패: $e');
-            if (mounted) {
-              setState(() => _hasError = true);
-              CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
-            }
-          });
+      try {
+        await ref.read(memberProfileProvider.notifier).reload();
+        if (!mounted) return;
+        final s = ref.read(memberProfileProvider).value;
+        if (s != null) setState(() => _applyProfileState(s));
+      } catch (e) {
+        debugPrint('memberProfileProvider reload 실패: $e');
+        if (mounted) {
+          setState(() => _hasError = true);
+          CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+        }
+      }
     }
   }
 

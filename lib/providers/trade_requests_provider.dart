@@ -39,28 +39,35 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     }
   }
 
-  /// 거래 요청 취소 — 서버 호출 후 목록에서 즉시 제거.
-  /// (보낸/받은 양쪽 모두 제거 — 받은요청 삭제도 cancelTradeRequest 사용)
+  /// 거래 요청 취소 — 서버 호출 후 현재 카드 received 재조회.
+  /// sent는 giveItemIds가 없어 로컬 제거로 폴백하되, received는 서버 기준으로 갱신.
   Future<void> cancel({required String tradeRequestHistoryId}) async {
     await _repo.cancel(tradeRequestHistoryId);
     final cur = state.value;
     if (cur == null) return;
+    // received: 현재 카드 기준 서버 재조회
+    if (cur.currentTakeItemId != null && cur.currentTakeItemId!.isNotEmpty) {
+      await loadReceived(cur.currentTakeItemId!);
+    }
+    // sent: giveItemIds를 알 수 없으므로 로컬 제거
+    final updated = state.value ?? cur;
     state = AsyncData(
-      cur.copyWith(
-        received: cur.received.where((r) => r.tradeRequestHistoryId != tradeRequestHistoryId).toList(),
-        sent: cur.sent.where((r) => r.tradeRequestHistoryId != tradeRequestHistoryId).toList(),
-      ),
+      updated.copyWith(sent: updated.sent.where((r) => r.tradeRequestHistoryId != tradeRequestHistoryId).toList()),
     );
   }
 
-  /// 거래 요청 거절 — 서버 호출 후 받은요청 목록에서 즉시 제거.
+  /// 거래 요청 거절 — 서버 호출 후 현재 카드 received 재조회.
   Future<void> reject(String tradeRequestHistoryId) async {
     await _repo.reject(tradeRequestHistoryId);
     final cur = state.value;
     if (cur == null) return;
-    state = AsyncData(
-      cur.copyWith(received: cur.received.where((r) => r.tradeRequestHistoryId != tradeRequestHistoryId).toList()),
-    );
+    if (cur.currentTakeItemId != null && cur.currentTakeItemId!.isNotEmpty) {
+      await loadReceived(cur.currentTakeItemId!);
+    } else {
+      state = AsyncData(
+        cur.copyWith(received: cur.received.where((r) => r.tradeRequestHistoryId != tradeRequestHistoryId).toList()),
+      );
+    }
   }
 
   /// 화면에서 주소 캐싱 등 side-effect 처리 후 받은요청 목록 주입.

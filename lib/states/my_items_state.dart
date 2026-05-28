@@ -6,7 +6,9 @@ class MyItemsState {
   final List<Item> available; // 판매중
   final List<Item> exchanged; // 교환완료
 
-  const MyItemsState({this.available = const [], this.exchanged = const []});
+  MyItemsState({List<Item> available = const [], List<Item> exchanged = const []})
+    : available = List.unmodifiable(available),
+      exchanged = List.unmodifiable(exchanged);
 
   bool get hasAvailable => available.isNotEmpty;
 
