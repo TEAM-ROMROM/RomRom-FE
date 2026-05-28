@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
@@ -13,10 +12,9 @@ import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
-import 'package:romrom_fe/services/app_event_bus.dart';
-import 'package:romrom_fe/events/trade_completed_event.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
@@ -31,14 +29,14 @@ import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 
-class MyRegisterItemScreen extends StatefulWidget {
+class MyRegisterItemScreen extends ConsumerStatefulWidget {
   const MyRegisterItemScreen({super.key});
 
   @override
-  State<MyRegisterItemScreen> createState() => _MyRegisterItemScreenState();
+  ConsumerState<MyRegisterItemScreen> createState() => _MyRegisterItemScreenState();
 }
 
-class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with TickerProviderStateMixin {
+class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   // 탭별 데이터
   final List<Item> _sellingItems = [];
@@ -64,9 +62,6 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
   late AnimationController _toggleAnimationController;
   late Animation<double> _toggleAnimation;
 
-  // 거래완료 이벤트 구독 (거래완료 시 판매중/거래완료 탭 재조회)
-  StreamSubscription<TradeCompletedEvent>? _tradeCompletedSub;
-
   @override
   void initState() {
     super.initState();
@@ -77,15 +72,10 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
 
     _loadAllTabs();
     _scrollController.addListener(_scrollListener);
-    // 거래완료 시 양쪽 탭 재조회 (거래완료된 물건이 판매중 → 거래완료로 이동 반영)
-    _tradeCompletedSub = AppEventBus.instance.on<TradeCompletedEvent>().listen((_) {
-      if (mounted) _loadAllTabs(isRefresh: true);
-    });
   }
 
   @override
   void dispose() {
-    _tradeCompletedSub?.cancel();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _toggleAnimationController.dispose();
@@ -262,6 +252,10 @@ class _MyRegisterItemScreenState extends State<MyRegisterItemScreen> with Ticker
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(myItemsProvider, (prev, next) {
+      if (mounted && next.hasValue) _loadAllTabs(isRefresh: true);
+    });
+
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(

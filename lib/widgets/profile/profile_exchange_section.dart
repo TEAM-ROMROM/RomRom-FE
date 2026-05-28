@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -6,6 +7,7 @@ import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/screens/my_page/my_register_item_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -13,17 +15,17 @@ import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
-class ProfileExchangeSection extends StatefulWidget {
+class ProfileExchangeSection extends ConsumerStatefulWidget {
   final String? memberId;
   final VoidCallback? onLoaded;
 
   const ProfileExchangeSection({super.key, this.memberId, this.onLoaded});
 
   @override
-  State<ProfileExchangeSection> createState() => _ProfileExchangeSectionState();
+  ConsumerState<ProfileExchangeSection> createState() => _ProfileExchangeSectionState();
 }
 
-class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
+class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection> {
   List<Item> _items = [];
   bool _isLoading = true;
   bool _calledOnLoaded = false;
@@ -71,6 +73,14 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
 
   @override
   Widget build(BuildContext context) {
+    // 본인 프로필(memberId == null)일 때만 provider 변경을 감지해 재조회.
+    // 타인 프로필(memberId != null)은 myItemsProvider와 무관하므로 건드리지 않는다.
+    if (widget.memberId == null) {
+      ref.listen(myItemsProvider, (prev, next) {
+        if (mounted && next.hasValue) _loadMyItems();
+      });
+    }
+
     return AppPressable(
       onTap: () {
         if (widget.memberId != null) return; // 타인 프로필에서는 등록 화면 진입 막기

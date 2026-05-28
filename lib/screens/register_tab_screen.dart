@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
@@ -10,10 +11,11 @@ import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/screens/home_tab_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
@@ -31,19 +33,19 @@ import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/screens/main_screen.dart';
+import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class RegisterTabScreen extends StatefulWidget {
+class RegisterTabScreen extends ConsumerStatefulWidget {
   const RegisterTabScreen({super.key});
 
   @override
-  State<RegisterTabScreen> createState() => _RegisterTabScreenState();
+  ConsumerState<RegisterTabScreen> createState() => _RegisterTabScreenState();
 }
 
-class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProviderStateMixin {
+class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false; //
   bool _isScrolling = false;
@@ -193,33 +195,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
 
   /// 첫 물건 등록 후 홈탭으로 전환하고 코치마크 표시
   void _navigateToHomeAndShowCoachMark() {
-    debugPrint('====================================');
-    debugPrint('_navigateToHomeAndShowCoachMark 호출됨');
-
-    // MainScreen의 GlobalKey를 통해 홈탭(인덱스 0)으로 전환
-    final mainState = MainScreen.globalKey.currentState;
-    debugPrint('MainScreen.globalKey.currentState: $mainState');
-
-    if (mainState != null) {
-      debugPrint('홈 탭(인덱스 0)으로 전환 시도...');
-      (mainState as dynamic).switchToTab(0);
-    } else {
-      debugPrint('⚠️ MainScreen.globalKey.currentState가 null입니다!');
-    }
-
-    // 탭 전환 후 홈탭에서 코치마크 표시
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final homeState = HomeTabScreen.globalKey.currentState;
-      debugPrint('HomeTabScreen.globalKey.currentState: $homeState');
-
-      if (homeState != null) {
-        debugPrint('HomeTabScreen의 showCoachMark 호출 시도...');
-        (homeState as dynamic).showCoachMark();
-      } else {
-        debugPrint('⚠️ HomeTabScreen.globalKey.currentState가 null입니다!');
-      }
-    });
-    debugPrint('====================================');
+    // 홈 탭이 표시할 코치마크 신호를 먼저 올린다
+    ref.read(coachMarkTriggerProvider.notifier).trigger();
+    // 홈 탭(0)으로 전환 — GlobalKey 교차호출 대체
+    ref.read(currentTabIndexProvider.notifier).set(0);
   }
 
   void _scrollListener() {
@@ -256,6 +235,11 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
 
   @override
   Widget build(BuildContext context) {
+    // 내 물건 목록이 외부(다른 화면의 등록/삭제/거래완료 등)에서 변경되면 로컬 페이징 목록을 재조회한다.
+    ref.listen(myItemsProvider, (prev, next) {
+      if (mounted && next.hasValue) _loadMyItems(isRefresh: true);
+    });
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(statusBarColor: AppColors.transparent),
       child: Scaffold(
@@ -536,30 +520,13 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                       await prefs.setBool('isMemberLocationSaved', true);
                     }
 
-                    // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
-                    try {
-                      final countResponse = await ItemApi().getMyItems(
-                        ItemRequest(pageNumber: 0, pageSize: 1, itemStatus: ItemStatus.available.serverName),
-                      );
-                      final totalCount =
-                          countResponse.itemPage?.totalElements ?? countResponse.itemPage?.page?.totalElements ?? 0;
-
-                      if (totalCount >= _maxAvailableItemCount) {
-                        if (mounted) {
-                          CommonSnackBar.show(
-                            context: context,
-                            message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
-                            type: SnackBarType.error,
-                          );
-                        }
-                        return;
-                      }
-                    } catch (e) {
-                      debugPrint('물품 개수 확인 실패: $e');
+                    // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한 (provider 캐시 활용, 중복 API 호출 제거)
+                    final currentAvailableCount = ref.read(myItemsProvider).value?.available.length ?? 0;
+                    if (currentAvailableCount >= _maxAvailableItemCount) {
                       if (mounted) {
                         CommonSnackBar.show(
                           context: context,
-                          message: ErrorUtils.getErrorMessage(e),
+                          message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
                           type: SnackBarType.error,
                         );
                       }
@@ -581,12 +548,10 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                     debugPrint('result type: ${result.runtimeType}');
                     if (result is Map<String, dynamic>) {
                       debugPrint('  - isFirstItemPosted: ${result['isFirstItemPosted']}');
-                      debugPrint('  - itemId: ${result['itemId']}');
                     }
                     debugPrint('====================================');
 
-                    // 등록 화면에서 돌아온 뒤 목록 새로고침
-                    _loadMyItems(isRefresh: true);
+                    // 등록 화면에서 돌아온 뒤 목록 새로고침은 myItemsProvider가 자동 처리 (중복 제거)
 
                     // 첫 물건 등록 완료 시 홈탭으로 전환 후 코치마크 표시
                     if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
@@ -594,7 +559,7 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
                       _navigateToHomeAndShowCoachMark();
                     } else {
                       debugPrint(
-                        '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}, itemId=${result is Map ? result['itemId'] : 'N/A'}',
+                        '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}',
                       );
                     }
                   } finally {
@@ -742,17 +707,14 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     }
 
     try {
-      final itemApi = ItemApi();
       final targetStatus = _currentTabStatus == MyItemToggleStatus.selling
           ? ItemStatus.exchanged.serverName
           : ItemStatus.available.serverName;
 
       final request = ItemRequest(itemId: item.itemId, itemStatus: targetStatus);
 
-      await itemApi.updateItemStatus(request);
-
-      // 성공 시 목록 새로고침
-      _loadMyItems(isRefresh: true);
+      // provider 경유로 상태 변경 → build의 ref.listen이 자동으로 _loadMyItems(isRefresh: true) 호출
+      await ref.read(myItemsProvider.notifier).changeStatus(request);
 
       if (!mounted) return;
 
@@ -778,13 +740,8 @@ class _RegisterTabScreenState extends State<RegisterTabScreen> with TickerProvid
     }
 
     try {
-      final itemApi = ItemApi();
-      await itemApi.deleteItem(item.itemId!);
-
-      // 성공 시 로컬 목록에서 제거
-      setState(() {
-        _myItems.removeWhere((element) => element.itemId == item.itemId);
-      });
+      // provider 경유로 삭제 → build의 ref.listen이 자동으로 _loadMyItems(isRefresh: true) 호출
+      await ref.read(myItemsProvider.notifier).delete(item.itemId!);
 
       if (mounted) {
         CommonSnackBar.show(context: context, message: '물품이 삭제되었습니다');

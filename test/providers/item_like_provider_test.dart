@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/repositories/item_repository.dart';
 import 'package:romrom_fe/states/item_like_state.dart';
 
@@ -21,6 +24,18 @@ class FakeItemRepository implements ItemRepository {
       item: Item(itemId: itemId, likeCount: returnCount),
     );
   }
+
+  @override
+  Future<List<Item>> getMyItems(ItemStatus status, {int pageSize = 100}) async => const [];
+
+  @override
+  Future<ItemResponse> postItem(ItemRequest request) async => throw UnimplementedError();
+
+  @override
+  Future<void> deleteItem(String itemId) async => throw UnimplementedError();
+
+  @override
+  Future<ItemResponse> updateItemStatus(ItemRequest request) async => throw UnimplementedError();
 }
 
 void main() {
