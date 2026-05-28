@@ -355,17 +355,30 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     });
 
     try {
-      _currentPage += 1;
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(
-        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: _currentSortField.serverName),
-      );
+      _currentPage += 1;
+      var content =
+          (await itemApi.getItems(
+            ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: _currentSortField.serverName),
+          )).itemPage?.content ??
+          [];
 
-      final newItems = await _convertToFeedItems(response.itemPage?.content ?? []);
+      // 끝에 도달하면 처음으로 되감아 끊김 없이 순환(또돌이표)
+      if (content.isEmpty) {
+        _currentPage = 0;
+        content =
+            (await itemApi.getItems(
+              ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: _currentSortField.serverName),
+            )).itemPage?.content ??
+            [];
+      }
+
+      final newItems = await _convertToFeedItems(content);
 
       setState(() {
         _feedItems.addAll(newItems);
-        _hasMoreItems = !(response.itemPage?.content.isEmpty ?? true);
+        // 리셋 후에도 비어 있으면 전체 물품이 0개 → 순환할 게 없으므로 중단
+        _hasMoreItems = content.isNotEmpty;
         _isLoadingMore = false;
       });
     } catch (e) {
@@ -614,8 +627,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                 }
                 // 일반 피드 아이템
                 final feedIndex = _feedIndexAtVirtualIndex(index);
+                final feedItem = _feedItems[feedIndex];
                 return HomeFeedItemWidget(
-                  item: _feedItems[feedIndex],
+                  // 순환 시 같은 itemUuid가 중복되므로 위치(feedIndex)까지 포함해 키 유일성 보장
+                  key: ValueKey('${feedItem.itemUuid ?? feedItem.id}_$feedIndex'),
+                  item: feedItem,
                   showBlur: _isBlurShown,
                   // AI 추천 결과를 HomeTabScreen으로 전달
                   onAiRecommend: _onAiRecommend,
