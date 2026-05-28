@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
@@ -10,19 +11,18 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
-import 'package:romrom_fe/services/app_event_bus.dart';
-import 'package:romrom_fe/events/trade_completed_event.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -36,14 +36,14 @@ import 'package:romrom_fe/widgets/sent_request_item_card.dart';
 import 'package:romrom_fe/enums/request_sort_type.dart';
 import 'package:romrom_fe/widgets/common/request_sort_bottom_sheet.dart';
 
-class RequestManagementTabScreen extends StatefulWidget {
+class RequestManagementTabScreen extends ConsumerStatefulWidget {
   const RequestManagementTabScreen({super.key});
 
   @override
-  State<RequestManagementTabScreen> createState() => _RequestManagementTabScreenState();
+  ConsumerState<RequestManagementTabScreen> createState() => _RequestManagementTabScreenState();
 }
 
-class _RequestManagementTabScreenState extends State<RequestManagementTabScreen> with TickerProviderStateMixin {
+class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTabScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   Timer? _scrollTimer;
 
@@ -77,15 +77,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
   RequestSortType _receivedSortType = RequestSortType.latest;
   RequestSortType _sentSortType = RequestSortType.latest;
 
-  // 테스트용 샘플 데이터
+  // 내 물건 카드 목록
   final List<RequestManagementItemCard> _itemCards = [];
-
-  // 받은 요청 목록 데이터
-  final List<TradeRequestHistory> _receivedRequests = [];
-  final List<TradeRequestHistory> _sentRequests = [];
-
-  // 거래완료 이벤트 구독 (거래완료 시 내 물건/요청 목록 재조회)
-  StreamSubscription<TradeCompletedEvent>? _tradeCompletedSub;
 
   @override
   void initState() {
@@ -100,10 +93,6 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
     _loadInitialItems();
-    // 거래완료 시 목록 재조회 (거래완료된 물건은 AVAILABLE 필터에서 자동 제외됨)
-    _tradeCompletedSub = AppEventBus.instance.on<TradeCompletedEvent>().listen((_) {
-      if (mounted) _loadInitialItems(isRefresh: true);
-    });
   }
 
   @override
@@ -179,68 +168,58 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     return itemCards;
   }
 
-  /// 현재 선택된 카드의 받은 요청 목록 로드
-  Future<List<TradeRequestHistory>> _loadReceivedRequestsForCurrentCard() async {
-    if (!mounted) return const [];
+  /// 현재 선택된 카드의 받은 요청 목록 로드 — provider에 위임.
+  Future<void> _loadReceivedRequestsForCurrentCard() async {
+    if (!mounted) return;
 
     setState(() => _isLoading = true);
     try {
       if (_itemCards.isEmpty || _currentCardIndex < 0 || _currentCardIndex >= _itemCards.length) {
-        if (mounted) setState(() => _receivedRequests.clear());
-        return const [];
+        // 카드 없음 — 받은요청 비움
+        await ref.read(tradeRequestsProvider.notifier).loadReceived('');
+        return;
       }
 
       final currentCard = _itemCards[_currentCardIndex];
-      final api = TradeApi();
+      final takeItemId = currentCard.itemId;
 
-      final paged = await api.getReceivedTradeRequests(
-        TradeRequest(takeItemId: currentCard.itemId, pageNumber: 0, pageSize: 10),
+      // 서버에서 목록 가져오기 (provider가 state 갱신)
+      final received = await TradeApi().getReceivedTradeRequests(
+        TradeRequest(takeItemId: takeItemId, pageNumber: 0, pageSize: 10),
       );
+      final list = received.content;
 
-      final list = paged.content;
-      if (list.isEmpty) {
-        if (mounted) setState(() => _receivedRequests.clear());
-        return const [];
+      // 주소 캐싱 (UI 관심사 — screen에서 수행)
+      if (list.isNotEmpty) {
+        await Future.wait(
+          list.map((r) async {
+            await r.takeItem.resolveAndCacheAddress();
+            await r.giveItem.resolveAndCacheAddress();
+          }),
+        );
       }
 
-      // 주소 캐시를 모두 채워둠
-      await Future.wait(
-        list.map((r) async {
-          await r.takeItem.resolveAndCacheAddress();
-          await r.giveItem.resolveAndCacheAddress();
-        }),
-      );
-
-      if (mounted) {
-        setState(() {
-          _receivedRequests
-            ..clear()
-            ..addAll(list);
-        });
-      }
-      return list;
+      if (!mounted) return;
+      // provider state 갱신
+      ref.read(tradeRequestsProvider.notifier).setReceived(takeItemId: takeItemId, received: list);
     } catch (e, st) {
       debugPrint('현재 카드의 받은 요청 목록 로드 실패: $e\n$st');
-      if (mounted) setState(() => _receivedRequests.clear());
-      return const [];
+      if (!mounted) return;
+      ref.read(tradeRequestsProvider.notifier).setReceived(received: const []);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      } else {
-        _isLoading = false;
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  /// 현재 선택된 카드의 보낸 요청 목록 로드
-  Future<List<TradeRequestHistory>> _loadSentRequestsForCurrentCard() async {
-    if (!mounted) return const [];
+  /// 모든 카드의 보낸 요청 목록 로드 — provider에 위임.
+  Future<void> _loadSentRequestsForCurrentCard() async {
+    if (!mounted) return;
 
     setState(() => _isLoading = true);
     try {
       if (_itemCards.isEmpty) {
-        if (mounted) setState(() => _sentRequests.clear());
-        return const [];
+        ref.read(tradeRequestsProvider.notifier).setSent(const []);
+        return;
       }
 
       final api = TradeApi();
@@ -283,24 +262,14 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
         }
       }
 
-      if (mounted) {
-        setState(() {
-          _sentRequests
-            ..clear()
-            ..addAll(allRequests);
-        });
-      }
-      return allRequests;
+      if (!mounted) return;
+      ref.read(tradeRequestsProvider.notifier).setSent(allRequests);
     } catch (e, st) {
       debugPrint('보낸 요청 목록 로드 실패: $e\n$st');
-      if (mounted) setState(() => _sentRequests.clear());
-      return const [];
+      if (!mounted) return;
+      ref.read(tradeRequestsProvider.notifier).setSent(const []);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      } else {
-        _isLoading = false;
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -325,8 +294,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   /// 보낸 요청 목록 본체
   Widget _buildSentListBody() {
+    final sentRequests = ref.watch(tradeRequestsProvider).value?.sent ?? const [];
+
     // 보낸 요청은 필터링 없이 모든 요청 표시
-    if (_sentRequests.isEmpty) {
+    if (sentRequests.isEmpty) {
       return _isLoading
           ? const SizedBox(height: 500, child: Center(child: CommonLoadingIndicator()))
           : Container(
@@ -341,8 +312,8 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
-        children: List.generate(_sentRequests.length, (index) {
-          final request = _sentRequests[index];
+        children: List.generate(sentRequests.length, (index) {
+          final request = sentRequests[index];
           final takeItem = request.takeItem;
           final giveItem = request.giveItem;
 
@@ -354,15 +325,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                 onTap: () {
                   // 교환 완료 상태면 삭제 처리
                   if (request.tradeStatus == TradeStatus.traded.serverName) {
-                    TradeApi()
-                        .cancelTradeRequest(TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId))
+                    ref
+                        .read(tradeRequestsProvider.notifier)
+                        .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '')
                         .then((_) {
                           if (mounted) {
-                            setState(() {
-                              _sentRequests.removeWhere(
-                                (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
-                              );
-                            });
                             CommonSnackBar.show(context: context, message: '삭제되었습니다.');
                           }
                         })
@@ -430,13 +397,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
                   if (result == true) {
                     try {
-                      await TradeApi().cancelTradeRequest(
-                        TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                      );
+                      await ref
+                          .read(tradeRequestsProvider.notifier)
+                          .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '');
                       if (mounted) {
-                        setState(() {
-                          _sentRequests.removeWhere((e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId);
-                        });
                         CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
                       }
                     } catch (e) {
@@ -461,7 +425,6 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   @override
   void dispose() {
-    _tradeCompletedSub?.cancel();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _scrollTimer?.cancel();
@@ -539,6 +502,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(myItemsProvider, (prev, next) {
+      if (mounted && next.hasValue) _loadInitialItems(isRefresh: true);
+    });
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(statusBarColor: AppColors.transparent),
       child: Scaffold(
@@ -783,9 +750,11 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
       return _buildSentRequestsList();
     }
 
-    // 받은 요청인 경우 - 로드된 데이터 사용
+    // 받은 요청인 경우 - provider에서 단일 소스로 파생
+    final receivedRequests = ref.watch(tradeRequestsProvider).value?.received ?? const [];
+
     // 완료 표시 OFF: 진행 중만, ON: 진행 중 + 완료 전체
-    final filteredRequests = _receivedRequests.where((request) {
+    final filteredRequests = receivedRequests.where((request) {
       final status = request.tradeStatus;
       if (_showCompletedRequests) {
         return true; // 완료 포함 전체 표시
@@ -843,17 +812,21 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
                               .getDetailedTradeRequest(request)
                               .then((detailedRequest) {
                                 if (mounted) {
-                                  setState(() {
-                                    // isNew 상태 갱신
-                                    final targetIndex = _receivedRequests.indexWhere(
-                                      (r) =>
-                                          r.tradeRequestHistoryId ==
-                                          detailedRequest.tradeRequestHistory?.tradeRequestHistoryId,
-                                    );
-                                    if (targetIndex != -1 && detailedRequest.tradeRequestHistory != null) {
-                                      _receivedRequests[targetIndex].isNew = detailedRequest.tradeRequestHistory!.isNew;
+                                  // isNew 상태 갱신 — notifier setter 경유
+                                  final updatedId = detailedRequest.tradeRequestHistory?.tradeRequestHistoryId;
+                                  final updatedIsNew = detailedRequest.tradeRequestHistory?.isNew;
+                                  if (updatedId != null) {
+                                    final cur = ref.read(tradeRequestsProvider).value;
+                                    if (cur != null) {
+                                      final updatedReceived = cur.received.map((r) {
+                                        if (r.tradeRequestHistoryId == updatedId) {
+                                          r.isNew = updatedIsNew;
+                                        }
+                                        return r;
+                                      }).toList();
+                                      ref.read(tradeRequestsProvider.notifier).setReceived(received: updatedReceived);
                                     }
-                                  });
+                                  }
                                 }
                               })
                               .catchError((e) {
@@ -879,15 +852,10 @@ class _RequestManagementTabScreenState extends State<RequestManagementTabScreen>
 
                           if (result == true) {
                             try {
-                              await TradeApi().cancelTradeRequest(
-                                TradeRequest(tradeRequestHistoryId: request.tradeRequestHistoryId),
-                              );
+                              await ref
+                                  .read(tradeRequestsProvider.notifier)
+                                  .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '');
                               if (mounted) {
-                                setState(() {
-                                  _receivedRequests.removeWhere(
-                                    (e) => e.tradeRequestHistoryId == request.tradeRequestHistoryId,
-                                  );
-                                });
                                 CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
                               }
                             } catch (e) {
