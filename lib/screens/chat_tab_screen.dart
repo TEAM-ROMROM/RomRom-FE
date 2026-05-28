@@ -165,9 +165,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
         chatRoomType: room.chatRoomType,
       );
 
-      // 목록에서 제거 후 맨 앞에 추가 (최신 메시지가 있는 채팅방이 위로)
-      _chatRoomsDetail.removeAt(roomIndex);
-      _chatRoomsDetail.insert(0, updatedRoom);
+      // 해당 방을 갱신한 뒤 마지막 메시지 시각 기준으로 재정렬
+      _chatRoomsDetail[roomIndex] = updatedRoom;
+      _sortRoomsByRecent();
     });
   }
 
@@ -239,6 +239,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
 
         setState(() {
           _chatRoomsDetail.addAll(visibleRooms);
+          _sortRoomsByRecent();
           _hasMore = !paged.last;
           if (_hasMore) _currentPage++;
         });
@@ -307,6 +308,19 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
         _isScrolled = false;
       });
     }
+  }
+
+  /// 채팅방 목록을 마지막 메시지 시각 내림차순으로 정렬 (최신 메시지가 위)
+  /// lastMessageTime이 null인 방은 맨 뒤로 (BE가 createdDate로 채워 사실상 null은 거의 없음)
+  void _sortRoomsByRecent() {
+    _chatRoomsDetail.sort((a, b) {
+      final ta = a.lastMessageTime;
+      final tb = b.lastMessageTime;
+      if (ta == null && tb == null) return 0;
+      if (ta == null) return 1;
+      if (tb == null) return -1;
+      return tb.compareTo(ta);
+    });
   }
 
   /// 필터링된 채팅방 목록 반환
