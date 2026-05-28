@@ -23,7 +23,7 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
       final cur = state.value ?? const TradeRequestsState();
       state = AsyncData(cur.copyWith(currentTakeItemId: takeItemId, received: received));
     } catch (e, st) {
-      state = AsyncError(e, st).copyWithPrevious(state);
+      state = AsyncError<TradeRequestsState>(e, st).copyWithPrevious(state);
     }
   }
 
@@ -35,7 +35,7 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
       final cur = state.value ?? const TradeRequestsState();
       state = AsyncData(cur.copyWith(sent: sent));
     } catch (e, st) {
-      state = AsyncError(e, st).copyWithPrevious(state);
+      state = AsyncError<TradeRequestsState>(e, st).copyWithPrevious(state);
     }
   }
 

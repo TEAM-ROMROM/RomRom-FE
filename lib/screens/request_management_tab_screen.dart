@@ -11,6 +11,7 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
