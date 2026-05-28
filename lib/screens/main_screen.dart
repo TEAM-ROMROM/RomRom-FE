@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
@@ -13,18 +15,14 @@ import 'package:romrom_fe/widgets/common/app_review_popup.dart';
 import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 
 /// 메인 화면
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
-  // MainScreen의 상태에 접근하기 위한 GlobalKey
-  static final GlobalKey<State<MainScreen>> globalKey = GlobalKey<State<MainScreen>>();
-
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
-  int _currentTabIndex = 0; // 선택된 탭 인덱스 관리
+class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObserver {
   late final List<Widget> _navigationTabScreens;
   final Set<String> _pendingRequests = <String>{};
 
@@ -32,7 +30,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _navigationTabScreens = [
-      HomeTabScreen(key: HomeTabScreen.globalKey, onLoaded: _onHomeLoaded),
+      HomeTabScreen(onLoaded: _onHomeLoaded),
       const RequestManagementTabScreen(),
       const RegisterTabScreen(),
       const ChatTabScreen(),
@@ -106,15 +104,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// 외부에서 탭을 전환할 수 있는 메서드
-  void switchToTab(int index) {
-    if (index >= 0 && index < _navigationTabScreens.length) {
-      setState(() {
-        _currentTabIndex = index;
-      });
-    }
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -139,16 +128,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final tabIndex = ref.watch(currentTabIndexProvider);
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      body: IndexedStack(index: _currentTabIndex, children: _navigationTabScreens),
+      body: IndexedStack(index: tabIndex, children: _navigationTabScreens),
       bottomNavigationBar: CustomBottomNavigationBar(
-        selectedIndex: _currentTabIndex,
+        selectedIndex: tabIndex,
         onTap: (index) {
-          setState(() {
-            _currentTabIndex = index;
-          });
+          ref.read(currentTabIndexProvider.notifier).set(index);
         },
       ),
     );

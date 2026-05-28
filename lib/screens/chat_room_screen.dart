@@ -17,13 +17,15 @@ import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
+import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
-import 'package:romrom_fe/services/app_event_bus.dart';
-import 'package:romrom_fe/events/trade_completed_event.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/chat_rooms_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
@@ -101,17 +103,17 @@ List<ChatMessage> mergeServerMessages({required List<ChatMessage> current, requi
   return merged;
 }
 
-class ChatRoomScreen extends StatefulWidget {
+class ChatRoomScreen extends ConsumerStatefulWidget {
   final String chatRoomId;
   final bool autoTriggerExchangeRequest;
 
   const ChatRoomScreen({super.key, required this.chatRoomId, this.autoTriggerExchangeRequest = false});
 
   @override
-  State<ChatRoomScreen> createState() => _ChatRoomScreenState();
+  ConsumerState<ChatRoomScreen> createState() => _ChatRoomScreenState();
 }
 
-class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObserver {
+class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> with WidgetsBindingObserver {
   final ChatWebSocketService _wsService = ChatWebSocketService();
   final TextEditingController _messageController = TextEditingController();
   bool _hasText = false;
@@ -358,7 +360,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
         // 상대방이 거래 완료를 수락했을 때 요청자에게도 후기 화면 표시
         if (newMessage.type == MessageType.tradeCompleted && !_reviewNavigated) {
           // 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건 목록을 재조회하도록 알림
-          AppEventBus.instance.emit(const TradeCompletedEvent());
+          ref.read(myItemsProvider.notifier).reload();
+          ref.read(chatRoomsProvider.notifier).reload();
           final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
           if (tradeRequestHistoryId != null) {
             _reviewNavigated = true;
@@ -665,14 +668,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
       if (picked.isEmpty) return;
 
       final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}';
+      _latestLocalTradeRequestId = localId;
       setState(() {
-        final localTradeRequestId = 'local_trade_request_${DateTime.now().microsecondsSinceEpoch}';
-        _latestLocalTradeRequestId = localTradeRequestId;
         _messages.insert(
           0,
           ChatMessage(
             chatRoomId: widget.chatRoomId,
-            chatMessageId: localTradeRequestId,
+            chatMessageId: localId,
             senderId: _myMemberId,
             createdDate: DateTime.now(),
             content: '사진을 보냈습니다.',
@@ -685,7 +687,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
       _scrollToBottom();
 
       try {
-        final uploadedImageUrls = await ImageApi().uploadImages(picked);
+        final compressed = await Future.wait(picked.map(ImageCompressor.toWebp));
+        final uploadedImageUrls = await ImageApi().uploadImages(compressed);
         if (!mounted) return;
 
         setState(() {
@@ -819,6 +822,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
     setState(() => _isPendingTradeAction = true);
     try {
       await ChatApi().rejectTradeCompletion(chatRoomId: widget.chatRoomId);
+      // 거래완료 거절 전파: 요청관리 탭이 myItemsProvider listen으로 받아 받은/보낸 요청 재조회.
+      if (mounted) ref.read(myItemsProvider.notifier).reload();
     } catch (e) {
       if (mounted) {
         CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
@@ -834,7 +839,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with WidgetsBindingObse
     try {
       await ChatApi().confirmTradeCompletion(chatRoomId: widget.chatRoomId);
       // 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건 목록을 재조회하도록 알림
-      AppEventBus.instance.emit(const TradeCompletedEvent());
+      ref.read(myItemsProvider.notifier).reload();
+      ref.read(chatRoomsProvider.notifier).reload();
       if (!mounted) return;
       final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
       if (tradeRequestHistoryId != null) {

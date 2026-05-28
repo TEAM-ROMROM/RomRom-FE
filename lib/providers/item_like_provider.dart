@@ -1,15 +1,19 @@
+/// 좋아요(Like) Provider (CLAUDE.md 규칙2 — optimistic 토글)
+///
+/// 종류: 동기 Notifier (optimistic + _inFlight dedup) — 즉시 반영 후 서버 응답으로 확정, 실패 시 prev 롤백.
+/// 4-레이어 표준: lib/repositories/item_repository.dart + lib/providers/item_repository_provider.dart
+///               + lib/states/item_like_state.dart + 이 파일.
+library;
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
-import 'package:romrom_fe/repositories/item_repository.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/states/item_like_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-
-final itemRepositoryProvider = Provider<ItemRepository>((ref) => ItemRepository(ItemApi()));
 
 final itemLikeProvider = NotifierProvider<ItemLikeNotifier, Map<String, ItemLikeState>>(ItemLikeNotifier.new);
 

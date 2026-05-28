@@ -26,6 +26,8 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
+import 'package:romrom_fe/providers/chat_rooms_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -259,7 +261,6 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
     }
 
     try {
-      final itemApi = ItemApi();
       // 현재 상태의 반대로 전환
       final targetStatus = item.itemStatus == ItemStatus.available.serverName
           ? ItemStatus.exchanged.serverName
@@ -267,7 +268,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
 
       final request = ItemRequest(itemId: item.itemId, itemStatus: targetStatus);
 
-      await itemApi.updateItemStatus(request);
+      await ref.read(myItemsProvider.notifier).changeStatus(request);
 
       if (mounted) {
         final successMessage = item.itemStatus == ItemStatus.available.serverName ? '교환 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
@@ -296,8 +297,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
     }
 
     try {
-      final itemApi = ItemApi();
-      await itemApi.deleteItem(item.itemId!);
+      await ref.read(myItemsProvider.notifier).delete(item.itemId!);
 
       if (mounted) {
         CommonSnackBar.show(context: context, message: '물품이 삭제되었습니다');
@@ -1112,7 +1112,10 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
 
       if (!mounted) return;
 
-      // 2. 채팅방 화면으로 이동
+      // 2. chatRoomsProvider 갱신 (ItemDetail→ChatRoom 경로에서 생성된 새 방 반영)
+      ref.read(chatRoomsProvider.notifier).reload();
+
+      // 3. 채팅방 화면으로 이동
       context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!));
     } catch (e) {
       debugPrint('채팅방 생성 실패: $e');

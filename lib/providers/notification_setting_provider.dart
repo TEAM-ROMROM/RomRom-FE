@@ -1,3 +1,10 @@
+/// 알림 설정(NotificationSetting) Provider (CLAUDE.md 규칙2 — optimistic 토글)
+///
+/// 종류: 동기 Notifier (optimistic + _inFlight dedup) — 즉시 반영 후 서버 응답으로 확정, 실패 시 prev 롤백.
+/// 4-레이어 표준: lib/repositories/notification_setting_repository.dart
+///               + notificationSettingRepositoryProvider(이 파일) + 이 파일.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/notification_setting_type.dart';

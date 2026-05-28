@@ -169,7 +169,7 @@ class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
 
   /// 차단/차단 해제 버튼 (상태에 따라 디자인 변경)
   Widget _buildBlockButton(String memberId) {
-    final isCurrentlyBlocked = ref.watch(memberBlockProvider.select((s) => s.contains(memberId)));
+    final isCurrentlyBlocked = ref.watch(memberBlockProvider.select((s) => s.isBlocked(memberId)));
     final isUnblocked = !isCurrentlyBlocked;
 
     return GestureDetector(

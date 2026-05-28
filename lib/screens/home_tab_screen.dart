@@ -3,11 +3,11 @@ import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
-import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -15,11 +15,11 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
+import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
-import 'package:romrom_fe/services/app_event_bus.dart';
-import 'package:romrom_fe/events/trade_completed_event.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -46,20 +46,17 @@ import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
 /// 홈 탭 화면
-class HomeTabScreen extends StatefulWidget {
+class HomeTabScreen extends ConsumerStatefulWidget {
   const HomeTabScreen({super.key, this.onLoaded});
-
-  // HomeTabScreen의 상태에 접근하기 위한 GlobalKey
-  static final GlobalKey<State<HomeTabScreen>> globalKey = GlobalKey<State<HomeTabScreen>>();
 
   /// 초기 피드 로딩 완료 시 호출되는 콜백 (최초 1회)
   final Future<void> Function()? onLoaded;
 
   @override
-  State<HomeTabScreen> createState() => _HomeTabScreenState();
+  ConsumerState<HomeTabScreen> createState() => _HomeTabScreenState();
 }
 
-class _HomeTabScreenState extends State<HomeTabScreen> {
+class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   // 메인 콘텐츠 페이지 컨트롤러
   final PageController _pageController = PageController();
   // 피드 아이템 목록
@@ -74,8 +71,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   bool _isLoadingMore = false;
   // 더 로드할 아이템 여부
   bool _hasMoreItems = true;
-  // 블러 효과 표시 여부
-  bool _isBlurShown = false;
   // 미확인 알림 존재 여부
   bool _hasUnreadNotification = false;
   // 미확인 알림 조회 중복 요청 방지
@@ -89,28 +84,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 초기 로드에 성공한 정렬 필드 저장
   ItemSortField _currentSortField = ItemSortField.recommended;
 
-  // 내 카드 목록 (나중에 API에서 가져올 예정)
-  List<Item> _myCards = [];
-
-  // 거래완료 이벤트 구독 (거래완료 시 내 카드 목록 재조회)
-  StreamSubscription<TradeCompletedEvent>? _tradeCompletedSub;
-
   @override
   void initState() {
     super.initState();
     _loadInitialItems();
-    _loadMyCards();
-    _checkFirstMainScreen();
     unawaited(_loadUnreadNotificationStatus());
-    // 거래완료 시 내 카드 목록 재조회 (거래완료된 물건은 AVAILABLE 필터에서 자동 제외됨)
-    _tradeCompletedSub = AppEventBus.instance.on<TradeCompletedEvent>().listen((_) {
-      if (mounted) _loadMyCards();
-    });
   }
 
   @override
   void dispose() {
-    _tradeCompletedSub?.cancel();
     _removeCoachMarkOverlay();
     _pageController.dispose();
     super.dispose();
@@ -138,41 +120,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         debugPrint('⚠️ HomeTabScreen이 mounted되지 않음!');
       }
     });
-    debugPrint('====================================');
-  }
-
-  /// 홈 화면 블러 표시 로직
-  ///
-  /// 블러 표시 조건:
-  /// - 내 물건이 0개일 때 (실제 물건 개수 기준)
-  ///
-  /// 코치마크 표시 조건:
-  /// - 첫 물품 등록 후 홈 탭에서 showCoachMark() 호출 시 표시
-  /// - _checkAndShowCoachMark()에서 처리
-  Future<void> _checkFirstMainScreen() async {
-    debugPrint('====================================');
-    debugPrint('_checkFirstMainScreen 호출됨');
-    try {
-      // 블러 표시 여부: 내 물건 개수가 0개일 때
-      final bool shouldShowBlur = _myCards.isEmpty;
-
-      debugPrint('조건 체크:');
-      debugPrint('  - 내 물건 개수: ${_myCards.length}');
-      debugPrint('  - shouldShowBlur: $shouldShowBlur');
-
-      setState(() {
-        _isBlurShown = shouldShowBlur;
-      });
-
-      // 코치마크는 여기서 표시하지 않음!
-      // 첫 물품 등록 후 showCoachMark() 외부 호출 시에만 _checkAndShowCoachMark()에서 표시
-      debugPrint('코치마크는 첫 물품 등록 플로우에서만 표시됨');
-    } catch (e) {
-      debugPrint('⚠️ 첫 화면 체크 실패: $e');
-      setState(() {
-        _isBlurShown = false;
-      });
-    }
     debugPrint('====================================');
   }
 
@@ -493,34 +440,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     return feedItems;
   }
 
-  /// 내 카드(물품) 목록 로드
-  Future<void> _loadMyCards() async {
-    try {
-      final itemApi = ItemApi();
-      final response = await itemApi.getMyItems(
-        ItemRequest(pageNumber: 0, pageSize: 10, itemStatus: ItemStatus.available.serverName),
-      );
-
-      if (!mounted) return;
-
-      final myItems = response.itemPage?.content ?? [];
-      setState(() {
-        _myCards = myItems;
-        // 내 물건 개수에 따라 블러 상태 업데이트
-        _isBlurShown = myItems.isEmpty;
-      });
-
-      debugPrint('내 카드 로딩 완료: ${myItems.length}개, 블러 표시: ${myItems.isEmpty}');
-    } catch (e) {
-      debugPrint('내 카드 로딩 실패: $e');
-      if (mounted) {
-        setState(() {
-          _isBlurShown = _myCards.isEmpty;
-        });
-      }
-    }
-  }
-
   /// 카드 드롭 핸들러 (거래 요청) - 요청하기 화면으로 이동
   void _handleCardDrop(String cardId) async {
     final feedItem = _feedItems[_currentFeedIndex];
@@ -567,13 +486,30 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final myItemsAsync = ref.watch(myItemsProvider);
+    final myCards = myItemsAsync.value?.available ?? const <Item>[];
+    // 최초 로드 전(value==null)에는 블러 판정 보류 → 깜빡임 방지
+    final isBlurShown = myItemsAsync.hasValue && myCards.isEmpty;
+
+    // 등록 탭의 첫 물건 등록 신호를 수신해 코치마크 표시 (GlobalKey 직접 호출 대체)
+    // postFrameCallback으로 감싸 build 중 setState 경고 방지
+    ref.listen<bool>(coachMarkTriggerProvider, (prev, next) {
+      if (next == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(coachMarkTriggerProvider.notifier).consume();
+          showCoachMark();
+        });
+      }
+    });
+
     if (_isLoading) {
       return const HomeFeedSkeleton();
     }
-    return _buildContent();
+    return _buildContent(myCards: myCards, isBlurShown: isBlurShown);
   }
 
-  Widget _buildContent() {
+  Widget _buildContent({required List<Item> myCards, required bool isBlurShown}) {
     // 피드 아이템이 없을 때 메시지 표시
     if (_feedItems.isEmpty) {
       return Center(
@@ -614,11 +550,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               scrollDirection: Axis.vertical,
               controller: _pageController,
               // 블러가 활성화된 경우 스와이프(스크롤) 동작을 비활성화해 첫 화면 고정
-              physics: _isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
+              physics: isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
               itemCount: _virtualItemCount + (_hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
-                if (!_isBlurShown) {
+                if (!isBlurShown) {
                   setState(() {
                     _currentVirtualIndex = index;
                     // 광고 슬롯이 아닐 때만 현재 피드 인덱스 갱신
@@ -646,7 +582,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                   // 순환 시 같은 itemUuid가 중복되므로 위치(feedIndex)까지 포함해 키 유일성 보장
                   key: ValueKey('${feedItem.itemUuid ?? feedItem.id}_$feedIndex'),
                   item: feedItem,
-                  showBlur: _isBlurShown,
+                  showBlur: isBlurShown,
                   // AI 추천 결과를 HomeTabScreen으로 전달
                   onAiRecommend: _onAiRecommend,
                 );
@@ -656,7 +592,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         ),
 
         // 알림 아이콘 및 메뉴 버튼 - 광고 슬롯에서는 숨김
-        if (!_isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
+        if (!isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
           Positioned(
             right: 16.w,
             top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
@@ -716,14 +652,14 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           ),
 
         // 하단 고정 카드 덱
-        if (!_isBlurShown)
+        if (!isBlurShown)
           Positioned(
             left: 0,
             right: 0,
             bottom: -130.h,
             child: HomeTabCardHand(
               key: const ValueKey('home_card_hand'),
-              cards: _myCards,
+              cards: myCards,
               onCardDrop: _handleCardDrop,
               highlightedItemIds: _aiHighlightedItemIds,
               dragEnabled: !_isAdAtVirtualIndex(_currentVirtualIndex),
@@ -738,21 +674,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               child: AppPressable(
                 onTap: () async {
                   final result = await context.navigateTo<Map<String, dynamic>>(
-                    screen: ItemRegisterScreen(
-                      onClose: () {
-                        Navigator.pop(context);
-                      },
-                    ),
+                    screen: ItemRegisterScreen(onClose: () => Navigator.pop(context)),
                   );
                   if (!mounted) return;
-                  if (result is Map<String, dynamic>) {
-                    // 등록 후엔 첫 물건 여부와 무관하게 항상 내 물건 목록을 갱신해야
-                    // 블러/등록 안내가 즉시 사라진다 (두 번째 이후 등록 시 갱신 누락 버그 수정)
-                    _loadMyCards();
-                    // 코치마크는 첫 물건 등록 시에만 표시
-                    if (result['isFirstItemPosted'] == true) {
-                      showCoachMark();
-                    }
+                  if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+                    showCoachMark(); // 목록 갱신은 provider(myItemsProvider)가 자동 처리
                   }
                 },
                 scaleDown: AppPressable.scaleButton,

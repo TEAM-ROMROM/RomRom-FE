@@ -36,6 +36,8 @@ import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -44,17 +46,17 @@ import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
 
 /// 물품 등록 입력 폼 위젯
 /// 물품 등록 화면에서 사용되는 입력 폼 위젯
-class RegisterInputForm extends StatefulWidget {
+class RegisterInputForm extends ConsumerStatefulWidget {
   final Item? item; // 수정 모드에서 사용
   final bool isEditMode;
 
   const RegisterInputForm({super.key, this.item, this.isEditMode = false});
 
   @override
-  State<RegisterInputForm> createState() => _RegisterInputFormState();
+  ConsumerState<RegisterInputForm> createState() => _RegisterInputFormState();
 }
 
-class _RegisterInputFormState extends State<RegisterInputForm> {
+class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
   // 임시 상태 변수들
   ItemCategories? selectedCategory;
   ItemCondition? selectedCondition;
@@ -879,18 +881,16 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         } else {
-                          // 등록 모드
-                          final response = await ItemApi().postItem(itemRequest);
+                          // 등록 모드: notifier.register가 postItem + reload + isFirstItemPosted 반환을 통합 처리
+                          final isFirst = await ref.read(myItemsProvider.notifier).register(itemRequest);
                           debugPrint('====================================');
-                          debugPrint(
-                            '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
-                          );
+                          debugPrint('물품 등록 응답: isFirstItemPosted=$isFirst');
                           debugPrint('====================================');
 
                           final userInfo = UserInfo();
                           await userInfo.getUserInfo();
 
-                          if (response.isFirstItemPosted == true) {
+                          if (isFirst) {
                             debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
                             await userInfo.saveLoginStatus(
                               isFirstLogin: false,
@@ -904,15 +904,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           }
 
                           if (context.mounted) {
-                            final resultData = {
-                              if (response.item?.itemId != null) 'itemId': response.item!.itemId,
-                              'isFirstItemPosted': response.isFirstItemPosted ?? false,
-                            };
-                            debugPrint('Navigator.pop 전달 데이터: $resultData');
-
-                            // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
-                            Navigator.of(context).pop(resultData);
-
+                            Navigator.of(context).pop({'isFirstItemPosted': isFirst});
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         }

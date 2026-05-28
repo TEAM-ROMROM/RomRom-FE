@@ -101,7 +101,7 @@ class _LoginButtonState extends State<LoginButton> {
           await RomAuthApi().fetchAndSaveMemberInfo();
           // 기존 회원 로그인: FCM 토큰 저장
           await FirebaseService().handleFcmToken();
-          nextScreen = MainScreen(key: MainScreen.globalKey);
+          nextScreen = const MainScreen();
         }
 
         if (context.mounted) {
