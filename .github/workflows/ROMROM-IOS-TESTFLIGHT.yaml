@@ -245,6 +245,17 @@ jobs:
           fi
           echo "✅ .env 파일 확인됨 (크기: $(wc -c < .env) bytes)"
 
+          # 프로덕션 빌드 방어: TEST_BUILD flag 강제 제거 (secrets.ENV_FILE 오염 대비)
+          if grep -q '^TEST_BUILD' .env; then
+            echo "⚠️⚠️⚠️ 경고: 프로덕션 빌드에 TEST_BUILD flag 발견 → 제거합니다 ⚠️⚠️⚠️"
+            echo "⚠️ secrets.ENV_FILE에 TEST_BUILD가 박혀있습니다. GitHub Secret을 수정하세요."
+            grep '^TEST_BUILD' .env
+            grep -v '^TEST_BUILD' .env > .env.tmp && mv .env.tmp .env
+            echo "✅ TEST_BUILD flag 제거 완료"
+          else
+            echo "✅ 프로덕션 빌드: TEST_BUILD flag 없음 (정상)"
+          fi
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:

@@ -10,6 +10,7 @@ import 'package:romrom_fe/screens/my_page/profile_image_crop_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
@@ -108,7 +109,8 @@ class _ProfileOverviewSectionState extends State<ProfileOverviewSection> {
       widget.onShowSaveButton?.call();
 
       try {
-        final List<String> urls = await ImageApi().uploadImages([croppedFile]);
+        final XFile compressed = await ImageCompressor.toWebp(croppedFile);
+        final List<String> urls = await ImageApi().uploadImages([compressed]);
         if (mounted) {
           if (urls.isNotEmpty) {
             setState(() => _imageUrl = urls.first);
