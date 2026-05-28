@@ -218,7 +218,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       }
 
       await FirebaseService().handleFcmToken();
-      return MainScreen(key: MainScreen.globalKey);
+      return const MainScreen();
     } catch (e) {
       // 네트워크 예외는 재throw → _initAndNavigate()의 catch에서 SnackBar 표시
       if (e is SocketException || e is TimeoutException) rethrow;
