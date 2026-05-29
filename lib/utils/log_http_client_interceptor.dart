@@ -6,9 +6,8 @@ import 'package:http/http.dart' as http;
 class LoggingHttpClient extends http.BaseClient {
   final http.Client _inner;
 
-  /// 기본 HTTP 요청 타임아웃 (10초)
-  /// 파일 업로드 등 장시간 작업은 별도 클라이언트 사용 권장
-  static const Duration defaultTimeout = Duration(seconds: 10);
+  /// 기본 HTTP 요청 타임아웃 (15초)
+  static const Duration defaultTimeout = Duration(seconds: 15);
 
   LoggingHttpClient(this._inner);
 
@@ -31,19 +30,17 @@ class LoggingHttpClient extends http.BaseClient {
     }
   }
 
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+  /// 요청별 타임아웃을 지정해 전송한다.
+  Future<http.StreamedResponse> sendWithTimeout(http.BaseRequest request, Duration timeout) async {
     final startTime = DateTime.now();
     final requestId = request.hashCode.toRadixString(16).padLeft(8, '0');
 
-    // 요청 로깅
     debugPrint("====================================");
     debugPrint("[${_formatTime(startTime)}] [${request.method}] ${request.url} [uid: $requestId]");
     request.headers.forEach((key, value) {
       debugPrint("   $key: $value");
     });
 
-    // 요청 본문 로깅
     if (request is http.MultipartRequest) {
       debugPrint("   [Form Fields]");
       debugPrint("   ${_prettyJson(request.fields)}");
@@ -57,26 +54,23 @@ class LoggingHttpClient extends http.BaseClient {
     }
 
     try {
-      // 실제 요청 전송 (타임아웃 적용)
       final streamedResponse = await _inner
           .send(request)
           .timeout(
-            defaultTimeout,
+            timeout,
             onTimeout: () {
               final duration = DateTime.now().difference(startTime).inMilliseconds;
               debugPrint("[${_formatTime(DateTime.now())}] [Timeout] ${request.url} [uid: $requestId]");
-              debugPrint("   [Duration] ${duration}ms (${defaultTimeout.inSeconds}s 초과)");
+              debugPrint("   [Duration] ${duration}ms (${timeout.inSeconds}s 초과)");
               debugPrint("====================================");
-              throw TimeoutException('HTTP 타임아웃: ${request.url}', defaultTimeout);
+              throw TimeoutException('HTTP 타임아웃: ${request.url}', timeout);
             },
           );
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
-      // 전체 응답 본문 읽기
       final responseBytes = await streamedResponse.stream.toBytes();
       final responseString = utf8.decode(responseBytes, allowMalformed: true);
 
-      // 응답 본문 출력
       debugPrint("[${_formatTime(DateTime.now())}] [${streamedResponse.statusCode}] ${request.url} [uid: $requestId]");
       debugPrint("   [Duration] ${duration}ms");
 
@@ -90,7 +84,6 @@ class LoggingHttpClient extends http.BaseClient {
       }
       debugPrint("====================================");
 
-      // 원본 StreamedResponse와 동일한 새 StreamedResponse 반환
       return http.StreamedResponse(
         Stream.value(responseBytes),
         streamedResponse.statusCode,
@@ -110,6 +103,9 @@ class LoggingHttpClient extends http.BaseClient {
       rethrow;
     }
   }
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) => sendWithTimeout(request, defaultTimeout);
 
   // 시간을 HH:mm:ss.SSS 형식으로 포맷팅
   String _formatTime(DateTime time) {

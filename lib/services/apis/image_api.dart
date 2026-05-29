@@ -29,6 +29,7 @@ class ImageApi {
       url: url,
       files: fileMap,
       isAuthRequired: true,
+      timeout: const Duration(seconds: 60),
       onSuccess: (responseData) {
         final urls = responseData['imageUrls'];
         if (urls is! List) {
