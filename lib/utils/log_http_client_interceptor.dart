@@ -31,8 +31,10 @@ class LoggingHttpClient extends http.BaseClient {
   }
 
   /// 요청별 타임아웃을 지정해 전송한다.
+  /// send(헤더 수신)와 stream.toBytes()(body 읽기) 전 구간에 동일 deadline을 적용한다.
   Future<http.StreamedResponse> sendWithTimeout(http.BaseRequest request, Duration timeout) async {
     final startTime = DateTime.now();
+    final deadline = startTime.add(timeout);
     final requestId = request.hashCode.toRadixString(16).padLeft(8, '0');
 
     debugPrint("====================================");
@@ -66,10 +68,28 @@ class LoggingHttpClient extends http.BaseClient {
               throw TimeoutException('HTTP 타임아웃: ${request.url}', timeout);
             },
           );
-      final duration = DateTime.now().difference(startTime).inMilliseconds;
 
-      final responseBytes = await streamedResponse.stream.toBytes();
+      // body 읽기에 남은 deadline 시간만큼 타임아웃 적용
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) {
+        final duration = DateTime.now().difference(startTime).inMilliseconds;
+        debugPrint("[${_formatTime(DateTime.now())}] [Timeout] ${request.url} [uid: $requestId]");
+        debugPrint("   [Duration] ${duration}ms (${timeout.inSeconds}s 초과 — body read)");
+        debugPrint("====================================");
+        throw TimeoutException('HTTP 타임아웃: ${request.url}', timeout);
+      }
+      final responseBytes = await streamedResponse.stream.toBytes().timeout(
+        remaining,
+        onTimeout: () {
+          final duration = DateTime.now().difference(startTime).inMilliseconds;
+          debugPrint("[${_formatTime(DateTime.now())}] [Timeout] ${request.url} [uid: $requestId]");
+          debugPrint("   [Duration] ${duration}ms (${timeout.inSeconds}s 초과 — body read)");
+          debugPrint("====================================");
+          throw TimeoutException('HTTP 타임아웃: ${request.url}', timeout);
+        },
+      );
       final responseString = utf8.decode(responseBytes, allowMalformed: true);
+      final duration = DateTime.now().difference(startTime).inMilliseconds;
 
       debugPrint("[${_formatTime(DateTime.now())}] [${streamedResponse.statusCode}] ${request.url} [uid: $requestId]");
       debugPrint("   [Duration] ${duration}ms");
