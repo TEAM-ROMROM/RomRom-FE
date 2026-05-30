@@ -50,6 +50,7 @@ class ItemApi {
       url: url,
       fields: fields,
       isAuthRequired: true,
+      timeout: const Duration(seconds: 60),
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
         debugPrint('물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}');
@@ -265,6 +266,7 @@ class ItemApi {
       url: url,
       fields: fields,
       isAuthRequired: true,
+      timeout: const Duration(seconds: 60),
       onSuccess: (responseData) {
         debugPrint('물품 수정 성공: ${request.itemName}');
       },

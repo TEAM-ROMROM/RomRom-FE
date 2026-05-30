@@ -216,6 +216,10 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
       });
     }
 
+    if (!listEquals(widget.cards, oldWidget.cards)) {
+      setState(() => _generateCards());
+    }
+
     if (!listEquals(widget.highlightedItemIds, oldWidget.highlightedItemIds)) {
       if (widget.highlightedItemIds.isNotEmpty) {
         if (!_highlightPulseController.isAnimating) {
