@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
+import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
@@ -109,6 +111,11 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     if (state == AppLifecycleState.resumed) {
       _syncNotificationPermissionToBackend();
       _tryShowReviewPopup();
+      // 현재 탭이 홈이면 피드 자동 새로고침 (throttle 적용)
+      final currentTab = ref.read(currentTabIndexProvider);
+      if (currentTab == 0) {
+        ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
+      }
     }
   }
 
@@ -129,6 +136,14 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final tabIndex = ref.watch(currentTabIndexProvider);
+
+    // 다른 탭 → 홈 탭(0) 전환 시 피드 자동 새로고침 (cold start 제외)
+    ref.listen<int>(currentTabIndexProvider, (prev, next) {
+      if (next == 0 && prev != null && prev != 0) {
+        ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+      }
+    });
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
