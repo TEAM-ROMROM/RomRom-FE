@@ -76,6 +76,15 @@ body {
 .delay-200 {
   transition-delay: 200ms;
 }
+.delay-300 {
+  transition-delay: 300ms;
+}
+.delay-400 {
+  transition-delay: 400ms;
+}
+.delay-500 {
+  transition-delay: 500ms;
+}
 
 .soft-glow {
   box-shadow: 0 18px 55px rgba(0, 0, 0, 0.12);
@@ -227,7 +236,10 @@ body {
     transition: none;
   }
   .delay-100,
-  .delay-200 {
+  .delay-200,
+  .delay-300,
+  .delay-400,
+  .delay-500 {
     transition-delay: 0ms;
   }
 }
@@ -388,8 +400,6 @@ html.dark .soft-glow {
   box-shadow: 0 18px 55px rgba(0, 0, 0, 0.5);
 }
 
-
-
 /* 모달 */
 html.dark #download-modal-card {
   background-color: #161a20;
@@ -409,4 +419,158 @@ html.dark #download-modal-close {
 }
 html.dark #download-modal-close:hover {
   color: #edeef0;
+}
+
+/* =====================
+   Hero 2 — 다크 쇼케이스 섹션
+   ===================== */
+
+/* 항상 다크 — 라이트/다크 모드 무관 */
+.hero2-section {
+  background-color: #080808 !important;
+  color: #ffffff;
+}
+html.dark .hero2-section {
+  background-color: #080808 !important;
+}
+
+/* 앰버 스포트라이트
+   — top:0 + gradient center at 50% 0% 로 overflow:hidden 클립 방지 */
+.hero2-spotlight {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130%;
+  height: 80%;
+  background: radial-gradient(
+    ellipse 160% 160% at 50% 5%,
+    rgb(92, 71, 7) 0%,
+    rgb(36, 36, 41) 30%,
+    rgba(0, 0, 0) 58%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 상단 메타 라벨 */
+.hero2-meta {
+  font-size: clamp(0.6rem, 2vw, 0.8rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 195, 0);
+  white-space: nowrap;
+}
+
+/* | 구분선 */
+.hero2-pipe {
+  color: rgba(255, 195, 0);
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* 서브 태그라인 */
+.hero2-tagline {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(255, 195, 0);
+}
+
+/* 메인 헤드라인 */
+.hero2-headline {
+  color: #fff;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  text-align: center;
+  font-family: Pretendard;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 120%; /* 116.4px */
+  letter-spacing: -0.424px;
+}
+
+/* ── 폰 목업 ── */
+
+/* 뒤쪽 폰 래퍼 (기울기 + 위치 조정) */
+.hero2-phone-back-wrap {
+  transform: rotate(-10deg) translateY(20px);
+  transform-origin: bottom center;
+  position: relative;
+  z-index: 1;
+  margin-right: -28px;
+  flex-shrink: 0;
+}
+
+/* CSS 폰 프레임 — 골드 티타늄 테두리 */
+.hero2-phone-frame {
+  width: 190px;
+  height: 390px;
+  border-radius: 42px;
+  /* 골드/티타늄 그라데이션 테두리 */
+  background: linear-gradient(
+    145deg,
+    #c8a84a 0%,
+    #e0c870 12%,
+    #a07830 25%,
+    #d4b05a 40%,
+    #8a6828 55%,
+    #c09040 70%,
+    #f0d880 85%,
+    #a87c38 100%
+  );
+  padding: 2.5px;
+  box-shadow:
+    0 50px 100px rgba(0, 0, 0, 0.92),
+    0 20px 40px rgba(0, 0, 0, 0.65),
+    0 0 30px rgba(180, 130, 30, 0.12);
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* 폰 내부 스크린 */
+.hero2-phone-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 39.5px;
+  background: #0a0a0a;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 다이나믹 아일랜드 */
+.hero2-notch {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 75px;
+  height: 21px;
+  background: #080808;
+  border-radius: 20px;
+  z-index: 2;
+}
+
+/* 스플래시 로고 */
+.hero2-splash-logo {
+  width: 58px;
+  height: auto;
+  margin-top: 10px;
+}
+
+/* 앞쪽 폰 래퍼 */
+.hero2-phone-front-wrap {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  margin-top: -60px;
+}
+
+/* 앞쪽 폰 이미지 */
+.hero2-front-img {
+  width: clamp(360px, 48vw, 720px);
+  height: auto;
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.9));
 }

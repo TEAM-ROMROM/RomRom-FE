@@ -1,0 +1,75 @@
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>롬롬(romrom) - 가치를 교환하는 새로운 방법</title>
+    <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/variable/pretendardvariable.css"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script src="/app-config.js"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: "#FACC15",
+              textMain: "#000000",
+              textMuted: "#868e96",
+              surface: "#f8f9fa",
+              borderLight: "#f1f3f5",
+            },
+            fontFamily: { sans: ["Pretendard Variable", "sans-serif"] },
+            letterSpacing: { tightest: "-.06em" },
+          },
+        },
+      };
+    </script>
+
+    <!-- 딥링크 처리 -->
+    <script>
+      (function () {
+        var ua = navigator.userAgent.toLowerCase();
+        var isAndroid = ua.indexOf("android") > -1;
+        var isIOS = /iphone|ipad|ipod/.test(ua);
+        var isMobile = isAndroid || isIOS;
+        var itemId = new URLSearchParams(window.location.search).get("itemId");
+        var cfg = window.APP_CONFIG || {};
+        var androidUrl =
+          cfg.androidStoreUrl ||
+          "https://play.google.com/store/apps/details?id=com.alom.romrom";
+        var iosUrl =
+          cfg.iosStoreUrl || "https://apps.apple.com/kr/app/id6748823976";
+
+        if (itemId && isMobile) {
+          window.location =
+            "romrom://item/detail?itemId=" + encodeURIComponent(itemId);
+          setTimeout(function () {
+            window.location = isIOS ? iosUrl : androidUrl;
+          }, 1500);
+        }
+
+        window._romrom = { isMobile, isIOS, androidUrl, iosUrl };
+      })();
+    </script>
+
+    <!-- 다크모드 플래시 방지 (렌더 전 초기화) -->
+    <script>
+      (function () {
+        var saved = localStorage.getItem("romrom-theme");
+        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (saved === "dark" || (!saved && prefersDark)) {
+          document.documentElement.classList.add("dark");
+        }
+        document.documentElement.classList.add("no-dark-transition");
+      })();
+    </script>

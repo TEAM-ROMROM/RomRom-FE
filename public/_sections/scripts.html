@@ -1,0 +1,15 @@
+    <script src="/js/main.js"></script>
+
+    <!-- Motion One: 섹션별 이미지 패럴랙스 -->
+    <script type="module">
+      import {
+        animate,
+        scroll,
+      } from "https://cdn.jsdelivr.net/npm/motion@latest/dist/motion.js";
+
+      document.querySelectorAll("[data-parallax]").forEach((el) => {
+        scroll(animate(el, { y: ["-16%", "16%"] }, { ease: "linear" }), {
+          target: el,
+        });
+      });
+    </script>
