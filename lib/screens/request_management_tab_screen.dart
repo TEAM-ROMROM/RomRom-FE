@@ -189,7 +189,13 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
     setState(() => _isLoading = true);
     try {
       final received = await TradeApi().getReceivedTradeRequests(
-        TradeRequest(takeItemId: takeItemId, pageNumber: 0, pageSize: 10),
+        TradeRequest(
+          takeItemId: takeItemId,
+          pageNumber: 0,
+          pageSize: 10,
+          sortField: _receivedSortType.serverSortField,
+          sortDirection: _receivedSortType.serverDirection,
+        ),
       );
       final list = received.content;
 
@@ -232,7 +238,13 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
       final pagedResults = await Future.wait<PagedTradeRequestHistory?>(
         _itemCards.map((card) async {
           try {
-            return await api.getSentTradeRequests(TradeRequest(giveItemId: card.itemId));
+            return await api.getSentTradeRequests(
+              TradeRequest(
+                giveItemId: card.itemId,
+                sortField: _sentSortType.serverSortField,
+                sortDirection: _sentSortType.serverDirection,
+              ),
+            );
           } catch (error, stackTrace) {
             debugPrint('보낸 요청 로드 실패 for itemId ${card.itemId}: $error\n$stackTrace');
             return null;
@@ -287,7 +299,11 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
           padding: const EdgeInsets.fromLTRB(0, 0, 16, 8),
           child: _buildSortChip(
             currentSort: _sentSortType,
-            onChanged: (selected) => setState(() => _sentSortType = selected),
+            onChanged: (selected) {
+              if (selected == _sentSortType) return; // 동일 정렬 재선택 시 무시
+              setState(() => _sentSortType = selected);
+              _loadSentRequestsForCurrentCard(); // 정렬 변경 시 서버 재조회
+            },
           ),
         ),
         // 기존 목록/빈상태/로딩
@@ -688,7 +704,11 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
                 children: [
                   _buildSortChip(
                     currentSort: _receivedSortType,
-                    onChanged: (selected) => setState(() => _receivedSortType = selected),
+                    onChanged: (selected) {
+                      if (selected == _receivedSortType) return; // 동일 정렬 재선택 시 무시
+                      setState(() => _receivedSortType = selected);
+                      _loadReceivedRequestsForCurrentCard(); // 정렬 변경 시 서버 재조회
+                    },
                   ),
                   const SizedBox(width: 12),
                   Text(
