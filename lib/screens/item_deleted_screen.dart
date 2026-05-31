@@ -6,7 +6,6 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
@@ -23,9 +22,8 @@ class ItemDeletedScreen extends StatefulWidget {
 }
 
 class _ItemDeletedScreenState extends State<ItemDeletedScreen> {
-  /// X 버튼: 화면 닫기 + 플래그 리셋 (계정 제재와 달리 로그아웃 없음)
+  /// X 버튼: 화면 닫기 (계정 제재와 달리 로그아웃 없음)
   void _handleClose() {
-    ApiClient.resetItemDeletedFlag();
     Navigator.of(context).pop();
   }
 

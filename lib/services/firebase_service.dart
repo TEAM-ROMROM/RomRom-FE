@@ -106,7 +106,7 @@ class FirebaseService {
       }
     }
 
-    RomRomDeepLinkRouter.openFromUri(context, uri, notificationType: notificationType);
+    RomRomDeepLinkRouter.openFromUri(context, uri, notificationType: notificationType, extraData: data);
   }
 
   /// FCM 토큰 발급 및 갱신
