@@ -144,6 +144,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       case NotificationType.tradeRequestReceived:
         await notifier.setEnabled(NotificationSettingType.transaction, true);
         break;
+      case NotificationType.itemDeletedByAdmin:
+        // 관리자 제재 통보는 사용자가 끌 수 없는 강제 알림 → 설정 토글 대상 아님
+        break;
     }
   }
 
@@ -272,6 +275,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       case NotificationType.systemNotice:
         // systemNotice는 content + marketing 묶음
         return [NotificationSettingType.content, NotificationSettingType.marketing];
+      case NotificationType.itemDeletedByAdmin:
+        // 관리자 제재 통보는 끌 수 없는 강제 알림 → 대응 설정 없음(항상 활성으로 간주)
+        return const [];
     }
   }
 

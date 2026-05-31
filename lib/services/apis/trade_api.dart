@@ -67,7 +67,11 @@ class TradeApi {
     final String url = '${AppUrls.baseUrl}/api/trade/get/received';
     late PagedTradeRequestHistory tradeResponse;
 
-    final Map<String, dynamic> fields = {'takeItemId': request.takeItemId};
+    final Map<String, dynamic> fields = {
+      'takeItemId': request.takeItemId,
+      if (request.sortField != null) 'sortField': request.sortField,
+      if (request.sortDirection != null) 'sortDirection': request.sortDirection,
+    };
 
     http.Response response = await ApiClient.sendMultipartRequest(
       url: url,
@@ -95,7 +99,11 @@ class TradeApi {
     final String url = '${AppUrls.baseUrl}/api/trade/get/sent';
     late PagedTradeRequestHistory tradeResponse;
 
-    final Map<String, dynamic> fields = {'giveItemId': request.giveItemId};
+    final Map<String, dynamic> fields = {
+      'giveItemId': request.giveItemId,
+      if (request.sortField != null) 'sortField': request.sortField,
+      if (request.sortDirection != null) 'sortDirection': request.sortDirection,
+    };
 
     http.Response response = await ApiClient.sendMultipartRequest(
       url: url,

@@ -122,12 +122,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       if (nextScreen is MainScreen && ColdStartDeepLinkData.hasPending) {
         final pendingUri = ColdStartDeepLinkData.pendingUri!;
         final pendingType = ColdStartDeepLinkData.pendingNotificationType;
+        final pendingExtra = ColdStartDeepLinkData.pendingExtraData; // clear() 전에 보관 (itemName/deleteReason 등)
         ColdStartDeepLinkData.clear();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_aborted) return; // 프레임 콜백 실행 전 중단됐을 경우 딥링크 라우팅 차단
           final ctx = navigatorKey.currentContext;
           if (ctx != null) {
-            RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType);
+            RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType, extraData: pendingExtra);
           }
         });
       } else {

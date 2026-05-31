@@ -17,6 +17,8 @@ TradeRequest _$TradeRequestFromJson(Map<String, dynamic> json) => TradeRequest(
   tradeReviewRating: json['tradeReviewRating'] as String?,
   tradeReviewTags: (json['tradeReviewTags'] as List<dynamic>?)?.map((e) => e as String).toList(),
   reviewComment: json['reviewComment'] as String?,
+  sortField: json['sortField'] as String?,
+  sortDirection: json['sortDirection'] as String?,
 );
 
 Map<String, dynamic> _$TradeRequestToJson(TradeRequest instance) => <String, dynamic>{
@@ -30,4 +32,6 @@ Map<String, dynamic> _$TradeRequestToJson(TradeRequest instance) => <String, dyn
   'tradeReviewRating': instance.tradeReviewRating,
   'tradeReviewTags': instance.tradeReviewTags,
   'reviewComment': instance.reviewComment,
+  'sortField': instance.sortField,
+  'sortDirection': instance.sortDirection,
 };
