@@ -1,13 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:romrom_fe/enums/message_type.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_image_bubble.dart';
 import 'package:romrom_fe/widgets/chat_location_bubble.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 /// 채팅 메시지 아이템 위젯
 /// system / text / image (업로드 중 포함) / 거래 완료 시스템 메시지 모든 타입 처리
@@ -264,20 +269,45 @@ class ChatMessageItem extends StatelessWidget {
     }
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      constraints: BoxConstraints(maxWidth: 264.w, maxHeight: isMine ? 264.h : double.infinity),
+      constraints: BoxConstraints(maxWidth: 264.w),
       decoration: BoxDecoration(
         color: isMine ? AppColors.primaryYellow : AppColors.secondaryBlack1,
         borderRadius: BorderRadius.circular(10.r),
       ),
-      child: Text(
-        message.content ?? '',
+      // SelectableLinkify: 길게 눌러 부분 선택 복사 + 메시지 내 URL 자동 링크화/탭 열기
+      child: SelectableLinkify(
+        text: message.content ?? '',
+        options: const LinkifyOptions(humanize: false),
         style: CustomTextStyles.p2.copyWith(
           color: isMine ? AppColors.textColorBlack : AppColors.textColorWhite,
           fontWeight: FontWeight.w400,
           height: 1.2,
         ),
+        // 링크 전용 색이 디자인 시스템에 없어 본문 글자색 유지 + 밑줄로만 구분
+        linkStyle: CustomTextStyles.p2.copyWith(
+          color: isMine ? AppColors.textColorBlack : AppColors.textColorWhite,
+          fontWeight: FontWeight.w400,
+          height: 1.2,
+          decoration: TextDecoration.underline,
+        ),
+        onOpen: (link) => _openUrl(context, link.url),
       ),
     );
+  }
+
+  Future<void> _openUrl(BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && context.mounted) {
+        CommonSnackBar.show(context: context, message: '링크를 열 수 없습니다.', type: SnackBarType.error);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        CommonSnackBar.show(context: context, message: '링크를 열 수 없습니다.', type: SnackBarType.error);
+      }
+    }
   }
 
   Widget _buildTimeText() {
@@ -319,13 +349,8 @@ class ChatMessageItem extends StatelessWidget {
             Positioned.fill(
               child: ColoredBox(
                 color: AppColors.primaryBlack.withValues(alpha: 0.5),
-                child: const Center(
-                  child: SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(color: AppColors.primaryYellow),
-                  ),
-                ),
+                // 이미지 업로드 중 오버레이 스피너
+                child: const Center(child: CommonLoadingIndicator(size: 32.0)),
               ),
             ),
           ],

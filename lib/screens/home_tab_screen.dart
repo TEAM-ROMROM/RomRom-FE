@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
-import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -14,12 +15,16 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
+import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/apis/trade_api.dart';
 
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
@@ -37,22 +42,21 @@ import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
 import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
 /// 홈 탭 화면
-class HomeTabScreen extends StatefulWidget {
+class HomeTabScreen extends ConsumerStatefulWidget {
   const HomeTabScreen({super.key, this.onLoaded});
-
-  // HomeTabScreen의 상태에 접근하기 위한 GlobalKey
-  static final GlobalKey<State<HomeTabScreen>> globalKey = GlobalKey<State<HomeTabScreen>>();
 
   /// 초기 피드 로딩 완료 시 호출되는 콜백 (최초 1회)
   final Future<void> Function()? onLoaded;
 
   @override
-  State<HomeTabScreen> createState() => _HomeTabScreenState();
+  ConsumerState<HomeTabScreen> createState() => _HomeTabScreenState();
 }
 
-class _HomeTabScreenState extends State<HomeTabScreen> {
+class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   // 메인 콘텐츠 페이지 컨트롤러
   final PageController _pageController = PageController();
   // 피드 아이템 목록
@@ -62,13 +66,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   int _currentVirtualIndex = 0; // 현재 보고 있는 가상 인덱스 (광고 슬롯 판별용)
   final int _pageSize = 10;
   // 초기 로딩 상태
-  bool _isLoading = true;
+  bool _isLoading = false;
   // 추가 아이템 로딩 상태
   bool _isLoadingMore = false;
   // 더 로드할 아이템 여부
   bool _hasMoreItems = true;
-  // 블러 효과 표시 여부
-  bool _isBlurShown = false;
   // 미확인 알림 존재 여부
   bool _hasUnreadNotification = false;
   // 미확인 알림 조회 중복 요청 방지
@@ -82,15 +84,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   // 초기 로드에 성공한 정렬 필드 저장
   ItemSortField _currentSortField = ItemSortField.recommended;
 
-  // 내 카드 목록 (나중에 API에서 가져올 예정)
-  List<Item> _myCards = [];
-
   @override
   void initState() {
     super.initState();
     _loadInitialItems();
-    _loadMyCards();
-    _checkFirstMainScreen();
     unawaited(_loadUnreadNotificationStatus());
   }
 
@@ -123,41 +120,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         debugPrint('⚠️ HomeTabScreen이 mounted되지 않음!');
       }
     });
-    debugPrint('====================================');
-  }
-
-  /// 홈 화면 블러 표시 로직
-  ///
-  /// 블러 표시 조건:
-  /// - 내 물건이 0개일 때 (실제 물건 개수 기준)
-  ///
-  /// 코치마크 표시 조건:
-  /// - 첫 물품 등록 후 홈 탭에서 showCoachMark() 호출 시 표시
-  /// - _checkAndShowCoachMark()에서 처리
-  Future<void> _checkFirstMainScreen() async {
-    debugPrint('====================================');
-    debugPrint('_checkFirstMainScreen 호출됨');
-    try {
-      // 블러 표시 여부: 내 물건 개수가 0개일 때
-      final bool shouldShowBlur = _myCards.isEmpty;
-
-      debugPrint('조건 체크:');
-      debugPrint('  - 내 물건 개수: ${_myCards.length}');
-      debugPrint('  - shouldShowBlur: $shouldShowBlur');
-
-      setState(() {
-        _isBlurShown = shouldShowBlur;
-      });
-
-      // 코치마크는 여기서 표시하지 않음!
-      // 첫 물품 등록 후 showCoachMark() 외부 호출 시에만 _checkAndShowCoachMark()에서 표시
-      debugPrint('코치마크는 첫 물품 등록 플로우에서만 표시됨');
-    } catch (e) {
-      debugPrint('⚠️ 첫 화면 체크 실패: $e');
-      setState(() {
-        _isBlurShown = false;
-      });
-    }
     debugPrint('====================================');
   }
 
@@ -278,7 +240,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
   /// 초기 아이템 로드
   /// 결과가 0개이면 recommend → distance → preferredCategory → createdDate 순으로 폴백
   Future<void> _loadInitialItems() async {
-    if (!mounted) return;
+    if (!mounted || _isLoading) return;
 
     setState(() {
       _isLoading = true;
@@ -315,6 +277,10 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _feedItems
           ..clear()
           ..addAll(feedItems);
+        _adVirtualIndices.clear();
+        _adVirtualIndicesSorted.clear();
+        _nextAdAfterFeedIndex = _adFreeCount;
+        _scheduleAdsForNewItems();
         _hasMoreItems = items.isNotEmpty;
         _isLoading = false;
       });
@@ -327,7 +293,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       await widget.onLoaded?.call();
 
       if (!mounted) return;
-      CommonSnackBar.show(context: context, message: '피드 로딩 실패: $e', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 
@@ -341,17 +307,31 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     });
 
     try {
-      _currentPage += 1;
       final itemApi = ItemApi();
-      final response = await itemApi.getItems(
-        ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: _currentSortField.serverName),
-      );
+      _currentPage += 1;
+      var content =
+          (await itemApi.getItems(
+            ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: _currentSortField.serverName),
+          )).itemPage?.content ??
+          [];
 
-      final newItems = await _convertToFeedItems(response.itemPage?.content ?? []);
+      // 끝에 도달하면 처음으로 되감아 끊김 없이 순환(또돌이표)
+      if (content.isEmpty) {
+        _currentPage = 0;
+        content =
+            (await itemApi.getItems(
+              ItemRequest(pageNumber: _currentPage, pageSize: _pageSize, sortField: _currentSortField.serverName),
+            )).itemPage?.content ??
+            [];
+      }
+
+      final newItems = await _convertToFeedItems(content);
 
       setState(() {
         _feedItems.addAll(newItems);
-        _hasMoreItems = !(response.itemPage?.content.isEmpty ?? true);
+        _scheduleAdsForNewItems();
+        // 리셋 후에도 비어 있으면 전체 물품이 0개 → 순환할 게 없으므로 중단
+        _hasMoreItems = content.isNotEmpty;
         _isLoadingMore = false;
       });
     } catch (e) {
@@ -359,40 +339,47 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         _isLoadingMore = false;
       });
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '추가 피드 로딩 실패: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }
 
   // ─── 광고 삽입 로직 ─────────────────────────────────────────────
-  // 처음 3개는 광고 없음, 이후 매 3슬롯마다 [아이템, 아이템, 광고] 패턴
-  static const int _adFreeCount = 3; // 초반 광고 없는 아이템 수
-  static const int _adInterval = 3; // 아이템 2개 + 광고 1개 = 3슬롯
+  // 처음 5개는 광고 없음, 이후 8~11개마다 광고 1개 (랜덤 간격)
+  static const int _adFreeCount = 5;
+  static const int _adMinInterval = 8;
+  static const int _adMaxInterval = 11;
 
-  /// 실제 피드 아이템 수를 기준으로 광고 포함 가상 총 슬롯 수 계산
-  int get _virtualItemCount {
-    final count = _feedItems.length;
-    if (count <= _adFreeCount) return count;
-    final remaining = count - _adFreeCount;
-    final fullGroups = remaining ~/ (_adInterval - 1); // 아이템 2개씩 묶음
-    final leftover = remaining % (_adInterval - 1);
-    return _adFreeCount + fullGroups * _adInterval + leftover;
-  }
+  final Set<int> _adVirtualIndices = {}; // O(1) 광고 슬롯 조회용
+  final List<int> _adVirtualIndicesSorted = []; // adsBefore 계산을 위한 정렬 리스트
+  int _nextAdAfterFeedIndex = _adFreeCount; // 다음 광고를 배치할 실제 피드 아이템 인덱스
+  final Random _random = Random();
+
+  /// 광고 포함 가상 총 슬롯 수
+  int get _virtualItemCount => _feedItems.length + _adVirtualIndices.length;
 
   /// 해당 가상 인덱스가 광고 슬롯인지 여부
-  bool _isAdAtVirtualIndex(int vi) {
-    if (vi < _adFreeCount) return false;
-    final offset = vi - _adFreeCount;
-    return offset % _adInterval == _adInterval - 1; // 매 3번째 슬롯 (index 2, 5, 8...)
-  }
+  bool _isAdAtVirtualIndex(int vi) => _adVirtualIndices.contains(vi);
 
   /// 가상 인덱스 → 실제 피드 아이템 인덱스 변환 (광고 슬롯에서 호출 금지)
   int _feedIndexAtVirtualIndex(int vi) {
-    if (vi < _adFreeCount) return vi;
-    final offset = vi - _adFreeCount;
-    final group = offset ~/ _adInterval;
-    final posInGroup = offset % _adInterval;
-    return _adFreeCount + group * (_adInterval - 1) + posInGroup;
+    int adsBefore = 0;
+    for (final ai in _adVirtualIndicesSorted) {
+      if (ai > vi) break;
+      adsBefore++;
+    }
+    return vi - adsBefore;
+  }
+
+  /// 새 피드 아이템이 추가된 후 광고 슬롯 위치를 랜덤으로 스케줄링.
+  /// _feedItems 갱신 직후 setState 내에서 호출해야 함.
+  void _scheduleAdsForNewItems() {
+    while (_nextAdAfterFeedIndex < _feedItems.length) {
+      final vi = _nextAdAfterFeedIndex + _adVirtualIndices.length;
+      _adVirtualIndices.add(vi);
+      _adVirtualIndicesSorted.add(vi); // 오름차순 보장 (vi는 단조 증가)
+      _nextAdAfterFeedIndex += _adMinInterval + _random.nextInt(_adMaxInterval - _adMinInterval + 1);
+    }
   }
   // ────────────────────────────────────────────────────────────────
 
@@ -453,33 +440,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     return feedItems;
   }
 
-  /// 내 카드(물품) 목록 로드
-  Future<void> _loadMyCards() async {
-    try {
-      final itemApi = ItemApi();
-      final response = await itemApi.getMyItems(
-        ItemRequest(pageNumber: 0, pageSize: 10, itemStatus: ItemStatus.available.serverName),
-      );
-
-      if (!mounted) return;
-
-      final myItems = response.itemPage?.content ?? [];
-      setState(() {
-        _myCards = myItems;
-        // 내 물건 개수에 따라 블러 상태 업데이트
-        _isBlurShown = myItems.isEmpty;
-      });
-
-      debugPrint('내 카드 로딩 완료: ${myItems.length}개, 블러 표시: ${myItems.isEmpty}');
-    } catch (e) {
-      debugPrint('내 카드 로딩 실패: $e');
-      // 테스트용 더미 데이터
-      setState(() {
-        // FIXME : 테스트용더미데이텅
-      });
-    }
-  }
-
   /// 카드 드롭 핸들러 (거래 요청) - 요청하기 화면으로 이동
   void _handleCardDrop(String cardId) async {
     final feedItem = _feedItems[_currentFeedIndex];
@@ -518,7 +478,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     } catch (e) {
       if (!mounted) return;
       debugPrint('거래 요청 확인 오류: $e');
-      CommonSnackBar.show(context: context, message: '교환 요청 확인에 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 
@@ -526,10 +486,30 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
-    }
+    final myItemsAsync = ref.watch(myItemsProvider);
+    final myCards = myItemsAsync.value?.available ?? const <Item>[];
+    // 최초 로드 전(value==null)에는 블러 판정 보류 → 깜빡임 방지
+    final isBlurShown = myItemsAsync.hasValue && myCards.isEmpty;
 
+    // 등록 탭의 첫 물건 등록 신호를 수신해 코치마크 표시 (GlobalKey 직접 호출 대체)
+    // postFrameCallback으로 감싸 build 중 setState 경고 방지
+    ref.listen<bool>(coachMarkTriggerProvider, (prev, next) {
+      if (next == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(coachMarkTriggerProvider.notifier).consume();
+          showCoachMark();
+        });
+      }
+    });
+
+    if (_isLoading) {
+      return const HomeFeedSkeleton();
+    }
+    return _buildContent(myCards: myCards, isBlurShown: isBlurShown);
+  }
+
+  Widget _buildContent({required List<Item> myCards, required bool isBlurShown}) {
     // 피드 아이템이 없을 때 메시지 표시
     if (_feedItems.isEmpty) {
       return Center(
@@ -538,13 +518,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           children: [
             Text('물품이 없습니다.', style: CustomTextStyles.h3),
             const SizedBox(height: 16),
-            Material(
-              color: AppColors.primaryYellow,
-              borderRadius: BorderRadius.circular(4.r),
-              child: InkWell(
-                onTap: _loadInitialItems,
-                highlightColor: darkenBlend(AppColors.primaryYellow),
-                splashColor: darkenBlend(AppColors.primaryYellow).withValues(alpha: 0.3),
+            AppPressable(
+              onTap: _loadInitialItems,
+              scaleDown: AppPressable.scaleButton,
+              enableRipple: false,
+              child: Material(
+                color: AppColors.primaryYellow,
                 borderRadius: BorderRadius.circular(4.r),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -571,11 +550,11 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               scrollDirection: Axis.vertical,
               controller: _pageController,
               // 블러가 활성화된 경우 스와이프(스크롤) 동작을 비활성화해 첫 화면 고정
-              physics: _isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
+              physics: isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
               itemCount: _virtualItemCount + (_hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 // 블러가 켜져 있으면 페이지 변경 자체가 발생하지 않으므로, 여기서는 블러 OFF 상태만 처리
-                if (!_isBlurShown) {
+                if (!isBlurShown) {
                   setState(() {
                     _currentVirtualIndex = index;
                     // 광고 슬롯이 아닐 때만 현재 피드 인덱스 갱신
@@ -590,7 +569,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               itemBuilder: (context, index) {
                 // 로딩 인디케이터 (맨 끝)
                 if (index >= _virtualItemCount) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+                  return const Center(child: CommonLoadingIndicator());
                 }
                 // 광고 슬롯
                 if (_isAdAtVirtualIndex(index)) {
@@ -598,9 +577,12 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                 }
                 // 일반 피드 아이템
                 final feedIndex = _feedIndexAtVirtualIndex(index);
+                final feedItem = _feedItems[feedIndex];
                 return HomeFeedItemWidget(
-                  item: _feedItems[feedIndex],
-                  showBlur: _isBlurShown,
+                  // 순환 시 같은 itemUuid가 중복되므로 위치(feedIndex)까지 포함해 키 유일성 보장
+                  key: ValueKey('${feedItem.itemUuid ?? feedItem.id}_$feedIndex'),
+                  item: feedItem,
+                  showBlur: isBlurShown,
                   // AI 추천 결과를 HomeTabScreen으로 전달
                   onAiRecommend: _onAiRecommend,
                 );
@@ -610,64 +592,13 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         ),
 
         // 알림 아이콘 및 메뉴 버튼 - 광고 슬롯에서는 숨김
-        if (!_isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
+        if (!isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
           Positioned(
             right: 16.w,
             top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox.square(
-                  dimension: 32.w,
-                  child: OverflowBox(
-                    maxWidth: 56.w,
-                    maxHeight: 56.w,
-                    child: Material(
-                      color: AppColors.transparent,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkResponse(
-                        onTap: () async {
-                          debugPrint(
-                            'HomeTab: share button tapped (index=$_currentFeedIndex, total=${_feedItems.length})',
-                          );
-                          if (_feedItems.isEmpty || _currentFeedIndex >= _feedItems.length) return;
-                          final item = _feedItems[_currentFeedIndex];
-                          final itemId = item.itemUuid;
-                          if (itemId == null) {
-                            debugPrint('HomeTab: share aborted - itemId is null');
-                            return;
-                          }
-                          debugPrint('HomeTab: sharing itemId=$itemId');
-                          try {
-                            // iPad/popover용 anchor(sharePositionOrigin)를 제공
-                            final RenderBox box = context.findRenderObject() as RenderBox;
-                            final Rect origin = box.localToGlobal(Offset.zero) & box.size;
-                            debugPrint('HomeTab: share origin=$origin');
-                            await shareItem(itemId: itemId, sharePositionOrigin: origin);
-                            debugPrint('HomeTab: share completed for itemId=$itemId');
-                          } catch (e, st) {
-                            debugPrint('HomeTab: share failed for itemId=$itemId - $e\n$st');
-                            if (mounted) {
-                              CommonSnackBar.show(context: context, message: '공유에 실패했습니다.', type: SnackBarType.error);
-                            }
-                          }
-                        },
-                        radius: 18.w,
-                        customBorder: const CircleBorder(),
-                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                        child: SizedBox.square(
-                          dimension: 56.w,
-                          child: Center(
-                            child: Icon(AppIcons.share, size: 30.w, color: AppColors.textColorWhite),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12.w),
                 SizedBox.square(
                   dimension: 32.w,
                   child: OverflowBox(
@@ -720,16 +651,18 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             ),
           ),
 
-        // 하단 고정 카드 덱 - 광고 슬롯에서는 숨김
-        if (!_isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
+        // 하단 고정 카드 덱
+        if (!isBlurShown)
           Positioned(
             left: 0,
             right: 0,
             bottom: -130.h,
             child: HomeTabCardHand(
-              cards: _myCards,
+              key: const ValueKey('home_card_hand'),
+              cards: myCards,
               onCardDrop: _handleCardDrop,
               highlightedItemIds: _aiHighlightedItemIds,
+              dragEnabled: !_isAdAtVirtualIndex(_currentVirtualIndex),
             ),
           )
         else if (!_isAdAtVirtualIndex(_currentVirtualIndex))
@@ -738,21 +671,18 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             right: 0,
             bottom: 24.h,
             child: Center(
-              child: GestureDetector(
+              child: AppPressable(
                 onTap: () async {
                   final result = await context.navigateTo<Map<String, dynamic>>(
-                    screen: ItemRegisterScreen(
-                      onClose: () {
-                        Navigator.pop(context);
-                      },
-                    ),
+                    screen: ItemRegisterScreen(onClose: () => Navigator.pop(context)),
                   );
                   if (!mounted) return;
                   if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
-                    _loadMyCards();
-                    showCoachMark();
+                    showCoachMark(); // 목록 갱신은 provider(myItemsProvider)가 자동 처리
                   }
                 },
+                scaleDown: AppPressable.scaleButton,
+                enableRipple: false,
                 child: Container(
                   width: 123.w,
                   height: 48.h,

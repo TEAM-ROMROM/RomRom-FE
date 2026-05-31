@@ -12,6 +12,9 @@ class TradeRequest {
   List<String>? itemTradeOptions;
   int pageNumber;
   int pageSize;
+  String? tradeReviewRating;
+  List<String>? tradeReviewTags;
+  String? reviewComment;
 
   TradeRequest({
     this.member,
@@ -21,6 +24,9 @@ class TradeRequest {
     this.itemTradeOptions,
     this.pageNumber = 0,
     this.pageSize = 10,
+    this.tradeReviewRating,
+    this.tradeReviewTags,
+    this.reviewComment,
   });
 
   // API 전송을 위한 setMember 메서드 (백엔드 패턴 따라)

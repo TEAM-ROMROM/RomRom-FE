@@ -2,33 +2,43 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/requests/notification_history_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
+import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
+import 'package:romrom_fe/widgets/common/app_skeleton.dart';
+import 'package:romrom_fe/models/app_motion.dart';
+import 'package:romrom_fe/widgets/skeletons/notification_skeleton.dart';
 
 /// 알림 화면
-class NotificationScreen extends StatefulWidget {
+class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
 
   @override
-  State<NotificationScreen> createState() => _NotificationScreenState();
+  ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen>
+class _NotificationScreenState extends ConsumerState<NotificationScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
 
@@ -49,12 +59,6 @@ class _NotificationScreenState extends State<NotificationScreen>
   final List<NotificationItemData> _activityNotifications = [];
   final List<NotificationItemData> _romromNotifications = [];
 
-  // 알림 타입별 음소거 상태 (true = 알림 꺼짐)
-  final Map<NotificationType, bool> _mutedNotificationTypes = {};
-
-  // API 요청 진행 중인 알림 타입 추적 (중복 클릭 방지)
-  final Set<NotificationType> _pendingMuteRequests = {};
-
   // 시스템 설정 복귀 후 처리할 대기 중인 알림 타입
   NotificationType? _pendingNotificationEnableType;
 
@@ -65,29 +69,30 @@ class _NotificationScreenState extends State<NotificationScreen>
     _scrollController.addListener(_scrollListener);
 
     // 토글 애니메이션 컨트롤러 초기화
-    _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this);
     _toggleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
     _loadNotifications();
     _loadNotificationSettings();
   }
 
-  /// 알림 설정 상태 로드 (음소거 여부)
+  /// 알림 설정 상태 로드 — notificationSettingProvider에 seed(force: false).
+  /// notification_settings_screen이 force:true로 최신화하므로, 여기선 미시드 상태일 때만 적용.
   Future<void> _loadNotificationSettings() async {
     try {
       final response = await MemberApi().getMemberInfo();
       final member = response.member;
       if (member != null && mounted) {
-        setState(() {
-          // false면 음소거(muted) 상태
-          _mutedNotificationTypes[NotificationType.tradeRequestReceived] = !(member.isTradeNotificationAgreed ?? true);
-          _mutedNotificationTypes[NotificationType.chatMessageReceived] = !(member.isChatNotificationAgreed ?? true);
-          _mutedNotificationTypes[NotificationType.itemLiked] = !(member.isActivityNotificationAgreed ?? true);
-          _mutedNotificationTypes[NotificationType.systemNotice] = !(member.isContentNotificationAgreed ?? true);
-        });
+        ref.read(notificationSettingProvider.notifier).seed({
+          NotificationSettingType.marketing: member.isMarketingInfoAgreed ?? false,
+          NotificationSettingType.activity: member.isActivityNotificationAgreed ?? false,
+          NotificationSettingType.chat: member.isChatNotificationAgreed ?? false,
+          NotificationSettingType.content: member.isContentNotificationAgreed ?? false,
+          NotificationSettingType.transaction: member.isTradeNotificationAgreed ?? false,
+        }, force: false);
       }
     } catch (e) {
       debugPrint('알림 설정 로드 실패: $e');
@@ -123,26 +128,22 @@ class _NotificationScreenState extends State<NotificationScreen>
     final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
     if (!permissionGranted) return; // 거부 시 UI 변경 없음
 
-    // 권한 허용됨 → 백엔드 업데이트 후 UI 반영
-    final MemberApi api = MemberApi();
-    try {
-      switch (type) {
-        case NotificationType.systemNotice:
-          await api.updateNotificationSetting(isMarketingInfoAgreed: true, isContentNotificationAgreed: true);
-          break;
-        case NotificationType.chatMessageReceived:
-          await api.updateNotificationSetting(isChatNotificationAgreed: true);
-          break;
-        case NotificationType.itemLiked:
-          await api.updateNotificationSetting(isActivityNotificationAgreed: true);
-          break;
-        case NotificationType.tradeRequestReceived:
-          await api.updateNotificationSetting(isTradeNotificationAgreed: true);
-          break;
-      }
-      if (mounted) setState(() => _mutedNotificationTypes[type] = false);
-    } catch (e) {
-      debugPrint('알림 설정 변경 실패: $e');
+    // 권한 허용됨 → provider 경유 업데이트
+    final notifier = ref.read(notificationSettingProvider.notifier);
+    switch (type) {
+      case NotificationType.systemNotice:
+        await notifier.setEnabled(NotificationSettingType.content, true);
+        await notifier.setEnabled(NotificationSettingType.marketing, true);
+        break;
+      case NotificationType.chatMessageReceived:
+        await notifier.setEnabled(NotificationSettingType.chat, true);
+        break;
+      case NotificationType.itemLiked:
+        await notifier.setEnabled(NotificationSettingType.activity, true);
+        break;
+      case NotificationType.tradeRequestReceived:
+        await notifier.setEnabled(NotificationSettingType.transaction, true);
+        break;
     }
   }
 
@@ -215,7 +216,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     } catch (e) {
       debugPrint('알림 데이터 로드 실패: $e');
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '알림 데이터를 불러오는 데 실패했습니다.', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) {
@@ -239,7 +240,8 @@ class _NotificationScreenState extends State<NotificationScreen>
   /// 설정 화면으로 이동
   void _onSettingsTap() async {
     await context.navigateTo(screen: const NotificationSettingsScreen());
-    _loadNotificationSettings(); // 복귀 후 설정 재로드
+    // 설정 화면은 force:true로 시드하므로 복귀 후 provider가 최신 상태.
+    // 별도 재로드 불필요.
   }
 
   /// 설정 화면으로 이동
@@ -254,19 +256,38 @@ class _NotificationScreenState extends State<NotificationScreen>
       CommonSnackBar.show(context: context, message: '모든 알림이 삭제되었습니다.', type: SnackBarType.success);
     } catch (e) {
       if (!mounted) return;
-      CommonSnackBar.show(context: context, message: '알림 삭제에 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
+  }
+
+  /// NotificationType → 대응하는 NotificationSettingType 목록
+  List<NotificationSettingType> _settingTypesFor(NotificationType type) {
+    switch (type) {
+      case NotificationType.tradeRequestReceived:
+        return [NotificationSettingType.transaction];
+      case NotificationType.chatMessageReceived:
+        return [NotificationSettingType.chat];
+      case NotificationType.itemLiked:
+        return [NotificationSettingType.activity];
+      case NotificationType.systemNotice:
+        // systemNotice는 content + marketing 묶음
+        return [NotificationSettingType.content, NotificationSettingType.marketing];
+    }
+  }
+
+  /// provider 상태에서 NotificationType의 muted 여부 계산
+  /// systemNotice: content 또는 marketing 중 하나라도 꺼져 있으면 muted
+  bool _isMuted(Map<NotificationSettingType, bool> settings, NotificationType type) {
+    final settingTypes = _settingTypesFor(type);
+    // 모두 enabled여야 unmuted. 하나라도 false면 muted.
+    return !settingTypes.every((t) => settings[t] ?? false);
   }
 
   /// 알림 끄기/켜기 토글
   /// 지정된 알림 유형의 현재 상태를 반전시켜 업데이트합니다.
   Future<void> _onToggleMuteNotification(NotificationType notificationType) async {
-    // 이미 해당 타입의 요청이 진행 중이면 중복 클릭 무시
-    if (_pendingMuteRequests.contains(notificationType)) return;
-
-    final MemberApi api = MemberApi();
-    final bool isMuted = _mutedNotificationTypes[notificationType] ?? false;
-    final bool newValue = isMuted; // muted=true이면 켜야 하므로 true 전송, muted=false이면 꺼야 하므로 false 전송
+    final settings = ref.read(notificationSettingProvider);
+    final bool isMuted = _isMuted(settings, notificationType);
 
     // 음소거 해제(켜기) 시도 시 시스템 권한 확인
     if (isMuted) {
@@ -289,41 +310,16 @@ class _NotificationScreenState extends State<NotificationScreen>
       }
     }
 
-    setState(() {
-      _pendingMuteRequests.add(notificationType);
-    });
+    // provider.setEnabled 경유 (optimistic + API + dedup 내장)
+    final bool newEnabled = isMuted; // muted → 켜기(true), unmuted → 끄기(false)
+    final notifier = ref.read(notificationSettingProvider.notifier);
+    final settingTypes = _settingTypesFor(notificationType);
+    for (final settingType in settingTypes) {
+      await notifier.setEnabled(settingType, newEnabled);
+    }
 
-    try {
-      switch (notificationType) {
-        case NotificationType.systemNotice:
-          await api.updateNotificationSetting(isMarketingInfoAgreed: newValue, isContentNotificationAgreed: newValue);
-          break;
-        case NotificationType.chatMessageReceived:
-          await api.updateNotificationSetting(isChatNotificationAgreed: newValue);
-          break;
-        case NotificationType.itemLiked:
-          await api.updateNotificationSetting(isActivityNotificationAgreed: newValue);
-          break;
-        case NotificationType.tradeRequestReceived:
-          await api.updateNotificationSetting(isTradeNotificationAgreed: newValue);
-          break;
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _mutedNotificationTypes[notificationType] = !isMuted;
-      });
+    if (mounted) {
       CommonSnackBar.show(context: context, message: isMuted ? '알림이 켜졌습니다.' : '알림이 꺼졌습니다.', type: SnackBarType.success);
-    } catch (e) {
-      debugPrint('알림 설정 변경 실패: $e');
-      if (!mounted) return;
-      CommonSnackBar.show(context: context, message: '알림 설정 변경에 실패했습니다.', type: SnackBarType.error);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _pendingMuteRequests.remove(notificationType);
-        });
-      }
     }
   }
 
@@ -333,6 +329,9 @@ class _NotificationScreenState extends State<NotificationScreen>
       await NotificationApi().updateNotificationsAsRead(notification.id);
     } catch (e) {
       debugPrint('알림 읽음 처리 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+      }
     }
     if (!mounted) return;
     try {
@@ -340,7 +339,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     } catch (e) {
       debugPrint('딥링크 이동 실패: $e');
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '화면 이동에 실패했습니다.', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) {
@@ -363,12 +362,15 @@ class _NotificationScreenState extends State<NotificationScreen>
       CommonSnackBar.show(context: context, message: '알림이 삭제되었습니다.', type: SnackBarType.success);
     } catch (e) {
       debugPrint('알림 삭제 실패: $e');
-      CommonSnackBar.show(context: context, message: '알림 삭제에 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // provider 공유 — notification_settings_screen과 동일한 소스
+    final settings = ref.watch(notificationSettingProvider);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(statusBarColor: AppColors.transparent),
       child: Scaffold(
@@ -405,23 +407,29 @@ class _NotificationScreenState extends State<NotificationScreen>
                     expandedExtra: 0.h, // 토글-알림목록 간격 제거
                     enableBlur: _isScrolled,
                     centerTitle: true, // 타이틀 중앙 정렬
-                    leadingWidget: GestureDetector(
+                    leadingWidget: AppPressable(
                       onTap: () => Navigator.pop(context),
+                      scaleDown: AppPressable.scaleIcon,
+                      enableRipple: false,
                       child: Icon(AppIcons.navigateBefore, size: 28.sp, color: AppColors.textColorWhite),
                     ),
                     trailingWidget: Row(
                       children: [
                         Padding(
                           padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
-                          child: GestureDetector(
+                          child: AppPressable(
                             onTap: _onDeleteAllNotificationTap,
+                            scaleDown: AppPressable.scaleIcon,
+                            enableRipple: false,
                             child: Icon(AppIcons.trash, size: 30.sp, color: AppColors.textColorWhite),
                           ),
                         ),
                         Padding(
                           padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
-                          child: GestureDetector(
+                          child: AppPressable(
                             onTap: _onSettingsTap,
+                            scaleDown: AppPressable.scaleIcon,
+                            enableRipple: false,
                             child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
                           ),
                         ),
@@ -429,7 +437,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                     ),
                   ),
                 ),
-                SliverToBoxAdapter(child: _buildNotificationList()),
+                SliverToBoxAdapter(child: _buildNotificationList(settings)),
               ],
             ),
           ),
@@ -438,49 +446,58 @@ class _NotificationScreenState extends State<NotificationScreen>
     );
   }
 
-  Widget _buildNotificationList() {
+  Widget _buildNotificationList(Map<NotificationSettingType, bool> settings) {
     final notifications = _isRightSelected ? _romromNotifications : _activityNotifications;
 
     if (_isLoading) {
       return SizedBox(
         height: 300.h,
-        child: const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow, strokeWidth: 2)),
+        child: const Center(child: CommonLoadingIndicator()),
       );
     }
 
     if (notifications.isEmpty) {
-      return Container(
-        height: 300.h,
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Center(
-          child: Text(
-            _isRightSelected ? '롬롬 소식이 없습니다' : '알림이 없습니다',
-            style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+      return AppFadeSlideIn(
+        child: Container(
+          height: 300.h,
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Center(
+            child: Text(
+              _isRightSelected ? '롬롬 소식이 없습니다' : '알림이 없습니다',
+              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+            ),
           ),
         ),
       );
     }
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(0.w, 4.h, 0.w, 0),
-      child: MediaQuery.removePadding(
-        context: context,
-        removeTop: true,
-        child: ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: notifications.length,
-          separatorBuilder: (_, _) => SizedBox(height: 0.h),
-          itemBuilder: (context, index) {
-            final notification = notifications[index];
-            return NotificationItemWidget(
-              data: notification,
-              isMuted: _mutedNotificationTypes[notification.type] ?? false,
-              onTap: () => _onNotificationTap(notification),
-              onMuteTap: () => _onToggleMuteNotification(notification.type),
-              onDeleteTap: () => _onDeleteNotification(notification.id),
-            );
-          },
+    return AppSkeleton(
+      isLoading: _isLoading,
+      skeleton: const NotificationListSkeleton(),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(0.w, 4.h, 0.w, 0),
+        child: MediaQuery.removePadding(
+          context: context,
+          removeTop: true,
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: notifications.length,
+            separatorBuilder: (_, index) => const SizedBox.shrink(),
+            itemBuilder: (context, index) {
+              final notification = notifications[index];
+              return AppFadeSlideIn(
+                delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
+                child: NotificationItemWidget(
+                  data: notification,
+                  isMuted: _isMuted(settings, notification.type),
+                  onTap: () => _onNotificationTap(notification),
+                  onMuteTap: () => _onToggleMuteNotification(notification.type),
+                  onDeleteTap: () => _onDeleteNotification(notification.id),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

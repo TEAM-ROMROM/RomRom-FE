@@ -6,6 +6,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 
@@ -51,9 +52,10 @@ class NotificationItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppPressable(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      scaleDown: AppPressable.scaleCard,
+      enableRipple: false,
       child: Container(
         color: data.isRead ? AppColors.primaryBlack : AppColors.notificationUnReadIndicator, // 읽은 알림과 안 읽은 알림 구분
         padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 24.w),

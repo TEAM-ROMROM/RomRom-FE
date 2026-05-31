@@ -15,7 +15,7 @@ class ItemApi {
   /// 물품 등록 API
   /// `POST /api/item/post`
   Future<ItemResponse> postItem(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/post';
+    final String url = '${AppUrls.baseUrl}/api/item/post';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
@@ -50,6 +50,7 @@ class ItemApi {
       url: url,
       fields: fields,
       isAuthRequired: true,
+      timeout: const Duration(seconds: 60),
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
         debugPrint('물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}');
@@ -62,7 +63,7 @@ class ItemApi {
   /// 좋아요 등록/취소 API
   /// `POST /api/item/like/post`
   Future<ItemResponse> postLike(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/like/post';
+    final String url = '${AppUrls.baseUrl}/api/item/like/post';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {'itemId': request.itemId};
@@ -83,7 +84,7 @@ class ItemApi {
   /// 물품 리스트 조회 API
   /// `POST /api/item/list/get`
   Future<ItemResponse> getItems(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/list/get';
+    final String url = '${AppUrls.baseUrl}/api/item/list/get';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
@@ -111,7 +112,7 @@ class ItemApi {
   /// 물품 상세 조회 API
   /// `POST /api/item/get`
   Future<ItemResponse> getItemDetail(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/get';
+    final String url = '${AppUrls.baseUrl}/api/item/get';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {'itemId': request.itemId};
@@ -129,10 +130,31 @@ class ItemApi {
     return itemResponse;
   }
 
+  /// memberId 기반 회원 등록 물품 조회 API
+  /// `POST /api/item/get/member`
+  Future<ItemResponse> getMemberItems(ItemRequest request) async {
+    final String url = '${AppUrls.baseUrl}/api/item/get/member';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {'memberId': request.memberId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('memberId 기반 회원 등록 물품 조회 성공: ${itemResponse.item?.latitude}, ${itemResponse.item?.longitude}');
+      },
+    );
+
+    return itemResponse;
+  }
+
   /// 내 물품 목록 조회 API
   /// `POST /api/item/get/my`
   Future<ItemResponse> getMyItems(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/get/my';
+    final String url = '${AppUrls.baseUrl}/api/item/get/my';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
@@ -160,7 +182,7 @@ class ItemApi {
   /// AI 가격 예측 API
   /// `POST /api/item/price/predict`
   Future<int> pricePredict(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/price/predict';
+    final String url = '${AppUrls.baseUrl}/api/item/price/predict';
     int predictedPrice = 0;
 
     final Map<String, dynamic> fields = {
@@ -192,7 +214,7 @@ class ItemApi {
   /// 물품 삭제 API
   /// `POST /api/item/delete`
   Future<void> deleteItem(String itemId) async {
-    const String url = '${AppUrls.baseUrl}/api/item/delete';
+    final String url = '${AppUrls.baseUrl}/api/item/delete';
 
     final Map<String, dynamic> fields = {'itemId': itemId};
 
@@ -209,7 +231,7 @@ class ItemApi {
   /// 물품 수정 API
   /// `POST /api/item/edit`
   Future<void> updateItem(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/edit';
+    final String url = '${AppUrls.baseUrl}/api/item/edit';
 
     final Map<String, dynamic> fields = {
       'itemId': request.itemId,
@@ -244,6 +266,7 @@ class ItemApi {
       url: url,
       fields: fields,
       isAuthRequired: true,
+      timeout: const Duration(seconds: 60),
       onSuccess: (responseData) {
         debugPrint('물품 수정 성공: ${request.itemName}');
       },
@@ -253,7 +276,7 @@ class ItemApi {
   /// 물품 거래 상태 변경 API
   /// `POST /api/item/status/update`
   Future<ItemResponse> updateItemStatus(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/status/update';
+    final String url = '${AppUrls.baseUrl}/api/item/status/update';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {'itemId': request.itemId, 'itemStatus': request.itemStatus};
@@ -274,7 +297,7 @@ class ItemApi {
   /// 좋아요 물품 목록 조회
   /// `POST /api/item/like/get`
   Future<ItemResponse> getLikeList(ItemRequest request) async {
-    const String url = '${AppUrls.baseUrl}/api/item/like/get';
+    final String url = '${AppUrls.baseUrl}/api/item/like/get';
     late ItemResponse itemResponse;
 
     final Map<String, dynamic> fields = {
@@ -293,5 +316,80 @@ class ItemApi {
     );
 
     return itemResponse;
+  }
+
+  /// 물품 숨김 API
+  /// `POST /api/item/hide/post`
+  Future<void> hideItem(String itemId) async {
+    final String url = '${AppUrls.baseUrl}/api/item/hide/post';
+
+    final Map<String, dynamic> fields = {'itemId': itemId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('물품 숨김 성공: $itemId');
+      },
+    );
+  }
+
+  /// 물품 숨김 해제 API
+  /// `POST /api/item/hide/delete`
+  Future<void> unhideItem(String itemId) async {
+    final String url = '${AppUrls.baseUrl}/api/item/hide/delete';
+
+    final Map<String, dynamic> fields = {'itemId': itemId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('물품 숨김 해제 성공: $itemId');
+      },
+    );
+  }
+
+  /// 비인증 물품 상세 조회 API (인증 불필요)
+  /// `GET /api/item/public/get`
+  Future<ItemResponse> getPublicItemDetail(String itemId) async {
+    final String url = '${AppUrls.baseUrl}/api/item/public/get?itemId=$itemId';
+    late ItemResponse itemResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {},
+      isAuthRequired: false,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('비인증 물품 상세 조회 성공: $itemId');
+      },
+    );
+
+    return itemResponse;
+  }
+
+  /// 물품 카테고리 자동 매칭 API
+  /// `POST /api/item/category/match`
+  Future<List<String>> matchItemCategories(String itemName) async {
+    final String url = '${AppUrls.baseUrl}/api/item/category/match';
+    List<String> recommendedCategories = [];
+
+    final Map<String, dynamic> fields = {'itemName': itemName};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        final response = ItemResponse.fromJson(responseData);
+        recommendedCategories = response.recommendedCategories ?? [];
+        debugPrint('카테고리 자동 매칭 성공: $recommendedCategories');
+      },
+    );
+
+    return recommendedCategories;
   }
 }

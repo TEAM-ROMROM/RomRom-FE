@@ -1,36 +1,41 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/chat_room_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
-import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
+import 'package:romrom_fe/providers/chat_rooms_provider.dart';
+import 'package:romrom_fe/states/chat_rooms_state.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
-import 'package:romrom_fe/services/apis/chat_api.dart';
+import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/skeletons/chat_room_list_skeleton.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
-enum LoadMode { initial, paging, refresh }
-
 /// 채팅 탭 화면
-class ChatTabScreen extends StatefulWidget {
+class ChatTabScreen extends ConsumerStatefulWidget {
   const ChatTabScreen({super.key});
 
   @override
-  State<ChatTabScreen> createState() => _ChatTabScreenState();
+  ConsumerState<ChatTabScreen> createState() => _ChatTabScreenState();
 }
 
-class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateMixin {
+class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  final ChatApi _chatApi = ChatApi();
+  bool _isScrolled = false;
+  Timer? _scrollTimer;
   final ChatWebSocketService _wsService = ChatWebSocketService();
 
   // 토글 상태 (0: 전체, 1: 보낸 요청, 2: 받은 요청)
@@ -40,48 +45,34 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
   late AnimationController _toggleAnimationController;
   late Animation<double> _toggleAnimation;
 
-  // 채팅방 목록
-  final List<ChatRoomDetailDto> _chatRoomsDetail = [];
-
-  // 페이지네이션 상태
-  bool _initialLoading = false; // 진입/리프레시 스켈레톤용
-  bool _pagingLoading = false; // 스크롤 바닥 로딩용
-  bool _prefetchLoading = false; // 초기 자동 프리패치(추가 페이지 당기는 중) 표시용
-
-  bool get _isAnyLoading => _initialLoading || _pagingLoading || _prefetchLoading;
-
-  bool _hasMore = true;
-  int _currentPage = 0;
-  // Slice 기반 페이지네이션: 한 번에 10개씩 요청
-  final int _pageSize = 10;
-
+  // 페이지네이션 로딩 표시용
+  bool _pagingLoading = false;
+  bool _prefetchLoading = false;
   int _autoPrefetchCount = 0;
   static const int _autoPrefetchMax = 5;
+
+  // 중복 요청 방지
+  final Set<String> _pendingRequests = {};
 
   // WebSocket 구독 관리
   final Map<String, StreamSubscription<ChatMessage>> _roomSubscriptions = {};
   String? _myMemberId;
 
+  // 재연결 이벤트 구독
+  StreamSubscription<void>? _reconnectSubscription;
+
   @override
   void initState() {
     super.initState();
 
-    // 애니메이션 컨트롤러 (0.0 ~ 2.0)
     _toggleAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
-      upperBound: 2.0, // 3개 탭이므로 2.0
+      upperBound: 2.0,
     );
-    // 컨트롤러를 직접 사용 (CurvedAnimation은 0~1 범위만 지원)
     _toggleAnimation = _toggleAnimationController;
 
-    // 현재 사용자 ID 가져오기
     _initializeWebSocket();
-
-    // API 호출로 채팅방 목록 로드
-    _loadChatRooms(mode: LoadMode.initial);
-
-    // 무한 스크롤 리스너 추가
     _scrollController.addListener(_onScroll);
   }
 
@@ -94,83 +85,38 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
         return;
       }
 
-      // WebSocket 연결
       await _wsService.connect();
 
-      // 채팅방 목록이 로드되면 각 채팅방을 구독
-      // _loadChatRooms 완료 후 _subscribeToAllRooms 호출
+      // 재연결 시 기존 구독 맵 초기화 후 목록 갱신 + 재구독
+      // reload()만 호출하면 _roomSubscriptions가 남아 새 세션 방 구독을 건너뛰므로 _triggerReload() 사용
+      _reconnectSubscription = _wsService.onReconnected.listen((_) {
+        if (!mounted) return;
+        _triggerReload();
+      });
     } catch (e) {
       debugPrint('채팅방 목록 WebSocket 초기화 실패: $e');
     }
   }
 
   /// 모든 채팅방에 대해 WebSocket 구독
-  void _subscribeToAllRooms() {
+  void _subscribeToRooms(List<ChatRoomDetailDto> rooms) {
     if (_myMemberId == null) return;
 
-    for (final room in _chatRoomsDetail) {
+    for (final room in rooms) {
       if (room.chatRoomId == null) continue;
-
-      // 이미 구독 중이면 스킵
       if (_roomSubscriptions.containsKey(room.chatRoomId)) continue;
 
       final subscription = _wsService.subscribeToChatRoom(room.chatRoomId!).listen((message) {
-        _onMessageReceived(message);
+        if (!mounted) return;
+        ref.read(chatRoomsProvider.notifier).onMessageReceived(message: message, myMemberId: _myMemberId);
       });
 
       _roomSubscriptions[room.chatRoomId!] = subscription;
     }
   }
 
-  /// 메시지 수신 시 채팅방 목록 업데이트
-  void _onMessageReceived(ChatMessage message) {
-    if (!mounted || message.chatRoomId == null) return;
-
-    final roomId = message.chatRoomId!;
-    final roomIndex = _chatRoomsDetail.indexWhere((room) => room.chatRoomId == roomId);
-
-    if (roomIndex == -1) {
-      // 채팅방이 목록에 없으면 무시 (또는 새로고침)
-      debugPrint('채팅방 목록에 없는 메시지 수신: $roomId');
-      return;
-    }
-
-    setState(() {
-      final room = _chatRoomsDetail[roomIndex];
-
-      // 최근 메시지 정보 업데이트
-      final updatedRoom = ChatRoomDetailDto(
-        chatRoomId: room.chatRoomId,
-        targetMember: room.targetMember,
-        targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
-        targetItemImageUrl: room.targetItemImageUrl,
-        lastMessageContent: message.content ?? '',
-        lastMessageTime: message.createdDate ?? DateTime.now(),
-        unreadCount: _calculateUnreadCount(room, message),
-        chatRoomType: room.chatRoomType,
-      );
-
-      // 목록에서 제거 후 맨 앞에 추가 (최신 메시지가 있는 채팅방이 위로)
-      _chatRoomsDetail.removeAt(roomIndex);
-      _chatRoomsDetail.insert(0, updatedRoom);
-    });
-  }
-
-  /// 읽지 않은 메시지 수 계산
-  int _calculateUnreadCount(ChatRoomDetailDto room, ChatMessage message) {
-    // 내가 보낸 메시지면 unreadCount 증가하지 않음
-    if (message.senderId == _myMemberId) {
-      return room.unreadCount ?? 0;
-    }
-
-    // 상대방이 보낸 메시지면 unreadCount 증가
-    return (room.unreadCount ?? 0) + 1;
-  }
-
   void _onTabChanged(int index) {
-    setState(() {
-      _selectedTabIndex = index;
-    });
+    setState(() => _selectedTabIndex = index);
     _toggleAnimationController.animateTo(
       index.toDouble(),
       duration: const Duration(milliseconds: 300),
@@ -178,223 +124,242 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
     );
   }
 
-  Future<void> _loadChatRooms({LoadMode mode = LoadMode.paging}) async {
-    final isRefresh = (mode == LoadMode.refresh);
-    final isPaging = (mode == LoadMode.paging);
+  /// 무한 스크롤 트리거
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 1) {
+      _triggerLoadMore();
+    }
 
-    if (_isAnyLoading || (!_hasMore && !isRefresh)) return;
+    _scrollTimer?.cancel();
+    _scrollTimer = Timer(const Duration(milliseconds: 100), () {});
 
-    setState(() {
-      if (isPaging) {
-        _pagingLoading = true;
-      } else {
-        _initialLoading = true;
-      }
-
-      if (isRefresh) {
-        _currentPage = 0;
-        _chatRoomsDetail.clear();
-        _hasMore = true;
-        _autoPrefetchCount = 0;
-      }
-    });
-
-    try {
-      if (isRefresh) {
-        final previous = Map<String, StreamSubscription<ChatMessage>>.from(_roomSubscriptions);
-        _roomSubscriptions.clear();
-        await Future.wait(
-          previous.entries.map((e) async {
-            await e.value.cancel();
-            _wsService.unsubscribeFromChatRoom(e.key);
-          }),
-        );
-      }
-
-      // initial/refresh면 스크롤 가능해질 때까지 프리패치
-      while (true) {
-        final paged = await _chatApi.getChatRooms(pageNumber: _currentPage, pageSize: _pageSize);
-        final visibleRooms = paged.content.where((r) => r.blocked != true).toList();
-
-        if (!mounted) return;
-
-        setState(() {
-          _chatRoomsDetail.addAll(visibleRooms);
-          _hasMore = !paged.last;
-          if (_hasMore) _currentPage++;
-        });
-
-        _subscribeToAllRooms();
-
-        // paging는 1페이지 로드 후 종료
-        if (isPaging) break;
-
-        // initial/refresh에서만 "스크롤 가능해질 때까지" 자동 프리패치
-        if (!_hasMore) break;
-        if (_autoPrefetchCount >= _autoPrefetchMax) break;
-
-        // 레이아웃 이후에 스크롤 가능 여부 판단
-        await SchedulerBinding.instance.endOfFrame;
-
-        if (!_scrollController.hasClients) {
-          _autoPrefetchCount++;
-          continue;
-        }
-
-        final isScrollable = _scrollController.position.maxScrollExtent > 0;
-        if (isScrollable) break;
-
-        // 다음 페이지를 더 당길 거라면, 즉시 prefetch 로딩 표시 ON
-        if (!_prefetchLoading) {
-          setState(() => _prefetchLoading = true);
-        }
-
-        _autoPrefetchCount++;
-      }
-    } catch (e) {
-      debugPrint('채팅방 목록 로드 실패: $e');
-      if (!mounted) return;
-      CommonSnackBar.show(context: context, type: SnackBarType.error, message: '채팅방을 불러오는 중 오류가 발생했습니다');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _initialLoading = false;
-          _pagingLoading = false;
-          _prefetchLoading = false;
-        });
-      }
+    if (_scrollController.offset > 50 && !_isScrolled) {
+      setState(() => _isScrolled = true);
+    } else if (_scrollController.offset <= 50 && _isScrolled) {
+      setState(() => _isScrolled = false);
     }
   }
 
-  /// 무한 스크롤 리스너
-  void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 1) {
-      _loadChatRooms(mode: LoadMode.paging);
+  /// 다음 페이지 로드 (중복 방지)
+  Future<void> _triggerLoadMore() async {
+    if (_pendingRequests.contains('loadMore')) return;
+    final cur = ref.read(chatRoomsProvider).value;
+    if (cur == null || !cur.hasMore) return;
+
+    _pendingRequests.add('loadMore');
+    setState(() => _pagingLoading = true);
+    try {
+      await ref.read(chatRoomsProvider.notifier).loadMore();
+      // 새로 로드된 방들 구독
+      final updated = ref.read(chatRoomsProvider).value;
+      if (updated != null) _subscribeToRooms(updated.rooms);
+    } finally {
+      if (mounted) setState(() => _pagingLoading = false);
+      _pendingRequests.remove('loadMore');
     }
+  }
+
+  /// 새로고침 (RefreshIndicator / 재연결 콜백)
+  Future<void> _triggerReload() async {
+    if (_pendingRequests.contains('reload')) return;
+    _pendingRequests.add('reload');
+
+    // 재연결 시 기존 WS 구독 해제 후 재구독
+    final previous = Map<String, StreamSubscription<ChatMessage>>.from(_roomSubscriptions);
+    _roomSubscriptions.clear();
+    await Future.wait(
+      previous.entries.map((e) async {
+        await e.value.cancel();
+        _wsService.unsubscribeFromChatRoom(e.key);
+      }),
+    );
+
+    try {
+      await ref.read(chatRoomsProvider.notifier).reload();
+      if (!mounted) return;
+
+      // 초기 로드와 마찬가지로 스크롤 가능해질 때까지 프리패치
+      _autoPrefetchCount = 0;
+      await _autoPrefetch();
+
+      final updated = ref.read(chatRoomsProvider).value;
+      if (updated != null) _subscribeToRooms(updated.rooms);
+    } catch (e) {
+      debugPrint('채팅방 목록 새로고침 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(context: context, type: SnackBarType.error, message: '채팅방을 불러오는 중 오류가 발생했습니다');
+      }
+    } finally {
+      _pendingRequests.remove('reload');
+    }
+  }
+
+  /// 초기 로드 / 리프레시 후 스크롤 가능해질 때까지 자동 프리패치
+  Future<void> _autoPrefetch() async {
+    while (true) {
+      final cur = ref.read(chatRoomsProvider).value;
+      if (cur == null || !cur.hasMore) break;
+      if (_autoPrefetchCount >= _autoPrefetchMax) break;
+
+      await SchedulerBinding.instance.endOfFrame;
+      if (!mounted) break;
+
+      if (!_scrollController.hasClients) {
+        _autoPrefetchCount++;
+        setState(() => _prefetchLoading = true);
+        await ref.read(chatRoomsProvider.notifier).loadMore();
+        final updated = ref.read(chatRoomsProvider).value;
+        if (updated != null) _subscribeToRooms(updated.rooms);
+        continue;
+      }
+
+      final isScrollable = _scrollController.position.maxScrollExtent > 0;
+      if (isScrollable) break;
+
+      setState(() => _prefetchLoading = true);
+      _autoPrefetchCount++;
+      await ref.read(chatRoomsProvider.notifier).loadMore();
+      final updated = ref.read(chatRoomsProvider).value;
+      if (updated != null) _subscribeToRooms(updated.rooms);
+    }
+
+    if (mounted && _prefetchLoading) setState(() => _prefetchLoading = false);
   }
 
   /// 필터링된 채팅방 목록 반환
-  List<ChatRoomDetailDto> _getFilteredChatRooms() {
+  List<ChatRoomDetailDto> _getFilteredChatRooms(List<ChatRoomDetailDto> rooms) {
     switch (_selectedTabIndex) {
-      case 0: // 전체
-        return _chatRoomsDetail;
-      case 1: // 보낸 요청 (내가 tradeSender)
-        return _chatRoomsDetail.where((room) => room.chatRoomType == ChatRoomType.requested).toList();
-      case 2: // 받은 요청 (내가 tradeReceiver)
-        return _chatRoomsDetail.where((room) => room.chatRoomType == ChatRoomType.received).toList();
+      case 0:
+        return rooms;
+      case 1:
+        return rooms.where((room) => room.chatRoomType == ChatRoomType.requested).toList();
+      case 2:
+        return rooms.where((room) => room.chatRoomType == ChatRoomType.received).toList();
       default:
-        return _chatRoomsDetail;
+        return rooms;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final chatAsync = ref.watch(chatRoomsProvider);
+
+    // 최초 로드 완료 직후 WS 구독 + 자동 프리패치
+    ref.listen<AsyncValue<ChatRoomsState>>(chatRoomsProvider, (prev, next) {
+      if (prev is AsyncLoading && next is AsyncData<ChatRoomsState>) {
+        _subscribeToRooms(next.value.rooms);
+        _autoPrefetchCount = 0;
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _autoPrefetch();
+        });
+      }
+    });
+
+    final rooms = chatAsync.value?.rooms ?? const [];
+    final isInitialLoading = chatAsync is AsyncLoading && rooms.isEmpty;
+    final filteredRooms = _getFilteredChatRooms(rooms);
+
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // 정적 제목
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24.w, 32.h, 24.w, 16.h),
-                child: Text('채팅', style: CustomTextStyles.h1),
-              ),
-            ),
-
-            // 토글 스위치
-            SliverToBoxAdapter(
-              child: TripleToggleSwitch(
-                animation: _toggleAnimation,
-                selectedIndex: _selectedTabIndex,
-                onFirstTap: () => _onTabChanged(0),
-                onSecondTap: () => _onTabChanged(1),
-                onThirdTap: () => _onTabChanged(2),
-                firstText: '전체',
-                secondText: '보낸 요청',
-                thirdText: '받은 요청',
-              ),
-            ),
-
-            // 초기 로딩: 스켈레톤 표시
-            if (_initialLoading && _chatRoomsDetail.isEmpty) const ChatRoomListSkeletonSliver(itemCount: 5),
-
-            // 데이터 있을 때: 채팅방 리스트
-            if (_chatRoomsDetail.isNotEmpty)
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final chatRoomDetail = _getFilteredChatRooms()[index];
-
-                  return Column(
-                    children: [
-                      ChatRoomListItem(
-                        accountStatus: chatRoomDetail.targetMember?.accountStatus,
-                        profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
-                        memberId: chatRoomDetail.targetMember?.memberId,
-                        nickname: chatRoomDetail.targetMember?.nickname ?? '',
-                        location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
-                        timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
-                        messagePreview: chatRoomDetail.lastMessageContent ?? '',
-                        unreadCount: chatRoomDetail.unreadCount ?? 0,
-                        targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
-                        myItemImageUrl: chatRoomDetail.myItemImageUrl ?? '',
-                        isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
-                        onProfileTap: () {
-                          final targetMember = chatRoomDetail.targetMember;
-                          if (targetMember?.memberId != null) {
-                            context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
-                          }
-                        },
-                        onTap: () async {
-                          debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
-
-                          // 채팅방 입장 시 unreadCount 초기화를 위해 목록 업데이트
-                          final roomId = chatRoomDetail.chatRoomId!;
-                          final roomIndex = _chatRoomsDetail.indexWhere((r) => r.chatRoomId == roomId);
-
-                          if (roomIndex != -1) {
-                            setState(() {
-                              final room = _chatRoomsDetail[roomIndex];
-                              _chatRoomsDetail[roomIndex] = ChatRoomDetailDto(
-                                chatRoomId: room.chatRoomId,
-                                targetMember: room.targetMember,
-                                targetMemberEupMyeonDong: room.targetMemberEupMyeonDong,
-                                lastMessageContent: room.lastMessageContent,
-                                lastMessageTime: room.lastMessageTime,
-                                unreadCount: 0, // 읽음 처리
-                                chatRoomType: room.chatRoomType,
-                              );
-                            });
-                          }
-
-                          final refreshed = await Navigator.of(
-                            context,
-                          ).push<bool>(MaterialPageRoute(builder: (_) => ChatRoomScreen(chatRoomId: roomId)));
-
-                          // 엄격히 true일 때만 새로고침
-                          if (refreshed == true) {
-                            _loadChatRooms(mode: LoadMode.refresh);
-                          }
-                        },
-                      ),
-                      SizedBox(height: 8.h),
-                    ],
-                  );
-                }, childCount: _getFilteredChatRooms().length),
-              ),
-
-            // 추가 페이지 로딩: 작은 인디케이터 (무한 스크롤)
-            if ((_pagingLoading || _prefetchLoading) && _chatRoomsDetail.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20.h),
-                  child: const Center(
-                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+        top: false,
+        child: RefreshIndicator(
+          color: AppColors.primaryYellow,
+          backgroundColor: AppColors.transparent,
+          displacement: MediaQuery.of(context).padding.top + 58.h + 62.h,
+          onRefresh: _triggerReload,
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: GlassHeaderDelegate(
+                  headerTitle: '채팅',
+                  toggle: TripleToggleSwitch(
+                    animation: _toggleAnimation,
+                    selectedIndex: _selectedTabIndex,
+                    onFirstTap: () => _onTabChanged(0),
+                    onSecondTap: () => _onTabChanged(1),
+                    onThirdTap: () => _onTabChanged(2),
+                    firstText: '전체',
+                    secondText: '보낸 요청',
+                    thirdText: '받은 요청',
                   ),
+                  statusBarHeight: MediaQuery.of(context).padding.top,
+                  toolbarHeight: 58.h,
+                  toggleHeight: 62.h,
+                  expandedExtra: 16.h,
+                  enableBlur: _isScrolled,
                 ),
               ),
-          ],
+
+              // 초기 로딩: 스켈레톤 표시
+              if (isInitialLoading) const ChatRoomListSkeletonSliver(itemCount: 5),
+
+              // 데이터 있을 때: 채팅방 리스트
+              if (rooms.isNotEmpty)
+                SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final chatRoomDetail = filteredRooms[index];
+
+                    return AppFadeSlideIn(
+                      delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
+                      child: Column(
+                        children: [
+                          ChatRoomListItem(
+                            accountStatus: chatRoomDetail.targetMember?.accountStatus,
+                            profileImageUrl: chatRoomDetail.targetMember?.profileUrl ?? '',
+                            memberId: chatRoomDetail.targetMember?.memberId,
+                            nickname: chatRoomDetail.targetMember?.nickname ?? '',
+                            location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
+                            timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
+                            messagePreview: chatRoomDetail.lastMessageContent ?? '',
+                            unreadCount: chatRoomDetail.unreadCount ?? 0,
+                            targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
+                            myItemImageUrl: chatRoomDetail.myItemImageUrl,
+                            isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
+                            onProfileTap: () {
+                              final targetMember = chatRoomDetail.targetMember;
+                              if (targetMember?.memberId != null) {
+                                context.navigateTo(screen: MemberProfileScreen(memberId: targetMember!.memberId!));
+                              }
+                            },
+                            onTap: () async {
+                              debugPrint('채팅방 클릭: ${chatRoomDetail.chatRoomId}');
+
+                              final roomId = chatRoomDetail.chatRoomId;
+                              if (roomId == null) return;
+
+                              // 입장 시 unreadCount 즉시 0으로 초기화 (낙관적 업데이트)
+                              ref.read(chatRoomsProvider.notifier).markRoomAsRead(roomId);
+
+                              final refreshed = await context.navigateTo<bool>(
+                                screen: ChatRoomScreen(chatRoomId: roomId),
+                              );
+
+                              // pop(true) 신호: 채팅방에서 변경 발생 (나가기·삭제·거래완료 등)
+                              if (refreshed == true) {
+                                ref.read(chatRoomsProvider.notifier).reload();
+                              }
+                            },
+                          ),
+                          SizedBox(height: 8.h),
+                        ],
+                      ),
+                    );
+                  }, childCount: filteredRooms.length),
+                ),
+
+              // 추가 페이지 로딩: 작은 인디케이터 (무한 스크롤)
+              if ((_pagingLoading || _prefetchLoading) && rooms.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.h),
+                    child: const Center(child: CommonLoadingIndicator()),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -402,17 +367,15 @@ class _ChatTabScreenState extends State<ChatTabScreen> with TickerProviderStateM
 
   @override
   void dispose() {
-    // 모든 채팅방 구독 해제 (참조 카운팅으로 다른 화면의 구독은 유지됨)
     for (final entry in _roomSubscriptions.entries) {
       entry.value.cancel();
       _wsService.unsubscribeFromChatRoom(entry.key);
     }
     _roomSubscriptions.clear();
-
-    // WebSocket은 싱글톤이므로 여기서 disconnect하지 않음
-    // (다른 화면에서도 사용 중일 수 있음)
+    _reconnectSubscription?.cancel();
 
     _scrollController.dispose();
+    _scrollTimer?.cancel();
     _toggleAnimationController.dispose();
     super.dispose();
   }

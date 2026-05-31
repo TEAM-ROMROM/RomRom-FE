@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 두 가지 옵션 중 하나를 선택하는 토글 위젯
@@ -43,12 +44,12 @@ class _ToggleSelectorState extends State<ToggleSelector> with SingleTickerProvid
     super.initState();
 
     // 토글 애니메이션 초기화
-    _toggleAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this);
 
     _toggleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
     // 초기 상태 설정
     if (widget.isRightSelected) {

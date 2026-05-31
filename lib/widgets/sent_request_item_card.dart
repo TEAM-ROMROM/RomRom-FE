@@ -5,11 +5,13 @@ import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
+import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
 class SentRequestItemCard extends StatelessWidget {
@@ -23,6 +25,7 @@ class SentRequestItemCard extends StatelessWidget {
   final TradeStatus? tradeStatus;
   final VoidCallback? onEditTap;
   final VoidCallback? onCancelTap;
+  final VoidCallback? onTap;
 
   const SentRequestItemCard({
     super.key,
@@ -36,18 +39,25 @@ class SentRequestItemCard extends StatelessWidget {
     this.tradeStatus,
     this.onEditTap,
     this.onCancelTap,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 361.w,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
-      child: Column(
-        children: [
-          _buildTopImageSection(), // 상단 이미지 영역
-          _buildBottomInfoSection(context), // 하단 정보 영역
-        ],
+    return AppPressable(
+      onTap: onTap,
+      scaleDown: AppPressable.scaleCard,
+      enableRipple: false,
+      borderRadius: BorderRadius.circular(10.r),
+      child: Container(
+        width: 361.w,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.r), color: AppColors.secondaryBlack1),
+        child: Column(
+          children: [
+            _buildTopImageSection(), // 상단 이미지 영역
+            _buildBottomInfoSection(context), // 하단 정보 영역
+          ],
+        ),
       ),
     );
   }
@@ -231,29 +241,18 @@ class SentRequestItemCard extends StatelessWidget {
   }
 
   /// 프로필 이미지 빌더
+  /// UserProfileCircularAvatar 사용: 원형 보장(width=height=24.w) + basicProfile.svg 폴백 내장
   Widget _buildProfileImage() {
     return Positioned(
       bottom: 8.h,
       right: 8.w,
-      child: Container(
-        width: 24.w,
-        height: 24.h,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.textColorWhite),
-        ),
-        child: ClipOval(child: _buildImage(otherUserProfileUrl)),
+      child: UserProfileCircularAvatar(
+        avatarSize: Size(24.w, 24.w),
+        profileUrl: otherUserProfileUrl.isEmpty ? null : otherUserProfileUrl,
+        hasBorder: true,
+        isDeleteAccount: false,
       ),
     );
-  }
-
-  /// 공통 이미지 빌더
-  Widget _buildImage(String imageUrl) {
-    if (imageUrl.isEmpty) {
-      return const ErrorImagePlaceholder();
-    }
-
-    return CachedImage(imageUrl: imageUrl, fit: BoxFit.cover, errorWidget: const ErrorImagePlaceholder());
   }
 
   /// 공통 서브 텍스트 스타일

@@ -143,3 +143,9 @@ windows/flutter/generated_plugins.cmake
 # ====================================================================
 # Patrol 테스트 마법사 히스토리 (개인 설정)
 .patrol_history.json
+
+# superpowers brainstorming session files (local only)
+.superpowers/
+
+# codegraph local index
+.codegraph/

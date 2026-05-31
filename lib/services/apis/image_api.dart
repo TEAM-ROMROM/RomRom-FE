@@ -16,7 +16,7 @@ class ImageApi {
   /// 사진 등록 API
   /// `POST /api/image/upload`
   Future<List<String>> uploadImages(List<XFile> images) async {
-    const String url = '${AppUrls.baseUrl}/api/image/upload';
+    final String url = '${AppUrls.baseUrl}/api/image/upload';
     List<String> imageUrls = [];
 
     // 타입 안전하게 파일 처리
@@ -29,6 +29,7 @@ class ImageApi {
       url: url,
       files: fileMap,
       isAuthRequired: true,
+      timeout: const Duration(seconds: 60),
       onSuccess: (responseData) {
         final urls = responseData['imageUrls'];
         if (urls is! List) {
@@ -45,7 +46,7 @@ class ImageApi {
   /// 물품 삭제 API
   /// `POST /api/item/delete`
   Future<void> deleteImages(List<String> imageUrls) async {
-    const String url = '${AppUrls.baseUrl}/api/image/delete';
+    final String url = '${AppUrls.baseUrl}/api/image/delete';
 
     final Map<String, dynamic> fields = {'imageUrls': imageUrls.join(',')};
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/debug/server_log_client.dart';
 import 'package:romrom_fe/debug/widgets/debug_log_panel.dart';
 import 'package:romrom_fe/debug/widgets/debug_menu_panel.dart';
 import 'package:romrom_fe/debug/widgets/debug_server_log_panel.dart';
+import 'package:romrom_fe/debug/widgets/debug_url_panel.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 
 /// 디버그 오버레이 전체 관리
@@ -11,11 +13,16 @@ class DebugOverlayManager {
   factory DebugOverlayManager() => _instance;
   DebugOverlayManager._internal();
 
+  /// 앱 전역 ServerLogClient 싱글톤 — 백그라운드 suspend/resume 제어용
+  final ServerLogClient serverLogClient = ServerLogClient();
+
   GlobalKey<NavigatorState>? _navigatorKey;
   OverlayEntry? _buttonEntry;
   OverlayEntry? _menuEntry;
   OverlayEntry? _logPanelEntry;
   OverlayEntry? _serverLogPanelEntry;
+
+  OverlayEntry? _urlPanelEntry;
 
   double _buttonX = 0;
   double _buttonY = 0;
@@ -23,6 +30,7 @@ class DebugOverlayManager {
   bool _isMenuOpen = false;
   bool _isLogPanelOpen = false;
   bool _isServerLogPanelOpen = false;
+  bool _isUrlPanelOpen = false;
 
   /// 디버그 오버레이 초기화 — navigatorKey의 overlay에 플로팅 버튼 삽입
   void init(GlobalKey<NavigatorState> navigatorKey) {
@@ -73,6 +81,7 @@ class DebugOverlayManager {
             DebugMenuItem(label: '로그 뷰어', icon: Icons.terminal, enabled: true, onTap: _toggleLogPanel),
             const DebugMenuItem(label: '자동 로그인', icon: Icons.login, enabled: false),
             DebugMenuItem(label: '서버 로그', icon: Icons.cloud, enabled: true, onTap: _toggleServerLogPanel),
+            DebugMenuItem(label: '서버 URL 변경', icon: Icons.dns, enabled: true, onTap: _toggleUrlPanel),
           ],
         );
       },
@@ -143,11 +152,51 @@ class DebugOverlayManager {
     _isServerLogPanelOpen = false;
   }
 
+  void _toggleUrlPanel() {
+    if (_isUrlPanelOpen) {
+      _closeUrlPanel();
+    } else {
+      _openUrlPanel();
+    }
+  }
+
+  void _openUrlPanel() {
+    _closeUrlPanel();
+    final overlay = _navigatorKey?.currentState?.overlay;
+    if (overlay == null) return;
+
+    _urlPanelEntry = OverlayEntry(
+      builder: (context) {
+        return DebugUrlPanel(onClose: _closeUrlPanel);
+      },
+    );
+    overlay.insert(_urlPanelEntry!, below: _buttonEntry);
+    _isUrlPanelOpen = true;
+  }
+
+  void _closeUrlPanel() {
+    _urlPanelEntry?.remove();
+    _urlPanelEntry = null;
+    _isUrlPanelOpen = false;
+  }
+
+  /// 앱 백그라운드 진입 시 SSE 연결 중단 (슬롯 반환)
+  void suspendServerLog() {
+    serverLogClient.suspend();
+  }
+
+  /// 앱 포그라운드 복귀 시 SSE 재연결
+  void resumeServerLog() {
+    serverLogClient.resume();
+  }
+
   /// 리소스 정리
   void dispose() {
+    serverLogClient.disconnect();
     _closeMenu();
     _closeLogPanel();
     _closeServerLogPanel();
+    _closeUrlPanel();
     _buttonEntry?.remove();
     _buttonEntry = null;
   }

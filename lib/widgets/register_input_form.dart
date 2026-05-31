@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/image_pick_source.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
@@ -23,32 +23,40 @@ import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:romrom_fe/screens/item_price_input_screen.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
 import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
 
 /// 물품 등록 입력 폼 위젯
 /// 물품 등록 화면에서 사용되는 입력 폼 위젯
-class RegisterInputForm extends StatefulWidget {
+class RegisterInputForm extends ConsumerStatefulWidget {
   final Item? item; // 수정 모드에서 사용
   final bool isEditMode;
 
   const RegisterInputForm({super.key, this.item, this.isEditMode = false});
 
   @override
-  State<RegisterInputForm> createState() => _RegisterInputFormState();
+  ConsumerState<RegisterInputForm> createState() => _RegisterInputFormState();
 }
 
-class _RegisterInputFormState extends State<RegisterInputForm> {
+class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
   // 임시 상태 변수들
   ItemCategories? selectedCategory;
   ItemCondition? selectedCondition;
@@ -58,7 +66,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   double? _latitude;
   double? _longitude;
   LocationAddress? _selectedAddress;
-  bool _isAiPriceLoading = false; // AI 가격 예측 로딩 상태
 
   // 처음 포커스 받았는지 추적을 위한 변수
   bool _hasConditionBeenTouched = false;
@@ -85,7 +92,13 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
+  // 소스 선택 바텀시트~촬영/선택 완료까지 진행 중 가드 (더블탭 방지)
+  bool _isPickingSource = false;
   final List<XFile> _newImageFiles = []; // 새로 선택된 로컬 이미지 파일 (아직 업로드 안 됨)
+  // _newImageFiles와 인덱스 1:1로 정렬되는 백그라운드 압축 Future 리스트.
+  // 선택 시 add, 삭제 시 같은 index를 removeAt, 등록 시 index로 수거.
+  // (path를 key로 쓰면 동일 파일 재선택 시 충돌하므로 인덱스 정렬 리스트를 쓴다.)
+  final List<Future<XFile>> _compressing = [];
   final List<String> _existingImageUrls = []; // 수정 모드: 기존 서버 이미지 URL
 
   // 상품사진 갤러리에서 가져오는 함수
@@ -94,38 +107,60 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
   /// 전체 이미지 수 (기존 서버 이미지 + 새 로컬 이미지)
   int get _totalImageCount => _existingImageUrls.length + _newImageFiles.length;
 
-  // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원, 서버 업로드 없음)
+  // 상품사진 추가: 소스(촬영/앨범) 선택 후 처리
   Future<void> onPickImage() async {
-    try {
-      setState(() {
-        _hasImageBeenTouched = true;
-      });
+    if (_isPickingSource) return; // 중복 진입 방지
 
-      final int totalCount = _totalImageCount;
-      if (totalCount >= kMaxImages) {
-        if (context.mounted) {
-          CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
-        }
-        return;
+    setState(() {
+      _hasImageBeenTouched = true;
+    });
+
+    final int totalCount = _totalImageCount;
+    if (totalCount >= kMaxImages) {
+      if (context.mounted) {
+        CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
       }
+      return;
+    }
 
-      final int remain = (kMaxImages - totalCount).clamp(0, kMaxImages);
+    final ImagePickSource? source = await showImageSourceBottomSheet(context);
+    if (source == null) return; // 바텀시트 취소
 
-      final List<XFile> picked = await _picker.pickMultiImage(limit: remain);
+    _isPickingSource = true;
+    try {
+      switch (source) {
+        case ImagePickSource.camera:
+          if (!context.mounted) return;
+          final bool granted = await ensureCameraPermission(context);
+          if (!granted) return;
 
-      // 사용자가 취소했거나 선택 없음
-      if (picked.isEmpty) return;
+          final XFile? shot = await _picker.pickImage(source: ImageSource.camera);
+          if (shot == null) return; // 촬영 취소
 
-      // 초과 선택 분리
-      final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
+          if (!mounted) return;
+          setState(() {
+            _newImageFiles.add(shot);
+            _compressing.add(ImageCompressor.toWebp(shot));
+          });
 
-      setState(() {
-        _newImageFiles.addAll(toAdd);
-      });
+        case ImagePickSource.gallery:
+          final int remain = (kMaxImages - _totalImageCount).clamp(0, kMaxImages);
+          final List<XFile> picked = await _picker.pickMultiImage(limit: remain);
+          if (picked.isEmpty) return; // 선택 없음/취소
+
+          final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
+          if (!mounted) return;
+          setState(() {
+            _newImageFiles.addAll(toAdd);
+            _compressing.addAll(toAdd.map(ImageCompressor.toWebp));
+          });
+      }
     } catch (e) {
       if (context.mounted) {
-        CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
+    } finally {
+      if (mounted) _isPickingSource = false;
     }
   }
 
@@ -142,58 +177,12 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         // 기존 서버 이미지 삭제
         _existingImageUrls.removeAt(index);
       } else {
-        // 새로 추가된 로컬 이미지 삭제
-        _newImageFiles.removeAt(index - existingCount);
+        // 새로 추가된 로컬 이미지 삭제 (압축 리스트도 같은 index 제거 → 결과 버림)
+        final localIndex = index - existingCount;
+        _newImageFiles.removeAt(localIndex);
+        _compressing.removeAt(localIndex);
       }
     });
-  }
-
-  /// 첫 물건 등록 상태 업데이트
-
-  // ai 가격 측정 함수
-  Future<void> _measureAiPrice() async {
-    setState(() => _isAiPriceLoading = true); // 로딩 시작
-    try {
-      final predictedPrice = await ItemApi().pricePredict(
-        ItemRequest(
-          itemName: titleController.text.trim(),
-          itemDescription: descriptionController.text.trim(),
-          itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
-        ),
-      );
-
-      // AI 가격 측정 결과가 0 이하(0, -1 등)인 경우 유효하지 않은 결과로 처리
-      if (predictedPrice <= 0) {
-        setState(() {
-          useAiPrice = false;
-        });
-        if (context.mounted) {
-          CommonSnackBar.show(context: context, message: 'AI가 적정 가격을 측정하지 못했어요. 직접 입력해 주세요.', type: SnackBarType.error);
-        }
-        return;
-      }
-
-      // 숫자를 콤마 포함 문자열로 변환
-      final formatted = const PriceCommaFormatter().formatEditUpdate(
-        const TextEditingValue(),
-        TextEditingValue(text: predictedPrice.toString()),
-      );
-
-      setState(() {
-        priceController.value = formatted;
-      });
-
-      if (context.mounted) {
-        CommonSnackBar.show(context: context, message: 'AI로 적정 가격을 추천해드렸어요!');
-      }
-    } catch (e) {
-      // 에러 처리 (스낵바 표시 등)
-      if (context.mounted) {
-        CommonSnackBar.show(context: context, message: 'AI 가격 예측에 실패했습니다: $e', type: SnackBarType.error);
-      }
-    } finally {
-      if (mounted) setState(() => _isAiPriceLoading = false); // 로딩 종료
-    }
   }
 
   Future<void> _initControllers() async {
@@ -252,6 +241,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         );
       }
       _newImageFiles.clear();
+      _compressing.clear();
       _latitude = item?.latitude;
       _longitude = item?.longitude;
       useAiPrice = item?.isAiPredictedPrice ?? false;
@@ -346,7 +336,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   width: 80.w,
                   height: 80.h,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.r),
+                    borderRadius: BorderRadius.circular(10.r),
                     border: Border.all(color: AppColors.opacity40White, width: 1.5.w),
                   ),
                   child: Column(
@@ -423,24 +413,24 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               },
                               child: Hero(
                                 tag: 'item_image_$index',
-                                child: ClipRRect(borderRadius: BorderRadius.circular(8.r), child: imageWidget),
+                                child: ClipRRect(borderRadius: BorderRadius.circular(10.r), child: imageWidget),
                               ),
                             ),
                             Positioned(
-                              top: -8.h,
-                              right: -8.w,
+                              top: -6.h,
+                              right: -6.h,
                               child: GestureDetector(
                                 onTap: () => onDeleteImage(index),
                                 child: Container(
-                                  width: 24.w,
-                                  height: 24.h,
+                                  width: 22.h,
+                                  height: 22.h,
                                   decoration: const BoxDecoration(
                                     color: AppColors.itemPictureRemoveButtonBackground,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.zero,
-                                    child: Icon(AppIcons.cancel, color: AppColors.primaryBlack, size: 16.sp),
+                                    child: Icon(AppIcons.cancel, color: AppColors.textColorBlack, size: 12.sp),
                                   ),
                                 ),
                               ),
@@ -510,7 +500,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                               return StatefulBuilder(
                                 builder: (context, setInnerState) {
                                   return SizedBox(
-                                    height: 502.h,
+                                    height: MediaQuery.of(context).size.height * 0.80,
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -528,16 +518,15 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                           ),
                                         ),
                                         Padding(
-                                          padding: EdgeInsets.only(left: 26.w),
+                                          padding: EdgeInsets.only(left: 26.w, bottom: 12.h),
                                           child: Text(
                                             ItemTextFieldPhrase.category.label,
                                             style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w700),
                                           ),
                                         ),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: Padding(
-                                            padding: EdgeInsets.only(right: 26.w, left: 26.w, top: 24.h),
+                                        Expanded(
+                                          child: SingleChildScrollView(
+                                            padding: EdgeInsets.only(right: 24.w, left: 24.w, top: 24.h, bottom: 12.h),
                                             child: Wrap(
                                               spacing: 8.0.w,
                                               runSpacing: 12.0.h,
@@ -552,6 +541,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                                                     });
                                                     Navigator.pop(context);
                                                   },
+                                                  iconPath: category.iconPath,
                                                 );
                                               }).toList(),
                                             ),
@@ -632,7 +622,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                        padding: EdgeInsets.only(top: 8.0.h),
                         child: Wrap(
                           spacing: 8.w,
                           runSpacing: 8.w,
@@ -677,7 +667,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(top: 8.0.h, bottom: 16.0.h),
+                        padding: EdgeInsets.only(top: 8.0.h),
                         child: Wrap(
                           spacing: 8.w,
                           children: ItemTradeOption.values
@@ -712,153 +702,87 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                   ),
                 ),
 
-                // AI 추천 가격 안내
-                Container(
-                  height: 58.h,
-                  margin: EdgeInsets.only(bottom: 24.h),
-                  padding: EdgeInsets.only(left: 12.w, right: 23.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.aiSuggestionContainerBackground,
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(4.r),
-                          border: Border.all(
-                            color: AppColors.textColorWhite,
-                            width: 0.5.w,
-                            strokeAlign: BorderSide.strokeAlignInside,
-                          ),
-                        ),
-                        child: GradientText(
-                          text: 'AI 추천 가격',
-                          style: CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
-                          gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: Text(
-                          ItemTextFieldPhrase.price.hintText,
-                          style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500, height: 1.4),
-                          maxLines: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // AI 가격 추천 스위치
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(ItemTextFieldPhrase.price.label, style: CustomTextStyles.p1),
-                    const Spacer(),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.aiSuggestionContainerBackground,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: GradientText(
-                        text: 'AI 추천 가격',
-                        style: CustomTextStyles.p3.copyWith(letterSpacing: -0.5.sp),
-                        gradient: const LinearGradient(colors: AppColors.aiGradient, stops: [0.0, 0.35, 0.7, 1.0]),
-                      ),
-                    ),
-                    SizedBox(width: 4.w),
-                    AnimatedToggleSwitch.dual(
-                      current: useAiPrice,
-                      first: false,
-                      second: true,
-                      spacing: 2.0.w,
-                      height: 20.h,
-                      style: ToggleStyle(
-                        indicatorColor: AppColors.textColorWhite,
-                        borderRadius: BorderRadius.all(Radius.circular(100.r)),
-                        indicatorBoxShadow: [
-                          const BoxShadow(
-                            color: AppColors.toggleSwitchIndicatorShadow,
-                            offset: Offset(-1, 0),
-                            blurRadius: 2,
-                          ),
-                        ],
-                      ),
-                      indicatorSize: Size(18.w, 18.h),
-                      borderWidth: 0,
-                      padding: EdgeInsets.all(1.w),
-                      onTap: canUseAiPrice
-                          ? null
-                          : (b) {
-                              // 조건이 안 맞으면 스낵바로 안내
-                              if (context.mounted) {
-                                CommonSnackBar.show(
-                                  context: context,
-                                  message: 'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요',
-                                  type: SnackBarType.info,
-                                );
-                              }
-                              return;
-                            }, // 비활성화
-                      onChanged: canUseAiPrice
-                          ? (b) {
-                              setState(() => useAiPrice = b as bool);
-                              if ((b as bool) && canUseAiPrice) {
-                                _measureAiPrice();
-                              }
-                            }
-                          : null, // 비활성화
-                      styleBuilder: (b) => ToggleStyle(
-                        backgroundGradient: b
-                            ? const LinearGradient(colors: AppColors.aiGradient)
-                            : const LinearGradient(colors: [AppColors.opacity40White, AppColors.opacity40White]),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 8.w),
-                // 가격 필드
-                RegisterCustomTextField(
-                  phrase: ItemTextFieldPhrase.price,
-                  prefixText: '₩',
-                  readOnly: useAiPrice || _isAiPriceLoading, // 로딩 중에도 readOnly
-                  maxLength: 11,
-                  keyboardType: TextInputType.number,
-                  controller: priceController,
-                  forceValidate: _forceValidateAll,
-                  focusNode: _priceFocusNode,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                  // 로딩 중일 때 suffixIcon으로 스피너 표시
-                  suffixIcon: _isAiPriceLoading
-                      ? Padding(
-                          padding: EdgeInsets.all(12.w),
-                          child: SizedBox(
-                            width: 10.w,
-                            height: 10.w,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.w,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryYellow),
+                // 적정 가격 필드
+                RegisterCustomLabeledField(
+                  label: ItemTextFieldPhrase.price.label,
+                  field: RegisterCustomTextField(
+                    phrase: ItemTextFieldPhrase.price,
+                    prefixText: '₩',
+                    readOnly: true,
+                    maxLength: 11,
+                    keyboardType: TextInputType.number,
+                    controller: priceController,
+                    forceValidate: _forceValidateAll,
+                    suffixIcon: useAiPrice
+                        ? Padding(
+                            padding: EdgeInsets.only(right: 12.w),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryBlack,
+                                    borderRadius: BorderRadius.circular(4.r),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SvgPicture.asset('assets/images/ai-recommend-price-star.svg', height: 14.h),
+                                      SizedBox(width: 2.w),
+                                      GradientText(
+                                        text: 'AI 추천 가격',
+                                        style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w600),
+                                        gradient: const LinearGradient(
+                                          colors: AppColors.aiGradient,
+                                          stops: [0.0, 0.35, 0.7, 1.0],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
+                              ],
                             ),
-                          ),
-                        )
-                      : null,
+                          )
+                        : Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
+                    onTap: () async {
+                      final initialPrice = int.tryParse(priceController.text.replaceAll(',', '')) ?? 0;
+                      await context.navigateTo(
+                        type: NavigationTypes.slideUp,
+                        screen: ItemPriceInputScreen(
+                          initialPrice: initialPrice,
+                          initialUseAiPrice: useAiPrice,
+                          canUseAiPrice: canUseAiPrice,
+                          itemName: titleController.text,
+                          itemDescription: descriptionController.text,
+                          itemCondition: selectedItemConditionTypes.isNotEmpty
+                              ? selectedItemConditionTypes.first.serverName
+                              : null,
+                          onPriceSelected: (price, aiUsed) {
+                            if (mounted) {
+                              setState(() {
+                                useAiPrice = aiUsed;
+                                priceController.value = const PriceCommaFormatter().formatEditUpdate(
+                                  const TextEditingValue(),
+                                  TextEditingValue(text: price.toString()),
+                                );
+                              });
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
                 // 거래 희망 위치 필드
-                SizedBox(height: 24.h),
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.location.label,
                   field: RegisterCustomTextField(
                     readOnly: true,
                     phrase: ItemTextFieldPhrase.location,
-                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.textColorWhite, size: 18.w),
+                    suffixIcon: Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
                     controller: locationController,
                     forceValidate: _forceValidateAll,
                     onTap: () async {
@@ -879,7 +803,6 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                       );
                     },
                   ),
-                  spacing: 32,
                 ),
 
                 // 등록 완료 버튼
@@ -917,12 +840,16 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           _isLoading = true;
                         });
 
-                        // 새 로컬 이미지가 있으면 서버에 업로드
+                        // 새 로컬 이미지가 있으면 압축본을 수거해 서버에 업로드
                         List<String> newImageUrls = [];
                         if (_newImageFiles.isNotEmpty) {
-                          newImageUrls = await ImageApi().uploadImages(_newImageFiles);
-                          if (newImageUrls.length != _newImageFiles.length) {
-                            throw Exception('일부 이미지 업로드에 실패했습니다 (${newImageUrls.length}/${_newImageFiles.length})');
+                          // 선택 시 시작한 백그라운드 압축을 순서 보존하여 수거.
+                          // _compressing은 _newImageFiles와 인덱스 1:1이라 그대로 await.
+                          // 보통 이미 완료되어 대기 0, 미완료분만 짧게 대기.
+                          final List<XFile> compressed = await Future.wait(_compressing);
+                          newImageUrls = await ImageApi().uploadImages(compressed);
+                          if (newImageUrls.length != compressed.length) {
+                            throw Exception('일부 이미지 업로드에 실패했습니다 (${newImageUrls.length}/${compressed.length})');
                           }
                         }
 
@@ -954,18 +881,16 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         } else {
-                          // 등록 모드
-                          final response = await ItemApi().postItem(itemRequest);
+                          // 등록 모드: notifier.register가 postItem + reload + isFirstItemPosted 반환을 통합 처리
+                          final isFirst = await ref.read(myItemsProvider.notifier).register(itemRequest);
                           debugPrint('====================================');
-                          debugPrint(
-                            '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
-                          );
+                          debugPrint('물품 등록 응답: isFirstItemPosted=$isFirst');
                           debugPrint('====================================');
 
                           final userInfo = UserInfo();
                           await userInfo.getUserInfo();
 
-                          if (response.isFirstItemPosted == true) {
+                          if (isFirst) {
                             debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
                             await userInfo.saveLoginStatus(
                               isFirstLogin: false,
@@ -979,15 +904,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                           }
 
                           if (context.mounted) {
-                            final resultData = {
-                              if (response.item?.itemId != null) 'itemId': response.item!.itemId,
-                              'isFirstItemPosted': response.isFirstItemPosted ?? false,
-                            };
-                            debugPrint('Navigator.pop 전달 데이터: $resultData');
-
-                            // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
-                            Navigator.of(context).pop(resultData);
-
+                            Navigator.of(context).pop({'isFirstItemPosted': isFirst});
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         }
@@ -1006,7 +923,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                         if (context.mounted) {
                           CommonSnackBar.show(
                             context: context,
-                            message: '물품 $modeText에 실패했습니다: $e',
+                            message: ErrorUtils.getErrorMessage(e),
                             type: SnackBarType.error,
                           );
                         }

@@ -3,6 +3,7 @@ import 'package:romrom_fe/enums/font_family.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -42,7 +43,7 @@ class RequestManagementItemCardWidget extends StatelessWidget {
 
     return AnimatedScale(
       scale: scale,
-      duration: const Duration(milliseconds: 300),
+      duration: AppMotion.normal,
       child: SizedBox(
         width: cardWidth,
         height: cardHeight,

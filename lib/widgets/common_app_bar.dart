@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 /// 공통 앱바 위젯
 /// 뒤로가기 버튼과 중앙 정렬된 제목을 기본 제공
@@ -61,21 +62,13 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: appBarHeight,
       scrolledUnderElevation: 0,
       leadingWidth: 72.w,
-      leading: Material(
-        color: Colors.transparent,
-        child: ClipOval(
-          child: InkResponse(
-            customBorder: const CircleBorder(),
-            onTap: onBackPressed ?? () => Navigator.of(context).pop(),
-            containedInkWell: true,
-            radius: 18.w,
-            highlightColor: AppColors.buttonHighlightColorGray,
-            splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-            child: SizedBox.square(
-              dimension: 32.w,
-              child: const Icon(AppIcons.navigateBefore, size: 24, color: AppColors.textColorWhite),
-            ),
-          ),
+      leading: AppPressable(
+        onTap: onBackPressed ?? () => Navigator.of(context).pop(),
+        scaleDown: AppPressable.scaleIcon,
+        enableRipple: false,
+        child: SizedBox.square(
+          dimension: 32.w,
+          child: const Icon(AppIcons.navigateBefore, size: 24, color: AppColors.textColorWhite),
         ),
       ),
       bottom: bottomWidgets,

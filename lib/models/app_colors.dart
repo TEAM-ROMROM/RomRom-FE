@@ -4,6 +4,7 @@ class AppColors {
   // 공통
   static const Color primaryBlack = Color(0xFF1D1E27);
   static const Color opacity30PrimaryBlack = Color(0x4D1D1E27); // 30% 불투명도 primaryBlack
+  static const Color opacity40PrimaryBlack = Color(0x661D1E27); // 40% 불투명도 primaryBlack
   static const Color opacity90PrimaryBlack = Color(0xE61D1E27); // 90% 불투명도 primaryBlack
   static const Color primaryYellow = Color(0xFFFFC300);
   static const Color secondaryBlack1 = Color(0xFF34353D);
@@ -26,6 +27,7 @@ class AppColors {
   static const Color opacity80Black = Color(0xCC000000); // 80% 불투명도 검정
 
   static const Color opacity20PrimaryYellow = Color(0x33FFC300);
+  static const Color opacity50PrimaryYellow = Color(0x80FFC300);
 
   // 로그인 화면
   static const Color kakao = Color(0xFFFEE500); // 카카오 배경
@@ -81,11 +83,21 @@ class AppColors {
 
   // 프로필 이미지 테두리 및 배경
   static const Color profileBorderGray = Color(0xFF77787D); // 프로필 이미지 테두리 색상 - 기본 프로필
-  static const Color profileBorderWhite = Color(0xFFFFFFFF); // 프로필 이미지 테두리 색상 - 기본 프로필 외
+  static const Color profileBorderWhite = Color(0x66FFFFFF); // 프로필 이미지 테두리 색상 - 기본 프로필 외
 
   // 아이템 옵션 메뉴
   static const Color itemOptionsMenuRedText = Color(0xFFFF5656); // 삭제 텍스트 색상
   static const Color itemOptionsMenuRedIcon = Color(0xFF993333); // 삭제 아이콘 색상
+
+  // 후기 만족도 선택 색상
+  static const Color reviewRatingUnselected = Color(0xFF828289);
+  static const Color reviewRatingUnselectedBackground = Color(0xFF4C4E54); // 만족도 선택 안된 상태 배경색
+  static const Color reviewRatingBad = Color(0xFFFF5656); // 별로예요
+  static const Color reviewRatingGood = Color(0xFFFFC300); // 좋아요
+  static const Color reviewRatingGreat = Color(0xFF00FF85); // 최고에요
+  static const Color reviewRatingBadBackground = Color(0xFFDFBABA); // 별로예요 선택 시 배경
+  static const Color reviewRatingGoodBackground = Color(0xFFDACFAF); // 좋아요 선택 시 배경
+  static const Color reviewRatingGreatBackground = Color(0xFFBDFADD); // 최고에요 선택 시 배경
 
   // 경고 다이얼로그
   static const Color warningRed = Color(0xFFFF5656); // 경고 아이콘 및 버튼 색상
@@ -102,9 +114,9 @@ class AppColors {
   // 물품 등록 화면
   // 물품 교환 AI 추천 가격 토글 Switch
   static const Color toggleSwitchIndicatorShadow = Color(0x40000000); // 검은색, opacity 25%
-  static const Color aiSuggestionContainerBackground = Color(0x4DCF7DFF); // ai 추천 가격 태그 배경색
+  static const Color aiSuggestionContainerBackground = Color(0x1ACF7DFF); // ai 추천 가격 태그 배경색
   // 물품 사진
-  static const Color itemPictureRemoveButtonBackground = Color(0xFFD2D2D2); // 물품 사진 삭제 버튼 배경색
+  static const Color itemPictureRemoveButtonBackground = Color(0xFFFFFFFF); // 물품 사진 삭제 버튼 배경색
 
   // 물품 상세 화면
   // 물품 사진오버레이 그레디언트
@@ -193,4 +205,13 @@ class AppColors {
   // 교환 완료 요청 시스템 메시지
   static const Color exchangeRequestSystemMessageBackground = Color(0x1AFFC300); // 채팅 시스템 메시지 배경색
   static const Color exchangeRequestSystemMessageBorder = Color(0x1AFFC300); // 채팅 시스템 메시지 테두리 색상
+
+  // 카테고리 칩 색상
+  static const Color categoryChipSelected = Color(0x4DFFC300); // 선택된 카테고리 칩 색상
+  static const Color categoryChipUnselected = AppColors.secondaryBlack1; // 선택되지 않은 카테고리 칩 색
+  static const Color categoryChipBorder = Color(0x4DFFC300); // 카테고리 칩 테두리 색상
+
+  // 완료 버튼 배경 색상
+  static const Color completionButtonEnabledBackground = primaryYellow; // 활성화된 완료 버튼 배경색
+  static const Color completionButtonDisabledBackground = Color(0xFF61501B); // 비활성화된 완료
 }

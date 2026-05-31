@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 class CompletionButton extends StatelessWidget {
   final bool isEnabled; // 버튼 활성화
@@ -42,8 +44,8 @@ class CompletionButton extends StatelessWidget {
 
     // 버튼 배경 색 결정
     final Color backgroundColor = effectiveEnabled
-        ? enabledBackgroundColor ?? AppColors.primaryYellow
-        : disabledBackgroundColor ?? AppColors.primaryYellow.withValues(alpha: 0.3);
+        ? enabledBackgroundColor ?? AppColors.completionButtonEnabledBackground
+        : disabledBackgroundColor ?? AppColors.completionButtonDisabledBackground;
 
     // 버튼 문구 색 결정
     final Color textColor = effectiveEnabled
@@ -53,33 +55,25 @@ class CompletionButton extends StatelessWidget {
     // 버튼 문구  결정
     final TextStyle buttonTextStyle = CustomTextStyles.p1.copyWith(color: textColor);
 
-    // 버튼 highlightColor와 splashColor는 backgroundColor를 어둡게 한 색상으로 설정
+    // 버튼 rippleColor는 backgroundColor를 어둡게 한 색상으로 설정
     final Color highlightColor = darkenBlend(backgroundColor);
-    final Color splashColor = highlightColor.withValues(alpha: 0.3);
 
     return Center(
-      child: SizedBox(
-        width: buttonWidth.w,
-        height: buttonHeight.h,
-        child: Material(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(10.r),
-          child: InkWell(
-            onTap: effectiveEnabled ? enabledOnPressed : disabledOnPressed,
-            customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-            highlightColor: highlightColor,
-            splashColor: splashColor,
+      child: AppPressable(
+        onTap: effectiveEnabled ? enabledOnPressed : disabledOnPressed,
+        enabled: effectiveEnabled,
+        borderRadius: BorderRadius.circular(10.r),
+        rippleColor: highlightColor,
+        child: SizedBox(
+          width: buttonWidth.w,
+          height: buttonHeight.h,
+          child: Material(
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(10.r),
             child: Center(
+              // 로딩 중이면 흰색 스피너, 아니면 버튼 텍스트
               child: isLoading
-                  ? SizedBox(
-                      width: 24.w,
-                      height: 24.h,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.w,
-                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.textColorWhite),
-                      ),
-                    )
+                  ? const CommonLoadingIndicator.white()
                   : Text(buttonText, style: buttonTextStyle, textAlign: TextAlign.center, softWrap: false),
             ),
           ),

@@ -13,35 +13,107 @@ import 'package:romrom_fe/screens/chat_location_picker_screen.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/services/apis/image_api.dart';
+import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/chat_rooms_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
 import 'package:romrom_fe/widgets/common/exchange_request_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
+import 'package:romrom_fe/screens/trade_review_screen.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
-class ChatRoomScreen extends StatefulWidget {
-  final String chatRoomId;
+/// 재연결 동기화용 메시지 병합 (순수 함수, 테스트 대상).
+///
+/// [current]는 화면의 현재 목록(reverse 정렬: index 0 = 최신).
+/// [serverMessages]는 getChatMessages 재조회 결과.
+///
+/// 규칙:
+/// - 서버 메시지 중 [current]에 chatMessageId가 없는 것만 추가
+/// - 이미 있으면 서버 버전으로 교체 (시각 등 교정)
+/// - 낙관적 로컬 메시지(id가 'local_'/'uploading_'/'ws_img_'/'local_trade_request_' 접두)는 서버에 없어도 보존
+/// - 결과는 createdDate 내림차순(최신 먼저), null은 맨 뒤
+List<ChatMessage> mergeServerMessages({required List<ChatMessage> current, required List<ChatMessage> serverMessages}) {
+  bool isLocalOptimistic(String? id) =>
+      id != null &&
+      (id.startsWith('local_') ||
+          id.startsWith('uploading_') ||
+          id.startsWith('ws_img_') ||
+          id.startsWith('local_trade_request_'));
 
-  const ChatRoomScreen({super.key, required this.chatRoomId});
+  final serverById = <String, ChatMessage>{
+    for (final m in serverMessages)
+      if (m.chatMessageId != null) m.chatMessageId!: m,
+  };
 
-  @override
-  State<ChatRoomScreen> createState() => _ChatRoomScreenState();
+  final merged = <ChatMessage>[];
+
+  // 1) 현재 목록 순회: 서버에 있으면 서버 버전으로 교체, 낙관적 로컬은 보존, 그 외 유지
+  final keptIds = <String>{};
+  for (final m in current) {
+    final id = m.chatMessageId;
+    if (id != null && serverById.containsKey(id)) {
+      merged.add(serverById[id]!);
+      keptIds.add(id);
+    } else if (isLocalOptimistic(id)) {
+      merged.add(m);
+    } else if (id != null) {
+      merged.add(m);
+      keptIds.add(id);
+    } else {
+      merged.add(m);
+    }
+  }
+
+  // 2) 서버 메시지 중 아직 추가되지 않은 것 추가
+  for (final m in serverMessages) {
+    final id = m.chatMessageId;
+    if (id != null && !keptIds.contains(id)) {
+      merged.add(m);
+      keptIds.add(id);
+    }
+  }
+
+  // 3) createdDate 내림차순 정렬, null은 맨 뒤
+  merged.sort((a, b) {
+    final da = a.createdDate;
+    final db = b.createdDate;
+    if (da == null && db == null) return 0;
+    if (da == null) return 1;
+    if (db == null) return -1;
+    return db.compareTo(da);
+  });
+
+  return merged;
 }
 
-class _ChatRoomScreenState extends State<ChatRoomScreen> {
+class ChatRoomScreen extends ConsumerStatefulWidget {
+  final String chatRoomId;
+  final bool autoTriggerExchangeRequest;
+
+  const ChatRoomScreen({super.key, required this.chatRoomId, this.autoTriggerExchangeRequest = false});
+
+  @override
+  ConsumerState<ChatRoomScreen> createState() => _ChatRoomScreenState();
+}
+
+class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> with WidgetsBindingObserver {
   final ChatWebSocketService _wsService = ChatWebSocketService();
   final TextEditingController _messageController = TextEditingController();
   bool _hasText = false;
@@ -51,6 +123,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSubscription;
+
+  // 재연결 동기화 중복 실행 방지
+  bool _isResyncing = false;
+  // 재연결 이벤트 구독
+  StreamSubscription<void>? _reconnectSubscription;
+
+  // 교환 완료 요청 낙관적 업데이트용 로컬 임시 메시지 ID
+  String? _latestLocalTradeRequestId;
 
   // 낙관적 로컬 메시지(서버 응답 대기)
   final Map<String, ChatMessage> _pendingLocalMessages = {};
@@ -86,6 +166,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       // _messages는 reverse 순서(최신 먼저)
       if (msg.senderId != _myMemberId) continue;
       if (msg.chatMessageId == null) continue;
+      // WS 실시간 이벤트로 isPresent가 즉시 갱신되므로 그대로 신뢰
+      // 잠금/백그라운드는 lifecycle observer가 isPresent=false로 갱신
       if (state.isPresent) return msg.chatMessageId;
       final sentAt = msg.createdDate;
       final leftAt = state.leftAt;
@@ -114,6 +196,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // 교환 완료 액션 중복 방지
   bool _isPendingTradeAction = false;
 
+  // 후기 화면 중복 진입 방지 (수락자가 이미 진입한 경우 WebSocket tradeCompleted 무시)
+  bool _reviewNavigated = false;
+
   String _errorMessage = '';
   String? _myMemberId;
 
@@ -133,13 +218,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   // 상대방 읽음 상태
   ChatUserState? _opponentState;
-  Timer? _readStatusTimer;
+  StreamSubscription<ChatUserState>? _readEventSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadInitialData();
     _messageController.addListener(_onMessageChanged);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // 잠금화면 또는 background 진입 시 퇴장 처리 → isPresent=false
+      unawaited(
+        ChatApi()
+            .updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: false)
+            .catchError((e) => debugPrint('[ChatRoom] paused read-cursor 업데이트 실패: $e')),
+      );
+    } else if (state == AppLifecycleState.resumed) {
+      // foreground 복귀 시 재입장 처리 → isPresent=true
+      unawaited(ChatApi().updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true));
+    }
   }
 
   bool _isLeaving = false;
@@ -255,6 +356,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             onConfirm: () => Navigator.of(context).pop(),
           );
         }
+
+        // 상대방이 거래 완료를 수락했을 때 요청자에게도 후기 화면 표시
+        if (newMessage.type == MessageType.tradeCompleted && !_reviewNavigated) {
+          // 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건 목록을 재조회하도록 알림
+          ref.read(myItemsProvider.notifier).reload();
+          ref.read(chatRoomsProvider.notifier).reload();
+          final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
+          if (tradeRequestHistoryId != null) {
+            _reviewNavigated = true;
+            context.navigateTo(
+              screen: TradeReviewScreen(
+                tradeRequestHistoryId: tradeRequestHistoryId,
+                opponentNickname: _opponentNickname,
+              ),
+            );
+          }
+        }
       });
 
       setState(() => _isLoading = false);
@@ -277,12 +395,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         }
       }
 
-      // 읽음 상태 주기적 갱신 (5초마다)
-      _readStatusTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-        if (!mounted) return;
-        final state = await ChatApi().getChatRoomReadStatus(chatRoomId: widget.chatRoomId);
-        if (!mounted) return;
+      // 읽음 이벤트 WebSocket 구독 (REST 폴링 대체)
+      _readEventSubscription = _wsService.subscribeToReadEvents(widget.chatRoomId).listen((state) {
+        if (state.memberId == _myMemberId || !mounted) return;
         setState(() => _opponentState = state);
+        debugPrint('[ChatRoom] 읽음 이벤트 수신: isPresent=${state.isPresent}, leftAt=${state.leftAt}');
+      });
+
+      // WebSocket 재연결 시 메시지 재동기화 (단절 구간 유실 복구)
+      _reconnectSubscription = _wsService.onReconnected.listen((_) {
+        _resyncMessages();
       });
 
       CommonModal.showOnceAfterFrame(
@@ -301,6 +423,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         message: '상대방이 채팅방을 나갔습니다.',
         onConfirm: () => Navigator.of(context).pop(),
       );
+
+      if (widget.autoTriggerExchangeRequest && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _isTradeCompleted || _hasActiveTradeRequest) {
+            if (_isTradeCompleted) {
+              CommonSnackBar.show(context: context, message: '이미 교환이 완료된 거래입니다.', type: SnackBarType.info);
+              return;
+            } else if (_hasActiveTradeRequest) {
+              CommonSnackBar.show(context: context, message: '교환 요청이 진행 중입니다.', type: SnackBarType.info);
+              return;
+            }
+          }
+          _doRequestTradeCompletion();
+        });
+      }
     } catch (e) {
       debugPrint('채팅방 초기화 실패: $e');
       if (!mounted) return;
@@ -309,6 +446,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         _errorMessage = ErrorUtils.getErrorMessage(e);
         _isLoading = false;
       });
+    }
+  }
+
+  /// 재연결 시 호출: 서버에서 최신 메시지를 재조회해 유실분을 병합한다.
+  Future<void> _resyncMessages() async {
+    if (_isResyncing || !mounted) return;
+    _isResyncing = true;
+    try {
+      final response = await ChatApi().getChatMessages(chatRoomId: widget.chatRoomId, pageNumber: 0, pageSize: 50);
+      if (!mounted) return;
+      final serverMessages = response.messages?.content ?? [];
+      setState(() {
+        _messages = mergeServerMessages(current: _messages, serverMessages: serverMessages);
+      });
+      debugPrint('[ChatRoom] 🔁 재연결 동기화 완료: 서버 ${serverMessages.length}건 병합');
+    } catch (e) {
+      // 백그라운드 동기화이므로 사용자에게 노출하지 않음. 다음 재연결 때 재시도.
+      debugPrint('[ChatRoom] 재연결 동기화 실패(무시): $e');
+    } finally {
+      _isResyncing = false;
     }
   }
 
@@ -362,6 +519,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         _messages.insert(0, fixedServer);
       }
     } else {
+      // 교환 완료 요청 WS 에코 도착: 낙관적 로컬 메시지를 실제 서버 메시지로 교체
+      if (newMessage.type == MessageType.tradeCompleteRequest && newMessage.senderId == _myMemberId) {
+        final localId = _latestLocalTradeRequestId;
+        if (localId != null) {
+          _messages.removeWhere((m) => m.chatMessageId == localId);
+          _latestLocalTradeRequestId = null;
+          debugPrint('[ChatRoom] 교환 완료 요청 WS 에코 수신 → 로컬 임시 메시지 교체');
+        }
+      }
+
       // WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API로 보완
       if (newMessage.type == MessageType.image && (newMessage.imageUrls == null || newMessage.imageUrls!.isEmpty)) {
         final tempId = 'ws_img_${DateTime.now().microsecondsSinceEpoch}';
@@ -379,8 +546,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final content = _messageController.text.trim();
     if (content.isEmpty || _isSendingMessage || _isInputDisabled) return;
 
-    setState(() => _isSendingMessage = true);
+    // 낙관적 삽입: WS 에코를 기다리지 않고 즉시 화면에 표시한다.
+    // 연결이 끊긴 상태에서도 내 메시지는 바로 보이고, WS 에코 도착 시
+    // _handleIncomingMessage의 매칭 로직이 실제 서버 메시지로 교체한다.
+    final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
+    final localMsg = ChatMessage(
+      chatRoomId: widget.chatRoomId,
+      chatMessageId: localId,
+      senderId: _myMemberId,
+      createdDate: DateTime.now(),
+      content: content,
+      type: MessageType.text,
+    );
+
+    setState(() {
+      _isSendingMessage = true;
+      _messages.insert(0, localMsg);
+      _pendingLocalMessages[localId] = localMsg;
+    });
     _messageController.clear();
+    _scrollToBottom();
 
     _sendMessageTimeoutTimer?.cancel();
     _sendMessageTimeoutTimer = Timer(const Duration(seconds: 10), () {
@@ -467,7 +652,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
-          _scrollController.animateTo(0.0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+          _scrollController.animateTo(0.0, duration: AppMotion.normal, curve: AppMotion.entry);
         }
       });
     }
@@ -483,6 +668,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (picked.isEmpty) return;
 
       final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}';
+      _latestLocalTradeRequestId = localId;
       setState(() {
         _messages.insert(
           0,
@@ -501,7 +687,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _scrollToBottom();
 
       try {
-        final uploadedImageUrls = await ImageApi().uploadImages(picked);
+        final compressed = await Future.wait(picked.map(ImageCompressor.toWebp));
+        final uploadedImageUrls = await ImageApi().uploadImages(compressed);
         if (!mounted) return;
 
         setState(() {
@@ -523,12 +710,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             _messages.removeWhere((m) => m.chatMessageId == localId);
             _uploadingLocalIds.remove(localId);
           });
-          CommonSnackBar.show(context: context, message: '이미지 전송에 실패했습니다: $e', type: SnackBarType.error);
+          CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
         }
       }
     } catch (e) {
       if (context.mounted) {
-        CommonSnackBar.show(context: context, message: '이미지 선택에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) _isPickingImage = false;
@@ -582,8 +769,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     ChatApi()
         .requestTradeCompletion(chatRoomId: widget.chatRoomId)
         .then((_) {
-          debugPrint('[ChatRoom] 교환 완료 요청 API 성공 → 이후 WebSocket 브로드캐스트 대기 중...');
-          if (mounted) setState(() => _isPendingTradeAction = false);
+          debugPrint('[ChatRoom] 교환 완료 요청 API 성공');
+          if (!mounted) return;
+          setState(() {
+            _isPendingTradeAction = false;
+            // 낙관적 업데이트: 백엔드 WS 브로드캐스트가 요청자에게 도달하지 않는 경우를 대비해
+            // REST API 성공 즉시 로컬 메시지를 삽입해 요청 카드를 표시한다.
+            // WS 에코가 나중에 도착하면 _handleIncomingMessage에서 이 로컬 메시지를 교체한다.
+            final latestMyRequestIndex = _messages.indexWhere(
+              (m) => m.type == MessageType.tradeCompleteRequest && m.senderId == _myMemberId,
+            );
+            final alreadyReceived = latestMyRequestIndex != -1 && _isActiveTradeRequest(latestMyRequestIndex);
+            if (!alreadyReceived) {
+              _messages.insert(
+                0,
+                ChatMessage(
+                  chatRoomId: widget.chatRoomId,
+                  chatMessageId: _latestLocalTradeRequestId,
+                  senderId: _myMemberId,
+                  createdDate: DateTime.now(),
+                  type: MessageType.tradeCompleteRequest,
+                ),
+              );
+            }
+          });
         })
         .catchError((e) {
           debugPrint('[ChatRoom] 교환 완료 요청 API 실패: $e');
@@ -601,7 +810,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       await ChatApi().cancelTradeCompletionRequest(chatRoomId: widget.chatRoomId);
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '요청 취소에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) setState(() => _isPendingTradeAction = false);
@@ -613,9 +822,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     setState(() => _isPendingTradeAction = true);
     try {
       await ChatApi().rejectTradeCompletion(chatRoomId: widget.chatRoomId);
+      // 거래완료 거절 전파: 요청관리 탭이 myItemsProvider listen으로 받아 받은/보낸 요청 재조회.
+      if (mounted) ref.read(myItemsProvider.notifier).reload();
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '거절에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) setState(() => _isPendingTradeAction = false);
@@ -627,9 +838,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     setState(() => _isPendingTradeAction = true);
     try {
       await ChatApi().confirmTradeCompletion(chatRoomId: widget.chatRoomId);
+      // 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건 목록을 재조회하도록 알림
+      ref.read(myItemsProvider.notifier).reload();
+      ref.read(chatRoomsProvider.notifier).reload();
+      if (!mounted) return;
+      final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
+      if (tradeRequestHistoryId != null) {
+        _reviewNavigated = true;
+        context.navigateTo(
+          screen: TradeReviewScreen(tradeRequestHistoryId: tradeRequestHistoryId, opponentNickname: _opponentNickname),
+        );
+      }
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '교환 완료 확인에 실패했습니다: $e', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
       if (mounted) setState(() => _isPendingTradeAction = false);
@@ -653,10 +875,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _messageSubscription?.cancel();
+    _readEventSubscription?.cancel();
+    _reconnectSubscription?.cancel();
+    _wsService.unsubscribeFromReadEvents(widget.chatRoomId);
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
-    _readStatusTimer?.cancel();
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
     }
@@ -672,7 +897,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+        body: Center(child: CommonLoadingIndicator()),
       );
     }
 

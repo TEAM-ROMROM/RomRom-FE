@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 스크롤에 따라 동적으로 크기가 변하는 헤더 위젯
@@ -38,7 +39,7 @@ class ScrollableHeader extends StatelessWidget {
       title: Padding(
         padding: EdgeInsets.only(top: 16.h, bottom: 24.h),
         child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.fast,
           opacity: isScrolled ? 1.0 : 0.0,
           child: Text(title, style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600)),
         ),
@@ -52,7 +53,7 @@ class ScrollableHeader extends StatelessWidget {
             child: Align(
               alignment: Alignment.topLeft,
               child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
+                duration: AppMotion.fast,
                 opacity: isScrolled ? 0.0 : 1.0,
                 child: Text(title, style: CustomTextStyles.h1),
               ),

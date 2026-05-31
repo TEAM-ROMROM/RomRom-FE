@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:romrom_fe/debug/debug_overlay_manager.dart';
 import 'package:romrom_fe/debug/log_capture.dart';
 import 'package:romrom_fe/debug/server_log_client.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -27,8 +28,8 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
   static const double _minWidth = 280;
   static const double _minHeight = 200;
 
-  // 서버 로그 클라이언트
-  final ServerLogClient _client = ServerLogClient();
+  // 서버 로그 클라이언트 (DebugOverlayManager 싱글톤 — 백그라운드 suspend/resume 공유)
+  ServerLogClient get _client => DebugOverlayManager().serverLogClient;
   StreamSubscription<CapturedLog>? _subscription;
   Timer? _debounceTimer;
   List<CapturedLog> _filteredLogs = [];
@@ -72,7 +73,7 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
     _debounceTimer?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
-    _client.disconnect();
+    // 싱글톤 클라이언트이므로 패널 닫힘 시 disconnect하지 않음 — DebugOverlayManager.dispose()에서 관리
     super.dispose();
   }
 

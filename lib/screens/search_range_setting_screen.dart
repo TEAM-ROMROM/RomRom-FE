@@ -9,8 +9,10 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/range_slider_widget.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
@@ -72,7 +74,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
       body: _locationNotSet
           ? _buildLocationNotSetView()
           : _currentPosition == null
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+          ? const Center(child: CommonLoadingIndicator())
           : Column(
               children: [
                 Expanded(child: _buildMapSection()),
@@ -202,7 +204,7 @@ class _SearchRangeSettingScreenState extends State<SearchRangeSettingScreen> {
     } catch (e) {
       debugPrint('탐색 범위 저장 실패: $e');
       if (mounted) {
-        CommonSnackBar.show(context: context, message: '탐색 범위 저장에 실패했습니다', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }

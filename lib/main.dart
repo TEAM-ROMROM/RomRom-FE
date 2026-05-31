@@ -4,12 +4,15 @@ import 'dart:io';
 import 'package:app_links/app_links.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/debug/debug_config.dart';
 import 'package:romrom_fe/debug/debug_overlay_manager.dart';
+import 'package:romrom_fe/debug/runtime_url_manager.dart';
+import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/firebase_options.dart';
@@ -18,7 +21,6 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/app_update_screen.dart';
 import 'package:romrom_fe/screens/splash_screen.dart';
 import 'package:romrom_fe/services/apis/app_version_api.dart';
-import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
@@ -38,6 +40,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kDebugMode) {
+    await RuntimeUrlManager().init();
+  }
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   await initialize(); // 초기화 실행
 
@@ -57,9 +62,6 @@ void main() async {
   // 알림 권한 요청 설정
   await FirebaseService().setupPushNotifications();
 
-  // FCM 토큰 갱신 감지 및 자동 저장 설정
-  _setupFcmTokenRefreshListener();
-
   // 시스템 오버레이 색상 설정
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(systemNavigationBarColor: AppColors.primaryBlack, statusBarColor: Colors.transparent),
@@ -77,17 +79,6 @@ void main() async {
 
   runApp(ProviderScope(child: MyApp(isGestureMode: isGestureMode)));
 }
-
-/// FCM 토큰 갱신 감지 및 자동 저장 설정
-void _setupFcmTokenRefreshListener() {
-  final firebaseService = FirebaseService();
-  final notificationApi = NotificationApi();
-
-  firebaseService.setupTokenRefreshListener(notificationApi);
-}
-
-/// 앱 전역 navigatorKey (ApiClient 등에서 글로벌 네비게이션에 사용)
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// 앱의 루트 위젯
 class MyApp extends StatefulWidget {
@@ -117,20 +108,51 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     _initAppLinks();
+    _initFcmInitialMessage();
+  }
+
+  /// 앱이 종료된 상태에서 알림 탭으로 실행된 경우 (콜드 스타트) 라우팅 처리
+  ///
+  /// 즉시 라우팅하지 않고 [ColdStartDeepLinkData]에 저장한다.
+  /// SplashScreen이 MainScreen으로 이동 완료 후 해당 데이터로 라우팅하여
+  /// SplashScreen의 pushAndRemoveUntil 이 딥링크 화면을 덮어쓰는 race condition을 방지한다.
+  Future<void> _initFcmInitialMessage() async {
+    try {
+      final message = await FirebaseMessaging.instance.getInitialMessage();
+      if (message == null) return;
+
+      debugPrint('[FCM] 콜드 스타트 초기 메시지: ${message.data}');
+
+      final deepLink = message.data['deepLink'] as String?;
+      if (deepLink == null || deepLink.isEmpty) return;
+
+      final uri = Uri.tryParse(deepLink);
+      if (uri == null) return;
+
+      NotificationType? notificationType;
+      final typeRaw = message.data['notificationType'] as String?;
+      if (typeRaw != null) {
+        try {
+          notificationType = NotificationType.fromServerName(typeRaw);
+        } catch (_) {
+          debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
+        }
+      }
+
+      ColdStartDeepLinkData.setPending(uri, notificationType: notificationType);
+    } catch (e) {
+      debugPrint('[FCM] 콜드 스타트 초기 메시지 처리 실패: $e');
+    }
   }
 
   /// app_links: 콜드 스타트 + 포그라운드 딥링크 처리
   Future<void> _initAppLinks() async {
     // 콜드 스타트: 앱이 링크로 열린 경우
+    // FCM과 동일하게 즉시 라우팅하지 않고 SplashScreen 이동 완료 후 처리
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final context = navigatorKey.currentContext;
-          if (context != null) {
-            RomRomDeepLinkRouter.openFromUri(context, initialUri);
-          }
-        });
+        ColdStartDeepLinkData.setPending(initialUri);
       }
     } catch (e) {
       debugPrint('[AppLinks] 초기 링크 처리 실패: $e');
@@ -159,6 +181,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkVersionOnResume();
+      if (DebugConfig.isTestBuild) {
+        DebugOverlayManager().resumeServerLog();
+      }
+    } else if (state == AppLifecycleState.paused) {
+      if (DebugConfig.isTestBuild) {
+        DebugOverlayManager().suspendServerLog();
+      }
     }
   }
 

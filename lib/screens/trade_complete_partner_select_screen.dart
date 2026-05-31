@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -14,6 +15,7 @@ import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/trade_request_target_preview.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/widgets/skeletons/trade_partner_select_skeleton.dart';
 
 /// 교환 완료 처리 시 교환 상대를 선택하는 화면
 class TradeCompletePartnerSelectScreen extends StatefulWidget {
@@ -29,7 +31,6 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
   bool _isLoading = true;
   List<ChatRoomDetailDto> _chatRooms = [];
   String? _selectedChatRoomId;
-  bool _isConfirming = false;
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
     _loadChatRooms();
   }
 
+  /// 물품 ID로 채팅방 목록 불러오기
   Future<void> _loadChatRooms() async {
     final itemId = widget.item.itemId;
     if (itemId == null) {
@@ -55,21 +57,27 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        CommonSnackBar.show(context: context, message: '채팅 목록을 불러오지 못했습니다.', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
+  }
+
+  /// 채팅방으로 이동하여 교환 완료 요청 전송
+  void _onConfirm() {
+    if (_selectedChatRoomId == null) return;
+    Navigator.of(context).pop<String>(_selectedChatRoomId);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
-      appBar: const CommonAppBar(title: '교환 완료', showBottomBorder: true),
+      appBar: const CommonAppBar(title: '교환 요청', showBottomBorder: true),
       body: Column(
         children: [
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+                ? const TradePartnerSelectSkeleton()
                 : ListView(
                     children: [
                       _buildItemCard(),
@@ -98,10 +106,10 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
           Padding(
             padding: EdgeInsets.only(left: 24.w, right: 24.w, bottom: 63.h + MediaQuery.of(context).padding.bottom),
             child: CompletionButton(
-              isEnabled: _selectedChatRoomId != null && !_isConfirming,
-              buttonText: '교환 완료',
-              isLoading: _isConfirming,
-              enabledOnPressed: () => _onConfirm(),
+              isEnabled: _selectedChatRoomId != null,
+              buttonText: '전송하기',
+              isLoading: false,
+              enabledOnPressed: _onConfirm,
             ),
           ),
         ],
@@ -140,12 +148,12 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
       },
       child: Container(
         margin: EdgeInsets.only(bottom: 16.h, left: 12.w, right: 12.w),
-        padding: EdgeInsets.only(bottom: 14.h, left: 16.w, top: 16.h),
+        padding: EdgeInsets.only(bottom: 14.h, left: 16.w, top: 16.h, right: 16.w),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.1) : AppColors.primaryBlack,
           borderRadius: BorderRadius.circular(8.r),
           border: Border.all(
-            color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.3) : Colors.transparent,
+            color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.3) : AppColors.transparent,
             width: 1.w,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -256,12 +264,5 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
         ),
       ),
     );
-  }
-
-  /// 교환 완료 확정 처리
-  void _onConfirm() {
-    if (_selectedChatRoomId == null || _isConfirming) return;
-    setState(() => _isConfirming = true);
-    Navigator.of(context).pop(true);
   }
 }

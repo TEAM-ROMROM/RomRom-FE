@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
+import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
@@ -22,8 +23,22 @@ class ChatWebSocketService {
   // 구독 참조 카운팅 (여러 화면에서 같은 채팅방을 구독할 수 있도록)
   final Map<String, int> _subscriptionRefCounts = {};
 
+  // 읽음 이벤트 구독 (/sub/chat.read.{chatRoomId})
+  final Map<String, StreamController<ChatUserState>> _readSubscriptions = {};
+  final Map<String, StompUnsubscribe> _stompReadSubscriptions = {};
+  final Map<String, int> _readSubscriptionRefCounts = {};
+
   // 토큰 갱신 중 중복 실행 방지
   bool _isRefreshingToken = false;
+
+  // 최초 연결 이후 재연결 여부 판단 (true면 _onConnect가 재연결로 간주)
+  bool _hasConnectedBefore = false;
+
+  // 재연결 시 화면이 메시지 재동기화를 트리거하도록 알리는 브로드캐스트 스트림
+  final StreamController<void> _reconnectController = StreamController<void>.broadcast();
+
+  /// 재연결 이벤트 스트림. 화면은 이를 구독해 getChatMessages 재조회를 수행한다.
+  Stream<void> get onReconnected => _reconnectController.stream;
 
   final TokenManager _tokenManager = TokenManager();
 
@@ -95,6 +110,16 @@ class ChatWebSocketService {
 
     // 기존 구독 재연결
     _resubscribeAll();
+
+    // 최초 연결이 아니라면(= 재연결) 화면에 재동기화 신호를 보낸다.
+    // 단절 구간에 브로드캐스트되어 유실된 메시지를 REST 재조회로 복구하기 위함.
+    if (_hasConnectedBefore) {
+      debugPrint('[WebSocket] 🔁 재연결 감지 → onReconnected 방송');
+      if (!_reconnectController.isClosed) {
+        _reconnectController.add(null);
+      }
+    }
+    _hasConnectedBefore = true;
   }
 
   /// 연결 해제 콜백
@@ -154,6 +179,9 @@ class ChatWebSocketService {
     for (var chatRoomId in _subscriptions.keys) {
       _subscribeToRoom(chatRoomId);
     }
+    for (var chatRoomId in _readSubscriptions.keys) {
+      _subscribeToReadRoom(chatRoomId);
+    }
   }
 
   /// 채팅방 구독
@@ -179,6 +207,75 @@ class ChatWebSocketService {
     }
 
     return controller.stream;
+  }
+
+  /// 읽음 이벤트 구독 (/sub/chat.read.{chatRoomId})
+  Stream<ChatUserState> subscribeToReadEvents(String chatRoomId) {
+    _readSubscriptionRefCounts[chatRoomId] = (_readSubscriptionRefCounts[chatRoomId] ?? 0) + 1;
+    debugPrint(
+      '[WebSocket] Subscribe to read events $chatRoomId (refCount: ${_readSubscriptionRefCounts[chatRoomId]})',
+    );
+
+    if (_readSubscriptions.containsKey(chatRoomId)) {
+      return _readSubscriptions[chatRoomId]!.stream;
+    }
+
+    final controller = StreamController<ChatUserState>.broadcast();
+    _readSubscriptions[chatRoomId] = controller;
+
+    if (_isConnected) {
+      _subscribeToReadRoom(chatRoomId);
+    }
+
+    return controller.stream;
+  }
+
+  /// 읽음 이벤트 구독 해제
+  void unsubscribeFromReadEvents(String chatRoomId) {
+    try {
+      final currentCount = _readSubscriptionRefCounts[chatRoomId] ?? 0;
+      if (currentCount <= 0) return;
+
+      _readSubscriptionRefCounts[chatRoomId] = currentCount - 1;
+      final newCount = _readSubscriptionRefCounts[chatRoomId]!;
+      debugPrint('[WebSocket] Unsubscribe from read events $chatRoomId (refCount: $newCount)');
+
+      if (newCount <= 0) {
+        _readSubscriptionRefCounts.remove(chatRoomId);
+        _stompReadSubscriptions[chatRoomId]?.call();
+        _stompReadSubscriptions.remove(chatRoomId);
+        _readSubscriptions[chatRoomId]?.close();
+        _readSubscriptions.remove(chatRoomId);
+        debugPrint('[WebSocket] ✅ Fully unsubscribed from read events $chatRoomId');
+      }
+    } catch (e) {
+      debugPrint('[WebSocket] Read unsubscribe error: $e');
+    }
+  }
+
+  /// 실제 읽음 이벤트 토픽 구독 실행
+  void _subscribeToReadRoom(String chatRoomId) {
+    if (_stompClient == null || !_isConnected) return;
+
+    final destination = '/sub/chat.read.$chatRoomId';
+    debugPrint('[WebSocket] ✅ Subscribing to: $destination');
+
+    final unsubscribe = _stompClient!.subscribe(
+      destination: destination,
+      callback: (StompFrame frame) {
+        if (frame.body == null) return;
+        try {
+          final jsonBody = jsonDecode(frame.body!);
+          final state = ChatUserState.fromJson(jsonBody);
+          debugPrint('[WebSocket] 📨 Read event: isPresent=${state.isPresent}, leftAt=${state.leftAt}');
+          _readSubscriptions[chatRoomId]?.add(state);
+        } catch (e) {
+          debugPrint('[WebSocket] Read event 파싱 실패: $e');
+        }
+      },
+    );
+
+    _stompReadSubscriptions[chatRoomId] = unsubscribe;
   }
 
   /// 실제 채팅방 구독 실행
@@ -231,8 +328,10 @@ class ChatWebSocketService {
             payloadTs = DateTime.fromMillisecondsSinceEpoch(jsonBody['clientSentAt'], isUtc: true).toLocal();
           }
 
-          // 3) 최종 시간 확정: 헤더 → 페이로드 → 지금
-          final finalCreated = headerTs ?? payloadTs ?? DateTime.now();
+          // 3) 최종 시간 확정: 헤더 → 페이로드 (둘 다 없으면 null 유지)
+          // DateTime.now() 폴백을 쓰면 지연 수신 메시지가 '수신 시각'으로 밀려 표시되므로 제거.
+          // 시각 출처가 없으면 null로 두고, 재연결 동기화 시 서버 createdDate로 교정된다.
+          final finalCreated = headerTs ?? payloadTs;
 
           // 모델로 변환
           final message = ChatMessage.fromJson(jsonBody).copyWith(createdDate: finalCreated);
@@ -351,11 +450,22 @@ class ChatWebSocketService {
       }
       _stompSubscriptions.clear();
 
+      for (var unsubscribe in _stompReadSubscriptions.values) {
+        unsubscribe();
+      }
+      _stompReadSubscriptions.clear();
+
       // 모든 스트림 컨트롤러 닫기
       for (var controller in _subscriptions.values) {
         await controller.close();
       }
       _subscriptions.clear();
+
+      for (var controller in _readSubscriptions.values) {
+        await controller.close();
+      }
+      _readSubscriptions.clear();
+      _readSubscriptionRefCounts.clear();
 
       debugPrint('[WebSocket] ✅ Disconnected');
     } catch (e) {

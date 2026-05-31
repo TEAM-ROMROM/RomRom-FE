@@ -22,7 +22,16 @@ class HomeTabCardHand extends StatefulWidget {
   /// AI 추천 상위 3개 itemId 목록 - 해당 카드에 glow boxShadow 효과 적용
   final List<String> highlightedItemIds;
 
-  const HomeTabCardHand({super.key, this.onCardDrop, this.cards, this.highlightedItemIds = const []});
+  /// 드래그 인터랙션 활성화 여부 (광고 슬롯에서 false)
+  final bool dragEnabled;
+
+  const HomeTabCardHand({
+    super.key,
+    this.onCardDrop,
+    this.cards,
+    this.highlightedItemIds = const [],
+    this.dragEnabled = true,
+  });
 
   @override
   State<HomeTabCardHand> createState() => _HomeTabCardHandState();
@@ -188,6 +197,28 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   @override
   void didUpdateWidget(HomeTabCardHand oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // dragEnabled가 true→false로 바뀌면 진행 중인 제스처 상태 전부 정리
+    if (oldWidget.dragEnabled && !widget.dragEnabled) {
+      _longPressTimer?.cancel();
+      _longPressTimer = null;
+      _pullController.reverse();
+      setState(() {
+        _panStartedOnCard = false;
+        _startCardId = null;
+        _hasStartedCardDrag = false;
+        _pressedCardId = null;
+        _hoveredCardId = null;
+        _pulledCardId = null;
+        _pullOffset = Offset.zero;
+        _dropShadowT = 0.0;
+        _wasOverDropZone = false;
+      });
+    }
+
+    if (!listEquals(widget.cards, oldWidget.cards)) {
+      setState(() => _generateCards());
+    }
 
     if (!listEquals(widget.highlightedItemIds, oldWidget.highlightedItemIds)) {
       if (widget.highlightedItemIds.isNotEmpty) {
@@ -889,11 +920,11 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
       children: [
         // 덱(카드 핸드) 영역
         GestureDetector(
-          // 드래그 제스처
-          onPanStart: _handlePanStart,
-          onPanUpdate: _handlePanUpdate,
-          onPanEnd: _handlePanEnd,
-          onPanCancel: _handlePanCancel,
+          // 광고 슬롯에서는 드래그 비활성화
+          onPanStart: widget.dragEnabled ? _handlePanStart : null,
+          onPanUpdate: widget.dragEnabled ? _handlePanUpdate : null,
+          onPanEnd: widget.dragEnabled ? _handlePanEnd : null,
+          onPanCancel: widget.dragEnabled ? _handlePanCancel : null,
           child: SizedBox(
             height: 280.h,
             child: Stack(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/ad_mob_service.dart';
+import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
 /// 홈 피드용 네이티브 광고 위젯
 /// PageView 한 페이지를 채우는 전체화면 크기로 표시됨
@@ -64,10 +65,8 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   @override
   Widget build(BuildContext context) {
     if (!_isLoaded || _nativeAd == null) {
-      return const ColoredBox(
-        color: AppColors.primaryBlack,
-        child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
-      );
+      // 광고 로드 전(또는 로드 실패) — 일반 피드 슬롯과 동일한 스켈레톤 노출
+      return const HomeFeedSkeleton();
     }
 
     return Center(

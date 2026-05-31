@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photo_viewer/photo_viewer.dart';
@@ -24,6 +25,9 @@ import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/providers/item_like_provider.dart';
+import 'package:romrom_fe/providers/chat_rooms_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -44,8 +48,10 @@ import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/screens/trade_location_detail_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/skeletons/item_detail_skeleton.dart';
 
-class ItemDetailDescriptionScreen extends StatefulWidget {
+class ItemDetailDescriptionScreen extends ConsumerStatefulWidget {
   final String itemId;
   final Size imageSize;
   final int currentImageIndex;
@@ -72,16 +78,21 @@ class ItemDetailDescriptionScreen extends StatefulWidget {
   });
 
   @override
-  State<ItemDetailDescriptionScreen> createState() => _ItemDetailDescriptionScreenState();
+  ConsumerState<ItemDetailDescriptionScreen> createState() => _ItemDetailDescriptionScreenState();
 }
 
-class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScreen> {
+class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescriptionScreen>
+    with SingleTickerProviderStateMixin {
   late PageController pageController;
   late final ValueNotifier<int> currentIndexVN;
-  late final ValueNotifier<bool> isLikedVN;
-  late final ValueNotifier<int> likeCountVN;
-  bool _likeInFlight = false;
   final GlobalKey _shareButtonKey = GlobalKey();
+
+  // 이미지 stretch 효과
+  final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<double> _stretchScaleVN = ValueNotifier<double>(1.0);
+  static const Duration _returnAnimDuration = Duration(milliseconds: 300);
+  late final AnimationController _returnAnim;
+  double _scaleAtRelease = 1.0;
 
   bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool isLoading = true;
@@ -100,9 +111,15 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     super.initState();
     currentIndexVN = ValueNotifier<int>(widget.currentImageIndex);
     pageController = PageController(initialPage: widget.currentImageIndex);
-    isLikedVN = ValueNotifier<bool>(false);
-    likeCountVN = ValueNotifier<int>(0);
+    _returnAnim = AnimationController(vsync: this, duration: _returnAnimDuration);
+    _returnAnim.addListener(_onReturnAnimTick);
+    _scrollController.addListener(_onScroll);
     _loadItemDetail();
+  }
+
+  void _onReturnAnimTick() {
+    final t = Curves.easeOutCubic.transform(_returnAnim.value);
+    _stretchScaleVN.value = _scaleAtRelease + (1.0 - _scaleAtRelease) * t;
   }
 
   Future<void> _loadItemDetail() async {
@@ -121,8 +138,6 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       setState(() {
         item = response.item;
         itemImages = item?.itemImages;
-        isLikedVN.value = (response.isLiked == true);
-        likeCountVN.value = item?.likeCount ?? 0;
 
         imageUrls =
             itemImages
@@ -143,6 +158,14 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
 
         isLoading = false;
       });
+
+      // 캐시 시드 (force=true: 서버 최신값 우선)
+      final id = item?.itemId;
+      if (id != null && id.isNotEmpty) {
+        ref
+            .read(itemLikeProvider.notifier)
+            .seed(itemId: id, isLiked: response.isLiked == true, likeCount: item?.likeCount ?? 0, force: true);
+      }
     } catch (e) {
       debugPrint('물품 상세 정보 로드 실패: $e');
       if (!mounted) return;
@@ -238,7 +261,6 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     }
 
     try {
-      final itemApi = ItemApi();
       // 현재 상태의 반대로 전환
       final targetStatus = item.itemStatus == ItemStatus.available.serverName
           ? ItemStatus.exchanged.serverName
@@ -246,7 +268,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
 
       final request = ItemRequest(itemId: item.itemId, itemStatus: targetStatus);
 
-      await itemApi.updateItemStatus(request);
+      await ref.read(myItemsProvider.notifier).changeStatus(request);
 
       if (mounted) {
         final successMessage = item.itemStatus == ItemStatus.available.serverName ? '교환 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
@@ -275,8 +297,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     }
 
     try {
-      final itemApi = ItemApi();
-      await itemApi.deleteItem(item.itemId!);
+      await ref.read(myItemsProvider.notifier).delete(item.itemId!);
 
       if (mounted) {
         CommonSnackBar.show(context: context, message: '물품이 삭제되었습니다');
@@ -295,7 +316,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   }
 
   void _popWithLikeResult() {
-    Navigator.of(context).pop(<String, dynamic>{'isLiked': isLikedVN.value, 'likeCount': likeCountVN.value});
+    Navigator.of(context).pop();
   }
 
   Future<void> _shareItem() async {
@@ -313,22 +334,46 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     }
   }
 
+  /// ScrollController 리스너. 당긴 픽셀 양과 이미지가 위로 늘어나는 픽셀 양을 1:1 매핑한다.
+  /// pixels >= 0 진입 시 spring 애니메이션으로 1.0 복귀시킨다.
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pixels = _scrollController.position.pixels;
+
+    if (pixels >= 0) {
+      // 손 뗀 직후: scale > 1.0 이고 애니메이션 진행 중이 아닐 때만 시작
+      if (_stretchScaleVN.value > 1.0 && !_returnAnim.isAnimating) {
+        _scaleAtRelease = _stretchScaleVN.value;
+        _returnAnim.forward(from: 0.0);
+      }
+      return;
+    }
+
+    // 당기는 중: 애니메이션이 돌고 있으면 멈추고 즉시 반영
+    if (_returnAnim.isAnimating) _returnAnim.stop();
+
+    final overscroll = -pixels;
+    final imageH = widget.imageSize.height;
+    if (imageH <= 0) return;
+    _stretchScaleVN.value = 1.0 + overscroll / imageH;
+  }
+
   @override
   void dispose() {
     currentIndexVN.dispose();
     pageController.dispose();
-    isLikedVN.dispose();
-    likeCountVN.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _returnAnim.removeListener(_onReturnAnimTick);
+    _returnAnim.dispose();
+    _stretchScaleVN.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.primaryBlack,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
-      );
+      return const Scaffold(backgroundColor: AppColors.primaryBlack, body: ItemDetailSkeleton());
     }
 
     // 작성자가 탈퇴한 게시글인 경우 별도 화면 표시
@@ -416,148 +461,150 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && !_likeInFlight) _popWithLikeResult();
+        if (!didPop) _popWithLikeResult();
       },
       child: Scaffold(
         body: Stack(
           children: [
             // 전체 화면 콘텐츠
             SingleChildScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
                   /// 배경 이미지 (가로 스와이프 가능)
-                  Stack(
-                    children: [
-                      SizedBox(
-                        height: widget.imageSize.height,
-                        width: widget.imageSize.width,
-                        child: PageView.builder(
-                          itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1, // ← 최소 1페이지
-                          controller: pageController,
-                          onPageChanged: (i) => currentIndexVN.value = i,
-                          itemBuilder: (context, i) {
-                            final hasImages = imageUrls.isNotEmpty;
-                            final safeIndex = hasImages ? i : 0;
-                            final String heroBaseId = 'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
-
-                            return PhotoViewerMultipleImage(
-                              // 이미지가 없으면 더미 URL을 넘겨서 로딩 실패 → errorWidget 호출
-                              imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
-                              index: safeIndex,
-                              id: heroBaseId + safeIndex.toString(),
-                              onPageChanged: (idx) {
-                                currentIndexVN.value = idx;
-                                if (pageController.hasClients) {
-                                  final now = pageController.page?.round();
-                                  if (now != idx) {
-                                    pageController.jumpToPage(idx); // 닫기 전에 목적지 미리 맞추기
-                                  }
-                                }
-                              },
-
-                              // 로딩 인디케이터
-                              placeholder: (ctx, url) => const Center(
-                                child: SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primaryYellow),
-                                ),
-                              ),
-
-                              // 이미지 없음/로딩 실패 시
-                              errorWidget: (ctx, url, err) =>
-                                  Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
-                            );
-                          },
-                        ),
-                      ),
-
-                      /// 이미지 인디케이터
-                      Positioned(
-                        bottom: 24.h,
-                        left: 0,
-                        right: 0,
-                        child: ValueListenableBuilder<int>(
-                          valueListenable: currentIndexVN,
-                          builder: (_, current, _) {
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(
-                                imageUrls.length,
-                                (index) => Container(
-                                  width: 6.w,
-                                  height: 6.w,
-                                  margin: EdgeInsets.symmetric(horizontal: 4.w),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      IgnorePointer(
-                        ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
-                        child: SizedBox(
+                  ValueListenableBuilder<double>(
+                    valueListenable: _stretchScaleVN,
+                    builder: (_, scale, child) {
+                      return Transform.scale(scale: scale, alignment: Alignment.bottomCenter, child: child);
+                    },
+                    child: Stack(
+                      children: [
+                        SizedBox(
                           height: widget.imageSize.height,
                           width: widget.imageSize.width,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: AppColors.itemDetailBlackGradient, // 검정색 그라데이션
-                                stops: const [0.0, 0.15, 0.60, 1.0],
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
+                          child: PageView.builder(
+                            itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1, // ← 최소 1페이지
+                            controller: pageController,
+                            onPageChanged: (i) => currentIndexVN.value = i,
+                            itemBuilder: (context, i) {
+                              final hasImages = imageUrls.isNotEmpty;
+                              final safeIndex = hasImages ? i : 0;
+                              final String heroBaseId = 'itemImage_${widget.homeFeedItem?.itemUuid ?? widget.itemId}_';
+
+                              return PhotoViewerMultipleImage(
+                                // 이미지가 없으면 더미 URL을 넘겨서 로딩 실패 → errorWidget 호출
+                                imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
+                                index: safeIndex,
+                                id: heroBaseId + safeIndex.toString(),
+                                onPageChanged: (idx) {
+                                  currentIndexVN.value = idx;
+                                  if (pageController.hasClients) {
+                                    final now = pageController.page?.round();
+                                    if (now != idx) {
+                                      pageController.jumpToPage(idx); // 닫기 전에 목적지 미리 맞추기
+                                    }
+                                  }
+                                },
+
+                                // 로딩 인디케이터
+                                placeholder: (ctx, url) => const Center(child: CommonLoadingIndicator(size: 32.0)),
+
+                                // 이미지 없음/로딩 실패 시
+                                errorWidget: (ctx, url, err) =>
+                                    Center(child: ErrorImagePlaceholder(size: widget.imageSize)),
+                              );
+                            },
+                          ),
+                        ),
+
+                        /// 이미지 인디케이터
+                        Positioned(
+                          bottom: 24.h,
+                          left: 0,
+                          right: 0,
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: currentIndexVN,
+                            builder: (_, current, _) {
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                  imageUrls.length,
+                                  (index) => Container(
+                                    width: 6.w,
+                                    height: 6.w,
+                                    margin: EdgeInsets.symmetric(horizontal: 4.w),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: current == index ? AppColors.primaryYellow : AppColors.opacity50White,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        IgnorePointer(
+                          ignoring: item?.itemStatus != ItemStatus.exchanged.serverName,
+                          child: SizedBox(
+                            height: widget.imageSize.height,
+                            width: widget.imageSize.width,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: AppColors.itemDetailBlackGradient, // 검정색 그라데이션
+                                  stops: const [0.0, 0.15, 0.60, 1.0],
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      /// 거래완료 오버레이 (검정 50%)
-                      if (item?.itemStatus == ItemStatus.exchanged.serverName)
-                        IgnorePointer(
-                          child: Container(
-                            height: widget.imageSize.height,
-                            width: widget.imageSize.width,
-                            color: AppColors.opacity50Black,
+                        /// 거래완료 오버레이 (검정 50%)
+                        if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                          IgnorePointer(
+                            child: Container(
+                              height: widget.imageSize.height,
+                              width: widget.imageSize.width,
+                              color: AppColors.opacity50Black,
+                            ),
                           ),
-                        ),
 
-                      /// 거래완료 글라스모피즘 배지 (이미지 중앙)
-                      if (item?.itemStatus == ItemStatus.exchanged.serverName)
-                        Positioned.fill(
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4.r),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                                child: Container(
-                                  width: 122.w,
-                                  height: 47.h,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.opacity10White,
-                                    borderRadius: BorderRadius.circular(4.r),
-                                    border: Border.all(color: AppColors.textColorWhite, width: 1.w),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '교환 완료',
-                                    style: CustomTextStyles.p1.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textColorWhite,
+                        /// 거래완료 글라스모피즘 배지 (이미지 중앙)
+                        if (item?.itemStatus == ItemStatus.exchanged.serverName)
+                          Positioned.fill(
+                            child: Align(
+                              alignment: Alignment.center,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4.r),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                  child: Container(
+                                    width: 122.w,
+                                    height: 47.h,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.opacity10White,
+                                      borderRadius: BorderRadius.circular(4.r),
+                                      border: Border.all(color: AppColors.textColorWhite, width: 1.w),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '교환 완료',
+                                      style: CustomTextStyles.p1.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textColorWhite,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
 
                   /// 아이템 설명 영역
@@ -633,9 +680,15 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                           customBorder: const CircleBorder(),
                                           highlightColor: AppColors.buttonHighlightColorGray,
                                           splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                                          child: ValueListenableBuilder<bool>(
-                                            valueListenable: isLikedVN,
-                                            builder: (_, liked, _) {
+                                          child: Builder(
+                                            builder: (context) {
+                                              final id = item?.itemId;
+                                              final liked = ref.watch(
+                                                itemLikeProvider.select(
+                                                  (s) =>
+                                                      (id != null && id.isNotEmpty) ? (s[id]?.isLiked ?? false) : false,
+                                                ),
+                                              );
                                               return SizedBox.square(
                                                 dimension: 56.w, // 리플/터치 캔버스
                                                 child: Center(
@@ -658,9 +711,14 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
                                     ),
                                   ),
                                   SizedBox(height: 2.h),
-                                  ValueListenableBuilder<int>(
-                                    valueListenable: likeCountVN,
-                                    builder: (_, likeCount, _) {
+                                  Builder(
+                                    builder: (context) {
+                                      final id = item?.itemId;
+                                      final likeCount = ref.watch(
+                                        itemLikeProvider.select(
+                                          (s) => (id != null && id.isNotEmpty) ? (s[id]?.likeCount ?? 0) : 0,
+                                        ),
+                                      );
                                       return Text(likeCount.toString(), style: CustomTextStyles.p2);
                                     },
                                   ),
@@ -1023,9 +1081,9 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
   }
 
   Future<void> _toggleLike() async {
-    if (_likeInFlight) return;
+    final id = item?.itemId;
+    if (id == null || id.isEmpty) return;
 
-    // 내가 작성한 게시글인지 확인
     final isCurrentMember = await MemberManager.isCurrentMember(item?.member?.memberId);
     if (isCurrentMember) {
       if (mounted) {
@@ -1034,31 +1092,7 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
       return;
     }
 
-    _likeInFlight = true;
-    final prevLiked = isLikedVN.value;
-    final prevCount = likeCountVN.value;
-
-    // 1) 빠른 UI 업데이트
-    isLikedVN.value = !prevLiked;
-    likeCountVN.value = prevLiked ? (prevCount > 0 ? prevCount - 1 : 0) : (prevCount + 1);
-
-    try {
-      final itemApi = ItemApi();
-      final req = ItemRequest(itemId: item!.itemId);
-      final res = await itemApi.postLike(req);
-
-      // 2) 서버 결과로 보정(서버-클라 불일치 대비)
-      if (!mounted) return;
-      isLikedVN.value = (res.isLiked == true);
-      likeCountVN.value = res.item?.likeCount ?? likeCountVN.value;
-    } catch (e) {
-      debugPrint('좋아요 실패: $e');
-      // 3) 실패 롤백
-      isLikedVN.value = prevLiked;
-      likeCountVN.value = prevCount;
-    } finally {
-      _likeInFlight = false;
-    }
+    await ref.read(itemLikeProvider.notifier).toggle(id);
   }
 
   /// 채팅하기 버튼 핸들러
@@ -1078,7 +1112,10 @@ class _ItemDetailDescriptionScreenState extends State<ItemDetailDescriptionScree
 
       if (!mounted) return;
 
-      // 2. 채팅방 화면으로 이동
+      // 2. chatRoomsProvider 갱신 (ItemDetail→ChatRoom 경로에서 생성된 새 방 반영)
+      ref.read(chatRoomsProvider.notifier).reload();
+
+      // 3. 채팅방 화면으로 이동
       context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!));
     } catch (e) {
       debugPrint('채팅방 생성 실패: $e');

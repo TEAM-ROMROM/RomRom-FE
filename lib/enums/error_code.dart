@@ -59,6 +59,8 @@ enum ErrorCode {
   invalidItemOwner(code: 'INVALID_ITEM_OWNER', koMessage: '해당 물품의 소유자가 아닙니다.'),
   itemValuePredictionFailed(code: 'ITEM_VALUE_PREDICTION_FAILED', koMessage: '아이템 가격 예측에 실패하였습니다.'),
   deletedItem(code: 'DELETED_ITEM', koMessage: '삭제된 물품입니다.'),
+  alreadyHiddenItem(code: 'ALREADY_HIDDEN_ITEM', koMessage: '이미 숨김 처리된 물품입니다.'),
+  hiddenItemNotFound(code: 'HIDDEN_ITEM_NOT_FOUND', koMessage: '숨김 처리된 물품을 찾을 수 없습니다.'),
 
   // ITEM CUSTOM TAG
   tooManyCustomTags(code: 'TOO_MANY_CUSTOM_TAGS', koMessage: '커스텀 태그의 최대 개수를 초과하였습니다.'),
@@ -71,11 +73,18 @@ enum ErrorCode {
   tradeToSelfForbidden(code: 'TRADE_TO_SELF_FORBIDDEN', koMessage: '자신의 물품에 교환 요청을 보낼 수 없습니다.'),
   tradeAccessForbidden(code: 'TRADE_ACCESS_FORBIDDEN', koMessage: '교환 요청 권한이 없습니다.'),
   cannotUpdateTradeRequest(code: 'CANNOT_UPDATE_TRADE_REQUEST', koMessage: '교환 요청을 수정할 수 없습니다.'),
+  tradeCompletionMessageNotFound(code: 'TRADE_COMPLETION_MESSAGE_NOT_FOUND', koMessage: '거래 완료 메시지를 찾을 수 없습니다.'),
+  tradeCompletionStateMismatch(code: 'TRADE_COMPLETION_STATE_MISMATCH', koMessage: '거래 완료 상태가 맞지 않습니다.'),
+  tradeCompletionRequestForbidden(code: 'TRADE_COMPLETION_REQUEST_FORBIDDEN', koMessage: '거래 완료 요청 권한이 없습니다.'),
 
   // CHAT
   cannotSendMessageToDeletedChatroom(
     code: 'CANNOT_SEND_MESSAGE_TO_DELETED_CHATROOM',
     koMessage: '교환 요청이 취소되었거나 교환 완료된 상태이므로, 메시지를 보낼 수 없습니다.',
+  ),
+  cannotSendMessageToAdminDeletedItemChatroom(
+    code: 'CANNOT_SEND_MESSAGE_TO_ADMIN_DELETED_ITEM_CHATROOM',
+    koMessage: '관리자에 의해 삭제된 물품의 채팅방에는 메시지를 보낼 수 없습니다.',
   ),
   chatUserStateNotFound(code: 'CHAT_USER_STATE_NOT_FOUND', koMessage: '채팅방 상태를 찾을 수 없습니다.'),
   chatroomNotFound(code: 'CHATROOM_NOT_FOUND', koMessage: '채팅방을 찾을 수 없습니다.'),

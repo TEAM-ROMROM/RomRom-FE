@@ -21,7 +21,9 @@ import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 로그인 버튼
@@ -52,7 +54,8 @@ class _LoginButtonState extends State<LoginButton> {
       barrierColor: AppColors.opacity50Black,
       builder: (_) => const PopScope(
         canPop: false,
-        child: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+        // 로그인 처리 중 전체화면 오버레이 스피너
+        child: Center(child: CommonLoadingIndicator()),
       ),
     );
 
@@ -98,7 +101,7 @@ class _LoginButtonState extends State<LoginButton> {
           await RomAuthApi().fetchAndSaveMemberInfo();
           // 기존 회원 로그인: FCM 토큰 저장
           await FirebaseService().handleFcmToken();
-          nextScreen = MainScreen(key: MainScreen.globalKey);
+          nextScreen = const MainScreen();
         }
 
         if (context.mounted) {
@@ -137,18 +140,17 @@ class _LoginButtonState extends State<LoginButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: widget.platform.backgroundColor,
-      borderRadius: BorderRadius.circular(10.r),
-      child: InkWell(
-        onTap: _isLoading
-            ? null
-            : () async {
-                await handleLogin(context);
-              },
-        customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-        highlightColor: darkenBlend(widget.platform.backgroundColor),
-        splashColor: darkenBlend(widget.platform.backgroundColor).withValues(alpha: 0.3),
+    return AppPressable(
+      scaleDown: AppPressable.scaleButton,
+      enableRipple: false,
+      onTap: _isLoading
+          ? null
+          : () async {
+              await handleLogin(context);
+            },
+      child: Material(
+        color: widget.platform.backgroundColor,
+        borderRadius: BorderRadius.circular(10.r),
         child: SizedBox(
           width: double.infinity,
           height: 56.h,

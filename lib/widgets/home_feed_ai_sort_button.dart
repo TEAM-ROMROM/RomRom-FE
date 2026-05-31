@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/widgets/common/app_pressable.dart';
 
 /// AI 물품 추천 버튼
 class HomeFeedAiSortButton extends StatelessWidget {
@@ -37,8 +38,10 @@ class HomeFeedAiSortButton extends StatelessWidget {
       ),
     ];
 
-    return GestureDetector(
+    return AppPressable(
       onTap: onTap,
+      scaleDown: AppPressable.scaleButton,
+      enableRipple: false,
       child: Container(
         width: 67.w,
         height: 24.h,

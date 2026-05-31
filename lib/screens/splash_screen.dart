@@ -21,7 +21,10 @@ import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/deep_link_router.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -37,6 +40,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late Animation<double> _loginUIFadeAnim;
   bool _showLoginUI = false;
   bool _loginTransitionStarted = false;
+  bool _aborted = false;
 
   @override
   void initState() {
@@ -60,28 +64,75 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     unawaited(_initAndNavigate());
   }
 
+  /// 스플래시 초기화 전체 타임아웃 (15초)
+  /// 개별 HTTP 요청 타임아웃(10초)이 1차 방어, 이 값은 2차 안전망
+  static const Duration _splashTimeout = Duration(seconds: 15);
+
   Future<void> _initAndNavigate() async {
     try {
-      final updateType = await AppVersionApi().checkUpdateType();
-      if (updateType == UpdateType.force && mounted) {
-        context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
-        return;
-      }
-
-      final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
-      final nextScreen = results[0]! as Widget;
-
-      if (!mounted) return;
-
-      if (nextScreen is LoginScreen) {
-        await _playLoginTransitionAnimation();
-      } else {
-        context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition);
-      }
-    } catch (e, st) {
-      debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
+      // timeout() onTimeout 미제공 시 TimeoutException을 자동으로 throw
+      await _runInitFlow().timeout(_splashTimeout);
+    } on TimeoutException {
+      debugPrint('[SplashScreen] 초기화 타임아웃 (${_splashTimeout.inSeconds}초) — 로그인 화면으로 이동');
+      _aborted = true; // _runInitFlow()가 백그라운드에서 완료되더라도 navigation/딥링크 차단
+      ColdStartDeepLinkData.clear(); // 중단 시 대기 중인 딥링크 폐기
       if (!mounted) return;
       await _playLoginTransitionAnimation();
+      _showNetworkErrorSnackBar();
+    } catch (e, st) {
+      debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
+      _aborted = true; // _runInitFlow()가 백그라운드에서 완료되더라도 navigation/딥링크 차단
+      ColdStartDeepLinkData.clear(); // 중단 시 대기 중인 딥링크 폐기
+      if (!mounted) return;
+      await _playLoginTransitionAnimation();
+      // 네트워크 관련 오류(연결 불가, 타임아웃)일 때만 SnackBar 표시
+      if (e is SocketException || e is TimeoutException) {
+        _showNetworkErrorSnackBar();
+      }
+    }
+  }
+
+  void _showNetworkErrorSnackBar() {
+    if (!mounted) return;
+    CommonSnackBar.show(context: context, message: '서버 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.', type: SnackBarType.error);
+  }
+
+  Future<void> _runInitFlow() async {
+    final updateType = await AppVersionApi().checkUpdateType();
+    // _aborted: timeout 또는 오류로 _initAndNavigate()가 이미 로그인 화면을 표시한 경우
+    if (_aborted) return;
+    if (updateType == UpdateType.force && mounted) {
+      context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+      return;
+    }
+
+    final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
+    if (_aborted) return; // Future.wait 대기 중 타임아웃이 발생했을 수 있음
+    final nextScreen = results[0]! as Widget;
+
+    if (!mounted) return;
+
+    if (nextScreen is LoginScreen) {
+      ColdStartDeepLinkData.clear(); // 미인증 상태 → 딥링크 데이터 폐기
+      await _playLoginTransitionAnimation();
+    } else {
+      context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition);
+      // MainScreen 이동 후 콜드 스타트 FCM/AppLinks 딥링크 처리
+      // (pushAndRemoveUntil이 완료된 다음 프레임에 navigatorKey로 push)
+      if (nextScreen is MainScreen && ColdStartDeepLinkData.hasPending) {
+        final pendingUri = ColdStartDeepLinkData.pendingUri!;
+        final pendingType = ColdStartDeepLinkData.pendingNotificationType;
+        ColdStartDeepLinkData.clear();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_aborted) return; // 프레임 콜백 실행 전 중단됐을 경우 딥링크 라우팅 차단
+          final ctx = navigatorKey.currentContext;
+          if (ctx != null) {
+            RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType);
+          }
+        });
+      } else {
+        ColdStartDeepLinkData.clear(); // 온보딩 등 비대상 화면 → 딥링크 데이터 폐기
+      }
     }
   }
 
@@ -167,8 +218,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       }
 
       await FirebaseService().handleFcmToken();
-      return MainScreen(key: MainScreen.globalKey);
+      return const MainScreen();
     } catch (e) {
+      // 네트워크 예외는 재throw → _initAndNavigate()의 catch에서 SnackBar 표시
+      if (e is SocketException || e is TimeoutException) rethrow;
       debugPrint('[SplashScreen] 사용자 정보 로드 실패: $e');
       return const LoginScreen();
     }

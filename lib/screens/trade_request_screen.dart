@@ -18,6 +18,7 @@ import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
@@ -68,6 +69,12 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
   /// API 요청 진행 중 여부
   bool _isSubmitting = false;
 
+  /// 선택한 카드에 대한 거래 요청 존재 여부 (null = 확인 중)
+  bool? _tradeRequestExists;
+
+  /// 거래 요청 존재 여부 확인 중 여부
+  bool _isCheckingExistence = false;
+
   @override
   void initState() {
     super.initState();
@@ -103,9 +110,11 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
       });
 
       // preSelectedCardId가 있으면 해당 카드 찾아서 선택 후 _hasSelectedCard를 true로 설정
+      int initialIndex = 0;
       if (widget.preSelectedCardId != null && items.isNotEmpty) {
         final preSelectedIndex = items.indexWhere((item) => item.itemId == widget.preSelectedCardId);
         if (preSelectedIndex >= 0) {
+          initialIndex = preSelectedIndex;
           setState(() {
             _selectedCardIndex = preSelectedIndex;
             _hasSelectedCard = true;
@@ -118,13 +127,17 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           });
         }
       }
+
+      if (items.isNotEmpty) {
+        _checkTradeRequestExistence(initialIndex);
+      }
     } catch (e) {
       debugPrint('내 물품 목록 로드 실패: $e');
       if (!mounted) return;
 
       setState(() => _isLoading = false);
 
-      CommonSnackBar.show(context: context, message: '물품 목록을 불러오는데 실패했습니다.', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     }
   }
 
@@ -148,6 +161,32 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
         aiPrice: item.isAiPredictedPrice ?? false,
       );
     }).toList();
+  }
+
+  /// 선택한 카드에 거래 요청이 존재하는지 확인
+  Future<void> _checkTradeRequestExistence(int cardIndex) async {
+    if (_myItems.isEmpty) return;
+
+    setState(() {
+      _tradeRequestExists = null;
+      _isCheckingExistence = true;
+    });
+
+    try {
+      final exists = await TradeApi().checkTradeRequestExistence(
+        TradeRequest(takeItemId: widget.targetItem.itemId, giveItemId: _myItems[cardIndex].itemId),
+      );
+
+      if (!mounted) return;
+
+      setState(() => _tradeRequestExists = exists);
+    } catch (e) {
+      debugPrint('거래 요청 존재 여부 확인 실패: $e');
+      if (!mounted) return;
+      setState(() => _tradeRequestExists = false);
+    } finally {
+      if (mounted) setState(() => _isCheckingExistence = false);
+    }
   }
 
   /// 거래 요청 API 호출
@@ -226,7 +265,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow))
+                      ? const Center(child: CommonLoadingIndicator())
                       : _myItemCards.isEmpty
                       ? _buildEmptyState()
                       : _buildTradeRequestStep(),
@@ -277,8 +316,12 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
   /// 거래방식 선택 및 요청
   Widget _buildTradeRequestStep() {
+    final bool isRequestDisabled = _isSubmitting || _tradeRequestExists == true || _isCheckingExistence;
+
     // 요청하기 버튼 색
-    Color requestButtonColor = _isSubmitting ? AppColors.primaryYellow.withValues(alpha: 0.5) : AppColors.primaryYellow;
+    Color requestButtonColor = isRequestDisabled
+        ? AppColors.primaryYellow.withValues(alpha: 0.5)
+        : AppColors.primaryYellow;
     // 요청하기 버튼 highlightColor
     Color requestButtonHighlightColor = darkenBlend(requestButtonColor);
     Color requestButtonSplashColor = requestButtonHighlightColor.withValues(alpha: 0.3);
@@ -318,6 +361,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                           itemCount: _myItemCards.length,
                           onPageChanged: (index) {
                             setState(() => _selectedCardIndex = index);
+                            _checkTradeRequestExistence(index);
                           },
                           itemBuilder: (context, index) {
                             return Padding(
@@ -348,16 +392,23 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           SizedBox(height: _hasSelectedCard ? 31.h : 23.h),
 
           // 거래방식 선택 섹션
-          TradeRequestTradeOptionSelector(
-            selectedOptions: _selectedTradeOptions,
-            onChanged: (next) {
-              setState(() {
-                _selectedTradeOptions
-                  ..clear()
-                  ..addAll(next);
-              });
-            },
-          ),
+          if (_tradeRequestExists == true)
+            Container(
+              height: 90.h,
+              alignment: Alignment.center,
+              child: Text('이미 교환을 요청한 물품입니다.', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
+            )
+          else
+            TradeRequestTradeOptionSelector(
+              selectedOptions: _selectedTradeOptions,
+              onChanged: (next) {
+                setState(() {
+                  _selectedTradeOptions
+                    ..clear()
+                    ..addAll(next);
+                });
+              },
+            ),
 
           SizedBox(height: _hasSelectedCard ? 24.h : 16.h),
 
@@ -393,16 +444,13 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
                     borderRadius: BorderRadius.circular(10.r),
                     child: InkWell(
                       customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                      onTap: _isSubmitting ? null : _submitTradeRequest,
+                      onTap: isRequestDisabled ? null : _submitTradeRequest,
                       highlightColor: requestButtonHighlightColor,
                       splashColor: requestButtonSplashColor,
                       child: Center(
-                        child: _isSubmitting
-                            ? SizedBox(
-                                width: 24.w,
-                                height: 24.h,
-                                child: const CircularProgressIndicator(color: AppColors.textColorBlack, strokeWidth: 2),
-                              )
+                        // 요청 중이면 검정 스피너, 아니면 버튼 텍스트
+                        child: (_isSubmitting || _isCheckingExistence)
+                            ? const CommonLoadingIndicator(color: AppColors.textColorBlack)
                             : Text('요청하기', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
                       ),
                     ),

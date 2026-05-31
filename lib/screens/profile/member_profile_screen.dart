@@ -1,34 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/screens/member_report_screen.dart';
-import 'package:romrom_fe/screens/my_page/my_profile_edit_screen.dart';
+import 'package:romrom_fe/states/member_profile_state.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
+import 'package:romrom_fe/widgets/skeletons/profile_screen_skeleton.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
-import 'package:romrom_fe/widgets/profile_sections.dart';
-import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
+import 'package:romrom_fe/widgets/profile/profile_exchange_section.dart';
+import 'package:romrom_fe/widgets/profile/profile_overview_section.dart';
+import 'package:romrom_fe/widgets/profile/profile_review_section.dart';
 
 /// 멤버 프로필 조회 화면
 /// 내 프로필이면 "프로필 수정" 버튼 표시, 타인 프로필이면 읽기 전용
-class MemberProfileScreen extends StatefulWidget {
+class MemberProfileScreen extends ConsumerStatefulWidget {
   final String memberId;
 
   const MemberProfileScreen({super.key, required this.memberId});
 
   @override
-  State<MemberProfileScreen> createState() => _MemberProfileScreenState();
+  ConsumerState<MemberProfileScreen> createState() => _MemberProfileScreenState();
 }
 
-class _MemberProfileScreenState extends State<MemberProfileScreen> {
+class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   bool _isMyProfile = false;
@@ -36,6 +42,17 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
   bool _blockStatusChanged = false;
   bool _deleteModalShown = false;
 
+  // 내 프로필 인라인 편집 상태
+  bool _showSaveButton = false;
+  bool _isProfileEdited = false;
+  bool _isSaving = false;
+
+  // 섹션 로딩 조율
+  bool _exchangeLoaded = false;
+  bool _reviewLoaded = false;
+  bool get _showContent => !_isLoading && _exchangeLoaded && _reviewLoaded;
+
+  // 표시 데이터 (타인 분기는 로컬 state, 본인 분기는 provider에서 파생)
   String _accountStatus = '';
   String _nickname = '';
   String _profileUrl = '';
@@ -54,10 +71,10 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
       _isMyProfile = await UserInfo().isSameMember(widget.memberId);
 
       if (_isMyProfile) {
-        // 내 프로필이면 API로 최신 정보 조회
-        await _loadMyProfileFromApi();
+        // 본인: provider 값을 로컬 편집 state에 복사 (reload 완료 후 isLoading=false 처리)
+        await _syncFromProvider();
       } else {
-        // 타인 프로필이면 API로 정보 조회
+        // 타인: 기존 직접 API 조회 유지
         await _loadOtherProfileFromApi();
       }
 
@@ -84,34 +101,50 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
           _isLoading = false;
           _hasError = true;
         });
-        CommonSnackBar.show(context: context, message: '프로필을 불러오는데 실패했습니다', type: SnackBarType.error);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }
 
-  Future<void> _loadMyProfileFromApi() async {
-    final memberApi = MemberApi();
-    final memberResponse = await memberApi.getMemberInfo();
+  /// 본인 분기: provider 현재 값을 로컬 편집 state로 동기화.
+  /// provider가 아직 로딩 중이면 reload 후 재시도.
+  Future<void> _syncFromProvider() async {
+    final profileState = ref.read(memberProfileProvider);
 
-    if (mounted) {
-      setState(() {
-        _accountStatus = memberResponse.member?.accountStatus ?? '';
-        _nickname = memberResponse.member?.nickname ?? '닉네임';
-        _profileUrl = memberResponse.member?.profileUrl ?? '';
-        _totalLikeCount = memberResponse.member?.totalLikeCount ?? 0;
-
-        final location = memberResponse.memberLocation;
-        if (location != null) {
-          final siGunGu = location.siGunGu ?? '';
-          final eupMyoenDong = location.eupMyoenDong ?? '';
-          final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
-          _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
+    if (profileState.hasValue && profileState.value != null) {
+      _applyProfileState(profileState.value!);
+    } else {
+      try {
+        await ref.read(memberProfileProvider.notifier).reload();
+        if (!mounted) return;
+        final s = ref.read(memberProfileProvider).value;
+        if (s != null) setState(() => _applyProfileState(s));
+      } catch (e) {
+        debugPrint('memberProfileProvider reload 실패: $e');
+        if (mounted) {
+          setState(() => _hasError = true);
+          CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
         }
-      });
+      }
     }
   }
 
-  /// 타인 프로필 API 조회
+  void _applyProfileState(MemberProfileState state) {
+    _accountStatus = state.member?.accountStatus ?? '';
+    _nickname = state.member?.nickname ?? '닉네임';
+    _profileUrl = state.member?.profileUrl ?? '';
+    _totalLikeCount = state.member?.totalLikeCount ?? 0;
+
+    final loc = state.location;
+    if (loc != null) {
+      final siGunGu = loc.siGunGu ?? '';
+      final eupMyoenDong = loc.eupMyoenDong ?? '';
+      final combined = '$siGunGu $eupMyoenDong'.trim();
+      _location = combined.isNotEmpty ? combined : '위치정보 없음';
+    }
+  }
+
+  /// 타인 프로필 API 조회 (기존 그대로 유지)
   Future<void> _loadOtherProfileFromApi() async {
     final memberApi = MemberApi();
     final memberResponse = await memberApi.getMemberProfile(widget.memberId);
@@ -130,19 +163,38 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     }
   }
 
-  Future<void> _navigateToEditScreen() async {
-    final result = await context.navigateTo(screen: const MyProfileEditScreen());
+  /// 내 프로필 저장 — provider.updateProfile 경유로 캐시 자동 갱신
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
+    if (!_isProfileEdited || _nickname.isEmpty) return;
 
-    // 수정 후 돌아왔을 때 정보 새로고침
-    if (result == true && mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-      await _loadProfileData();
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(memberProfileProvider.notifier).updateProfile(nickname: _nickname, profileUrl: _profileUrl);
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: '프로필이 업데이트되었습니다.', type: SnackBarType.success);
+        setState(() {
+          _showSaveButton = false;
+          _isProfileEdited = false;
+        });
+      }
+    } on UgcViolationException catch (e) {
+      if (mounted) {
+        final ugcMessage = e.violatingText.isNotEmpty
+            ? '\'${e.violatingText}\'이(가) 포함된\n부적절한 표현입니다.\n수정 후 다시 시도해주세요.'
+            : '부적절한 표현이 포함되어 있습니다.\n수정 후 다시 시도해주세요.';
+        CommonModal.error(context: context, message: ugcMessage, onConfirm: () => Navigator.of(context).pop());
+      }
+    } catch (e) {
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
-  /// 차단/차단해제 토글 처리
+  /// 차단/차단해제 토글 처리 (타인 전용, 그대로 유지)
   Future<void> _handleBlockToggle() async {
     final memberApi = MemberApi();
     bool success;
@@ -165,8 +217,22 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     }
   }
 
-  /// 뒤로가기 처리 - 차단 상태 변경 시 결과 반환
+  /// 뒤로가기 처리 - 미저장 변경 확인 후 차단 상태 변경 시 결과 반환
   void _handleBackPressed() {
+    if (_isMyProfile && _isProfileEdited) {
+      CommonModal.confirm(
+        context: context,
+        message: '변경 사항이 저장되지 않았습니다.\n저장하지 않고 나가시겠습니까?',
+        confirmText: '나가기',
+        cancelText: '취소',
+        onCancel: () => Navigator.of(context).pop(),
+        onConfirm: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+        },
+      );
+      return;
+    }
     if (_blockStatusChanged) {
       Navigator.pop(context, {'memberId': widget.memberId, 'isBlocked': _isBlockedUser});
     } else {
@@ -190,10 +256,7 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.primaryBlack,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
-      );
+      return const Scaffold(backgroundColor: AppColors.primaryBlack, body: ProfileScreenSkeleton());
     }
 
     if (_hasError) {
@@ -232,85 +295,85 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
         appBar: CommonAppBar(
           title: '프로필',
           showBottomBorder: true,
-          actions: _isMyProfile ? null : [_buildProfileMenu()],
+          actions: _isMyProfile
+              ? (_showSaveButton
+                    ? [
+                        Padding(
+                          padding: EdgeInsets.only(right: 24.0.w),
+                          child: GestureDetector(
+                            onTap: _handleSave,
+                            child: Text(
+                              '저장',
+                              style: CustomTextStyles.h2.copyWith(
+                                color: _isProfileEdited && _nickname.isNotEmpty
+                                    ? AppColors.primaryYellow
+                                    : AppColors.secondaryBlack2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ]
+                    : null)
+              : [_buildProfileMenu()],
           onBackPressed: () => _handleBackPressed(),
         ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
-              children: [
-                SizedBox(height: 56.h),
-
-                // 프로필 이미지
-                _buildProfileImageSection(),
-
-                SizedBox(height: 24.h),
-
-                // 닉네임
-                _buildNicknameSection(),
-
-                SizedBox(height: 8.h),
-
-                // 차단여부
-                _buildBlockedStatusSection(),
-
-                SizedBox(height: 52.h),
-
-                // 위치 섹션
-                ProfileInfoSection(label: '위치', value: _location),
-
-                SizedBox(height: 16.h),
-
-                // 받은 좋아요 수 섹션
-                ProfileLikesSection(likeCount: _totalLikeCount),
-
-                // 내 프로필인 경우 수정 버튼
-                if (_isMyProfile) ...[SizedBox(height: 40.h), _buildEditButton()],
-              ],
-            ),
-          ),
+        body: Stack(
+          children: [
+            Offstage(offstage: !_showContent, child: _buildProfileContent()),
+            if (!_showContent) const ProfileScreenSkeleton(),
+          ],
         ),
       ),
     );
   }
 
-  /// 프로필 이미지 섹션
-  Widget _buildProfileImageSection() {
-    return UserProfileCircularAvatar(
-      avatarSize: Size(132.w, 132.h),
-      profileUrl: _profileUrl.isNotEmpty ? _profileUrl : null,
-      hasBorder: true,
-      isDeleteAccount: _accountStatus == AccountStatus.deleteAccount.serverName,
-    );
-  }
-
-  /// 닉네임 섹션
-  Widget _buildNicknameSection() {
-    return Text(_nickname, style: CustomTextStyles.h2, textAlign: TextAlign.center);
-  }
-
-  /// 차단 여부 섹션
-  Widget _buildBlockedStatusSection() {
-    return Text(
-      _isBlockedUser ? '차단됨' : '',
-      style: CustomTextStyles.p2.copyWith(color: AppColors.isBlockedStatusText),
-      textAlign: TextAlign.center,
-    );
-  }
-
-  /// 프로필 수정 버튼 (내 프로필인 경우만)
-  Widget _buildEditButton() {
-    return GestureDetector(
-      onTap: _navigateToEditScreen,
-      child: Container(
-        width: double.infinity,
-        height: 48.h,
-        decoration: BoxDecoration(color: AppColors.primaryYellow, borderRadius: BorderRadius.circular(10.r)),
-        alignment: Alignment.center,
-        child: Text(
-          '프로필 수정',
-          style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
+  Widget _buildProfileContent() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        child: Wrap(
+          runSpacing: 16.h,
+          children: [
+            ProfileOverviewSection(
+              isEditable: _isMyProfile,
+              nickname: _nickname,
+              imageUrl: _profileUrl,
+              location: _location,
+              receivedLikes: _totalLikeCount,
+              accountStatus: _accountStatus,
+              onShowSaveButton: _isMyProfile ? () => setState(() => _showSaveButton = true) : null,
+              onUploadFailed: _isMyProfile
+                  ? () {
+                      if (!_isProfileEdited) setState(() => _showSaveButton = false);
+                    }
+                  : null,
+              onImageUploaded: _isMyProfile
+                  ? (url) => setState(() {
+                      _profileUrl = url;
+                      _isProfileEdited = true;
+                    })
+                  : null,
+              onNicknameChanged: _isMyProfile
+                  ? (nickname) => setState(() {
+                      _nickname = nickname;
+                      _isProfileEdited = true;
+                      _showSaveButton = true;
+                    })
+                  : null,
+            ),
+            if (!_isMyProfile && _isBlockedUser)
+              Center(
+                child: Text('차단됨', style: CustomTextStyles.p2.copyWith(color: AppColors.isBlockedStatusText)),
+              ),
+            ProfileExchangeSection(
+              memberId: _isMyProfile ? null : widget.memberId,
+              onLoaded: () => setState(() => _exchangeLoaded = true),
+            ),
+            ProfileReviewSection(
+              memberId: _isMyProfile ? null : widget.memberId,
+              onLoaded: () => setState(() => _reviewLoaded = true),
+            ),
+          ],
         ),
       ),
     );

@@ -55,7 +55,7 @@ class RomAuthApi {
   /// 정지 계정인 경우 AccountSuspendedException throw
   /// 정상 계정인 경우 토큰 저장 후 정상 반환
   Future<void> signInWithSocial({required String firebaseIdToken, required String providerId}) async {
-    const String url = '${AppUrls.baseUrl}/api/auth/login';
+    final String url = '${AppUrls.baseUrl}/api/auth/login';
 
     try {
       // 사용자 정보 불러옴
@@ -225,7 +225,7 @@ class RomAuthApi {
   /// POST : `/api/auth/logout` 서버 로그아웃 API 호출
   Future<void> logout() async {
     await MemberManager.clearMemberInfo();
-    const String url = '${AppUrls.baseUrl}/api/auth/logout';
+    final String url = '${AppUrls.baseUrl}/api/auth/logout';
     await ApiClient.sendMultipartRequest(
       url: url,
       fields: {

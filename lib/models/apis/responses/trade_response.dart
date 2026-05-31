@@ -3,6 +3,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/models/apis/objects/api_page.dart';
 import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 
 part 'trade_response.g.dart';
 
@@ -12,12 +13,14 @@ class TradeResponse {
   final PagedTradeRequestHistory? tradeRequestHistoryPage;
   final PagedItem? itemPage;
   final bool? tradeRequestHistoryExists; // 거래 요청 이력 존재 여부
+  final PagedTradeReview? tradeReviewPage;
 
   TradeResponse({
     this.tradeRequestHistory,
     this.tradeRequestHistoryPage,
     this.itemPage,
     this.tradeRequestHistoryExists,
+    this.tradeReviewPage,
   });
 
   factory TradeResponse.fromJson(Map<String, dynamic> json) => _$TradeResponseFromJson(json);
@@ -86,6 +89,65 @@ class PagedItem {
   Map<String, dynamic> toJson() => _$PagedItemToJson(this);
 }
 
+/// Individual trade review
+@JsonSerializable(explicitToJson: true)
+class TradeReview extends BaseEntity {
+  final String? tradeReviewId;
+  final TradeRequestHistory? tradeRequestHistory;
+  final Member? reviewerMember;
+  final Member? reviewedMember;
+  final String? tradeReviewRating;
+  final List<String>? tradeReviewTags;
+  final String? reviewComment;
+
+  TradeReview({
+    this.tradeReviewId,
+    this.tradeRequestHistory,
+    this.reviewerMember,
+    this.reviewedMember,
+    this.tradeReviewRating,
+    this.tradeReviewTags,
+    this.reviewComment,
+    super.createdDate,
+    super.updatedDate,
+  });
+
+  factory TradeReview.fromJson(Map<String, dynamic> json) => _$TradeReviewFromJson(json);
+  @override
+  Map<String, dynamic> toJson() => _$TradeReviewToJson(this);
+}
+
+/// `Paged<TradeReview>` — flat Spring Page structure
+@JsonSerializable(explicitToJson: true)
+class PagedTradeReview {
+  @JsonKey(fromJson: _tradeReviewListFromJson, toJson: _tradeReviewListToJson)
+  final List<TradeReview> content;
+
+  final int? totalPages;
+  final int? totalElements;
+  final int? size;
+  final int? number;
+  final bool? last;
+  final bool? first;
+  final bool? empty;
+  final int? numberOfElements;
+
+  PagedTradeReview({
+    required this.content,
+    this.totalPages,
+    this.totalElements,
+    this.size,
+    this.number,
+    this.last,
+    this.first,
+    this.empty,
+    this.numberOfElements,
+  });
+
+  factory PagedTradeReview.fromJson(Map<String, dynamic> json) => _$PagedTradeReviewFromJson(json);
+  Map<String, dynamic> toJson() => _$PagedTradeReviewToJson(this);
+}
+
 /// ---------- converters ----------
 Item _itemFromJson(Object? value) {
   if (value is Map<String, dynamic>) return Item.fromJson(value);
@@ -127,5 +189,14 @@ List<Item> _itemsFromJson(Object? value) {
 }
 
 Object _itemsToJson(List<Item> list) => list.map((e) => e.toJson()).toList();
+
+List<TradeReview> _tradeReviewListFromJson(Object? value) {
+  if (value is List) {
+    return value.whereType<Map<String, dynamic>>().map(TradeReview.fromJson).toList();
+  }
+  return const <TradeReview>[];
+}
+
+Object _tradeReviewListToJson(List<TradeReview> list) => list.map((e) => e.toJson()).toList();
 
 /// --------------------------------

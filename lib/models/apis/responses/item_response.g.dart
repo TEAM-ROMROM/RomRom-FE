@@ -11,6 +11,7 @@ ItemResponse _$ItemResponseFromJson(Map<String, dynamic> json) => ItemResponse(
   itemPage: json['itemPage'] == null ? null : ItemPage.fromJson(json['itemPage'] as Map<String, dynamic>),
   isLiked: json['isLiked'] as bool?,
   isFirstItemPosted: json['isFirstItemPosted'] as bool?,
+  recommendedCategories: (json['recommendedCategories'] as List<dynamic>?)?.map((e) => e as String).toList(),
 );
 
 Map<String, dynamic> _$ItemResponseToJson(ItemResponse instance) => <String, dynamic>{
@@ -18,6 +19,7 @@ Map<String, dynamic> _$ItemResponseToJson(ItemResponse instance) => <String, dyn
   'itemPage': instance.itemPage,
   'isLiked': instance.isLiked,
   'isFirstItemPosted': instance.isFirstItemPosted,
+  'recommendedCategories': instance.recommendedCategories,
 };
 
 ItemPage _$ItemPageFromJson(Map<String, dynamic> json) => ItemPage(

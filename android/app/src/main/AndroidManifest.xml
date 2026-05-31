@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- 위치 권한 요청 -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -14,6 +15,23 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- 카메라 촬영 권한 (image_picker 카메라 소스) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- 갤러리/이미지 접근 권한 (image_picker)
+         Android 13+(API 33)에서는 image_picker가 시스템 Photo Picker를 자동 사용하므로
+         READ_MEDIA_IMAGES 등 광범위 미디어 권한이 불필요하다.
+         READ_MEDIA_IMAGES를 선언하면 Google Play가 'Photo and Video Permissions Declaration'
+         제출을 강제해 업로드가 차단되므로(이슈 #871), tools:node="remove"로 명시 제거.
+         Android 12 이하(maxSdkVersion=32) 호환을 위해 READ_EXTERNAL_STORAGE만 유지한다. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+        tools:node="remove"/>
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
 
     <application
         android:label="롬롬"
@@ -105,6 +123,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
 
     </application>
     <!-- Required to query activities that can process text, see:

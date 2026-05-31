@@ -8,7 +8,6 @@ import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/exceptions/item_deleted_exception.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
-import 'package:romrom_fe/main.dart' show navigatorKey;
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/item_deleted_screen.dart';
@@ -149,6 +148,7 @@ class ApiClient {
     Map<String, List<File>>? files,
     bool isAuthRequired = true,
     required Function(dynamic) onSuccess,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     try {
       // 인증이 필요한 경우 토큰 불러옴
@@ -171,6 +171,7 @@ class ApiClient {
         accessToken: accessToken, // null -> 인증 헤더 추가 안함
         fields: fields,
         files: files,
+        timeout: timeout,
       );
 
       // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
@@ -213,6 +214,7 @@ class ApiClient {
             accessToken: accessToken,
             fields: fields,
             files: files,
+            timeout: timeout,
           );
 
           // 토큰 갱신 후 재시도에서도 UGC 위반 체크
@@ -253,6 +255,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool isAuthRequired = true,
     required Function(Map<String, dynamic>) onSuccess,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     try {
       // 인증이 필요한 경우 토큰 불러옴
@@ -274,6 +277,7 @@ class ApiClient {
         method: method,
         accessToken: accessToken,
         body: body,
+        timeout: timeout,
       );
 
       // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
@@ -300,7 +304,13 @@ class ApiClient {
         if (isRefreshed) {
           accessToken = await _tokenManager.getAccessToken();
 
-          response = await _executeHttpRequest(url: url, method: method, accessToken: accessToken, body: body);
+          response = await _executeHttpRequest(
+            url: url,
+            method: method,
+            accessToken: accessToken,
+            body: body,
+            timeout: timeout,
+          );
 
           // 토큰 갱신 후 재시도에서도 UGC 위반 체크
           final ugcViolationHttpRetry = _handleUgcViolationResponse(response);
@@ -330,6 +340,7 @@ class ApiClient {
     String? accessToken,
     Map<String, dynamic>? fields,
     Map<String, List<File>>? files,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     // MultipartRequest 생성
     var request = http.MultipartRequest(method, Uri.parse(url));
@@ -377,7 +388,7 @@ class ApiClient {
     }
 
     // 로깅 클라이언트로 요청 전송
-    var streamedResponse = await _client.send(request);
+    var streamedResponse = await _client.sendWithTimeout(request, timeout);
     return await http.Response.fromStream(streamedResponse);
   }
 
@@ -387,8 +398,8 @@ class ApiClient {
     required String method,
     String? accessToken,
     Map<String, dynamic>? body,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
-    // Request 준비
     Uri uri = Uri.parse(url);
     Map<String, String> headers = {'Content-Type': 'application/json'};
 
@@ -396,35 +407,14 @@ class ApiClient {
       headers['Authorization'] = 'Bearer $accessToken';
     }
 
-    String? jsonBody;
+    final request = http.Request(method.toUpperCase(), uri);
+    request.headers.addAll(headers);
     if (body != null) {
-      jsonBody = jsonEncode(body);
+      request.body = jsonEncode(body);
     }
 
-    http.Response response;
-
-    // HTTP 메소드에 따라 요청 실행
-    switch (method.toUpperCase()) {
-      case 'GET':
-        response = await _client.get(uri, headers: headers);
-        break;
-      case 'POST':
-        response = await _client.post(uri, headers: headers, body: jsonBody);
-        break;
-      case 'PUT':
-        response = await _client.put(uri, headers: headers, body: jsonBody);
-        break;
-      case 'DELETE':
-        response = await _client.delete(uri, headers: headers, body: jsonBody);
-        break;
-      case 'PATCH':
-        response = await _client.patch(uri, headers: headers, body: jsonBody);
-        break;
-      default:
-        throw Exception('지원하지 않는 HTTP 메소드: $method');
-    }
-
-    return response;
+    final streamedResponse = await _client.sendWithTimeout(request, timeout);
+    return await http.Response.fromStream(streamedResponse);
   }
 
   /// 응답 처리
@@ -451,7 +441,7 @@ class ApiClient {
       final refreshToken = await _tokenManager.getRefreshToken();
       if (refreshToken == null) return false;
 
-      const String url = '${AppUrls.baseUrl}/api/auth/reissue';
+      final String url = '${AppUrls.baseUrl}/api/auth/reissue';
 
       var response = await _executeMultipartRequest(url: url, method: 'POST', fields: {'refreshToken': refreshToken});
 
