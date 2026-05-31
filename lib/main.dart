@@ -139,7 +139,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         }
       }
 
-      ColdStartDeepLinkData.setPending(uri, notificationType: notificationType);
+      ColdStartDeepLinkData.setPending(uri, notificationType: notificationType, extraData: message.data);
     } catch (e) {
       debugPrint('[FCM] 콜드 스타트 초기 메시지 처리 실패: $e');
     }
