@@ -146,3 +146,6 @@ windows/flutter/generated_plugins.cmake
 
 # superpowers brainstorming session files (local only)
 .superpowers/
+
+# codegraph local index
+.codegraph/
