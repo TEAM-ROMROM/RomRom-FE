@@ -307,117 +307,184 @@
       </div>
     </section>
 
-<!-- 히어로 섹션 -->
-<section class="snap-section hero-section w-full relative overflow-hidden">
-  <div class="hero-spotlight"></div>
-  <div
-    class="pt-36 pb-24 px-8 sm:px-10 lg:px-16 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-14 lg:gap-20 min-h-screen relative z-10"
+<!-- CTA 섹션 -->
+<section
+  class="snap-section flex flex-col items-center justify-center bg-surface text-center px-8 fade-up"
+>
+  <h2
+    class="text-4xl md:text-5xl font-black tracking-tighter mb-6 text-textMain"
   >
-    <div
-      class="flex-1 text-center lg:text-left z-10 flex flex-col items-center lg:items-start"
-    >
-      <h1
-        class="text-4xl md:text-5xl lg:text-[4.5rem] font-black tracking-tightest leading-[1.25] mb-7 fade-up delay-100"
+    물물교환의 새로운 기준, 롬롬
+  </h2>
+  <p class="text-textMuted text-lg mb-12 font-medium">
+    지금 바로 교환을 시작하세요.
+  </p>
+  <button
+    class="js-download-trigger btn-highlight bg-textMain text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-brand hover:text-black transition-colors"
+  >
+    앱 다운로드
+  </button>
+</section>
+
+<!-- 고객지원 / Support -->
+<section
+  id="support"
+  class="snap-section flex items-center bg-surface border-t border-borderLight px-8 sm:px-10 lg:px-16"
+  style="scroll-margin-top: 80px"
+>
+  <div class="max-w-7xl mx-auto w-full py-24">
+    <div class="max-w-3xl">
+      <span class="text-brand font-black text-sm tracking-[0.2em] uppercase"
+        >Support</span
       >
-        <span class="highlight-yellow">물물교환,</span><br />모든 것이<br />가치가
-        되다
-      </h1>
+      <h2
+        class="mt-4 text-3xl lg:text-4xl font-black tracking-tight text-textMain"
+      >
+        롬롬 고객지원
+      </h2>
       <p
-        class="text-textMuted text-base md:text-lg max-w-md leading-relaxed mb-10 font-medium fade-up delay-200"
+        class="mt-5 text-textMuted text-base md:text-lg leading-relaxed font-medium"
       >
-        안 쓰는 물건, 나의 재능, 현금을 자유롭게 섞어 원하는 가치와
-        교환해보세요.
+        롬롬 이용 중 궁금한 점, 오류 신고, 계정 문제, 거래 요청 및 채팅 관련
+        문의, 사용자 신고, 기능 제안이 있다면 아래 이메일로 문의해주세요.
       </p>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div
-        class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto fade-up delay-200"
+        class="bg-white rounded-[1.75rem] border border-borderLight p-7 shadow-sm"
       >
-        <button
-          class="js-download-trigger flex items-center justify-center gap-3 bg-surface text-textMain px-8 py-4 rounded-full font-bold text-base border border-borderLight shadow-sm hover:bg-white transition-colors whitespace-nowrap"
-          data-store="appstore"
+        <div
+          class="w-11 h-11 rounded-full bg-brand/20 flex items-center justify-center mb-5"
         >
-          <i
-            class="fa-brands fa-apple text-[22px] text-black"
-            aria-hidden="true"
-          ></i>
-          App Store
-        </button>
-        <button
-          class="js-download-trigger flex items-center justify-center gap-3 bg-surface text-textMain px-8 py-4 rounded-full font-bold text-base border border-borderLight shadow-sm hover:bg-white transition-colors whitespace-nowrap"
-          data-store="googleplay"
+          <i class="fa-solid fa-envelope text-textMain"></i>
+        </div>
+        <h3 class="text-lg font-black mb-3">문의 이메일</h3>
+        <a
+          href="mailto:romrom.app.support@gmail.com"
+          class="text-textMain font-bold underline underline-offset-4 break-all"
         >
-          <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-            <defs>
-              <linearGradient id="playGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#34A853" />
-                <stop offset="45%" stop-color="#4285F4" />
-                <stop offset="70%" stop-color="#FBBC05" />
-                <stop offset="100%" stop-color="#EA4335" />
-              </linearGradient>
-            </defs>
-            <path d="M4 2.5L20 12L4 21.5V2.5Z" fill="url(#playGradient)" />
-          </svg>
-          Google Play
-        </button>
+          jowheemin@gmail.com
+        </a>
+        <p class="mt-3 text-sm text-textMuted leading-relaxed font-medium">
+          앱 이용 문의, 오류 제보, 계정 관련 문의를 접수합니다.
+        </p>
+      </div>
+
+      <div
+        class="bg-white rounded-[1.75rem] border border-borderLight p-7 shadow-sm"
+      >
+        <div
+          class="w-11 h-11 rounded-full bg-brand/20 flex items-center justify-center mb-5"
+        >
+          <i class="fa-solid fa-circle-question text-textMain"></i>
+        </div>
+        <h3 class="text-lg font-black mb-3">문의 가능 항목</h3>
+        <ul
+          class="space-y-2 text-sm text-textMuted leading-relaxed font-medium"
+        >
+          <li>계정 및 로그인 문제</li>
+          <li>앱 오류 및 버그 제보</li>
+          <li>거래 요청, 채팅, 알림 관련 문제</li>
+          <li>부적절한 사용자 또는 게시물 신고</li>
+          <li>서비스 피드백 및 기능 제안</li>
+        </ul>
+      </div>
+
+      <div
+        class="bg-white rounded-[1.75rem] border border-borderLight p-7 shadow-sm"
+      >
+        <div
+          class="w-11 h-11 rounded-full bg-brand/20 flex items-center justify-center mb-5"
+        >
+          <i class="fa-solid fa-clock text-textMain"></i>
+        </div>
+        <h3 class="text-lg font-black mb-3">답변 안내</h3>
+        <p class="text-sm text-textMuted leading-relaxed font-medium">
+          접수된 문의는 영업일 기준 2~3일 이내 답변을 목표로 합니다. 문의 시
+          사용 중인 기기, OS 버전, 앱 버전, 발생 화면을 함께 보내주시면 더
+          정확하게 확인할 수 있습니다.
+        </p>
       </div>
     </div>
+
     <div
-      class="flex-1 flex justify-center lg:justify-end lg:pr-6 w-full z-10 fade-up delay-100"
+      class="mt-8 bg-white rounded-[1.75rem] border border-borderLight p-7 shadow-sm"
     >
-      <img
-        src="/images/hero-mockup.png"
-        alt="롬롬 앱 목업"
-        data-parallax
-        class="w-[85vw] max-w-[440px] lg:max-w-[640px] drop-shadow-[0_25px_60px_rgba(0,0,0,0.12)]"
-      />
+      <h3 class="text-lg font-black mb-3">ROMROM Support Information</h3>
+      <p class="text-sm text-textMuted leading-relaxed font-medium">
+        ROMROM is a local exchange platform where users can exchange items,
+        talents, and services. For questions, app issues, bug reports, account
+        support, user reports, or feature requests, please contact us at
+        <a
+          href="mailto:jowheemin@gmail.com"
+          class="text-textMain font-bold underline underline-offset-4"
+          >jowheemin@gmail.com</a
+        >.
+      </p>
+      <div class="mt-5 flex flex-wrap gap-4 text-sm font-bold">
+        <a
+          href="https://jasper-organ-4fb.notion.site/32124dde98fb801599cbc8555d9b62e0"
+          class="hover:text-textMain text-textMuted transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+          >이용약관</a
+        >
+        <a
+          href="https://jasper-organ-4fb.notion.site/32124dde98fb8016ae64ca031526b237"
+          class="hover:text-textMain text-textMuted transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+          >개인정보처리방침</a
+        >
+      </div>
     </div>
   </div>
 </section>
 
-    <!-- 푸터 -->
-    <footer
-      class="snap-section flex flex-col justify-center bg-white border-t border-borderLight px-8 sm:px-10 lg:px-16 fade-up"
-      style="min-height: auto; scroll-snap-align: start"
-    >
-      <div class="max-w-7xl mx-auto w-full py-12">
-        <div
-          class="flex flex-col md:flex-row justify-between items-center gap-5"
+<!-- 푸터 -->
+<footer
+  class="snap-section flex flex-col justify-center bg-white border-t border-borderLight px-8 sm:px-10 lg:px-16 fade-up"
+  style="min-height: auto; scroll-snap-align: start"
+>
+  <div class="max-w-7xl mx-auto w-full py-12">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-5">
+      <img src="/images/romrom.svg" alt="romrom" class="h-7 w-auto" />
+      <div class="flex gap-6 text-xs md:text-sm text-textMuted font-bold">
+        <a
+          href="https://jasper-organ-4fb.notion.site/32124dde98fb801599cbc8555d9b62e0"
+          class="hover:text-textMain transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+          >이용약관</a
         >
-          <img src="/images/romrom.svg" alt="romrom" class="h-7 w-auto" />
-          <div class="flex gap-6 text-xs md:text-sm text-textMuted font-bold">
-            <a
-              href="https://jasper-organ-4fb.notion.site/32124dde98fb801599cbc8555d9b62e0"
-              class="hover:text-textMain transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-              >이용약관</a
-            >
-            <a
-              href="https://jasper-organ-4fb.notion.site/32124dde98fb8016ae64ca031526b237"
-              class="hover:text-textMain transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-              >개인정보처리방침</a
-            >
-            <a href="#" class="hover:text-textMain transition-colors"
-              >고객지원</a
-            >
-            <a
-              href="https://github.com/TEAM-ROMROM"
-              class="hover:text-textMain transition-colors inline-flex items-center gap-1"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <i class="fa-brands fa-github"></i> GitHub
-            </a>
-          </div>
-        </div>
-        <div
-          class="mt-6 text-center md:text-left text-xs text-textMuted font-medium"
+        <a
+          href="https://jasper-organ-4fb.notion.site/32124dde98fb8016ae64ca031526b237"
+          class="hover:text-textMain transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+          >개인정보처리방침</a
         >
-          © 2026 Team ROMROM. All rights reserved.
-        </div>
+        <a href="#support" class="hover:text-textMain transition-colors"
+          >고객지원</a
+        >
+        <a
+          href="https://github.com/TEAM-ROMROM"
+          class="hover:text-textMain transition-colors inline-flex items-center gap-1"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i class="fa-brands fa-github"></i> GitHub
+        </a>
       </div>
-    </footer>
+    </div>
+    <div
+      class="mt-6 text-center md:text-left text-xs text-textMuted font-medium"
+    >
+      © 2026 Team ROMROM. All rights reserved.
+    </div>
+  </div>
+</footer>
 
     <!-- 다운로드 모달 (데스크탑 전용) -->
     <div

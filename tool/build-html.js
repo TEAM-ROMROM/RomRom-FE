@@ -25,6 +25,7 @@ const BODY_SECTIONS = [
   "section-feature-02.html",
   "section-feature-03.html",
   "section-cta.html",
+  "support.html",
   "footer.html",
   "modal-download.html",
   "scripts.html",
