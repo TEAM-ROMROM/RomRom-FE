@@ -222,6 +222,35 @@ class RomAuthApi {
     }
   }
 
+  /// POST : `/api/auth/kakao/firebase-token` 카카오 accessToken으로 Firebase Custom Token 발급
+  Future<String> getKakaoFirebaseToken(String accessToken) async {
+    final String url = '${AppUrls.baseUrl}/api/auth/kakao/firebase-token';
+
+    try {
+      http.Response response = await ApiClient.sendHttpRequest(
+        url: url,
+        method: 'POST',
+        body: {'accessToken': accessToken},
+        isAuthRequired: false,
+        onSuccess: (_) {},
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final String customToken = responseData['customToken'] as String;
+        debugPrint('Firebase Custom Token 발급 성공');
+        return customToken;
+      } else {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        final String errorCode = errorData['code'] ?? 'UNKNOWN';
+        throw Exception('Firebase Custom Token 발급 실패: $errorCode (${response.statusCode})');
+      }
+    } catch (e) {
+      debugPrint('getKakaoFirebaseToken 실패: $e');
+      rethrow;
+    }
+  }
+
   /// POST : `/api/auth/logout` 서버 로그아웃 API 호출
   Future<void> logout() async {
     await MemberManager.clearMemberInfo();
