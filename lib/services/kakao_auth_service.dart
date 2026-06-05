@@ -37,10 +37,14 @@ class KakaoAuthService {
   }
 
   /// 백엔드 발급 Custom Token으로 Firebase 로그인
-  Future<void> _signInWithFirebaseCustomToken(String kakaoAccessToken) async {
+  ///
+  /// [kakaoEmail]은 기존 카카오 회원 매칭을 위한 fallback 식별자 (nullable)
+  Future<void> _signInWithFirebaseCustomToken({required String kakaoAccessToken, String? kakaoEmail}) async {
     try {
-      // 백엔드에서 Firebase Custom Token 발급
-      final String customToken = await romAuthApi.getKakaoFirebaseToken(kakaoAccessToken);
+      final String customToken = await romAuthApi.getKakaoFirebaseToken(
+        kakaoAccessToken: kakaoAccessToken,
+        email: kakaoEmail,
+      );
 
       // Custom Token으로 Firebase 로그인 (UID = kakao:{카카오회원번호} 고정)
       final UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
@@ -52,11 +56,10 @@ class KakaoAuthService {
   }
 
   /// 로그인 성공 후 후처리 함수
-  Future<void> _handleLoginSuccess(OAuthToken token) async {
-    debugPrint('카카오 로그인 성공: ${token.accessToken}');
+  Future<void> _handleLoginSuccess({required OAuthToken token, String? kakaoEmail}) async {
+    debugPrint('카카오 로그인 성공');
 
-    // 백엔드 Custom Token → Firebase 로그인
-    await _signInWithFirebaseCustomToken(token.accessToken);
+    await _signInWithFirebaseCustomToken(kakaoAccessToken: token.accessToken, kakaoEmail: kakaoEmail);
 
     // Firebase ID 토큰 취득
     final String firebaseIdToken = await FirebaseAuth.instance.currentUser?.getIdToken() ?? '';
@@ -79,8 +82,12 @@ class KakaoAuthService {
   /// 카카오톡 앱을 통한 로그인
   Future<bool> loginWithKakaoTalk() async {
     try {
-      OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
-      await _handleLoginSuccess(token);
+      final OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
+
+      final User kakaoUser = await UserApi.instance.me();
+      final String? kakaoEmail = kakaoUser.kakaoAccount?.email;
+
+      await _handleLoginSuccess(token: token, kakaoEmail: kakaoEmail);
       return true;
     } on AccountSuspendedException {
       rethrow;
@@ -105,8 +112,12 @@ class KakaoAuthService {
   /// 카카오 계정 웹 로그인 (카카오톡 미설치 환경 폴백)
   Future<bool> loginWithKakaoAccount() async {
     try {
-      OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
-      await _handleLoginSuccess(token);
+      final OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
+
+      final User kakaoUser = await UserApi.instance.me();
+      final String? kakaoEmail = kakaoUser.kakaoAccount?.email;
+
+      await _handleLoginSuccess(token: token, kakaoEmail: kakaoEmail);
       return true;
     } on AccountSuspendedException {
       rethrow;

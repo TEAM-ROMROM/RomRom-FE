@@ -223,14 +223,16 @@ class RomAuthApi {
   }
 
   /// POST : `/api/auth/kakao/firebase-token` 카카오 accessToken으로 Firebase Custom Token 발급
-  Future<String> getKakaoFirebaseToken(String accessToken) async {
+  ///
+  /// [email]은 기존 카카오 회원 마이그레이션 fallback 식별자로 nullable
+  Future<String> getKakaoFirebaseToken({required String kakaoAccessToken, String? email}) async {
     final String url = '${AppUrls.baseUrl}/api/auth/kakao/firebase-token';
 
     try {
       http.Response response = await ApiClient.sendHttpRequest(
         url: url,
         method: 'POST',
-        body: {'accessToken': accessToken},
+        body: {'accessToken': kakaoAccessToken, 'email': email},
         isAuthRequired: false,
         onSuccess: (_) {},
       );
