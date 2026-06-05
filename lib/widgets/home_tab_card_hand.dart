@@ -423,15 +423,33 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
   }
 
   // 좌표에서 카드 찾기
+  // 렌더링은 _cards.reversed로 그려져 index 0이 시각적 최상단(Stack 맨 위)이다.
+  // 따라서 index 0부터(=위에 있는 카드부터) 검사해 첫 매치를 반환해야
+  // 사용자가 보는 최상단 카드가 선택된다.
+  // 전제: hit-test는 _handlePanStart(터치 시작) 시점에 호출되며, 이때 카드는
+  // 팬/재정렬/pull 애니메이션이 끝난 정적 상태다. 따라서 _calculateCardTransform의
+  // 정적 목표값(보간 전)으로 판정해도 실제 렌더 위치와 일치한다.
   String? _findCardAtPosition(Offset localPosition) {
-    // 왼쪽 카드가 위에 있으므로 (reversed로 렌더링됨)
-    // 역순으로 검사하여 위에 있는 카드부터 확인
-    for (int i = _cards.length - 1; i >= 0; i--) {
+    for (int i = 0; i < _cards.length; i++) {
       final transform = _calculateCardTransform(context, i, _cards.length);
-      final cardCenterX = transform['centerX'] as double;
+      final double cardCenterX = transform['centerX'] as double;
+      // transform['top']은 Positioned.top과 동일 기준점(adjustedTop)이므로 중심 Y는 +height/2
+      final double cardCenterY = (transform['top'] as double) + _cardHeight / 2;
+      // 렌더와 동일한 회전각(tangent + tilt)
+      final double angle = transform['angle'] as double;
 
-      // 카드 영역 체크 (카드 너비의 절반 범위 내)
-      if ((localPosition.dx - cardCenterX).abs() < _cardWidth / 2) {
+      // 터치점을 카드 중심 기준 상대 좌표로
+      final double dx = localPosition.dx - cardCenterX;
+      final double dy = localPosition.dy - cardCenterY;
+
+      // 렌더는 rotateZ(angle)이므로 -angle로 역회전해 카드 로컬 좌표로 변환
+      final double cosA = math.cos(-angle);
+      final double sinA = math.sin(-angle);
+      final double localX = dx * cosA - dy * sinA;
+      final double localY = dx * sinA + dy * cosA;
+
+      // 역회전된 좌표가 카드 사각형 안이면 이 카드가 hit (회전·세로 위치 반영)
+      if (localX.abs() < _cardWidth / 2 && localY.abs() < _cardHeight / 2) {
         return _cards[i].itemId;
       }
     }
