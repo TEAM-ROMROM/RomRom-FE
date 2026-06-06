@@ -41,6 +41,7 @@ class KakaoAuthService {
   /// [kakaoEmail]은 기존 카카오 회원 매칭을 위한 fallback 식별자 (nullable)
   Future<void> _signInWithFirebaseCustomToken({required String kakaoAccessToken, String? kakaoEmail}) async {
     try {
+      debugPrint('[KakaoAuth] /kakao/firebase-token 요청: email=$kakaoEmail');
       final String customToken = await romAuthApi.getKakaoFirebaseToken(
         kakaoAccessToken: kakaoAccessToken,
         email: kakaoEmail,
@@ -48,7 +49,7 @@ class KakaoAuthService {
 
       // Custom Token으로 Firebase 로그인 (UID = kakao:{카카오회원번호} 고정)
       final UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
-      debugPrint('Firebase 로그인 성공: ${userCredential.user?.uid}');
+      debugPrint('[KakaoAuth] Firebase 로그인 성공: uid=${userCredential.user?.uid}');
     } catch (error) {
       debugPrint('Firebase Custom Token 로그인 실패: $error');
       rethrow;
@@ -86,6 +87,7 @@ class KakaoAuthService {
 
       final User kakaoUser = await UserApi.instance.me();
       final String? kakaoEmail = kakaoUser.kakaoAccount?.email;
+      debugPrint('[KakaoAuth] 앱 로그인 email: $kakaoEmail');
 
       await _handleLoginSuccess(token: token, kakaoEmail: kakaoEmail);
       return true;
@@ -116,6 +118,7 @@ class KakaoAuthService {
 
       final User kakaoUser = await UserApi.instance.me();
       final String? kakaoEmail = kakaoUser.kakaoAccount?.email;
+      debugPrint('[KakaoAuth] 웹 로그인 email: $kakaoEmail');
 
       await _handleLoginSuccess(token: token, kakaoEmail: kakaoEmail);
       return true;
