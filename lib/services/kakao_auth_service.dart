@@ -18,13 +18,36 @@ class KakaoAuthService {
   KakaoAuthService._internal();
   final romAuthApi = RomAuthApi();
 
+  // us**@exam***.com 형식으로 마스킹
+  static String _maskEmail(String? email) {
+    if (email == null) return 'null';
+    final atIndex = email.indexOf('@');
+    if (atIndex <= 0) return '***@***';
+    final local = email.substring(0, atIndex);
+    final domain = email.substring(atIndex + 1);
+    final maskedLocal = local.length > 2 ? '${local.substring(0, 2)}**' : '**';
+    final dotIndex = domain.lastIndexOf('.');
+    final maskedDomain = dotIndex > 0 ? '${domain[0]}***${domain.substring(dotIndex)}' : '***';
+    return '$maskedLocal@$maskedDomain';
+  }
+
+  // kakao:123456789 → kakao:123*** 형식으로 마스킹
+  static String _maskUid(String? uid) {
+    if (uid == null) return 'null';
+    final colonIndex = uid.indexOf(':');
+    if (colonIndex >= 0 && uid.length > colonIndex + 4) {
+      return '${uid.substring(0, colonIndex + 4)}***';
+    }
+    return uid.length > 4 ? '${uid.substring(0, 4)}***' : '****';
+  }
+
   /// 사용자 정보 가져오기
   Future<void> getKakaoUserInfo() async {
     try {
       User user = await UserApi.instance.me();
 
       debugPrint(
-        '사용자 정보 요청 성공: 이메일: ${user.kakaoAccount?.email}, 닉네임: ${user.kakaoAccount?.profile?.nickname}, 프로필 이미지: ${user.kakaoAccount?.profile?.profileImageUrl}',
+        '사용자 정보 요청 성공: 이메일: ${_maskEmail(user.kakaoAccount?.email)}, 닉네임: ${user.kakaoAccount?.profile?.nickname}, 프로필 이미지: (hidden)',
       );
 
       // 사용자 정보 저장
@@ -41,7 +64,7 @@ class KakaoAuthService {
   /// [kakaoEmail]은 기존 카카오 회원 매칭을 위한 fallback 식별자 (nullable)
   Future<void> _signInWithFirebaseCustomToken({required String kakaoAccessToken, String? kakaoEmail}) async {
     try {
-      debugPrint('[KakaoAuth] /kakao/firebase-token 요청: email=$kakaoEmail');
+      debugPrint('[KakaoAuth] /kakao/firebase-token 요청: email=${_maskEmail(kakaoEmail)}');
       final String customToken = await romAuthApi.getKakaoFirebaseToken(
         kakaoAccessToken: kakaoAccessToken,
         email: kakaoEmail,
@@ -49,7 +72,7 @@ class KakaoAuthService {
 
       // Custom Token으로 Firebase 로그인 (UID = kakao:{카카오회원번호} 고정)
       final UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
-      debugPrint('[KakaoAuth] Firebase 로그인 성공: uid=${userCredential.user?.uid}');
+      debugPrint('[KakaoAuth] Firebase 로그인 성공: uid=${_maskUid(userCredential.user?.uid)}');
     } catch (error) {
       debugPrint('Firebase Custom Token 로그인 실패: $error');
       rethrow;
@@ -85,9 +108,14 @@ class KakaoAuthService {
     try {
       final OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
 
-      final User kakaoUser = await UserApi.instance.me();
-      final String? kakaoEmail = kakaoUser.kakaoAccount?.email;
-      debugPrint('[KakaoAuth] 앱 로그인 email: $kakaoEmail');
+      String? kakaoEmail;
+      try {
+        final User kakaoUser = await UserApi.instance.me();
+        kakaoEmail = kakaoUser.kakaoAccount?.email;
+      } catch (e) {
+        debugPrint('[KakaoAuth] 앱 로그인 email 조회 실패 (null로 계속): $e');
+      }
+      debugPrint('[KakaoAuth] 앱 로그인 email: ${_maskEmail(kakaoEmail)}');
 
       await _handleLoginSuccess(token: token, kakaoEmail: kakaoEmail);
       return true;
@@ -97,7 +125,7 @@ class KakaoAuthService {
       rethrow;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'account-exists-with-different-credential' && e.email != null) {
-        debugPrint('Firebase 이메일 중복 감지: ${e.email}');
+        debugPrint('Firebase 이메일 중복 감지: ${_maskEmail(e.email)}');
         throw EmailAlreadyRegisteredException(registeredSocialPlatform: '');
       }
       debugPrint('카카오톡으로 로그인 실패: $e');
@@ -116,9 +144,14 @@ class KakaoAuthService {
     try {
       final OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
 
-      final User kakaoUser = await UserApi.instance.me();
-      final String? kakaoEmail = kakaoUser.kakaoAccount?.email;
-      debugPrint('[KakaoAuth] 웹 로그인 email: $kakaoEmail');
+      String? kakaoEmail;
+      try {
+        final User kakaoUser = await UserApi.instance.me();
+        kakaoEmail = kakaoUser.kakaoAccount?.email;
+      } catch (e) {
+        debugPrint('[KakaoAuth] 웹 로그인 email 조회 실패 (null로 계속): $e');
+      }
+      debugPrint('[KakaoAuth] 웹 로그인 email: ${_maskEmail(kakaoEmail)}');
 
       await _handleLoginSuccess(token: token, kakaoEmail: kakaoEmail);
       return true;
@@ -128,7 +161,7 @@ class KakaoAuthService {
       rethrow;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'account-exists-with-different-credential' && e.email != null) {
-        debugPrint('Firebase 이메일 중복 감지: ${e.email}');
+        debugPrint('Firebase 이메일 중복 감지: ${_maskEmail(e.email)}');
         throw EmailAlreadyRegisteredException(registeredSocialPlatform: '');
       }
       debugPrint('카카오 웹으로 로그인 실패: $e');
