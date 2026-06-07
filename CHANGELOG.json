@@ -1,11 +1,39 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-01T23:50:05Z",
-    "currentVersion": "1.10.80",
-    "totalReleases": 114,
+    "lastUpdated": "2026-06-07T17:09:49Z",
+    "currentVersion": "1.10.82",
+    "totalReleases": 115,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.82",
+      "project_type": "flutter",
+      "date": "2026-06-07",
+      "pr_number": 914,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 카카오 로그인에서 미설치 환경 시 인앱 웹 로그인 자동 지원\n\n* **Bug Fixes**\n  * 홈 탭의 팬 애니메이션이 광고 슬롯에서만 재생되는 문제 해결\n\n* **Chores**\n  * 앱 버전 1.10.80에서 1.10.82로 업데이트",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "카카오 로그인에서 미설치 환경 시 인앱 웹 로그인 자동 지원"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "홈 탭의 팬 애니메이션이 광고 슬롯에서만 재생되는 문제 해결"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전 1.10.80에서 1.10.82로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.80",
       "project_type": "flutter",
