@@ -33,6 +33,11 @@ class ServerLogClient {
   bool _isConnected = false;
   bool _shouldReconnect = false;
   Timer? _reconnectTimer;
+  // AOP 상세 로그(@LogMonitor 등) 수신 토글 — 재연결 시 서버에 다시 통보하기 위해 기억
+  bool _aopEnabled = false;
+
+  /// AOP 상세 로그 토글 상태
+  bool get isAopEnabled => _aopEnabled;
 
   void _onUrlChanged(String _) {
     if (_shouldReconnect) {
@@ -68,6 +73,11 @@ class ServerLogClient {
       _webSocket = socket;
       _isConnected = true;
       _addSystemLog('[서버 로그] 연결 성공');
+
+      // 재연결 시 이전 AOP 토글 상태를 서버에 다시 통보 (서버는 세션별 상태라 새 세션은 기본 OFF)
+      if (_aopEnabled) {
+        _sendAopToggle(true);
+      }
 
       // onDone에서 멤버 필드(_webSocket) 대신 이 연결의 socket을 직접 참조한다.
       // 빠른 재연결로 _webSocket이 새 소켓으로 교체된 뒤 늦게 실행되는 onDone이
@@ -131,8 +141,11 @@ class ServerLogClient {
       final message = json['message'] as String? ?? '';
       final threadName = json['threadName'] as String? ?? '';
       final timestamp = json['timestamp'] as String? ?? '';
+      final isAop = json['source'] == 'AOP';
 
-      final displayMessage = '[$level] $loggerName ($threadName): $message';
+      // AOP 상세 로그는 마커(⟫)로 일반 로그와 구분
+      final prefix = isAop ? '⟫ ' : '';
+      final displayMessage = '$prefix[$level] $loggerName ($threadName): $message';
       DateTime time;
       try {
         time = DateTime.parse(timestamp);
@@ -177,6 +190,22 @@ class ServerLogClient {
     if (_shouldReconnect) {
       _addSystemLog('[서버 로그] 포그라운드 복귀 — 재연결 중...');
       _doConnect();
+    }
+  }
+
+  /// AOP 상세 로그(@LogMonitor 등) 수신 토글.
+  /// 상태를 기억하고 서버에 통보한다 (연결 안 된 경우 다음 연결 성공 시 재전송).
+  void setAopEnabled(bool enabled) {
+    _aopEnabled = enabled;
+    _sendAopToggle(enabled);
+    _addSystemLog('[서버 로그] AOP 상세 로그 ${enabled ? "ON" : "OFF"}');
+  }
+
+  /// 현재 WebSocket으로 토글 명령 전송
+  void _sendAopToggle(bool enabled) {
+    final socket = _webSocket;
+    if (socket != null && _isConnected) {
+      socket.add(jsonEncode({'action': 'toggleAop', 'enabled': enabled}));
     }
   }
 
