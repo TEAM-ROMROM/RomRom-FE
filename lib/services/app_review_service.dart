@@ -117,13 +117,28 @@ class AppReviewService with WidgetsBindingObserver {
     debugPrint('[AppReview] 노출 기록: ${count + 1}회');
   }
 
+  /// [리뷰 남기기] 진행 중 플래그 — 재진입 차단용.
+  /// 싱글톤이라 공유 가변 상태(_sheetShownSignal·옵저버)를 두 호출이 덮어쓰면
+  /// 신호 유실·옵저버 조기 해제로 스토어 중복 이동/폴백 누락이 생긴다. (#910)
+  bool _reviewInFlight = false;
+
   /// [리뷰 남기기] 클릭 시 — 영구 비활성 + 네이티브 리뷰 요청
   Future<void> requestReviewAndDisable() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kDisabled, true);
-    debugPrint('[AppReview] 영구 비활성 처리');
+    // 빠른 연타 등으로 인한 동시 재진입 차단
+    if (_reviewInFlight) {
+      debugPrint('[AppReview] 리뷰 요청 진행 중 → 중복 호출 무시');
+      return;
+    }
+    _reviewInFlight = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kDisabled, true);
+      debugPrint('[AppReview] 영구 비활성 처리');
 
-    await _requestReview();
+      await _requestReview();
+    } finally {
+      _reviewInFlight = false;
+    }
   }
 
   // ── 인앱 리뷰 카드 표출 추정용 라이프사이클 감시 상태 ──
