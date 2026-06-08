@@ -245,6 +245,19 @@ class RomAuthApi {
       } else {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
         final String errorCode = errorData['code'] ?? 'UNKNOWN';
+
+        if (response.statusCode == 409 || errorCode == 'EMAIL_ALREADY_REGISTERED') {
+          final String registeredSocialPlatform = errorData['registeredSocialPlatform'] ?? '';
+          throw EmailAlreadyRegisteredException(registeredSocialPlatform: registeredSocialPlatform);
+        }
+
+        if (errorCode == 'SUSPENDED_MEMBER') {
+          throw AccountSuspendedException(
+            suspendReason: errorData['suspendReason'] ?? '',
+            suspendedUntil: errorData['suspendedUntil'] ?? '',
+          );
+        }
+
         throw Exception('Firebase Custom Token 발급 실패: $errorCode (${response.statusCode})');
       }
     } catch (e) {
