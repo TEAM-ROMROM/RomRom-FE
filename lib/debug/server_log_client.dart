@@ -64,11 +64,15 @@ class ServerLogClient {
       // 핸드셰이크 헤더에 HMAC 서명 첨부 (BE HmacLogHandshakeInterceptor가 검증)
       final headers = SecuredApiUtils.generateHeaders();
 
-      _webSocket = await WebSocket.connect(_endpoint, headers: headers);
+      final socket = await WebSocket.connect(_endpoint, headers: headers);
+      _webSocket = socket;
       _isConnected = true;
       _addSystemLog('[서버 로그] 연결 성공');
 
-      _socketSubscription = _webSocket!.listen(
+      // onDone에서 멤버 필드(_webSocket) 대신 이 연결의 socket을 직접 참조한다.
+      // 빠른 재연결로 _webSocket이 새 소켓으로 교체된 뒤 늦게 실행되는 onDone이
+      // 엉뚱한 소켓의 closeCode를 읽는 레이스를 방지한다.
+      _socketSubscription = socket.listen(
         _onSocketMessage,
         onError: (error) {
           _addSystemLog('[서버 로그] 스트림 에러: $error');
@@ -77,7 +81,7 @@ class ServerLogClient {
         },
         onDone: () {
           // 서버가 닫은 코드로 구독자 초과(정책 위반) 여부 판별
-          final closeCode = _webSocket?.closeCode;
+          final closeCode = socket.closeCode;
           _isConnected = false;
           if (closeCode == WebSocketStatus.policyViolation) {
             // 최대 동시 접속 수 초과 — 슬롯이 해제될 때까지 더 길게 대기 후 재시도
