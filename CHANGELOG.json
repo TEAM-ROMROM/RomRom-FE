@@ -1,11 +1,27 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-08T13:52:32Z",
-    "currentVersion": "1.10.92",
-    "totalReleases": 118,
+    "lastUpdated": "2026-06-08T14:08:19Z",
+    "currentVersion": "1.10.93",
+    "totalReleases": 119,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.93",
+      "project_type": "flutter",
+      "date": "2026-06-08",
+      "pr_number": 928,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **개선**\n  * 앱 내부 진단 도구에서 상세 로그를 켜고 끌 수 있습니다",
+      "parsed_changes": {
+        "개선": {
+          "title": "개선",
+          "items": [
+            "앱 내부 진단 도구에서 상세 로그를 켜고 끌 수 있습니다"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.92",
       "project_type": "flutter",
