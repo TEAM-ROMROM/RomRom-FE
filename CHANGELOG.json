@@ -1,11 +1,27 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-08T13:38:52Z",
-    "currentVersion": "1.10.91",
-    "totalReleases": 117,
+    "lastUpdated": "2026-06-08T13:52:32Z",
+    "currentVersion": "1.10.92",
+    "totalReleases": 118,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.92",
+      "project_type": "flutter",
+      "date": "2026-06-08",
+      "pr_number": 926,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **개선**\n  * 앱 내부 진단 도구의 연결 안정성이 개선되었습니다",
+      "parsed_changes": {
+        "개선": {
+          "title": "개선",
+          "items": [
+            "앱 내부 진단 도구의 연결 안정성이 개선되었습니다"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.91",
       "project_type": "flutter",
