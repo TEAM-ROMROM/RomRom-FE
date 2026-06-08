@@ -122,6 +122,12 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
     setState(() {});
   }
 
+  // AOP 상세 로그(@LogMonitor 등) 토글 — 켜면 서버가 상세 진단 로그를 흘려보냄 (평소 OFF)
+  void _toggleAop() {
+    _client.setAopEnabled(!_client.isAopEnabled);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -193,6 +199,12 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
             ),
             const SizedBox(width: 4),
             _titleBarButton(icon: _client.isConnected ? Icons.link : Icons.link_off, onTap: _toggleConnection),
+            // AOP 상세 로그 토글 — 켜지면 주황색으로 강조
+            _titleBarButton(
+              icon: _client.isAopEnabled ? Icons.bug_report : Icons.bug_report_outlined,
+              color: _client.isAopEnabled ? Colors.orangeAccent : null,
+              onTap: _toggleAop,
+            ),
             _titleBarButton(
               icon: _showFilters ? Icons.filter_list : Icons.filter_list_off,
               onTap: () => setState(() => _showFilters = !_showFilters),
@@ -209,12 +221,12 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
     );
   }
 
-  Widget _titleBarButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _titleBarButton({required IconData icon, required VoidCallback onTap, Color? color}) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(4),
-        child: Icon(icon, color: const Color(0xFFCCCCCC), size: 16),
+        child: Icon(icon, color: color ?? const Color(0xFFCCCCCC), size: 16),
       ),
     );
   }
