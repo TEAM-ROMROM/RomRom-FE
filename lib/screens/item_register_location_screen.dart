@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -83,12 +84,13 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
 
   Future<void> _updateAddress(NLatLng position) async {
     final address = await _locationService.getAddressFromCoordinates(position);
-    if (address != null) {
-      setState(() {
-        _selectedPosition = position; // 핀이 가리키는 위치 저장
-        _selectedAddress = address;
-      });
-    }
+    if (!mounted) return;
+    // 해외 좌표 등으로 주소를 받지 못한 경우 _selectedAddress=null 로 리셋해
+    // 직전 국내 주소가 남아 잘못된 위치가 등록되는 stale state 버그를 막는다.
+    setState(() {
+      _selectedPosition = position;
+      _selectedAddress = address;
+    });
   }
 
   @override
@@ -140,6 +142,25 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
                     ),
                   ),
                 ),
+                // 해외 좌표 안내 (주소 못 받은 경우 표시)
+                if (_currentPosition != null && _selectedAddress == null)
+                  Positioned(
+                    left: 24.w,
+                    right: 24.w,
+                    bottom: 110.h,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.opacity80Black,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '국내 위치만 등록할 수 있어요',
+                        textAlign: TextAlign.center,
+                        style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite),
+                      ),
+                    ),
+                  ),
                 // 선택 완료 버튼 (하단 고정, 지도 위에 겹치게)
                 Positioned(
                   left: 24.w,
