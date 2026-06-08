@@ -44,7 +44,8 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
     }
   }
 
-  /// WS 새 메시지 도착 시: 해당 방 last*/unread 업데이트 + 맨 앞 이동.
+  /// WS 새 메시지 도착 시: 해당 방 last*/unread 업데이트.
+  /// (목록 순서는 ChatRoomsState 가 lastMessageTime 내림차순 자동 정렬 — 이슈 #884)
   /// [myMemberId]: 내가 보낸 메시지이면 unreadCount 를 증가하지 않음.
   /// 목록에 없는 roomId는 무시 (기존 동작 유지).
   void onMessageReceived({required ChatMessage message, required String? myMemberId}) {
@@ -66,8 +67,11 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
       unreadCount: newUnreadCount,
     );
 
-    final reordered = [updated, ...cur.rooms.where((r) => r.chatRoomId != roomId)];
-    state = AsyncData(cur.copyWith(rooms: reordered));
+    // 해당 방만 갱신한다. 목록 순서는 ChatRoomsState 생성자가
+    // lastMessageTime 내림차순으로 자동 정렬하므로 수동 맨앞 이동은 불필요 (이슈 #884).
+    final newRooms = [...cur.rooms];
+    newRooms[idx] = updated;
+    state = AsyncData(cur.copyWith(rooms: newRooms));
   }
 
   /// 채팅방 입장 시 unreadCount 를 0으로 초기화.

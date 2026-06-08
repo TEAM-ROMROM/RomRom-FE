@@ -444,63 +444,68 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
           child: HomeFeedRefreshIndicator(visible: isRefreshing),
         ),
 
-        // 알림 아이콘 + 메뉴 버튼 — 광고 슬롯에서는 숨김
-        if (!isBlurShown && !_isAdAtVirtualIndex(_currentVirtualIndex))
+        // 알림 아이콘 및 메뉴 버튼 - 광고 슬롯에서는 Offstage로 숨김(트리에서 제거하지 않음)
+        // 조건부 if로 제거하면 Stack children 개수가 바뀌어 형제인 HomeTabCardHand가 remount되고
+        // 펼침(팬) 애니메이션이 다시 재생됨 → Offstage로 element를 유지해 children 개수를 고정한다.
+        if (!isBlurShown)
           Positioned(
             right: 16.w,
             top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox.square(
-                  dimension: 32.w,
-                  child: OverflowBox(
-                    maxWidth: 56.w,
-                    maxHeight: 56.w,
-                    child: Material(
-                      color: AppColors.transparent,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkResponse(
-                        onTap: () async {
-                          await context.navigateTo(screen: const NotificationScreen());
-                          if (!mounted) return;
-                          _loadUnreadNotificationStatus();
-                        },
-                        radius: 18.w,
-                        customBorder: const CircleBorder(),
-                        highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                        splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                        child: SizedBox.square(
-                          dimension: 56.w,
-                          child: Center(
-                            child: _hasUnreadNotification
-                                ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
-                                : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
+            child: Offstage(
+              offstage: _isAdAtVirtualIndex(_currentVirtualIndex),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox.square(
+                    dimension: 32.w,
+                    child: OverflowBox(
+                      maxWidth: 56.w,
+                      maxHeight: 56.w,
+                      child: Material(
+                        color: AppColors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkResponse(
+                          onTap: () async {
+                            await context.navigateTo(screen: const NotificationScreen());
+                            if (!mounted) return;
+                            _loadUnreadNotificationStatus();
+                          },
+                          radius: 18.w,
+                          customBorder: const CircleBorder(),
+                          highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+                          child: SizedBox.square(
+                            dimension: 56.w,
+                            child: Center(
+                              child: _hasUnreadNotification
+                                  ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
+                                  : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(width: 10.w),
-                ReportMenuButton(
-                  onReportPressed: () async {
-                    if (feedItems.isEmpty) return;
-                    final currentItem = feedItems[_currentFeedIndex];
-                    final bool? reported = await context.navigateTo(
-                      screen: ReportScreen(itemId: currentItem.itemUuid ?? ''),
-                    );
-                    if (reported == true && mounted) {
-                      await CommonModal.success(
-                        context: context,
-                        message: '신고가 접수되었습니다.',
-                        onConfirm: () => Navigator.of(context).pop(),
+                  SizedBox(width: 10.w),
+                  ReportMenuButton(
+                    onReportPressed: () async {
+                      if (feedItems.isEmpty) return;
+                      final currentItem = feedItems[_currentFeedIndex];
+                      final bool? reported = await context.navigateTo(
+                        screen: ReportScreen(itemId: currentItem.itemUuid ?? ''),
                       );
-                    }
-                  },
-                ),
-              ],
+                      if (reported == true && mounted) {
+                        await CommonModal.success(
+                          context: context,
+                          message: '신고가 접수되었습니다.',
+                          onConfirm: () => Navigator.of(context).pop(),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
 

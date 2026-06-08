@@ -1,11 +1,69 @@
 {
   "metadata": {
-    "lastUpdated": "2026-05-31T13:16:48Z",
-    "currentVersion": "1.10.78",
-    "totalReleases": 113,
+    "lastUpdated": "2026-06-07T17:09:49Z",
+    "currentVersion": "1.10.82",
+    "totalReleases": 115,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.82",
+      "project_type": "flutter",
+      "date": "2026-06-07",
+      "pr_number": 914,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * 카카오 로그인에서 미설치 환경 시 인앱 웹 로그인 자동 지원\n\n* **Bug Fixes**\n  * 홈 탭의 팬 애니메이션이 광고 슬롯에서만 재생되는 문제 해결\n\n* **Chores**\n  * 앱 버전 1.10.80에서 1.10.82로 업데이트",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "카카오 로그인에서 미설치 환경 시 인앱 웹 로그인 자동 지원"
+          ]
+        },
+        "bug_fixes": {
+          "title": "Bug Fixes",
+          "items": [
+            "홈 탭의 팬 애니메이션이 광고 슬롯에서만 재생되는 문제 해결"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "앱 버전 1.10.80에서 1.10.82로 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
+    {
+      "version": "1.10.80",
+      "project_type": "flutter",
+      "date": "2026-06-01",
+      "pr_number": 908,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **버그 수정**\n  * 채팅방 목록이 최신 메시지 시간 기준으로 올바르게 정렬되도록 복구했습니다.\n  * 카메라 권한 거부 시 확인 모달을 통해 설정 앱으로 이동할 수 있도록 개선했습니다.\n\n* **개선 사항**\n  * iOS 앱 로컬라이제이션 지원을 강화하여 한국어와 영어를 명시적으로 지원합니다.\n  * 카메라, 사진, 위치 권한 설정을 추가했습니다.\n\n* **버전 업데이트**\n  * v1.10.80으로 업그레이드되었습니다.",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "채팅방 목록이 최신 메시지 시간 기준으로 올바르게 정렬되도록 복구했습니다.",
+            "카메라 권한 거부 시 확인 모달을 통해 설정 앱으로 이동할 수 있도록 개선했습니다."
+          ]
+        },
+        "개선_사항": {
+          "title": "개선 사항",
+          "items": [
+            "iOS 앱 로컬라이제이션 지원을 강화하여 한국어와 영어를 명시적으로 지원합니다.",
+            "카메라, 사진, 위치 권한 설정을 추가했습니다."
+          ]
+        },
+        "버전_업데이트": {
+          "title": "버전 업데이트",
+          "items": [
+            "v1.10.80으로 업그레이드되었습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.78",
       "project_type": "flutter",
