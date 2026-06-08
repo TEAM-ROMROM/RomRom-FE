@@ -277,16 +277,6 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     }
   }
 
-  bool _isPrefix(List<HomeFeedItem> shorter, List<HomeFeedItem> longer) {
-    if (shorter.length > longer.length) return false;
-    for (int i = 0; i < shorter.length; i++) {
-      if (!identical(shorter[i], longer[i]) && shorter[i].id != longer[i].id) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   @override
   Widget build(BuildContext context) {
     final myItemsAsync = ref.watch(myItemsProvider);
@@ -315,18 +305,23 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         });
       }
 
-      final prevItems = prev?.value?.items;
-      final nextItems = next.value?.items;
-      if (prevItems == null || nextItems == null) return;
+      final prevState = prev?.value;
+      final nextState = next.value;
+      if (prevState == null || nextState == null) return;
+      final prevItems = prevState.items;
+      final nextItems = nextState.items;
       if (identical(prevItems, nextItems)) return;
 
-      // 길이만 늘었고 앞쪽이 동일 → append (loadMore)
-      if (nextItems.length > prevItems.length && _isPrefix(prevItems, nextItems)) {
-        _onFeedItemsAppended(nextItems.length);
-      } else {
-        // 그 외 — 새로고침 등으로 통째 교체
+      // provider가 명시한 feedRevision 변화로 append/replace를 구분.
+      // (위치기반 id로 list diff하던 기존 _isPrefix는 초기 페이지<10개 + refresh 시 오분류 → #904에서 폐기)
+      if (nextState.feedRevision != prevState.feedRevision) {
+        // refresh — 통째 교체 (page 0 점프 + 광고 슬롯 리셋)
         _onFeedItemsReplaced(nextItems.length);
+      } else if (nextItems.length > prevItems.length) {
+        // loadMore — 뒤에 append (풀 소진 되감기 포함)
+        _onFeedItemsAppended(nextItems.length);
       }
+      // 그 외(markSeen 등 길이·revision 불변)는 슬롯 갱신 불필요
 
       // loadMore 등에서 발생한 에러는 SnackBar로 표시 (자동 새로고침 silent fail은 provider에서 swallow됨)
       if (next.hasError && next.hasValue) {

@@ -131,7 +131,8 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
       state = const AsyncLoading<HomeFeedState>().copyWithPrevious(state);
 
       final next = await _fetchInitial(seenItemIds: current.seenItemIds);
-      state = AsyncData(next.copyWith(lastRefreshAt: DateTime.now()));
+      // feedRevision 증가 = 화면에 "통째 교체(replace)"임을 명시적으로 통지 (page 0 점프 + 광고 슬롯 리셋 트리거)
+      state = AsyncData(next.copyWith(lastRefreshAt: DateTime.now(), feedRevision: current.feedRevision + 1));
     } catch (e) {
       // silent fail — 기존 데이터 유지
       debugPrint('[HomeFeed] refresh failed silently: $e');

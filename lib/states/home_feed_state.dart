@@ -24,6 +24,10 @@ class HomeFeedState {
   /// 직전 자동 새로고침 완료 시각 (throttle 계산용). null이면 한 번도 안 함.
   final DateTime? lastRefreshAt;
 
+  /// 피드가 통째로 교체(refresh)된 횟수. loadMore(append)에서는 증가하지 않는다.
+  /// 화면은 이 값의 변화로 append/replace를 명시적으로 구분한다 (위치기반 id 역추론의 오분류 방지, #904).
+  final int feedRevision;
+
   HomeFeedState({
     List<HomeFeedItem> items = const [],
     this.currentPage = 0,
@@ -31,6 +35,7 @@ class HomeFeedState {
     this.currentSortField = ItemSortField.recommended,
     LinkedHashSet<String>? seenItemIds,
     this.lastRefreshAt,
+    this.feedRevision = 0,
   }) : items = List.unmodifiable(items),
        // LinkedHashSet 타입 명시가 필요 (Set 리터럴은 LinkedHashSet 타입 보장 안 함)
        // ignore: prefer_collection_literals
@@ -43,6 +48,7 @@ class HomeFeedState {
     ItemSortField? currentSortField,
     LinkedHashSet<String>? seenItemIds,
     DateTime? lastRefreshAt,
+    int? feedRevision,
   }) {
     return HomeFeedState(
       items: items ?? this.items,
@@ -51,6 +57,7 @@ class HomeFeedState {
       currentSortField: currentSortField ?? this.currentSortField,
       seenItemIds: seenItemIds ?? this.seenItemIds,
       lastRefreshAt: lastRefreshAt ?? this.lastRefreshAt,
+      feedRevision: feedRevision ?? this.feedRevision,
     );
   }
 
@@ -64,7 +71,8 @@ class HomeFeedState {
           hasMoreItems == other.hasMoreItems &&
           currentSortField == other.currentSortField &&
           setEquals(seenItemIds, other.seenItemIds) &&
-          lastRefreshAt == other.lastRefreshAt;
+          lastRefreshAt == other.lastRefreshAt &&
+          feedRevision == other.feedRevision;
 
   @override
   int get hashCode => Object.hash(
@@ -74,9 +82,10 @@ class HomeFeedState {
     currentSortField,
     Object.hashAll(seenItemIds),
     lastRefreshAt,
+    feedRevision,
   );
 
   @override
   String toString() =>
-      'HomeFeedState(items=${items.length}, page=$currentPage, hasMore=$hasMoreItems, sort=$currentSortField, seen=${seenItemIds.length}, lastRefresh=$lastRefreshAt)';
+      'HomeFeedState(items=${items.length}, page=$currentPage, hasMore=$hasMoreItems, sort=$currentSortField, seen=${seenItemIds.length}, lastRefresh=$lastRefreshAt, rev=$feedRevision)';
 }

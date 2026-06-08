@@ -96,10 +96,36 @@ void main() {
       // 'a'를 봤다고 마킹
       c.read(homeFeedProvider.notifier).markSeen('a');
 
+      final beforeRev = c.read(homeFeedProvider).value!.feedRevision;
+
       // refresh → 같은 데이터지만 'a'가 끝으로 가야 함
       await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
       final after = c.read(homeFeedProvider).value!;
       expect(after.items.map((e) => e.itemUuid).toList(), ['b', 'c', 'a']);
+      // refresh는 replace 신호로 feedRevision을 증가시켜야 함 (#904)
+      expect(after.feedRevision, beforeRev + 1, reason: 'refresh는 replace이므로 revision 증가');
+    });
+
+    // #904 회귀 방지: 초기 페이지가 적게 와도 refresh를 append로 오분류하지 않도록
+    // provider가 명시 신호(feedRevision)를 정확히 갱신하는지 검증
+    test('feedRevision: refresh는 증가, loadMore는 불변', () async {
+      final repo = _FakeRepo({
+        ItemSortField.recommended.serverName: {
+          0: [_item('a'), _item('b')], // 초기 페이지 2개 (10개 미만 — 버그 트리거 조건)
+          1: [_item('c'), _item('d')],
+        },
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final initialRev = c.read(homeFeedProvider).value!.feedRevision;
+
+      // loadMore: revision 불변 (append)
+      await c.read(homeFeedProvider.notifier).loadMore();
+      expect(c.read(homeFeedProvider).value!.feedRevision, initialRev, reason: 'loadMore는 append이므로 revision 불변');
+
+      // refresh: revision 증가 (replace) — 초기보다 많은 아이템이어도 append로 오분류되지 않음
+      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+      expect(c.read(homeFeedProvider).value!.feedRevision, initialRev + 1, reason: 'refresh는 replace이므로 revision 증가');
     });
 
     test('seen-set LRU: 100개 초과 시 가장 오래된 것 제거', () async {
