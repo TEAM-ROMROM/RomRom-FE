@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -41,6 +42,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   bool _showLoginUI = false;
   bool _loginTransitionStarted = false;
   bool _aborted = false;
+  String _appVersion = '';
 
   @override
   void initState() {
@@ -62,6 +64,17 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     );
 
     unawaited(_initAndNavigate());
+    unawaited(_loadAppVersion());
+  }
+
+  /// 로그인 UI 우하단에 표시할 앱 버전 로드 (LoginScreen과 동일 구현)
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _appVersion = packageInfo.version);
+      }
+    } catch (_) {}
   }
 
   /// 스플래시 초기화 전체 타임아웃 (15초)
@@ -249,36 +262,50 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             if (_showLoginUI)
               FadeTransition(
                 opacity: _loginUIFadeAnim,
-                child: SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Spacer(flex: 2),
-                      SizedBox(height: 108.w), // 로고 자리 확보
-                      SizedBox(height: 45.h),
-                      Text(
-                        '손쉬운 물건 교환',
-                        style: CustomTextStyles.p1.copyWith(
-                          color: AppColors.textColorWhite.withValues(alpha: 0.6),
-                          fontWeight: FontWeight.w600,
+                child: Stack(
+                  children: [
+                    SafeArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Spacer(flex: 2),
+                          SizedBox(height: 108.w), // 로고 자리 확보
+                          SizedBox(height: 45.h),
+                          Text(
+                            '손쉬운 물건 교환',
+                            style: CustomTextStyles.p1.copyWith(
+                              color: AppColors.textColorWhite.withValues(alpha: 0.6),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 17.h),
+                          SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
+                          const Spacer(flex: 3),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 24.w),
+                            child: AuthButtonGroup(
+                              buttons: [
+                                LoginPlatforms.kakao,
+                                if (Platform.isIOS) LoginPlatforms.apple,
+                                LoginPlatforms.google,
+                              ].map((platform) => LoginButton(platform: platform)).toList(),
+                            ),
+                          ),
+                          SizedBox(height: 48.h),
+                        ],
+                      ),
+                    ),
+                    // 우하단 버전 정보 (LoginScreen과 동일 — 고정 픽셀 사용, iPad 대응)
+                    if (_appVersion.isNotEmpty)
+                      Positioned(
+                        right: 20,
+                        bottom: 40,
+                        child: Text(
+                          'v$_appVersion',
+                          style: CustomTextStyles.p4.copyWith(color: AppColors.textColorWhite.withValues(alpha: 0.4)),
                         ),
                       ),
-                      SizedBox(height: 17.h),
-                      SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
-                      const Spacer(flex: 3),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 24.w),
-                        child: AuthButtonGroup(
-                          buttons: [
-                            LoginPlatforms.kakao,
-                            if (Platform.isIOS) LoginPlatforms.apple,
-                            LoginPlatforms.google,
-                          ].map((platform) => LoginButton(platform: platform)).toList(),
-                        ),
-                      ),
-                      SizedBox(height: 48.h),
-                    ],
-                  ),
+                  ],
                 ),
               ),
 
