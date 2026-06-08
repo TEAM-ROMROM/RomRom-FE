@@ -1,11 +1,28 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-08T12:34:20Z",
-    "currentVersion": "1.10.89",
-    "totalReleases": 116,
+    "lastUpdated": "2026-06-08T13:38:52Z",
+    "currentVersion": "1.10.91",
+    "totalReleases": 117,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.91",
+      "project_type": "flutter",
+      "date": "2026-06-08",
+      "pr_number": 924,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **개선**\n  * 채팅방 목록이 최근 메시지 순으로 정렬됩니다\n  * 앱 안정성 및 내부 진단 도구가 개선되었습니다",
+      "parsed_changes": {
+        "개선": {
+          "title": "개선",
+          "items": [
+            "채팅방 목록이 최근 메시지 순으로 정렬됩니다",
+            "앱 안정성 및 내부 진단 도구가 개선되었습니다"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.89",
       "project_type": "flutter",

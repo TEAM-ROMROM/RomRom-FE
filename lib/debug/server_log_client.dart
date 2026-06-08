@@ -1,16 +1,26 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:romrom_fe/debug/log_capture.dart';
 import 'package:romrom_fe/debug/runtime_url_manager.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/utils/secured_api_utils.dart';
 
-/// SSE 기반 서버 로그 스트리밍 클라이언트
+/// WebSocket 기반 서버 로그 스트리밍 클라이언트
+///
+/// BE가 기존 SSE(/api/app/debug/log-stream)를 WebSocket(/ws/debug-logs)으로 전환하여
+/// 리버스 프록시(시놀로지 nginx)의 SSE 단절 문제를 우회한다.
+/// 인증은 핸드셰이크 단계에서 HMAC 서명(X-Timestamp/X-Signature)으로 처리한다 — 로그인 불필요.
 class ServerLogClient {
-  static String get _endpoint => '${AppUrls.baseUrl}/api/app/debug/log-stream';
+  /// baseUrl(http/https)을 WebSocket 스킴(ws/wss)으로 변환한 디버그 로그 엔드포인트
+  static String get _endpoint {
+    final base = AppUrls.baseUrl;
+    final wsBase = base.replaceFirst(RegExp(r'^http'), 'ws'); // http→ws, https→wss
+    return '$wsBase/ws/debug-logs';
+  }
+
   static const Duration _reconnectDelay = Duration(seconds: 3);
   static const Duration _reconnectDelayOnCapacityExceeded = Duration(seconds: 15);
   static const int _maxBufferSize = 1000;
@@ -18,8 +28,8 @@ class ServerLogClient {
   final List<CapturedLog> _buffer = [];
   final StreamController<CapturedLog> _controller = StreamController<CapturedLog>.broadcast();
 
-  http.Client? _httpClient;
-  StreamSubscription<String>? _sseSubscription;
+  WebSocket? _webSocket;
+  StreamSubscription<dynamic>? _socketSubscription;
   bool _isConnected = false;
   bool _shouldReconnect = false;
   Timer? _reconnectTimer;
@@ -40,7 +50,7 @@ class ServerLogClient {
   /// 연결 상태
   bool get isConnected => _isConnected;
 
-  /// SSE 연결 시작
+  /// WebSocket 연결 시작
   Future<void> connect() async {
     _shouldReconnect = true;
     RuntimeUrlManager().addUrlChangeListener(_onUrlChanged);
@@ -51,50 +61,39 @@ class ServerLogClient {
     disconnect(permanent: false);
 
     try {
+      // 핸드셰이크 헤더에 HMAC 서명 첨부 (BE HmacLogHandshakeInterceptor가 검증)
       final headers = SecuredApiUtils.generateHeaders();
-      headers['Accept'] = 'text/event-stream';
-      headers['Cache-Control'] = 'no-cache';
 
-      final request = http.Request('GET', Uri.parse(_endpoint));
-      request.headers.addAll(headers);
-
-      _httpClient = http.Client();
-      final response = await _httpClient!.send(request);
-
-      if (response.statusCode == 503) {
-        // 구독자 수 초과 — BE 슬롯이 해제될 때까지 대기 후 재시도
-        final body = await response.stream.bytesToString();
-        _addSystemLog('[서버 로그] 구독자 수 초과 (503) — ${_reconnectDelayOnCapacityExceeded.inSeconds}초 후 재시도');
-        debugPrint('[ServerLogClient] 503 body: $body');
-        _scheduleReconnect(delay: _reconnectDelayOnCapacityExceeded);
-        return;
-      }
-      if (response.statusCode != 200) {
-        final body = await response.stream.bytesToString();
-        _addSystemLog('[서버 로그] 연결 실패: ${response.statusCode} $body');
-        _scheduleReconnect();
-        return;
-      }
-
+      _webSocket = await WebSocket.connect(_endpoint, headers: headers);
       _isConnected = true;
       _addSystemLog('[서버 로그] 연결 성공');
 
-      _sseSubscription = response.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen(
-            _onSseLine,
-            onError: (error) {
-              _addSystemLog('[서버 로그] 스트림 에러: $error');
-              _isConnected = false;
-              _scheduleReconnect();
-            },
-            onDone: () {
-              _addSystemLog('[서버 로그] 연결 종료');
-              _isConnected = false;
-              _scheduleReconnect();
-            },
-          );
+      _socketSubscription = _webSocket!.listen(
+        _onSocketMessage,
+        onError: (error) {
+          _addSystemLog('[서버 로그] 스트림 에러: $error');
+          _isConnected = false;
+          _scheduleReconnect();
+        },
+        onDone: () {
+          // 서버가 닫은 코드로 구독자 초과(정책 위반) 여부 판별
+          final closeCode = _webSocket?.closeCode;
+          _isConnected = false;
+          if (closeCode == WebSocketStatus.policyViolation) {
+            // 최대 동시 접속 수 초과 — 슬롯이 해제될 때까지 더 길게 대기 후 재시도
+            _addSystemLog('[서버 로그] 구독자 수 초과 — ${_reconnectDelayOnCapacityExceeded.inSeconds}초 후 재시도');
+            _scheduleReconnect(delay: _reconnectDelayOnCapacityExceeded);
+          } else {
+            _addSystemLog('[서버 로그] 연결 종료');
+            _scheduleReconnect();
+          }
+        },
+      );
+    } on WebSocketException catch (e) {
+      // 핸드셰이크 거부(인증 실패 등) 포함
+      _addSystemLog('[서버 로그] 연결 실패: ${e.message}');
+      _isConnected = false;
+      _scheduleReconnect();
     } catch (e) {
       _addSystemLog('[서버 로그] 연결 실패: $e');
       _isConnected = false;
@@ -102,28 +101,22 @@ class ServerLogClient {
     }
   }
 
-  String _sseDataBuffer = '';
-  String _sseEventType = '';
+  /// WebSocket 텍스트 메시지 수신 — BE가 JSON 한 건씩 텍스트 프레임으로 전송
+  void _onSocketMessage(dynamic message) {
+    if (message is! String) return;
 
-  void _onSseLine(String line) {
-    if (line.startsWith('event:')) {
-      // SSE 이벤트 타입 저장 (connected, heartbeat 등)
-      _sseEventType = line.substring(6).trim();
-    } else if (line.startsWith('data:')) {
-      _sseDataBuffer = line.substring(5).trim();
-    } else if (line.isEmpty && _sseDataBuffer.isNotEmpty) {
-      final eventType = _sseEventType;
-      final data = _sseDataBuffer;
-      _sseEventType = '';
-      _sseDataBuffer = '';
-
-      if (eventType == 'connected' || data == 'connected') {
-        // BE 연결 수립 확인 이벤트 — 시스템 로그로만 표시, JSON 파싱 불필요
+    // 연결 직후 BE가 보내는 connected 알림은 시스템 로그로만 표시
+    // (형식: {"level":"INFO","message":"connected"})
+    try {
+      final json = jsonDecode(message) as Map<String, dynamic>;
+      if (json['message'] == 'connected' && json['loggerName'] == null) {
         _addSystemLog('[서버 로그] 서버 연결 확인됨');
         return;
       }
-      _parseAndAddLog(data);
+    } catch (_) {
+      // JSON이 아니면 아래 파싱에서 처리
     }
+    _parseAndAddLog(message);
   }
 
   void _parseAndAddLog(String jsonStr) {
@@ -195,12 +188,10 @@ class ServerLogClient {
       RuntimeUrlManager().removeUrlChangeListener(_onUrlChanged);
     }
     _reconnectTimer?.cancel();
-    _sseSubscription?.cancel();
-    _sseSubscription = null;
-    _httpClient?.close();
-    _httpClient = null;
+    _socketSubscription?.cancel();
+    _socketSubscription = null;
+    _webSocket?.close();
+    _webSocket = null;
     _isConnected = false;
-    _sseDataBuffer = '';
-    _sseEventType = '';
   }
 }

@@ -180,12 +180,12 @@ class DebugOverlayManager {
     _isUrlPanelOpen = false;
   }
 
-  /// 앱 백그라운드 진입 시 SSE 연결 중단 (슬롯 반환)
+  /// 앱 백그라운드 진입 시 WebSocket 연결 중단 (슬롯 반환)
   void suspendServerLog() {
     serverLogClient.suspend();
   }
 
-  /// 앱 포그라운드 복귀 시 SSE 재연결
+  /// 앱 포그라운드 복귀 시 WebSocket 재연결
   void resumeServerLog() {
     serverLogClient.resume();
   }
