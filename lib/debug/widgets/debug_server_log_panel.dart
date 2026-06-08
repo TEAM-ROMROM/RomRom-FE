@@ -7,7 +7,7 @@ import 'package:romrom_fe/debug/log_capture.dart';
 import 'package:romrom_fe/debug/server_log_client.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 
-/// 서버 로그 뷰어 패널 (SSE 기반)
+/// 서버 로그 뷰어 패널 (WebSocket 기반)
 class DebugServerLogPanel extends StatefulWidget {
   final VoidCallback onClose;
   final VoidCallback onMinimize;
