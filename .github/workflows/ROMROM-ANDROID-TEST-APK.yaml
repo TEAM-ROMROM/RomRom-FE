@@ -345,7 +345,7 @@ jobs:
       - name: Install Fastlane
         working-directory: android
         run: |
-          printf 'source "https://rubygems.org"\ngem "fastlane"\n' > Gemfile
+          printf 'source "https://rubygems.org"\ngem "fastlane"\ngem "multi_json"\n' > Gemfile
           bundle install
           echo "Fastlane installed"
           bundle exec fastlane --version
