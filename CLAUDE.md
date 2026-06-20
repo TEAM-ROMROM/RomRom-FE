@@ -160,6 +160,14 @@ bash tool/full_check.sh
 ### Phase 6 — main 머지 후 배포
 - `/cassiiopeia:changelog-deploy` — main push + deploy PR 생성 + 릴리스 노트 작성 + automerge
 
+### ⛔ 출시노트(릴리스 노트) 정제 규칙 — 심사 자동 제출 ON이므로 필수
+> **배경**: `deploy`는 이제 iOS App Store + Android Play Store 심사를 **자동 제출**한다(이슈 #930·#931). 따라서 `/changelog-deploy`가 만드는 릴리스 노트는 **CodeRabbit Summary든 Claude 직접 작성이든 그대로 실제 앱스토어/플레이스토어 "이번 업데이트" 출시노트로 나가 심사에 들어간다.** deploy = 내부 배포가 아니라 **사용자 대면 출시**다.
+
+- **출시노트에서 반드시 제외**: CICD·빌드·워크플로우·fastlane·배포 자동화·테스트·리팩터링·문서·의존성 등 **사용자가 앱에서 체감하지 못하는 내부 변경**. (예: "심사 거짓 성공 수정", "deliver 추가", "promote lane 옵션" 같은 커밋은 출시노트에 절대 넣지 않는다 — 빈 카테고리가 되면 그 카테고리째 생략)
+- **출시노트에 쓰는 것**: 사용자가 직접 느끼는 기능/수정/개선만. `fix:`/`feat:`/`chore:` 등 기술 prefix 금지, API·DB·라이브러리명 등 내부 구현 용어 금지. "이번 업데이트에서 뭐가 바뀌었지?"를 읽는 일반 사용자 관점으로 재작성.
+- **deploy 전 사용자 눈 확인 필수**: 심사가 들어가는 배포이므로, `/changelog-deploy`가 자동 모드로 설정돼 있어도 **릴리스 노트 본문은 PR 생성 전 사용자에게 보여주고 승인받은 뒤** 진행한다. (출시노트가 곧 심사 제출물이라 자동 통과 금지)
+- 이 규칙은 `/cassiiopeia:changelog-deploy` 스킬의 릴리스 노트 작성 원칙(기술 prefix 금지·내부구현 금지·사용자 관점)과 동일선상이며, **심사 자동화로 인해 더 엄격히** 적용한다.
+
 ### 절대 규칙 — Skill 우회 금지
 - **GitHub 작업** (이슈/PR/댓글) → 무조건 `/cassiiopeia:github` 거치기. `gh`/`curl`/`Invoke-RestMethod` 직접 호출 금지
 - **Commit** → 무조건 `/cassiiopeia:commit` 거치기. `git commit` 직접 호출 금지
