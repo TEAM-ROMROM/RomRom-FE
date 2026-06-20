@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
-import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -25,9 +24,7 @@ import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
-import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
 /// 홈 피드 아이템 위젯
@@ -287,24 +284,12 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                         child: InkResponse(
                           radius: 18.w,
                           containedInkWell: false,
-                          onTap: () async {
+                          onTap: () {
                             final id = widget.item.itemUuid;
                             if (id == null || id.isEmpty) return;
 
-                            // 내가 작성한 게시글인지 확인
-                            final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
-                            if (isCurrentMember) {
-                              if (mounted) {
-                                CommonSnackBar.show(
-                                  context: context,
-                                  message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
-                                  type: SnackBarType.error,
-                                );
-                              }
-                              return;
-                            }
-
-                            await ref.read(itemLikeProvider.notifier).toggle(id);
+                            // 본인글 차단은 toggle 내부에서 동기 처리 — await 없이 즉시 하트 반응
+                            ref.read(itemLikeProvider.notifier).toggle(id, authorMemberId: widget.item.authorMemberId);
                           },
                           customBorder: const CircleBorder(),
                           highlightColor: AppColors.buttonHighlightColorGray,

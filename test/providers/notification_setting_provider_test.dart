@@ -16,6 +16,9 @@ class FakeNotificationSettingRepository implements NotificationSettingRepository
 }
 
 void main() {
+  // navigatorKey.currentContext(GlobalKey) 접근이 바인딩을 요구하므로 초기화
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('notificationSettingProvider', () {
     late FakeNotificationSettingRepository fake;
     late ProviderContainer container;
