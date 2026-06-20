@@ -42,7 +42,6 @@ import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
-import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
@@ -1080,19 +1079,12 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
     }
   }
 
-  Future<void> _toggleLike() async {
+  void _toggleLike() {
     final id = item?.itemId;
     if (id == null || id.isEmpty) return;
 
-    final isCurrentMember = await MemberManager.isCurrentMember(item?.member?.memberId);
-    if (isCurrentMember) {
-      if (mounted) {
-        CommonSnackBar.show(context: context, message: '본인 게시글에는 좋아요를 누를 수 없습니다.', type: SnackBarType.error);
-      }
-      return;
-    }
-
-    await ref.read(itemLikeProvider.notifier).toggle(id);
+    // 본인글 차단은 toggle 내부에서 동기 처리 — await 없이 즉시 하트 반응
+    ref.read(itemLikeProvider.notifier).toggle(id, authorMemberId: item?.member?.memberId);
   }
 
   /// 채팅하기 버튼 핸들러

@@ -27,6 +27,9 @@ class FakeMemberBlockRepository implements MemberBlockRepository {
 }
 
 void main() {
+  // navigatorKey.currentContext(GlobalKey) 접근이 바인딩을 요구하므로 초기화
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('memberBlockProvider', () {
     late FakeMemberBlockRepository fake;
     late ProviderContainer container;

@@ -1,11 +1,28 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-08T14:08:19Z",
-    "currentVersion": "1.10.93",
-    "totalReleases": 119,
+    "lastUpdated": "2026-06-20T13:46:37Z",
+    "currentVersion": "1.10.97",
+    "totalReleases": 120,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.97",
+      "project_type": "flutter",
+      "date": "2026-06-20",
+      "pr_number": 933,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **버그 수정**\n  * 좋아요를 빠르게 연속으로 눌러도 정확히 반영됩니다\n  * 물품을 넘길 때 교환 방식 선택 영역이 깜빡이던 문제를 해결했습니다",
+      "parsed_changes": {
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "좋아요를 빠르게 연속으로 눌러도 정확히 반영됩니다",
+            "물품을 넘길 때 교환 방식 선택 영역이 깜빡이던 문제를 해결했습니다"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.93",
       "project_type": "flutter",

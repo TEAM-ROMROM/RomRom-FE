@@ -392,7 +392,15 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
           SizedBox(height: _hasSelectedCard ? 31.h : 23.h),
 
           // 거래방식 선택 섹션
-          if (_tradeRequestExists == true)
+          // 확인 중에는 선택 탭 대신 같은 높이의 로딩을 표시해 깜빡임 방지 (#855)
+          // _tradeRequestExists == null(확인 중)일 때 곧바로 선택 탭을 렌더링하면
+          // 이미 요청한 물품이어도 응답 직전까지 선택 탭이 잠깐 노출되는 문제 발생
+          if (_isCheckingExistence)
+            SizedBox(
+              height: 90.h,
+              child: const Center(child: CommonLoadingIndicator()),
+            )
+          else if (_tradeRequestExists == true)
             Container(
               height: 90.h,
               alignment: Alignment.center,

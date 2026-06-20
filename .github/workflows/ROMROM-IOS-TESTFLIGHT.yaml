@@ -423,31 +423,47 @@ jobs:
           default_platform(:ios)
 
           platform :ios do
-            lane :upload_testflight do
+            lane :deploy_appstore do
               api_key = app_store_connect_api_key(
                 key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
                 issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
                 key_filepath: ENV["API_KEY_PATH"]
               )
-          
-              # 업로드 + 암호화 규정 자동 설정
+
+              # 1) TestFlight 업로드 (deliver가 심사 제출에 쓰도록 빌드 처리 완료까지 대기)
               pilot(
                 api_key: api_key,
                 ipa: ENV["IPA_PATH"],
                 changelog: ENV["RELEASE_NOTES"],
-                skip_waiting_for_build_processing: true,  # 빠르게 업로드만
+                skip_waiting_for_build_processing: false,  # 심사 제출 전 빌드 처리 완료 대기
                 distribute_external: false,
                 notify_external_testers: false,
                 uses_non_exempt_encryption: false  # 암호화 규정 자동 설정
               )
-          
-              puts "✅ TESTFLIGHT 자동 업로드 완료!"
+              puts "✅ TESTFLIGHT 업로드 완료!"
+
+              # 2) App Store production 심사 자동 제출 (수동 입력 제거 — 이 작업의 핵심)
+              #    메타데이터/스크린샷은 App Store Connect 웹에서 관리 → 빌드만 심사 제출
+              deliver(
+                api_key: api_key,
+                submit_for_review: true,     # 심사 자동 제출
+                automatic_release: true,     # 심사 통과 즉시 자동 출시
+                force: true,                 # CI 비대화형: HTML 미리보기 확인 건너뜀
+                skip_binary_upload: true,    # pilot으로 올린 빌드 사용 (재업로드 안 함)
+                skip_metadata: true,         # 메타는 App Store Connect 웹에서 관리
+                skip_screenshots: true,      # 스샷은 App Store Connect 웹에서 관리
+                precheck_include_in_app_purchases: false,
+                submission_information: {
+                  add_id_info_uses_idfa: false  # 광고 식별자 미사용 (심사 질문 자동 응답)
+                }
+              )
+              puts "✅ APP STORE 심사 제출 완료!"
             end
           end
           EOF
 
-      # Upload to TestFlight with Fastlane (자동화 개선)
-      - name: Upload to TestFlight with Fastlane
+      # TestFlight 업로드 + App Store 심사 자동 제출 (Fastlane)
+      - name: Upload to TestFlight & Submit to App Store
         run: |
           # 절대 경로로 IPA 파일 찾기
           IPA_PATH=$(find $GITHUB_WORKSPACE/ios/build/ipa -name "*.ipa" | head -1)
@@ -482,20 +498,20 @@ jobs:
           echo "IPA_PATH: $IPA_PATH"
           echo "API_KEY_PATH: $API_KEY_PATH"
 
-          # Fastlane 실행 (권한 에러는 무시하고 성공 처리)
+          # Fastlane 실행 (TestFlight 업로드 + App Store 심사 제출. 실패 시 워크플로우 실패로 표면화)
           cd ios
-          fastlane upload_testflight || echo "⚠️ 권한 에러 발생했지만 업로드는 성공적으로 완료됨"
+          fastlane deploy_appstore
 
       # 성공 알림
-      - name: Notify TestFlight Upload Success
+      - name: Notify TestFlight Upload & App Store Submit Success
         if: success()
         run: |
-          echo "✅ TestFlight 업로드 성공!"
+          echo "✅ TestFlight 업로드 + App Store 심사 제출 성공!"
           echo "버전: ${{ needs.prepare-build.outputs.version }}"
           echo "커밋: ${{ github.sha }}"
 
       - name: Notify on Failure
         if: failure()
         run: |
-          echo "❌ TestFlight 업로드 실패!"
+          echo "❌ TestFlight 업로드 또는 App Store 심사 제출 실패!"
           echo "로그를 확인해주세요."
