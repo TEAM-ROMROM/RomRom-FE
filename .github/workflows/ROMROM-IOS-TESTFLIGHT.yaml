@@ -464,11 +464,27 @@ jobs:
               puts "✅ TESTFLIGHT 업로드 완료!"
 
               # 2) App Store production 심사 자동 제출 (appstore_submit 모드에서만)
-              #    메타데이터/스크린샷은 App Store Connect 웹에서 관리 → 빌드만 심사 제출
+              #    빌드만 제출하되, 새 버전 심사에 필수인 릴리스 노트(whatsNew)는 채운다.
               #    ⚠️ app_identifier(Bundle ID)를 반드시 넘긴다 — 없으면 deliver가
               #       "Could not infer your App's Bundle Identifier"로 비대화형에서 crash (이슈 #931)
               if submit_to_appstore
                 app_ver = ENV["APP_VERSION"]
+                release_notes = (ENV["RELEASE_NOTES"] || "버그를 수정하고 안정성을 개선했습니다.").strip
+                release_notes = "버그를 수정하고 안정성을 개선했습니다." if release_notes.empty?
+
+                # ⭐ 3차 수정: whatsNew(릴리스 노트) 메타만 담은 디렉토리 동적 생성.
+                #   App Store는 업데이트 버전 심사 제출 시 whatsNew를 필수로 요구한다.
+                #   release_notes.txt만 만들고 다른 메타 파일은 안 만든다 → ASC 기존 메타(설명/키워드 등)는 보존.
+                #   ASC 앱 로케일이 Korean이므로 ko / ko-KR 양쪽에 작성(로케일 코드 불일치 방어).
+                metadata_path = "./fastlane/metadata"
+                ["ko", "ko-KR"].each do |loc|
+                  dir = "#{metadata_path}/#{loc}"
+                  require "fileutils"
+                  FileUtils.mkdir_p(dir)
+                  File.write("#{dir}/release_notes.txt", release_notes)
+                end
+                UI.message("📝 whatsNew(릴리스 노트) 메타 작성 완료: #{release_notes}")
+
                 deliver(
                   api_key: api_key,
                   app_identifier: app_id,      # ⭐ Bundle ID 명시 (근본 원인 수정 — 미전달 시 crash)
@@ -476,9 +492,10 @@ jobs:
                   submit_for_review: true,     # 심사 자동 제출
                   automatic_release: true,     # 심사 통과 즉시 자동 출시
                   force: true,                 # CI 비대화형: HTML 미리보기 확인 건너뜀
-                  run_precheck_before_submit: false, # 메타 스킵 상태에서 precheck 비대화형 충돌 방지
+                  run_precheck_before_submit: false, # precheck 비대화형 충돌 방지
                   skip_binary_upload: true,    # pilot으로 올린 빌드 사용 (재업로드 안 함)
-                  skip_metadata: true,         # 메타는 App Store Connect 웹에서 관리
+                  skip_metadata: false,        # ⭐ 3차 수정 — release_notes(whatsNew)만 업로드 (다른 메타 파일 없음 → 기존값 보존)
+                  metadata_path: metadata_path,
                   skip_screenshots: true,      # 스샷은 App Store Connect 웹에서 관리
                   precheck_include_in_app_purchases: false,
                   submission_information: {
