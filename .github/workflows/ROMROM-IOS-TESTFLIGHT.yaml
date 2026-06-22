@@ -462,7 +462,25 @@ jobs:
               UI.message("🎛️  배포 모드: #{deploy_mode} (ASC 버전 준비: #{prepare_appstore} / 심사 자동제출: #{submit_to_appstore})")
 
               # 1) TestFlight 업로드 (항상 수행)
-              #    ASC 준비/제출 모드면 deliver가 빌드를 선택할 수 있도록 처리 완료까지 대기
+              #    ASC 준비/제출 모드(store_prepare/store_submit)면 deliver가 "방금 올린 그 빌드"를
+              #    선택해 같은 버전의 What's New와 정합성을 맞춰야 하므로, 빌드 처리 완료까지 대기한다.
+              #
+              #    ⚠️⚠️ Apple 빌드 처리(Processing) 지연 주의 ⚠️⚠️
+              #    pilot은 방금 업로드한 빌드가 App Store Connect에서 "Processing → Complete"가
+              #    될 때까지 기다린다(skip_waiting_for_build_processing: false).
+              #    이 Processing 시간은 100% Apple 서버 사정이며 통제 불가하다:
+              #      - 보통 5~15분, 그러나 때때로 30분~1시간 이상 걸릴 수 있다 (실측: build 174가 1시간+ 처리됨).
+              #      - 짧은 시간에 같은 앱 빌드를 연속 업로드하면 Apple 처리 큐가 밀려 더 길어질 수 있다.
+              #    → CI가 "TestFlight 배포" step에서 오래 멈춰 있어도 hang이 아니라 정상 대기다.
+              #       (TestFlight 화면의 Build Uploads에서 해당 빌드 status가 Processing인지 확인 가능)
+              #
+              #    📌 모드별 Processing 병목 정리:
+              #       - store_only    : Processing 대기 없음 (빌드만 업로드)             → 빠름, 병목 X
+              #       - store_prepare : Processing 완료까지 대기 후 deliver(제출 직전)    → ⚠️ 병목 O
+              #       - store_submit  : Processing 완료까지 대기 후 deliver(심사 제출)    → ⚠️ 병목 O
+              #       즉 3개 모드 중 ASC를 건드리는 2개(prepare/submit)는 Apple Processing 속도에 종속된다.
+              #       Processing이 안 끝나면 deliver가 빌드를 못 골라 "심사 직전"에도 도달 못 하고 계속 대기.
+              #       이건 코드로 못 줄이는 구조적 한계(Apple이 처리해줘야 진행 가능). 급할 땐 store_only 권장.
               pilot(
                 api_key: api_key,
                 app_identifier: app_id,                          # Bundle ID 명시 (비대화형 안전)
@@ -494,8 +512,11 @@ jobs:
                 workspace = ENV["GITHUB_WORKSPACE"] || Dir.pwd
                 metadata_path = File.join(workspace, "ios", "fastlane", "metadata")
                 require "fileutils"
-                # ASC 앱 로케일이 Korean이므로 ko / ko-KR 양쪽 작성(로케일 코드 불일치 방어).
-                ["ko", "ko-KR"].each do |loc|
+                # ⚠️ 로케일 디렉토리명은 fastlane deliver가 인정하는 코드만 가능.
+                #    한국어는 "ko" 가 유효 (ko-KR은 무효 — 실측 #175 실패: "Unsupported directory name(s) ... ko-KR").
+                #    유효 목록: ko, en-US, ja, zh-Hans 등. 필요시 DELIVER_LOCALES로 추가 (쉼표 구분).
+                locales = (ENV["DELIVER_LOCALES"] || "ko").split(",").map(&:strip).reject(&:empty?)
+                locales.each do |loc|
                   dir = File.join(metadata_path, loc)
                   FileUtils.mkdir_p(dir)
                   File.write(File.join(dir, "release_notes.txt"), release_notes)

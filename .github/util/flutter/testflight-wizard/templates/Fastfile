@@ -74,7 +74,15 @@ platform :ios do
     release_notes = (ENV["RELEASE_NOTES"] || "새로운 빌드가 업로드되었습니다.").dup
 
     # 1) TestFlight 업로드 (항상 수행)
-    #    ASC 준비/제출 모드면 deliver가 빌드를 선택할 수 있도록 처리 완료까지 대기
+    #    ASC 준비/제출 모드면 deliver가 "방금 올린 그 빌드"를 선택해 같은 버전의 What's New와
+    #    정합성을 맞춰야 하므로, 빌드 처리 완료까지 대기한다.
+    #
+    #    ⚠️⚠️ Apple 빌드 처리(Processing) 지연 주의 ⚠️⚠️
+    #    pilot은 방금 올린 빌드가 ASC에서 "Processing → Complete"가 될 때까지 기다린다.
+    #    이 시간은 Apple 서버 사정으로 통제 불가 — 보통 5~15분이지만 30분~1시간+ 걸릴 수 있다.
+    #    짧은 시간에 같은 앱 빌드를 연속 업로드하면 처리 큐가 밀려 더 길어질 수 있다.
+    #    → CI가 이 step에서 오래 멈춰 있어도 hang이 아니라 정상 대기다.
+    #    → store_only 모드는 이 대기를 건너뛴다(skip_waiting_for_build_processing: true).
     pilot_args = {
       api_key: api_key,
       ipa: ipa_path,
@@ -101,12 +109,12 @@ platform :ios do
       # App Store는 업데이트 버전 심사 제출 시 whatsNew(릴리스 노트)를 필수로 요구한다.
       # ⚠️ metadata_path는 반드시 절대 경로로 — 상대경로는 fastlane CWD와 어긋나 deliver가 못 읽음.
       #    release_notes.txt만 만들고 다른 메타 파일은 안 만든다 → ASC 기존 메타(설명/키워드 등)는 보존.
-      #    ASC 앱 로케일에 맞춰 ko / ko-KR 양쪽 작성(로케일 코드 불일치 방어). 필요시 DELIVER_LOCALES로 추가.
+      # ⚠️ 로케일 디렉토리명은 fastlane deliver가 인정하는 코드만 가능 (ko 유효 / ko-KR 무효).
+      #    유효: ko, en-US, ja, zh-Hans 등. 필요시 DELIVER_LOCALES로 추가(쉼표 구분).
       require "fileutils"
       base = ENV["GITHUB_WORKSPACE"] ? File.join(ENV["GITHUB_WORKSPACE"], "ios") : Dir.pwd
       metadata_path = File.join(base, "fastlane", "metadata")
-      (ENV["DELIVER_LOCALES"] || "ko,ko-KR").split(",").map(&:strip).each do |loc|
-        next if loc.empty?
+      (ENV["DELIVER_LOCALES"] || "ko").split(",").map(&:strip).reject(&:empty?).each do |loc|
         dir = File.join(metadata_path, loc)
         FileUtils.mkdir_p(dir)
         File.write(File.join(dir, "release_notes.txt"), notes)
