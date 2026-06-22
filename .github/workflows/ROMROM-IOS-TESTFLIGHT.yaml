@@ -468,9 +468,11 @@ jobs:
               #    ⚠️ app_identifier(Bundle ID)를 반드시 넘긴다 — 없으면 deliver가
               #       "Could not infer your App's Bundle Identifier"로 비대화형에서 crash (이슈 #931)
               if submit_to_appstore
+                app_ver = ENV["APP_VERSION"]
                 deliver(
                   api_key: api_key,
                   app_identifier: app_id,      # ⭐ Bundle ID 명시 (근본 원인 수정 — 미전달 시 crash)
+                  app_version: app_ver,        # ⭐ 2차 수정 — 해당 버전의 editable App Store 버전 생성/선택
                   submit_for_review: true,     # 심사 자동 제출
                   automatic_release: true,     # 심사 통과 즉시 자동 출시
                   force: true,                 # CI 비대화형: HTML 미리보기 확인 건너뜀
@@ -523,6 +525,7 @@ jobs:
           export RELEASE_NOTES="$RELEASE_NOTES"
           export APP_IDENTIFIER="com.alom.romrom"   # deliver/pilot Bundle ID (비대화형 추론 실패 방지)
           export DEPLOY_MODE="${{ env.DEPLOY_MODE }}"   # testflight_only(기본) | appstore_submit
+          export APP_VERSION="${{ needs.prepare-build.outputs.version }}"   # deliver editable 버전 생성/선택용
 
           # 디버깅 정보
           echo "Working directory: $(pwd)"
@@ -530,6 +533,7 @@ jobs:
           echo "API_KEY_PATH: $API_KEY_PATH"
           echo "APP_IDENTIFIER: $APP_IDENTIFIER"
           echo "DEPLOY_MODE: $DEPLOY_MODE"
+          echo "APP_VERSION: $APP_VERSION"
 
           # Fastlane 실행 (TestFlight 업로드 + App Store 심사 제출. 실패 시 워크플로우 실패로 표면화)
           cd ios
