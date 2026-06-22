@@ -94,6 +94,7 @@ platform :ios do
       deliver(
         api_key: api_key,
         app_identifier: app_id,            # Bundle ID 명시 (비대화형 추론 실패 방지)
+        app_version: ENV["APP_VERSION"],   # 해당 버전의 editable App Store 버전 생성/선택 (없으면 submit 불가)
         submit_for_review: true,           # 심사 자동 제출
         automatic_release: true,           # 심사 통과 즉시 자동 출시
         force: true,                       # CI 비대화형: HTML 미리보기 확인 건너뜀
