@@ -47,9 +47,10 @@ platform :ios do
   # ──────────────────────────────────────────────────────────────
   desc "배포 (DEPLOY_MODE: testflight_only | appstore_prepare | appstore_submit)"
   lane :deploy do
+    # 플랫폼 공통 네이밍(store_*)과 iOS 전용 네이밍(testflight_only/appstore_*) 둘 다 호환
     deploy_mode = (ENV["DEPLOY_MODE"] || "testflight_only").strip
-    prepare_appstore = (deploy_mode == "appstore_prepare" || deploy_mode == "appstore_submit")
-    submit_to_appstore = (deploy_mode == "appstore_submit")
+    prepare_appstore = ["appstore_prepare", "appstore_submit", "store_prepare", "store_submit"].include?(deploy_mode)
+    submit_to_appstore = ["appstore_submit", "store_submit"].include?(deploy_mode)
     UI.message("🎛️  배포 모드: #{deploy_mode} (ASC 버전 준비: #{prepare_appstore} / 심사 자동제출: #{submit_to_appstore})")
 
     api_key = app_store_connect_api_key(

@@ -20,13 +20,22 @@ platform :android do
   #   internal(completed) → promote_internal_to_production → Google 심사 요청 자동화
   # ============================================================
 
-  desc "Deploy to Play Store Internal Testing Track + Promote to Production"
+  desc "Deploy to Play Store (DEPLOY_MODE: store_only | store_prepare | store_submit)"
   lane :deploy_internal do
     version_name = ENV["VERSION_NAME"] || "1.0.0"
     version_code = ENV["VERSION_CODE"] || "1"
 
-    puts "📦 배포 정보:"
-    puts "  버전: #{version_name} (#{version_code})"
+    # 배포 모드 (iOS와 통일된 3단계 — store_ 접두사로 플랫폼 공통):
+    #   store_only    : 내부 테스트(internal) 트랙 업로드까지만
+    #   store_prepare : internal 업로드 + production에 draft로 올림
+    #                   → Play Console에서 사람이 "출시 시작" 눌러야 심사 진행 (제출 직전 상태)
+    #   store_submit  : internal 업로드 + production completed 승급(심사 자동 등록) — 완전 자동
+    # (구 testflight_only/appstore_prepare/appstore_submit 별칭도 호환)
+    deploy_mode = (ENV["DEPLOY_MODE"] || "store_submit").strip
+    promote = ["store_prepare", "store_submit", "appstore_prepare", "appstore_submit"].include?(deploy_mode)
+    submit = ["store_submit", "appstore_submit"].include?(deploy_mode)
+
+    puts "📦 배포 정보: #{version_name} (#{version_code}) / 모드: #{deploy_mode} (프로덕션 승급: #{promote} / 심사 자동등록: #{submit})"
 
     # ── Step 1: 내부 테스트 트랙에 업로드 ──────────────────────
     puts ""
@@ -52,33 +61,46 @@ platform :android do
 
     puts "✅ 내부 테스트 업로드 완료!"
 
-    # ── Step 2: 내부 테스트 → 프로덕션 자동 승급 (Google 심사 요청) ──
+    unless promote
+      puts ""
+      puts "⏭️  store_only 모드 — 프로덕션 승급 건너뜀 (내부 테스트 업로드만 완료)"
+      next
+    end
+
+    # ── Step 2: 내부 테스트 → 프로덕션 승급 ──
+    #   store_submit  : completed로 승급 → Google 심사 자동 등록 (완전 자동)
+    #   store_prepare : draft로 승급 → Play Console에서 사람이 "출시 시작" 눌러야 심사 진행
+    promote_status = submit ? 'completed' : 'draft'
     puts ""
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    puts "🚀 2단계: 프로덕션 트랙으로 승급 중... (Google 심사 요청)"
+    puts "🚀 2단계: 프로덕션 트랙으로 승급 중... (release_status: #{promote_status})"
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    promote_internal_to_production
+    promote_internal_to_production(promote_status: promote_status)
 
     puts ""
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    puts "✅ 전체 배포 완료!"
-    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    if submit
+      puts "✅ 전체 배포 완료! 프로덕션: Google 심사 자동 등록됨 (심사 통과 후 전체 출시)"
+    else
+      puts "✅ 프로덕션 버전 준비 완료 (draft) — Play Console에서 '출시 시작'만 누르면 심사 진행됩니다."
+    end
     puts "📦 버전: #{version_name} (#{version_code})"
-    puts "📋 내부 테스트: 즉시 배포됨"
-    puts "🔍 프로덕션: Google 심사 요청 완료 (심사 통과 후 전체 사용자 배포)"
     puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   end
 
-  desc "Promote internal track directly to production (Google 심사 요청)"
-  lane :promote_internal_to_production do
+  desc "Promote internal track to production (promote_status: completed=심사자동등록 | draft=출시직전대기)"
+  lane :promote_internal_to_production do |options|
     # ⚠️ Draft App(미출시)일 때는 이 lane이 동작하지 않습니다.
     # Play Console에서 최초 1회 수동 프로덕션 출시 후 사용 가능합니다.
+    #   promote_status: 'completed' → 즉시 심사 등록 (store_submit)
+    #   promote_status: 'draft'     → 프로덕션 draft로만 올림, 사람이 콘솔에서 "출시 시작" (store_prepare)
+    status = options[:promote_status] || 'completed'
     upload_to_play_store(
       package_name: 'com.alom.romrom',
       track: 'internal',
       track_promote_to: 'production',
-      track_promote_release_status: 'completed', # 프로덕션 릴리스를 completed로 명시 (draft 방지)
+      track_promote_release_status: status,   # completed(심사등록) | draft(출시 직전 대기)
       json_key: ENV["GOOGLE_PLAY_JSON_KEY"],
       skip_upload_apk: true,
       skip_upload_aab: true,
