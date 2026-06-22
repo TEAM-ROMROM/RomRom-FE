@@ -522,7 +522,16 @@ jobs:
                   File.write(File.join(dir, "release_notes.txt"), release_notes)
                 end
                 UI.message("📝 whatsNew 메타 작성: #{release_notes}")
-                UI.message("📂 Dir.pwd=#{Dir.pwd}")
+
+                # ⭐ 심사 메모(Notes) 초기화: 이전 버전의 거절 대응 소명서가 ASC에서 자동 승계되어
+                #    매 버전 남는 문제 방지. review_information/notes.txt만 빈 내용으로 만들어 Notes만 비운다.
+                #    (demo_user/demo_password 등 다른 review_information 파일은 안 만듦 → 연락처·데모계정은 ASC 기존값 보존)
+                #    What's New(release_notes.txt)와 동일한 메타 디렉토리 방식 — 존재하는 파일만 deliver가 반영.
+                review_dir = File.join(metadata_path, "review_information")
+                FileUtils.mkdir_p(review_dir)
+                File.write(File.join(review_dir, "notes.txt"), "")
+                UI.message("🧹 심사 Notes 초기화 (review_information/notes.txt 공란)")
+
                 UI.message("📂 metadata_path=#{metadata_path}")
                 UI.message("📂 생성된 메타 파일:\n#{Dir.glob(File.join(metadata_path, '**', '*')).join("\n")}")
 
@@ -530,6 +539,8 @@ jobs:
                   api_key: api_key,
                   app_identifier: app_id,      # ⭐ Bundle ID 명시 (근본 원인 수정 — 미전달 시 crash)
                   app_version: app_ver,        # ⭐ 2차 수정 — 해당 버전의 editable App Store 버전 생성/선택
+                  build_number: ENV["BUILD_NUMBER"],  # ⭐ 빌드 명시 선택 — skip_metadata:false면 자동선택을 건너뛰어
+                                                      #    엉뚱한(이전) 빌드가 붙는 문제 방지 (실측 #176: 1.10.103에 build173 붙음)
                   submit_for_review: submit_to_appstore,  # appstore_submit이면 심사 자동제출, appstore_prepare면 제출 직전까지만
                   automatic_release: submit_to_appstore,  # 제출 모드에서만 심사통과 즉시 자동출시 설정
                   force: true,                 # CI 비대화형: HTML 미리보기 확인 건너뜀
@@ -592,6 +603,7 @@ jobs:
           export APP_IDENTIFIER="com.alom.romrom"   # deliver/pilot Bundle ID (비대화형 추론 실패 방지)
           export DEPLOY_MODE="${{ env.DEPLOY_MODE }}"   # testflight_only(기본) | appstore_prepare | appstore_submit
           export APP_VERSION="${{ needs.prepare-build.outputs.version }}"   # deliver editable 버전 생성/선택용
+          export BUILD_NUMBER="${{ needs.prepare-build.outputs.build_number }}"   # deliver가 붙일 빌드 번호 명시 선택용
 
           # 디버깅 정보
           echo "Working directory: $(pwd)"
@@ -600,6 +612,7 @@ jobs:
           echo "APP_IDENTIFIER: $APP_IDENTIFIER"
           echo "DEPLOY_MODE: $DEPLOY_MODE"
           echo "APP_VERSION: $APP_VERSION"
+          echo "BUILD_NUMBER: $BUILD_NUMBER"
 
           # Fastlane 실행 (TestFlight 업로드 + App Store 심사 제출. 실패 시 워크플로우 실패로 표면화)
           cd ios

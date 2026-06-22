@@ -120,12 +120,20 @@ platform :ios do
         File.write(File.join(dir, "release_notes.txt"), notes)
       end
       UI.message("📝 whatsNew 메타 작성: #{notes}")
+
+      # 심사 메모(Notes) 초기화: 이전 버전 거절 소명서가 ASC에서 자동 승계되어 남는 문제 방지.
+      # review_information/notes.txt만 빈 내용으로 → Notes만 비움 (연락처·데모계정은 파일 없으면 ASC 기존값 보존).
+      review_dir = File.join(metadata_path, "review_information")
+      FileUtils.mkdir_p(review_dir)
+      File.write(File.join(review_dir, "notes.txt"), "")
+      UI.message("🧹 심사 Notes 초기화")
       UI.message("📂 metadata_path=#{metadata_path}")
 
       deliver(
         api_key: api_key,
         app_identifier: app_id,            # Bundle ID 명시 (비대화형 추론 실패 방지)
         app_version: ENV["APP_VERSION"],   # 해당 버전의 editable App Store 버전 생성/선택 (없으면 submit 불가)
+        build_number: ENV["BUILD_NUMBER"], # 빌드 명시 선택 — skip_metadata:false면 자동선택을 건너뛰어 엉뚱한 빌드가 붙는 문제 방지
         submit_for_review: submit_to_appstore,  # appstore_submit이면 심사 자동제출, prepare면 제출 직전까지만
         automatic_release: submit_to_appstore,  # 제출 모드에서만 심사통과 즉시 자동출시 설정
         force: true,                       # CI 비대화형: HTML 미리보기 확인 건너뜀
