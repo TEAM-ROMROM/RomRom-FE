@@ -8,12 +8,27 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: "배포 모드 — store_only: 내부테스트까지만 / store_prepare: 프로덕션 draft(출시 직전) / store_submit: 심사 자동 등록"
+        required: false
+        default: "store_submit"
+        type: choice
+        options:
+          - store_only
+          - store_prepare
+          - store_submit
 
 env:
   FLUTTER_VERSION: "3.35.5"
   JAVA_VERSION: "17"
   PROJECT_TYPE: "flutter"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # 배포 모드 (우선순위: 수동 dispatch input > repo variable ANDROID_DEPLOY_MODE > 폴백 store_submit)
+  #   store_only    : internal 트랙 업로드까지만
+  #   store_prepare : production draft 승급 (Play Console에서 사람이 "출시 시작")
+  #   store_submit  : production completed 승급 (Google 심사 자동 등록) — 기존 기본 동작
+  DEPLOY_MODE: ${{ github.event.inputs.deploy_mode || vars.ANDROID_DEPLOY_MODE || 'store_submit' }}
 
 jobs:
   prepare-build:
@@ -634,10 +649,11 @@ jobs:
           export GOOGLE_PLAY_JSON_KEY="$GOOGLE_PLAY_JSON_KEY"
           export VERSION_NAME="$VERSION_NAME"
           export VERSION_CODE="$VERSION_CODE"
-          
+          export DEPLOY_MODE="${{ env.DEPLOY_MODE }}"   # store_only | store_prepare | store_submit
+
           # 배포 실행
           echo "=========================================="
-          echo "🚀 Play Store 배포 실행"
+          echo "🚀 Play Store 배포 실행 (모드: $DEPLOY_MODE)"
           echo "🎯 버전: $VERSION_NAME (코드: $VERSION_CODE)"
           echo "=========================================="
           

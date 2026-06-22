@@ -25,8 +25,10 @@ env:
   PROJECT_TYPE: "flutter"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   # 배포 모드 결정 (우선순위: 수동 dispatch input > repo variable IOS_DEPLOY_MODE > 폴백 testflight_only)
-  # - testflight_only : pilot(TestFlight 업로드)까지만. 기본·안전값.
-  # - appstore_submit : pilot 후 deliver로 App Store production 심사 자동 제출.
+  # - testflight_only (=store_only)    : pilot(TestFlight 업로드)까지만. 기본·안전값.
+  # - appstore_prepare (=store_prepare): pilot + deliver로 버전·빌드·What's New 채워 "제출 직전"까지. 사람이 ASC에서 Add for Review.
+  # - appstore_submit (=store_submit)  : pilot 후 deliver로 App Store 심사 자동 제출.
+  # (store_* 공통 네이밍도 Fastfile에서 인식 — Android와 통일)
   DEPLOY_MODE: ${{ github.event.inputs.deploy_mode || vars.IOS_DEPLOY_MODE || 'testflight_only' }}
 
 jobs:
@@ -450,9 +452,13 @@ jobs:
               #   appstore_prepare       : TestFlight + ASC에 버전 생성·빌드 선택·What's New 채움
               #                            → "제출 직전(Prepare for Submission)" 상태까지. 사람이 ASC에서 검토 후 Add for Review.
               #   appstore_submit        : 위 전부 + 심사 자동 제출(submit_for_review)까지 완전 자동
+              # 플랫폼 공통 네이밍(store_*)과 iOS 전용 네이밍(testflight_only/appstore_*) 둘 다 호환
+              #   store_only    = testflight_only : TestFlight 업로드까지만
+              #   store_prepare = appstore_prepare: ASC 버전 준비(제출 직전)
+              #   store_submit  = appstore_submit : 심사 자동 제출
               deploy_mode = (ENV["DEPLOY_MODE"] || "testflight_only").strip
-              prepare_appstore = (deploy_mode == "appstore_prepare" || deploy_mode == "appstore_submit")
-              submit_to_appstore = (deploy_mode == "appstore_submit")
+              prepare_appstore = ["appstore_prepare", "appstore_submit", "store_prepare", "store_submit"].include?(deploy_mode)
+              submit_to_appstore = ["appstore_submit", "store_submit"].include?(deploy_mode)
               UI.message("🎛️  배포 모드: #{deploy_mode} (ASC 버전 준비: #{prepare_appstore} / 심사 자동제출: #{submit_to_appstore})")
 
               # 1) TestFlight 업로드 (항상 수행)
