@@ -89,8 +89,22 @@ platform :ios do
     UI.success("✅ TestFlight 업로드 완료!")
 
     # 2) App Store production 심사 자동 제출 (appstore_submit 모드에서만)
-    #    메타/스크린샷은 App Store Connect 웹에서 관리 → 빌드만 심사 제출
+    #    빌드만 제출하되, 새 버전 심사에 필수인 릴리스 노트(whatsNew)는 채운다.
     if submit_to_appstore
+      notes = (ENV["RELEASE_NOTES"] || "버그를 수정하고 안정성을 개선했습니다.").strip
+      notes = "버그를 수정하고 안정성을 개선했습니다." if notes.empty?
+
+      # App Store는 업데이트 버전 심사 제출 시 whatsNew(릴리스 노트)를 필수로 요구한다.
+      # release_notes.txt만 만들고 다른 메타 파일은 안 만든다 → ASC 기존 메타(설명/키워드 등)는 보존.
+      # ASC 앱 로케일에 맞춰 ko / ko-KR 양쪽 작성(로케일 코드 불일치 방어). 필요시 en-US 등 추가.
+      require "fileutils"
+      metadata_path = "./fastlane/metadata"
+      (ENV["DELIVER_LOCALES"] || "ko,ko-KR").split(",").map(&:strip).each do |loc|
+        next if loc.empty?
+        FileUtils.mkdir_p("#{metadata_path}/#{loc}")
+        File.write("#{metadata_path}/#{loc}/release_notes.txt", notes)
+      end
+
       deliver(
         api_key: api_key,
         app_identifier: app_id,            # Bundle ID 명시 (비대화형 추론 실패 방지)
@@ -98,9 +112,10 @@ platform :ios do
         submit_for_review: true,           # 심사 자동 제출
         automatic_release: true,           # 심사 통과 즉시 자동 출시
         force: true,                       # CI 비대화형: HTML 미리보기 확인 건너뜀
-        run_precheck_before_submit: false, # 메타 스킵 상태에서 precheck 비대화형 충돌 방지
+        run_precheck_before_submit: false, # precheck 비대화형 충돌 방지
         skip_binary_upload: true,          # pilot으로 올린 빌드 사용 (재업로드 안 함)
-        skip_metadata: true,               # 메타는 App Store Connect 웹에서 관리
+        skip_metadata: false,              # release_notes(whatsNew)만 업로드 (다른 메타 파일 없음 → 기존값 보존)
+        metadata_path: metadata_path,
         skip_screenshots: true,            # 스샷은 App Store Connect 웹에서 관리
         precheck_include_in_app_purchases: false,
         submission_information: {
