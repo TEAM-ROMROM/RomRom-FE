@@ -19,11 +19,11 @@
 #   4. fastlane upload_testflight (TestFlight 업로드)
 #
 # 사용법:
-#   ./init.sh PROJECT_PATH BUNDLE_ID TEAM_ID PROFILE_NAME [USES_ENCRYPTION]
+#   ./testflight-wizard-setup.sh PROJECT_PATH BUNDLE_ID TEAM_ID PROFILE_NAME [USES_ENCRYPTION]
 #
 # 예시:
-#   ./init.sh /path/to/project com.example.myapp ABC1234DEF "MyApp Distribution"
-#   ./init.sh /path/to/project com.example.myapp ABC1234DEF "MyApp Distribution" false
+#   ./testflight-wizard-setup.sh /path/to/project com.example.myapp ABC1234DEF "MyApp Distribution"
+#   ./testflight-wizard-setup.sh /path/to/project com.example.myapp ABC1234DEF "MyApp Distribution" false
 #
 # 생성/수정되는 파일:
 #   - ios/Gemfile                    (Fastlane 의존성)
@@ -81,7 +81,7 @@ ${BLUE}빌드 파이프라인:${NC}
   4. fastlane upload_testflight (TestFlight 업로드)
 
 ${BLUE}사용법:${NC}
-  ./init.sh PROJECT_PATH BUNDLE_ID TEAM_ID PROFILE_NAME [USES_ENCRYPTION]
+  ./testflight-wizard-setup.sh PROJECT_PATH BUNDLE_ID TEAM_ID PROFILE_NAME [USES_ENCRYPTION]
 
 ${BLUE}매개변수:${NC}
   PROJECT_PATH      Flutter 프로젝트 루트 경로
@@ -91,8 +91,8 @@ ${BLUE}매개변수:${NC}
   USES_ENCRYPTION   암호화 사용 여부 (true/false, 기본값: false)
 
 ${BLUE}예시:${NC}
-  ./init.sh /path/to/project com.example.myapp ABC1234DEF "MyApp Distribution"
-  ./init.sh /path/to/project com.example.myapp ABC1234DEF "MyApp Distribution" false
+  ./testflight-wizard-setup.sh /path/to/project com.example.myapp ABC1234DEF "MyApp Distribution"
+  ./testflight-wizard-setup.sh /path/to/project com.example.myapp ABC1234DEF "MyApp Distribution" false
 
 ${BLUE}생성/수정되는 파일:${NC}
   - ios/Gemfile                    Fastlane 의존성
@@ -540,7 +540,7 @@ patch_xcode_project() {
         print_error "해결 방법:"
         print_info "1. 위 목록에서 정확한 Bundle ID를 확인하세요 (대소문자 구분!)"
         print_info "2. 올바른 Bundle ID로 스크립트를 다시 실행하세요"
-        print_info "   예: ./init.sh \"$PROJECT_PATH\" \"정확한.번들.아이디\" \"$TEAM_ID\" \"$PROFILE_NAME\""
+        print_info "   예: ./testflight-wizard-setup.sh \"$PROJECT_PATH\" \"정확한.번들.아이디\" \"$TEAM_ID\" \"$PROFILE_NAME\""
         mv "${pbxproj_path}.bak" "$pbxproj_path"
         return 1
     fi

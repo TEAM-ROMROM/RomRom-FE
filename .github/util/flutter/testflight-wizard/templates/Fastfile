@@ -2,7 +2,7 @@
 # Fastfile for iOS TestFlight Deployment
 # ============================================
 #
-# 이 파일은 flutter-ios-testflight-init 마법사에 의해 생성됩니다.
+# 이 파일은 testflight-wizard 마법사(.github/util/flutter/testflight-wizard)에 의해 생성됩니다.
 # GitHub Actions 워크플로우에서 이 파일을 직접 사용합니다.
 #
 # 빌드 파이프라인:
@@ -23,6 +23,15 @@
 #   - DEPLOY_MODE: 배포 모드 (선택, 기본 testflight_only)
 #       └ testflight_only : TestFlight 업로드까지만 (기본·안전값)
 #       └ appstore_submit : pilot 후 deliver로 App Store production 심사 자동 제출
+#
+# ── 배포 가이드 (마법사 안내와 동일) ──────────────────────────────
+# 【배포 모드 DEPLOY_MODE】 store_only(TF까지·기본) / store_prepare(제출직전·ASC에서 Add for Review) / store_submit(심사 자동제출)
+# 【신규 앱】 App Store 최초 1회는 ASC에서 직접 심사제출/출시 필요. 이후 prepare/submit 정상동작.
+# 【로케일】 What's New 메타는 'ko'만 유효(ko-KR 무효 — Unsupported directory name). 추가는 DELIVER_LOCALES ENV.
+# 【개인정보】 연락처·데모계정은 app_review_information 미전달로 ASC 기존값 보존(하드코딩 금지).
+# 【심사 Notes】 review_information/notes.txt를 매 배포마다 빈 값으로 덮어써 초기화(보존 아님).
+#              이전 버전 거절 소명서가 ASC에서 자동 승계되어 다음 심사까지 남는 문제 방지.
+# ──────────────────────────────────────────────────────────────
 #
 # 사용법 (CI):
 #   fastlane deploy              # DEPLOY_MODE에 따라 분기 (권장 진입점)

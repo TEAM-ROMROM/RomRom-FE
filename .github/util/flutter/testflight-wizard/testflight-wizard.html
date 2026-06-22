@@ -1527,9 +1527,10 @@
                 <p class="text-sm text-yellow-200 mb-1">생성되는 파일:</p>
                 <ul class="text-xs text-slate-300 list-disc list-inside">
                     <li>ios/Gemfile</li>
-                    <li>ios/fastlane/Appfile</li>
                     <li>ios/fastlane/Fastfile</li>
                     <li>ios/ExportOptions.plist</li>
+                    <li>ios/Runner.xcodeproj (Manual Signing 패치)</li>
+                    <li>ios/Runner/Info.plist (암호화 설정 패치)</li>
                 </ul>
             </div>
 
@@ -1537,7 +1538,7 @@
                 <label class="block text-sm font-medium mb-2 text-slate-300">터미널에서 실행:</label>
                 <div class="code-block">
                     <button class="copy-btn absolute top-2 right-2 px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition" onclick="copyCode(this)">복사</button>
-                    <pre id="initCmd">cd "/path/to/project" && bash ".github/util/flutter-ios-testflight-init/init.sh" ...</pre>
+                    <pre id="initCmd">cd "/path/to/project" && bash ".github/util/flutter/testflight-wizard/testflight-wizard-setup.sh" ...</pre>
                 </div>
             </div>
 
@@ -1558,6 +1559,50 @@
 
             <div class="bg-green-900/30 border border-green-700 rounded-lg p-4 mb-6">
                 <p class="text-sm text-green-200">🎉 모든 설정이 완료되었습니다! 아래 값들을 GitHub Secrets에 등록하세요.</p>
+            </div>
+
+            <!-- 배포 모드 & 출시 로드맵 안내 -->
+            <div class="bg-indigo-900/30 border border-indigo-700 rounded-lg p-5 mb-6">
+                <p class="text-base font-bold text-indigo-200 mb-3">🚀 배포 모드 &amp; 출시 로드맵</p>
+
+                <!-- 배포 모드 3종 -->
+                <p class="text-sm font-semibold text-slate-200 mb-2">① 배포 모드 (IOS_DEPLOY_MODE)</p>
+                <ul class="text-xs text-slate-300 space-y-1.5 mb-4 ml-1">
+                    <li>
+                        <code class="bg-slate-700 px-1.5 py-0.5 rounded text-green-400">store_only</code>
+                        <span class="text-slate-400">— 기본·안전.</span>
+                        TestFlight 업로드까지만. 심사 제출은 하지 않음. <strong class="text-green-300">최초 세팅 시 권장.</strong>
+                    </li>
+                    <li>
+                        <code class="bg-slate-700 px-1.5 py-0.5 rounded text-yellow-400">store_prepare</code>
+                        <span class="text-slate-400">— 제출 직전.</span>
+                        빌드를 App Store Connect 심사에 올려두되, 사람이 ASC에서 <strong class="text-yellow-300">"Add for Review"</strong> 버튼을 직접 눌러야 심사 시작.
+                    </li>
+                    <li>
+                        <code class="bg-slate-700 px-1.5 py-0.5 rounded text-orange-400">store_submit</code>
+                        <span class="text-slate-400">— 완전 자동.</span>
+                        빌드 업로드 + 심사 자동 제출까지 한 번에. (사용자 대면 출시로 직결)
+                    </li>
+                </ul>
+
+                <!-- 출시 로드맵 3단계 -->
+                <p class="text-sm font-semibold text-slate-200 mb-2">② 출시 로드맵 (처음이라면 이 순서로)</p>
+                <ol class="text-xs text-slate-300 list-decimal list-inside space-y-1.5 mb-4 ml-1">
+                    <li><code class="bg-slate-700 px-1 rounded text-green-400">store_only</code>로 빌드 → TestFlight에서 정상 동작 검증</li>
+                    <li><strong class="text-yellow-300">최초 1회는 App Store Connect에서 직접 심사 제출/출시</strong> (신규 앱은 자동 제출 불가 — 필수 단계)</li>
+                    <li>앱이 정식 출시된 뒤 <code class="bg-slate-700 px-1 rounded text-yellow-400">store_prepare</code> 또는 <code class="bg-slate-700 px-1 rounded text-orange-400">store_submit</code>으로 전환해 자동화</li>
+                </ol>
+
+                <!-- 모드 변경 위치 -->
+                <div class="bg-slate-800/60 border border-slate-600 rounded-lg p-3">
+                    <p class="text-xs text-slate-300">
+                        ⚙️ <strong class="text-indigo-300">모드 변경 위치:</strong>
+                        저장소 <span class="text-yellow-400">Settings</span> → <span class="text-yellow-400">Secrets and variables</span> → <span class="text-yellow-400">Actions</span> → <span class="text-yellow-400">Variables</span> 탭 → <code class="bg-slate-700 px-1 rounded text-yellow-400">IOS_DEPLOY_MODE</code> 값 수정.
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1.5">
+                        📄 동작 상세는 <code class="bg-slate-700 px-1 rounded">ios/fastlane/Fastfile</code> 상단 주석 참고.
+                    </p>
+                </div>
             </div>
 
             <!-- GitHub Secrets 등록 방법 -->

@@ -1846,6 +1846,50 @@
                 </ol>
             </div>
 
+            <!-- 배포 모드 & 출시 로드맵 안내 -->
+            <div class="bg-indigo-900/30 border border-indigo-700 rounded-lg p-5 mb-6">
+                <p class="text-base font-bold text-indigo-200 mb-3">🚀 배포 모드 &amp; 출시 로드맵</p>
+
+                <!-- 배포 모드 3종 -->
+                <p class="text-sm font-semibold text-slate-200 mb-2">① 배포 모드 (ANDROID_DEPLOY_MODE)</p>
+                <ul class="text-xs text-slate-300 space-y-1.5 mb-4 ml-1">
+                    <li>
+                        <code class="bg-slate-700 px-1.5 py-0.5 rounded text-green-400">store_only</code>
+                        <span class="text-slate-400">— 기본·안전.</span>
+                        internal 트랙에 AAB 업로드까지만. 프로덕션 심사는 하지 않음. <strong class="text-green-300">최초 세팅 시 권장.</strong>
+                    </li>
+                    <li>
+                        <code class="bg-slate-700 px-1.5 py-0.5 rounded text-yellow-400">store_prepare</code>
+                        <span class="text-slate-400">— 제출 직전.</span>
+                        production <strong class="text-yellow-300">draft</strong>로 올려두되, 사람이 Play Console에서 <strong class="text-yellow-300">"출시 시작"</strong>을 직접 눌러야 심사 시작.
+                    </li>
+                    <li>
+                        <code class="bg-slate-700 px-1.5 py-0.5 rounded text-orange-400">store_submit</code>
+                        <span class="text-slate-400">— 완전 자동.</span>
+                        production <strong class="text-orange-300">completed</strong>로 올려 심사 자동 등록까지 한 번에. (사용자 대면 출시로 직결)
+                    </li>
+                </ul>
+
+                <!-- 출시 로드맵 3단계 -->
+                <p class="text-sm font-semibold text-slate-200 mb-2">② 출시 로드맵 (처음이라면 이 순서로)</p>
+                <ol class="text-xs text-slate-300 list-decimal list-inside space-y-1.5 mb-4 ml-1">
+                    <li><code class="bg-slate-700 px-1 rounded text-green-400">store_only</code>로 internal 트랙 배포 → 내부 테스트에서 정상 동작 검증</li>
+                    <li><strong class="text-yellow-300">최초 1회는 Play Console에서 수동으로 프로덕션 출시</strong> (Draft App은 자동 승급 불가 — 필수 단계)</li>
+                    <li>앱이 정식 출시된 뒤 <code class="bg-slate-700 px-1 rounded text-yellow-400">store_prepare</code> 또는 <code class="bg-slate-700 px-1 rounded text-orange-400">store_submit</code>으로 전환해 자동화</li>
+                </ol>
+
+                <!-- 모드 변경 위치 -->
+                <div class="bg-slate-800/60 border border-slate-600 rounded-lg p-3">
+                    <p class="text-xs text-slate-300">
+                        ⚙️ <strong class="text-indigo-300">모드 변경 위치:</strong>
+                        저장소 <span class="text-yellow-400">Settings</span> → <span class="text-yellow-400">Secrets and variables</span> → <span class="text-yellow-400">Actions</span> → <span class="text-yellow-400">Variables</span> 탭 → <code class="bg-slate-700 px-1 rounded text-yellow-400">ANDROID_DEPLOY_MODE</code> 값 수정.
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1.5">
+                        📄 동작 상세는 <code class="bg-slate-700 px-1 rounded">android/fastlane/Fastfile.playstore</code> 상단 주석 참고.
+                    </p>
+                </div>
+            </div>
+
             <div class="flex justify-between mt-8">
                 <button class="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition" onclick="prevStep()">← 이전</button>
                 <button class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 rounded-lg font-medium transition" onclick="resetWizard()">🔄 처음부터 다시 시작</button>
