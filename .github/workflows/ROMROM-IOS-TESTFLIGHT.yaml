@@ -8,12 +8,25 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: "배포 모드 — testflight_only: TestFlight 업로드까지만 / appstore_submit: App Store 심사까지 자동 제출"
+        required: false
+        default: "testflight_only"
+        type: choice
+        options:
+          - testflight_only
+          - appstore_submit
 
 env:
   FLUTTER_VERSION: "3.35.5"
   XCODE_VERSION: "26.0"
   PROJECT_TYPE: "flutter"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # 배포 모드 결정 (우선순위: 수동 dispatch input > repo variable IOS_DEPLOY_MODE > 폴백 testflight_only)
+  # - testflight_only : pilot(TestFlight 업로드)까지만. 기본·안전값.
+  # - appstore_submit : pilot 후 deliver로 App Store production 심사 자동 제출.
+  DEPLOY_MODE: ${{ github.event.inputs.deploy_mode || vars.IOS_DEPLOY_MODE || 'testflight_only' }}
 
 jobs:
   prepare-build:
@@ -430,40 +443,56 @@ jobs:
                 key_filepath: ENV["API_KEY_PATH"]
               )
 
-              # 1) TestFlight 업로드 (deliver가 심사 제출에 쓰도록 빌드 처리 완료까지 대기)
+              app_id = ENV["APP_IDENTIFIER"] || "com.alom.romrom"
+              # 배포 모드: testflight_only(기본) | appstore_submit
+              deploy_mode = (ENV["DEPLOY_MODE"] || "testflight_only").strip
+              submit_to_appstore = (deploy_mode == "appstore_submit")
+              UI.message("🎛️  배포 모드: #{deploy_mode} (App Store 심사 제출: #{submit_to_appstore})")
+
+              # 1) TestFlight 업로드 (항상 수행)
+              #    심사 제출 모드면 deliver가 빌드를 찾을 수 있도록 처리 완료까지 대기
               pilot(
                 api_key: api_key,
+                app_identifier: app_id,                          # Bundle ID 명시 (비대화형 안전)
                 ipa: ENV["IPA_PATH"],
                 changelog: ENV["RELEASE_NOTES"],
-                skip_waiting_for_build_processing: false,  # 심사 제출 전 빌드 처리 완료 대기
+                skip_waiting_for_build_processing: !submit_to_appstore,  # 심사 제출 시에만 처리 완료 대기
                 distribute_external: false,
                 notify_external_testers: false,
                 uses_non_exempt_encryption: false  # 암호화 규정 자동 설정
               )
               puts "✅ TESTFLIGHT 업로드 완료!"
 
-              # 2) App Store production 심사 자동 제출 (수동 입력 제거 — 이 작업의 핵심)
+              # 2) App Store production 심사 자동 제출 (appstore_submit 모드에서만)
               #    메타데이터/스크린샷은 App Store Connect 웹에서 관리 → 빌드만 심사 제출
-              deliver(
-                api_key: api_key,
-                submit_for_review: true,     # 심사 자동 제출
-                automatic_release: true,     # 심사 통과 즉시 자동 출시
-                force: true,                 # CI 비대화형: HTML 미리보기 확인 건너뜀
-                skip_binary_upload: true,    # pilot으로 올린 빌드 사용 (재업로드 안 함)
-                skip_metadata: true,         # 메타는 App Store Connect 웹에서 관리
-                skip_screenshots: true,      # 스샷은 App Store Connect 웹에서 관리
-                precheck_include_in_app_purchases: false,
-                submission_information: {
-                  add_id_info_uses_idfa: false  # 광고 식별자 미사용 (심사 질문 자동 응답)
-                }
-              )
-              puts "✅ APP STORE 심사 제출 완료!"
+              #    ⚠️ app_identifier(Bundle ID)를 반드시 넘긴다 — 없으면 deliver가
+              #       "Could not infer your App's Bundle Identifier"로 비대화형에서 crash (이슈 #931)
+              if submit_to_appstore
+                deliver(
+                  api_key: api_key,
+                  app_identifier: app_id,      # ⭐ Bundle ID 명시 (근본 원인 수정 — 미전달 시 crash)
+                  submit_for_review: true,     # 심사 자동 제출
+                  automatic_release: true,     # 심사 통과 즉시 자동 출시
+                  force: true,                 # CI 비대화형: HTML 미리보기 확인 건너뜀
+                  run_precheck_before_submit: false, # 메타 스킵 상태에서 precheck 비대화형 충돌 방지
+                  skip_binary_upload: true,    # pilot으로 올린 빌드 사용 (재업로드 안 함)
+                  skip_metadata: true,         # 메타는 App Store Connect 웹에서 관리
+                  skip_screenshots: true,      # 스샷은 App Store Connect 웹에서 관리
+                  precheck_include_in_app_purchases: false,
+                  submission_information: {
+                    add_id_info_uses_idfa: false  # 광고 식별자 미사용 (심사 질문 자동 응답)
+                  }
+                )
+                puts "✅ APP STORE 심사 제출 완료!"
+              else
+                puts "⏭️  testflight_only 모드 — App Store 심사 제출 건너뜀 (TestFlight 업로드만 완료)"
+              end
             end
           end
           EOF
 
-      # TestFlight 업로드 + App Store 심사 자동 제출 (Fastlane)
-      - name: Upload to TestFlight & Submit to App Store
+      # TestFlight 업로드 (+ DEPLOY_MODE=appstore_submit 시 App Store 심사 자동 제출)
+      - name: Upload to TestFlight (+ App Store Submit if appstore_submit)
         run: |
           # 절대 경로로 IPA 파일 찾기
           IPA_PATH=$(find $GITHUB_WORKSPACE/ios/build/ipa -name "*.ipa" | head -1)
@@ -492,26 +521,35 @@ jobs:
           export API_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8"
           export IPA_PATH="$IPA_PATH"
           export RELEASE_NOTES="$RELEASE_NOTES"
+          export APP_IDENTIFIER="com.alom.romrom"   # deliver/pilot Bundle ID (비대화형 추론 실패 방지)
+          export DEPLOY_MODE="${{ env.DEPLOY_MODE }}"   # testflight_only(기본) | appstore_submit
 
           # 디버깅 정보
           echo "Working directory: $(pwd)"
           echo "IPA_PATH: $IPA_PATH"
           echo "API_KEY_PATH: $API_KEY_PATH"
+          echo "APP_IDENTIFIER: $APP_IDENTIFIER"
+          echo "DEPLOY_MODE: $DEPLOY_MODE"
 
           # Fastlane 실행 (TestFlight 업로드 + App Store 심사 제출. 실패 시 워크플로우 실패로 표면화)
           cd ios
           fastlane deploy_appstore
 
       # 성공 알림
-      - name: Notify TestFlight Upload & App Store Submit Success
+      - name: Notify Success
         if: success()
         run: |
-          echo "✅ TestFlight 업로드 + App Store 심사 제출 성공!"
+          echo "✅ iOS 배포 성공! (모드: ${{ env.DEPLOY_MODE }})"
+          if [ "${{ env.DEPLOY_MODE }}" = "appstore_submit" ]; then
+            echo "   → TestFlight 업로드 + App Store 심사 제출 완료"
+          else
+            echo "   → TestFlight 업로드 완료 (심사 제출은 testflight_only 모드라 생략)"
+          fi
           echo "버전: ${{ needs.prepare-build.outputs.version }}"
           echo "커밋: ${{ github.sha }}"
 
       - name: Notify on Failure
         if: failure()
         run: |
-          echo "❌ TestFlight 업로드 또는 App Store 심사 제출 실패!"
+          echo "❌ iOS 배포 실패! (모드: ${{ env.DEPLOY_MODE }})"
           echo "로그를 확인해주세요."

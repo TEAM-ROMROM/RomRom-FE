@@ -17,9 +17,16 @@
 #   - API_KEY_PATH: API Key 파일 경로 (.p8)
 #   - IPA_PATH: 업로드할 IPA 파일 경로
 #   - RELEASE_NOTES: 릴리즈 노트 (한국어/영어 동시 적용)
+#   - APP_IDENTIFIER: 앱 Bundle ID (예: com.example.app)
+#       └ appstore_submit 모드에서 deliver가 빌드를 특정하는 데 필수.
+#         없으면 "Could not infer your App's Bundle Identifier"로 비대화형 crash.
+#   - DEPLOY_MODE: 배포 모드 (선택, 기본 testflight_only)
+#       └ testflight_only : TestFlight 업로드까지만 (기본·안전값)
+#       └ appstore_submit : pilot 후 deliver로 App Store production 심사 자동 제출
 #
 # 사용법 (CI):
-#   fastlane upload_testflight
+#   fastlane deploy              # DEPLOY_MODE에 따라 분기 (권장 진입점)
+#   fastlane upload_testflight   # TestFlight 업로드만 (DEPLOY_MODE 무시)
 #
 # 사용법 (로컬):
 #   bundle exec fastlane upload_testflight
@@ -30,6 +37,81 @@
 default_platform(:ios)
 
 platform :ios do
+  # ──────────────────────────────────────────────────────────────
+  # 통합 진입점: DEPLOY_MODE로 "TestFlight만" / "App Store 심사까지"를 제어
+  #   - testflight_only(기본): pilot(TestFlight 업로드)까지만
+  #   - appstore_submit      : pilot 후 deliver로 App Store production 심사 자동 제출
+  # 워크플로우는 이 lane(`fastlane deploy`)을 호출하면 모드에 따라 알아서 분기된다.
+  # ──────────────────────────────────────────────────────────────
+  desc "배포 (DEPLOY_MODE: testflight_only | appstore_submit)"
+  lane :deploy do
+    deploy_mode = (ENV["DEPLOY_MODE"] || "testflight_only").strip
+    submit_to_appstore = (deploy_mode == "appstore_submit")
+    UI.message("🎛️  배포 모드: #{deploy_mode} (App Store 심사 제출: #{submit_to_appstore})")
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_filepath: ENV["API_KEY_PATH"],
+      duration: 1200,
+      in_house: false
+    )
+
+    app_id = ENV["APP_IDENTIFIER"]
+    if submit_to_appstore && (app_id.nil? || app_id.empty?)
+      UI.user_error!("appstore_submit 모드에는 APP_IDENTIFIER(Bundle ID)가 필요합니다. ENV로 전달하세요.")
+    end
+
+    ipa_path = ENV["IPA_PATH"]
+    ipa_path = Dir.glob("build/ipa/*.ipa").first if ipa_path.nil? || ipa_path.empty?
+    UI.message("📦 IPA 경로: #{ipa_path}")
+
+    # Ruby 3.4+ frozen string 호환성: .dup으로 mutable 복사본 생성
+    release_notes = (ENV["RELEASE_NOTES"] || "새로운 빌드가 업로드되었습니다.").dup
+
+    # 1) TestFlight 업로드 (항상 수행)
+    #    심사 제출 모드면 deliver가 빌드를 찾을 수 있도록 처리 완료까지 대기
+    pilot_args = {
+      api_key: api_key,
+      ipa: ipa_path,
+      changelog: release_notes,
+      localized_build_info: {
+        "ko" => { whats_new: release_notes.dup },
+        "en-US" => { whats_new: release_notes.dup }
+      },
+      skip_waiting_for_build_processing: !submit_to_appstore,
+      distribute_external: false,
+      notify_external_testers: false,
+      uses_non_exempt_encryption: ENV["USES_NON_EXEMPT_ENCRYPTION"] == "true"
+    }
+    pilot_args[:app_identifier] = app_id unless app_id.nil? || app_id.empty?
+    upload_to_testflight(pilot_args)
+    UI.success("✅ TestFlight 업로드 완료!")
+
+    # 2) App Store production 심사 자동 제출 (appstore_submit 모드에서만)
+    #    메타/스크린샷은 App Store Connect 웹에서 관리 → 빌드만 심사 제출
+    if submit_to_appstore
+      deliver(
+        api_key: api_key,
+        app_identifier: app_id,            # Bundle ID 명시 (비대화형 추론 실패 방지)
+        submit_for_review: true,           # 심사 자동 제출
+        automatic_release: true,           # 심사 통과 즉시 자동 출시
+        force: true,                       # CI 비대화형: HTML 미리보기 확인 건너뜀
+        run_precheck_before_submit: false, # 메타 스킵 상태에서 precheck 비대화형 충돌 방지
+        skip_binary_upload: true,          # pilot으로 올린 빌드 사용 (재업로드 안 함)
+        skip_metadata: true,               # 메타는 App Store Connect 웹에서 관리
+        skip_screenshots: true,            # 스샷은 App Store Connect 웹에서 관리
+        precheck_include_in_app_purchases: false,
+        submission_information: {
+          add_id_info_uses_idfa: false     # 광고 식별자 미사용 (심사 질문 자동 응답)
+        }
+      )
+      UI.success("✅ App Store 심사 제출 완료!")
+    else
+      UI.message("⏭️  testflight_only 모드 — App Store 심사 제출 건너뜀")
+    end
+  end
+
   desc "TestFlight에 IPA 업로드 (CI용 - IPA가 이미 빌드된 상태)"
   lane :upload_testflight do
     UI.message("🚀 TestFlight 업로드 시작")
@@ -52,7 +134,8 @@ platform :ios do
     UI.message("📦 IPA 경로: #{ipa_path}")
 
     # 릴리즈 노트 설정
-    release_notes = ENV["RELEASE_NOTES"] || "새로운 빌드가 업로드되었습니다."
+    # Ruby 3.4+ frozen string 호환성: .dup으로 mutable 복사본 생성
+    release_notes = (ENV["RELEASE_NOTES"] || "새로운 빌드가 업로드되었습니다.").dup
     UI.message("📝 릴리즈 노트: #{release_notes}")
 
     # TestFlight 업로드 (upload_to_testflight = pilot)
@@ -60,9 +143,10 @@ platform :ios do
       api_key: api_key,
       ipa: ipa_path,
       changelog: release_notes,
+      # Ruby 3.4+ frozen string 호환성: localized_build_info 내부 문자열도 .dup 적용
       localized_build_info: {
-        "ko" => { whats_new: release_notes },
-        "en-US" => { whats_new: release_notes }
+        "ko" => { whats_new: release_notes.dup },
+        "en-US" => { whats_new: release_notes.dup }
       },
       skip_waiting_for_build_processing: ENV["SKIP_WAITING_FOR_BUILD_PROCESSING"] == "true",
       distribute_external: false,
@@ -106,10 +190,12 @@ platform :ios do
 
     # TestFlight 업로드
     ipa_path = Dir.glob("build/ipa/*.ipa").first
+    # Ruby 3.4+ frozen string 호환성: .dup으로 mutable 복사본 생성
+    changelog = (options[:changelog] || "새로운 빌드가 업로드되었습니다.").dup
     pilot(
       api_key: api_key,
       ipa: ipa_path,
-      changelog: options[:changelog] || "새로운 빌드가 업로드되었습니다.",
+      changelog: changelog,
       skip_waiting_for_build_processing: ENV["SKIP_WAITING_FOR_BUILD_PROCESSING"] == "true",
       distribute_external: false,
       notify_external_testers: false,
