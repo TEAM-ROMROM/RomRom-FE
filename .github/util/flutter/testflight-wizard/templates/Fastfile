@@ -38,16 +38,19 @@ default_platform(:ios)
 
 platform :ios do
   # ──────────────────────────────────────────────────────────────
-  # 통합 진입점: DEPLOY_MODE로 "TestFlight만" / "App Store 심사까지"를 제어
-  #   - testflight_only(기본): pilot(TestFlight 업로드)까지만
-  #   - appstore_submit      : pilot 후 deliver로 App Store production 심사 자동 제출
+  # 통합 진입점: DEPLOY_MODE로 배포 범위를 제어 (3가지)
+  #   - testflight_only (기본): pilot(TestFlight 업로드)까지만
+  #   - appstore_prepare       : pilot + deliver로 ASC에 버전 생성·빌드 선택·What's New 채움
+  #                              → "제출 직전(Prepare for Submission)" 상태까지. 사람이 ASC에서 검토 후 Add for Review.
+  #   - appstore_submit        : 위 전부 + submit_for_review로 심사 자동 제출까지 완전 자동
   # 워크플로우는 이 lane(`fastlane deploy`)을 호출하면 모드에 따라 알아서 분기된다.
   # ──────────────────────────────────────────────────────────────
-  desc "배포 (DEPLOY_MODE: testflight_only | appstore_submit)"
+  desc "배포 (DEPLOY_MODE: testflight_only | appstore_prepare | appstore_submit)"
   lane :deploy do
     deploy_mode = (ENV["DEPLOY_MODE"] || "testflight_only").strip
+    prepare_appstore = (deploy_mode == "appstore_prepare" || deploy_mode == "appstore_submit")
     submit_to_appstore = (deploy_mode == "appstore_submit")
-    UI.message("🎛️  배포 모드: #{deploy_mode} (App Store 심사 제출: #{submit_to_appstore})")
+    UI.message("🎛️  배포 모드: #{deploy_mode} (ASC 버전 준비: #{prepare_appstore} / 심사 자동제출: #{submit_to_appstore})")
 
     api_key = app_store_connect_api_key(
       key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
@@ -58,8 +61,8 @@ platform :ios do
     )
 
     app_id = ENV["APP_IDENTIFIER"]
-    if submit_to_appstore && (app_id.nil? || app_id.empty?)
-      UI.user_error!("appstore_submit 모드에는 APP_IDENTIFIER(Bundle ID)가 필요합니다. ENV로 전달하세요.")
+    if prepare_appstore && (app_id.nil? || app_id.empty?)
+      UI.user_error!("appstore_prepare/appstore_submit 모드에는 APP_IDENTIFIER(Bundle ID)가 필요합니다. ENV로 전달하세요.")
     end
 
     ipa_path = ENV["IPA_PATH"]
@@ -70,7 +73,7 @@ platform :ios do
     release_notes = (ENV["RELEASE_NOTES"] || "새로운 빌드가 업로드되었습니다.").dup
 
     # 1) TestFlight 업로드 (항상 수행)
-    #    심사 제출 모드면 deliver가 빌드를 찾을 수 있도록 처리 완료까지 대기
+    #    ASC 준비/제출 모드면 deliver가 빌드를 선택할 수 있도록 처리 완료까지 대기
     pilot_args = {
       api_key: api_key,
       ipa: ipa_path,
@@ -79,7 +82,7 @@ platform :ios do
         "ko" => { whats_new: release_notes.dup },
         "en-US" => { whats_new: release_notes.dup }
       },
-      skip_waiting_for_build_processing: !submit_to_appstore,
+      skip_waiting_for_build_processing: !prepare_appstore,
       distribute_external: false,
       notify_external_testers: false,
       uses_non_exempt_encryption: ENV["USES_NON_EXEMPT_ENCRYPTION"] == "true"
@@ -88,43 +91,53 @@ platform :ios do
     upload_to_testflight(pilot_args)
     UI.success("✅ TestFlight 업로드 완료!")
 
-    # 2) App Store production 심사 자동 제출 (appstore_submit 모드에서만)
-    #    빌드만 제출하되, 새 버전 심사에 필수인 릴리스 노트(whatsNew)는 채운다.
-    if submit_to_appstore
+    # 2) App Store 버전 준비 (+ appstore_submit이면 심사 자동 제출)
+    #    버전 생성·빌드 선택·What's New(whatsNew) 채우기까지 해서 "제출 직전" 상태로 만든다.
+    if prepare_appstore
       notes = (ENV["RELEASE_NOTES"] || "버그를 수정하고 안정성을 개선했습니다.").strip
       notes = "버그를 수정하고 안정성을 개선했습니다." if notes.empty?
 
       # App Store는 업데이트 버전 심사 제출 시 whatsNew(릴리스 노트)를 필수로 요구한다.
-      # release_notes.txt만 만들고 다른 메타 파일은 안 만든다 → ASC 기존 메타(설명/키워드 등)는 보존.
-      # ASC 앱 로케일에 맞춰 ko / ko-KR 양쪽 작성(로케일 코드 불일치 방어). 필요시 en-US 등 추가.
+      # ⚠️ metadata_path는 반드시 절대 경로로 — 상대경로는 fastlane CWD와 어긋나 deliver가 못 읽음.
+      #    release_notes.txt만 만들고 다른 메타 파일은 안 만든다 → ASC 기존 메타(설명/키워드 등)는 보존.
+      #    ASC 앱 로케일에 맞춰 ko / ko-KR 양쪽 작성(로케일 코드 불일치 방어). 필요시 DELIVER_LOCALES로 추가.
       require "fileutils"
-      metadata_path = "./fastlane/metadata"
+      base = ENV["GITHUB_WORKSPACE"] ? File.join(ENV["GITHUB_WORKSPACE"], "ios") : Dir.pwd
+      metadata_path = File.join(base, "fastlane", "metadata")
       (ENV["DELIVER_LOCALES"] || "ko,ko-KR").split(",").map(&:strip).each do |loc|
         next if loc.empty?
-        FileUtils.mkdir_p("#{metadata_path}/#{loc}")
-        File.write("#{metadata_path}/#{loc}/release_notes.txt", notes)
+        dir = File.join(metadata_path, loc)
+        FileUtils.mkdir_p(dir)
+        File.write(File.join(dir, "release_notes.txt"), notes)
       end
+      UI.message("📝 whatsNew 메타 작성: #{notes}")
+      UI.message("📂 metadata_path=#{metadata_path}")
 
       deliver(
         api_key: api_key,
         app_identifier: app_id,            # Bundle ID 명시 (비대화형 추론 실패 방지)
         app_version: ENV["APP_VERSION"],   # 해당 버전의 editable App Store 버전 생성/선택 (없으면 submit 불가)
-        submit_for_review: true,           # 심사 자동 제출
-        automatic_release: true,           # 심사 통과 즉시 자동 출시
+        submit_for_review: submit_to_appstore,  # appstore_submit이면 심사 자동제출, prepare면 제출 직전까지만
+        automatic_release: submit_to_appstore,  # 제출 모드에서만 심사통과 즉시 자동출시 설정
         force: true,                       # CI 비대화형: HTML 미리보기 확인 건너뜀
         run_precheck_before_submit: false, # precheck 비대화형 충돌 방지
         skip_binary_upload: true,          # pilot으로 올린 빌드 사용 (재업로드 안 함)
         skip_metadata: false,              # release_notes(whatsNew)만 업로드 (다른 메타 파일 없음 → 기존값 보존)
         metadata_path: metadata_path,
         skip_screenshots: true,            # 스샷은 App Store Connect 웹에서 관리
+        # app_review_information은 넘기지 않는다 → ASC 기존 심사정보(연락처·데모계정) 보존 (개인정보 하드코딩 방지)
         precheck_include_in_app_purchases: false,
         submission_information: {
           add_id_info_uses_idfa: false     # 광고 식별자 미사용 (심사 질문 자동 응답)
         }
       )
-      UI.success("✅ App Store 심사 제출 완료!")
+      if submit_to_appstore
+        UI.success("✅ App Store 심사 자동 제출 완료!")
+      else
+        UI.success("✅ App Store 버전 준비 완료 (Prepare for Submission) — ASC에서 검토 후 'Add for Review'만 누르면 제출됩니다.")
+      end
     else
-      UI.message("⏭️  testflight_only 모드 — App Store 심사 제출 건너뜀")
+      UI.message("⏭️  testflight_only 모드 — App Store 단계 건너뜀")
     end
   end
 
