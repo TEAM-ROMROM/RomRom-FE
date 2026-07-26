@@ -466,32 +466,26 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
 
   Future<void> _navigateToItemDetail(Item item) async {
     if (item.itemId == null) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ItemDetailDescriptionScreen(
-          itemId: item.itemId!,
-          imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-          currentImageIndex: 0,
-          heroTag: 'itemImage_${item.itemId}_0',
-          isMyItem: true,
-          isRequestManagement: false,
-        ),
+    await context.navigateTo(
+      screen: ItemDetailDescriptionScreen(
+        itemId: item.itemId!,
+        imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+        currentImageIndex: 0,
+        heroTag: 'itemImage_${item.itemId}_0',
+        isMyItem: true,
+        isRequestManagement: false,
       ),
     );
     // 상태 변경/삭제 시 myItemsProvider가 notifier 경유로 자동 갱신
   }
 
   Future<void> _navigateToEditItem(Item item) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ItemModificationScreen(
-          itemId: item.itemId,
-          onClose: () {
-            Navigator.pop(context);
-          },
-        ),
+    await context.navigateTo(
+      screen: ItemModificationScreen(
+        itemId: item.itemId,
+        onClose: () {
+          Navigator.pop(context);
+        },
       ),
     );
     // 수정 완료 후 myItemsProvider가 notifier 경유로 자동 갱신

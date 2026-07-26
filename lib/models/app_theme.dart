@@ -81,4 +81,7 @@ class CustomTextStyles {
     letterSpacing: 0.sp,
     color: AppColors.textColorWhite,
   );
+
+  /// debug 패널 기본 스타일 : 12px 고정 픽셀 (디버그 오버레이는 화면 스케일 무관하게 고정 크기 사용)
+  static TextStyle debugBase = const TextStyle(fontWeight: FontWeight.w400, fontSize: 12, color: Colors.white);
 }

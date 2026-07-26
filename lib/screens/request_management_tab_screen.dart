@@ -689,16 +689,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // 제목
-              Text(
-                '요청 목록',
-                style: TextStyle(
-                  color: AppColors.textColorWhite,
-                  fontFamily: 'Pretendard',
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w500,
-                  height: 1.0,
-                ),
-              ),
+              Text('요청 목록', style: CustomTextStyles.h3),
               // 정렬 칩 (보더 pill) + 완료 표시 토글
               Row(
                 children: [
@@ -714,7 +705,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
                   Text(
                     '완료 포함',
                     style: CustomTextStyles.p3.copyWith(
-                      color: const Color(0x80FFFFFF),
+                      color: AppColors.opacity50White,
                       fontWeight: FontWeight.w400,
                       letterSpacing: -0.5.sp,
                     ),
@@ -727,16 +718,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
           ),
           SizedBox(height: 8.h),
           // 설명 텍스트
-          Text(
-            '내 물건에 온 교환 요청이에요',
-            style: TextStyle(
-              color: const Color(0xFFFFFFCC),
-              fontFamily: 'Pretendard',
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              height: 1.0,
-            ),
-          ),
+          Text('내 물건에 온 교환 요청이에요', style: CustomTextStyles.p2.copyWith(color: AppColors.requestManagementDescription)),
         ],
       ),
     );

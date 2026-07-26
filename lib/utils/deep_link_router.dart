@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/item_deleted_screen.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 콜드 스타트 딥링크 대기 데이터 (FCM / app_links 공용)
 ///
@@ -75,16 +76,14 @@ class RomRomDeepLinkRouter {
 
       final imageSize = Size(MediaQuery.of(context).size.width, 400.h);
 
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ItemDetailDescriptionScreen(
-            itemId: itemId,
-            imageSize: imageSize,
-            currentImageIndex: 0,
-            heroTag: 'share_item_$itemId',
-            isMyItem: false,
-            isRequestManagement: false,
-          ),
+      await context.navigateTo(
+        screen: ItemDetailDescriptionScreen(
+          itemId: itemId,
+          imageSize: imageSize,
+          currentImageIndex: 0,
+          heroTag: 'share_item_$itemId',
+          isMyItem: false,
+          isRequestManagement: false,
         ),
       );
     }
@@ -109,18 +108,16 @@ class RomRomDeepLinkRouter {
 
           final imageSize = Size(MediaQuery.of(context).size.width, 400.h);
 
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ItemDetailDescriptionScreen(
-                itemId: itemId,
-                imageSize: imageSize,
-                currentImageIndex: 0,
-                heroTag: 'deeplink_item_$itemId',
-                isMyItem: isMyItem,
-                isRequestManagement: isRequestManagement,
-                isChatAccessAllowed: isChatAccessAllowed,
-                tradeRequestHistoryId: tradeRequestHistoryId,
-              ),
+          await context.navigateTo(
+            screen: ItemDetailDescriptionScreen(
+              itemId: itemId,
+              imageSize: imageSize,
+              currentImageIndex: 0,
+              heroTag: 'deeplink_item_$itemId',
+              isMyItem: isMyItem,
+              isRequestManagement: isRequestManagement,
+              isChatAccessAllowed: isChatAccessAllowed,
+              tradeRequestHistoryId: tradeRequestHistoryId,
             ),
           );
           return;
@@ -131,7 +128,7 @@ class RomRomDeepLinkRouter {
           final chatRoomId = uri.queryParameters['chatRoomId'];
           if (chatRoomId == null || chatRoomId.isEmpty) return;
 
-          await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatRoomScreen(chatRoomId: chatRoomId)));
+          await context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId));
           return;
         }
 
@@ -141,10 +138,8 @@ class RomRomDeepLinkRouter {
           final itemName = extraData?['itemName'] as String? ?? '';
           final deleteReason = extraData?['deleteReason'] as String? ?? '';
 
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ItemDeletedScreen(itemTitle: itemName, deleteReason: deleteReason),
-            ),
+          await context.navigateTo(
+            screen: ItemDeletedScreen(itemTitle: itemName, deleteReason: deleteReason),
           );
           return;
         }

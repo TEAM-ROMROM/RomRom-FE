@@ -249,7 +249,7 @@ class _DebugButtonWrapperState extends State<_DebugButtonWrapper> {
             color: AppColors.primaryBlack.withValues(alpha: 0.8),
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.primaryYellow, width: 1.5),
-            boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 8, offset: Offset(0, 2))],
+            boxShadow: const [BoxShadow(color: AppColors.debugPanelShadow, blurRadius: 8, offset: Offset(0, 2))],
           ),
           child: const Icon(Icons.bug_report, color: AppColors.primaryYellow, size: 24),
         ),
