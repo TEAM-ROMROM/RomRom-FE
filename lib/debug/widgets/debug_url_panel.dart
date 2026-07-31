@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:romrom_fe/debug/runtime_url_manager.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -84,16 +85,16 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
               color: AppColors.primaryBlack.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.secondaryBlack2, width: 1),
-              boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 12, offset: Offset(0, 4))],
+              boxShadow: const [BoxShadow(color: AppColors.debugPanelShadow, blurRadius: 12, offset: Offset(0, 4))],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
-                const Divider(color: Color(0xFF333333), height: 1),
+                const Divider(color: AppColors.debugDivider, height: 1),
                 _buildCurrentUrl(),
-                const Divider(color: Color(0xFF333333), height: 1),
+                const Divider(color: AppColors.debugDivider, height: 1),
                 _buildInputSection(),
                 const SizedBox(height: 8),
                 _buildResetButton(),
@@ -113,10 +114,7 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
         children: [
           const Icon(Icons.dns, color: AppColors.primaryYellow, size: 16),
           const SizedBox(width: 8),
-          const Text(
-            '서버 URL 변경',
-            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-          ),
+          Text('서버 URL 변경', style: CustomTextStyles.debugBase.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
           const Spacer(),
           GestureDetector(
             onTap: widget.onClose,
@@ -134,7 +132,7 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('현재 연결', style: TextStyle(color: AppColors.secondaryBlack2, fontSize: 11)),
+          Text('현재 연결', style: CustomTextStyles.debugBase.copyWith(color: AppColors.secondaryBlack2, fontSize: 11)),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -142,17 +140,13 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
                 width: 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: isProd ? const Color(0xFF4CAF50) : const Color(0xFFFF9800),
+                  color: isProd ? AppColors.debugProdGreen : AppColors.debugDevOrange,
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(
-                  _currentUrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                child: Text(_currentUrl, style: CustomTextStyles.debugBase, overflow: TextOverflow.ellipsis),
               ),
             ],
           ),
@@ -167,7 +161,10 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('PR / Issue 번호 입력', style: TextStyle(color: AppColors.secondaryBlack2, fontSize: 11)),
+          Text(
+            'PR / Issue 번호 입력',
+            style: CustomTextStyles.debugBase.copyWith(color: AppColors.secondaryBlack2, fontSize: 11),
+          ),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -175,7 +172,7 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
                 child: Container(
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
+                    color: AppColors.debugInputBg,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: AppColors.secondaryBlack2, width: 1),
                   ),
@@ -183,11 +180,11 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
                     controller: _controller,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: const InputDecoration(
+                    style: CustomTextStyles.debugBase.copyWith(fontSize: 13),
+                    decoration: InputDecoration(
                       hintText: '예: 582',
-                      hintStyle: TextStyle(color: Color(0xFF555555), fontSize: 13),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      hintStyle: CustomTextStyles.debugBase.copyWith(color: AppColors.debugHintGray, fontSize: 13),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       border: InputBorder.none,
                     ),
                     onSubmitted: (_) => _connect(),
@@ -208,9 +205,13 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
                             height: 14,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                           )
-                        : const Text(
+                        : Text(
                             '연결',
-                            style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold),
+                            style: CustomTextStyles.debugBase.copyWith(
+                              color: Colors.black,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),
@@ -218,9 +219,9 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'http://romrom-pr-{번호}.pr.suhsaechan.kr:8079',
-            style: TextStyle(color: Color(0xFF555555), fontSize: 10),
+            style: CustomTextStyles.debugBase.copyWith(color: AppColors.debugHintGray, fontSize: 10),
           ),
         ],
       ),
@@ -235,14 +236,14 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
         child: Container(
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
+            color: AppColors.debugInputBg,
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: AppColors.secondaryBlack2, width: 1),
           ),
           child: Center(
             child: Text(
               'Prod로 초기화',
-              style: TextStyle(
+              style: CustomTextStyles.debugBase.copyWith(
                 color: RuntimeUrlManager().isUsingProd ? AppColors.secondaryBlack2 : Colors.white,
                 fontSize: 13,
               ),

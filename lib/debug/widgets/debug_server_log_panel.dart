@@ -6,6 +6,7 @@ import 'package:romrom_fe/debug/debug_overlay_manager.dart';
 import 'package:romrom_fe/debug/log_capture.dart';
 import 'package:romrom_fe/debug/server_log_client.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 
 /// 서버 로그 뷰어 패널 (WebSocket 기반)
 class DebugServerLogPanel extends StatefulWidget {
@@ -150,7 +151,7 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
             color: AppColors.primaryBlack.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppColors.secondaryBlack2, width: 1),
-            boxShadow: const [BoxShadow(color: Color(0x60000000), blurRadius: 16, offset: Offset(0, 4))],
+            boxShadow: const [BoxShadow(color: AppColors.debugPanelShadowStrong, blurRadius: 16, offset: Offset(0, 4))],
           ),
           child: Column(
             children: [
@@ -183,12 +184,12 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
           children: [
-            const Icon(Icons.drag_indicator, color: Color(0xFF888888), size: 16),
+            const Icon(Icons.drag_indicator, color: AppColors.debugTextDarkGray, size: 16),
             const SizedBox(width: 4),
-            const Expanded(
+            Expanded(
               child: Text(
                 '서버 로그',
-                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                style: CustomTextStyles.debugBase.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ),
             // 연결 상태 표시
@@ -226,7 +227,7 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(4),
-        child: Icon(icon, color: color ?? const Color(0xFFCCCCCC), size: 16),
+        child: Icon(icon, color: color ?? AppColors.debugTextGray, size: 16),
       ),
     );
   }
@@ -244,11 +245,11 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
               height: 28,
               child: TextField(
                 controller: _searchController,
-                style: const TextStyle(color: Colors.white, fontSize: 11),
+                style: CustomTextStyles.debugBase.copyWith(fontSize: 11),
                 decoration: InputDecoration(
                   hintText: '검색...',
-                  hintStyle: const TextStyle(color: Color(0xFF888888), fontSize: 11),
-                  prefixIcon: const Icon(Icons.search, size: 14, color: Color(0xFF888888)),
+                  hintStyle: CustomTextStyles.debugBase.copyWith(color: AppColors.debugTextDarkGray, fontSize: 11),
+                  prefixIcon: const Icon(Icons.search, size: 14, color: AppColors.debugTextDarkGray),
                   prefixIconConstraints: const BoxConstraints(minWidth: 28),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                   filled: true,
@@ -269,8 +270,8 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
 
   Widget _buildLogList() {
     if (_filteredLogs.isEmpty) {
-      return const Center(
-        child: Text('서버 로그 없음', style: TextStyle(color: Color(0xFF888888), fontSize: 12)),
+      return Center(
+        child: Text('서버 로그 없음', style: CustomTextStyles.debugBase.copyWith(color: AppColors.debugTextDarkGray)),
       );
     }
 
@@ -292,11 +293,15 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
               children: [
                 TextSpan(
                   text: '$time ',
-                  style: const TextStyle(color: Color(0xFF888888), fontSize: 10, fontFamily: 'monospace'),
+                  style: CustomTextStyles.debugBase.copyWith(
+                    color: AppColors.debugTextDarkGray,
+                    fontSize: 10,
+                    fontFamily: 'monospace',
+                  ),
                 ),
                 TextSpan(
                   text: log.message,
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontFamily: 'monospace'),
+                  style: CustomTextStyles.debugBase.copyWith(fontSize: 10, fontFamily: 'monospace'),
                 ),
               ],
             ),
@@ -317,16 +322,19 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
         children: [
           GestureDetector(
             onTap: _clearLogs,
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.delete_outline, size: 14, color: Color(0xFFCCCCCC)),
-                SizedBox(width: 4),
-                Text('클리어', style: TextStyle(color: Color(0xFFCCCCCC), fontSize: 11)),
+                const Icon(Icons.delete_outline, size: 14, color: AppColors.debugTextGray),
+                const SizedBox(width: 4),
+                Text('클리어', style: CustomTextStyles.debugBase.copyWith(color: AppColors.debugTextGray, fontSize: 11)),
               ],
             ),
           ),
           const Spacer(),
-          Text('${_filteredLogs.length}건', style: const TextStyle(color: Color(0xFF888888), fontSize: 11)),
+          Text(
+            '${_filteredLogs.length}건',
+            style: CustomTextStyles.debugBase.copyWith(color: AppColors.debugTextDarkGray, fontSize: 11),
+          ),
           const Spacer(),
           GestureDetector(
             onTap: _copyLogs,
@@ -335,13 +343,13 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
                 Icon(
                   Icons.copy,
                   size: 14,
-                  color: _showCopiedFeedback ? AppColors.primaryYellow : const Color(0xFFCCCCCC),
+                  color: _showCopiedFeedback ? AppColors.primaryYellow : AppColors.debugTextGray,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   _showCopiedFeedback ? '복사됨!' : '복사',
-                  style: TextStyle(
-                    color: _showCopiedFeedback ? AppColors.primaryYellow : const Color(0xFFCCCCCC),
+                  style: CustomTextStyles.debugBase.copyWith(
+                    color: _showCopiedFeedback ? AppColors.primaryYellow : AppColors.debugTextGray,
                     fontSize: 11,
                   ),
                 ),
@@ -367,7 +375,7 @@ class _DebugServerLogPanelState extends State<DebugServerLogPanel> {
           width: 20,
           height: 20,
           alignment: Alignment.bottomRight,
-          child: const Icon(Icons.drag_handle, size: 14, color: Color(0xFF888888)),
+          child: const Icon(Icons.drag_handle, size: 14, color: AppColors.debugTextDarkGray),
         ),
       ),
     );

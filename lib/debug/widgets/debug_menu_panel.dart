@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_theme.dart';
 
 /// 디버그 메뉴 항목 정의
 class DebugMenuItem {
@@ -44,7 +45,7 @@ class DebugMenuPanel extends StatelessWidget {
               color: AppColors.primaryBlack.withValues(alpha: 0.94),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.secondaryBlack2, width: 1),
-              boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 12, offset: Offset(0, 4))],
+              boxShadow: const [BoxShadow(color: AppColors.debugPanelShadow, blurRadius: 12, offset: Offset(0, 4))],
             ),
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(mainAxisSize: MainAxisSize.min, children: items.map((item) => _buildMenuItem(item)).toList()),
@@ -73,10 +74,14 @@ class DebugMenuPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.label,
-                  style: TextStyle(color: item.enabled ? Colors.white : AppColors.secondaryBlack2, fontSize: 14),
+                  style: CustomTextStyles.debugBase.copyWith(
+                    color: item.enabled ? Colors.white : AppColors.secondaryBlack2,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-              if (!item.enabled) const Text('추후', style: TextStyle(color: AppColors.secondaryBlack2, fontSize: 11)),
+              if (!item.enabled)
+                Text('추후', style: CustomTextStyles.debugBase.copyWith(color: AppColors.secondaryBlack2, fontSize: 11)),
             ],
           ),
         ),

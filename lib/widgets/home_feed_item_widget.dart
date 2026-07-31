@@ -191,19 +191,16 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                       scaleDown: AppPressable.scaleCard,
                       enableRipple: false,
                       onTap: () async {
-                        await Navigator.push<void>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ItemDetailDescriptionScreen(
-                              itemId: widget.item.itemUuid ?? '',
-                              imageSize: Size(screenWidth, screenWidth),
-                              currentImageIndex: index,
-                              heroTag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
-                              homeFeedItem: widget.item,
-                              isMyItem: false,
-                              isRequestManagement: false,
-                              isTradeRequestAllowed: true,
-                            ),
+                        await context.navigateTo<void>(
+                          screen: ItemDetailDescriptionScreen(
+                            itemId: widget.item.itemUuid ?? '',
+                            imageSize: Size(screenWidth, screenWidth),
+                            currentImageIndex: index,
+                            heroTag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
+                            homeFeedItem: widget.item,
+                            isMyItem: false,
+                            isRequestManagement: false,
+                            isTradeRequestAllowed: true,
                           ),
                         );
                         // 캐시(itemLikeProvider)로 좋아요 상태가 자동 전파됨
