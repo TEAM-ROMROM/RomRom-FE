@@ -53,6 +53,8 @@ class HomeFeedItem {
   /// [startIndex]는 id 생성 기점 (기존 코드와 호환).
   static Future<List<HomeFeedItem>> fromItems(List<Item> details, {int startIndex = 0}) async {
     final feedItems = <HomeFeedItem>[];
+    // 주소 변환 병렬 처리 (결과 순서 = 입력 순서)
+    final locationTexts = await Future.wait(details.map(_toLocationText));
 
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
@@ -71,21 +73,13 @@ class HomeFeedItem {
         }
       }
 
-      String locationText = '미지정';
-      if (d.latitude != null && d.longitude != null) {
-        final address = await LocationService().getAddressFromCoordinates(NLatLng(d.latitude!, d.longitude!));
-        if (address != null) {
-          locationText = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-        }
-      }
-
       feedItems.add(
         HomeFeedItem(
           id: index + startIndex + 1,
           itemUuid: d.itemId,
           name: d.itemName ?? ' ',
           price: d.price ?? 0,
-          location: locationText,
+          location: locationTexts[index],
           date: d.createdDate is DateTime ? d.createdDate as DateTime : DateTime.now(),
           itemCondition: cond,
           transactionTypes: opts,
@@ -103,5 +97,13 @@ class HomeFeedItem {
     }
 
     return feedItems;
+  }
+
+  /// 물품 좌표 > 표시 주소 '시도 시군구 읍면동' (좌표 없음·변환 실패 > '미지정')
+  static Future<String> _toLocationText(Item detail) async {
+    if (detail.latitude == null || detail.longitude == null) return '미지정';
+    final address = await LocationService().getAddressFromCoordinates(NLatLng(detail.latitude!, detail.longitude!));
+    if (address == null) return '미지정';
+    return '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
   }
 }

@@ -18,10 +18,15 @@ class LoggingHttpClient extends http.BaseClient {
     final startTime = DateTime.now();
     final deadline = startTime.add(timeout);
     final requestId = request.hashCode.toRadixString(16).padLeft(8, '0');
-    final isLoggingEnabled = LogMasking.isHttpLoggingEnabled;
     // 로그 출력 게이트 (릴리즈 빌드 차단)
-    void logIfEnabled(String message) {
-      if (isLoggingEnabled) debugPrint(message);
+    final isLoggingEnabled = LogMasking.isHttpLoggingEnabled;
+    // 타임아웃 로그 3건 공통 (로깅 꺼짐이면 문자열 조립 생략)
+    void logTimeout(String durationSuffix) {
+      if (!isLoggingEnabled) return;
+      final duration = DateTime.now().difference(startTime).inMilliseconds;
+      debugPrint("[${_formatTime(DateTime.now())}] [Timeout] ${request.url} [uid: $requestId]");
+      debugPrint("   [Duration] ${duration}ms (${timeout.inSeconds}s 초과$durationSuffix)");
+      debugPrint("====================================");
     }
 
     // 요청 로그 (헤더·폼 필드 마스킹, 본문 길이 제한)
@@ -51,10 +56,7 @@ class LoggingHttpClient extends http.BaseClient {
           .timeout(
             timeout,
             onTimeout: () {
-              final duration = DateTime.now().difference(startTime).inMilliseconds;
-              logIfEnabled("[${_formatTime(DateTime.now())}] [Timeout] ${request.url} [uid: $requestId]");
-              logIfEnabled("   [Duration] ${duration}ms (${timeout.inSeconds}s 초과)");
-              logIfEnabled("====================================");
+              logTimeout('');
               throw TimeoutException('HTTP 타임아웃: ${request.url}', timeout);
             },
           );
@@ -62,35 +64,32 @@ class LoggingHttpClient extends http.BaseClient {
       // body 읽기에 남은 deadline 시간만큼 타임아웃 적용
       final remaining = deadline.difference(DateTime.now());
       if (remaining <= Duration.zero) {
-        final duration = DateTime.now().difference(startTime).inMilliseconds;
-        logIfEnabled("[${_formatTime(DateTime.now())}] [Timeout] ${request.url} [uid: $requestId]");
-        logIfEnabled("   [Duration] ${duration}ms (${timeout.inSeconds}s 초과 — body read)");
-        logIfEnabled("====================================");
+        logTimeout(' — body read');
         throw TimeoutException('HTTP 타임아웃: ${request.url}', timeout);
       }
       final responseBytes = await streamedResponse.stream.toBytes().timeout(
         remaining,
         onTimeout: () {
-          final duration = DateTime.now().difference(startTime).inMilliseconds;
-          logIfEnabled("[${_formatTime(DateTime.now())}] [Timeout] ${request.url} [uid: $requestId]");
-          logIfEnabled("   [Duration] ${duration}ms (${timeout.inSeconds}s 초과 — body read)");
-          logIfEnabled("====================================");
+          logTimeout(' — body read');
           throw TimeoutException('HTTP 타임아웃: ${request.url}', timeout);
         },
       );
-      final responseString = utf8.decode(responseBytes, allowMalformed: true);
-      final duration = DateTime.now().difference(startTime).inMilliseconds;
+      // 로깅 꺼짐이면 응답 디코딩·로그 문자열 조립 생략
+      if (isLoggingEnabled) {
+        final responseString = utf8.decode(responseBytes, allowMalformed: true);
+        final duration = DateTime.now().difference(startTime).inMilliseconds;
 
-      logIfEnabled(
-        "[${_formatTime(DateTime.now())}] [${streamedResponse.statusCode}] ${request.url} [uid: $requestId]",
-      );
-      logIfEnabled("   [Duration] ${duration}ms");
+        debugPrint(
+          "[${_formatTime(DateTime.now())}] [${streamedResponse.statusCode}] ${request.url} [uid: $requestId]",
+        );
+        debugPrint("   [Duration] ${duration}ms");
 
-      if (isLoggingEnabled && responseString.isNotEmpty) {
-        logIfEnabled("   [Response]");
-        logIfEnabled("   ${LogMasking.formatBody(responseString)}");
+        if (responseString.isNotEmpty) {
+          debugPrint("   [Response]");
+          debugPrint("   ${LogMasking.formatBody(responseString)}");
+        }
+        debugPrint("====================================");
       }
-      logIfEnabled("====================================");
 
       return http.StreamedResponse(
         Stream.value(responseBytes),
@@ -103,11 +102,13 @@ class LoggingHttpClient extends http.BaseClient {
         request: streamedResponse.request,
       );
     } catch (error) {
-      final duration = DateTime.now().difference(startTime).inMilliseconds;
-      logIfEnabled("[${_formatTime(DateTime.now())}] [Error] ${request.url} [uid: $requestId]");
-      logIfEnabled("   [Duration] ${duration}ms");
-      logIfEnabled("   $error");
-      logIfEnabled("====================================");
+      if (isLoggingEnabled) {
+        final duration = DateTime.now().difference(startTime).inMilliseconds;
+        debugPrint("[${_formatTime(DateTime.now())}] [Error] ${request.url} [uid: $requestId]");
+        debugPrint("   [Duration] ${duration}ms");
+        debugPrint("   $error");
+        debugPrint("====================================");
+      }
       rethrow;
     }
   }

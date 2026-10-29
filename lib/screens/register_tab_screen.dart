@@ -93,10 +93,11 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
   }
 
   void _scrollListener() {
-    setState(() => _isScrolling = true);
+    // 값이 바뀔 때만 리빌드 (스크롤 이벤트마다 setState 금지)
+    if (!_isScrolling) setState(() => _isScrolling = true);
     _scrollTimer?.cancel();
     _scrollTimer = Timer(const Duration(milliseconds: 500), () {
-      setState(() => _isScrolling = false);
+      if (mounted && _isScrolling) setState(() => _isScrolling = false);
     });
 
     if (_scrollController.offset > 50 && !_isScrolled) {

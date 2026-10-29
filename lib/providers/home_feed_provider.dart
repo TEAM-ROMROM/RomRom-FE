@@ -24,6 +24,10 @@ const Duration kHomeFeedRefreshThrottle = Duration(seconds: 30);
 @visibleForTesting
 const int kHomeFeedSeenSetMaxSize = 100;
 
+/// loadMore 실패 후 재시도 대기 시간 (스크롤 알림마다 즉시 재시도 방지)
+@visibleForTesting
+const Duration loadMoreRetryCooldown = Duration(seconds: 3);
+
 /// 한 페이지 조회 크기.
 const int _kPageSize = 10;
 
@@ -37,6 +41,16 @@ const List<ItemSortField> _kFallbackOrder = [
 
 class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   HomeFeedRepository get _repo => ref.read(homeFeedRepositoryProvider);
+
+  // loadMore 진행 중 여부 (스크롤 이벤트 연속 발생 시 같은 페이지 중복 조회 차단)
+  bool _isLoadMoreInFlight = false;
+
+  // 마지막 loadMore 실패 시각 (재시도 대기 판정용, 성공 시 초기화)
+  DateTime? _lastLoadMoreFailedAt;
+
+  // 현재 시각 공급자 (테스트에서 교체)
+  @visibleForTesting
+  DateTime Function() now = DateTime.now;
 
   @override
   Future<HomeFeedState> build() => _fetchInitial(seenItemIds: LinkedHashSet<String>());
@@ -73,8 +87,10 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   Future<void> loadMore() async {
     final current = state.valueOrNull;
     if (current == null || !current.hasMoreItems) return;
-    if (state.isLoading) return;
+    if (state.isLoading || _isLoadMoreInFlight) return;
+    if (_isInLoadMoreRetryCooldown()) return;
 
+    _isLoadMoreInFlight = true;
     try {
       var nextPage = current.currentPage + 1;
       var fetched = await _repo.fetchPage(
@@ -107,9 +123,13 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
           seenItemIds: seen,
         ),
       );
+      _lastLoadMoreFailedAt = null;
     } catch (e, st) {
+      _lastLoadMoreFailedAt = now();
       // loadMore 실패는 사용자 가시 액션 — 에러로 surface하여 화면에서 SnackBar 처리.
       state = AsyncError<HomeFeedState>(e, st).copyWithPrevious(state);
+    } finally {
+      _isLoadMoreInFlight = false; // (성공·실패 공통)
     }
   }
 
@@ -163,6 +183,12 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     }
 
     state = AsyncData(current.copyWith(seenItemIds: next));
+  }
+
+  bool _isInLoadMoreRetryCooldown() {
+    final failedAt = _lastLoadMoreFailedAt;
+    if (failedAt == null) return false;
+    return now().difference(failedAt) < loadMoreRetryCooldown;
   }
 
   bool _shouldThrottle(DateTime? last) {

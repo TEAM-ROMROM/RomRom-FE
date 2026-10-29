@@ -140,6 +140,8 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
   /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
   Future<List<_LikedItem>> _convertToLikeItems(List<Item> details) async {
     List<_LikedItem> likeItems = <_LikedItem>[];
+    // 주소 변환 병렬 처리 (결과 순서 = 입력 순서)
+    final locationTexts = await Future.wait(details.map(_toLocationText));
 
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
@@ -159,20 +161,11 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
         }
       }
 
-      // 위치 정보 변환
-      String locationText = '미지정';
-      if (d.latitude != null && d.longitude != null) {
-        final address = await LocationService().getAddressFromCoordinates(NLatLng(d.latitude!, d.longitude!));
-        if (address != null) {
-          locationText = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-        }
-      }
-
       final likeItem = _LikedItem(
         itemId: d.itemId ?? 'unknown_$index',
         heroTag: 'itemImage_${d.itemId}_0',
         title: d.itemName ?? '제목 없음',
-        location: locationText,
+        location: locationTexts[index],
         itemStatus: d.itemStatus ?? 'unknown',
         imageUrl: (d.imageUrlList.isNotEmpty) ? d.imageUrlList.first : '',
         tags: [cond.label, ...opts.map((e) => e.label)],
@@ -183,6 +176,14 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
     }
 
     return likeItems;
+  }
+
+  /// 물품 좌표 > 표시 주소 '시도 시군구 읍면동' (좌표 없음·변환 실패 > '미지정')
+  Future<String> _toLocationText(Item detail) async {
+    if (detail.latitude == null || detail.longitude == null) return '미지정';
+    final address = await LocationService().getAddressFromCoordinates(NLatLng(detail.latitude!, detail.longitude!));
+    if (address == null) return '미지정';
+    return '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
   }
 
   @override

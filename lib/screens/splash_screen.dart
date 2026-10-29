@@ -14,7 +14,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
-import 'package:romrom_fe/enums/app_update_type.dart';
+import 'package:romrom_fe/services/splash_startup_sequence.dart';
 import 'package:romrom_fe/screens/app_update_screen.dart';
 import 'package:romrom_fe/services/apis/app_version_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
@@ -110,18 +110,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     CommonSnackBar.show(context: context, message: '서버 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.', type: SnackBarType.error);
   }
 
+  /// 스플래시 최소 노출 시간 (2초, 버전 확인과 동시에 시작)
+  static const Duration _minimumSplashDuration = Duration(seconds: 2);
+
   Future<void> _runInitFlow() async {
-    final updateType = await AppVersionApi().checkUpdateType();
-    // _aborted: timeout 또는 오류로 _initAndNavigate()가 이미 로그인 화면을 표시한 경우
-    if (_aborted) return;
-    if (updateType == UpdateType.force && mounted) {
-      context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+    final startupResult = await runSplashStartupSequence<Widget>(
+      checkUpdateType: AppVersionApi().checkUpdateType,
+      determineInitialScreen: _determineInitialScreen,
+      // _aborted: timeout 또는 오류로 _initAndNavigate()가 이미 로그인 화면을 표시한 경우
+      isAborted: () => _aborted,
+      minimumSplashDuration: _minimumSplashDuration,
+    );
+    if (startupResult.isAborted) return;
+    if (startupResult.isForcedUpdate) {
+      if (mounted) context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
       return;
     }
-
-    final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
-    if (_aborted) return; // Future.wait 대기 중 타임아웃이 발생했을 수 있음
-    final nextScreen = results[0]! as Widget;
+    final nextScreen = startupResult.nextScreen!;
 
     if (!mounted) return;
 
@@ -231,7 +236,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         return OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
       }
 
-      await FirebaseService().handleFcmToken();
+      // FCM 토큰 저장은 화면 이동과 무관 (권한 응답 대기 포함, 실패 로그는 handleFcmToken 내부)
+      unawaited(FirebaseService().handleFcmToken());
       return const MainScreen();
     } catch (e) {
       // 네트워크 예외는 재throw → _initAndNavigate()의 catch에서 SnackBar 표시

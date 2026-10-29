@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 알림 권한 유도 관련 로직 서비스
@@ -16,9 +17,16 @@ class NotificationPermissionService {
   static const String _kShownOnSignupKey = 'notificationPermissionShownOnSignup';
   static const Duration _kReshowInterval = Duration(days: 7);
 
+  // 시작 시 권한 요청 Future (첫 프레임 이후 1회분 공유, 테스트에서 교체)
+  // 시작 권한 체인은 이 서비스를 호출하지 않음 > 대기 순환 없음
+  @visibleForTesting
+  static Future<void> Function() waitForStartupPermissionRequest = FirebaseService().requestNotificationPermission;
+
   /// 알림 권한 허용 여부 확인
   /// Firebase Messaging 기준으로 확인 (앱 초기화 시 requestPermission과 동일한 채널)
   Future<bool> isPermissionGranted() async {
+    // 시작 시 권한 응답 완료 후 상태 조회
+    await waitForStartupPermissionRequest();
     try {
       final settings = await FirebaseMessaging.instance.getNotificationSettings();
       final status = settings.authorizationStatus;
@@ -92,6 +100,8 @@ class NotificationPermissionService {
   /// Firebase로 권한 요청 시도 → 허용되지 않으면 앱 설정 화면으로 이동
   /// (앱 초기화 시 Firebase가 이미 시스템 팝업을 소진했으므로 Firebase 기준으로 처리)
   Future<void> requestOrOpenSettings() async {
+    // 시작 시 권한 요청 진행 중이면 응답 후 재요청 (동시 requestPermission 충돌 방지)
+    await waitForStartupPermissionRequest();
     debugPrint('[NotificationPermission] 권한 요청 시작');
     final settings = await FirebaseMessaging.instance.requestPermission(alert: true, badge: true, sound: true);
     final status = settings.authorizationStatus;

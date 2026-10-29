@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
@@ -56,6 +58,42 @@ class _FailThenSucceedRepo implements HomeFeedRepository {
     callCount++;
     if (callCount <= failCount) throw Exception('boom');
     return items;
+  }
+}
+
+/// fetchPage를 completer로 붙잡아 두는 fake (동시 호출 재현)
+class _GatedRepo implements HomeFeedRepository {
+  final Completer<void> gate = Completer<void>();
+  int callCount = 0;
+
+  @override
+  Future<List<Item>> fetchPage({
+    required int pageNumber,
+    required int pageSize,
+    required ItemSortField sortField,
+  }) async {
+    callCount++;
+    // 첫 페이지(0)는 즉시, 이후 페이지는 gate가 열릴 때까지 대기
+    if (pageNumber > 0) await gate.future;
+    return [_item('p$pageNumber')];
+  }
+}
+
+/// 첫 페이지(0)는 성공, 이후 페이지는 [shouldFailLoadMore]가 true인 동안 실패
+class _LoadMoreFailRepo implements HomeFeedRepository {
+  bool shouldFailLoadMore = true;
+  int loadMoreCallCount = 0;
+
+  @override
+  Future<List<Item>> fetchPage({
+    required int pageNumber,
+    required int pageSize,
+    required ItemSortField sortField,
+  }) async {
+    if (pageNumber == 0) return [_item('p0')];
+    loadMoreCallCount++;
+    if (shouldFailLoadMore) throw Exception('boom');
+    return [_item('p$pageNumber')];
   }
 }
 
@@ -266,6 +304,64 @@ void main() {
 
       expect(repo.callCount, callsAfterInitial);
       expect(c.read(homeFeedProvider).hasError, true);
+    });
+
+    test('loadMore: 진행 중 동시 호출은 repository를 1번만 호출', () async {
+      final repo = _GatedRepo();
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final callsAfterInitial = repo.callCount;
+      final notifier = c.read(homeFeedProvider.notifier);
+
+      final firstLoad = notifier.loadMore();
+      final secondLoad = notifier.loadMore();
+      repo.gate.complete();
+      await Future.wait([firstLoad, secondLoad]);
+
+      expect(repo.callCount - callsAfterInitial, 1, reason: '동시 loadMore는 같은 페이지를 중복 조회하지 않음');
+      expect(c.read(homeFeedProvider).value!.currentPage, 1);
+    });
+
+    test('loadMore: 완료 후에는 다시 호출 가능', () async {
+      final repo = _GatedRepo()..gate.complete();
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+
+      await notifier.loadMore();
+      await notifier.loadMore();
+
+      expect(c.read(homeFeedProvider).value!.currentPage, 2);
+    });
+
+    test('loadMore 실패: 대기 시간 안의 재호출은 repository를 부르지 않고, 지나면 다시 호출', () async {
+      final repo = _LoadMoreFailRepo();
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      var fakeNow = DateTime(2026, 10, 29, 12);
+      notifier.now = () => fakeNow;
+
+      await notifier.loadMore();
+      expect(repo.loadMoreCallCount, 1);
+      expect(c.read(homeFeedProvider).hasError, true);
+
+      // 실패 직후 재호출 — 대기 시간 안이라 차단
+      await notifier.loadMore();
+      expect(repo.loadMoreCallCount, 1, reason: '대기 시간 안에는 재시도하지 않음');
+
+      // 대기 시간 직전 — 여전히 차단
+      fakeNow = fakeNow.add(loadMoreRetryCooldown - const Duration(milliseconds: 1));
+      await notifier.loadMore();
+      expect(repo.loadMoreCallCount, 1);
+
+      // 대기 시간 경과 — 재시도 허용, 성공 시 에러 해소
+      fakeNow = fakeNow.add(const Duration(milliseconds: 1));
+      repo.shouldFailLoadMore = false;
+      await notifier.loadMore();
+      expect(repo.loadMoreCallCount, 2);
+      expect(c.read(homeFeedProvider).hasError, false);
+      expect(c.read(homeFeedProvider).value!.currentPage, 1);
     });
   });
 }

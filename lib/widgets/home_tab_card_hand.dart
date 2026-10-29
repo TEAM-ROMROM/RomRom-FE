@@ -127,16 +127,13 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
     _initializeAnimations();
     _generateCards();
 
+    // 궤도 각도: 리스너는 동기 보관만 (카드 변환은 _buildCard의 AnimatedBuilder가 구독)
     _orbitController = AnimationController.unbounded(vsync: this)
-      ..addListener(() {
-        if (!mounted) return;
-        setState(() => _orbitAngle = _orbitController?.value ?? _orbitAngle);
-      })
+      ..addListener(() => _orbitAngle = _orbitController?.value ?? _orbitAngle)
       ..value = _orbitAngle;
 
-    // 아이콘 애니메이션 초기화
-    _iconAnimationController = AnimationController(duration: const Duration(milliseconds: 700), vsync: this)
-      ..repeat(reverse: true); // 반복 애니메이션 (위아래로 움직임)
+    // 드롭 안내 아이콘 위아래 반복 (카드 당김 중에만 실행, _syncDropGuideIconWithPulledCard)
+    _iconAnimationController = AnimationController(duration: const Duration(milliseconds: 700), vsync: this);
 
     _iconAnimation = Tween<double>(
       begin: 0.0,
@@ -214,6 +211,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
         _dropShadowT = 0.0;
         _wasOverDropZone = false;
       });
+      _syncDropGuideIconWithPulledCard();
     }
 
     if (!listEquals(widget.cards, oldWidget.cards)) {
@@ -494,22 +492,42 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
 
     final isHovered = _hasStartedCardDrag && _hoveredCardId == cardId && !isPulled;
 
-    final transform = _calculateCardTransform(context, index, totalCards);
     final bool isPressed = _pressedCardId == cardId;
 
     // AI 추천 하이라이트 여부
     final bool isAiHighlighted = cardId != null && widget.highlightedItemIds.contains(cardId);
 
+    // 카드 본문 (애니메이션 값 무관 > 프레임마다 재빌드하지 않도록 child로 재사용)
+    final Widget cardContent = RequestManagementItemCardWidget(
+      card: RequestManagementItemCard(
+        itemId: cardId!,
+        imageUrl: cardData.primaryImageUrl ?? '',
+        category: ItemCategories.fromServerName(cardData.itemCategory!).label,
+        title: cardData.itemName ?? '물품',
+        price: cardData.price ?? 0,
+        likeCount: cardData.likeCount ?? 0,
+        aiPrice: cardData.isAiPredictedPrice ?? false,
+      ),
+      width: _cardWidth,
+      height: _cardHeight,
+      isActive: true,
+    );
+
     return AnimatedBuilder(
-      // float 컨트롤러도 함께 listen
+      // float 컨트롤러도 함께 listen, 궤도 회전(_orbitController)은 카드 변환만 갱신
       animation: Listenable.merge([
         _fanAnimation,
         _pullAnimation,
         _highlightPulseAnimation,
         _highlightFloatAnimation,
         _reorderAnimation,
+        _orbitController,
       ]),
+      child: cardContent,
       builder: (context, child) {
+        // 현재 궤도 각도 기준 목표 위치
+        final transform = _calculateCardTransform(context, index, totalCards);
+
         // 스태거드 애니메이션 효과
         final staggerDelay = index * 0.03;
         final staggeredFanValue = (_fanAnimation.value - staggerDelay).clamp(0.0, 1.0);
@@ -525,7 +543,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
         // ── 재정렬 보간 적용 ─────────────────────────────────────────
         // 추천 카드 2개 이상: 전체 카드가 중앙 집결(0→0.4) → 겹쳐서 홀드(0.4→0.6) → 팬아웃(0.6→1.0)
         // 추천 카드 1개: 직선 이동 (집결 애니메이션 생략)
-        if (cardId != null && _preReorderTransforms.containsKey(cardId)) {
+        if (_preReorderTransforms.containsKey(cardId)) {
           final oldTransform = _preReorderTransforms[cardId]!;
           final oldLeft = oldTransform['left'] as double;
           final oldTop = oldTransform['top'] as double;
@@ -656,20 +674,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                 borderRadius: BorderRadius.circular(10 * scale * _cardWidth / 219.0),
                 boxShadow: cardBoxShadow,
               ),
-              child: RequestManagementItemCardWidget(
-                card: RequestManagementItemCard(
-                  itemId: cardId!,
-                  imageUrl: cardData.primaryImageUrl ?? '',
-                  category: ItemCategories.fromServerName(cardData.itemCategory!).label,
-                  title: cardData.itemName ?? '물품',
-                  price: cardData.price ?? 0,
-                  likeCount: cardData.likeCount ?? 0,
-                  aiPrice: cardData.isAiPredictedPrice ?? false,
-                ),
-                width: _cardWidth,
-                height: _cardHeight,
-                isActive: true,
-              ),
+              child: child,
             ),
           ),
         );
@@ -760,81 +765,105 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
       final double maxAngle = _getMaxOrbitAngle();
       final double clampedAngle = targetAngle.clamp(minAngle, maxAngle);
 
-      setState(() {
-        _orbitAngle = clampedAngle;
-        _orbitController?.value = clampedAngle;
+      // 각도 갱신 (전체 setState 없이 카드 변환 AnimatedBuilder만 재빌드)
+      _orbitAngle = clampedAngle;
+      _orbitController?.value = clampedAngle;
 
-        // 각도에 따라 카드 동적 로드
-        // 왼쪽으로 스와이프 (음수 방향) → 오른쪽 카드 추가 로드
-        if (_orbitAngle < _orbitAccumulated - 0.2 && _rightLoadedCount > 0) {
+      // 각도에 따라 카드 동적 로드 (카드 목록 변경 시에만 전체 재빌드)
+      // 왼쪽으로 스와이프 (음수 방향) → 오른쪽 카드 추가 로드
+      if (_orbitAngle < _orbitAccumulated - 0.2 && _rightLoadedCount > 0) {
+        setState(() {
           if (_loadCardsRight()) {
             // 연속 로드 방지
             _orbitAccumulated = _orbitAngle;
             _orbitDragStart = details.localPosition.dx;
           }
-        }
-        // 오른쪽으로 스와이프 (양수 방향) → 왼쪽 카드 추가 로드
-        if (_orbitAngle > _orbitAccumulated + 0.2 && _leftLoadedCount > 0) {
+        });
+      }
+      // 오른쪽으로 스와이프 (양수 방향) → 왼쪽 카드 추가 로드
+      if (_orbitAngle > _orbitAccumulated + 0.2 && _leftLoadedCount > 0) {
+        setState(() {
           if (_loadCardsLeft()) {
             // 연속 로드 방지
             _orbitAccumulated = _orbitAngle;
             _orbitDragStart = details.localPosition.dx;
           }
-        }
-      });
+        });
+      }
     }
 
-    // 2) 카드 드래그는 조건부
+    // 2) 카드 드래그는 조건부 (당김 상태 + 드롭존 그림자 갱신, 이벤트당 setState 1회)
     if (_panStartedOnCard && _startCardId != null) {
       if (_hasStartedCardDrag) {
         setState(() {
-          // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -15px
-          if (_pulledCardId == null && dispY < -15) {
-            _pulledCardId = _hoveredCardId;
-            _pullOffset = Offset(dispX, dispY);
-            _pullController.forward();
-            HapticFeedback.mediumImpact();
-          } else if (_pulledCardId != null) {
-            _pullOffset = Offset(dispX, dispY);
-          }
+          _updatePulledCard(dispX, dispY);
+          _updateDropZoneShadow();
         });
-
-        // ⬇️ 드롭존 overlap 체크 → 그림자 강도 갱신
-        final deckBox = _deckKey.currentContext?.findRenderObject() as RenderBox?;
-        final dropRect = _globalRectOf(_dropZoneKey);
-        if (deckBox != null && dropRect != null && _pulledCardId != null) {
-          // 현재 카드의 위치 계산
-          final cardIndex = _cards.indexWhere((card) => card.itemId == _pulledCardId);
-          if (cardIndex != -1) {
-            final transform = _calculateCardTransform(context, cardIndex, _cards.length);
-            final pullValue = _pullAnimation.value;
-
-            // 카드의 실제 위치 계산 (pull 효과 포함)
-            final cardLeft = (transform['left'] as double) + _pullOffset.dx * pullValue;
-            final cardTop = (transform['top'] as double) + _pullOffset.dy * pullValue - _pullLift * pullValue;
-
-            // 카드의 글로벌 위치
-            final cardGlobalTopLeft = deckBox.localToGlobal(Offset(cardLeft, cardTop));
-
-            // 카드의 전체 영역 (Rect)
-            final cardRect = cardGlobalTopLeft & Size(_cardWidth, _cardHeight);
-
-            // 드롭존과 카드 영역이 겹치는지 체크
-            final isOver = dropRect.overlaps(cardRect);
-
-            // 스무딩(선형 보간)
-            final target = isOver ? 1.0 : 0.0;
-            final newT = (_dropShadowT * 0.7) + (target * 0.3); // 부드럽게
-
-            if (isOver && !_wasOverDropZone) {
-              HapticFeedback.selectionClick(); // 드롭존 진입시 손맛
-            }
-            _wasOverDropZone = isOver;
-
-            setState(() => _dropShadowT = newT.clamp(0.0, 1.0));
-          }
-        }
       }
+    }
+  }
+
+  /// 카드 당김 갱신: 시작 판정(위로 -15px 초과) > 손가락 변위 반영
+  void _updatePulledCard(double dispX, double dispY) {
+    // 위로 당길 때 시작(dispY가 음수), 시작 임계치 -15px
+    if (_pulledCardId == null && dispY < -15) {
+      _pulledCardId = _hoveredCardId;
+      _pullOffset = Offset(dispX, dispY);
+      _pullController.forward();
+      HapticFeedback.mediumImpact();
+      _syncDropGuideIconWithPulledCard();
+    } else if (_pulledCardId != null) {
+      _pullOffset = Offset(dispX, dispY);
+    }
+  }
+
+  /// 드롭존 overlap 체크 > 그림자 강도 갱신 (진입 시 햅틱)
+  void _updateDropZoneShadow() {
+    final deckBox = _deckKey.currentContext?.findRenderObject() as RenderBox?;
+    final dropRect = _globalRectOf(_dropZoneKey);
+    if (deckBox == null || dropRect == null || _pulledCardId == null) return;
+
+    // 현재 카드의 위치 계산
+    final cardIndex = _cards.indexWhere((card) => card.itemId == _pulledCardId);
+    if (cardIndex == -1) return;
+
+    final transform = _calculateCardTransform(context, cardIndex, _cards.length);
+    final pullValue = _pullAnimation.value;
+
+    // 카드의 실제 위치 계산 (pull 효과 포함)
+    final cardLeft = (transform['left'] as double) + _pullOffset.dx * pullValue;
+    final cardTop = (transform['top'] as double) + _pullOffset.dy * pullValue - _pullLift * pullValue;
+
+    // 카드의 글로벌 위치
+    final cardGlobalTopLeft = deckBox.localToGlobal(Offset(cardLeft, cardTop));
+
+    // 카드의 전체 영역 (Rect)
+    final cardRect = cardGlobalTopLeft & Size(_cardWidth, _cardHeight);
+
+    // 드롭존과 카드 영역이 겹치는지 체크
+    final isOver = dropRect.overlaps(cardRect);
+
+    // 스무딩(선형 보간)
+    final target = isOver ? 1.0 : 0.0;
+    final newT = (_dropShadowT * 0.7) + (target * 0.3); // 부드럽게
+
+    if (isOver && !_wasOverDropZone) {
+      HapticFeedback.selectionClick(); // 드롭존 진입시 손맛
+    }
+    _wasOverDropZone = isOver;
+
+    _dropShadowT = newT.clamp(0.0, 1.0);
+  }
+
+  /// 드롭 안내 아이콘 반복: 카드 당김 중에만 위아래 반복, 해제 시 정지 + 시작 위치 복귀
+  void _syncDropGuideIconWithPulledCard() {
+    final bool isCardPulled = _pulledCardId != null;
+    if (isCardPulled && !_iconAnimationController.isAnimating) {
+      _iconAnimationController.repeat(reverse: true);
+    } else if (!isCardPulled) {
+      _iconAnimationController
+        ..stop()
+        ..value = 0.0;
     }
   }
 
@@ -859,6 +888,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
             _dropShadowT = 0.0; // 그림자 원복
             _wasOverDropZone = false;
           });
+          _syncDropGuideIconWithPulledCard();
           _pullController.reverse();
         });
       } else {
@@ -869,6 +899,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
             _pulledCardId = null;
             _pullOffset = Offset.zero;
           });
+          _syncDropGuideIconWithPulledCard();
         });
       }
     }

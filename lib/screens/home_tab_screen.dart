@@ -40,6 +40,17 @@ import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/native_ad_widget.dart';
 import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
+// 다음 페이지 선행 로드 기준: 끝에서 뷰포트 높이의 몇 배 전인지
+const double loadMorePrefetchViewportRatio = 1.5;
+
+/// 홈 피드 선행 로드 여부: 피드 자신의 세로 스크롤(depth 0)이 끝 근처일 때만
+/// 카드 안 가로 이미지 캐러셀(depth 1, 가로) 알림은 제외
+bool shouldPrefetchHomeFeed(ScrollMetrics metrics, int depth) {
+  if (depth != 0 || metrics.axis != Axis.vertical) return false;
+  final prefetchThresholdPixels = metrics.maxScrollExtent - metrics.viewportDimension * loadMorePrefetchViewportRatio;
+  return metrics.pixels >= prefetchThresholdPixels;
+}
+
 /// 홈 탭 화면 — 피드 상태는 homeFeedProvider 단일 소유.
 class HomeTabScreen extends ConsumerStatefulWidget {
   const HomeTabScreen({super.key, this.onLoaded});
@@ -306,6 +317,19 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         });
       }
 
+      // loadMore 에러는 정상 상태 > 에러 전환 시 1회 SnackBar (목록 동일 객체여도 표시, 자동 새로고침 실패는 provider에서 swallow)
+      final isNewLoadMoreError = next.hasError && next.hasValue && !(prev?.hasError ?? false);
+      if (isNewLoadMoreError) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          CommonSnackBar.show(
+            context: context,
+            message: ErrorUtils.getErrorMessage(next.error!),
+            type: SnackBarType.error,
+          );
+        });
+      }
+
       final prevState = prev?.valueOrNull;
       final nextState = next.valueOrNull;
       if (prevState == null || nextState == null) return;
@@ -323,18 +347,6 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         _onFeedItemsAppended(nextItems.length);
       }
       // 그 외(markSeen 등 길이·revision 불변)는 슬롯 갱신 불필요
-
-      // loadMore 등에서 발생한 에러는 SnackBar로 표시 (자동 새로고침 silent fail은 provider에서 swallow됨)
-      if (next.hasError && next.hasValue) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          CommonSnackBar.show(
-            context: context,
-            message: ErrorUtils.getErrorMessage(next.error!),
-            type: SnackBarType.error,
-          );
-        });
-      }
     });
 
     final asyncFeed = ref.watch(homeFeedProvider);
@@ -396,7 +408,8 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         Positioned.fill(
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
-              if (hasMoreItems && scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+              // 끝에서 뷰포트 1.5배 전부터 선행 로드
+              if (hasMoreItems && shouldPrefetchHomeFeed(scrollInfo.metrics, scrollInfo.depth)) {
                 ref.read(homeFeedProvider.notifier).loadMore();
               }
               return false;

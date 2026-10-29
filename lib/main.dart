@@ -24,7 +24,6 @@ import 'package:romrom_fe/services/apis/app_version_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
-import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/device_type.dart';
@@ -45,23 +44,11 @@ void main() async {
     await RuntimeUrlManager().init();
   }
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  await initialize(); // 초기화 실행
+  // 서로 의존 없는 초기화 병렬 (env·SDK <-> Firebase 메시징, Firebase 옵션은 env 미사용)
+  await Future.wait([initialize(), _initFirebaseMessaging()]);
 
   // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Initialize local notifications plugin (sets default small icon)
-  await initNotificationPlugin();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true, // 배너/알림창 보이기
-    badge: true,
-    sound: true,
-  );
-
-  // 알림 권한 요청 설정
-  await FirebaseService().setupPushNotifications();
 
   // 시스템 오버레이 색상 설정
   SystemChrome.setSystemUIOverlayStyle(
@@ -79,6 +66,23 @@ void main() async {
   }
 
   runApp(ProviderScope(child: MyApp(isGestureMode: isGestureMode)));
+
+  // 첫 프레임(스플래시) 이후 알림 권한 요청 1회 (권한 응답이 스플래시 표시를 막지 않게)
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(FirebaseService().requestNotificationPermission());
+  });
+}
+
+/// Firebase 메시징 초기화: Firebase 앱 > 백그라운드 핸들러 > 포그라운드 표시 옵션 > 메시지 리스너 (권한 요청 제외)
+Future<void> _initFirebaseMessaging() async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+    alert: true, // 배너/알림창 보이기
+    badge: true,
+    sound: true,
+  );
+  FirebaseService().registerPushMessageListeners();
 }
 
 /// 앱의 루트 위젯

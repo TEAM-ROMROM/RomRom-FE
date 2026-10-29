@@ -15,8 +15,8 @@ Future<void> initialize() async {
   if (DebugConfig.isTestBuild) {
     LogCapture().start();
   }
-  await initNaverMap(); // 네이버 지도 초기화
-  await initGoogleSignIn(); // Google Sign-In 초기화 (v7 필수)
+  // env 의존 SDK 초기화 병렬 (네이버 지도, Google Sign-In v7 필수 — 서로 의존 없음)
+  await Future.wait([initNaverMap(), initGoogleSignIn()]);
   initKakaoSdk(); // 카카오 sdk 초기화
   // UMP 동의 수집 후 MobileAds 초기화 (non-blocking)
   _initConsentAndAds();
