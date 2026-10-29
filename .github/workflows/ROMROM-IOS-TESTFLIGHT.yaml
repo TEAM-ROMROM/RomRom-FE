@@ -20,7 +20,7 @@ on:
           - appstore_submit
 
 env:
-  FLUTTER_VERSION: "3.35.5"
+  FLUTTER_VERSION: "3.38.9"
   XCODE_VERSION: "26.0"
   PROJECT_TYPE: "flutter"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

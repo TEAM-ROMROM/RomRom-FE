@@ -49,9 +49,9 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.5"
+          flutter-version: "3.38.9"
           cache: true
-          cache-key: flutter-${{ runner.os }}-3.35.5
+          cache-key: flutter-${{ runner.os }}-3.38.9
 
       - name: Verify Flutter version
         run: |
