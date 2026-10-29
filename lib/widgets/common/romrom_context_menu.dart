@@ -49,6 +49,12 @@ class RomRomContextMenu extends StatefulWidget {
   final bool enableHapticFeedback;
   final double triggerRotationDegreesOnOpen;
 
+  /// 스크린 리더가 읽는 트리거 이름
+  final String semanticLabel;
+
+  /// 트리거 터치 영역 한 변 (null이면 기존 30.w 박스 + 40.w 터치)
+  final double? tapTargetSize;
+
   /// 0이면 회전 없음, 45면 45도 회전
 
   const RomRomContextMenu({
@@ -65,6 +71,8 @@ class RomRomContextMenu extends StatefulWidget {
     this.itemHeight = 52,
     this.enableHapticFeedback = true,
     this.triggerRotationDegreesOnOpen = 0,
+    this.semanticLabel = '더보기',
+    this.tapTargetSize,
   });
 
   @override
@@ -172,35 +180,44 @@ class _RomRomContextMenuState extends State<RomRomContextMenu> with SingleTicker
     final triggerChild =
         widget.customTrigger ?? Icon(widget.items.first.contextIcon, size: 30.sp, color: AppColors.textColorWhite);
 
+    // 터치 영역 지정 시 박스 자체를 키움 (OverflowBox 밖 영역은 히트 테스트 불가)
+    final triggerBoxSize = widget.tapTargetSize ?? 30.w;
+    final overflowSize = widget.tapTargetSize ?? 40.w;
+    final canvasSize = widget.tapTargetSize ?? 48.w;
+
     return SizedBox.square(
-      dimension: 30.w,
+      dimension: triggerBoxSize,
       child: OverflowBox(
-        maxWidth: 40.w,
-        maxHeight: 40.w,
+        maxWidth: overflowSize,
+        maxHeight: overflowSize,
         child: Material(
           color: AppColors.transparent,
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
-          child: InkResponse(
-            key: _triggerKey,
-            onTap: _showMenu,
-            radius: 18.w,
-            customBorder: const CircleBorder(),
-            highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-            splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-            child: SizedBox.square(
-              dimension: 48.w, // 리플/터치 캔버스
-              child: widget.triggerRotationDegreesOnOpen == 0
-                  ? triggerChild
-                  : AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        final radians =
-                            (widget.triggerRotationDegreesOnOpen * _animationController.value) * (math.pi / 180.0);
-                        return Transform.rotate(angle: radians, child: child);
-                      },
-                      child: triggerChild,
-                    ),
+          child: Semantics(
+            button: true,
+            label: widget.semanticLabel,
+            child: InkResponse(
+              key: _triggerKey,
+              onTap: _showMenu,
+              radius: 18.w,
+              customBorder: const CircleBorder(),
+              highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
+              splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
+              child: SizedBox.square(
+                dimension: canvasSize, // 리플/터치 캔버스
+                child: widget.triggerRotationDegreesOnOpen == 0
+                    ? triggerChild
+                    : AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          final radians =
+                              (widget.triggerRotationDegreesOnOpen * _animationController.value) * (math.pi / 180.0);
+                          return Transform.rotate(angle: radians, child: child);
+                        },
+                        child: triggerChild,
+                      ),
+              ),
             ),
           ),
         ),

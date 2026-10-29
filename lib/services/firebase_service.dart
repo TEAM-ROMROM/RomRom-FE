@@ -8,9 +8,15 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
+import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 
 class FirebaseService {
+  // 싱글톤 구현
+  static final FirebaseService _instance = FirebaseService._internal();
+  factory FirebaseService() => _instance;
+  FirebaseService._internal();
+
   // Foreground 메시지를 UI에서 구독할 수 있도록 브로드캐스트 스트림 제공
   final StreamController<RemoteMessage> _foregroundMessageController = StreamController<RemoteMessage>.broadcast();
 
@@ -21,22 +27,47 @@ class FirebaseService {
   void dispose() {
     try {
       _foregroundMessageController.close();
-    } catch (_) {}
+    } catch (_) {
+      // 이미 닫힌 스트림 (중복 dispose 무시)
+    }
   }
 
-  /// 알림 권한 요청 세팅
-  Future<void> setupPushNotifications() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
+  // 알림 권한 요청 1회분 (첫 호출 Future 공유)
+  Future<void>? _notificationPermissionRequest;
 
-    // 알림 권한 요청 (iOS)
-    NotificationSettings settings = await messaging.requestPermission(alert: true, badge: true, sound: true);
+  /// 알림 권한 요청 1회: 로컬 알림 초기화(iOS 권한 창) > FCM 권한 요청 > 결과 로그
+  /// 첫 프레임 이후 호출 (스플래시 표시 후 권한 창), 이후 호출은 같은 Future 반환
+  Future<void> requestNotificationPermission() {
+    return _notificationPermissionRequest ??= _initNotificationPluginAndRequestPermission();
+  }
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint('[FCM] 푸시 알림 권한이 허용됨');
-    } else {
-      debugPrint('[FCM] 푸시 알림 권한이 거부됨');
+  Future<void> _initNotificationPluginAndRequestPermission() async {
+    // 로컬 알림 초기화 (Android 기본 아이콘, iOS 권한 창 포함)
+    try {
+      await initNotificationPlugin();
+    } catch (e) {
+      debugPrint('[FCM] 로컬 알림 초기화 실패: $e');
     }
 
+    // FCM 권한 요청 (iOS, Android 13+)
+    try {
+      final NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('[FCM] 푸시 알림 권한이 허용됨');
+      } else {
+        debugPrint('[FCM] 푸시 알림 권한이 거부됨');
+      }
+    } catch (e) {
+      debugPrint('[FCM] 푸시 알림 권한 요청 실패: $e');
+    }
+  }
+
+  /// 푸시 메시지 리스너 등록: 포그라운드 수신, 알림 탭으로 앱 열림 (시작 시 1회, 권한 요청 제외)
+  void registerPushMessageListeners() {
     // 앱이 포그라운드에 있을 때 (인앱 표시 처리용으로 스트림에 전달)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       try {
@@ -46,6 +77,8 @@ class FirebaseService {
         final android = message.notification?.android;
 
         if (notification != null && android != null) {
+          // 첫 프레임 직후 수신 대비 초기화 완료 대기 (완료 후엔 즉시 반환)
+          await initNotificationPlugin();
           // flutter_local_notifications 이용 (use shared initialized plugin)
           await flutterLocalNotificationsPlugin.show(
             id: notification.hashCode,
@@ -90,17 +123,13 @@ class FirebaseService {
     final uri = Uri.tryParse(deepLink);
     if (uri == null) return;
 
-    NotificationType? notificationType;
     final typeRaw = data['notificationType'] as String?;
-    if (typeRaw != null) {
-      try {
-        notificationType = NotificationType.fromServerName(typeRaw);
-      } catch (_) {
-        debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
-      }
+    final notificationType = NotificationType.fromServerName(typeRaw);
+    if (typeRaw != null && notificationType == null) {
+      debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
     }
 
-    RomRomDeepLinkRouter.openFromUri(context, uri, notificationType: notificationType);
+    RomRomDeepLinkRouter.openFromUri(context, uri, notificationType: notificationType, extraData: data);
   }
 
   /// FCM 토큰 발급 및 갱신
@@ -129,7 +158,7 @@ class FirebaseService {
   void onTokenRefresh({required Function(String) onTokenRefreshed}) {
     FirebaseMessaging.instance.onTokenRefresh
         .listen((newToken) {
-          debugPrint('[FCM] 토큰 갱신됨: $newToken');
+          debugPrint('[FCM] 토큰 갱신됨');
           onTokenRefreshed(newToken);
         })
         .onError((err) {
@@ -144,6 +173,8 @@ class FirebaseService {
   Future<void> handleFcmToken() async {
     try {
       final notificationApi = NotificationApi();
+      // 0. 권한 응답 후 발급 (시작 시 순서 유지: 권한 > 토큰, iOS APNs 토큰 도착 전 발급 실패 방지)
+      await requestNotificationPermission();
       // 1. FCM 토큰 발급
       final fcmToken = await getFcmToken();
       if (fcmToken == null) {
@@ -161,6 +192,7 @@ class FirebaseService {
   }
 
   /// FCM 토큰 갱신 감지 및 자동 저장
+  /// 콜백 실행 시점에 인증 토큰 유무를 확인하여 미인증 상태에서의 silent fail 방지
   void setupTokenRefreshListener(NotificationApi notificationApi) {
     if (_tokenRefreshListenerSet) return;
 
@@ -170,8 +202,15 @@ class FirebaseService {
     onTokenRefresh(
       onTokenRefreshed: (String newToken) async {
         try {
+          // 인증 전 토큰 갱신 이벤트 도달 시 저장 스킵
+          // (로그인/온보딩 완료 후 handleFcmToken()이 최신 토큰을 다시 저장함)
+          final accessToken = await TokenManager().getAccessToken();
+          if (accessToken == null) {
+            debugPrint('[FCM] 인증 전 토큰 갱신 감지 → 저장 스킵');
+            return;
+          }
           await notificationApi.saveFcmToken(fcmToken: newToken);
-          debugPrint('[FCM] 갱신된 FCM 토큰 저장 완료: $newToken');
+          debugPrint('[FCM] 갱신된 FCM 토큰 저장 완료');
         } catch (e) {
           debugPrint('[FCM] 갱신된 FCM 토큰 저장 실패: $e');
         }

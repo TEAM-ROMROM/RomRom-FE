@@ -1,32 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
 import 'package:romrom_fe/enums/trade_review_tag.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
-import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
-import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/services/app_review_service.dart';
+import 'package:romrom_fe/widgets/common/app_review_popup.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/trade/rating_option_button.dart';
 
 /// 교환 완료 후 리뷰 작성 화면
-class TradeReviewScreen extends StatefulWidget {
+class TradeReviewScreen extends ConsumerStatefulWidget {
   final String tradeRequestHistoryId;
   final String opponentNickname;
 
   const TradeReviewScreen({super.key, required this.tradeRequestHistoryId, required this.opponentNickname});
 
   @override
-  State<TradeReviewScreen> createState() => _TradeReviewScreenState();
+  ConsumerState<TradeReviewScreen> createState() => _TradeReviewScreenState();
 }
 
-class _TradeReviewScreenState extends State<TradeReviewScreen> {
+class _TradeReviewScreenState extends ConsumerState<TradeReviewScreen> {
   int _step = 1;
   TradeReviewRating? _rating;
   final Set<TradeReviewTag> _selectedTags = {};
@@ -43,18 +45,30 @@ class _TradeReviewScreenState extends State<TradeReviewScreen> {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
     try {
-      await TradeApi().postTradeReview(
-        TradeRequest(
-          tradeRequestHistoryId: widget.tradeRequestHistoryId,
-          tradeReviewRating: _rating!.serverName,
-          tradeReviewTags: skipDetails ? null : _selectedTags.map((t) => t.serverName).toList(),
-          reviewComment: skipDetails
-              ? null
-              : _commentController.text.trim().isEmpty
-              ? null
-              : _commentController.text.trim(),
-        ),
-      );
+      await ref
+          .read(tradeRepositoryProvider)
+          .postTradeReview(
+            tradeRequestHistoryId: widget.tradeRequestHistoryId,
+            tradeReviewRating: _rating!.serverName,
+            tradeReviewTags: skipDetails ? null : _selectedTags.map((t) => t.serverName).toList(),
+            reviewComment: skipDetails
+                ? null
+                : _commentController.text.trim().isEmpty
+                ? null
+                : _commentController.text.trim(),
+          );
+      if (!mounted) return;
+
+      // 거래 완료 횟수 기록 및 리뷰 팝업 조건 체크
+      final reviewService = AppReviewService();
+      await reviewService.onTradeComplete();
+
+      if (!mounted) return;
+
+      if (await reviewService.shouldShow(tradeTriggered: true)) {
+        if (mounted) await AppReviewPopup.show(context, reviewService);
+      }
+
       if (!mounted) return;
       context.navigateTo(
         screen: const MainScreen(),
@@ -96,7 +110,7 @@ class _TradeReviewScreenState extends State<TradeReviewScreen> {
                   /// 닫기 버튼
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Icon(AppIcons.cancel, color: Colors.white, size: 24.sp),
+                    child: Icon(AppIcons.cancel, color: Colors.white, size: 24.sp, semanticLabel: '닫기'),
                   ),
                   SizedBox(height: 40.h),
 

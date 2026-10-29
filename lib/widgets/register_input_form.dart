@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:romrom_fe/enums/image_pick_source.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
@@ -14,43 +13,63 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/location_address.dart';
+import 'package:romrom_fe/models/register_form_snapshot.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/image_fullscreen_viewer.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
-import 'package:romrom_fe/services/apis/image_api.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
-import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/screens/item_price_input_screen.dart';
-import 'package:romrom_fe/widgets/common/gradient_text.dart';
-import 'package:romrom_fe/widgets/register_option_chip.dart';
+import 'package:romrom_fe/widgets/register_input_form/register_category_bottom_sheet.dart';
+import 'package:romrom_fe/widgets/register_input_form/register_category_field.dart';
+import 'package:romrom_fe/widgets/register_input_form/register_image_picker_section.dart';
+import 'package:romrom_fe/widgets/register_input_form/register_option_selector.dart';
+import 'package:romrom_fe/widgets/register_input_form/register_price_suffix_icon.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/image_repository_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
-import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
+
+part 'register_input_form/register_input_form_image_selection.dart';
+part 'register_input_form/register_input_form_submission.dart';
+part 'register_input_form/register_input_form_unsaved_changes.dart';
 
 /// 물품 등록 입력 폼 위젯
 /// 물품 등록 화면에서 사용되는 입력 폼 위젯
-class RegisterInputForm extends StatefulWidget {
+class RegisterInputForm extends ConsumerStatefulWidget {
   final Item? item; // 수정 모드에서 사용
   final bool isEditMode;
+  // 미저장 변경 여부 전달 (부모 화면의 이탈 경고 가드가 구독)
+  final ValueNotifier<bool>? hasUnsavedChangesNotifier;
+  // 저장 진행 여부 전달 (부모 화면 가드가 저장 중 이탈 차단)
+  final ValueNotifier<bool>? isSaveInProgressNotifier;
 
-  const RegisterInputForm({super.key, this.item, this.isEditMode = false});
+  const RegisterInputForm({
+    super.key,
+    this.item,
+    this.isEditMode = false,
+    this.hasUnsavedChangesNotifier,
+    this.isSaveInProgressNotifier,
+  });
 
   @override
-  State<RegisterInputForm> createState() => _RegisterInputFormState();
+  ConsumerState<RegisterInputForm> createState() => _RegisterInputFormState();
 }
 
-class _RegisterInputFormState extends State<RegisterInputForm> {
+/// 물품 등록 폼 상태 필드·파생 값 (책임별 mixin이 공유, part 파일: register_input_form/)
+abstract class _RegisterInputFormStateFields extends ConsumerState<RegisterInputForm> {
   // 임시 상태 변수들
   ItemCategories? selectedCategory;
   ItemCondition? selectedCondition;
@@ -86,69 +105,52 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
   // 이미지 관련 변수들
   final ImagePicker _picker = ImagePicker();
+  // 소스 선택 바텀시트~촬영/선택 완료까지 진행 중 가드 (더블탭 방지)
+  bool _isPickingSource = false;
   final List<XFile> _newImageFiles = []; // 새로 선택된 로컬 이미지 파일 (아직 업로드 안 됨)
+  // _newImageFiles와 인덱스 1:1로 정렬되는 백그라운드 압축 Future 리스트.
+  // 선택 시 add, 삭제 시 같은 index를 removeAt, 등록 시 index로 수거.
+  // (path를 key로 쓰면 동일 파일 재선택 시 충돌하므로 인덱스 정렬 리스트를 쓴다.)
+  final List<Future<XFile>> _compressing = [];
   final List<String> _existingImageUrls = []; // 수정 모드: 기존 서버 이미지 URL
 
-  // 상품사진 갤러리에서 가져오는 함수
-  static const int kMaxImages = 10;
+  bool _isInitLoading = true;
+  bool _isLoading = false;
+
+  // 진입 시점 폼 값 (등록: 빈 폼, 수정: 불러온 물품) — 이탈 경고 비교 기준, 초기화 전 null
+  RegisterFormSnapshot? _initialFormSnapshot;
+  // 저장 성공 여부 (true면 이탈 경고 없이 닫기)
+  bool _isSubmitSucceeded = false;
+
+  /// 수정 / 등록 (안내 문구용)
+  String get _modeText => widget.isEditMode ? '수정' : '등록';
 
   /// 전체 이미지 수 (기존 서버 이미지 + 새 로컬 이미지)
   int get _totalImageCount => _existingImageUrls.length + _newImageFiles.length;
 
-  // 상품사진 갤러리에서 가져오는 함수 (다중 선택 지원, 서버 업로드 없음)
-  Future<void> onPickImage() async {
-    try {
-      setState(() {
-        _hasImageBeenTouched = true;
-      });
+  /// 폼 유효성 검사
+  /// 모든 필드가 채워져 있는지 확인
+  bool get isFormValid {
+    // 가격 변환 (콤마 제거 후 숫자로 변환)
+    final priceText = priceController.text.replaceAll(',', '').trim();
+    final price = int.tryParse(priceText) ?? 0;
 
-      final int totalCount = _totalImageCount;
-      if (totalCount >= kMaxImages) {
-        if (context.mounted) {
-          CommonSnackBar.show(context: context, message: '이미지는 최대 10장까지 등록할 수 있습니다.', type: SnackBarType.info);
-        }
-        return;
-      }
-
-      final int remain = (kMaxImages - totalCount).clamp(0, kMaxImages);
-
-      final List<XFile> picked = await _picker.pickMultiImage(limit: remain);
-
-      // 사용자가 취소했거나 선택 없음
-      if (picked.isEmpty) return;
-
-      // 초과 선택 분리
-      final List<XFile> toAdd = picked.length > remain ? picked.sublist(0, remain) : picked;
-
-      setState(() {
-        _newImageFiles.addAll(toAdd);
-      });
-    } catch (e) {
-      if (context.mounted) {
-        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
-      }
-    }
+    return titleController.text.trim().isNotEmpty && // 공백만 있는 경우 제외
+        selectedCategory != null &&
+        descriptionController.text.trim().length >= 10 && // 최소 10자 이상, 공백만 있는 경우 제외
+        selectedItemConditionTypes.isNotEmpty &&
+        selectedTradeOptions.isNotEmpty &&
+        price > 0 && // 0원 초과
+        locationController.text.isNotEmpty &&
+        _latitude != null &&
+        _longitude != null &&
+        _totalImageCount > 0;
   }
+}
 
-  /// 이미지 삭제 (로컬에서만 제거, 서버 호출 없음)
-  void onDeleteImage(int index) {
-    if (index < 0 || index >= _totalImageCount) return;
-
-    final int existingCount = _existingImageUrls.length;
-
-    setState(() {
-      _hasImageBeenTouched = true;
-
-      if (index < existingCount) {
-        // 기존 서버 이미지 삭제
-        _existingImageUrls.removeAt(index);
-      } else {
-        // 새로 추가된 로컬 이미지 삭제
-        _newImageFiles.removeAt(index - existingCount);
-      }
-    });
-  }
-
+/// 물품 등록 폼: 수명주기·초기값·필드 입력 처리·화면 구성 (로직 mixin 3개: 사진 선택, 제출, 이탈 경고 스냅샷)
+class _RegisterInputFormState extends _RegisterInputFormStateFields
+    with _RegisterInputFormImageSelection, _RegisterInputFormSubmission, _RegisterInputFormUnsavedChanges {
   Future<void> _initControllers() async {
     // 수정 모드에서 초기화
     if (widget.isEditMode && widget.item != null) {
@@ -157,9 +159,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       // 좌표가 있으면 주소 변환, 없으면 빈 문자열로 초기화
       if (item?.latitude != null && item?.longitude != null) {
         _selectedAddress = await LocationService().getAddressFromCoordinates(NLatLng(item!.latitude!, item.longitude!));
-        locationController.text =
-            '${_selectedAddress?.siDo ?? ''} ${_selectedAddress?.siGunGu ?? ''} ${_selectedAddress?.eupMyoenDong ?? ''}'
-                .trim();
+        locationController.text = _selectedAddress?.siDoSiGunGuEupMyoenDongText.trim() ?? '';
       } else {
         _selectedAddress = null;
         locationController.text = '';
@@ -175,11 +175,9 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
 
       priceController.value = formatted;
 
-      selectedCategory = item?.itemCategory != null ? ItemCategories.fromServerName(item!.itemCategory!) : null;
-      selectedItemConditionTypes = item?.itemCondition != null
-          ? [ItemCondition.fromServerName(item!.itemCondition!)]
-          : [];
-      selectedTradeOptions = (item?.itemTradeOptions ?? []).map((e) => ItemTradeOption.fromServerName(e)).toList();
+      selectedCategory = ItemCategories.fromServerName(item?.itemCategory);
+      selectedItemConditionTypes = [?ItemCondition.fromServerName(item?.itemCondition)];
+      selectedTradeOptions = ItemTradeOption.fromServerNamesSkippingUnknown(item?.itemTradeOptions);
       // 수정 모드에서는 이미 선택된 값이 있으므로 touched 상태로 설정
       if (selectedItemConditionTypes.isNotEmpty) {
         _hasConditionBeenTouched = true;
@@ -192,27 +190,19 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
         _existingImageUrls.addAll(
           widget.item!.itemImages!
               .map((img) {
-                final imageUrl = img.imageUrl ?? '';
-                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-                  return imageUrl;
-                } else if (imageUrl.isNotEmpty) {
-                  return 'http://suh-project.synology.me/$imageUrl';
-                } else {
-                  return '';
-                }
+                // 상대 경로 > 이미지 서버 절대 주소 (https)
+                return AppUrls.toAbsoluteImageUrl(img.imageUrl ?? '');
               })
               .where((url) => url.isNotEmpty),
         );
       }
       _newImageFiles.clear();
+      _compressing.clear();
       _latitude = item?.latitude;
       _longitude = item?.longitude;
       useAiPrice = item?.isAiPredictedPrice ?? false;
     }
   }
-
-  bool _isInitLoading = true;
-  bool _isLoading = false;
 
   void _onFormValueChanged() {
     if (mounted) setState(() {});
@@ -228,6 +218,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
     _initControllers().then((_) {
       if (mounted) {
         setState(() {
+          _initialFormSnapshot = _captureFormSnapshot();
           _isInitLoading = false;
         });
       }
@@ -250,35 +241,99 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
     super.dispose();
   }
 
-  /// 폼 유효성 검사
-  /// 모든 필드가 채워져 있는지 확인
-  bool get isFormValid {
-    // 가격 변환 (콤마 제거 후 숫자로 변환)
-    final priceText = priceController.text.replaceAll(',', '').trim();
-    final price = int.tryParse(priceText) ?? 0;
-
-    return titleController.text.trim().isNotEmpty && // 공백만 있는 경우 제외
-        selectedCategory != null &&
-        descriptionController.text.trim().length >= 10 && // 최소 10자 이상, 공백만 있는 경우 제외
-        selectedItemConditionTypes.isNotEmpty &&
-        selectedTradeOptions.isNotEmpty &&
-        price > 0 && // 0원 초과
-        locationController.text.isNotEmpty &&
-        _latitude != null &&
-        _longitude != null &&
-        _totalImageCount > 0;
-  }
-
   bool get canUseAiPrice {
     return titleController.text.isNotEmpty &&
         descriptionController.text.isNotEmpty &&
         selectedItemConditionTypes.isNotEmpty;
   }
 
+  /// 카테고리 칸 탭 > 선택 바텀시트 > 고른 값 반영
+  Future<void> _onCategoryFieldTap() async {
+    setState(() {
+      _hasCategoryBeenTouched = true;
+    });
+    final ItemCategories? pickedCategory = await RegisterCategoryBottomSheet.show(
+      context: context,
+      selectedCategory: selectedCategory,
+    );
+    setState(() {
+      selectedCategory = pickedCategory;
+    });
+  }
+
+  /// 사용감 칩 탭 > 단일 선택 (이미 고른 칩이면 해제)
+  void _onConditionOptionTap(ItemCondition option) {
+    final newList = <ItemCondition>[];
+    if (!selectedItemConditionTypes.contains(option)) newList.add(option);
+    setState(() {
+      _hasConditionBeenTouched = true;
+      selectedItemConditionTypes = newList;
+    });
+  }
+
+  /// 거래 방식 칩 탭 > 복수 선택 토글
+  void _onTradeOptionTap(ItemTradeOption option) {
+    final newList = List<ItemTradeOption>.from(selectedTradeOptions);
+    if (newList.contains(option)) {
+      newList.remove(option);
+    } else {
+      newList.add(option);
+    }
+    setState(() {
+      _hasTradeOptionBeenTouched = true;
+      selectedTradeOptions = newList;
+    });
+  }
+
+  /// 가격 칸 탭 > 가격 입력 화면 (AI 추천 가능 여부 전달) > 고른 가격·AI 사용 여부 반영
+  Future<void> _openPriceInputScreen() async {
+    final initialPrice = int.tryParse(priceController.text.replaceAll(',', '')) ?? 0;
+    await context.navigateTo(
+      type: NavigationTypes.slideUp,
+      screen: ItemPriceInputScreen(
+        initialPrice: initialPrice,
+        initialUseAiPrice: useAiPrice,
+        canUseAiPrice: canUseAiPrice,
+        itemName: titleController.text,
+        itemDescription: descriptionController.text,
+        itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
+        onPriceSelected: (price, aiUsed) {
+          if (mounted) {
+            setState(() {
+              useAiPrice = aiUsed;
+              priceController.value = const PriceCommaFormatter().formatEditUpdate(
+                const TextEditingValue(),
+                TextEditingValue(text: price.toString()),
+              );
+            });
+          }
+        },
+      ),
+    );
+  }
+
+  /// 위치 칸 탭 > 위치 선택 화면 > 주소 문구·좌표 반영
+  Future<void> _openLocationScreen() async {
+    await context.navigateTo<LocationAddress>(
+      screen: ItemRegisterLocationScreen(
+        initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
+        onLocationSelected: (address) {
+          debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
+          setState(() {
+            locationController.text = address.siDoSiGunGuEupMyoenDongText;
+            // 위치 좌표 저장
+            _latitude = address.latitude;
+            _longitude = address.longitude;
+          });
+          debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 수정 / 등록
-    final String modeText = widget.isEditMode ? '수정' : '등록';
+    _reportUnsavedChangesAfterFrame();
 
     if (_isInitLoading) {
       return const RegisterInputFormSkeleton();
@@ -289,134 +344,15 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
       behavior: HitTestBehavior.opaque,
       child: Column(
         children: [
-          // 이미지 업로드
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              GestureDetector(
-                onTap: onPickImage,
-                child: Container(
-                  width: 80.w,
-                  height: 80.h,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10.r),
-                    border: Border.all(color: AppColors.opacity40White, width: 1.5.w),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(height: 6.h),
-                      Icon(AppIcons.itmeRegisterImage, color: AppColors.opacity60White, size: 18.sp),
-                      SizedBox(height: 4.h),
-                      Text(
-                        '$_totalImageCount/10',
-                        style: CustomTextStyles.p3.copyWith(color: AppColors.opacity40White),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: SizedBox(
-                  height: 88.h,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _totalImageCount,
-                    separatorBuilder: (_, index) => SizedBox(width: 8.w),
-                    padding: EdgeInsets.only(top: 8.h),
-                    itemBuilder: (context, index) {
-                      final int existingCount = _existingImageUrls.length;
-                      final bool isExisting = index < existingCount;
-
-                      // 이미지 위젯 결정: 기존 서버 이미지는 CachedImage, 새 로컬 이미지는 Image.file
-                      Widget imageWidget;
-                      if (isExisting) {
-                        imageWidget = CachedImage(
-                          imageUrl: _existingImageUrls[index],
-                          width: 80.w,
-                          height: 80.h,
-                          fit: BoxFit.cover,
-                          errorWidget: Container(
-                            color: AppColors.opacity40White,
-                            child: const Icon(Icons.broken_image, color: AppColors.textColorWhite),
-                          ),
-                        );
-                      } else {
-                        final localFile = _newImageFiles[index - existingCount];
-                        imageWidget = Image.file(
-                          File(localFile.path),
-                          width: 80.w,
-                          height: 80.h,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, error, stackTrace) => Container(
-                            width: 80.w,
-                            height: 80.h,
-                            color: AppColors.opacity40White,
-                            child: const Icon(Icons.broken_image, color: AppColors.textColorWhite),
-                          ),
-                        );
-                      }
-
-                      return SizedBox(
-                        height: 88.h,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                context.navigateTo(
-                                  type: NavigationTypes.fadePush,
-                                  screen: ImageFullscreenViewer(
-                                    existingImageUrls: List.unmodifiable(_existingImageUrls),
-                                    newImageFilePaths: _newImageFiles.map((f) => f.path).toList(growable: false),
-                                    initialIndex: index,
-                                  ),
-                                );
-                              },
-                              child: Hero(
-                                tag: 'item_image_$index',
-                                child: ClipRRect(borderRadius: BorderRadius.circular(10.r), child: imageWidget),
-                              ),
-                            ),
-                            Positioned(
-                              top: -6.h,
-                              right: -6.h,
-                              child: GestureDetector(
-                                onTap: () => onDeleteImage(index),
-                                child: Container(
-                                  width: 22.h,
-                                  height: 22.h,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.itemPictureRemoveButtonBackground,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Padding(
-                                    padding: EdgeInsets.zero,
-                                    child: Icon(AppIcons.cancel, color: AppColors.textColorBlack, size: 12.sp),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
+          // 이미지 업로드 (사진 없음 안내 포함)
+          RegisterImagePickerSection(
+            existingImageUrls: _existingImageUrls,
+            newImagePaths: _newImageFiles.map((file) => file.path).toList(growable: false),
+            shouldShowEmptyImageError: _hasImageBeenTouched && _totalImageCount == 0,
+            onAddImageTap: onPickImage,
+            onImageTap: _openImageFullscreenViewer,
+            onDeleteImageTap: onDeleteImage,
           ),
-          // 이미지 에러 메시지
-          if (_hasImageBeenTouched && _totalImageCount == 0)
-            Padding(
-              padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
-              child: Row(
-                children: [
-                  Text('상품 사진을 최소 1장 이상 등록해주세요', style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder)),
-                ],
-              ),
-            ),
           Padding(
             padding: EdgeInsets.only(right: 24.w),
             child: Column(
@@ -441,125 +377,10 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 // 카테고리 필드
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.category.label,
-                  field: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          setState(() {
-                            _hasCategoryBeenTouched = true;
-                          });
-                          const categories = ItemCategories.values;
-                          ItemCategories? tempSelected = selectedCategory;
-                          await showModalBottomSheet<void>(
-                            context: context,
-                            backgroundColor: AppColors.primaryBlack,
-                            barrierColor: AppColors.opacity80Black,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                            ),
-                            isScrollControlled: true,
-                            builder: (context) {
-                              return StatefulBuilder(
-                                builder: (context, setInnerState) {
-                                  return SizedBox(
-                                    height: MediaQuery.of(context).size.height * 0.80,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Center(
-                                          child: Padding(
-                                            padding: EdgeInsets.symmetric(vertical: 14.0.h),
-                                            child: Container(
-                                              width: 50.w,
-                                              height: 4.h,
-                                              decoration: BoxDecoration(
-                                                color: AppColors.opacity50White,
-                                                borderRadius: BorderRadius.circular(5.r),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.only(left: 26.w, bottom: 12.h),
-                                          child: Text(
-                                            ItemTextFieldPhrase.category.label,
-                                            style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w700),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: SingleChildScrollView(
-                                            padding: EdgeInsets.only(right: 24.w, left: 24.w, top: 24.h, bottom: 12.h),
-                                            child: Wrap(
-                                              spacing: 8.0.w,
-                                              runSpacing: 12.0.h,
-                                              children: categories.map((category) {
-                                                final isSelected = tempSelected == category;
-                                                return CategoryChip(
-                                                  label: category.label,
-                                                  isSelected: isSelected,
-                                                  onTap: () {
-                                                    setInnerState(() {
-                                                      tempSelected = category;
-                                                    });
-                                                    Navigator.pop(context);
-                                                  },
-                                                  iconPath: category.iconPath,
-                                                );
-                                              }).toList(),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          );
-                          setState(() {
-                            selectedCategory = tempSelected;
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-                          decoration: BoxDecoration(
-                            color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
-                                ? AppColors.errorContainer
-                                : AppColors.opacity10White,
-                            borderRadius: BorderRadius.circular(8.r),
-                            border: Border.all(
-                              color: (_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null
-                                  ? AppColors.errorBorder
-                                  : AppColors.opacity30White,
-                              width: 1.5.w,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  selectedCategory?.label ?? ItemTextFieldPhrase.category.hintText,
-                                  style: CustomTextStyles.p2.copyWith(
-                                    color: selectedCategory != null
-                                        ? AppColors.textColorWhite
-                                        : AppColors.opacity40White,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if ((_hasCategoryBeenTouched || _forceValidateAll) && selectedCategory == null)
-                        Padding(
-                          padding: EdgeInsets.only(top: 8.0.h),
-                          child: Text(
-                            ItemTextFieldPhrase.category.errorText,
-                            style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
-                          ),
-                        ),
-                    ],
+                  field: RegisterCategoryField(
+                    selectedCategory: selectedCategory,
+                    shouldShowError: _hasCategoryBeenTouched || _forceValidateAll,
+                    onTap: _onCategoryFieldTap,
                   ),
                 ),
 
@@ -581,87 +402,27 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                 // 물건 상태 필드
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.condition.label,
-                  field: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.only(top: 8.0.h),
-                        child: Wrap(
-                          spacing: 8.w,
-                          runSpacing: 8.w,
-                          children: ItemCondition.values
-                              .map(
-                                (option) => RegisterOptionChip(
-                                  itemOption: option.label,
-                                  isSelected: selectedItemConditionTypes.contains(option),
-                                  onTap: () {
-                                    final newList = <ItemCondition>[];
-                                    if (selectedItemConditionTypes.contains(option)) {
-                                      // 선택 해제
-                                    } else {
-                                      newList
-                                        ..clear()
-                                        ..add(option);
-                                    }
-                                    setState(() {
-                                      _hasConditionBeenTouched = true;
-                                      selectedItemConditionTypes = newList;
-                                    });
-                                  },
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                      ((_hasConditionBeenTouched || _forceValidateAll) && selectedItemConditionTypes.isEmpty)
-                          ? Text(
-                              ItemTextFieldPhrase.condition.errorText,
-                              style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
-                            )
-                          : Text('', style: CustomTextStyles.p3),
-                    ],
+                  field: RegisterOptionSelector<ItemCondition>(
+                    options: ItemCondition.values,
+                    selectedOptions: selectedItemConditionTypes,
+                    labelOf: (option) => option.label,
+                    onOptionTap: _onConditionOptionTap,
+                    shouldShowError: _hasConditionBeenTouched || _forceValidateAll,
+                    errorText: ItemTextFieldPhrase.condition.errorText,
+                    runSpacing: 8.w,
                   ),
                 ),
 
                 // 거래 방식 필드
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.tradeOption.label,
-                  field: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.only(top: 8.0.h),
-                        child: Wrap(
-                          spacing: 8.w,
-                          children: ItemTradeOption.values
-                              .map(
-                                (option) => RegisterOptionChip(
-                                  itemOption: option.label,
-                                  isSelected: selectedTradeOptions.contains(option),
-                                  onTap: () {
-                                    final newList = List<ItemTradeOption>.from(selectedTradeOptions);
-                                    if (newList.contains(option)) {
-                                      newList.remove(option);
-                                    } else {
-                                      newList.add(option);
-                                    }
-                                    setState(() {
-                                      _hasTradeOptionBeenTouched = true;
-                                      selectedTradeOptions = newList;
-                                    });
-                                  },
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                      ((_hasTradeOptionBeenTouched || _forceValidateAll) && selectedTradeOptions.isEmpty)
-                          ? Text(
-                              ItemTextFieldPhrase.tradeOption.errorText,
-                              style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
-                            )
-                          : Text('', style: CustomTextStyles.p3),
-                    ],
+                  field: RegisterOptionSelector<ItemTradeOption>(
+                    options: ItemTradeOption.values,
+                    selectedOptions: selectedTradeOptions,
+                    labelOf: (option) => option.label,
+                    onOptionTap: _onTradeOptionTap,
+                    shouldShowError: _hasTradeOptionBeenTouched || _forceValidateAll,
+                    errorText: ItemTextFieldPhrase.tradeOption.errorText,
                   ),
                 ),
 
@@ -676,66 +437,8 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     keyboardType: TextInputType.number,
                     controller: priceController,
                     forceValidate: _forceValidateAll,
-                    suffixIcon: useAiPrice
-                        ? Padding(
-                            padding: EdgeInsets.only(right: 12.w),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryBlack,
-                                    borderRadius: BorderRadius.circular(4.r),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SvgPicture.asset('assets/images/ai-recommend-price-star.svg', height: 14.h),
-                                      SizedBox(width: 2.w),
-                                      GradientText(
-                                        text: 'AI 추천 가격',
-                                        style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w600),
-                                        gradient: const LinearGradient(
-                                          colors: AppColors.aiGradient,
-                                          stops: [0.0, 0.35, 0.7, 1.0],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
-                              ],
-                            ),
-                          )
-                        : Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
-                    onTap: () async {
-                      final initialPrice = int.tryParse(priceController.text.replaceAll(',', '')) ?? 0;
-                      await context.navigateTo(
-                        type: NavigationTypes.slideUp,
-                        screen: ItemPriceInputScreen(
-                          initialPrice: initialPrice,
-                          initialUseAiPrice: useAiPrice,
-                          canUseAiPrice: canUseAiPrice,
-                          itemName: titleController.text,
-                          itemDescription: descriptionController.text,
-                          itemCondition: selectedItemConditionTypes.isNotEmpty
-                              ? selectedItemConditionTypes.first.serverName
-                              : null,
-                          onPriceSelected: (price, aiUsed) {
-                            if (mounted) {
-                              setState(() {
-                                useAiPrice = aiUsed;
-                                priceController.value = const PriceCommaFormatter().formatEditUpdate(
-                                  const TextEditingValue(),
-                                  TextEditingValue(text: price.toString()),
-                                );
-                              });
-                            }
-                          },
-                        ),
-                      );
-                    },
+                    suffixIcon: RegisterPriceSuffixIcon(isAiPredictedPrice: useAiPrice),
+                    onTap: _openPriceInputScreen,
                   ),
                 ),
 
@@ -748,23 +451,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     suffixIcon: Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),
                     controller: locationController,
                     forceValidate: _forceValidateAll,
-                    onTap: () async {
-                      await context.navigateTo<LocationAddress>(
-                        screen: ItemRegisterLocationScreen(
-                          initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
-                          onLocationSelected: (address) {
-                            debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
-                            setState(() {
-                              locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
-                              // 위치 좌표 저장
-                              _latitude = address.latitude;
-                              _longitude = address.longitude;
-                            });
-                            debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
-                          },
-                        ),
-                      );
-                    },
+                    onTap: _openLocationScreen,
                   ),
                 ),
 
@@ -775,135 +462,7 @@ class _RegisterInputFormState extends State<RegisterInputForm> {
                     isEnabled: isFormValid,
                     isLoading: _isLoading,
                     buttonText: widget.isEditMode ? '수정 완료' : '등록 완료',
-                    enabledOnPressed: () async {
-                      // 모든 필드 강제 검증
-                      if (!isFormValid) {
-                        setState(() {
-                          _forceValidateAll = true;
-                          _hasCategoryBeenTouched = true;
-                          _hasConditionBeenTouched = true;
-                          _hasTradeOptionBeenTouched = true;
-                          _hasImageBeenTouched = true;
-                        });
-                        return;
-                      }
-
-                      if (_longitude == null || _latitude == null) {
-                        CommonSnackBar.show(
-                          context: context,
-                          message: ItemTextFieldPhrase.location.errorText,
-                          type: SnackBarType.info,
-                        );
-                        return;
-                      }
-
-                      try {
-                        debugPrint('물품 $modeText 시작 - longitude: $_longitude, latitude: $_latitude');
-                        setState(() {
-                          _isLoading = true;
-                        });
-
-                        // 새 로컬 이미지가 있으면 서버에 업로드
-                        List<String> newImageUrls = [];
-                        if (_newImageFiles.isNotEmpty) {
-                          newImageUrls = await ImageApi().uploadImages(_newImageFiles);
-                          if (newImageUrls.length != _newImageFiles.length) {
-                            throw Exception('일부 이미지 업로드에 실패했습니다 (${newImageUrls.length}/${_newImageFiles.length})');
-                          }
-                        }
-
-                        // 기존 서버 이미지 URL + 새로 업로드된 URL 합치기
-                        final List<String> allImageUrls = [..._existingImageUrls, ...newImageUrls];
-
-                        final itemRequest = ItemRequest(
-                          itemId: widget.isEditMode ? widget.item?.itemId : null,
-                          itemName: titleController.text.trim(),
-                          itemDescription: descriptionController.text.trim(),
-                          itemCategory: selectedCategory!.serverName,
-                          itemCondition: selectedItemConditionTypes.isNotEmpty
-                              ? selectedItemConditionTypes.first.serverName
-                              : null,
-                          itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
-                          itemPrice: int.parse(priceController.text.replaceAll(',', '')),
-                          itemCustomTags: [],
-                          itemImageUrls: allImageUrls,
-                          longitude: _longitude,
-                          latitude: _latitude,
-                          isAiPredictedPrice: useAiPrice,
-                        );
-
-                        if (widget.isEditMode) {
-                          // 수정 모드
-                          await ItemApi().updateItem(itemRequest);
-                          if (context.mounted) {
-                            Navigator.of(context).pop({'updated': true});
-                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
-                          }
-                        } else {
-                          // 등록 모드
-                          final response = await ItemApi().postItem(itemRequest);
-                          debugPrint('====================================');
-                          debugPrint(
-                            '물품 등록 응답: isFirstItemPosted=${response.isFirstItemPosted}, itemId=${response.item?.itemId}',
-                          );
-                          debugPrint('====================================');
-
-                          final userInfo = UserInfo();
-                          await userInfo.getUserInfo();
-
-                          if (response.isFirstItemPosted == true) {
-                            debugPrint('첫 물품 등록 확인! UserInfo 업데이트 중...');
-                            await userInfo.saveLoginStatus(
-                              isFirstLogin: false,
-                              isFirstItemPosted: true,
-                              isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
-                              isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
-                              isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
-                              isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
-                              isCoachMarkShown: userInfo.isCoachMarkShown,
-                            );
-                          }
-
-                          if (context.mounted) {
-                            final resultData = {
-                              if (response.item?.itemId != null) 'itemId': response.item!.itemId,
-                              'isFirstItemPosted': response.isFirstItemPosted ?? false,
-                            };
-                            debugPrint('Navigator.pop 전달 데이터: $resultData');
-
-                            // itemId가 있으면 함께 전달, 없으면 isFirstItemPosted만 전달
-                            Navigator.of(context).pop(resultData);
-
-                            CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
-                          }
-                        }
-                      } on UgcViolationException catch (e) {
-                        if (context.mounted) {
-                          final ugcMessage = e.violatingText.isNotEmpty
-                              ? '\'${e.violatingText}\'이(가) 포함된\n부적절한 표현입니다.\n수정 후 다시 시도해주세요.'
-                              : '부적절한 표현이 포함되어 있습니다.\n수정 후 다시 시도해주세요.';
-                          CommonModal.error(
-                            context: context,
-                            message: ugcMessage,
-                            onConfirm: () => Navigator.of(context).pop(),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          CommonSnackBar.show(
-                            context: context,
-                            message: '물품 $modeText에 실패했습니다: $e',
-                            type: SnackBarType.error,
-                          );
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() {
-                            _isLoading = false;
-                          });
-                        }
-                      }
-                    },
+                    enabledOnPressed: _onSubmitButtonPressed,
                   ),
                 ),
                 SizedBox(height: 24.h),

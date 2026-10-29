@@ -10,11 +10,8 @@ enum ItemCondition {
 
   const ItemCondition({required this.label, required this.serverName});
 
-  /// 서버 이름으로부터 enum 값으로 변환
-  static ItemCondition fromServerName(String serverName) {
-    return ItemCondition.values.firstWhere(
-      (e) => e.serverName == serverName,
-      orElse: () => throw ArgumentError('Invalid serverName: $serverName'),
-    );
+  /// 서버 이름 > 물품 상태 (모르는 값·null > null)
+  static ItemCondition? fromServerName(String? serverName) {
+    return ItemCondition.values.where((e) => e.serverName == serverName).firstOrNull;
   }
 }

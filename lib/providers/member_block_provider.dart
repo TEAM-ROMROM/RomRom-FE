@@ -1,46 +1,74 @@
+// 회원 차단(Block) Provider (CLAUDE.md 규칙2 — optimistic 토글)
+//
+// 종류: 동기 Notifier (optimistic + _inFlight dedup) — 즉시 반영 후 서버 응답으로 확정, 실패 시 prev 롤백.
+// 4-레이어 표준: lib/repositories/member_block_repository.dart + memberBlockRepositoryProvider(이 파일)
+//               + lib/states/member_block_state.dart + 이 파일.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/repositories/member_block_repository.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/states/member_block_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 
 final memberBlockRepositoryProvider = Provider<MemberBlockRepository>((ref) => MemberBlockRepository(MemberApi()));
 
-final memberBlockProvider = NotifierProvider<MemberBlockNotifier, Set<String>>(MemberBlockNotifier.new);
+final memberBlockProvider = NotifierProvider<MemberBlockNotifier, MemberBlockState>(MemberBlockNotifier.new);
 
-class MemberBlockNotifier extends Notifier<Set<String>> {
+class MemberBlockNotifier extends Notifier<MemberBlockState> {
   final Set<String> _inFlight = <String>{};
 
+  /// 세션 시작 상태 (invalidate 시 notifier 인스턴스 재사용 > 세션별 필드도 여기서 초기화)
   @override
-  Set<String> build() => <String>{};
+  MemberBlockState build() {
+    _inFlight.clear();
+    return const MemberBlockState();
+  }
 
   /// 차단 목록 시드. force=false일 땐 비어있을 때만 시드.
   void seed(Set<String> ids, {bool force = false}) {
-    if (!force && state.isNotEmpty) return;
-    state = {...ids};
+    if (!force && state.blockedIds.isNotEmpty) return;
+    state = MemberBlockState(blockedIds: {...ids});
   }
 
-  /// Optimistic 차단/차단해제 토글.
-  Future<void> setBlocked(String memberId, bool block) async {
-    if (_inFlight.contains(memberId)) return;
+  /// 서버 차단 회원 목록 조회 > 차단 id 강제 시드 > 목록 반환 (실패 시 예외 전달, 상태 유지)
+  Future<List<Member>> fetchBlockedMembers() async {
+    final blockedMembers = await ref.read(memberBlockRepositoryProvider).getBlockedMembers();
+    seed(blockedMembers.map((member) => member.memberId).whereType<String>().toSet(), force: true);
+    return blockedMembers;
+  }
+
+  /// Optimistic 차단/차단해제 토글 > 서버 확정 여부 반환 (실패·진행 중 중복 호출 시 false)
+  Future<bool> setBlocked(String memberId, bool block) async {
+    if (_inFlight.contains(memberId)) return false;
     _inFlight.add(memberId);
 
-    final wasBlocked = state.contains(memberId);
-    state = block ? {...state, memberId} : (state.toSet()..remove(memberId));
+    final prev = state;
+    final newIds = {...state.blockedIds};
+    if (block) {
+      newIds.add(memberId);
+    } else {
+      newIds.remove(memberId);
+    }
+    state = MemberBlockState(blockedIds: newIds);
 
     try {
       final repo = ref.read(memberBlockRepositoryProvider);
       final ok = block ? await repo.block(memberId) : await repo.unblock(memberId);
       if (!ok) throw Exception('서버 응답이 false');
+      return true;
     } catch (e) {
       debugPrint('memberBlockProvider.setBlocked 실패: $e');
-      state = wasBlocked ? {...state, memberId} : (state.toSet()..remove(memberId));
+      state = prev;
       final ctx = navigatorKey.currentContext;
       if (ctx != null) {
         CommonSnackBar.show(context: ctx, message: block ? '차단에 실패했어요' : '차단 해제에 실패했어요', type: SnackBarType.error);
       }
+      return false;
     } finally {
       _inFlight.remove(memberId);
     }

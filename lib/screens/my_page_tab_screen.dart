@@ -1,90 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:romrom_fe/utils/installed_app_version.dart';
 import 'package:romrom_fe/enums/account_status.dart';
-import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/screens/my_page/my_like_list_screen.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/auth_service.dart';
+import 'package:romrom_fe/services/session_navigation_handler.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/terms_screen.dart';
 import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-class MyPageTabScreen extends StatefulWidget {
+class MyPageTabScreen extends ConsumerStatefulWidget {
   const MyPageTabScreen({super.key});
 
   @override
-  State<MyPageTabScreen> createState() => _MyPageTabScreenState();
+  ConsumerState<MyPageTabScreen> createState() => _MyPageTabScreenState();
 }
 
-class _MyPageTabScreenState extends State<MyPageTabScreen> {
-  String _memberId = '';
-  String _nickname = '닉네임';
-  String _location = '위치정보 없음';
-  String? _profileUrl;
-  String? _accountStatus;
+class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
   String _appVersion = '';
-  String? _loginEmail;
-  String? _socialPlatform;
 
   @override
   void initState() {
     super.initState();
-    _loadUserInfo();
     _loadAppVersion();
   }
 
-  /// 사용자 정보 로드
-  Future<void> _loadUserInfo() async {
-    try {
-      final memberApi = MemberApi();
-      final memberResponse = await memberApi.getMemberInfo();
-
-      if (mounted) {
-        setState(() {
-          // memberId
-          _memberId = memberResponse.member?.memberId ?? '';
-
-          // 닉네임
-          _nickname = memberResponse.member?.nickname ?? '닉네임';
-
-          // 프로필 이미지
-          _profileUrl = memberResponse.member?.profileUrl;
-
-          // 계정 상태
-          _accountStatus = memberResponse.member?.accountStatus;
-
-          // 로그인 계정 정보
-          _loginEmail = _maskEmail(memberResponse.member?.email);
-          _socialPlatform = _platformDisplayName(memberResponse.member?.socialPlatform);
-
-          // 위치 정보 (주소 조합)
-          final location = memberResponse.memberLocation;
-          if (location != null) {
-            final siGunGu = location.siGunGu ?? '';
-            final eupMyoenDong = location.eupMyoenDong ?? '';
-            final combinedLocation = '$siGunGu $eupMyoenDong'.trim();
-
-            _location = combinedLocation.isNotEmpty ? combinedLocation : '위치정보 없음';
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('사용자 정보 로드 실패: $e');
-      // 기본값 유지
+  Future<void> _loadAppVersion() async {
+    // 조회 실패 시 빈 문자열 > 버전 문구 미표시
+    final installedAppVersion = await fetchInstalledAppVersion();
+    if (mounted) {
+      setState(() => _appVersion = installedAppVersion);
     }
   }
 
@@ -115,17 +75,27 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
     }
   }
 
-  Future<void> _loadAppVersion() async {
-    try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      if (mounted) {
-        setState(() => _appVersion = packageInfo.version);
-      }
-    } catch (_) {}
-  }
-
   @override
   Widget build(BuildContext context) {
+    final profileAsync = ref.watch(memberProfileProvider);
+    final profileState = profileAsync.valueOrNull;
+
+    final memberId = profileState?.member?.memberId ?? '';
+    final nickname = profileState?.member?.nickname ?? '닉네임';
+    final profileUrl = profileState?.member?.profileUrl;
+    final accountStatus = profileState?.member?.accountStatus;
+    final loginEmail = _maskEmail(profileState?.member?.email);
+    final socialPlatform = _platformDisplayName(profileState?.member?.socialPlatform);
+
+    final location = profileState?.location;
+    String locationText = '위치정보 없음';
+    if (location != null) {
+      final siGunGu = location.siGunGu ?? '';
+      final eupMyoenDong = location.eupMyoenDong ?? '';
+      final combined = '$siGunGu $eupMyoenDong'.trim();
+      if (combined.isNotEmpty) locationText = combined;
+    }
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -140,7 +110,13 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
 
             // 닉네임 박스
             SizedBox(height: 16.h),
-            _buildNicknameBox(),
+            _buildNicknameBox(
+              memberId: memberId,
+              nickname: nickname,
+              profileUrl: profileUrl,
+              accountStatus: accountStatus,
+              location: locationText,
+            ),
 
             // 메뉴 섹션 1
             SizedBox(height: 16.h),
@@ -155,8 +131,11 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
               _MenuItem(
                 label: '내 위치인증',
                 icon: AppIcons.location,
-                onTap: () {
-                  context.navigateTo(screen: const MyLocationVerificationScreen());
+                onTap: () async {
+                  final result = await context.navigateTo<bool>(screen: const MyLocationVerificationScreen());
+                  if (result == true) {
+                    ref.read(memberProfileProvider.notifier).reload();
+                  }
                 },
               ),
               _MenuItem(
@@ -205,9 +184,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 onTap: () {},
                 trailingText: _appVersion.isNotEmpty ? 'v$_appVersion' : '',
               ),
-              if (_loginEmail != null) _MenuItem(label: '로그인 계정', onTap: () {}, trailingText: _loginEmail),
-              if (_socialPlatform != null) _MenuItem(label: '연결 플랫폼', onTap: () {}, trailingText: _socialPlatform),
-              _MenuItem(label: '로그아웃', onTap: () => AuthService().logout(context), isDestructive: true),
+              if (loginEmail != null) _MenuItem(label: '로그인 계정', onTap: () {}, trailingText: loginEmail),
+              if (socialPlatform != null) _MenuItem(label: '연결 플랫폼', onTap: () {}, trailingText: socialPlatform),
+              _MenuItem(label: '로그아웃', onTap: () => _handleLogoutButtonTap(context), isDestructive: true),
               _MenuItem(label: '회원탈퇴', onTap: () => _handleDeleteMemberButtonTap(context), isDestructive: true),
             ]),
             SizedBox(height: 24.h),
@@ -218,13 +197,22 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   }
 
   /// 닉네임 박스 위젯
-  Widget _buildNicknameBox() {
+  Widget _buildNicknameBox({
+    required String memberId,
+    required String nickname,
+    required String? profileUrl,
+    required String? accountStatus,
+    required String location,
+  }) {
     return AppPressable(
       onTap: () async {
-        final result = await context.navigateTo<bool>(screen: MemberProfileScreen(memberId: _memberId));
+        if (memberId.isEmpty) return;
+        final result = await context.navigateTo<bool>(screen: MemberProfileScreen(memberId: memberId));
 
         if (result == true) {
-          await _loadUserInfo();
+          // 프로필 수정 후 provider 갱신 (member_profile_screen이 notifier.updateProfile로 이미 갱신하나
+          // 화면이 pop true를 반환하는 다른 경로(예: 차단 변경)도 있으므로 명시적 reload)
+          ref.read(memberProfileProvider.notifier).reload();
         }
       },
       scaleDown: AppPressable.scaleCard,
@@ -238,9 +226,9 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
             // 프로필 이미지
             UserProfileCircularAvatar(
               avatarSize: const Size(50, 50),
-              profileUrl: _profileUrl,
+              profileUrl: profileUrl,
               hasBorder: true,
-              isDeleteAccount: _accountStatus == AccountStatus.deleteAccount.serverName,
+              isDeleteAccount: accountStatus == AccountStatus.deleteAccount.serverName,
             ),
             SizedBox(width: 16.w),
 
@@ -250,14 +238,14 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(_nickname, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
+                  Text(nickname, style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       Icon(AppIcons.location, size: 13.sp, color: AppColors.opacity60White),
                       SizedBox(width: 3.w),
                       Text(
-                        _location,
+                        location,
                         style: CustomTextStyles.p3.copyWith(
                           fontWeight: FontWeight.w500,
                           color: AppColors.opacity60White,
@@ -339,6 +327,17 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
   }
 
   /// 회원 탈퇴 처리
+  /// 로그아웃: 확인 모달 > 확인 시 모달 잠금·스피너 상태로 로그아웃 > 로그인 화면 (모달 포함 스택 제거)
+  Future<void> _handleLogoutButtonTap(BuildContext context) async {
+    await CommonModal.confirm(
+      context: context,
+      message: '로그아웃하시겠어요?',
+      confirmText: '로그아웃',
+      onCancel: () => Navigator.of(context).pop(false),
+      onConfirm: () => AuthService().logout(context),
+    );
+  }
+
   Future<void> _handleDeleteMemberButtonTap(BuildContext context) async {
     final result = await context.showDeleteDialog(title: '회원 탈퇴', description: '정말 탈퇴하시겠습니까?', confirmText: '탈퇴하기');
 
@@ -352,7 +351,7 @@ class _MyPageTabScreenState extends State<MyPageTabScreen> {
     final isSuccess = await AuthService().deleteAccount();
     if (!context.mounted) return;
     if (isSuccess) {
-      context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
+      SessionNavigationHandler.notifyLoggedOut(); // 로그인 화면 전환 + 회원별 provider 초기화 (앱 루트)
     } else {
       CommonSnackBar.show(context: context, message: '회원 탈퇴에 실패했습니다. 다시 시도해주세요.', type: SnackBarType.error);
     }

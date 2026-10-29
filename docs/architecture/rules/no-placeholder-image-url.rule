@@ -1,0 +1,4 @@
+description=picsum 등 임시 이미지 URL 금지 (빈 이미지는 CachedImage·ErrorImagePlaceholder)
+paths=lib/
+extensions=.dart
+pattern=picsum\.photos

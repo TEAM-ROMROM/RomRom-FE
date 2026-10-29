@@ -44,3 +44,30 @@ class ChatRoomDetailDto {
 
   static String? _toIsoString(DateTime? dt) => dt?.toIso8601String();
 }
+
+/// ChatRoomDetailDto 복사 및 수정용 확장 메서드
+extension ChatRoomDetailDtoCopy on ChatRoomDetailDto {
+  ChatRoomDetailDto copyWith({
+    String? chatRoomId,
+    Member? targetMember,
+    String? targetMemberEupMyeonDong,
+    String? lastMessageContent,
+    DateTime? lastMessageTime,
+    int? unreadCount,
+    ChatRoomType? chatRoomType,
+    String? targetItemImageUrl,
+    String? myItemImageUrl,
+    bool? blocked,
+  }) => ChatRoomDetailDto(
+    chatRoomId: chatRoomId ?? this.chatRoomId,
+    targetMember: targetMember ?? this.targetMember,
+    targetMemberEupMyeonDong: targetMemberEupMyeonDong ?? this.targetMemberEupMyeonDong,
+    lastMessageContent: lastMessageContent ?? this.lastMessageContent,
+    lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+    unreadCount: unreadCount ?? this.unreadCount,
+    chatRoomType: chatRoomType ?? this.chatRoomType,
+    targetItemImageUrl: targetItemImageUrl ?? this.targetItemImageUrl,
+    myItemImageUrl: myItemImageUrl ?? this.myItemImageUrl,
+    blocked: blocked ?? this.blocked,
+  );
+}

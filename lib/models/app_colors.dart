@@ -214,4 +214,18 @@ class AppColors {
   // 완료 버튼 배경 색상
   static const Color completionButtonEnabledBackground = primaryYellow; // 활성화된 완료 버튼 배경색
   static const Color completionButtonDisabledBackground = Color(0xFF61501B); // 비활성화된 완료
+
+  // 요청관리 탭 설명 텍스트 (연한 크림색)
+  static const Color requestManagementDescription = Color(0xFFFFFFCC);
+
+  // ===== 디버그 패널 전용 (개발자 도구, 고정 다크 팔레트) =====
+  static const Color debugPanelShadow = Color(0x40000000); // 패널 그림자 25% 검정
+  static const Color debugPanelShadowStrong = Color(0x60000000); // 로그 패널 그림자 37.5% 검정
+  static const Color debugTextGray = Color(0xFFCCCCCC); // 밝은 회색 텍스트·아이콘
+  static const Color debugTextDarkGray = Color(0xFF888888); // 어두운 회색 텍스트·아이콘
+  static const Color debugHintGray = Color(0xFF555555); // 입력 힌트 텍스트
+  static const Color debugDivider = Color(0xFF333333); // 패널 구분선
+  static const Color debugInputBg = Color(0xFF1A1A1A); // 입력 필드 배경
+  static const Color debugProdGreen = Color(0xFF4CAF50); // Prod 연결 상태 표시
+  static const Color debugDevOrange = Color(0xFFFF9800); // Dev 연결 상태 표시
 }

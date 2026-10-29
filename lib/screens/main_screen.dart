@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/notification_setting_type.dart';
+import 'package:romrom_fe/enums/refresh_trigger.dart';
+import 'package:romrom_fe/providers/current_tab_index_provider.dart';
+import 'package:romrom_fe/providers/home_feed_provider.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
+import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
@@ -8,21 +14,19 @@ import 'package:romrom_fe/screens/my_page_tab_screen.dart';
 import 'package:romrom_fe/screens/register_tab_screen.dart';
 import 'package:romrom_fe/screens/request_management_tab_screen.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
+import 'package:romrom_fe/services/app_review_service.dart';
+import 'package:romrom_fe/widgets/common/app_review_popup.dart';
 import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 
 /// 메인 화면
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
-  // MainScreen의 상태에 접근하기 위한 GlobalKey
-  static final GlobalKey<State<MainScreen>> globalKey = GlobalKey<State<MainScreen>>();
-
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
-  int _currentTabIndex = 0; // 선택된 탭 인덱스 관리
+class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObserver {
   late final List<Widget> _navigationTabScreens;
   final Set<String> _pendingRequests = <String>{};
 
@@ -30,7 +34,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _navigationTabScreens = [
-      HomeTabScreen(key: HomeTabScreen.globalKey, onLoaded: _onHomeLoaded),
+      HomeTabScreen(onLoaded: _onHomeLoaded),
       const RequestManagementTabScreen(),
       const RegisterTabScreen(),
       const ChatTabScreen(),
@@ -41,6 +45,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await _syncNotificationPermissionToBackend();
+      await AppReviewService().onAppLaunch();
     });
   }
 
@@ -71,12 +76,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     const requestKey = 'sync_notification_permission';
     if (_pendingRequests.contains(requestKey)) return;
     _pendingRequests.add(requestKey);
+    // await 이후 ref 사용 방지 (notifier 선확보)
+    final memberProfileNotifier = ref.read(memberProfileProvider.notifier);
+    final notificationSettingNotifier = ref.read(notificationSettingProvider.notifier);
     try {
       final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
       if (permissionGranted) return;
 
-      final memberResponse = await MemberApi().getMemberInfo();
-      final member = memberResponse.member;
+      // 공유 회원 프로필 (알림 설정 변경 시 notificationSettingProvider가 무효화)
+      final memberProfile = await memberProfileNotifier.fetchCachedOrReload();
+      final member = memberProfile.member;
       if (member == null) return;
 
       final bool anyEnabled =
@@ -87,14 +96,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           (member.isTradeNotificationAgreed ?? false);
 
       if (anyEnabled) {
-        await MemberApi().updateNotificationSetting(
-          isMarketingInfoAgreed: false,
-          isActivityNotificationAgreed: false,
-          isChatNotificationAgreed: false,
-          isContentNotificationAgreed: false,
-          isTradeNotificationAgreed: false,
-        );
-        debugPrint('[알림 동기화] 시스템 권한 거부 → 백엔드 알림 설정 전체 false 반영');
+        // 5개 항목 전체 false: notificationSettingProvider 일괄 요청 1회 (백그라운드라 실패 스낵바 없음)
+        final isSyncSucceeded = await notificationSettingNotifier.setAll({
+          for (final settingType in NotificationSettingType.values) settingType: false,
+        }, isSilent: true);
+        if (isSyncSucceeded) {
+          debugPrint('[알림 동기화] 시스템 권한 거부 → 백엔드 알림 설정 전체 false 반영');
+        } else {
+          debugPrint('[알림 동기화] 실패: 일괄 변경 미반영 (다음 앱 복귀 시 재시도)');
+        }
       }
     } catch (e) {
       debugPrint('[알림 동기화] 실패: $e');
@@ -103,19 +113,24 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// 외부에서 탭을 전환할 수 있는 메서드
-  void switchToTab(int index) {
-    if (index >= 0 && index < _navigationTabScreens.length) {
-      setState(() {
-        _currentTabIndex = index;
-      });
-    }
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _syncNotificationPermissionToBackend();
+      _tryShowReviewPopup();
+      // 현재 탭이 홈이면 피드 자동 새로고침 (throttle 적용)
+      final currentTab = ref.read(currentTabIndexProvider);
+      if (currentTab == 0) {
+        ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
+      }
+    }
+  }
+
+  /// 앱 복귀 시 리뷰 팝업 조건 체크 (iOS/Android 공통)
+  Future<void> _tryShowReviewPopup() async {
+    final service = AppReviewService();
+    if (await service.shouldShow(tradeTriggered: false)) {
+      if (mounted) await AppReviewPopup.show(context, service);
     }
   }
 
@@ -127,16 +142,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final tabIndex = ref.watch(currentTabIndexProvider);
+
+    // 다른 탭 → 홈 탭(0) 전환 시 피드 자동 새로고침 (cold start 제외)
+    ref.listen<int>(currentTabIndexProvider, (prev, next) {
+      if (next == 0 && prev != null && prev != 0) {
+        ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+      }
+    });
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      body: IndexedStack(index: _currentTabIndex, children: _navigationTabScreens),
+      body: IndexedStack(index: tabIndex, children: _navigationTabScreens),
       bottomNavigationBar: CustomBottomNavigationBar(
-        selectedIndex: _currentTabIndex,
+        selectedIndex: tabIndex,
         onTap: (index) {
-          setState(() {
-            _currentTabIndex = index;
-          });
+          ref.read(currentTabIndexProvider.notifier).set(index);
         },
       ),
     );

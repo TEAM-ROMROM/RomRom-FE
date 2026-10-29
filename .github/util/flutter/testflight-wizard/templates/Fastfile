@@ -2,7 +2,7 @@
 # Fastfile for iOS TestFlight Deployment
 # ============================================
 #
-# 이 파일은 flutter-ios-testflight-init 마법사에 의해 생성됩니다.
+# 이 파일은 testflight-wizard 마법사(.github/util/flutter/testflight-wizard)에 의해 생성됩니다.
 # GitHub Actions 워크플로우에서 이 파일을 직접 사용합니다.
 #
 # 빌드 파이프라인:
@@ -17,9 +17,25 @@
 #   - API_KEY_PATH: API Key 파일 경로 (.p8)
 #   - IPA_PATH: 업로드할 IPA 파일 경로
 #   - RELEASE_NOTES: 릴리즈 노트 (한국어/영어 동시 적용)
+#   - APP_IDENTIFIER: 앱 Bundle ID (예: com.example.app)
+#       └ appstore_submit 모드에서 deliver가 빌드를 특정하는 데 필수.
+#         없으면 "Could not infer your App's Bundle Identifier"로 비대화형 crash.
+#   - DEPLOY_MODE: 배포 모드 (선택, 기본 testflight_only)
+#       └ testflight_only : TestFlight 업로드까지만 (기본·안전값)
+#       └ appstore_submit : pilot 후 deliver로 App Store production 심사 자동 제출
+#
+# ── 배포 가이드 (마법사 안내와 동일) ──────────────────────────────
+# 【배포 모드 DEPLOY_MODE】 store_only(TF까지·기본) / store_prepare(제출직전·ASC에서 Add for Review) / store_submit(심사 자동제출)
+# 【신규 앱】 App Store 최초 1회는 ASC에서 직접 심사제출/출시 필요. 이후 prepare/submit 정상동작.
+# 【로케일】 What's New 메타는 'ko'만 유효(ko-KR 무효 — Unsupported directory name). 추가는 DELIVER_LOCALES ENV.
+# 【개인정보】 연락처·데모계정은 app_review_information 미전달로 ASC 기존값 보존(하드코딩 금지).
+# 【심사 Notes】 review_information/notes.txt를 매 배포마다 빈 값으로 덮어써 초기화(보존 아님).
+#              이전 버전 거절 소명서가 ASC에서 자동 승계되어 다음 심사까지 남는 문제 방지.
+# ──────────────────────────────────────────────────────────────
 #
 # 사용법 (CI):
-#   fastlane upload_testflight
+#   fastlane deploy              # DEPLOY_MODE에 따라 분기 (권장 진입점)
+#   fastlane upload_testflight   # TestFlight 업로드만 (DEPLOY_MODE 무시)
 #
 # 사용법 (로컬):
 #   bundle exec fastlane upload_testflight
@@ -30,6 +46,127 @@
 default_platform(:ios)
 
 platform :ios do
+  # ──────────────────────────────────────────────────────────────
+  # 통합 진입점: DEPLOY_MODE로 배포 범위를 제어 (3가지)
+  #   - testflight_only (기본): pilot(TestFlight 업로드)까지만
+  #   - appstore_prepare       : pilot + deliver로 ASC에 버전 생성·빌드 선택·What's New 채움
+  #                              → "제출 직전(Prepare for Submission)" 상태까지. 사람이 ASC에서 검토 후 Add for Review.
+  #   - appstore_submit        : 위 전부 + submit_for_review로 심사 자동 제출까지 완전 자동
+  # 워크플로우는 이 lane(`fastlane deploy`)을 호출하면 모드에 따라 알아서 분기된다.
+  # ──────────────────────────────────────────────────────────────
+  desc "배포 (DEPLOY_MODE: testflight_only | appstore_prepare | appstore_submit)"
+  lane :deploy do
+    # 플랫폼 공통 네이밍(store_*)과 iOS 전용 네이밍(testflight_only/appstore_*) 둘 다 호환
+    deploy_mode = (ENV["DEPLOY_MODE"] || "testflight_only").strip
+    prepare_appstore = ["appstore_prepare", "appstore_submit", "store_prepare", "store_submit"].include?(deploy_mode)
+    submit_to_appstore = ["appstore_submit", "store_submit"].include?(deploy_mode)
+    UI.message("🎛️  배포 모드: #{deploy_mode} (ASC 버전 준비: #{prepare_appstore} / 심사 자동제출: #{submit_to_appstore})")
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_filepath: ENV["API_KEY_PATH"],
+      duration: 1200,
+      in_house: false
+    )
+
+    app_id = ENV["APP_IDENTIFIER"]
+    if prepare_appstore && (app_id.nil? || app_id.empty?)
+      UI.user_error!("appstore_prepare/appstore_submit 모드에는 APP_IDENTIFIER(Bundle ID)가 필요합니다. ENV로 전달하세요.")
+    end
+
+    ipa_path = ENV["IPA_PATH"]
+    ipa_path = Dir.glob("build/ipa/*.ipa").first if ipa_path.nil? || ipa_path.empty?
+    UI.message("📦 IPA 경로: #{ipa_path}")
+
+    # Ruby 3.4+ frozen string 호환성: .dup으로 mutable 복사본 생성
+    release_notes = (ENV["RELEASE_NOTES"] || "새로운 빌드가 업로드되었습니다.").dup
+
+    # 1) TestFlight 업로드 (항상 수행)
+    #    ASC 준비/제출 모드면 deliver가 "방금 올린 그 빌드"를 선택해 같은 버전의 What's New와
+    #    정합성을 맞춰야 하므로, 빌드 처리 완료까지 대기한다.
+    #
+    #    ⚠️⚠️ Apple 빌드 처리(Processing) 지연 주의 ⚠️⚠️
+    #    pilot은 방금 올린 빌드가 ASC에서 "Processing → Complete"가 될 때까지 기다린다.
+    #    이 시간은 Apple 서버 사정으로 통제 불가 — 보통 5~15분이지만 30분~1시간+ 걸릴 수 있다.
+    #    짧은 시간에 같은 앱 빌드를 연속 업로드하면 처리 큐가 밀려 더 길어질 수 있다.
+    #    → CI가 이 step에서 오래 멈춰 있어도 hang이 아니라 정상 대기다.
+    #    → store_only 모드는 이 대기를 건너뛴다(skip_waiting_for_build_processing: true).
+    pilot_args = {
+      api_key: api_key,
+      ipa: ipa_path,
+      changelog: release_notes,
+      localized_build_info: {
+        "ko" => { whats_new: release_notes.dup },
+        "en-US" => { whats_new: release_notes.dup }
+      },
+      skip_waiting_for_build_processing: !prepare_appstore,
+      distribute_external: false,
+      notify_external_testers: false,
+      uses_non_exempt_encryption: ENV["USES_NON_EXEMPT_ENCRYPTION"] == "true"
+    }
+    pilot_args[:app_identifier] = app_id unless app_id.nil? || app_id.empty?
+    upload_to_testflight(pilot_args)
+    UI.success("✅ TestFlight 업로드 완료!")
+
+    # 2) App Store 버전 준비 (+ appstore_submit이면 심사 자동 제출)
+    #    버전 생성·빌드 선택·What's New(whatsNew) 채우기까지 해서 "제출 직전" 상태로 만든다.
+    if prepare_appstore
+      notes = (ENV["RELEASE_NOTES"] || "버그를 수정하고 안정성을 개선했습니다.").strip
+      notes = "버그를 수정하고 안정성을 개선했습니다." if notes.empty?
+
+      # App Store는 업데이트 버전 심사 제출 시 whatsNew(릴리스 노트)를 필수로 요구한다.
+      # ⚠️ metadata_path는 반드시 절대 경로로 — 상대경로는 fastlane CWD와 어긋나 deliver가 못 읽음.
+      #    release_notes.txt만 만들고 다른 메타 파일은 안 만든다 → ASC 기존 메타(설명/키워드 등)는 보존.
+      # ⚠️ 로케일 디렉토리명은 fastlane deliver가 인정하는 코드만 가능 (ko 유효 / ko-KR 무효).
+      #    유효: ko, en-US, ja, zh-Hans 등. 필요시 DELIVER_LOCALES로 추가(쉼표 구분).
+      require "fileutils"
+      base = ENV["GITHUB_WORKSPACE"] ? File.join(ENV["GITHUB_WORKSPACE"], "ios") : Dir.pwd
+      metadata_path = File.join(base, "fastlane", "metadata")
+      (ENV["DELIVER_LOCALES"] || "ko").split(",").map(&:strip).reject(&:empty?).each do |loc|
+        dir = File.join(metadata_path, loc)
+        FileUtils.mkdir_p(dir)
+        File.write(File.join(dir, "release_notes.txt"), notes)
+      end
+      UI.message("📝 whatsNew 메타 작성: #{notes}")
+
+      # 심사 메모(Notes) 초기화: 이전 버전 거절 소명서가 ASC에서 자동 승계되어 남는 문제 방지.
+      # review_information/notes.txt만 빈 내용으로 → Notes만 비움 (연락처·데모계정은 파일 없으면 ASC 기존값 보존).
+      review_dir = File.join(metadata_path, "review_information")
+      FileUtils.mkdir_p(review_dir)
+      File.write(File.join(review_dir, "notes.txt"), "")
+      UI.message("🧹 심사 Notes 초기화")
+      UI.message("📂 metadata_path=#{metadata_path}")
+
+      deliver(
+        api_key: api_key,
+        app_identifier: app_id,            # Bundle ID 명시 (비대화형 추론 실패 방지)
+        app_version: ENV["APP_VERSION"],   # 해당 버전의 editable App Store 버전 생성/선택 (없으면 submit 불가)
+        build_number: ENV["BUILD_NUMBER"], # 빌드 명시 선택 — skip_metadata:false면 자동선택을 건너뛰어 엉뚱한 빌드가 붙는 문제 방지
+        submit_for_review: submit_to_appstore,  # appstore_submit이면 심사 자동제출, prepare면 제출 직전까지만
+        automatic_release: submit_to_appstore,  # 제출 모드에서만 심사통과 즉시 자동출시 설정
+        force: true,                       # CI 비대화형: HTML 미리보기 확인 건너뜀
+        run_precheck_before_submit: false, # precheck 비대화형 충돌 방지
+        skip_binary_upload: true,          # pilot으로 올린 빌드 사용 (재업로드 안 함)
+        skip_metadata: false,              # release_notes(whatsNew)만 업로드 (다른 메타 파일 없음 → 기존값 보존)
+        metadata_path: metadata_path,
+        skip_screenshots: true,            # 스샷은 App Store Connect 웹에서 관리
+        # app_review_information은 넘기지 않는다 → ASC 기존 심사정보(연락처·데모계정) 보존 (개인정보 하드코딩 방지)
+        precheck_include_in_app_purchases: false,
+        submission_information: {
+          add_id_info_uses_idfa: false     # 광고 식별자 미사용 (심사 질문 자동 응답)
+        }
+      )
+      if submit_to_appstore
+        UI.success("✅ App Store 심사 자동 제출 완료!")
+      else
+        UI.success("✅ App Store 버전 준비 완료 (Prepare for Submission) — ASC에서 검토 후 'Add for Review'만 누르면 제출됩니다.")
+      end
+    else
+      UI.message("⏭️  testflight_only 모드 — App Store 단계 건너뜀")
+    end
+  end
+
   desc "TestFlight에 IPA 업로드 (CI용 - IPA가 이미 빌드된 상태)"
   lane :upload_testflight do
     UI.message("🚀 TestFlight 업로드 시작")
@@ -52,7 +189,8 @@ platform :ios do
     UI.message("📦 IPA 경로: #{ipa_path}")
 
     # 릴리즈 노트 설정
-    release_notes = ENV["RELEASE_NOTES"] || "새로운 빌드가 업로드되었습니다."
+    # Ruby 3.4+ frozen string 호환성: .dup으로 mutable 복사본 생성
+    release_notes = (ENV["RELEASE_NOTES"] || "새로운 빌드가 업로드되었습니다.").dup
     UI.message("📝 릴리즈 노트: #{release_notes}")
 
     # TestFlight 업로드 (upload_to_testflight = pilot)
@@ -60,9 +198,10 @@ platform :ios do
       api_key: api_key,
       ipa: ipa_path,
       changelog: release_notes,
+      # Ruby 3.4+ frozen string 호환성: localized_build_info 내부 문자열도 .dup 적용
       localized_build_info: {
-        "ko" => { whats_new: release_notes },
-        "en-US" => { whats_new: release_notes }
+        "ko" => { whats_new: release_notes.dup },
+        "en-US" => { whats_new: release_notes.dup }
       },
       skip_waiting_for_build_processing: ENV["SKIP_WAITING_FOR_BUILD_PROCESSING"] == "true",
       distribute_external: false,
@@ -106,10 +245,12 @@ platform :ios do
 
     # TestFlight 업로드
     ipa_path = Dir.glob("build/ipa/*.ipa").first
+    # Ruby 3.4+ frozen string 호환성: .dup으로 mutable 복사본 생성
+    changelog = (options[:changelog] || "새로운 빌드가 업로드되었습니다.").dup
     pilot(
       api_key: api_key,
       ipa: ipa_path,
-      changelog: options[:changelog] || "새로운 빌드가 업로드되었습니다.",
+      changelog: changelog,
       skip_waiting_for_build_processing: ENV["SKIP_WAITING_FOR_BUILD_PROCESSING"] == "true",
       distribute_external: false,
       notify_external_testers: false,

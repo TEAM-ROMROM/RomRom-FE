@@ -1,5 +1,6 @@
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
 
 class HomeFeedItem {
   final int id;
@@ -43,4 +44,43 @@ class HomeFeedItem {
     this.isLiked = false,
     this.authorMemberId,
   });
+
+  /// API 응답(Item) > HomeFeedItem 리스트 ([locationTexts]: 같은 순서의 표시 주소, ItemAddressResolver가 생성)
+  /// [startIndex]는 id 생성 기점 (기존 코드와 호환).
+  static List<HomeFeedItem> fromItems(List<Item> details, {int startIndex = 0, required List<String> locationTexts}) {
+    assert(details.length == locationTexts.length, 'locationTexts must match details order and length');
+    final feedItems = <HomeFeedItem>[];
+
+    for (int index = 0; index < details.length; index++) {
+      final d = details[index];
+
+      // 모르는·없는 물품 상태 > 미개봉
+      final cond = ItemCondition.fromServerName(d.itemCondition) ?? ItemCondition.sealed;
+      final opts = ItemTradeOption.fromServerNamesSkippingUnknown(d.itemTradeOptions);
+
+      feedItems.add(
+        HomeFeedItem(
+          id: index + startIndex + 1,
+          itemUuid: d.itemId,
+          name: d.itemName ?? ' ',
+          price: d.price ?? 0,
+          location: locationTexts[index],
+          date: d.createdDate is DateTime ? d.createdDate as DateTime : DateTime.now(),
+          itemCondition: cond,
+          transactionTypes: opts,
+          accountStatus: d.member?.accountStatus,
+          profileUrl: d.member?.profileUrl ?? '',
+          likeCount: d.likeCount ?? 0,
+          imageUrls: d.imageUrlList,
+          description: d.itemDescription ?? '',
+          hasAiAnalysis: false,
+          latitude: d.latitude,
+          longitude: d.longitude,
+          authorMemberId: d.member?.memberId,
+        ),
+      );
+    }
+
+    return feedItems;
+  }
 }

@@ -1,0 +1,4 @@
+description=화면·위젯은 services/apis 직접 import 금지 (Riverpod provider·notifier 경유, CLAUDE.md 규칙 1·3)
+paths=lib/screens/,lib/widgets/
+extensions=.dart
+pattern=^import .*services/apis/

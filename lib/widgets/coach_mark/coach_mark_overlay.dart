@@ -160,7 +160,12 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> with SingleTickerPr
                           splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
                           child: const SizedBox.square(
                             dimension: 56,
-                            child: Icon(AppIcons.cancel, size: 30, color: AppColors.textColorWhite),
+                            child: Icon(
+                              AppIcons.cancel,
+                              size: 30,
+                              color: AppColors.textColorWhite,
+                              semanticLabel: '닫기',
+                            ),
                           ),
                         ),
                       ),

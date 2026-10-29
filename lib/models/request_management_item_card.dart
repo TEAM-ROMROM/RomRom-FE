@@ -1,3 +1,6 @@
+import 'package:romrom_fe/enums/item_categories.dart';
+import 'package:romrom_fe/models/apis/objects/item.dart';
+
 /// 요청 관리 페이지의 물품 카드에 필요한 정보를 담는 데이터 모델
 class RequestManagementItemCard {
   /// 물품 ID
@@ -30,4 +33,17 @@ class RequestManagementItemCard {
     required this.likeCount,
     this.aiPrice = false,
   });
+
+  /// 내 물품 > 요청관리 카드 (카테고리 표시 이름, 모르는·빈 카테고리 > '기타', 이름 없음 > titleFallback)
+  factory RequestManagementItemCard.fromItem(Item item, {String titleFallback = ' '}) {
+    return RequestManagementItemCard(
+      itemId: item.itemId ?? '',
+      imageUrl: item.primaryImageUrl ?? '',
+      category: (ItemCategories.fromServerName(item.itemCategory) ?? ItemCategories.etc).label,
+      title: item.itemName ?? titleFallback,
+      price: item.price ?? 0,
+      likeCount: item.likeCount ?? 0,
+      aiPrice: item.isAiPredictedPrice ?? false,
+    );
+  }
 }

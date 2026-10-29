@@ -1,10 +1,8 @@
 // lib/models/apis/objects/item.dart
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/objects/item_image.dart';
-import 'package:romrom_fe/services/location_service.dart';
 
 part 'item.g.dart';
 
@@ -58,23 +56,7 @@ extension ItemImageX on Item {
   String? get primaryImageUrl => imageUrlList.isNotEmpty ? imageUrlList.first : null;
 }
 
-extension ItemAddressResolver on Item {
-  Future<String> resolveAndCacheAddress() async {
-    const fallback = '미지정';
-    if (latitude == null || longitude == null) {
-      address = fallback;
-      return address!;
-    }
-    try {
-      final addr = await LocationService().getAddressFromCoordinates(NLatLng(latitude!, longitude!));
-      address = (addr == null) ? fallback : '${addr.siDo} ${addr.siGunGu} ${addr.eupMyoenDong}'.trim();
-      if (address!.isEmpty) address = fallback;
-      return address!;
-    } catch (_) {
-      address = fallback;
-      return address!;
-    }
-  }
-
+/// 표시 주소 (address 미채움 > '미지정', 채움은 ItemAddressResolver)
+extension ItemLocationX on Item {
   String get displayLocation => address ?? '미지정';
 }

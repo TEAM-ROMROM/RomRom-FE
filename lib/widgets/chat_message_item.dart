@@ -1,13 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:romrom_fe/enums/message_type.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_image_bubble.dart';
 import 'package:romrom_fe/widgets/chat_location_bubble.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 /// 채팅 메시지 아이템 위젯
@@ -30,6 +34,9 @@ class ChatMessageItem extends StatelessWidget {
   /// 거래 완료 요청 확인 콜백 (상대방이 보낸 요청이 활성 상태일 때만 non-null)
   final VoidCallback? onConfirmTradeRequest;
 
+  // 거래 요청 취소·거절·완료 API 진행 중 여부 (true면 버튼 비활성 표시·탭 무시)
+  final bool isTradeActionPending;
+
   const ChatMessageItem({
     super.key,
     required this.message,
@@ -42,6 +49,7 @@ class ChatMessageItem extends StatelessWidget {
     this.onCancelTradeRequest,
     this.onRejectTradeRequest,
     this.onConfirmTradeRequest,
+    this.isTradeActionPending = false,
   });
 
   @override
@@ -172,7 +180,7 @@ class ChatMessageItem extends StatelessWidget {
             ),
             SizedBox(height: 8.h),
             Text(
-              isMine ? '상대방이 수락하면 미리 작성한 후기가 전달됩니다.' : '교환한 물건이 맞는지 확인해주세요. 확인 버튼을 누르면 거래가 최종 성사 됩니다.',
+              isMine ? '상대방이 수락하면 미리 작성한 후기가 전달됩니다.' : '교환한 물품이 맞는지 확인해주세요. 확인 버튼을 누르면 거래가 최종 성사 됩니다.',
               style: CustomTextStyles.p3.copyWith(
                 fontWeight: FontWeight.w400,
                 color: AppColors.primaryYellow,
@@ -180,7 +188,13 @@ class ChatMessageItem extends StatelessWidget {
               ),
             ),
             if (isMine)
-              _tradeButton('요청 취소하기', AppColors.primaryYellow, AppColors.textColorBlack, onCancelTradeRequest)
+              _tradeButton(
+                '요청 취소하기',
+                AppColors.primaryYellow,
+                AppColors.opacity50PrimaryYellow,
+                AppColors.textColorBlack,
+                onCancelTradeRequest,
+              )
             else
               Row(
                 children: [
@@ -188,6 +202,7 @@ class ChatMessageItem extends StatelessWidget {
                     child: _tradeButton(
                       '거절하기',
                       AppColors.opacity40White,
+                      AppColors.opacity20White,
                       AppColors.textColorBlack,
                       onRejectTradeRequest,
                     ),
@@ -197,6 +212,7 @@ class ChatMessageItem extends StatelessWidget {
                     child: _tradeButton(
                       '확인 및 완료하기',
                       AppColors.primaryYellow,
+                      AppColors.opacity50PrimaryYellow,
                       AppColors.textColorBlack,
                       onConfirmTradeRequest,
                     ),
@@ -209,15 +225,16 @@ class ChatMessageItem extends StatelessWidget {
     );
   }
 
-  Widget _tradeButton(String label, Color bg, Color fg, VoidCallback? onTap) {
+  /// 거래 요청 카드 버튼 (진행 중이면 비활성 배경 + 탭 무시)
+  Widget _tradeButton(String label, Color bg, Color pendingBackgroundColor, Color fg, VoidCallback? onTap) {
     return Container(
       height: 44.h,
       padding: EdgeInsets.only(top: 12.h),
       child: Material(
-        color: bg,
+        color: isTradeActionPending ? pendingBackgroundColor : bg,
         borderRadius: BorderRadius.circular(4.r),
         child: InkWell(
-          onTap: onTap,
+          onTap: isTradeActionPending ? null : onTap,
           borderRadius: BorderRadius.circular(4.r),
           highlightColor: darkenBlend(bg),
           splashColor: darkenBlend(bg).withValues(alpha: 0.3),
@@ -265,20 +282,45 @@ class ChatMessageItem extends StatelessWidget {
     }
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      constraints: BoxConstraints(maxWidth: 264.w, maxHeight: isMine ? 264.h : double.infinity),
+      constraints: BoxConstraints(maxWidth: 264.w),
       decoration: BoxDecoration(
         color: isMine ? AppColors.primaryYellow : AppColors.secondaryBlack1,
         borderRadius: BorderRadius.circular(10.r),
       ),
-      child: Text(
-        message.content ?? '',
+      // SelectableLinkify: 길게 눌러 부분 선택 복사 + 메시지 내 URL 자동 링크화/탭 열기
+      child: SelectableLinkify(
+        text: message.content ?? '',
+        options: const LinkifyOptions(humanize: false),
         style: CustomTextStyles.p2.copyWith(
           color: isMine ? AppColors.textColorBlack : AppColors.textColorWhite,
           fontWeight: FontWeight.w400,
           height: 1.2,
         ),
+        // 링크 전용 색이 디자인 시스템에 없어 본문 글자색 유지 + 밑줄로만 구분
+        linkStyle: CustomTextStyles.p2.copyWith(
+          color: isMine ? AppColors.textColorBlack : AppColors.textColorWhite,
+          fontWeight: FontWeight.w400,
+          height: 1.2,
+          decoration: TextDecoration.underline,
+        ),
+        onOpen: (link) => _openUrl(context, link.url),
       ),
     );
+  }
+
+  Future<void> _openUrl(BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && context.mounted) {
+        CommonSnackBar.show(context: context, message: '링크를 열 수 없습니다.', type: SnackBarType.error);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        CommonSnackBar.show(context: context, message: '링크를 열 수 없습니다.', type: SnackBarType.error);
+      }
+    }
   }
 
   Widget _buildTimeText() {

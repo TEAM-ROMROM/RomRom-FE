@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -10,16 +11,17 @@ import 'package:romrom_fe/exceptions/email_already_registered_exception.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/auth_repository_provider.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/api_client.dart';
-import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -27,16 +29,16 @@ import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 로그인 버튼
-class LoginButton extends StatefulWidget {
+class LoginButton extends ConsumerStatefulWidget {
   const LoginButton({super.key, required this.platform});
 
   final LoginPlatforms platform;
 
   @override
-  State<LoginButton> createState() => _LoginButtonState();
+  ConsumerState<LoginButton> createState() => _LoginButtonState();
 }
 
-class _LoginButtonState extends State<LoginButton> {
+class _LoginButtonState extends ConsumerState<LoginButton> {
   final KakaoAuthService kakaoAuthService = KakaoAuthService();
   final GoogleAuthService googleAuthService = GoogleAuthService();
   final AppleAuthService appleAuthService = AppleAuthService();
@@ -44,6 +46,8 @@ class _LoginButtonState extends State<LoginButton> {
 
   Future<void> handleLogin(BuildContext context) async {
     if (_isLoading) return; // 이미 로그인 중이면 무시
+    // 첫 await 전 캡처 (로그인 중 화면 종료 대비)
+    final authRepository = ref.read(authRepositoryProvider);
     ApiClient.resetSuspendedFlag(); // 재로그인 시 제재 플래그 리셋
     setState(() => _isLoading = true);
 
@@ -98,14 +102,18 @@ class _LoginButtonState extends State<LoginButton> {
         if (userInfo.needsOnboarding) {
           nextScreen = OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
         } else {
-          await RomAuthApi().fetchAndSaveMemberInfo();
+          await authRepository.fetchAndSaveMemberInfo();
           // 기존 회원 로그인: FCM 토큰 저장
           await FirebaseService().handleFcmToken();
-          nextScreen = MainScreen(key: MainScreen.globalKey);
+          nextScreen = const MainScreen();
         }
 
         if (context.mounted) {
-          context.navigateTo(screen: nextScreen, type: NavigationTypes.pushReplacement);
+          startUserSession(
+            invalidate: ref.invalidate,
+            navigateToSessionScreen: () =>
+                context.navigateTo(screen: nextScreen, type: NavigationTypes.pushReplacement),
+          );
         }
       }
     } on AccountSuspendedException catch (e) {

@@ -81,7 +81,9 @@ class CommonSnackBar {
       _activeToasts.remove(toast);
       try {
         toast.dispose();
-      } catch (_) {}
+      } catch (_) {
+        // 이미 해제된 토스트 (정리 중 재해제 무시)
+      }
       _updateAllPositions();
     }
   }
@@ -92,7 +94,9 @@ class CommonSnackBar {
     try {
       toast.overlayEntry.remove();
       toast.dispose();
-    } catch (_) {}
+    } catch (_) {
+      // 이미 제거된 오버레이 (즉시 제거 중복 호출 무시)
+    }
     _updateAllPositions();
   }
 

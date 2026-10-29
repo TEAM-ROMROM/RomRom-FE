@@ -41,7 +41,7 @@ class TradeRequestHistory extends BaseEntity {
   final List<String> itemTradeOptions;
 
   final String? tradeStatus;
-  bool? isNew;
+  final bool? isNew;
 
   TradeRequestHistory({
     required this.tradeRequestHistoryId,
@@ -57,6 +57,18 @@ class TradeRequestHistory extends BaseEntity {
   factory TradeRequestHistory.fromJson(Map<String, dynamic> json) => _$TradeRequestHistoryFromJson(json);
   @override
   Map<String, dynamic> toJson() => _$TradeRequestHistoryToJson(this);
+
+  /// 읽음 여부만 바꾼 새 이력 (나머지 필드 공유)
+  TradeRequestHistory copyWithIsNew(bool? isNew) => TradeRequestHistory(
+    tradeRequestHistoryId: tradeRequestHistoryId,
+    takeItem: takeItem,
+    giveItem: giveItem,
+    itemTradeOptions: itemTradeOptions,
+    tradeStatus: tradeStatus,
+    isNew: isNew,
+    createdDate: createdDate,
+    updatedDate: updatedDate,
+  );
 }
 
 /// `Paged<TradeRequestHistory>`

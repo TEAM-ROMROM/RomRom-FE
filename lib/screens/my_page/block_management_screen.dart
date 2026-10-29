@@ -10,7 +10,6 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -39,17 +38,14 @@ class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
   /// 차단된 회원 목록 로드
   Future<void> _loadBlockedMembers() async {
     try {
-      final memberApi = MemberApi();
-      final response = await memberApi.getBlockedMembers();
+      // 조회 + 차단 캐시 강제 시드는 provider 담당
+      final blockedMembers = await ref.read(memberBlockProvider.notifier).fetchBlockedMembers();
 
       if (mounted) {
         setState(() {
-          _blockedMembers = response.members ?? [];
+          _blockedMembers = blockedMembers;
           _isLoading = false;
         });
-
-        final ids = (response.members ?? []).map((m) => m.memberId).whereType<String>().toSet();
-        ref.read(memberBlockProvider.notifier).seed(ids, force: true);
       }
     } catch (e) {
       debugPrint('차단 회원 목록 로드 실패: $e');
@@ -169,7 +165,7 @@ class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
 
   /// 차단/차단 해제 버튼 (상태에 따라 디자인 변경)
   Widget _buildBlockButton(String memberId) {
-    final isCurrentlyBlocked = ref.watch(memberBlockProvider.select((s) => s.contains(memberId)));
+    final isCurrentlyBlocked = ref.watch(memberBlockProvider.select((s) => s.isBlocked(memberId)));
     final isUnblocked = !isCurrentlyBlocked;
 
     return GestureDetector(

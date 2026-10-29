@@ -180,12 +180,12 @@ class DebugOverlayManager {
     _isUrlPanelOpen = false;
   }
 
-  /// 앱 백그라운드 진입 시 SSE 연결 중단 (슬롯 반환)
+  /// 앱 백그라운드 진입 시 WebSocket 연결 중단 (슬롯 반환)
   void suspendServerLog() {
     serverLogClient.suspend();
   }
 
-  /// 앱 포그라운드 복귀 시 SSE 재연결
+  /// 앱 포그라운드 복귀 시 WebSocket 재연결
   void resumeServerLog() {
     serverLogClient.resume();
   }
@@ -249,7 +249,7 @@ class _DebugButtonWrapperState extends State<_DebugButtonWrapper> {
             color: AppColors.primaryBlack.withValues(alpha: 0.8),
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.primaryYellow, width: 1.5),
-            boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 8, offset: Offset(0, 2))],
+            boxShadow: const [BoxShadow(color: AppColors.debugPanelShadow, blurRadius: 8, offset: Offset(0, 2))],
           ),
           child: const Icon(Icons.bug_report, color: AppColors.primaryYellow, size: 24),
         ),

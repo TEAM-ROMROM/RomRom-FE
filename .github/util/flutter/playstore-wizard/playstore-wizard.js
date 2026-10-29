@@ -1133,55 +1133,6 @@ function saveCurrentStepData() {
 // Command Generation Functions
 // ============================================
 
-function generateSetupCommand() {
-    const projectPath = state.projectPath || '/path/to/project';
-    const applicationId = state.applicationId || 'com.example.app';
-    const keyAlias = state.keyAlias || 'release-key';
-    const storePassword = state.storePassword || 'changeit';
-    const keyPassword = state.keyPassword || storePassword;
-    const validityDays = state.validityDays || '99999';
-    const certCN = state.certCN || 'Unknown';
-    const certO = state.certO || 'Unknown';
-    const certL = state.certL || 'Unknown';
-    const certC = state.certC || 'KR';
-
-    const os = state.detectedOS;
-    let cmd = '';
-
-    if (os === 'windows') {
-        // Windows PowerShell 명령어
-        let winPath = projectPath;
-        // Unix 경로를 Windows 경로로 변환
-        if (!winPath.includes('\\') && !/^[A-Za-z]:/.test(winPath)) {
-            winPath = winPath.replace(/\//g, '\\');
-            if (winPath.startsWith('\\')) {
-                winPath = 'C:' + winPath;
-            }
-        } else {
-            winPath = winPath.replace(/\//g, '\\');
-        }
-        
-        // PowerShell에서 특수문자 이스케이프 처리
-        const escapePowerShell = (str) => {
-            return str.replace(/"/g, '`"').replace(/\$/g, '`$');
-        };
-        
-        cmd = `cd "${winPath}"; powershell -ExecutionPolicy Bypass -File .github\\util\\flutter\\playstore-wizard\\playstore-wizard-setup.ps1 "${escapePowerShell(winPath)}" "${escapePowerShell(applicationId)}" "${escapePowerShell(keyAlias)}" "${escapePowerShell(storePassword)}" "${escapePowerShell(keyPassword)}" "${validityDays}" "${escapePowerShell(certCN)}" "${escapePowerShell(certO)}" "${escapePowerShell(certL)}" "${certC}"`;
-    } else {
-        // Mac/Linux Bash 명령어
-        // 특수문자 이스케이프 처리
-        const escapeBash = (str) => {
-            return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$');
-        };
-        
-        cmd = `cd "${projectPath}" && bash .github/util/flutter/playstore-wizard/playstore-wizard-setup.sh "${escapeBash(projectPath)}" "${escapeBash(applicationId)}" "${escapeBash(keyAlias)}" "${escapeBash(storePassword)}" "${escapeBash(keyPassword)}" "${validityDays}" "${escapeBash(certCN)}" "${escapeBash(certO)}" "${escapeBash(certL)}" "${certC}"`;
-    }
-
-    const setupCmdEl = document.getElementById('setupCmd');
-    if (setupCmdEl) {
-        setupCmdEl.textContent = cmd;
-    }
-}
 
 // ============================================
 // Step 1: Application ID 자동 감지 (프로젝트 경로 입력 시 자동 실행)

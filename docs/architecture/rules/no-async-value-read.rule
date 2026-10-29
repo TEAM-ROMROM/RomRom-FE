@@ -1,0 +1,4 @@
+description=화면·위젯의 AsyncValue .value 읽기 금지 (로딩 중 null·에러 시 재throw 위험 > .valueOrNull) (휴리스틱: ref.watch/read(xProvider).value·async 이름 변수만 검사)
+paths=lib/screens/,lib/widgets/
+extensions=.dart
+pattern=ref\.(?:watch|read)\(\s*\w+Provider(?:\([^()]*\))?\s*\)\.value\b|\b\w*[Aa]sync\w*\.value\b

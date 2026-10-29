@@ -1,37 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/screens/my_page/my_register_item_screen.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
-class ProfileExchangeSection extends StatefulWidget {
+class ProfileExchangeSection extends ConsumerStatefulWidget {
   final String? memberId;
   final VoidCallback? onLoaded;
 
   const ProfileExchangeSection({super.key, this.memberId, this.onLoaded});
 
   @override
-  State<ProfileExchangeSection> createState() => _ProfileExchangeSectionState();
+  ConsumerState<ProfileExchangeSection> createState() => _ProfileExchangeSectionState();
 }
 
-class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
-  List<Item> _items = [];
-  bool _isLoading = true;
+class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection> {
+  // 타인 프로필 전용 로컬 목록 (본인 프로필은 myItemsProvider 구독)
+  List<Item> _memberItems = [];
+  bool _isMemberItemsLoading = true;
   bool _calledOnLoaded = false;
+
+  bool get _isMyProfile => widget.memberId == null;
 
   @override
   void initState() {
     super.initState();
-    _loadMyItems();
+    if (_isMyProfile) {
+      // 본인: myItemsProvider 첫 로드 완료 시 onLoaded 알림 (성공·실패 공통)
+      ref
+          .read(myItemsProvider.future)
+          .then((_) {}, onError: (Object error) => debugPrint('내 교환 물건 로드 실패: $error'))
+          .whenComplete(_notifyLoaded);
+    } else {
+      _loadMemberItems();
+    }
   }
 
   void _notifyLoaded() {
@@ -40,30 +53,21 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
     widget.onLoaded?.call();
   }
 
-  /// 내 교환 물건 로드
-  Future<void> _loadMyItems() async {
+  /// 타인 교환 물건 로드
+  Future<void> _loadMemberItems() async {
     try {
-      final List<Item> items;
-      if (widget.memberId != null) {
-        final res = await ItemApi().getMemberItems(ItemRequest(memberId: widget.memberId));
-        items = res.itemPage?.content ?? [];
-      } else {
-        final (availableRes, exchangedRes) = await (
-          ItemApi().getMyItems(ItemRequest(itemStatus: ItemStatus.available.serverName, pageNumber: 0, pageSize: 20)),
-          ItemApi().getMyItems(ItemRequest(itemStatus: ItemStatus.exchanged.serverName, pageNumber: 0, pageSize: 20)),
-        ).wait;
-        items = <Item>[...availableRes.itemPage?.content ?? [], ...exchangedRes.itemPage?.content ?? []];
-      }
-      await Future.wait(items.map((item) => item.resolveAndCacheAddress()));
+      final addressResolver = ref.read(itemAddressResolverProvider);
+      final List<Item> items = await ref.read(itemRepositoryProvider).getMemberItems(widget.memberId);
+      await addressResolver.resolveAndCacheAddresses(items);
       if (mounted) {
         setState(() {
-          _items = items;
-          _isLoading = false;
+          _memberItems = items;
+          _isMemberItemsLoading = false;
         });
       }
     } catch (e) {
-      debugPrint('내 교환 물건 로드 실패: $e');
-      if (mounted) setState(() => _isLoading = false);
+      debugPrint('타인 교환 물건 로드 실패: $e');
+      if (mounted) setState(() => _isMemberItemsLoading = false);
     } finally {
       _notifyLoaded();
     }
@@ -71,9 +75,26 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
 
   @override
   Widget build(BuildContext context) {
+    // 표시 목록: 본인 > myItemsProvider(판매중 + 거래완료), 타인 > 로컬 조회 결과
+    final List<Item> items;
+    final bool isLoading;
+    final bool hasLoadErrorWithoutItems;
+    if (_isMyProfile) {
+      final myItemsAsync = ref.watch(myItemsProvider);
+      final myItems = myItemsAsync.valueOrNull;
+      isLoading = myItems == null && myItemsAsync.isLoading;
+      // 첫 로드 실패 + 이전 값 없음 > 실패 문구 (재시도는 섹션 탭 > 등록 물품 화면)
+      hasLoadErrorWithoutItems = myItems == null && myItemsAsync.hasError;
+      items = myItems == null ? const <Item>[] : [...myItems.available, ...myItems.exchanged];
+    } else {
+      items = _memberItems;
+      isLoading = _isMemberItemsLoading;
+      hasLoadErrorWithoutItems = false;
+    }
+
     return AppPressable(
       onTap: () {
-        if (widget.memberId != null) return; // 타인 프로필에서는 등록 화면 진입 막기
+        if (!_isMyProfile) return; // 타인 프로필에서는 등록 화면 진입 막기
         context.navigateTo(screen: const MyRegisterItemScreen());
       },
       child: Container(
@@ -85,7 +106,7 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('교환 물건', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
+                Text('교환 물품', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
                 Padding(
                   padding: EdgeInsets.only(right: 16.0.w),
                   child: Icon(AppIcons.detailView, size: 16.w, color: AppColors.opacity30White),
@@ -93,38 +114,47 @@ class _ProfileExchangeSectionState extends State<ProfileExchangeSection> {
               ],
             ),
             SizedBox(height: 19.h),
-            _buildContent(),
+            _buildContent(items: items, isLoading: isLoading, hasLoadErrorWithoutItems: hasLoadErrorWithoutItems),
           ],
         ),
       ),
     );
   }
 
-  /// 내 물품 목록 조회 API 호출 결과에 따른 콘텐츠 빌드
-  Widget _buildContent() {
-    if (_isLoading) {
+  /// 교환 물건 목록 > 로딩·실패·빈 상태·가로 목록
+  Widget _buildContent({required List<Item> items, required bool isLoading, required bool hasLoadErrorWithoutItems}) {
+    if (isLoading) {
       return SizedBox(
         height: 163.w,
         child: const Center(child: CommonLoadingIndicator()),
       );
     }
 
-    if (_items.isEmpty) {
-      return SizedBox(
-        height: 163.w,
-        child: Center(
-          child: Text('등록된 교환 물건이 없습니다.', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
-        ),
-      );
+    if (hasLoadErrorWithoutItems) {
+      return _buildCenterMessage('교환 물품을 불러오지 못했어요.');
+    }
+
+    if (items.isEmpty) {
+      return _buildCenterMessage('등록된 교환 물품이 없습니다.');
     }
 
     return SizedBox(
       height: 163.w,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _items.length,
+        itemCount: items.length,
         separatorBuilder: (_, _) => SizedBox(width: 12.w),
-        itemBuilder: (_, index) => _buildItemCard(_items[index]),
+        itemBuilder: (_, index) => _buildItemCard(items[index]),
+      ),
+    );
+  }
+
+  /// 목록 자리 중앙 안내 문구 (빈 상태·실패 공통)
+  Widget _buildCenterMessage(String message) {
+    return SizedBox(
+      height: 163.w,
+      child: Center(
+        child: Text(message, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
       ),
     );
   }

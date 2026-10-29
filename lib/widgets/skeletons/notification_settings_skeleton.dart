@@ -18,7 +18,7 @@ class NotificationSettingsSkeleton extends StatelessWidget {
 
   Widget _buildGroup(double width, int rowCount) {
     return Container(
-      decoration: BoxDecoration(color: const Color(0xFF34353D), borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10)),
       child: Column(children: List.generate(rowCount, (i) => _buildRow(width, i, rowCount))),
     );
   }

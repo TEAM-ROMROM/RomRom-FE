@@ -165,7 +165,7 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
                   style: CustomTextStyles.h2.copyWith(height: 1.3),
                   children: [
                     const TextSpan(
-                      text: '내 물건을 꾹 누른 다음\n위로 드래그',
+                      text: '내 물품을 꾹 누른 다음\n위로 드래그',
                       style: TextStyle(color: AppColors.primaryYellow),
                     ),
                     const TextSpan(text: '하여 요청하세요'),

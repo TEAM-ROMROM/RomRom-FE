@@ -1,22 +1,20 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:http/http.dart' as http;
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// LOCATION 타입 메시지 말풍선
-/// - Static Maps API 이미지 (220w × 130h) — http.get으로 직접 요청(헤더 보장)
+/// - Static Maps API 이미지 (264w × 176h) — CachedImage로 디스크 캐시 + 인증 헤더
 /// - 주소 텍스트 (lat/lng → 역지오코딩)
 /// - "지도에서 보기" 버튼 → 네이버지도 앱 or 웹 폴백
 class ChatLocationBubble extends StatefulWidget {
@@ -30,14 +28,11 @@ class ChatLocationBubble extends StatefulWidget {
 
 class _ChatLocationBubbleState extends State<ChatLocationBubble> {
   String _address = '';
-  Uint8List? _mapImageBytes;
-  bool _mapImageError = false;
 
   @override
   void initState() {
     super.initState();
     _fetchAddress();
-    _fetchMapImage();
   }
 
   Future<void> _fetchAddress() async {
@@ -50,42 +45,6 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
 
     if (result != null) {
       setState(() => _address = LocationUtils.formatAddress(result));
-    }
-  }
-
-  Future<void> _fetchMapImage() async {
-    final lat = widget.message.latitude;
-    final lng = widget.message.longitude;
-    if (lat == null || lng == null) return;
-
-    try {
-      final uri = Uri.parse(AppUrls.naverStaticMapApiUrl).replace(
-        queryParameters: {
-          'w': '528',
-          'h': '352',
-          'center': '$lng,$lat',
-          'level': '15',
-          'markers': 'type:d|size:mid|color:0xFFC300|pos:$lng $lat',
-        },
-      );
-
-      final response = await http.get(
-        uri,
-        headers: {
-          'x-ncp-apigw-api-key-id': dotenv.get('NMF_CLIENT_ID'),
-          'x-ncp-apigw-api-key': dotenv.get('NMF_CLIENT_SECRET'),
-        },
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        setState(() => _mapImageBytes = response.bodyBytes);
-      } else {
-        setState(() => _mapImageError = true);
-      }
-    } catch (_) {
-      if (mounted) setState(() => _mapImageError = true);
     }
   }
 
@@ -151,20 +110,49 @@ class _ChatLocationBubbleState extends State<ChatLocationBubble> {
     );
   }
 
+  /// 정적 지도 URL: 좌표 > 중심·마커 쿼리 (좌표 없으면 null)
+  String? _buildStaticMapUrl() {
+    final lat = widget.message.latitude;
+    final lng = widget.message.longitude;
+    if (lat == null || lng == null) return null;
+
+    return Uri.parse(AppUrls.naverStaticMapApiUrl)
+        .replace(
+          queryParameters: {
+            'w': '528',
+            'h': '352',
+            'center': '$lng,$lat',
+            'level': '15',
+            'markers': 'type:d|size:mid|color:0xFFC300|pos:$lng $lat',
+          },
+        )
+        .toString();
+  }
+
   Widget _buildMapImage(double width) {
-    if (_mapImageError || (widget.message.latitude == null || widget.message.longitude == null)) {
-      return Container(
-        color: AppColors.secondaryBlack2,
-        child: const Center(child: Icon(Icons.map_outlined, color: AppColors.opacity50White, size: 32)),
-      );
-    }
-    if (_mapImageBytes == null) {
-      return Container(
+    final mapUrl = _buildStaticMapUrl();
+    final mapErrorWidget = Container(
+      color: AppColors.secondaryBlack2,
+      child: const Center(child: Icon(Icons.map_outlined, color: AppColors.opacity50White, size: 32)),
+    );
+    // NCP API 키 누락 시 지도 에러 위젯 (dotenv.get 예외 방지)
+    final ncpClientId = dotenv.maybeGet('NMF_CLIENT_ID');
+    final ncpClientSecret = dotenv.maybeGet('NMF_CLIENT_SECRET');
+    if (mapUrl == null || ncpClientId == null || ncpClientSecret == null) return mapErrorWidget;
+
+    return CachedImage(
+      imageUrl: mapUrl,
+      width: width,
+      height: 176.h,
+      fit: BoxFit.cover,
+      // NCP API 키 헤더 (상수라 캐시 키에 포함하지 않음)
+      httpHeaders: {'x-ncp-apigw-api-key-id': ncpClientId, 'x-ncp-apigw-api-key': ncpClientSecret},
+      placeholder: Container(
         color: AppColors.secondaryBlack2,
         // 지도 이미지 로딩 중 스피너
         child: const Center(child: CommonLoadingIndicator()),
-      );
-    }
-    return Image.memory(_mapImageBytes!, width: width, height: 176.h, fit: BoxFit.cover);
+      ),
+      errorWidget: mapErrorWidget,
+    );
   }
 }

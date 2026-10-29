@@ -25,7 +25,6 @@ class ItemApi {
       'itemCondition': request.itemCondition,
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
-      'itemCustomTags': request.itemCustomTags?.join(','),
       'itemImageUrls': request.itemImageUrls?.join(','),
       'isAiPredictedPrice': request.isAiPredictedPrice,
     };
@@ -50,6 +49,7 @@ class ItemApi {
       url: url,
       fields: fields,
       isAuthRequired: true,
+      timeout: const Duration(seconds: 60),
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
         debugPrint('물품 등록 성공: ${itemResponse.item?.itemName ?? request.itemName}');
@@ -240,7 +240,6 @@ class ItemApi {
       'itemCondition': request.itemCondition,
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
-      'itemCustomTags': request.itemCustomTags?.join(','),
       'isAiPredictedPrice': request.isAiPredictedPrice?.toString() ?? 'false',
       'itemImageUrls': request.itemImageUrls?.join(','),
     };
@@ -265,6 +264,7 @@ class ItemApi {
       url: url,
       fields: fields,
       isAuthRequired: true,
+      timeout: const Duration(seconds: 60),
       onSuccess: (responseData) {
         debugPrint('물품 수정 성공: ${request.itemName}');
       },
@@ -314,5 +314,80 @@ class ItemApi {
     );
 
     return itemResponse;
+  }
+
+  /// 물품 숨김 API
+  /// `POST /api/item/hide/post`
+  Future<void> hideItem(String itemId) async {
+    final String url = '${AppUrls.baseUrl}/api/item/hide/post';
+
+    final Map<String, dynamic> fields = {'itemId': itemId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('물품 숨김 성공: $itemId');
+      },
+    );
+  }
+
+  /// 물품 숨김 해제 API
+  /// `POST /api/item/hide/delete`
+  Future<void> unhideItem(String itemId) async {
+    final String url = '${AppUrls.baseUrl}/api/item/hide/delete';
+
+    final Map<String, dynamic> fields = {'itemId': itemId};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('물품 숨김 해제 성공: $itemId');
+      },
+    );
+  }
+
+  /// 비인증 물품 상세 조회 API (인증 불필요)
+  /// `GET /api/item/public/get`
+  Future<ItemResponse> getPublicItemDetail(String itemId) async {
+    final String url = '${AppUrls.baseUrl}/api/item/public/get?itemId=$itemId';
+    late ItemResponse itemResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {},
+      isAuthRequired: false,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
+        debugPrint('비인증 물품 상세 조회 성공: $itemId');
+      },
+    );
+
+    return itemResponse;
+  }
+
+  /// 물품 카테고리 자동 매칭 API
+  /// `POST /api/item/category/match`
+  Future<List<String>> matchItemCategories(String itemName) async {
+    final String url = '${AppUrls.baseUrl}/api/item/category/match';
+    List<String> recommendedCategories = [];
+
+    final Map<String, dynamic> fields = {'itemName': itemName};
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        final response = ItemResponse.fromJson(responseData);
+        recommendedCategories = response.recommendedCategories ?? [];
+        debugPrint('카테고리 자동 매칭 성공: $recommendedCategories');
+      },
+    );
+
+    return recommendedCategories;
   }
 }

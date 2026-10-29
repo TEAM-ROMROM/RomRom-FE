@@ -4,23 +4,27 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:romrom_fe/enums/navigation_types.dart';
+import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/api_exception.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/models/app_urls.dart';
-import 'package:romrom_fe/screens/account_suspended_screen.dart';
-import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/models/token_reissue_result.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/services/session_navigation_handler.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
-import 'package:romrom_fe/utils/log_utils.dart';
+import 'package:romrom_fe/utils/log_masking.dart';
+import 'package:romrom_fe/utils/single_flight.dart';
 
 /// 모든 HTTP 요청을 처리
 class ApiClient {
   static final TokenManager _tokenManager = TokenManager();
   static final LoggingHttpClient _client = LoggingHttpClient(http.Client());
+
+  /// 동시 401 시 reissue 1회만 실행 (refresh 토큰 rotation 상호 무효화 방지)
+  static final SingleFlight<TokenReissueResult> _reissueFlight = SingleFlight<TokenReissueResult>();
 
   /// 동시 다발적 403 응답 시 중복 네비게이션 방지 플래그
   static bool _isSuspendedHandling = false;
@@ -64,13 +68,7 @@ class ApiClient {
           debugPrint('제재된 회원 감지 (403 SUSPENDED_MEMBER)');
           _tokenManager.deleteTokens();
 
-          final context = navigatorKey.currentContext;
-          if (context != null && context.mounted) {
-            context.navigateTo(
-              screen: AccountSuspendedScreen(suspendReason: suspendReason, suspendedUntil: suspendedUntil),
-              type: NavigationTypes.clearStackImmediate,
-            );
-          }
+          SessionNavigationHandler.notifyAccountSuspended(suspendReason: suspendReason, suspendedUntil: suspendedUntil);
           return AccountSuspendedException(suspendReason: suspendReason, suspendedUntil: suspendedUntil);
         }
       } catch (e) {
@@ -101,7 +99,7 @@ class ApiClient {
     return null;
   }
 
-  /// MultipartRequest 요청 전송 (form-data 형식, 파일 업로드 지원)
+  /// MultipartRequest 요청 전송 (form-data 형식, 파일 업로드 지원): 공통 파이프라인 > 2xx 응답 onSuccess 전달
   static Future<http.Response> sendMultipartRequest({
     required String url,
     String method = 'POST',
@@ -109,171 +107,118 @@ class ApiClient {
     Map<String, List<File>>? files,
     bool isAuthRequired = true,
     required Function(dynamic) onSuccess,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
-    try {
-      // 인증이 필요한 경우 토큰 불러옴
-      String? accessToken;
-      String? refreshToken;
-
-      if (isAuthRequired) {
-        accessToken = await _tokenManager.getAccessToken();
-        refreshToken = await _tokenManager.getRefreshToken();
-
-        if (accessToken == null || refreshToken == null) {
-          throw Exception('토큰이 없습니다.');
-        }
-      }
-
-      // 요청 보내기
-      http.Response response = await _executeMultipartRequest(
+    final response = await _sendWithAuthRetry(
+      isAuthRequired: isAuthRequired,
+      execute: (accessToken) => _executeMultipartRequest(
         url: url,
         method: method,
         accessToken: accessToken, // null -> 인증 헤더 추가 안함
         fields: fields,
         files: files,
-      );
-
-      // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
-      final suspendedException = _handleSuspendedResponse(response);
-      if (suspendedException != null) throw suspendedException;
-
-      // UGC 필터링 위반 체크 (400 PROHIBITED_CONTENT)
-      final ugcViolation = _handleUgcViolationResponse(response);
-      if (ugcViolation != null) throw ugcViolation;
-
-      // 성공 응답 처리 (200-299)
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (response.body.isNotEmpty) {
-          try {
-            final responseData = jsonDecode(response.body);
-            // 응답이 성공적이면 onSuccess 콜백 실행
-            onSuccess(responseData);
-          } catch (e) {
-            debugPrint('응답 데이터 처리 중 오류: $e');
-          }
-        } else {
-          onSuccess({});
-        }
-        return response;
-      }
-      // 인증 실패 시 토큰 갱신 시도 (401)
-      else if (isAuthRequired && response.statusCode == 401) {
-        bool isRefreshed = await _refreshToken();
-
-        // 토큰 재발급 성공 시 요청 재시도
-        if (isRefreshed) {
-          accessToken = await _tokenManager.getAccessToken();
-
-          response = await _executeMultipartRequest(
-            url: url,
-            method: method,
-            accessToken: accessToken,
-            fields: fields,
-            files: files,
-          );
-
-          // 토큰 갱신 후 재시도에서도 UGC 위반 체크
-          final ugcViolationRetry = _handleUgcViolationResponse(response);
-          if (ugcViolationRetry != null) throw ugcViolationRetry;
-
-          if (response.statusCode >= 200 && response.statusCode < 300) {
-            if (response.body.isNotEmpty) {
-              try {
-                final responseData = jsonDecode(response.body);
-                onSuccess(responseData);
-              } catch (e) {
-                debugPrint('응답 데이터 처리 중 오류: $e');
-              }
-            } else {
-              onSuccess({});
-            }
-            return response;
-          } else {
-            throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
-          }
-        } else {
-          throw Exception('토큰 갱신 실패: 재로그인 필요');
-        }
-      } else {
-        throw Exception('API 요청 실패: ${response.statusCode}, ${response.body}');
-      }
-    } catch (error) {
-      debugPrint('API 요청 중 오류 발생: $error');
-      rethrow;
-    }
+        timeout: timeout,
+      ),
+    );
+    _notifyMultipartSuccess(response, onSuccess);
+    return response;
   }
 
-  /// HTTP 요청 전송 (JSON 형식, 다양한 메소드 지원)
+  /// HTTP 요청 전송 (JSON 형식, 다양한 메소드 지원): 공통 파이프라인 (onSuccess 미호출, 호출부가 응답 직접 처리)
   static Future<http.Response> sendHttpRequest({
     required String url,
     required String method,
     Map<String, dynamic>? body,
     bool isAuthRequired = true,
     required Function(Map<String, dynamic>) onSuccess,
+    Duration timeout = const Duration(seconds: 15),
+  }) {
+    return _sendWithAuthRetry(
+      isAuthRequired: isAuthRequired,
+      execute: (accessToken) =>
+          _executeHttpRequest(url: url, method: method, accessToken: accessToken, body: body, timeout: timeout),
+    );
+  }
+
+  /// 인증 요청 공통: 토큰 확인 > 실행 > 제재·UGC 검사 > 2xx 반환 / 401 재발급 후 1회 재시도 / 그 외 ApiException
+  static Future<http.Response> _sendWithAuthRetry({
+    required bool isAuthRequired,
+    required Future<http.Response> Function(String? accessToken) execute,
   }) async {
     try {
-      // 인증이 필요한 경우 토큰 불러옴
-      String? accessToken;
-      String? refreshToken;
+      final String? sentAccessToken = isAuthRequired ? await _loadAccessTokenOrThrow() : null;
+      final response = await execute(sentAccessToken);
+      _throwIfSuspendedOrUgcViolation(response);
+      if (_isSuccessResponse(response)) return response;
 
-      if (isAuthRequired) {
-        accessToken = await _tokenManager.getAccessToken();
-        refreshToken = await _tokenManager.getRefreshToken();
-
-        if (accessToken == null || refreshToken == null) {
-          throw Exception('토큰이 없습니다.');
-        }
+      if (!isAuthRequired || response.statusCode != 401) {
+        throw ApiException(statusCode: response.statusCode, responseBody: response.body);
       }
 
-      // 요청 보내기
-      http.Response response = await _executeHttpRequest(
-        url: url,
-        method: method,
-        accessToken: accessToken,
-        body: body,
+      // 401 > 토큰 확보 > 1회 재시도 (재시도 응답도 제재·UGC 검사)
+      final String? retryAccessToken = await _resolveRetryAccessToken(sentAccessToken);
+      final retryResponse = await execute(retryAccessToken);
+      _throwIfSuspendedOrUgcViolation(retryResponse);
+      if (_isSuccessResponse(retryResponse)) return retryResponse;
+      throw ApiException(
+        statusCode: retryResponse.statusCode,
+        responseBody: retryResponse.body,
+        isAfterTokenRefresh: true,
       );
-
-      // 제재된 회원 체크 (403 SUSPENDED_MEMBER)
-      final suspendedExceptionHttp = _handleSuspendedResponse(response);
-      if (suspendedExceptionHttp != null) throw suspendedExceptionHttp;
-
-      // UGC 필터링 위반 체크 (400 PROHIBITED_CONTENT)
-      final ugcViolationHttp = _handleUgcViolationResponse(response);
-      if (ugcViolationHttp != null) throw ugcViolationHttp;
-
-      // 성공 응답 처리 (200-299)
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        // await _handleResponse(response: response, url: url, onSuccess: onSuccess);
-        return response;
-      }
-      // 인증 실패 시 토큰 갱신 시도 (401)
-      else if (isAuthRequired && response.statusCode == 401) {
-        bool isRefreshed = await _refreshToken();
-
-        // 토큰 재발급 성공 시 요청 재시도
-        if (isRefreshed) {
-          accessToken = await _tokenManager.getAccessToken();
-
-          response = await _executeHttpRequest(url: url, method: method, accessToken: accessToken, body: body);
-
-          // 토큰 갱신 후 재시도에서도 UGC 위반 체크
-          final ugcViolationHttpRetry = _handleUgcViolationResponse(response);
-          if (ugcViolationHttpRetry != null) throw ugcViolationHttpRetry;
-
-          if (response.statusCode >= 200 && response.statusCode < 300) {
-            return response;
-          } else {
-            throw Exception('API 요청 실패 (토큰 갱신 후): ${response.statusCode}, ${response.body}');
-          }
-        } else {
-          throw Exception('토큰 갱신 실패: 재로그인 필요');
-        }
-      } else {
-        throw Exception('API 요청 실패: ${response.statusCode}, ${response.body}');
-      }
     } catch (error) {
-      debugPrint('API 요청 중 오류 발생: $error');
+      debugPrint('API 요청 중 오류 발생: ${LogMasking.describeErrorForLog(error)}');
       rethrow;
+    }
+  }
+
+  /// 저장된 accessToken (access·refresh 둘 중 하나라도 없으면 예외)
+  static Future<String> _loadAccessTokenOrThrow() async {
+    final accessToken = await _tokenManager.getAccessToken();
+    final refreshToken = await _tokenManager.getRefreshToken();
+    if (accessToken == null || refreshToken == null) {
+      throw Exception('토큰이 없습니다.');
+    }
+    return accessToken;
+  }
+
+  /// 401 재시도 토큰: 다른 요청이 이미 재발급했으면 저장 토큰 / 아니면 재발급 후 새 토큰 (실패 시 예외)
+  static Future<String?> _resolveRetryAccessToken(String? sentAccessToken) async {
+    final storedAccessToken = await _tokenManager.getAccessToken();
+    if (!shouldReissueToken(sentAccessToken: sentAccessToken, storedAccessToken: storedAccessToken)) {
+      return storedAccessToken;
+    }
+    final isReissued = await _reissueTokensForRetry();
+    if (!isReissued) throw Exception('토큰 갱신 실패: 재로그인 필요');
+    return _tokenManager.getAccessToken();
+  }
+
+  /// 401 재발급 판정: 보낸 토큰 == 저장 토큰이면 재발급 (늦게 도착한 401의 중복 재발급 방지, 저장 토큰 없음도 재발급 경로)
+  @visibleForTesting
+  static bool shouldReissueToken({required String? sentAccessToken, required String? storedAccessToken}) {
+    return storedAccessToken == null || storedAccessToken == sentAccessToken;
+  }
+
+  /// 제재(403 SUSPENDED_MEMBER)·UGC 위반(400 PROHIBITED_CONTENT) 응답이면 해당 예외 throw
+  static void _throwIfSuspendedOrUgcViolation(http.Response response) {
+    final suspendedException = _handleSuspendedResponse(response);
+    if (suspendedException != null) throw suspendedException;
+
+    final ugcViolation = _handleUgcViolationResponse(response);
+    if (ugcViolation != null) throw ugcViolation;
+  }
+
+  static bool _isSuccessResponse(http.Response response) => response.statusCode >= 200 && response.statusCode < 300;
+
+  /// multipart 2xx 응답 > onSuccess 전달 (빈 body > {}, 디코딩·콜백 오류는 로그만)
+  static void _notifyMultipartSuccess(http.Response response, Function(dynamic) onSuccess) {
+    if (response.body.isEmpty) {
+      onSuccess({});
+      return;
+    }
+    try {
+      onSuccess(jsonDecode(response.body));
+    } catch (e) {
+      debugPrint('응답 데이터 처리 중 오류: $e');
     }
   }
 
@@ -284,6 +229,7 @@ class ApiClient {
     String? accessToken,
     Map<String, dynamic>? fields,
     Map<String, List<File>>? files,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     // MultipartRequest 생성
     var request = http.MultipartRequest(method, Uri.parse(url));
@@ -331,7 +277,7 @@ class ApiClient {
     }
 
     // 로깅 클라이언트로 요청 전송
-    var streamedResponse = await _client.send(request);
+    var streamedResponse = await _client.sendWithTimeout(request, timeout);
     return await http.Response.fromStream(streamedResponse);
   }
 
@@ -341,8 +287,8 @@ class ApiClient {
     required String method,
     String? accessToken,
     Map<String, dynamic>? body,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
-    // Request 준비
     Uri uri = Uri.parse(url);
     Map<String, String> headers = {'Content-Type': 'application/json'};
 
@@ -350,104 +296,83 @@ class ApiClient {
       headers['Authorization'] = 'Bearer $accessToken';
     }
 
-    String? jsonBody;
+    final request = http.Request(method.toUpperCase(), uri);
+    request.headers.addAll(headers);
     if (body != null) {
-      jsonBody = jsonEncode(body);
+      request.body = jsonEncode(body);
     }
 
-    http.Response response;
-
-    // HTTP 메소드에 따라 요청 실행
-    switch (method.toUpperCase()) {
-      case 'GET':
-        response = await _client.get(uri, headers: headers);
-        break;
-      case 'POST':
-        response = await _client.post(uri, headers: headers, body: jsonBody);
-        break;
-      case 'PUT':
-        response = await _client.put(uri, headers: headers, body: jsonBody);
-        break;
-      case 'DELETE':
-        response = await _client.delete(uri, headers: headers, body: jsonBody);
-        break;
-      case 'PATCH':
-        response = await _client.patch(uri, headers: headers, body: jsonBody);
-        break;
-      default:
-        throw Exception('지원하지 않는 HTTP 메소드: $method');
-    }
-
-    return response;
+    final streamedResponse = await _client.sendWithTimeout(request, timeout);
+    return await http.Response.fromStream(streamedResponse);
   }
 
-  /// 응답 처리
-  /// ignore: unused_element
-  static Future<void> _handleResponse({
-    required http.Response response,
-    required String url,
-    required Function(Map<String, dynamic>) onSuccess,
-  }) async {
-    if (response.body.isNotEmpty) {
-      final responseData = jsonDecode(response.body);
-      responsePrinter(url, responseData);
-      onSuccess(responseData);
-    } else {
-      responsePrinter(url, null);
-      debugPrint('서버 응답이 비어 있음. 빈 객체로 처리합니다.');
-      onSuccess({});
-    }
-  }
+  /// 토큰 재발급 단일 실행: 진행 중이면 같은 Future 공유 (예외 없음, 실패 결과 반환)
+  static Future<TokenReissueResult> reissueTokens() => _reissueFlight.run(_requestTokenReissue);
 
-  /// 토큰 갱신
-  static Future<bool> _refreshToken() async {
+  /// reissue 요청 > 제재 확인 > 200 토큰 저장 (rotation) / 401 refresh 만료 판정 (화면 이동은 제재만)
+  static Future<TokenReissueResult> _requestTokenReissue() async {
     try {
       final refreshToken = await _tokenManager.getRefreshToken();
-      if (refreshToken == null) return false;
+      if (refreshToken == null) return const TokenReissueResult.failed();
 
       final String url = '${AppUrls.baseUrl}/api/auth/reissue';
+      final response = await _executeMultipartRequest(
+        url: url,
+        method: 'POST',
+        fields: {TokenKeys.refreshToken.name: refreshToken},
+      );
 
-      var response = await _executeMultipartRequest(url: url, method: 'POST', fields: {'refreshToken': refreshToken});
+      // 제재 회원 (403 SUSPENDED_MEMBER > 제재 화면 이동)
+      if (_handleSuspendedResponse(response) != null) return const TokenReissueResult.failed();
 
-      // 토큰 갱신(reissue) 시에도 제재된 회원 체크 (403 SUSPENDED_MEMBER)
-      if (_handleSuspendedResponse(response) != null) {
-        return false;
-      }
-
+      // 재발급 성공 (rotation: 새 refreshToken 없으면 기존 유지)
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final String newAccessToken = responseData['accessToken'];
-        // Refresh Token Rotation: 응답에 새 refreshToken이 있으면 갱신, 없으면 기존 유지
-        final String? newRefreshToken = responseData['refreshToken'] as String?;
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final String newAccessToken = responseData[TokenKeys.accessToken.name];
+        final String? newRefreshToken = responseData[TokenKeys.refreshToken.name] as String?;
         await _tokenManager.saveTokens(newAccessToken, newRefreshToken ?? refreshToken);
-        return true;
+        return TokenReissueResult(responseData: responseData);
       }
 
-      // EXPIRED_REFRESH_TOKEN: 토큰 삭제 + 하트비트 중단 + 로그인 화면 이동
-      if (!_isSessionExpiredHandling && response.statusCode == 401) {
-        try {
-          final data = jsonDecode(response.body);
-          if (data['errorCode'] == 'EXPIRED_REFRESH_TOKEN') {
-            _isSessionExpiredHandling = true;
-            debugPrint('세션 만료 감지 (EXPIRED_REFRESH_TOKEN): 자동 로그아웃 처리');
-            await _tokenManager.deleteTokens();
-            HeartbeatManager.instance.stop();
-            // 회원 캐시 삭제
-            await MemberManager.clearMemberInfo();
-            final context = navigatorKey.currentContext;
-            if (context != null && context.mounted) {
-              context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.fadeTransition);
-            }
-          }
-        } catch (e) {
-          debugPrint('세션 만료 응답 파싱 실패: $e');
-        }
-      }
-
-      return false;
+      // refresh 토큰 만료 (401 EXPIRED_REFRESH_TOKEN)
+      return TokenReissueResult.failed(isRefreshTokenExpired: _isExpiredRefreshTokenResponse(response));
     } catch (e) {
       debugPrint('토큰 갱신 중 오류 발생: $e');
+      return const TokenReissueResult.failed();
+    }
+  }
+
+  /// 401 + errorCode EXPIRED_REFRESH_TOKEN 여부
+  static bool _isExpiredRefreshTokenResponse(http.Response response) {
+    if (response.statusCode != 401) return false;
+    try {
+      final data = jsonDecode(response.body);
+      return data is Map && data['errorCode'] == 'EXPIRED_REFRESH_TOKEN';
+    } catch (e) {
+      debugPrint('세션 만료 응답 파싱 실패: $e');
       return false;
+    }
+  }
+
+  /// 401 재시도용 재발급: 만료면 세션 만료 처리 > 성공 여부
+  static Future<bool> _reissueTokensForRetry() async {
+    final reissueResult = await reissueTokens();
+    if (reissueResult.isRefreshTokenExpired) await _handleSessionExpired();
+    return reissueResult.isSuccess;
+  }
+
+  /// 세션 만료 처리: 토큰 삭제 > 하트비트 중단 > 회원 캐시 삭제 > 로그인 화면 (중복 방지)
+  static Future<void> _handleSessionExpired() async {
+    if (_isSessionExpiredHandling) return;
+    _isSessionExpiredHandling = true;
+    debugPrint('세션 만료 감지 (EXPIRED_REFRESH_TOKEN): 자동 로그아웃 처리');
+    try {
+      await _tokenManager.deleteTokens();
+      HeartbeatManager.instance.stop();
+      await MemberManager.clearMemberInfo();
+      SessionNavigationHandler.notifySessionExpired();
+    } catch (e) {
+      debugPrint('세션 만료 처리 실패: $e');
     }
   }
 }

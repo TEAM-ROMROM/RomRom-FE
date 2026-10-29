@@ -5,8 +5,8 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 /// 알림 바텀시트 채팅 - 알림 미리보기 위젯
-class NotificationBotomSheetChattingPreview extends StatelessWidget {
-  const NotificationBotomSheetChattingPreview({super.key});
+class NotificationBottomSheetChattingPreview extends StatelessWidget {
+  const NotificationBottomSheetChattingPreview({super.key});
 
   @override
   Widget build(BuildContext context) {

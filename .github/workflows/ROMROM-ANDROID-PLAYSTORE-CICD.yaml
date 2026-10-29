@@ -8,12 +8,27 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: "배포 모드 — store_only: 내부테스트까지만 / store_prepare: 프로덕션 draft(출시 직전) / store_submit: 심사 자동 등록"
+        required: false
+        default: "store_submit"
+        type: choice
+        options:
+          - store_only
+          - store_prepare
+          - store_submit
 
 env:
   FLUTTER_VERSION: "3.35.5"
   JAVA_VERSION: "17"
   PROJECT_TYPE: "flutter"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # 배포 모드 (우선순위: 수동 dispatch input > repo variable ANDROID_DEPLOY_MODE > 폴백 store_submit)
+  #   store_only    : internal 트랙 업로드까지만
+  #   store_prepare : production draft 승급 (Play Console에서 사람이 "출시 시작")
+  #   store_submit  : production completed 승급 (Google 심사 자동 등록) — 기존 기본 동작
+  DEPLOY_MODE: ${{ github.event.inputs.deploy_mode || vars.ANDROID_DEPLOY_MODE || 'store_submit' }}
 
 jobs:
   prepare-build:
@@ -171,6 +186,17 @@ jobs:
           echo "${{ secrets.ENV_FILE }}" > .env
           echo "✅ .env 파일 생성됨 (크기: $(wc -c < .env) bytes)"
 
+          # 프로덕션 빌드 방어: TEST_BUILD flag 강제 제거 (secrets.ENV_FILE 오염 대비)
+          if grep -q '^TEST_BUILD' .env; then
+            echo "⚠️⚠️⚠️ 경고: 프로덕션 빌드에 TEST_BUILD flag 발견 → 제거합니다 ⚠️⚠️⚠️"
+            echo "⚠️ secrets.ENV_FILE에 TEST_BUILD가 박혀있습니다. GitHub Secret을 수정하세요."
+            grep '^TEST_BUILD' .env
+            grep -v '^TEST_BUILD' .env > .env.tmp && mv .env.tmp .env
+            echo "✅ TEST_BUILD flag 제거 완료"
+          else
+            echo "✅ 프로덕션 빌드: TEST_BUILD flag 없음 (정상)"
+          fi
+
       # Release Keystore 설정
       - name: Setup Release Keystore
         run: |
@@ -232,12 +258,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Android build.gradle.kts 수정 (release 서명 설정)
+      # Android build.gradle 수정 (release 서명 설정)
       - name: Configure Android build for release
         run: |
-          # build.gradle.kts에 release 서명 설정이 없으면 추가
-          if ! grep -q "signingConfigs" android/app/build.gradle.kts; then
-            echo "⚠️ build.gradle.kts에 서명 설정 추가 필요"
+          # build.gradle에 release 서명 설정이 없으면 추가
+          if ! grep -q "signingConfigs" android/app/build.gradle; then
+            echo "⚠️ build.gradle에 서명 설정 추가 필요"
             # 서명 설정은 이미 되어있다고 가정 (수동으로 미리 설정해야 함)
           fi
           echo "✅ Android 빌드 설정 확인 완료"
@@ -623,10 +649,11 @@ jobs:
           export GOOGLE_PLAY_JSON_KEY="$GOOGLE_PLAY_JSON_KEY"
           export VERSION_NAME="$VERSION_NAME"
           export VERSION_CODE="$VERSION_CODE"
-          
+          export DEPLOY_MODE="${{ env.DEPLOY_MODE }}"   # store_only | store_prepare | store_submit
+
           # 배포 실행
           echo "=========================================="
-          echo "🚀 Play Store 배포 실행"
+          echo "🚀 Play Store 배포 실행 (모드: $DEPLOY_MODE)"
           echo "🎯 버전: $VERSION_NAME (코드: $VERSION_CODE)"
           echo "=========================================="
           
