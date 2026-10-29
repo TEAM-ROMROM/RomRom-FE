@@ -66,7 +66,7 @@ class _SkeletonTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Skeleton.leaf(
-                  child: Text('물건 제목 $index', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
+                  child: Text('물품 제목 $index', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
                 ),
                 SizedBox(height: 6.h),
                 Skeleton.leaf(

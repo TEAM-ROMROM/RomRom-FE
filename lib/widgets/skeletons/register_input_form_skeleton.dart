@@ -34,18 +34,18 @@ class RegisterInputFormSkeleton extends StatelessWidget {
             const SkeletonRectanglar(width: double.infinity, height: 46),
 
             // 물건 설명 필드
-            Skeleton.keep(child: Text('물건 설명', style: CustomTextStyles.p1)),
+            Skeleton.keep(child: Text('물품 설명', style: CustomTextStyles.p1)),
             SizedBox(height: 8.h),
             const SkeletonRectanglar(width: double.infinity, height: 140),
 
             // 물건 상태 필드
             SizedBox(height: 20.h),
-            Skeleton.keep(child: Text('물건 상태', style: CustomTextStyles.p1)),
+            Skeleton.keep(child: Text('물품 상태', style: CustomTextStyles.p1)),
             SizedBox(height: 16.h),
             const SkeletonRectanglar(width: double.infinity, height: 68),
 
             // 거래방식 필드
-            Skeleton.keep(child: Text('교환방식', style: CustomTextStyles.p1)),
+            Skeleton.keep(child: Text('교환 방식', style: CustomTextStyles.p1)),
             SizedBox(height: 16.h),
             const SkeletonRectanglar(width: double.infinity, height: 30),
 

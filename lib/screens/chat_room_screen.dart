@@ -25,6 +25,7 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
+import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -833,8 +834,17 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> with WidgetsBin
     }
   }
 
+  /// 교환 완료 확인: 되돌릴 수 없음 확인 모달 > 완료 API > 후기 작성 화면
   Future<void> _onConfirmTradeRequest() async {
     if (_isPendingTradeAction) return;
+    final bool? isTradeCompletionConfirmed = await CommonModal.confirm(
+      context: context,
+      message: '거래를 완료하면 되돌릴 수 없어요.\n완료하시겠어요?',
+      confirmText: '완료하기',
+      onCancel: () => Navigator.of(context).pop(false),
+      onConfirm: () => Navigator.of(context).pop(true),
+    );
+    if (isTradeCompletionConfirmed != true || !mounted || _isPendingTradeAction) return;
     setState(() => _isPendingTradeAction = true);
     try {
       await ChatApi().confirmTradeCompletion(chatRoomId: widget.chatRoomId);
@@ -916,7 +926,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> with WidgetsBin
                 splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
                 child: const Padding(
                   padding: EdgeInsets.all(8),
-                  child: Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+                  child: Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite, semanticLabel: '뒤로 가기'),
                 ),
               ),
             ),
@@ -976,7 +986,12 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> with WidgetsBin
             onBlockConfirm: () async {
               final opponentId = _opponentId;
               if (opponentId == null) throw Exception('상대방 정보를 찾을 수 없습니다.');
-              await MemberApi().blockMember(opponentId);
+              // 차단: memberBlockProvider 경유 (실패 시 provider가 롤백·에러 안내, 방 유지)
+              final isBlockSucceeded = await ref.read(memberBlockProvider.notifier).setBlocked(opponentId, true);
+              if (!isBlockSucceeded) return;
+              if (context.mounted) {
+                CommonSnackBar.show(context: context, message: '사용자를 차단했습니다', type: SnackBarType.success);
+              }
               await _leaveRoom(shouldPop: true);
             },
             onLeaveChatRoomConfirm: () async {
@@ -1058,6 +1073,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> with WidgetsBin
           onCancelTradeRequest: onCancelTradeRequest,
           onRejectTradeRequest: onRejectTradeRequest,
           onConfirmTradeRequest: onConfirmTradeRequest,
+          isTradeActionPending: _isPendingTradeAction,
         );
       },
     );

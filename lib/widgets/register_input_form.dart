@@ -15,13 +15,13 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
+import 'package:romrom_fe/models/register_form_snapshot.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/screens/image_fullscreen_viewer.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
-import 'package:romrom_fe/services/apis/image_api.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
@@ -37,6 +37,7 @@ import 'package:romrom_fe/widgets/register_option_chip.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/image_repository_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -49,8 +50,18 @@ import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
 class RegisterInputForm extends ConsumerStatefulWidget {
   final Item? item; // 수정 모드에서 사용
   final bool isEditMode;
+  // 미저장 변경 여부 전달 (부모 화면의 이탈 경고 가드가 구독)
+  final ValueNotifier<bool>? hasUnsavedChangesNotifier;
+  // 저장 진행 여부 전달 (부모 화면 가드가 저장 중 이탈 차단)
+  final ValueNotifier<bool>? isSaveInProgressNotifier;
 
-  const RegisterInputForm({super.key, this.item, this.isEditMode = false});
+  const RegisterInputForm({
+    super.key,
+    this.item,
+    this.isEditMode = false,
+    this.hasUnsavedChangesNotifier,
+    this.isSaveInProgressNotifier,
+  });
 
   @override
   ConsumerState<RegisterInputForm> createState() => _RegisterInputFormState();
@@ -228,14 +239,8 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
         _existingImageUrls.addAll(
           widget.item!.itemImages!
               .map((img) {
-                final imageUrl = img.imageUrl ?? '';
-                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-                  return imageUrl;
-                } else if (imageUrl.isNotEmpty) {
-                  return 'http://suh-project.synology.me/$imageUrl';
-                } else {
-                  return '';
-                }
+                // 상대 경로 > 이미지 서버 절대 주소 (https)
+                return AppUrls.toAbsoluteImageUrl(img.imageUrl ?? '');
               })
               .where((url) => url.isNotEmpty),
         );
@@ -251,6 +256,57 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
   bool _isInitLoading = true;
   bool _isLoading = false;
 
+  // 진입 시점 폼 값 (등록: 빈 폼, 수정: 불러온 물품) — 이탈 경고 비교 기준, 초기화 전 null
+  RegisterFormSnapshot? _initialFormSnapshot;
+  // 저장 성공 여부 (true면 이탈 경고 없이 닫기)
+  bool _isSubmitSucceeded = false;
+
+  /// 현재 폼 값 > 스냅샷
+  RegisterFormSnapshot _captureFormSnapshot() {
+    return RegisterFormSnapshot(
+      existingImageUrls: List.unmodifiable(_existingImageUrls),
+      newImagePaths: _newImageFiles.map((file) => file.path).toList(growable: false),
+      itemName: titleController.text,
+      itemDescription: descriptionController.text,
+      category: selectedCategory,
+      conditions: List.unmodifiable(selectedItemConditionTypes),
+      tradeOptions: selectedTradeOptions.toSet(),
+      priceText: priceController.text,
+      isAiPredictedPrice: useAiPrice,
+      latitude: _latitude,
+      longitude: _longitude,
+    );
+  }
+
+  /// 미저장 변경 여부 (초기화 전·저장 성공 후 false)
+  bool get _hasUnsavedChanges {
+    final initialFormSnapshot = _initialFormSnapshot;
+    if (initialFormSnapshot == null || _isSubmitSucceeded) return false;
+    return _captureFormSnapshot().hasChangesFrom(initialFormSnapshot);
+  }
+
+  /// 미저장 변경 여부 부모 전달 (build 중 부모 갱신 금지 > 프레임 후)
+  void _reportUnsavedChangesAfterFrame() {
+    final hasUnsavedChangesNotifier = widget.hasUnsavedChangesNotifier;
+    if (hasUnsavedChangesNotifier == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) hasUnsavedChangesNotifier.value = _hasUnsavedChanges;
+    });
+  }
+
+  /// 저장 성공 > 이탈 경고 해제 후 결과와 함께 닫기
+  void _popAfterSubmitSucceeded(Map<String, dynamic> submitResult) {
+    _isSubmitSucceeded = true;
+    widget.hasUnsavedChangesNotifier?.value = false;
+    final navigator = Navigator.of(context);
+    final formRoute = ModalRoute.of(context);
+    // 저장 중 이미 나가기로 닫힌 화면이면 중복 pop 금지
+    if (formRoute == null || !formRoute.isActive) return;
+    // 저장 중 띄운 이탈 확인 모달 등 위에 쌓인 라우트 정리 > 폼 화면만 닫기
+    navigator.popUntil((route) => route == formRoute);
+    navigator.pop(submitResult);
+  }
+
   void _onFormValueChanged() {
     if (mounted) setState(() {});
   }
@@ -265,6 +321,7 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
     _initControllers().then((_) {
       if (mounted) {
         setState(() {
+          _initialFormSnapshot = _captureFormSnapshot();
           _isInitLoading = false;
         });
       }
@@ -316,6 +373,7 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
   Widget build(BuildContext context) {
     // 수정 / 등록
     final String modeText = widget.isEditMode ? '수정' : '등록';
+    _reportUnsavedChangesAfterFrame();
 
     if (_isInitLoading) {
       return const RegisterInputFormSkeleton();
@@ -430,7 +488,12 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.zero,
-                                    child: Icon(AppIcons.cancel, color: AppColors.textColorBlack, size: 12.sp),
+                                    child: Icon(
+                                      AppIcons.cancel,
+                                      color: AppColors.textColorBlack,
+                                      size: 12.sp,
+                                      semanticLabel: '사진 삭제',
+                                    ),
                                   ),
                                 ),
                               ),
@@ -839,6 +902,7 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
                         setState(() {
                           _isLoading = true;
                         });
+                        widget.isSaveInProgressNotifier?.value = true;
 
                         // 새 로컬 이미지가 있으면 압축본을 수거해 서버에 업로드
                         List<String> newImageUrls = [];
@@ -847,7 +911,7 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
                           // _compressing은 _newImageFiles와 인덱스 1:1이라 그대로 await.
                           // 보통 이미 완료되어 대기 0, 미완료분만 짧게 대기.
                           final List<XFile> compressed = await Future.wait(_compressing);
-                          newImageUrls = await ImageApi().uploadImages(compressed);
+                          newImageUrls = await ref.read(imageRepositoryProvider).uploadImages(compressed);
                           if (newImageUrls.length != compressed.length) {
                             throw Exception('일부 이미지 업로드에 실패했습니다 (${newImageUrls.length}/${compressed.length})');
                           }
@@ -874,10 +938,10 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
                         );
 
                         if (widget.isEditMode) {
-                          // 수정 모드
-                          await ItemApi().updateItem(itemRequest);
+                          // 수정 모드: notifier.edit가 수정 API + 내 물건 재조회 (다른 탭 즉시 반영)
+                          await ref.read(myItemsProvider.notifier).edit(itemRequest);
                           if (context.mounted) {
-                            Navigator.of(context).pop({'updated': true});
+                            _popAfterSubmitSucceeded({'updated': true});
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         } else {
@@ -904,7 +968,7 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
                           }
 
                           if (context.mounted) {
-                            Navigator.of(context).pop({'isFirstItemPosted': isFirst});
+                            _popAfterSubmitSucceeded({'isFirstItemPosted': isFirst});
                             CommonSnackBar.show(context: context, message: '물품이 성공적으로 $modeText되었습니다.');
                           }
                         }
@@ -929,6 +993,8 @@ class _RegisterInputFormState extends ConsumerState<RegisterInputForm> {
                         }
                       } finally {
                         if (mounted) {
+                          // 저장 종료 > 이탈 차단 해제 (성공·실패 공통, 해제된 화면의 notifier 접근 금지)
+                          widget.isSaveInProgressNotifier?.value = false;
                           setState(() {
                             _isLoading = false;
                           });

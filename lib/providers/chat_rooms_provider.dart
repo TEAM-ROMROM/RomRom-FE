@@ -32,7 +32,7 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
 
   /// 다음 페이지 로드 (무한스크롤).
   Future<void> loadMore() async {
-    final cur = state.value;
+    final cur = state.valueOrNull;
     if (cur == null || !cur.hasMore) return;
     try {
       final nextPage = cur.currentPage + 1;
@@ -49,7 +49,7 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
   /// [myMemberId]: 내가 보낸 메시지이면 unreadCount 를 증가하지 않음.
   /// 목록에 없는 roomId는 무시 (기존 동작 유지).
   void onMessageReceived({required ChatMessage message, required String? myMemberId}) {
-    final cur = state.value;
+    final cur = state.valueOrNull;
     if (cur == null || message.chatRoomId == null) return;
 
     final roomId = message.chatRoomId!;
@@ -76,7 +76,7 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
 
   /// 채팅방 입장 시 unreadCount 를 0으로 초기화.
   void markRoomAsRead(String chatRoomId) {
-    final cur = state.value;
+    final cur = state.valueOrNull;
     if (cur == null) return;
     final idx = cur.rooms.indexWhere((r) => r.chatRoomId == chatRoomId);
     if (idx == -1) return;
@@ -88,7 +88,7 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
 
   /// 방 나가기/삭제 후 목록에서 즉시 제거.
   void removeRoom(String chatRoomId) {
-    final cur = state.value;
+    final cur = state.valueOrNull;
     if (cur == null) return;
     state = AsyncData(cur.copyWith(rooms: cur.rooms.where((r) => r.chatRoomId != chatRoomId).toList()));
   }

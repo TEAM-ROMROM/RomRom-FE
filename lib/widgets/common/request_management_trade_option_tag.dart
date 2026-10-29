@@ -15,10 +15,9 @@ class RequestManagementTradeOptionTag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 62.w,
-      height: 23.h,
       alignment: Alignment.center,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(100.r), color: AppColors.secondaryBlack2),
-      padding: EdgeInsets.fromLTRB(18.w, 6.h, 18.w, 7.h),
+      padding: EdgeInsets.fromLTRB(18.w, 6, 18.w, 7),
       child: Text(option.label, style: CustomTextStyles.p3.copyWith(fontSize: 10.sp)),
     );
   }

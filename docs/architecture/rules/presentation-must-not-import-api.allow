@@ -27,6 +27,4 @@ lib/screens/trade_review_screen.dart
 lib/widgets/home_feed_item_widget.dart
 lib/widgets/login_button.dart
 lib/widgets/profile/profile_exchange_section.dart
-lib/widgets/profile/profile_overview_section.dart
 lib/widgets/profile/profile_review_section.dart
-lib/widgets/register_input_form.dart

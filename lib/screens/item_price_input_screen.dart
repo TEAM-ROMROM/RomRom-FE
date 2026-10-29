@@ -121,7 +121,7 @@ class _ItemPriceInputScreenState extends State<ItemPriceInputScreen> {
   }
 
   void _onToggleTapWhenDisabled(dynamic _) {
-    CommonSnackBar.show(context: context, message: 'AI 가격 측정을 위해 제목, 설명, 물건 상태를 모두 입력해주세요', type: SnackBarType.info);
+    CommonSnackBar.show(context: context, message: 'AI 가격 측정을 위해 제목, 설명, 물품 상태를 모두 입력해주세요', type: SnackBarType.info);
   }
 
   void _onConfirm() {
@@ -257,7 +257,7 @@ class _AiPriceCard extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 8.h),
-                Text('AI가 물건의 적정 가격을 추천해드려요', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
+                Text('AI가 물품의 적정 가격을 추천해드려요', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
               ],
             ),
           ),

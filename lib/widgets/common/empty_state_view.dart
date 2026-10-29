@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 
-/// 빈 상태 뷰 (예: 좋아요 목록이 비어있을 때)
+/// 빈 상태·에러 상태 뷰: 아이콘, 중앙 문구, 설명, 버튼(옵션)
+/// 목록 비어있음 > 기본 생성자 / 불러오기 실패 > .error (다시 시도 버튼)
 class EmptyStateView extends StatelessWidget {
   final IconData icon;
   final String centerText;
   final String? descriptionText;
   final String? buttonText;
   final VoidCallback? onButtonTap;
+
+  // 버튼 동작 진행 중 여부 (true면 스피너 표시 + 탭 무시)
+  final bool isButtonLoading;
 
   const EmptyStateView({
     super.key,
@@ -19,7 +24,20 @@ class EmptyStateView extends StatelessWidget {
     this.descriptionText,
     this.buttonText,
     this.onButtonTap,
+    this.isButtonLoading = false,
   });
+
+  /// 불러오기 실패 뷰: 경고 아이콘 + 다시 시도 버튼 (isRetrying이면 재시도 탭 무시)
+  const EmptyStateView.error({
+    super.key,
+    required VoidCallback onRetry,
+    this.centerText = '불러오지 못했어요',
+    String this.descriptionText = '잠시 후 다시 시도해 주세요',
+    bool isRetrying = false,
+  }) : icon = AppIcons.warning,
+       buttonText = '다시 시도',
+       onButtonTap = onRetry,
+       isButtonLoading = isRetrying;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +75,12 @@ class EmptyStateView extends StatelessWidget {
             // 버튼 (옵션)
             if (buttonText != null && onButtonTap != null) ...[
               SizedBox(height: 40.h),
-              CompletionButton(isEnabled: true, buttonText: buttonText!, enabledOnPressed: onButtonTap),
+              CompletionButton(
+                isEnabled: true,
+                isLoading: isButtonLoading,
+                buttonText: buttonText!,
+                enabledOnPressed: onButtonTap,
+              ),
             ],
             SizedBox(height: 32.h),
           ],

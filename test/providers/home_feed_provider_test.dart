@@ -26,13 +26,36 @@ class _FakeRepo implements HomeFeedRepository {
 }
 
 class _ThrowingRepo implements HomeFeedRepository {
+  int callCount = 0;
+
   @override
   Future<List<Item>> fetchPage({
     required int pageNumber,
     required int pageSize,
     required ItemSortField sortField,
   }) async {
+    callCount++;
     throw Exception('boom');
+  }
+}
+
+/// 처음 [failCount]회는 실패, 이후 [items] 반환 (첫 로드 실패 > 재시도 성공 재현)
+class _FailThenSucceedRepo implements HomeFeedRepository {
+  final int failCount;
+  final List<Item> items;
+  int callCount = 0;
+
+  _FailThenSucceedRepo({required this.failCount, required this.items});
+
+  @override
+  Future<List<Item>> fetchPage({
+    required int pageNumber,
+    required int pageSize,
+    required ItemSortField sortField,
+  }) async {
+    callCount++;
+    if (callCount <= failCount) throw Exception('boom');
+    return items;
   }
 }
 
@@ -190,6 +213,59 @@ void main() {
       // 예외 없이 완료, 데이터 유지
       expect(c.read(homeFeedProvider).hasValue, true);
       expect(c.read(homeFeedProvider).value!.items.length, 1);
+    });
+
+    test('retryInitialLoad: 첫 로드 실패 후 재시도 성공 시 데이터 표시', () async {
+      final repo = _FailThenSucceedRepo(failCount: 1, items: [_item('a')]);
+      final c = _makeContainer(repo);
+      await expectLater(c.read(homeFeedProvider.future), throwsException);
+
+      await c.read(homeFeedProvider.notifier).retryInitialLoad();
+
+      final state = c.read(homeFeedProvider);
+      expect(state.hasError, false);
+      expect(state.value!.items.length, 1);
+    });
+
+    test('retryInitialLoad: 재시도 진행 중 중복 호출은 무시', () async {
+      final repo = _ThrowingRepo();
+      final c = _makeContainer(repo);
+      await expectLater(c.read(homeFeedProvider.future), throwsException);
+      final callsAfterInitial = repo.callCount;
+      final notifier = c.read(homeFeedProvider.notifier);
+
+      await Future.wait([notifier.retryInitialLoad(), notifier.retryInitialLoad()]);
+
+      // 실패 시 정렬 폴백 없이 1회 호출 > 재시도 1회분만 증가
+      expect(repo.callCount - callsAfterInitial, 1);
+      expect(c.read(homeFeedProvider).hasError, true);
+    });
+
+    test('retryInitialLoad: 데이터가 이미 있으면 무시', () async {
+      final repo = _FakeRepo({
+        ItemSortField.recommended.serverName: {
+          0: [_item('a')],
+        },
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final callsAfterInitial = repo.callCount;
+
+      await c.read(homeFeedProvider.notifier).retryInitialLoad();
+
+      expect(repo.callCount, callsAfterInitial);
+    });
+
+    test('refresh: 첫 로드 실패(데이터 없음) 상태에서 호출해도 예외 없이 무시', () async {
+      final repo = _ThrowingRepo();
+      final c = _makeContainer(repo);
+      await expectLater(c.read(homeFeedProvider.future), throwsException);
+      final callsAfterInitial = repo.callCount;
+
+      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+
+      expect(repo.callCount, callsAfterInitial);
+      expect(c.read(homeFeedProvider).hasError, true);
     });
   });
 }

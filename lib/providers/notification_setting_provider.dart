@@ -58,4 +58,30 @@ class NotificationSettingNotifier extends Notifier<Map<NotificationSettingType, 
       _inFlight.remove(type);
     }
   }
+
+  /// 여러 항목 일괄 Optimistic 변경: 요청 1회 > 실패 시 전체 롤백 > 서버 확정 여부 반환
+  /// (대상 중 진행 중 토글 있으면 요청 없이 false, isSilent면 실패 스낵바 생략)
+  Future<bool> setAll(Map<NotificationSettingType, bool> values, {bool isSilent = false}) async {
+    if (values.isEmpty) return true;
+    if (values.keys.any(_inFlight.contains)) return false;
+    _inFlight.addAll(values.keys);
+
+    final prev = state;
+    state = {...state, ...values};
+
+    try {
+      await ref.read(notificationSettingRepositoryProvider).updateAll(values);
+      return true;
+    } catch (e) {
+      debugPrint('notificationSettingProvider.setAll 실패: $e');
+      state = prev;
+      final ctx = navigatorKey.currentContext;
+      if (!isSilent && ctx != null) {
+        CommonSnackBar.show(context: ctx, message: '알림 설정 변경에 실패했어요', type: SnackBarType.error);
+      }
+      return false;
+    } finally {
+      _inFlight.removeAll(values.keys);
+    }
+  }
 }

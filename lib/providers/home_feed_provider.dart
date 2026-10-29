@@ -71,7 +71,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
 
   /// 다음 페이지 로드. 빈 페이지면 page 0으로 되감기 + seen-set 클리어 ("또돌이표").
   Future<void> loadMore() async {
-    final current = state.value;
+    final current = state.valueOrNull;
     if (current == null || !current.hasMoreItems) return;
     if (state.isLoading) return;
 
@@ -116,7 +116,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   /// 자동 새로고침. throttle 통과 시 page 0 다시 조회.
   /// 실패는 silent — 기존 items 유지.
   Future<void> refresh({required RefreshTrigger trigger}) async {
-    final current = state.value;
+    final current = state.valueOrNull;
     if (current == null) return; // 아직 최초 로드도 안 된 상태 — 무시
     if (state.isLoading) return; // 중복 진행 방지
 
@@ -140,9 +140,18 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     }
   }
 
+  /// 첫 로드 실패 후 재시도: 로딩 전환 > 첫 페이지 조회 > 성공 시 데이터, 실패 시 에러
+  /// 데이터가 이미 있거나 진행 중이면 무시 (refresh는 데이터 없으면 무시하므로 별도 경로)
+  Future<void> retryInitialLoad() async {
+    if (state.hasValue || state.isLoading) return;
+
+    state = const AsyncLoading<HomeFeedState>();
+    state = await AsyncValue.guard(() => _fetchInitial(seenItemIds: LinkedHashSet<String>()));
+  }
+
   /// 사용자가 본 아이템을 seen-set에 추가 (LRU 갱신).
   void markSeen(String itemId) {
-    final current = state.value;
+    final current = state.valueOrNull;
     if (current == null) return;
 
     final next = LinkedHashSet<String>.from(current.seenItemIds);

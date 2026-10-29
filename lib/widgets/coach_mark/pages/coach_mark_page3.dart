@@ -61,7 +61,7 @@ class _CoachMarkPage3State extends State<CoachMarkPage3> with SingleTickerProvid
                     children: [
                       const TextSpan(text: '좌·우로 넘기며\n'),
                       const TextSpan(
-                        text: '교환하고 싶은 물건',
+                        text: '교환하고 싶은 물품',
                         style: TextStyle(color: AppColors.primaryYellow),
                       ),
                       const TextSpan(text: '을 선택하세요'),

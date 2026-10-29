@@ -48,4 +48,11 @@ class MyItemsNotifier extends AsyncNotifier<MyItemsState> {
     await _repo.updateItemStatus(request);
     await reload();
   }
+
+  /// 물품 수정: API > 서버 재조회
+  /// (AsyncNotifier 기본 update(cb)와 이름 충돌 회피로 edit 사용)
+  Future<void> edit(ItemRequest request) async {
+    await _repo.updateItem(request);
+    await reload();
+  }
 }

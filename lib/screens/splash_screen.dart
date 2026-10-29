@@ -272,7 +272,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           SizedBox(height: 108.w), // 로고 자리 확보
                           SizedBox(height: 45.h),
                           Text(
-                            '손쉬운 물건 교환',
+                            '손쉬운 물품 교환',
                             style: CustomTextStyles.p1.copyWith(
                               color: AppColors.textColorWhite.withValues(alpha: 0.6),
                               fontWeight: FontWeight.w600,

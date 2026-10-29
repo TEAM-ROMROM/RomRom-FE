@@ -22,4 +22,7 @@ class ItemRepository {
   Future<void> deleteItem(String itemId) => _api.deleteItem(itemId);
 
   Future<ItemResponse> updateItemStatus(ItemRequest request) => _api.updateItemStatus(request);
+
+  /// 물품 수정 (이미지 URL·위치 포함 전체 필드)
+  Future<void> updateItem(ItemRequest request) => _api.updateItem(request);
 }

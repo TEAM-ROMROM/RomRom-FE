@@ -659,9 +659,9 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
               child: RequestManagementItemCardWidget(
                 card: RequestManagementItemCard(
                   itemId: cardId!,
-                  imageUrl: cardData.primaryImageUrl ?? 'https://picsum.photos/400/300',
+                  imageUrl: cardData.primaryImageUrl ?? '',
                   category: ItemCategories.fromServerName(cardData.itemCategory!).label,
-                  title: cardData.itemName ?? '아이템',
+                  title: cardData.itemName ?? '물품',
                   price: cardData.price ?? 0,
                   likeCount: cardData.likeCount ?? 0,
                   aiPrice: cardData.isAiPredictedPrice ?? false,
@@ -1015,7 +1015,7 @@ class _HomeTabCardHandState extends State<HomeTabCardHand> with TickerProviderSt
                           },
                         ),
                         Text(
-                          "위로 드래그하여\n교환방식 선택하기",
+                          "위로 드래그하여\n교환 방식 선택하기",
                           textAlign: TextAlign.center,
                           style: CustomTextStyles.p2.copyWith(height: 1.4),
                         ),

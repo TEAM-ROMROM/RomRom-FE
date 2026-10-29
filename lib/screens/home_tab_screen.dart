@@ -31,6 +31,7 @@ import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
@@ -238,7 +239,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   }
 
   Future<void> _handleCardDrop(String cardId) async {
-    final feed = ref.read(homeFeedProvider).value;
+    final feed = ref.read(homeFeedProvider).valueOrNull;
     if (feed == null || feed.items.isEmpty) return;
     if (_currentFeedIndex >= feed.items.length) return;
 
@@ -280,7 +281,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   @override
   Widget build(BuildContext context) {
     final myItemsAsync = ref.watch(myItemsProvider);
-    final myCards = myItemsAsync.value?.available ?? const <Item>[];
+    final myCards = myItemsAsync.valueOrNull?.available ?? const <Item>[];
     final isBlurShown = myItemsAsync.hasValue && myCards.isEmpty;
 
     // 등록 탭의 첫 물건 등록 신호 → 코치마크 표시
@@ -305,8 +306,8 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         });
       }
 
-      final prevState = prev?.value;
-      final nextState = next.value;
+      final prevState = prev?.valueOrNull;
+      final nextState = next.valueOrNull;
       if (prevState == null || nextState == null) return;
       final prevItems = prevState.items;
       final nextItems = nextState.items;
@@ -343,6 +344,14 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
       return const HomeFeedSkeleton();
     }
 
+    // 첫 로드 실패 (데이터 없음) — 에러 뷰 + 다시 시도 (재시도 중엔 스켈레톤이라 중복 탭 불가)
+    if (asyncFeed.hasError && !asyncFeed.hasValue) {
+      return EmptyStateView.error(
+        centerText: '물품을 불러오지 못했어요',
+        onRetry: () => ref.read(homeFeedProvider.notifier).retryInitialLoad(),
+      );
+    }
+
     return _buildContent(asyncFeed: asyncFeed, myCards: myCards, isBlurShown: isBlurShown);
   }
 
@@ -351,7 +360,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     required List<Item> myCards,
     required bool isBlurShown,
   }) {
-    final feed = asyncFeed.value;
+    final feed = asyncFeed.valueOrNull;
     final feedItems = feed?.items ?? const <HomeFeedItem>[];
     final hasMoreItems = feed?.hasMoreItems ?? false;
     // 자동 새로고침 중 = 데이터는 있고 다음 로딩 중
@@ -371,9 +380,9 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
               child: Material(
                 color: AppColors.primaryYellow,
                 borderRadius: BorderRadius.circular(4.r),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  child: Text('새로고침', style: TextStyle(color: AppColors.textColorBlack)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Text('새로고침', style: CustomTextStyles.p2.copyWith(color: AppColors.textColorBlack)),
                 ),
               ),
             ),
@@ -444,8 +453,12 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         // 펼침(팬) 애니메이션이 다시 재생됨 → Offstage로 element를 유지해 children 개수를 고정한다.
         if (!isBlurShown)
           Positioned(
-            right: 16.w,
-            top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 16.h : 8.h),
+            // 신고 버튼 터치 영역 확대분만큼 위치 보정 (아이콘 시각 위치 유지)
+            right: 16.w - ReportMenuButton.tapTargetExtraInset,
+            top:
+                MediaQuery.of(context).padding.top +
+                (Platform.isAndroid ? 16.h : 8.h) -
+                ReportMenuButton.rowTopCompensation(32.w),
             child: Offstage(
               offstage: _isAdAtVirtualIndex(_currentVirtualIndex),
               child: Row(
@@ -474,15 +487,25 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                             dimension: 56.w,
                             child: Center(
                               child: _hasUnreadNotification
-                                  ? SvgPicture.asset('assets/images/alertWithBadge.svg', width: 30.w, height: 30.w)
-                                  : Icon(AppIcons.alert, size: 30.w, color: AppColors.textColorWhite),
+                                  ? SvgPicture.asset(
+                                      'assets/images/alertWithBadge.svg',
+                                      width: 30.w,
+                                      height: 30.w,
+                                      semanticsLabel: '읽지 않은 알림 있음, 알림 목록',
+                                    )
+                                  : Icon(
+                                      AppIcons.alert,
+                                      size: 30.w,
+                                      color: AppColors.textColorWhite,
+                                      semanticLabel: '알림',
+                                    ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 10.w),
+                  SizedBox(width: max(0.0, 10.w - ReportMenuButton.tapTargetExtraInset)),
                   ReportMenuButton(
                     onReportPressed: () async {
                       if (feedItems.isEmpty) return;

@@ -34,6 +34,9 @@ class ChatMessageItem extends StatelessWidget {
   /// 거래 완료 요청 확인 콜백 (상대방이 보낸 요청이 활성 상태일 때만 non-null)
   final VoidCallback? onConfirmTradeRequest;
 
+  // 거래 요청 취소·거절·완료 API 진행 중 여부 (true면 버튼 비활성 표시·탭 무시)
+  final bool isTradeActionPending;
+
   const ChatMessageItem({
     super.key,
     required this.message,
@@ -46,6 +49,7 @@ class ChatMessageItem extends StatelessWidget {
     this.onCancelTradeRequest,
     this.onRejectTradeRequest,
     this.onConfirmTradeRequest,
+    this.isTradeActionPending = false,
   });
 
   @override
@@ -176,7 +180,7 @@ class ChatMessageItem extends StatelessWidget {
             ),
             SizedBox(height: 8.h),
             Text(
-              isMine ? '상대방이 수락하면 미리 작성한 후기가 전달됩니다.' : '교환한 물건이 맞는지 확인해주세요. 확인 버튼을 누르면 거래가 최종 성사 됩니다.',
+              isMine ? '상대방이 수락하면 미리 작성한 후기가 전달됩니다.' : '교환한 물품이 맞는지 확인해주세요. 확인 버튼을 누르면 거래가 최종 성사 됩니다.',
               style: CustomTextStyles.p3.copyWith(
                 fontWeight: FontWeight.w400,
                 color: AppColors.primaryYellow,
@@ -184,7 +188,13 @@ class ChatMessageItem extends StatelessWidget {
               ),
             ),
             if (isMine)
-              _tradeButton('요청 취소하기', AppColors.primaryYellow, AppColors.textColorBlack, onCancelTradeRequest)
+              _tradeButton(
+                '요청 취소하기',
+                AppColors.primaryYellow,
+                AppColors.opacity50PrimaryYellow,
+                AppColors.textColorBlack,
+                onCancelTradeRequest,
+              )
             else
               Row(
                 children: [
@@ -192,6 +202,7 @@ class ChatMessageItem extends StatelessWidget {
                     child: _tradeButton(
                       '거절하기',
                       AppColors.opacity40White,
+                      AppColors.opacity20White,
                       AppColors.textColorBlack,
                       onRejectTradeRequest,
                     ),
@@ -201,6 +212,7 @@ class ChatMessageItem extends StatelessWidget {
                     child: _tradeButton(
                       '확인 및 완료하기',
                       AppColors.primaryYellow,
+                      AppColors.opacity50PrimaryYellow,
                       AppColors.textColorBlack,
                       onConfirmTradeRequest,
                     ),
@@ -213,15 +225,16 @@ class ChatMessageItem extends StatelessWidget {
     );
   }
 
-  Widget _tradeButton(String label, Color bg, Color fg, VoidCallback? onTap) {
+  /// 거래 요청 카드 버튼 (진행 중이면 비활성 배경 + 탭 무시)
+  Widget _tradeButton(String label, Color bg, Color pendingBackgroundColor, Color fg, VoidCallback? onTap) {
     return Container(
       height: 44.h,
       padding: EdgeInsets.only(top: 12.h),
       child: Material(
-        color: bg,
+        color: isTradeActionPending ? pendingBackgroundColor : bg,
         borderRadius: BorderRadius.circular(4.r),
         child: InkWell(
-          onTap: onTap,
+          onTap: isTradeActionPending ? null : onTap,
           borderRadius: BorderRadius.circular(4.r),
           highlightColor: darkenBlend(bg),
           splashColor: darkenBlend(bg).withValues(alpha: 0.3),

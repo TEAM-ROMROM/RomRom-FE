@@ -48,6 +48,9 @@ class FakeItemRepository implements ItemRepository {
 
   @override
   Future<ItemResponse> updateItemStatus(ItemRequest request) async => throw UnimplementedError();
+
+  @override
+  Future<void> updateItem(ItemRequest request) async => throw UnimplementedError();
 }
 
 void main() {

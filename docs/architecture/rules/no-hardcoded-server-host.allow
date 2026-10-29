@@ -2,5 +2,3 @@
 # Remove a file from this list once it is fixed (the rule test flags leftover lines)
 lib/debug/runtime_url_manager.dart
 lib/models/app_urls.dart
-lib/services/chat_websocket_service.dart
-lib/widgets/register_input_form.dart

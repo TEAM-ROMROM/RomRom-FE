@@ -20,6 +20,7 @@ import 'package:romrom_fe/screens/my_page/terms_screen.dart';
 import 'package:romrom_fe/screens/my_page/block_management_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
@@ -187,7 +188,7 @@ class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
               ),
               if (loginEmail != null) _MenuItem(label: '로그인 계정', onTap: () {}, trailingText: loginEmail),
               if (socialPlatform != null) _MenuItem(label: '연결 플랫폼', onTap: () {}, trailingText: socialPlatform),
-              _MenuItem(label: '로그아웃', onTap: () => AuthService().logout(context), isDestructive: true),
+              _MenuItem(label: '로그아웃', onTap: () => _handleLogoutButtonTap(context), isDestructive: true),
               _MenuItem(label: '회원탈퇴', onTap: () => _handleDeleteMemberButtonTap(context), isDestructive: true),
             ]),
             SizedBox(height: 24.h),
@@ -328,6 +329,17 @@ class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
   }
 
   /// 회원 탈퇴 처리
+  /// 로그아웃: 확인 모달 > 확인 시 모달 잠금·스피너 상태로 로그아웃 > 로그인 화면 (모달 포함 스택 제거)
+  Future<void> _handleLogoutButtonTap(BuildContext context) async {
+    await CommonModal.confirm(
+      context: context,
+      message: '로그아웃하시겠어요?',
+      confirmText: '로그아웃',
+      onCancel: () => Navigator.of(context).pop(false),
+      onConfirm: () => AuthService().logout(context),
+    );
+  }
+
   Future<void> _handleDeleteMemberButtonTap(BuildContext context) async {
     final result = await context.showDeleteDialog(title: '회원 탈퇴', description: '정말 탈퇴하시겠습니까?', confirmText: '탈퇴하기');
 

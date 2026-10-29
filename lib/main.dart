@@ -28,6 +28,7 @@ import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/device_type.dart';
+import 'package:romrom_fe/utils/text_scale_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 백그라운드에서 알림 설정(최상단에 위치 해야 함)
@@ -229,7 +230,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             top: false,
             bottom: Platform.isAndroid,
             child: MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+              data: MediaQuery.of(context).copyWith(textScaler: clampAppTextScaler(MediaQuery.textScalerOf(context))),
               child: MaterialApp(
                 title: 'RomRom',
                 theme: AppTheme.defaultTheme,

@@ -64,6 +64,7 @@ class ChatInputBar extends StatelessWidget {
                 child: RomRomContextMenu(
                   position: ContextMenuPosition.above,
                   triggerRotationDegreesOnOpen: 45,
+                  semanticLabel: '첨부 메뉴',
                   customTrigger: Container(
                     width: 40.w,
                     height: 40.w,

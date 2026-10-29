@@ -30,9 +30,9 @@ class MemberBlockNotifier extends Notifier<MemberBlockState> {
     state = MemberBlockState(blockedIds: {...ids});
   }
 
-  /// Optimistic 차단/차단해제 토글.
-  Future<void> setBlocked(String memberId, bool block) async {
-    if (_inFlight.contains(memberId)) return;
+  /// Optimistic 차단/차단해제 토글 > 서버 확정 여부 반환 (실패·진행 중 중복 호출 시 false)
+  Future<bool> setBlocked(String memberId, bool block) async {
+    if (_inFlight.contains(memberId)) return false;
     _inFlight.add(memberId);
 
     final prev = state;
@@ -48,6 +48,7 @@ class MemberBlockNotifier extends Notifier<MemberBlockState> {
       final repo = ref.read(memberBlockRepositoryProvider);
       final ok = block ? await repo.block(memberId) : await repo.unblock(memberId);
       if (!ok) throw Exception('서버 응답이 false');
+      return true;
     } catch (e) {
       debugPrint('memberBlockProvider.setBlocked 실패: $e');
       state = prev;
@@ -55,6 +56,7 @@ class MemberBlockNotifier extends Notifier<MemberBlockState> {
       if (ctx != null) {
         CommonSnackBar.show(context: ctx, message: block ? '차단에 실패했어요' : '차단 해제에 실패했어요', type: SnackBarType.error);
       }
+      return false;
     } finally {
       _inFlight.remove(memberId);
     }

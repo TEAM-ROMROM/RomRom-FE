@@ -57,7 +57,7 @@ enum ErrorCode {
   // ITEM
   itemNotFound(code: 'ITEM_NOT_FOUND', koMessage: '해당 물품을 찾을 수 없습니다.'),
   invalidItemOwner(code: 'INVALID_ITEM_OWNER', koMessage: '해당 물품의 소유자가 아닙니다.'),
-  itemValuePredictionFailed(code: 'ITEM_VALUE_PREDICTION_FAILED', koMessage: '아이템 가격 예측에 실패하였습니다.'),
+  itemValuePredictionFailed(code: 'ITEM_VALUE_PREDICTION_FAILED', koMessage: '물품 가격 예측에 실패하였습니다.'),
   deletedItem(code: 'DELETED_ITEM', koMessage: '삭제된 물품입니다.'),
   alreadyHiddenItem(code: 'ALREADY_HIDDEN_ITEM', koMessage: '이미 숨김 처리된 물품입니다.'),
   hiddenItemNotFound(code: 'HIDDEN_ITEM_NOT_FOUND', koMessage: '숨김 처리된 물품을 찾을 수 없습니다.'),
@@ -96,7 +96,7 @@ enum ErrorCode {
   notTradeRequestSender(code: 'NOT_TRADE_REQUEST_SENDER', koMessage: '상대방 회원이 교환 요청의 당사자가 아닙니다.'),
 
   // ITEM LIKES
-  selfLikeNotAllowed(code: 'SELF_LIKE_NOT_ALLOWED', koMessage: '내 아이템에는 좋아요를 누를 수 없습니다.'),
+  selfLikeNotAllowed(code: 'SELF_LIKE_NOT_ALLOWED', koMessage: '내 물품에는 좋아요를 누를 수 없습니다.'),
 
   // Vertex AI Client
   aiPredictedPricePromptLoadError(code: 'AI_PREDICTED_PRICE_PROMPT_LOAD_ERROR', koMessage: 'AI 가격측정 프롬프트 로딩에 실패했습니다.'),

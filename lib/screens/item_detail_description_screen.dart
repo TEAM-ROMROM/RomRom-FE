@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' show max;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -33,6 +34,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
+import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
@@ -94,6 +96,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
   double _scaleAtRelease = 1.0;
 
   bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
+  bool _isChatCreationInProgress = false; // 채팅방 생성 요청 진행 여부 (채팅하기 중복 탭 방지)
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
@@ -255,7 +258,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
   /// 물품 상태 토글 (판매중 ↔ 거래완료)
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: '물품 정보를 찾을 수 없어요', type: SnackBarType.error);
       return;
     }
 
@@ -270,7 +273,9 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
       await ref.read(myItemsProvider.notifier).changeStatus(request);
 
       if (mounted) {
-        final successMessage = item.itemStatus == ItemStatus.available.serverName ? '교환 완료로 변경되었습니다' : '판매중으로 변경되었습니다';
+        final successMessage = item.itemStatus == ItemStatus.available.serverName
+            ? '교환 완료로 변경되었습니다'
+            : '교환 가능으로 변경되었습니다';
 
         CommonSnackBar.show(context: context, message: successMessage);
 
@@ -279,11 +284,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
       }
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }
@@ -291,7 +292,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
   /// 물품 삭제
   Future<bool> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: '물품 정보를 찾을 수 없어요', type: SnackBarType.error);
       return false;
     }
 
@@ -304,11 +305,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
       return true;
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
       return false;
     }
@@ -388,7 +385,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
               customBorder: const CircleBorder(),
               highlightColor: AppColors.buttonHighlightColorGray,
               splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-              child: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+              child: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite, semanticLabel: '뒤로 가기'),
             ),
           ),
         ),
@@ -414,7 +411,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
               customBorder: const CircleBorder(),
               highlightColor: AppColors.buttonHighlightColorGray,
               splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-              child: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite),
+              child: const Icon(AppIcons.navigateBefore, color: AppColors.textColorWhite, semanticLabel: '뒤로 가기'),
             ),
           ),
         ),
@@ -451,6 +448,8 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
     if (item == null) {
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
+        // 물품 없음 화면에서도 뒤로가기 제공
+        appBar: const CommonAppBar(title: ''),
         body: Center(child: Text('물품 정보가 없습니다.', style: CustomTextStyles.h3)),
       );
     }
@@ -699,6 +698,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
                                                           : 'assets/images/dislike-heart-icon.svg',
                                                       width: 30.w,
                                                       height: 30.h,
+                                                      semanticsLabel: liked ? '좋아요 취소' : '좋아요',
                                                     ),
                                                   ),
                                                 ),
@@ -895,7 +895,12 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
                       child: SizedBox.square(
                         dimension: 56.w,
                         child: Center(
-                          child: Icon(AppIcons.navigateBefore, size: 24.sp, color: AppColors.textColorWhite),
+                          child: Icon(
+                            AppIcons.navigateBefore,
+                            size: 24.sp,
+                            color: AppColors.textColorWhite,
+                            semanticLabel: '뒤로 가기',
+                          ),
                         ),
                       ),
                     ),
@@ -905,8 +910,12 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
             ),
 
             Positioned(
-              top: MediaQuery.of(context).padding.top + 8.h,
-              right: 16.w,
+              // 신고 버튼(타인 물품)은 터치 영역 확대분만큼 위치 보정 (아이콘 시각 위치 유지)
+              top:
+                  MediaQuery.of(context).padding.top +
+                  8.h -
+                  (widget.isMyItem ? 0 : ReportMenuButton.rowTopCompensation(32.w)),
+              right: 16.w - (widget.isMyItem ? 0 : ReportMenuButton.tapTargetExtraInset),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -929,14 +938,20 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
                           child: SizedBox.square(
                             dimension: 56.w,
                             child: Center(
-                              child: Icon(AppIcons.share, size: 30.sp, color: AppColors.textColorWhite),
+                              child: Icon(
+                                AppIcons.share,
+                                size: 30.sp,
+                                color: AppColors.textColorWhite,
+                                semanticLabel: '공유',
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 12.w),
+                  // 신고 버튼 터치 여백만큼 간격 축소 (작은 화면 음수 폭 방지)
+                  SizedBox(width: max(0.0, 12.w - (widget.isMyItem ? 0 : ReportMenuButton.tapTargetExtraInset))),
                   !widget.isMyItem
                       ? ReportMenuButton(
                           onReportPressed: () async {
@@ -961,7 +976,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
                             ContextMenuItem(
                               id: 'changeTradeStatus',
                               icon: AppIcons.change,
-                              title: item?.itemStatus == ItemStatus.available.serverName ? '교환완료로 변경' : '판매중으로 변경',
+                              title: item?.itemStatus == ItemStatus.available.serverName ? '교환완료로 변경' : '교환 가능으로 변경',
                               onTap: () async {
                                 await _toggleItemStatus(item!);
                               },
@@ -1034,7 +1049,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
                     left: 0,
                     right: 0,
                     child: CustomFloatingButton(
-                      isEnabled: true,
+                      isEnabled: !_isChatCreationInProgress,
                       enabledOnPressed: _handleChatButtonPressed,
                       buttonText: '채팅하기',
                       buttonWidth: 346,
@@ -1087,13 +1102,15 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
     ref.read(itemLikeProvider.notifier).toggle(id, authorMemberId: item?.member?.memberId);
   }
 
-  /// 채팅하기 버튼 핸들러
+  /// 채팅하기: 진행 중이면 무시 > 채팅방 생성 > 목록 갱신 > 채팅방 이동
   Future<void> _handleChatButtonPressed() async {
+    if (_isChatCreationInProgress) return;
     if (item == null || widget.tradeRequestHistoryId == null) {
       CommonSnackBar.show(context: context, message: '채팅방을 생성할 수 없습니다', type: SnackBarType.error);
       return;
     }
 
+    setState(() => _isChatCreationInProgress = true);
     try {
       // 1. 채팅방 생성 (이미 있으면 기존 방 반환)
       final chatApi = ChatApi();
@@ -1113,11 +1130,10 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
       debugPrint('채팅방 생성 실패: $e');
       if (!mounted) return;
 
-      CommonSnackBar.show(
-        context: context,
-        message: '채팅방 생성 실패: ${ErrorUtils.getErrorMessage(e)}',
-        type: SnackBarType.error,
-      );
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+    } finally {
+      // 버튼 잠금 해제 (성공·실패 공통)
+      if (mounted) setState(() => _isChatCreationInProgress = false);
     }
   }
 

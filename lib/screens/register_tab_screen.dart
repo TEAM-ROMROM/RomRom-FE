@@ -25,6 +25,7 @@ import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'dart:async';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -54,6 +55,9 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
 
   // FAB 중복 탭 방지
   bool _isFabProcessing = false;
+
+  // 에러 뷰 다시 시도 진행 중 여부 (reload는 로딩 상태를 내지 않아 화면에서 추적)
+  bool _isRetryingMyItems = false;
 
   // 토글 상태
   MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.selling;
@@ -106,7 +110,9 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
   Widget build(BuildContext context) {
     final myItemsAsync = ref.watch(myItemsProvider);
     final isLoading = myItemsAsync.isLoading;
-    final myItems = myItemsAsync.value;
+    final myItems = myItemsAsync.valueOrNull;
+    // 불러오기 실패 + 이전 값 없음 > 에러 뷰 (이전 값 있으면 목록 유지)
+    final hasLoadErrorWithoutItems = myItemsAsync.hasError && myItems == null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(statusBarColor: AppColors.transparent),
@@ -135,13 +141,13 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: GlassHeaderDelegate(
-                        headerTitle: '나의 등록된 물건',
+                        headerTitle: '나의 등록된 물품',
                         toggle: GlassHeaderToggleBuilder.buildDefaultToggle(
                           animation: _toggleAnimation,
                           isRightSelected: _currentTabStatus == MyItemToggleStatus.completed,
                           onLeftTap: () => _onToggleChanged(MyItemToggleStatus.selling),
                           onRightTap: () => _onToggleChanged(MyItemToggleStatus.completed),
-                          leftText: '판매 중',
+                          leftText: '교환 가능',
                           rightText: '교환 완료',
                         ),
                         statusBarHeight: MediaQuery.of(context).padding.top,
@@ -151,7 +157,11 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
                         enableBlur: _isScrolled,
                       ),
                     ),
-                    ..._buildItemSlivers(isLoading: isLoading, myItems: myItems),
+                    ..._buildItemSlivers(
+                      isLoading: isLoading,
+                      hasLoadErrorWithoutItems: hasLoadErrorWithoutItems,
+                      myItems: myItems,
+                    ),
                   ],
                 ),
               ),
@@ -163,9 +173,22 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
     );
   }
 
-  List<Widget> _buildItemSlivers({required bool isLoading, required myItems}) {
+  List<Widget> _buildItemSlivers({required bool isLoading, required bool hasLoadErrorWithoutItems, required myItems}) {
     if (isLoading && myItems == null) {
       return const [RegisterTabSkeletonSliver()];
+    }
+
+    if (hasLoadErrorWithoutItems) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: EmptyStateView.error(
+            centerText: '물품을 불러오지 못했어요',
+            onRetry: _onRetryMyItemsPressed,
+            isRetrying: _isRetryingMyItems,
+          ),
+        ),
+      ];
     }
 
     final List<Item> filteredItems = switch (_currentTabStatus) {
@@ -212,10 +235,21 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
     ];
   }
 
+  /// 에러 뷰 다시 시도: 진행 중이면 무시 > 내 물품 재조회
+  Future<void> _onRetryMyItemsPressed() async {
+    if (_isRetryingMyItems) return;
+    setState(() => _isRetryingMyItems = true);
+    try {
+      await ref.read(myItemsProvider.notifier).reload();
+    } finally {
+      if (mounted) setState(() => _isRetryingMyItems = false);
+    }
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Text(
-        '등록된 물건이 없어요.',
+        '등록된 물품이 없어요.',
         style: CustomTextStyles.p1.copyWith(color: AppColors.opacity40White, fontWeight: FontWeight.w500),
         textAlign: TextAlign.center,
       ),
@@ -223,8 +257,8 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
   }
 
   Widget _buildItemTile(Item item, int index) {
-    final imageUrl = item.primaryImageUrl != null ? item.primaryImageUrl! : 'https://picsum.photos/400/300';
-    final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : 'Unknown';
+    final imageUrl = item.primaryImageUrl ?? '';
+    final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : '';
 
     return Stack(
       children: [
@@ -258,7 +292,8 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 6.h),
-                    Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
+                    if (uploadTime.isNotEmpty)
+                      Text(uploadTime, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
                     SizedBox(height: 12.h),
                     Text('${formatPrice(item.price ?? 0)}원', style: CustomTextStyles.p1),
                     SizedBox(height: 10.h),
@@ -297,7 +332,7 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
                   id: 'changeTradeStatus',
                   contextIcon: AppIcons.dotsVerticalSmall,
                   icon: AppIcons.change,
-                  title: _currentTabStatus == MyItemToggleStatus.selling ? '교환 완료로 변경' : '판매중으로 변경',
+                  title: _currentTabStatus == MyItemToggleStatus.selling ? '교환 완료로 변경' : '교환 가능으로 변경',
                   onTap: () => _showChangeStatusConfirmDialog(item),
                   showDividerAfter: true,
                 ),
@@ -363,14 +398,16 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
 
                     // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
                     // provider 미로딩 시(null) 등록 차단 — stale 0으로 제한 우회 방지
-                    final myItemsValue = ref.read(myItemsProvider).value;
+                    final myItemsAsyncValue = ref.read(myItemsProvider);
+                    final myItemsValue = myItemsAsyncValue.valueOrNull;
                     if (myItemsValue == null) {
+                      // 문구 분기: 실제 로딩 중(첫 로드·재시도) / 불러오기 실패
+                      final isMyItemsLoading = myItemsAsyncValue.isLoading || _isRetryingMyItems;
+                      final blockedMessage = isMyItemsLoading
+                          ? '물품 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.'
+                          : '물품 정보를 불러오지 못했어요. 다시 시도해 주세요.';
                       if (mounted) {
-                        CommonSnackBar.show(
-                          context: context,
-                          message: '물품 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
-                          type: SnackBarType.error,
-                        );
+                        CommonSnackBar.show(context: context, message: blockedMessage, type: SnackBarType.error);
                       }
                       return;
                     }
@@ -408,7 +445,7 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
                       _navigateToHomeAndShowCoachMark();
                     } else {
                       debugPrint(
-                        '첫 물건 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}',
+                        '첫 물품 등록 조건 불충족: isFirstItemPosted=${result is Map ? result['isFirstItemPosted'] : 'N/A'}',
                       );
                     }
                   } finally {
@@ -488,7 +525,7 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
         },
       ),
     );
-    // 수정 완료 후 myItemsProvider가 notifier 경유로 자동 갱신
+    // 수정 저장 시 RegisterInputForm이 myItemsProvider.edit 호출 > ref.watch로 목록 자동 갱신
   }
 
   Future<void> _showChangeStatusConfirmDialog(Item item) async {
@@ -500,8 +537,8 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
       context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId, autoTriggerExchangeRequest: true));
     } else {
       final result = await context.showDeleteDialog(
-        title: '판매중으로 변경하시겠습니까?',
-        description: '판매중으로 변경하시겠습니까?',
+        title: '교환 가능으로 변경하시겠습니까?',
+        description: '교환 가능으로 변경하시겠습니까?',
         confirmText: '확인',
       );
       if (result == true) {
@@ -519,33 +556,27 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
 
   Future<void> _toggleItemStatus(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: '물품 정보를 찾을 수 없어요', type: SnackBarType.error);
       return;
     }
 
     try {
-      final targetStatus = _currentTabStatus == MyItemToggleStatus.selling
-          ? ItemStatus.exchanged.serverName
-          : ItemStatus.available.serverName;
+      final isChangingToExchanged = _currentTabStatus == MyItemToggleStatus.selling;
+      final targetStatus = isChangingToExchanged ? ItemStatus.exchanged.serverName : ItemStatus.available.serverName;
       await ref.read(myItemsProvider.notifier).changeStatus(ItemRequest(itemId: item.itemId, itemStatus: targetStatus));
       if (!mounted) return;
-      if (_currentTabStatus != MyItemToggleStatus.selling) {
-        CommonSnackBar.show(context: context, message: '판매중으로 변경되었습니다');
-      }
+      // 변경 방향별 성공 안내 (상세 화면과 같은 문구)
+      CommonSnackBar.show(context: context, message: isChangingToExchanged ? '교환 완료로 변경되었습니다' : '교환 가능으로 변경되었습니다');
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '상태 변경 실패: ${ErrorUtils.getErrorMessage(e)}',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }
 
   Future<void> _deleteItem(Item item) async {
     if (item.itemId == null) {
-      CommonSnackBar.show(context: context, message: '물품 ID가 없습니다', type: SnackBarType.error);
+      CommonSnackBar.show(context: context, message: '물품 정보를 찾을 수 없어요', type: SnackBarType.error);
       return;
     }
 
@@ -556,11 +587,7 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
       }
     } catch (e) {
       if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '물품 삭제 실패: ${ErrorUtils.getErrorMessage(e)}',
-          type: SnackBarType.error,
-        );
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
   }

@@ -91,7 +91,12 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
                                 width: 44.w,
                                 height: 44.h,
                                 child: Center(
-                                  child: Icon(AppIcons.cancel, size: 24.sp, color: AppColors.textColorWhite),
+                                  child: Icon(
+                                    AppIcons.cancel,
+                                    size: 24.sp,
+                                    color: AppColors.textColorWhite,
+                                    semanticLabel: '닫기',
+                                  ),
                                 ),
                               ),
                             ),

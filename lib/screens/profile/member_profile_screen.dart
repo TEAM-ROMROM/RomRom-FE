@@ -8,6 +8,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/states/member_profile_state.dart';
@@ -109,24 +110,33 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   /// 본인 분기: provider 현재 값을 로컬 편집 state로 동기화.
   /// provider가 아직 로딩 중이면 reload 후 재시도.
   Future<void> _syncFromProvider() async {
-    final profileState = ref.read(memberProfileProvider);
-
-    if (profileState.hasValue && profileState.value != null) {
-      _applyProfileState(profileState.value!);
-    } else {
-      try {
-        await ref.read(memberProfileProvider.notifier).reload();
-        if (!mounted) return;
-        final s = ref.read(memberProfileProvider).value;
-        if (s != null) setState(() => _applyProfileState(s));
-      } catch (e) {
-        debugPrint('memberProfileProvider reload 실패: $e');
-        if (mounted) {
-          setState(() => _hasError = true);
-          CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
-        }
-      }
+    final currentProfile = ref.read(memberProfileProvider).valueOrNull;
+    if (currentProfile != null) {
+      _applyProfileState(currentProfile);
+      return;
     }
+
+    // 값 없음(로딩·첫 로드 실패) > 재조회 (reload는 실패를 throw 대신 AsyncError로 기록)
+    try {
+      await ref.read(memberProfileProvider.notifier).reload();
+      if (!mounted) return;
+      final reloadedAsync = ref.read(memberProfileProvider);
+      final reloadedProfile = reloadedAsync.valueOrNull;
+      if (reloadedProfile != null) {
+        setState(() => _applyProfileState(reloadedProfile));
+      } else if (reloadedAsync.hasError) {
+        _showProfileLoadError(reloadedAsync.error!);
+      }
+    } catch (e) {
+      if (mounted) _showProfileLoadError(e);
+    }
+  }
+
+  /// 본인 프로필 로드 실패 > 에러 화면 + 스낵바
+  void _showProfileLoadError(Object error) {
+    debugPrint('memberProfileProvider reload 실패: $error');
+    setState(() => _hasError = true);
+    CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(error), type: SnackBarType.error);
   }
 
   void _applyProfileState(MemberProfileState state) {
@@ -194,27 +204,20 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
     }
   }
 
-  /// 차단/차단해제 토글 처리 (타인 전용, 그대로 유지)
+  /// 차단/차단해제 토글 (타인 전용): memberBlockProvider 경유 > 성공 시 화면 상태·결과 플래그 갱신
   Future<void> _handleBlockToggle() async {
-    final memberApi = MemberApi();
-    bool success;
+    final shouldBlock = !_isBlockedUser;
+    // 실패 시 provider가 롤백·에러 안내
+    final isToggleSucceeded = await ref.read(memberBlockProvider.notifier).setBlocked(widget.memberId, shouldBlock);
+    if (!isToggleSucceeded || !mounted) return;
 
-    if (_isBlockedUser) {
-      success = await memberApi.unblockMember(widget.memberId);
-      if (success && mounted) {
-        CommonSnackBar.show(context: context, message: '차단이 해제되었습니다', type: SnackBarType.success);
-      }
-    } else {
-      success = await memberApi.blockMember(widget.memberId);
-      if (success && mounted) {
-        CommonSnackBar.show(context: context, message: '사용자를 차단했습니다', type: SnackBarType.success);
-      }
-    }
-
-    if (success && mounted) {
-      setState(() => _isBlockedUser = !_isBlockedUser);
-      _blockStatusChanged = true;
-    }
+    CommonSnackBar.show(
+      context: context,
+      message: shouldBlock ? '사용자를 차단했습니다' : '차단이 해제되었습니다',
+      type: SnackBarType.success,
+    );
+    setState(() => _isBlockedUser = shouldBlock);
+    _blockStatusChanged = true;
   }
 
   /// 뒤로가기 처리 - 미저장 변경 확인 후 차단 상태 변경 시 결과 반환

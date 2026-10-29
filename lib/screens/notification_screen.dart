@@ -417,7 +417,12 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                       onTap: () => Navigator.pop(context),
                       scaleDown: AppPressable.scaleIcon,
                       enableRipple: false,
-                      child: Icon(AppIcons.navigateBefore, size: 28.sp, color: AppColors.textColorWhite),
+                      child: Icon(
+                        AppIcons.navigateBefore,
+                        size: 28.sp,
+                        color: AppColors.textColorWhite,
+                        semanticLabel: '뒤로 가기',
+                      ),
                     ),
                     trailingWidget: Row(
                       children: [
@@ -427,7 +432,12 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                             onTap: _onDeleteAllNotificationTap,
                             scaleDown: AppPressable.scaleIcon,
                             enableRipple: false,
-                            child: Icon(AppIcons.trash, size: 30.sp, color: AppColors.textColorWhite),
+                            child: Icon(
+                              AppIcons.trash,
+                              size: 30.sp,
+                              color: AppColors.textColorWhite,
+                              semanticLabel: '알림 전체 삭제',
+                            ),
                           ),
                         ),
                         Padding(
@@ -436,7 +446,12 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                             onTap: _onSettingsTap,
                             scaleDown: AppPressable.scaleIcon,
                             enableRipple: false,
-                            child: Icon(AppIcons.setting, size: 30.sp, color: AppColors.textColorWhite),
+                            child: Icon(
+                              AppIcons.setting,
+                              size: 30.sp,
+                              color: AppColors.textColorWhite,
+                              semanticLabel: '알림 설정',
+                            ),
                           ),
                         ),
                       ],

@@ -299,6 +299,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                                 child: SvgPicture.asset(
                                   liked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg',
                                   fit: BoxFit.contain,
+                                  semanticsLabel: liked ? '좋아요 취소' : '좋아요',
                                 ),
                               ),
                             ),
@@ -446,7 +447,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '교환을 시작하려면\n먼저 나의 물건을 등록해 주세요!',
+                    '교환을 시작하려면\n먼저 나의 물품을 등록해 주세요!',
                     textAlign: TextAlign.center,
                     style: CustomTextStyles.h2.copyWith(
                       fontWeight: FontWeight.w600,

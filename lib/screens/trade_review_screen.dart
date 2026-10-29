@@ -110,7 +110,7 @@ class _TradeReviewScreenState extends State<TradeReviewScreen> {
                   /// 닫기 버튼
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Icon(AppIcons.cancel, color: Colors.white, size: 24.sp),
+                    child: Icon(AppIcons.cancel, color: Colors.white, size: 24.sp, semanticLabel: '닫기'),
                   ),
                   SizedBox(height: 40.h),
 

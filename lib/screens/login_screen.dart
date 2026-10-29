@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: 45.h),
                 // 서비스 간단 소개 텍스트
                 Text(
-                  '손쉬운 물건 교환',
+                  '손쉬운 물품 교환',
                   style: CustomTextStyles.p1.copyWith(
                     color: AppColors.textColorWhite.withValues(alpha: 0.6),
                     fontWeight: FontWeight.w600,

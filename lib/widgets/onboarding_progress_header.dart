@@ -88,7 +88,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
             onTap: widget.onBackPressed ?? () => Navigator.of(context).pop(),
             scaleDown: AppPressable.scaleIcon,
             enableRipple: false,
-            child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
+            child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite, semanticLabel: '뒤로 가기'),
           ),
           SizedBox(width: 81.w),
           // 애니메이션 프로그레스 표시기

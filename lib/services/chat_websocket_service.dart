@@ -63,14 +63,9 @@ class ChatWebSocketService {
         throw Exception('Access token not found');
       }
 
-      // 2. 엔드포인트 URL 생성
-      // 🔧 TEST: HTTP로 시도 (stomp_dart_client의 HTTPS URL 파싱 버그 우회)
-      const wsUrl = 'wss://api.romrom.suhsaechan.kr/chat';
-      debugPrint('[WebSocket] ========================================');
-      debugPrint('[WebSocket] 연결 시도 시작 (HTTP 테스트)');
-      debugPrint('[WebSocket] AppUrls.baseUrl: ${AppUrls.baseUrl}');
-      debugPrint('[WebSocket] wsUrl: $wsUrl');
-      debugPrint('[WebSocket] ========================================');
+      // 2. 엔드포인트 URL 생성 (AppUrls.baseUrl 기준: https > wss, 디버그 URL 변경 반영)
+      final wsUrl = AppUrls.chatWebSocketUrl;
+      debugPrint('[WebSocket] 연결 시도: $wsUrl');
 
       // 3. StompClient 생성
       _stompClient = StompClient(

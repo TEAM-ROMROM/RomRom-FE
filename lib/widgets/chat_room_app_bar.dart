@@ -112,9 +112,16 @@ Widget _buildContextMenu({
           id: 'report',
           icon: AppIcons.report,
           title: '신고하기',
-          onTap: () {
-            if (opponentId != null) {
-              context.navigateTo(screen: MemberReportScreen(memberId: opponentId));
+          onTap: () async {
+            if (opponentId == null) return;
+            // 신고 화면 결과 대기 > 성공 시 접수 안내 (홈·프로필 신고와 같은 문구)
+            final bool? isReported = await context.navigateTo<bool>(screen: MemberReportScreen(memberId: opponentId));
+            if (isReported == true && context.mounted) {
+              await CommonModal.success(
+                context: context,
+                message: '신고가 접수되었습니다.',
+                onConfirm: () => Navigator.of(context).pop(),
+              );
             }
           },
           showDividerAfter: true,
@@ -142,7 +149,7 @@ Widget _buildContextMenu({
                     CommonSnackBar.show(
                       context: context,
                       type: SnackBarType.error,
-                      message: '회원 차단 실패: ${ErrorUtils.getErrorMessage(e)}',
+                      message: ErrorUtils.getErrorMessage(e),
                     );
                   }
                 }
@@ -171,7 +178,7 @@ Widget _buildContextMenu({
                 } catch (e) {
                   if (context.mounted) {
                     Navigator.of(context).pop();
-                    CommonSnackBar.show(context: context, message: '채팅방 나가기 실패: ${ErrorUtils.getErrorMessage(e)}');
+                    CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e));
                   }
                 }
               },

@@ -11,7 +11,7 @@
 ///   ItemStatus.values.forEach((status) => print(status.name));
 ///   final serverValue = selectedStatus.serverName; // API 전송용
 enum ItemStatus {
-  available(id: 1, label: '판매중', serverName: 'AVAILABLE'),
+  available(id: 1, label: '교환 가능', serverName: 'AVAILABLE'),
   exchanged(id: 2, label: '교환완료', serverName: 'EXCHANGED');
 
   final int id;

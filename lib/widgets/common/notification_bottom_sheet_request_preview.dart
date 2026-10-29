@@ -150,7 +150,7 @@ class _NotificationBottomSheetRequestCardAnimationState extends State<_Notificat
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('내 물건에 교환 요청', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
+                          Text('내 물품에 교환 요청', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
                           const SizedBox(height: 4),
                           Text('받은 요청을 지금 확인해볼까요?', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w400)),
                         ],

@@ -62,7 +62,7 @@ class NotificationBottomSheet {
         text: TextSpan(
           style: descriptionStyle,
           children: [
-            const TextSpan(text: '내 물건에 대한 실시간 '),
+            const TextSpan(text: '내 물품에 대한 실시간 '),
             const TextSpan(
               text: '교환 제안',
               style: TextStyle(color: AppColors.primaryYellow),

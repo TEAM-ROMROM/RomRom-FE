@@ -122,16 +122,17 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `memberBlockProvider` | `providers/member_block_provider.dart` | Notifier(토글) | 차단 `Set<memberId>` |
 | `notificationSettingProvider` | `providers/notification_setting_provider.dart` | Notifier(토글) | 알림설정 `Map<type, bool>` |
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
+| `imageRepositoryProvider` | `providers/image_repository_provider.dart` | Provider | ImageRepository 주입 (이미지 업로드·삭제 공용) |
 | `coachMarkTriggerProvider` | `providers/coach_mark_trigger_provider.dart` | Notifier(bool) | 첫 등록 후 코치마크 일회성 신호 |
 
 ### myItems 구독/사용 현황 (내 물건 도메인)
 | 화면 | 방식 |
 |---|---|
 | `home_tab_screen` | `ref.watch` → 카드덱·블러 파생 |
-| `register_tab_screen` | `ref.listen` → `_loadMyItems(isRefresh:true)` |
+| `register_tab_screen` | `ref.watch` → 내 물건 목록 파생 |
 | `my_register_item_screen` | `ref.listen` → `_loadAllTabs(isRefresh:true)` |
 | `request_management_tab_screen` | `ref.listen` → `_loadInitialItems(isRefresh:true)` |
-| `profile_exchange_section` | 본인 프로필일 때만 `ref.listen` |
-| mutation: `register_input_form`(등록), `item_detail_description_screen`·`register_tab_screen`(삭제/상태변경), `chat_room_screen`(거래완료) | `ref.read(myItemsProvider.notifier).register/delete/changeStatus/reload` |
+| `profile_exchange_section` | 본인 프로필일 때만 `ref.watch`로 목록 표시 (타인은 로컬 조회) |
+| mutation: `register_input_form`(등록·수정), `item_detail_description_screen`·`register_tab_screen`(삭제/상태변경), `chat_room_screen`(거래완료) | `ref.read(myItemsProvider.notifier).register/edit/delete/changeStatus/reload` (`edit`: AsyncNotifier 기본 `update`와 이름 충돌 회피) |
 
 > Phase 2~5에서 memberProfile·notifications·chatRooms·tradeRequests provider가 추가되면 이 표를 갱신한다.

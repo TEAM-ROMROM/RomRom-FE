@@ -74,5 +74,18 @@ void main() {
       await f;
       expect(fake.blockCalls, 1);
     });
+
+    test('setBlocked는 서버 확정 시 true를 반환한다', () async {
+      final isBlockSucceeded = await container.read(memberBlockProvider.notifier).setBlocked('B', true);
+      expect(isBlockSucceeded, isTrue);
+    });
+
+    test('setBlocked는 실패·서버 false 시 false를 반환한다 (호출부 성공 처리 차단용)', () async {
+      final notifier = container.read(memberBlockProvider.notifier);
+      fake.throwOnBlock = true;
+      expect(await notifier.setBlocked('B', true), isFalse);
+      fake.unblockReturn = false;
+      expect(await notifier.setBlocked('A', false), isFalse);
+    });
   });
 }

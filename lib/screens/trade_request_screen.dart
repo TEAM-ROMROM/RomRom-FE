@@ -192,7 +192,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
   /// 거래 요청 API 호출
   Future<void> _submitTradeRequest() async {
     if (_selectedTradeOptions.isEmpty) {
-      CommonSnackBar.show(context: context, message: '교환방식을 선택해주세요.', type: SnackBarType.info);
+      CommonSnackBar.show(context: context, message: '교환 방식을 선택해주세요.', type: SnackBarType.info);
       return;
     }
 

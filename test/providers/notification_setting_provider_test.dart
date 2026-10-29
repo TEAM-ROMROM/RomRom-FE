@@ -7,10 +7,19 @@ import 'package:romrom_fe/repositories/notification_setting_repository.dart';
 class FakeNotificationSettingRepository implements NotificationSettingRepository {
   bool shouldThrow = false;
   int callCount = 0;
+  int updateAllCallCount = 0;
+  Map<NotificationSettingType, bool>? lastUpdateAllValues;
 
   @override
   Future<void> update(NotificationSettingType type, bool value) async {
     callCount++;
+    if (shouldThrow) throw Exception('boom');
+  }
+
+  @override
+  Future<void> updateAll(Map<NotificationSettingType, bool> values) async {
+    updateAllCallCount++;
+    lastUpdateAllValues = values;
     if (shouldThrow) throw Exception('boom');
   }
 }
@@ -55,6 +64,34 @@ void main() {
       final f2 = n.setEnabled(NotificationSettingType.chat, false);
       await Future.wait([f1, f2]);
       expect(fake.callCount, 1);
+    });
+
+    test('setAll은 repository updateAll 1회 호출 + 전체 즉시 반영 + true 반환', () async {
+      final notifier = container.read(notificationSettingProvider.notifier);
+      notifier.seed({for (final type in NotificationSettingType.values) type: true});
+      final allDisabled = {for (final type in NotificationSettingType.values) type: false};
+
+      final isUpdateSucceeded = await notifier.setAll(allDisabled, isSilent: true);
+
+      expect(isUpdateSucceeded, isTrue);
+      expect(fake.updateAllCallCount, 1);
+      expect(fake.callCount, 0);
+      expect(fake.lastUpdateAllValues, allDisabled);
+      expect(container.read(notificationSettingProvider).values.every((isEnabled) => !isEnabled), isTrue);
+    });
+
+    test('setAll 실패 시 전체 롤백 + false 반환', () async {
+      final notifier = container.read(notificationSettingProvider.notifier);
+      notifier.seed({for (final type in NotificationSettingType.values) type: true});
+      fake.shouldThrow = true;
+
+      final isUpdateSucceeded = await notifier.setAll({
+        for (final type in NotificationSettingType.values) type: false,
+      }, isSilent: true);
+
+      expect(isUpdateSucceeded, isFalse);
+      expect(fake.updateAllCallCount, 1);
+      expect(container.read(notificationSettingProvider).values.every((isEnabled) => isEnabled), isTrue);
     });
   });
 }

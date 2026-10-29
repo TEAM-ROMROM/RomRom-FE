@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
+import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
@@ -90,14 +92,15 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
           (member.isTradeNotificationAgreed ?? false);
 
       if (anyEnabled) {
-        await MemberApi().updateNotificationSetting(
-          isMarketingInfoAgreed: false,
-          isActivityNotificationAgreed: false,
-          isChatNotificationAgreed: false,
-          isContentNotificationAgreed: false,
-          isTradeNotificationAgreed: false,
-        );
-        debugPrint('[알림 동기화] 시스템 권한 거부 → 백엔드 알림 설정 전체 false 반영');
+        // 5개 항목 전체 false: notificationSettingProvider 일괄 요청 1회 (백그라운드라 실패 스낵바 없음)
+        final isSyncSucceeded = await ref.read(notificationSettingProvider.notifier).setAll({
+          for (final settingType in NotificationSettingType.values) settingType: false,
+        }, isSilent: true);
+        if (isSyncSucceeded) {
+          debugPrint('[알림 동기화] 시스템 권한 거부 → 백엔드 알림 설정 전체 false 반영');
+        } else {
+          debugPrint('[알림 동기화] 실패: 일괄 변경 미반영 (다음 앱 복귀 시 재시도)');
+        }
       }
     } catch (e) {
       debugPrint('[알림 동기화] 실패: $e');
