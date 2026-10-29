@@ -144,14 +144,10 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       final uri = Uri.tryParse(deepLink);
       if (uri == null) return;
 
-      NotificationType? notificationType;
       final typeRaw = message.data['notificationType'] as String?;
-      if (typeRaw != null) {
-        try {
-          notificationType = NotificationType.fromServerName(typeRaw);
-        } catch (_) {
-          debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
-        }
+      final notificationType = NotificationType.fromServerName(typeRaw);
+      if (typeRaw != null && notificationType == null) {
+        debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
       }
 
       ColdStartDeepLinkData.setPending(uri, notificationType: notificationType, extraData: message.data);

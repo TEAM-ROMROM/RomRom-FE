@@ -12,7 +12,7 @@ import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/member_repository_provider.dart';
 import 'package:romrom_fe/repositories/member_repository.dart';
-import 'package:romrom_fe/screens/member_report_screen.dart';
+import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/states/member_profile_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -247,7 +247,7 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
 
   /// 신고하기 처리
   Future<void> _handleReport() async {
-    final bool? reported = await context.navigateTo(screen: MemberReportScreen(memberId: widget.memberId));
+    final bool? reported = await context.navigateTo(screen: ReportScreen.member(memberId: widget.memberId));
 
     if (reported == true && mounted) {
       await CommonModal.success(

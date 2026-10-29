@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:romrom_fe/utils/installed_app_version.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -72,12 +72,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
 
   /// 로그인 UI 우하단에 표시할 앱 버전 로드 (LoginScreen과 동일 구현)
   Future<void> _loadAppVersion() async {
-    try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      if (mounted) {
-        setState(() => _appVersion = packageInfo.version);
-      }
-    } catch (_) {}
+    // 조회 실패 시 빈 문자열 > 버전 문구 미표시
+    final installedAppVersion = await fetchInstalledAppVersion();
+    if (mounted) {
+      setState(() => _appVersion = installedAppVersion);
+    }
   }
 
   /// 스플래시 초기화 전체 타임아웃 (15초)

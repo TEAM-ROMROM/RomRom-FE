@@ -275,11 +275,11 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
                       ),
                     ),
                     Row(
-                      children: tradeOptions
+                      children: ItemTradeOption.fromServerNamesSkippingUnknown(tradeOptions)
                           .map(
                             (option) => Padding(
                               padding: EdgeInsets.only(right: 4.w),
-                              child: RequestManagementTradeOptionTag(option: ItemTradeOption.fromServerName(option)),
+                              child: RequestManagementTradeOptionTag(option: option),
                             ),
                           )
                           .toList(),

@@ -52,12 +52,7 @@ class _ExchangeRequestBody extends StatelessWidget {
   const _ExchangeRequestBody({required this.opponentItem, required this.myItem});
 
   String _categoryLabel(String? serverName) {
-    if (serverName == null) return '';
-    try {
-      return ItemCategories.fromServerName(serverName).label;
-    } catch (_) {
-      return '';
-    }
+    return ItemCategories.fromServerName(serverName)?.label ?? '';
   }
 
   @override

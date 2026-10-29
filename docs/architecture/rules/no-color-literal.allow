@@ -5,6 +5,4 @@ lib/debug/widgets/debug_server_log_panel.dart
 lib/debug/widgets/debug_url_panel.dart
 lib/screens/trade_review_screen.dart
 lib/widgets/common/completed_toggle_switch.dart
-lib/widgets/home_feed_item_tag_chips.dart
 lib/widgets/home_feed_item_widget.dart
-lib/widgets/item_card_option_chip.dart

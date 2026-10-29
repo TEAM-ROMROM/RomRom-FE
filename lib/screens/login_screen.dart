@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:romrom_fe/utils/installed_app_version.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -29,12 +29,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loadAppVersion() async {
-    try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      if (mounted) {
-        setState(() => _appVersion = packageInfo.version);
-      }
-    } catch (_) {}
+    // 조회 실패 시 빈 문자열 > 버전 문구 미표시
+    final installedAppVersion = await fetchInstalledAppVersion();
+    if (mounted) {
+      setState(() => _appVersion = installedAppVersion);
+    }
   }
 
   @override

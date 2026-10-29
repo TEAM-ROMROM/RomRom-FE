@@ -10,10 +10,8 @@ enum TradeStatus {
 
   const TradeStatus({required this.label, required this.serverName});
 
-  static TradeStatus fromServerName(String name) {
-    return TradeStatus.values.firstWhere(
-      (e) => e.serverName == name,
-      orElse: () => throw ArgumentError('No ItemTradeOption with serverName $name'),
-    );
+  /// 서버 이름 > 거래 상태 (모르는 값·null > null)
+  static TradeStatus? fromServerName(String? name) {
+    return TradeStatus.values.where((e) => e.serverName == name).firstOrNull;
   }
 }

@@ -437,7 +437,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   Future<void> _onReportPressed(List<HomeFeedItem> feedItems) async {
     if (feedItems.isEmpty) return;
     final currentItem = feedItems[_currentFeedIndex];
-    final bool? reported = await context.navigateTo(screen: ReportScreen(itemId: currentItem.itemUuid ?? ''));
+    final bool? reported = await context.navigateTo(screen: ReportScreen.item(itemId: currentItem.itemUuid ?? ''));
     if (reported == true && mounted) {
       await CommonModal.success(
         context: context,

@@ -28,7 +28,8 @@ extension AccountStatusExtension on AccountStatus {
     }
   }
 
-  static AccountStatus fromServerName(String name) {
-    return AccountStatus.values.firstWhere((e) => e.serverName == name, orElse: () => AccountStatus.activeAccount);
+  /// 서버 이름 > 계정 상태 (모르는 값·null > null)
+  static AccountStatus? fromServerName(String? name) {
+    return AccountStatus.values.where((e) => e.serverName == name).firstOrNull;
   }
 }

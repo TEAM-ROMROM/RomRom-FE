@@ -61,12 +61,7 @@ class RequestReceivedList extends StatelessWidget {
                         createdDate: giveItem.createdDate ?? DateTime.now(),
                         isNew: request.isNew ?? false,
                         tradeOptions: ItemTradeOption.fromServerNamesSkippingUnknown(giveItem.itemTradeOptions),
-                        tradeStatus: request.tradeStatus != null
-                            ? TradeStatus.values.firstWhere(
-                                (e) => e.serverName == request.tradeStatus,
-                                orElse: () => TradeStatus.chatting,
-                              )
-                            : TradeStatus.chatting,
+                        tradeStatus: TradeStatus.fromServerName(request.tradeStatus) ?? TradeStatus.chatting,
                         onTap: () => onCardTap(request),
                         onMenuTap: () => onMenuTap(request),
                       ),

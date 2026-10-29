@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:romrom_fe/enums/item_condition.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 
@@ -21,5 +23,21 @@ void main() {
     expect(feedItems.map((feedItem) => feedItem.id), [11, 12, 13]);
     expect(feedItems.map((feedItem) => feedItem.location), ['미지정', '서울특별시 중구 태평로1가', '미지정']);
     expect(feedItems[1].latitude, 37.5665);
+  });
+
+  test('fromItems > 모르는·없는 물품 상태는 미개봉, 모르는 거래 방식은 제외', () {
+    final items = [
+      Item(itemId: 'a', itemCondition: 'NEW_CONDITION', itemTradeOptions: ['NEW_OPTION', 'DIRECT_ONLY']),
+      Item(itemId: 'b'),
+      Item(itemId: 'c', itemCondition: 'HEAVILY_USED'),
+    ];
+
+    final feedItems = HomeFeedItem.fromItems(items, locationTexts: const ['', '', '']);
+
+    expect(feedItems[0].itemCondition, ItemCondition.sealed);
+    expect(feedItems[0].transactionTypes, [ItemTradeOption.directTradeOnly]);
+    expect(feedItems[1].itemCondition, ItemCondition.sealed);
+    expect(feedItems[1].transactionTypes, isEmpty);
+    expect(feedItems[2].itemCondition, ItemCondition.heavilyUsed);
   });
 }

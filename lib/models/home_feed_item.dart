@@ -1,5 +1,4 @@
 import 'package:romrom_fe/enums/item_condition.dart';
-import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 
@@ -55,19 +54,9 @@ class HomeFeedItem {
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
 
-      ItemCondition cond = ItemCondition.sealed;
-      try {
-        cond = item_cond.ItemCondition.values.firstWhere((e) => e.serverName == d.itemCondition);
-      } catch (_) {}
-
-      final opts = <ItemTradeOption>[];
-      if (d.itemTradeOptions != null) {
-        for (final s in d.itemTradeOptions!) {
-          try {
-            opts.add(ItemTradeOption.values.firstWhere((e) => e.serverName == s));
-          } catch (_) {}
-        }
-      }
+      // 모르는·없는 물품 상태 > 미개봉
+      final cond = ItemCondition.fromServerName(d.itemCondition) ?? ItemCondition.sealed;
+      final opts = ItemTradeOption.fromServerNamesSkippingUnknown(d.itemTradeOptions);
 
       feedItems.add(
         HomeFeedItem(

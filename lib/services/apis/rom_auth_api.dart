@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
@@ -17,6 +16,7 @@ import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/installed_app_version.dart';
 import 'package:romrom_fe/utils/log_masking.dart';
 
 // AuthApi -> RomAuthApi 이름 변경 : kakao SDK ApiAuth 와 충돌
@@ -32,11 +32,7 @@ class RomAuthApi {
     final platform = Platform.isIOS ? 'ios' : 'android';
     final locale = Platform.localeName.replaceAll('_', '-');
 
-    String appVersion = 'unknown';
-    try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      appVersion = packageInfo.version;
-    } catch (_) {}
+    final appVersion = await fetchInstalledAppVersion(fallbackVersion: 'unknown');
 
     String deviceModel = 'unknown';
     try {

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
@@ -229,7 +228,7 @@ class _CommonModalState extends State<CommonModal> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       elevation: 0,
       backgroundColor: AppColors.secondaryBlack1,
-      insetPadding: EdgeInsets.symmetric(horizontal: isTablet ? 200 : 40.w),
+      insetPadding: EdgeInsets.symmetric(horizontal: isTablet ? 200 : 40),
       child: Container(
         key: CommonModal.modalBoxKey,
         width: _modalWidth,

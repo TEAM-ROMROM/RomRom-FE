@@ -35,5 +35,15 @@ class AppUrls {
   // 스토어 URL
   static const String androidStoreUrl = "https://play.google.com/store/apps/details?id=com.alom.romrom&hl=ko";
   static const String iosStoreUrl =
-      "https://apps.apple.com/kr/app/%EB%A1%AC%EB%A1%AC-romrom-%ED%98%81%EC%8B%A0%EC%A0%81%EC%9D%B8-%EB%AC%BC%EB%AC%BC%EA%B5%90%ED%99%98/id6748823976";
+      "https://apps.apple.com/kr/app/%EB%A1%AC%EB%A1%AC-romrom-%ED%98%81%EC%8B%A0%EC%A0%81%EC%9D%B8-%EB%AC%BC%EB%AC%BC%EA%B5%90%ED%99%98/id$iosAppStoreId";
+
+  // iOS App Store 앱 id (openStoreListing 필수 인자)
+  static const String iosAppStoreId = '6748823976';
+
+  // 리뷰 유도용 스토어 URL (지역·언어 파라미터 없는 짧은 주소)
+  static const String androidStoreReviewUrl = 'https://play.google.com/store/apps/details?id=com.alom.romrom';
+  static const String iosStoreReviewUrl = 'https://apps.apple.com/app/id$iosAppStoreId';
+
+  // 운영 API 서버 주소 (RuntimeUrlManager 기본값·릴리스 빌드 고정값)
+  static const String productionApiBaseUrl = 'https://api.romrom.suhsaechan.kr';
 }

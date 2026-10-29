@@ -34,7 +34,7 @@ import 'package:romrom_fe/screens/trade_request_screen.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_bottom_action_button.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_bottom_gradient.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_circle_icon_button.dart';
-import 'package:romrom_fe/widgets/item_detail/item_detail_error_view.dart';
+import 'package:romrom_fe/widgets/common/error_scaffold.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_image_header.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_info_section.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_seller_section.dart';
@@ -257,11 +257,11 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
 
     // 작성자가 탈퇴한 게시글인 경우 별도 화면 표시
     if (errorMessage == ErrorCode.deletedMember.koMessage) {
-      return const ItemDetailErrorView(message: '작성자가 탈퇴한 게시글입니다.');
+      return const ErrorScaffold(message: '작성자가 탈퇴한 게시글입니다.');
     }
 
     if (hasError) {
-      return ItemDetailErrorView(message: errorMessage, onRetry: _loadItemDetail);
+      return ErrorScaffold(message: errorMessage, onRetry: _loadItemDetail);
     }
 
     if (item == null) {
@@ -405,7 +405,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
 
   /// 신고: 신고 화면 > 접수 시 완료 모달 > 상세 닫기
   Future<void> _openReportScreen() async {
-    final bool? reported = await context.navigateTo(screen: ReportScreen(itemId: widget.itemId));
+    final bool? reported = await context.navigateTo(screen: ReportScreen.item(itemId: widget.itemId));
 
     if (reported == true && mounted) {
       await CommonModal.success(

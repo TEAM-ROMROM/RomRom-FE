@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 
-import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -140,24 +139,7 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
 
   /// Item 목록을 RequestManagementItemCard 목록으로 변환
   List<RequestManagementItemCard> _convertToItemCards(List<Item> items) {
-    return items.map((item) {
-      String category;
-      try {
-        category = ItemCategories.fromServerName(item.itemCategory ?? '').label;
-      } catch (_) {
-        category = '기타';
-      }
-
-      return RequestManagementItemCard(
-        itemId: item.itemId ?? '',
-        imageUrl: item.primaryImageUrl ?? '',
-        category: category,
-        title: item.itemName ?? '',
-        price: item.price ?? 0,
-        likeCount: item.likeCount ?? 0,
-        aiPrice: item.isAiPredictedPrice ?? false,
-      );
-    }).toList();
+    return items.map((item) => RequestManagementItemCard.fromItem(item, titleFallback: '')).toList();
   }
 
   /// 선택한 카드에 거래 요청이 존재하는지 확인

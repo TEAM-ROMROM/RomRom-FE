@@ -5,17 +5,28 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
-import 'package:romrom_fe/enums/item_report_reason.dart';
+import 'package:romrom_fe/enums/report_target_type.dart';
+import 'package:romrom_fe/models/report_reason.dart';
 import 'package:romrom_fe/providers/report_repository_provider.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
-/// 신고하기 페이지
+/// 신고하기 페이지: 물품·회원 공용 (대상 종류별 사유 목록·신고 API)
+/// 신고 성공 시 pop(true), 실패 시 오류 모달 후 화면 유지
 class ReportScreen extends ConsumerStatefulWidget {
-  final String itemId; // 신고 대상 아이템 ID
+  final ReportTargetType targetType;
+  final String targetId; // 신고 대상 ID (물품 ID 또는 회원 ID)
 
-  const ReportScreen({super.key, required this.itemId});
+  const ReportScreen({super.key, required this.targetType, required this.targetId});
+
+  /// 물품 신고
+  const ReportScreen.item({super.key, required String itemId}) : targetType = ReportTargetType.item, targetId = itemId;
+
+  /// 회원 신고
+  const ReportScreen.member({super.key, required String memberId})
+    : targetType = ReportTargetType.member,
+      targetId = memberId;
 
   @override
   ConsumerState<ReportScreen> createState() => _ReportScreenState();
@@ -23,7 +34,7 @@ class ReportScreen extends ConsumerStatefulWidget {
 
 class _ReportScreenState extends ConsumerState<ReportScreen> {
   // 선택된 신고 사유 집합
-  final Set<ItemReportReason> _selectedReasons = {};
+  final Set<ReportReason> _selectedReasons = {};
   late final TextEditingController _extraCommentController;
   bool _isSubmitting = false;
 
@@ -75,8 +86,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                       Text('신고 사유', style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600)),
                       SizedBox(height: 24.h),
                       // 신고 사유 리스트
-                      ...ItemReportReason.values.map((reason) => _buildReasonRow(reason)),
-                      if (_selectedReasons.contains(ItemReportReason.etc)) ...[
+                      ...widget.targetType.reasons.map((reason) => _buildReasonRow(reason)),
+                      if (_selectedReasons.any((reason) => reason.shouldShowExtraCommentInput)) ...[
                         Container(
                           width: 345.w,
                           height: 140.h,
@@ -137,15 +148,12 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                 if (_isSubmitting) return;
                 setState(() => _isSubmitting = true);
                 try {
-                  await ref
-                      .read(reportRepositoryProvider)
-                      .reportItem(
-                        itemId: widget.itemId,
-                        itemReportReasons: _selectedReasons.map((e) => e.id).toSet(),
-                        extraComment: _extraCommentController.text.trim(),
-                      );
+                  await _submitReport(
+                    reasonIds: _selectedReasons.map((e) => e.id).toSet(),
+                    extraComment: _extraCommentController.text.trim(),
+                  );
                 } catch (e) {
-                  debugPrint('신고 요청 중 오류: $e');
+                  debugPrint('${widget.targetType.logLabel} 요청 중 오류: $e');
                   // 에러 코드 파싱
                   final messageForUser = ErrorUtils.getErrorMessage(e);
 
@@ -173,21 +181,43 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     );
   }
 
+  /// 대상 종류별 신고 API 호출 (물품 > reportItem, 회원 > reportMember)
+  Future<void> _submitReport({required Set<int> reasonIds, required String extraComment}) {
+    final reportRepository = ref.read(reportRepositoryProvider);
+    switch (widget.targetType) {
+      case ReportTargetType.item:
+        return reportRepository.reportItem(
+          itemId: widget.targetId,
+          itemReportReasons: reasonIds,
+          extraComment: extraComment,
+        );
+      case ReportTargetType.member:
+        return reportRepository.reportMember(
+          targetMemberId: widget.targetId,
+          memberReportReasons: reasonIds,
+          extraComment: extraComment,
+        );
+    }
+  }
+
+  /// 신고 사유 선택/해제 토글
+  void _toggleReason(ReportReason reason) {
+    setState(() {
+      if (_selectedReasons.contains(reason)) {
+        _selectedReasons.remove(reason);
+      } else {
+        _selectedReasons.add(reason);
+      }
+    });
+  }
+
   /// 신고 사유 행
-  Widget _buildReasonRow(ItemReportReason reason) {
+  Widget _buildReasonRow(ReportReason reason) {
     return Padding(
       padding: EdgeInsets.only(bottom: 24.h),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () {
-          setState(() {
-            if (_selectedReasons.contains(reason)) {
-              _selectedReasons.remove(reason);
-            } else {
-              _selectedReasons.add(reason);
-            }
-          });
-        },
+        onTap: () => _toggleReason(reason),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -196,15 +226,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               height: 20.w,
               child: Checkbox(
                 value: _selectedReasons.contains(reason),
-                onChanged: (value) {
-                  setState(() {
-                    if (value == true) {
-                      _selectedReasons.add(reason);
-                    } else {
-                      _selectedReasons.remove(reason);
-                    }
-                  });
-                },
+                onChanged: (_) => _toggleReason(reason),
                 activeColor: AppColors.primaryYellow,
                 checkColor: AppColors.primaryBlack,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),

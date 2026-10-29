@@ -194,10 +194,7 @@ class _MyLocationVerificationScreenState extends ConsumerState<MyLocationVerific
                       color: AppColors.locationVerificationAreaLabel,
                       borderRadius: BorderRadius.circular(100.r),
                     ),
-                    child: Text(
-                      '${_selectedAddress!.siDo} ${_selectedAddress!.siGunGu} ${_selectedAddress!.eupMyoenDong}',
-                      style: CustomTextStyles.p2,
-                    ),
+                    child: Text(_selectedAddress!.siDoSiGunGuEupMyoenDongText, style: CustomTextStyles.p2),
                   ),
                 CompletionButton(
                   isEnabled: _selectedAddress != null,

@@ -4,7 +4,7 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/screens/member_report_screen.dart';
+import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -115,7 +115,7 @@ Widget _buildContextMenu({
           onTap: () async {
             if (opponentId == null) return;
             // 신고 화면 결과 대기 > 성공 시 접수 안내 (홈·프로필 신고와 같은 문구)
-            final bool? isReported = await context.navigateTo<bool>(screen: MemberReportScreen(memberId: opponentId));
+            final bool? isReported = await context.navigateTo<bool>(screen: ReportScreen.member(memberId: opponentId));
             if (isReported == true && context.mounted) {
               await CommonModal.success(
                 context: context,

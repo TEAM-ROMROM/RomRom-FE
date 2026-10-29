@@ -43,11 +43,11 @@ class _MyCategorySettingsScreenState extends ConsumerState<MyCategorySettingsScr
           selectedCategories.clear();
           for (final category in categories) {
             if (category.itemCategory != null) {
-              try {
-                final itemCategory = ItemCategories.fromServerName(category.itemCategory!);
-                selectedCategories.add(itemCategory.id);
-              } catch (e) {
+              final itemCategory = ItemCategories.fromServerName(category.itemCategory);
+              if (itemCategory == null) {
                 debugPrint('카테고리 변환 실패: ${category.itemCategory}');
+              } else {
+                selectedCategories.add(itemCategory.id);
               }
             }
           }

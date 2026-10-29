@@ -20,39 +20,39 @@ class RegisterInputFormSkeleton extends StatelessWidget {
           children: [
             SizedBox(height: 8.h),
             // 이미지 업로드 영역
-            const SkeletonRectanglar(),
+            const SkeletonRectangular(),
 
             // 제목 필드
             Skeleton.keep(child: Text('제목', style: CustomTextStyles.p1)),
             SizedBox(height: 8.h),
-            const SkeletonRectanglar(width: double.infinity, height: 46),
+            const SkeletonRectangular(width: double.infinity, height: 46),
 
             // 카테고리 필드
             SizedBox(height: 20.h),
             Skeleton.keep(child: Text('카테고리', style: CustomTextStyles.p1)),
             SizedBox(height: 8.h),
-            const SkeletonRectanglar(width: double.infinity, height: 46),
+            const SkeletonRectangular(width: double.infinity, height: 46),
 
             // 물건 설명 필드
             Skeleton.keep(child: Text('물품 설명', style: CustomTextStyles.p1)),
             SizedBox(height: 8.h),
-            const SkeletonRectanglar(width: double.infinity, height: 140),
+            const SkeletonRectangular(width: double.infinity, height: 140),
 
             // 물건 상태 필드
             SizedBox(height: 20.h),
             Skeleton.keep(child: Text('물품 상태', style: CustomTextStyles.p1)),
             SizedBox(height: 16.h),
-            const SkeletonRectanglar(width: double.infinity, height: 68),
+            const SkeletonRectangular(width: double.infinity, height: 68),
 
             // 거래방식 필드
             Skeleton.keep(child: Text('교환 방식', style: CustomTextStyles.p1)),
             SizedBox(height: 16.h),
-            const SkeletonRectanglar(width: double.infinity, height: 30),
+            const SkeletonRectangular(width: double.infinity, height: 30),
 
             // 적정 가격 필드
             Skeleton.keep(child: Text('적정 가격', style: CustomTextStyles.p1)),
             SizedBox(height: 8.h),
-            const SkeletonRectanglar(width: double.infinity, height: 46),
+            const SkeletonRectangular(width: double.infinity, height: 46),
           ],
         ),
       ),
@@ -60,11 +60,11 @@ class RegisterInputFormSkeleton extends StatelessWidget {
   }
 }
 
-class SkeletonRectanglar extends StatelessWidget {
+class SkeletonRectangular extends StatelessWidget {
   final double width;
   final double height;
 
-  const SkeletonRectanglar({super.key, this.width = 80, this.height = 80});
+  const SkeletonRectangular({super.key, this.width = 80, this.height = 80});
 
   @override
   Widget build(BuildContext context) {

@@ -27,7 +27,8 @@ extension ChatRoomTypeExtension on ChatRoomType {
     }
   }
 
-  static ChatRoomType fromServerName(String name) {
-    return ChatRoomType.values.firstWhere((e) => e.serverName == name, orElse: () => ChatRoomType.requested);
+  /// 서버 이름 > 채팅방 타입 (모르는 값·null > null)
+  static ChatRoomType? fromServerName(String? name) {
+    return ChatRoomType.values.where((e) => e.serverName == name).firstOrNull;
   }
 }

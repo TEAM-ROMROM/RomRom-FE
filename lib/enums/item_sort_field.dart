@@ -20,12 +20,8 @@ enum ItemSortField {
 
   const ItemSortField({required this.label, required this.serverName});
 
-  /// serverName으로부터 ItemSortField를 찾는 헬퍼 메서드
-  static ItemSortField? fromServerName(String serverName) {
-    try {
-      return ItemSortField.values.firstWhere((e) => e.serverName == serverName);
-    } catch (e) {
-      return null;
-    }
+  /// 서버 이름 > 정렬 기준 (모르는 값·null > null)
+  static ItemSortField? fromServerName(String? serverName) {
+    return ItemSortField.values.where((e) => e.serverName == serverName).firstOrNull;
   }
 }

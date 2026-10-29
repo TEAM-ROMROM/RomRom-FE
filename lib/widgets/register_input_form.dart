@@ -159,9 +159,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
       // 좌표가 있으면 주소 변환, 없으면 빈 문자열로 초기화
       if (item?.latitude != null && item?.longitude != null) {
         _selectedAddress = await LocationService().getAddressFromCoordinates(NLatLng(item!.latitude!, item.longitude!));
-        locationController.text =
-            '${_selectedAddress?.siDo ?? ''} ${_selectedAddress?.siGunGu ?? ''} ${_selectedAddress?.eupMyoenDong ?? ''}'
-                .trim();
+        locationController.text = _selectedAddress?.siDoSiGunGuEupMyoenDongText.trim() ?? '';
       } else {
         _selectedAddress = null;
         locationController.text = '';
@@ -177,11 +175,9 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
 
       priceController.value = formatted;
 
-      selectedCategory = item?.itemCategory != null ? ItemCategories.fromServerName(item!.itemCategory!) : null;
-      selectedItemConditionTypes = item?.itemCondition != null
-          ? [ItemCondition.fromServerName(item!.itemCondition!)]
-          : [];
-      selectedTradeOptions = (item?.itemTradeOptions ?? []).map((e) => ItemTradeOption.fromServerName(e)).toList();
+      selectedCategory = ItemCategories.fromServerName(item?.itemCategory);
+      selectedItemConditionTypes = [?ItemCondition.fromServerName(item?.itemCondition)];
+      selectedTradeOptions = ItemTradeOption.fromServerNamesSkippingUnknown(item?.itemTradeOptions);
       // 수정 모드에서는 이미 선택된 값이 있으므로 touched 상태로 설정
       if (selectedItemConditionTypes.isNotEmpty) {
         _hasConditionBeenTouched = true;
@@ -324,7 +320,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
         onLocationSelected: (address) {
           debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
           setState(() {
-            locationController.text = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+            locationController.text = address.siDoSiGunGuEupMyoenDongText;
             // 위치 좌표 저장
             _latitude = address.latitude;
             _longitude = address.longitude;

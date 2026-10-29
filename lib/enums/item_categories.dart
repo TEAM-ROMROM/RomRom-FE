@@ -110,10 +110,8 @@ enum ItemCategories {
 
   const ItemCategories({required this.id, required this.label, required this.serverName, required this.iconPath});
 
-  static ItemCategories fromServerName(String serverName) {
-    return ItemCategories.values.firstWhere(
-      (e) => e.serverName == serverName,
-      orElse: () => throw ArgumentError('Invalid serverName: $serverName'),
-    );
+  /// 서버 이름 > 카테고리 (모르는 값·null > null)
+  static ItemCategories? fromServerName(String? serverName) {
+    return ItemCategories.values.where((e) => e.serverName == serverName).firstOrNull;
   }
 }

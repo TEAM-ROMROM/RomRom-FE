@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:romrom_fe/utils/installed_app_version.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
@@ -41,12 +41,11 @@ class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
   }
 
   Future<void> _loadAppVersion() async {
-    try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      if (mounted) {
-        setState(() => _appVersion = packageInfo.version);
-      }
-    } catch (_) {}
+    // 조회 실패 시 빈 문자열 > 버전 문구 미표시
+    final installedAppVersion = await fetchInstalledAppVersion();
+    if (mounted) {
+      setState(() => _appVersion = installedAppVersion);
+    }
   }
 
   /// 이메일 마스킹: "abc@gmail.com" → "ab***@gmail.com" (@앞 2자 유지, 나머지 ***)

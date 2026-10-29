@@ -34,15 +34,13 @@ class RequestManagementItemCard {
     this.aiPrice = false,
   });
 
-  /// 내 물품 > 요청관리 카드 (카테고리 표시 이름, 모르는·빈 카테고리 > '기타')
-  factory RequestManagementItemCard.fromItem(Item item) {
+  /// 내 물품 > 요청관리 카드 (카테고리 표시 이름, 모르는·빈 카테고리 > '기타', 이름 없음 > titleFallback)
+  factory RequestManagementItemCard.fromItem(Item item, {String titleFallback = ' '}) {
     return RequestManagementItemCard(
       itemId: item.itemId ?? '',
       imageUrl: item.primaryImageUrl ?? '',
-      category: ItemCategories.values
-          .firstWhere((category) => category.serverName == item.itemCategory, orElse: () => ItemCategories.etc)
-          .label,
-      title: item.itemName ?? ' ',
+      category: (ItemCategories.fromServerName(item.itemCategory) ?? ItemCategories.etc).label,
+      title: item.itemName ?? titleFallback,
       price: item.price ?? 0,
       likeCount: item.likeCount ?? 0,
       aiPrice: item.isAiPredictedPrice ?? false,

@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
@@ -23,7 +22,7 @@ import 'package:romrom_fe/states/item_like_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
-import 'package:romrom_fe/enums/item_condition.dart' as item_condition_enum;
+import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
@@ -143,20 +142,9 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
 
-      // 카테고리/상태/옵션 매핑
-      ItemCondition cond = ItemCondition.sealed;
-      try {
-        cond = item_condition_enum.ItemCondition.values.firstWhere((e) => e.serverName == d.itemCondition);
-      } catch (_) {}
-
-      final opts = <ItemTradeOption>[];
-      if (d.itemTradeOptions != null) {
-        for (final s in d.itemTradeOptions!) {
-          try {
-            opts.add(ItemTradeOption.values.firstWhere((e) => e.serverName == s));
-          } catch (_) {}
-        }
-      }
+      // 모르는·없는 물품 상태 > 미개봉
+      final cond = ItemCondition.fromServerName(d.itemCondition) ?? ItemCondition.sealed;
+      final opts = ItemTradeOption.fromServerNamesSkippingUnknown(d.itemTradeOptions);
 
       final likeItem = _LikedItem(
         itemId: d.itemId ?? 'unknown_$index',

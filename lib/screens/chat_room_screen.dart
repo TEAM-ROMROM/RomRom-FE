@@ -30,7 +30,7 @@ import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
-import 'package:romrom_fe/widgets/chat_room/chat_room_error_view.dart';
+import 'package:romrom_fe/widgets/common/error_scaffold.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_room_message_list.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
@@ -234,8 +234,8 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     }
 
     if (_hasError) {
-      return ChatRoomErrorView(
-        errorMessage: _errorMessage,
+      return ErrorScaffold(
+        message: _errorMessage,
         onBackPressed: () => Navigator.of(context).pop(true),
         onRetry: _loadInitialData,
       );

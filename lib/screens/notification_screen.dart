@@ -199,10 +199,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       final isRomromNews = item.notificationType == NotificationType.systemNotice.serverName;
       if (isRomromNews != isRomromNewsTab) continue;
 
-      final type = NotificationType.values.firstWhere(
-        (e) => e.serverName == item.notificationType,
-        orElse: () => NotificationType.systemNotice,
-      );
+      // 모르는 알림 타입 > 공지사항
+      final type = NotificationType.fromServerName(item.notificationType) ?? NotificationType.systemNotice;
 
       notificationItems.add(
         NotificationItemData(

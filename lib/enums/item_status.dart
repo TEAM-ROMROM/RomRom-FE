@@ -20,12 +20,8 @@ enum ItemStatus {
 
   const ItemStatus({required this.id, required this.label, required this.serverName});
 
-  /// serverName으로부터 ItemStatus를 찾는 헬퍼 메서드
-  static ItemStatus? fromServerName(String serverName) {
-    try {
-      return ItemStatus.values.firstWhere((status) => status.serverName == serverName);
-    } catch (e) {
-      return null;
-    }
+  /// 서버 이름 > 물품 거래 상태 (모르는 값·null > null)
+  static ItemStatus? fromServerName(String? serverName) {
+    return ItemStatus.values.where((status) => status.serverName == serverName).firstOrNull;
   }
 }

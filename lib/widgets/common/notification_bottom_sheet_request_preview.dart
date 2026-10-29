@@ -5,8 +5,8 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 알림 바텀시트 교환 요청 - 알림 미리보기 위젯
-class NotificationBotomSheetRequestPreview extends StatelessWidget {
-  const NotificationBotomSheetRequestPreview({super.key});
+class NotificationBottomSheetRequestPreview extends StatelessWidget {
+  const NotificationBottomSheetRequestPreview({super.key});
 
   @override
   Widget build(BuildContext context) {

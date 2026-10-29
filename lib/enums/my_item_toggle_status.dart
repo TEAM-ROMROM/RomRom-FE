@@ -10,11 +10,8 @@ enum MyItemToggleStatus {
 
   const MyItemToggleStatus({required this.id, required this.label, required this.serverName});
 
-  static MyItemToggleStatus? fromServerName(String serverName) {
-    try {
-      return MyItemToggleStatus.values.firstWhere((s) => s.serverName == serverName);
-    } catch (_) {
-      return null;
-    }
+  /// 서버 이름 > 내 물건 토글 상태 (모르는 값·null > null)
+  static MyItemToggleStatus? fromServerName(String? serverName) {
+    return MyItemToggleStatus.values.where((s) => s.serverName == serverName).firstOrNull;
   }
 }

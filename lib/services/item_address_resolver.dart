@@ -23,7 +23,7 @@ class ItemAddressResolver {
     if (position == null) return unknownLocationText;
     final address = await _lookupAddress(position);
     if (address == null) return unknownLocationText;
-    return '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
+    return address.siDoSiGunGuEupMyoenDongText;
   }
 
   /// 물품 목록 > 표시 주소 목록 (병렬 조회, 결과 순서 = 입력 순서)
@@ -44,7 +44,7 @@ class ItemAddressResolver {
     try {
       final address = await _lookupAddress(position);
       if (address == null) return unknownLocationText;
-      final trimmedAddress = '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}'.trim();
+      final trimmedAddress = address.siDoSiGunGuEupMyoenDongText.trim();
       return trimmedAddress.isEmpty ? unknownLocationText : trimmedAddress;
     } catch (_) {
       return unknownLocationText;

@@ -23,7 +23,6 @@ class ServerLogClient {
 
   static const Duration _reconnectDelay = Duration(seconds: 3);
   static const Duration _reconnectDelayOnCapacityExceeded = Duration(seconds: 15);
-  static const int _maxBufferSize = 1000;
 
   final List<CapturedLog> _buffer = [];
   final StreamController<CapturedLog> _controller = StreamController<CapturedLog>.broadcast();
@@ -160,7 +159,7 @@ class ServerLogClient {
   }
 
   void _addLog(CapturedLog log) {
-    if (_buffer.length >= _maxBufferSize) {
+    if (_buffer.length >= LogCapture.maximumBufferedLogCount) {
       _buffer.removeAt(0);
     }
     _buffer.add(log);

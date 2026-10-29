@@ -68,8 +68,8 @@ class ItemDetailInfoSection extends StatelessWidget {
   Widget _buildTags() {
     return Row(
       children: [
-        if (item.itemCondition != null)
-          ItemDetailConditionTag(condition: ItemCondition.fromServerName(item.itemCondition!).label),
+        if (ItemCondition.fromServerName(item.itemCondition) case final condition?)
+          ItemDetailConditionTag(condition: condition.label),
         SizedBox(width: 4.w),
         if (item.itemTradeOptions?.isNotEmpty == true)
           Expanded(
@@ -88,21 +88,12 @@ class ItemDetailInfoSection extends StatelessWidget {
 
   /// 카테고리 서버 값 > 표시 이름 (없음·알 수 없음: '카테고리 없음')
   static String _toCategoryLabel(String? serverName) {
-    if (serverName == null) return '카테고리 없음';
-    try {
-      return ItemCategories.fromServerName(serverName).label;
-    } catch (e) {
-      return '카테고리 없음';
-    }
+    return ItemCategories.fromServerName(serverName)?.label ?? '카테고리 없음';
   }
 
   /// 거래 방식 서버 값 > 표시 이름 (알 수 없으면 서버 값 그대로)
   static String _toTradeOptionLabel(String serverName) {
-    try {
-      return ItemTradeOption.fromServerName(serverName).label;
-    } catch (e) {
-      return serverName;
-    }
+    return ItemTradeOption.fromServerName(serverName)?.label ?? serverName;
   }
 
   /// 등록 시각 > 상대 표기 (N일 전 / N시간 전 / N분 전 / 방금 전)
