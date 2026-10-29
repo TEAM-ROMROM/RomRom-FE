@@ -7,7 +7,6 @@ import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'dart:async';
 
-import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
@@ -15,8 +14,6 @@ import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
-import 'package:romrom_fe/widgets/common/app_pressable.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
@@ -27,15 +24,13 @@ import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
-import 'package:romrom_fe/widgets/common/loading_indicator.dart';
-import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
-import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
-import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
-import 'package:romrom_fe/widgets/sent_request_item_card.dart';
+import 'package:romrom_fe/widgets/request_management/request_item_cards_carousel.dart';
+import 'package:romrom_fe/widgets/request_management/request_list_header.dart';
+import 'package:romrom_fe/widgets/request_management/request_page_indicator.dart';
+import 'package:romrom_fe/widgets/request_management/request_received_list.dart';
+import 'package:romrom_fe/widgets/request_management/request_sent_list.dart';
 import 'package:romrom_fe/enums/request_sort_type.dart';
-import 'package:romrom_fe/widgets/common/request_sort_bottom_sheet.dart';
 
 class RequestManagementTabScreen extends ConsumerStatefulWidget {
   const RequestManagementTabScreen({super.key});
@@ -158,7 +153,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
 
       final itemCard = RequestManagementItemCard(
         itemId: d.itemId ?? '',
-        imageUrl: d.primaryImageUrl != null ? d.primaryImageUrl! : 'https://picsum.photos/400/300',
+        imageUrl: d.primaryImageUrl ?? '',
         category: category,
         title: d.itemName ?? ' ',
         price: d.price ?? 0,
@@ -291,155 +286,86 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
 
   /// 보낸 요청 목록 (정렬 버튼 + 목록)
   Widget _buildSentRequestsList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // 정렬 칩 행 (항상 표시)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(0, 0, 16, 8),
-          child: _buildSortChip(
-            currentSort: _sentSortType,
-            onChanged: (selected) {
-              if (selected == _sentSortType) return; // 동일 정렬 재선택 시 무시
-              setState(() => _sentSortType = selected);
-              _loadSentRequestsForCurrentCard(); // 정렬 변경 시 서버 재조회
-            },
-          ),
-        ),
-        // 기존 목록/빈상태/로딩
-        _buildSentListBody(),
-      ],
-    );
-  }
-
-  /// 보낸 요청 목록 본체
-  Widget _buildSentListBody() {
     final sentRequests = ref.watch(tradeRequestsProvider).value?.sent ?? const [];
 
-    // 보낸 요청은 필터링 없이 모든 요청 표시
-    if (sentRequests.isEmpty) {
-      return _isLoading
-          ? const SizedBox(height: 500, child: Center(child: CommonLoadingIndicator()))
-          : Container(
-              height: 200,
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: Center(
-                child: Text('보낸 요청이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
-              ),
-            );
-    }
+    return RequestSentList(
+      sentRequests: sentRequests,
+      isLoading: _isLoading,
+      currentSort: _sentSortType,
+      onSortChanged: (selected) {
+        if (selected == _sentSortType) return; // 동일 정렬 재선택 시 무시
+        setState(() => _sentSortType = selected);
+        _loadSentRequestsForCurrentCard(); // 정렬 변경 시 서버 재조회
+      },
+      onCardTap: (request) {
+        final takeItem = request.takeItem;
+        // 교환 완료 상태면 삭제 처리
+        if (request.tradeStatus == TradeStatus.traded.serverName) {
+          ref
+              .read(tradeRequestsProvider.notifier)
+              .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '')
+              .then((_) {
+                if (mounted) {
+                  CommonSnackBar.show(context: context, message: '삭제되었습니다.');
+                }
+              })
+              .catchError((e) {
+                debugPrint('교환 완료 항목 삭제 실패: $e');
+                if (mounted) {
+                  CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
+                }
+              });
+          return;
+        }
+        // 기존 로직: 상세 페이지 이동
+        context.navigateTo(
+          screen: ItemDetailDescriptionScreen(
+            itemId: takeItem.itemId!,
+            // 내가 요청 보낸 카드로 이동
+            imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+            currentImageIndex: 0,
+            heroTag: 'itemImage_${takeItem.itemId!}_0',
+            // ← 인덱스 포함
+            isMyItem: false,
+            isRequestManagement: true,
+            tradeRequestHistoryId: request.tradeRequestHistoryId,
+            isChatAccessAllowed: false, // 보낸요청 = 채팅 불가
+          ),
+        );
+      },
+      onEditTap: (request) {
+        context.navigateTo(
+          screen: ItemModificationScreen(
+            itemId: request.giveItem.itemId,
+            onClose: () {
+              Navigator.pop(context);
+            },
+          ),
+        );
+      },
+      onCancelTap: (request) async {
+        final result = await context.showDeleteDialog(
+          title: '교환 요청 취소',
+          description: '교환 요청을 취소하시겠습니까?',
+          confirmText: '확인',
+        );
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      child: Column(
-        children: List.generate(sentRequests.length, (index) {
-          final request = sentRequests[index];
-          final takeItem = request.takeItem;
-          final giveItem = request.giveItem;
-
-          return AppFadeSlideIn(
-            delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 16.h),
-              child: SentRequestItemCard(
-                onTap: () {
-                  // 교환 완료 상태면 삭제 처리
-                  if (request.tradeStatus == TradeStatus.traded.serverName) {
-                    ref
-                        .read(tradeRequestsProvider.notifier)
-                        .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '')
-                        .then((_) {
-                          if (mounted) {
-                            CommonSnackBar.show(context: context, message: '삭제되었습니다.');
-                          }
-                        })
-                        .catchError((e) {
-                          debugPrint('교환 완료 항목 삭제 실패: $e');
-                          if (mounted) {
-                            CommonSnackBar.show(context: context, message: '삭제에 실패했습니다', type: SnackBarType.error);
-                          }
-                        });
-                    return;
-                  }
-                  // 기존 로직: 상세 페이지 이동
-                  context.navigateTo(
-                    screen: ItemDetailDescriptionScreen(
-                      itemId: takeItem.itemId!,
-                      // 내가 요청 보낸 카드로 이동
-                      imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-                      currentImageIndex: 0,
-                      heroTag: 'itemImage_${takeItem.itemId!}_0',
-                      // ← 인덱스 포함
-                      isMyItem: false,
-                      isRequestManagement: true,
-                      tradeRequestHistoryId: request.tradeRequestHistoryId,
-                      isChatAccessAllowed: false, // 보낸요청 = 채팅 불가
-                    ),
-                  );
-                },
-                myItemImageUrl: giveItem.imageUrlList.isNotEmpty
-                    ? giveItem.imageUrlList.first
-                    : 'https://picsum.photos/400/300',
-                otherItemImageUrl: takeItem.imageUrlList.isNotEmpty
-                    ? takeItem.imageUrlList.first
-                    : 'https://picsum.photos/400/300',
-                otherUserProfileUrl: takeItem.member?.profileUrl ?? '',
-                title: takeItem.itemName ?? ' ',
-                location: takeItem.address ?? '주소 미등록',
-                createdDate: takeItem.createdDate ?? DateTime.now(),
-                tradeOptions: takeItem.itemTradeOptions != null
-                    ? takeItem.itemTradeOptions!
-                          .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
-                          .toList()
-                    : [],
-                tradeStatus: request.tradeStatus != null
-                    ? TradeStatus.values.firstWhere(
-                        (e) => e.serverName == request.tradeStatus,
-                        orElse: () => TradeStatus.chatting,
-                      )
-                    : TradeStatus.chatting,
-                onEditTap: () {
-                  context.navigateTo(
-                    screen: ItemModificationScreen(
-                      itemId: giveItem.itemId,
-                      onClose: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                  );
-                },
-                onCancelTap: () async {
-                  final result = await context.showDeleteDialog(
-                    title: '교환 요청 취소',
-                    description: '교환 요청을 취소하시겠습니까?',
-                    confirmText: '확인',
-                  );
-
-                  if (result == true) {
-                    try {
-                      await ref
-                          .read(tradeRequestsProvider.notifier)
-                          .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '');
-                      if (mounted) {
-                        CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
-                      }
-                    } catch (e) {
-                      debugPrint('요청 취소 실패: $e');
-                      if (mounted) {
-                        CommonSnackBar.show(
-                          context: context,
-                          message: ErrorUtils.getErrorMessage(e),
-                          type: SnackBarType.error,
-                        );
-                      }
-                    }
-                  }
-                },
-              ),
-            ),
-          );
-        }),
-      ),
+        if (result == true) {
+          try {
+            await ref
+                .read(tradeRequestsProvider.notifier)
+                .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '');
+            if (mounted) {
+              CommonSnackBar.show(context: context, message: '요청을 취소했습니다.');
+            }
+          } catch (e) {
+            debugPrint('요청 취소 실패: $e');
+            if (mounted) {
+              CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+            }
+          }
+        }
+      },
     );
   }
 
@@ -597,155 +523,45 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
 
   /// 물품 카드 캐러셀 섹션
   Widget _buildItemCardsCarousel() {
-    if (_itemCards.isEmpty) {
-      return _isLoading
-          ? const SizedBox(height: 150, child: Center(child: CommonLoadingIndicator()))
-          : Container(
-              height: 326,
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: Center(
-                child: Text('등록된 물품이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
-              ),
-            );
-    }
-
-    return SizedBox(
-      height: 334,
-      child: PageView.builder(
-        controller: _cardController,
-        onPageChanged: _onCardPageChanged,
-        itemCount: _itemCards.length,
-        itemBuilder: (context, index) {
-          return AppPressable(
-            scaleDown: AppPressable.scaleCard,
-            enableRipple: false,
-            onTap: () {
-              context.navigateTo(
-                screen: ItemDetailDescriptionScreen(
-                  itemId: _itemCards[index].itemId,
-                  imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-                  currentImageIndex: 0,
-                  heroTag: 'itemImage_${_itemCards[index].itemId}_0',
-                  isMyItem: true,
-                  isRequestManagement: true,
-                  isChatAccessAllowed: false,
-                ),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: RequestManagementItemCardWidget(
-                card: _itemCards[index],
-                isActive: index == _currentCardIndex,
-                width: 219,
-                height: 326,
-              ),
-            ),
-          );
-        },
-      ),
+    return RequestItemCardsCarousel(
+      itemCards: _itemCards,
+      currentCardIndex: _currentCardIndex,
+      cardController: _cardController,
+      isLoading: _isLoading,
+      onPageChanged: _onCardPageChanged,
+      onCardTap: (card) {
+        context.navigateTo(
+          screen: ItemDetailDescriptionScreen(
+            itemId: card.itemId,
+            imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+            currentImageIndex: 0,
+            heroTag: 'itemImage_${card.itemId}_0',
+            isMyItem: true,
+            isRequestManagement: true,
+            isChatAccessAllowed: false,
+          ),
+        );
+      },
     );
   }
 
   /// 페이지 인디케이터
   Widget _buildPageIndicator() {
-    if (_itemCards.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(0, 37.h, 0, 32.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          _itemCards.length,
-          (index) => Container(
-            margin: EdgeInsets.symmetric(horizontal: 4.w),
-            width: 8.w,
-            height: 8.h,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _currentCardIndex == index ? AppColors.primaryYellow : AppColors.opacity30White,
-            ),
-          ),
-        ),
-      ),
-    );
+    return RequestPageIndicator(itemCount: _itemCards.length, currentIndex: _currentCardIndex);
   }
 
   /// 요청 목록 헤더 섹션
   Widget _buildRequestListHeader() {
-    // 보낸 요청에서는 헤더 표시 안함
-    if (_isRightSelected) {
-      return const SizedBox.shrink();
-    }
-
-    // 받은 요청에서만 헤더 표시
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 제목과 토글을 한 줄에 배치
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // 제목
-              Text('요청 목록', style: CustomTextStyles.h3),
-              // 정렬 칩 (보더 pill) + 완료 표시 토글
-              Row(
-                children: [
-                  _buildSortChip(
-                    currentSort: _receivedSortType,
-                    onChanged: (selected) {
-                      if (selected == _receivedSortType) return; // 동일 정렬 재선택 시 무시
-                      setState(() => _receivedSortType = selected);
-                      _loadReceivedRequestsForCurrentCard(); // 정렬 변경 시 서버 재조회
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '완료 포함',
-                    style: CustomTextStyles.p3.copyWith(
-                      color: AppColors.opacity50White,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: -0.5.sp,
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  CompletedToggleSwitch(value: _showCompletedRequests, onChanged: _toggleCompletedRequests),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          // 설명 텍스트
-          Text('내 물건에 온 교환 요청이에요', style: CustomTextStyles.p2.copyWith(color: AppColors.requestManagementDescription)),
-        ],
-      ),
-    );
-  }
-
-  /// 정렬 칩 (보더 pill 스타일)
-  Widget _buildSortChip({required RequestSortType currentSort, required ValueChanged<RequestSortType> onChanged}) {
-    return GestureDetector(
-      onTap: () => RequestSortBottomSheet.show(context: context, currentSort: currentSort, onSelected: onChanged),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.opacity50PrimaryYellow, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              currentSort.label,
-              style: CustomTextStyles.p3.copyWith(color: AppColors.primaryYellow, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryYellow, size: 14),
-          ],
-        ),
-      ),
+    return RequestListHeader(
+      isRightSelected: _isRightSelected,
+      currentSort: _receivedSortType,
+      showCompletedRequests: _showCompletedRequests,
+      onSortChanged: (selected) {
+        if (selected == _receivedSortType) return; // 동일 정렬 재선택 시 무시
+        setState(() => _receivedSortType = selected);
+        _loadReceivedRequestsForCurrentCard(); // 정렬 변경 시 서버 재조회
+      },
+      onToggleCompleted: _toggleCompletedRequests,
     );
   }
 
@@ -769,121 +585,69 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
       }
     }).toList();
 
-    if (filteredRequests.isEmpty) {
-      return _isLoading
-          ? const SizedBox(height: 150, child: Center(child: CommonLoadingIndicator()))
-          : Container(
-              height: 200,
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: Center(
-                child: Text('진행 중인 요청이 없습니다', style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
-              ),
-            );
-    }
+    return RequestReceivedList(
+      filteredRequests: filteredRequests,
+      isLoading: _isLoading,
+      onCardTap: (request) {
+        final giveItem = request.giveItem;
+        TradeApi()
+            .getDetailedTradeRequest(request)
+            .then((detailedRequest) {
+              if (mounted) {
+                // isNew 상태 갱신 — notifier setter 경유
+                final updatedId = detailedRequest.tradeRequestHistory?.tradeRequestHistoryId;
+                final updatedIsNew = detailedRequest.tradeRequestHistory?.isNew;
+                if (updatedId != null) {
+                  final cur = ref.read(tradeRequestsProvider).value;
+                  if (cur != null) {
+                    final updatedReceived = cur.received.map((r) {
+                      if (r.tradeRequestHistoryId == updatedId) {
+                        r.isNew = updatedIsNew;
+                      }
+                      return r;
+                    }).toList();
+                    ref.read(tradeRequestsProvider.notifier).setReceived(received: updatedReceived);
+                  }
+                }
+              }
+            })
+            .catchError((e) {
+              debugPrint('교환 요청 상세 조회 실패: $e');
+            });
+        context.navigateTo(
+          screen: ItemDetailDescriptionScreen(
+            itemId: giveItem.itemId!,
+            // 요청 받은 카드로 이동
+            imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+            currentImageIndex: 0,
+            heroTag: 'itemImage_${request.giveItem.itemId!}_0',
+            // ← 인덱스 포함
+            isMyItem: false,
+            isRequestManagement: true,
+            tradeRequestHistoryId: request.tradeRequestHistoryId,
+            isChatAccessAllowed: true, // 받은요청 = 채팅 가능
+          ),
+        );
+      },
+      onMenuTap: (request) async {
+        final result = await context.showDeleteDialog(title: '교환 요청 삭제', description: '정말 삭제하시겠습니까?');
 
-    return _isLoading
-        ? const SizedBox(height: 150, child: Center(child: CommonLoadingIndicator()))
-        : Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
-              children: List.generate(filteredRequests.length, (index) {
-                final request = filteredRequests[index];
-                final giveItem = request.giveItem;
-
-                return AppFadeSlideIn(
-                  delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
-                  child: Column(
-                    children: [
-                      RequestListItemCardWidget(
-                        imageUrl: giveItem.imageUrlList.isNotEmpty
-                            ? giveItem.imageUrlList.first
-                            : 'https://picsum.photos/400/300',
-                        title: giveItem.itemName ?? ' ',
-                        address: giveItem.address ?? '주소 미등록',
-                        createdDate: giveItem.createdDate ?? DateTime.now(),
-                        isNew: request.isNew ?? false,
-                        tradeOptions: giveItem.itemTradeOptions != null
-                            ? giveItem.itemTradeOptions!
-                                  .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
-                                  .toList()
-                            : [],
-                        tradeStatus: request.tradeStatus != null
-                            ? TradeStatus.values.firstWhere(
-                                (e) => e.serverName == request.tradeStatus,
-                                orElse: () => TradeStatus.chatting,
-                              )
-                            : TradeStatus.chatting,
-                        onTap: () {
-                          TradeApi()
-                              .getDetailedTradeRequest(request)
-                              .then((detailedRequest) {
-                                if (mounted) {
-                                  // isNew 상태 갱신 — notifier setter 경유
-                                  final updatedId = detailedRequest.tradeRequestHistory?.tradeRequestHistoryId;
-                                  final updatedIsNew = detailedRequest.tradeRequestHistory?.isNew;
-                                  if (updatedId != null) {
-                                    final cur = ref.read(tradeRequestsProvider).value;
-                                    if (cur != null) {
-                                      final updatedReceived = cur.received.map((r) {
-                                        if (r.tradeRequestHistoryId == updatedId) {
-                                          r.isNew = updatedIsNew;
-                                        }
-                                        return r;
-                                      }).toList();
-                                      ref.read(tradeRequestsProvider.notifier).setReceived(received: updatedReceived);
-                                    }
-                                  }
-                                }
-                              })
-                              .catchError((e) {
-                                debugPrint('교환 요청 상세 조회 실패: $e');
-                              });
-                          context.navigateTo(
-                            screen: ItemDetailDescriptionScreen(
-                              itemId: giveItem.itemId!,
-                              // 요청 받은 카드로 이동
-                              imageSize: Size(MediaQuery.of(context).size.width, 400.h),
-                              currentImageIndex: 0,
-                              heroTag: 'itemImage_${request.giveItem.itemId!}_0',
-                              // ← 인덱스 포함
-                              isMyItem: false,
-                              isRequestManagement: true,
-                              tradeRequestHistoryId: request.tradeRequestHistoryId,
-                              isChatAccessAllowed: true, // 받은요청 = 채팅 가능
-                            ),
-                          );
-                        },
-                        onMenuTap: () async {
-                          final result = await context.showDeleteDialog(title: '교환 요청 삭제', description: '정말 삭제하시겠습니까?');
-
-                          if (result == true) {
-                            try {
-                              await ref
-                                  .read(tradeRequestsProvider.notifier)
-                                  .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '');
-                              if (mounted) {
-                                CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
-                              }
-                            } catch (e) {
-                              debugPrint('요청 취소 실패: $e');
-                              if (mounted) {
-                                CommonSnackBar.show(
-                                  context: context,
-                                  message: ErrorUtils.getErrorMessage(e),
-                                  type: SnackBarType.error,
-                                );
-                              }
-                            }
-                          }
-                        },
-                      ),
-                      if (index < filteredRequests.length - 1)
-                        Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h),
-                    ],
-                  ),
-                );
-              }),
-            ),
-          );
+        if (result == true) {
+          try {
+            await ref
+                .read(tradeRequestsProvider.notifier)
+                .cancel(tradeRequestHistoryId: request.tradeRequestHistoryId ?? '');
+            if (mounted) {
+              CommonSnackBar.show(context: context, message: '요청을 삭제했습니다.');
+            }
+          } catch (e) {
+            debugPrint('요청 취소 실패: $e');
+            if (mounted) {
+              CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+            }
+          }
+        }
+      },
+    );
   }
 }
