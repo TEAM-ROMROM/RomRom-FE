@@ -2,7 +2,7 @@
 import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
 
-/// 알림 유형 > 대응 설정 항목 목록 (systemNotice는 content + marketing 묶음)
+/// 알림 유형 > 대응 설정 항목 목록 (announcement는 content + marketing 묶음)
 List<NotificationSettingType> toNotificationSettingTypes(NotificationType type) {
   switch (type) {
     case NotificationType.tradeRequestReceived:
@@ -11,8 +11,8 @@ List<NotificationSettingType> toNotificationSettingTypes(NotificationType type) 
       return [NotificationSettingType.chat];
     case NotificationType.itemLiked:
       return [NotificationSettingType.activity];
-    case NotificationType.systemNotice:
-      // systemNotice는 content + marketing 묶음
+    case NotificationType.announcement:
+      // announcement는 content + marketing 묶음
       return [NotificationSettingType.content, NotificationSettingType.marketing];
     case NotificationType.itemDeletedByAdmin:
       // 관리자 제재 통보는 끌 수 없는 강제 알림 → 대응 설정 없음(항상 활성으로 간주)

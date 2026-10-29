@@ -134,7 +134,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     // 권한 허용됨 → provider 경유 업데이트
     final notifier = ref.read(notificationSettingProvider.notifier);
     switch (type) {
-      case NotificationType.systemNotice:
+      case NotificationType.announcement:
         await notifier.setEnabled(NotificationSettingType.content, true);
         await notifier.setEnabled(NotificationSettingType.marketing, true);
         break;
@@ -184,7 +184,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   }
 
   /// 서버 알림 > 화면 표시 데이터 (탭 필터, 필수값 없는 알림 제외)
-  /// 롬롬 소식 탭: systemNotice만, 활동 및 채팅 탭: 그 외 전부
+  /// 롬롬 소식 탭: announcement만, 활동 및 채팅 탭: 그 외 전부
   List<NotificationItemData> _toNotificationItems(
     List<NotificationHistory> notificationHistories, {
     required bool isRomromNewsTab,
@@ -196,11 +196,11 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       final body = item.body;
       if (id == null || title == null || body == null) continue;
 
-      final isRomromNews = item.notificationType == NotificationType.systemNotice.serverName;
+      final isRomromNews = item.notificationType == NotificationType.announcement.serverName;
       if (isRomromNews != isRomromNewsTab) continue;
 
       // 모르는 알림 타입 > 공지사항
-      final type = NotificationType.fromServerName(item.notificationType) ?? NotificationType.systemNotice;
+      final type = NotificationType.fromServerName(item.notificationType) ?? NotificationType.announcement;
 
       notificationItems.add(
         NotificationItemData(

@@ -37,6 +37,9 @@ void main() {
 
     test('NotificationType', () {
       expect(NotificationType.fromServerName('ITEM_LIKED'), NotificationType.itemLiked);
+      // BE NotificationType.ANNOUNCEMENT (옛 값 SYSTEM_NOTICE는 BE에 없음, #942)
+      expect(NotificationType.fromServerName('ANNOUNCEMENT'), NotificationType.announcement);
+      expect(NotificationType.fromServerName('SYSTEM_NOTICE'), isNull);
       expect(NotificationType.fromServerName(unknownServerName), isNull);
       expect(NotificationType.fromServerName(null), isNull);
     });

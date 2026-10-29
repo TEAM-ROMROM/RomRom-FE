@@ -9,7 +9,7 @@ void main() {
       expect(toNotificationSettingTypes(NotificationType.tradeRequestReceived), [NotificationSettingType.transaction]);
       expect(toNotificationSettingTypes(NotificationType.chatMessageReceived), [NotificationSettingType.chat]);
       expect(toNotificationSettingTypes(NotificationType.itemLiked), [NotificationSettingType.activity]);
-      expect(toNotificationSettingTypes(NotificationType.systemNotice), [
+      expect(toNotificationSettingTypes(NotificationType.announcement), [
         NotificationSettingType.content,
         NotificationSettingType.marketing,
       ]);
@@ -22,8 +22,8 @@ void main() {
       final partlyEnabledSettings = {NotificationSettingType.content: true, NotificationSettingType.marketing: false};
       final fullyEnabledSettings = {NotificationSettingType.content: true, NotificationSettingType.marketing: true};
 
-      expect(isNotificationTypeMuted(partlyEnabledSettings, NotificationType.systemNotice), true);
-      expect(isNotificationTypeMuted(fullyEnabledSettings, NotificationType.systemNotice), false);
+      expect(isNotificationTypeMuted(partlyEnabledSettings, NotificationType.announcement), true);
+      expect(isNotificationTypeMuted(fullyEnabledSettings, NotificationType.announcement), false);
     });
 
     test('설정 미로드(키 없음)는 꺼짐, 관리자 제재는 항상 켜짐', () {

@@ -80,7 +80,6 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
       itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
       itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
       itemPrice: int.parse(priceController.text.replaceAll(',', '')),
-      itemCustomTags: [],
       itemImageUrls: allImageUrls,
       longitude: _longitude,
       latitude: _latitude,

@@ -3,7 +3,7 @@ enum NotificationType {
   tradeRequestReceived(label: '교환 요청', serverName: 'TRADE_REQUEST_RECEIVED'),
   chatMessageReceived(label: '채팅', serverName: 'CHAT_MESSAGE_RECEIVED'),
   itemLiked(label: '좋아요', serverName: 'ITEM_LIKED'),
-  systemNotice(label: '공지사항', serverName: 'SYSTEM_NOTICE'),
+  announcement(label: '공지사항', serverName: 'ANNOUNCEMENT'),
   itemDeletedByAdmin(label: '게시글 삭제', serverName: 'ITEM_DELETED_BY_ADMIN');
 
   final String label;
@@ -20,7 +20,7 @@ enum NotificationType {
         return 'assets/images/notificationChat.svg';
       case NotificationType.itemLiked:
         return 'assets/images/notificationLike.svg';
-      case NotificationType.systemNotice:
+      case NotificationType.announcement:
         return 'assets/images/notificationAnnouncement.svg';
       case NotificationType.itemDeletedByAdmin:
         return 'assets/images/notificationAnnouncement.svg';
