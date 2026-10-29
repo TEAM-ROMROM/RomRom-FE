@@ -70,7 +70,6 @@ class ChatWebSocketService {
       debugPrint('[WebSocket] 연결 시도 시작 (HTTP 테스트)');
       debugPrint('[WebSocket] AppUrls.baseUrl: ${AppUrls.baseUrl}');
       debugPrint('[WebSocket] wsUrl: $wsUrl');
-      debugPrint('[WebSocket] Access Token: ${accessToken.substring(0, 20)}...');
       debugPrint('[WebSocket] ========================================');
 
       // 3. StompClient 생성

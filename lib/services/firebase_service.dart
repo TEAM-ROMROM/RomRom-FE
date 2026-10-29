@@ -135,7 +135,7 @@ class FirebaseService {
   void onTokenRefresh({required Function(String) onTokenRefreshed}) {
     FirebaseMessaging.instance.onTokenRefresh
         .listen((newToken) {
-          debugPrint('[FCM] 토큰 갱신됨: $newToken');
+          debugPrint('[FCM] 토큰 갱신됨');
           onTokenRefreshed(newToken);
         })
         .onError((err) {
