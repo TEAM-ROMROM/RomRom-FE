@@ -1,26 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
-
-// 디자인 기준 화면 (iPhone 393x852)
-const Size designScreenSize = Size(393, 852);
+import '../../helpers/pump_design_screen.dart';
 
 /// 테스트 앱 렌더 > 'open' 탭 시 openModal 실행
 Future<void> pumpModalLauncher(WidgetTester tester, {required void Function(BuildContext context) openModal}) async {
   await tester.pumpWidget(
-    ScreenUtilInit(
-      designSize: designScreenSize,
-      builder: (context, child) => MaterialApp(
-        home: Builder(
-          builder: (launcherContext) => Scaffold(
-            body: Center(
-              child: ElevatedButton(onPressed: () => openModal(launcherContext), child: const Text('open')),
-            ),
+    buildDesignScreenApp(
+      home: Builder(
+        builder: (launcherContext) => Scaffold(
+          body: Center(
+            child: ElevatedButton(onPressed: () => openModal(launcherContext), child: const Text('open')),
           ),
         ),
       ),

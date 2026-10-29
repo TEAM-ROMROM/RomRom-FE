@@ -13,6 +13,8 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/profile_image_crop/profile_crop_corner_handle.dart';
+import 'package:romrom_fe/widgets/profile_image_crop/profile_crop_overlay_painter.dart';
 
 /// 프로필 이미지 크롭 화면
 /// - 이미지는 원본 비율 그대로 표시
@@ -54,8 +56,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
   static const double _minRectSize = 60.0;
   static const int _outputSize = 500;
 
-  static const double _handleVisualSize = 18.0; // 실제 보이는 핸들
-  static const double _handleHitSize = 40.0; // 터치 영역
+  static const double _handleHitSize = ProfileCropCornerHandle.hitSizePixels; // 터치 영역
 
   @override
   void initState() {
@@ -357,7 +358,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
                         if (_rectW > 0)
                           CustomPaint(
                             size: Size(innerW, innerH),
-                            painter: _CropOverlayPainter(
+                            painter: ProfileCropOverlayPainter(
                               rectLeft: _rectLeft,
                               rectTop: _rectTop,
                               rectW: _rectW,
@@ -412,37 +413,18 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
     return Positioned(
       left: x - _handleHitSize / 2,
       top: y - _handleHitSize / 2,
-
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onPanStart: (_) {
+      child: ProfileCropCornerHandle(
+        isLeftCorner: moveLeft,
+        isTopCorner: moveTop,
+        onDragStart: () {
           setState(() => _isDraggingHandle = true);
           _gridController.forward();
         },
-        onPanUpdate: (details) => _onResizeCorner(details: details, moveLeft: moveLeft, moveTop: moveTop),
-        onPanEnd: (_) {
+        onDragUpdate: (details) => _onResizeCorner(details: details, moveLeft: moveLeft, moveTop: moveTop),
+        onDragEnd: () {
           setState(() => _isDraggingHandle = false);
           _gridController.reverse();
         },
-        onPanCancel: () {
-          setState(() => _isDraggingHandle = false);
-          _gridController.reverse();
-        },
-
-        child: Container(
-          width: _handleHitSize,
-          height: _handleHitSize,
-          decoration: const BoxDecoration(color: AppColors.transparent, shape: BoxShape.circle),
-          child: Center(
-            child: SizedBox(
-              width: _handleVisualSize,
-              height: _handleVisualSize,
-              child: CustomPaint(
-                painter: _CornerHandlePainter(holeAtRight: moveLeft, holeAtBottom: moveTop),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -458,114 +440,4 @@ class _VisibleArea {
 
   double get width => right - left;
   double get height => bottom - top;
-}
-
-/// 크롭 오버레이 Painter
-/// - rect 내부(원 외부): 반투명 검정 오버레이
-/// - rect 테두리, 원 테두리, 원 내부 rule of thirds 격자선
-class _CropOverlayPainter extends CustomPainter {
-  final double rectLeft;
-  final double rectTop;
-  final double rectW;
-  final double rectH;
-  final Animation<double> gridOpacity;
-
-  const _CropOverlayPainter({
-    required this.rectLeft,
-    required this.rectTop,
-    required this.rectW,
-    required this.rectH,
-    required this.gridOpacity,
-  }) : super(repaint: gridOpacity);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(rectLeft, rectTop, rectW, rectH);
-
-    final circleRadius = math.min(rectW, rectH) / 2;
-    final circleCenter = Offset(rectLeft + rectW / 2, rectTop + rectH / 2);
-
-    // rect 내부(원 외부) 반투명 오버레이
-    final overlayPaint = Paint()..color = AppColors.opacity40PrimaryBlack;
-
-    final overlayPath = Path()
-      ..addRect(rect)
-      ..addOval(Rect.fromCircle(center: circleCenter, radius: circleRadius))
-      ..fillType = PathFillType.evenOdd;
-
-    canvas.drawPath(overlayPath, overlayPaint);
-
-    // 격자선: 핸들 드래그 중에만 fade-in / fade-out
-    final opacity = gridOpacity.value;
-
-    // 격자선: rect 전체 기준 3등분
-    if (opacity > 0.01) {
-      final gridPaint = Paint()
-        ..color = AppColors.textColorWhite.withValues(alpha: opacity)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.5;
-
-      // 세로선 2개
-      for (int i = 1; i <= 2; i++) {
-        final x = rectLeft + rectW * i / 3;
-        canvas.drawLine(Offset(x, rectTop), Offset(x, rectTop + rectH), gridPaint);
-      }
-
-      // 가로선 2개
-      for (int i = 1; i <= 2; i++) {
-        final y = rectTop + rectH * i / 3;
-        canvas.drawLine(Offset(rectLeft, y), Offset(rectLeft + rectW, y), gridPaint);
-      }
-    }
-
-    // rect 테두리
-    final borderPaint = Paint()
-      ..color = AppColors.textColorWhite
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-
-    canvas.drawRect(rect, borderPaint);
-
-    // 원 테두리
-    canvas.drawCircle(circleCenter, circleRadius, borderPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CropOverlayPainter oldDelegate) {
-    return rectLeft != oldDelegate.rectLeft ||
-        rectTop != oldDelegate.rectTop ||
-        rectW != oldDelegate.rectW ||
-        rectH != oldDelegate.rectH;
-  }
-}
-
-/// 꼭지점 핸들 Painter
-class _CornerHandlePainter extends CustomPainter {
-  final bool holeAtRight;
-  final bool holeAtBottom;
-
-  const _CornerHandlePainter({required this.holeAtRight, required this.holeAtBottom});
-
-  static const double _shapeSize = 16.0;
-  static const double _holeSize = 12.0;
-  static const double _gapSize = _shapeSize - _holeSize;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final offsetX = (size.width - _shapeSize) / 2 + (holeAtRight ? _gapSize : -_gapSize);
-    final offsetY = (size.height - _shapeSize) / 2 + (holeAtBottom ? _gapSize : -_gapSize);
-    final holeX = offsetX + (holeAtRight ? _shapeSize - _holeSize : 0.0);
-    final holeY = offsetY + (holeAtBottom ? _shapeSize - _holeSize : 0.0);
-
-    final paint = Paint()..color = AppColors.textColorWhite;
-    final path = Path()
-      ..addRect(Rect.fromLTWH(offsetX, offsetY, _shapeSize, _shapeSize))
-      ..addRect(Rect.fromLTWH(holeX, holeY, _holeSize, _holeSize))
-      ..fillType = PathFillType.evenOdd;
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CornerHandlePainter old) =>
-      old.holeAtRight != holeAtRight || old.holeAtBottom != holeAtBottom;
 }

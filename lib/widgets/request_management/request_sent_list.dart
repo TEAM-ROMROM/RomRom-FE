@@ -86,11 +86,7 @@ class RequestSentList extends StatelessWidget {
                 title: takeItem.itemName ?? ' ',
                 location: takeItem.address ?? '주소 미등록',
                 createdDate: takeItem.createdDate ?? DateTime.now(),
-                tradeOptions: takeItem.itemTradeOptions != null
-                    ? takeItem.itemTradeOptions!
-                          .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
-                          .toList()
-                    : [],
+                tradeOptions: ItemTradeOption.fromServerNamesSkippingUnknown(takeItem.itemTradeOptions),
                 tradeStatus: request.tradeStatus != null
                     ? TradeStatus.values.firstWhere(
                         (e) => e.serverName == request.tradeStatus,

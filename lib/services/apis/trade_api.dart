@@ -159,7 +159,7 @@ class TradeApi {
 
   /// 거래 요청 상세 조회 API
   /// `POST /api/trade/get`
-  Future<TradeResponse> getDetailedTradeRequest(TradeRequestHistory request) async {
+  Future<TradeResponse> getDetailedTradeRequest(TradeRequest request) async {
     final String url = '${AppUrls.baseUrl}/api/trade/get';
     late TradeResponse tradeResponse;
 

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
@@ -14,9 +13,7 @@ import 'package:romrom_fe/repositories/item_repository.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/screens/register_tab_screen.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
-
-// 디자인 기준 화면 (iPhone 393x852)
-const Size designScreenSize = Size(393, 852);
+import '../helpers/pump_design_screen.dart';
 
 /// 내 물품 조회: 실패 모드면 throw, 아니면 [pendingResponse] 완료까지 대기 (재시도 진행 중 재현)
 class _FailingItemRepository implements ItemRepository {
@@ -51,17 +48,12 @@ class _FailingChatRepository implements ChatRepository {
 
 /// 화면 렌더 (ScreenUtil + ProviderScope override)
 Future<void> pumpScreen(WidgetTester tester, {required Widget screen, required List<Override> overrides}) async {
-  tester.view.devicePixelRatio = 1.0;
-  tester.view.physicalSize = designScreenSize;
-  addTearDown(tester.view.reset);
+  useDesignScreenView(tester);
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
-      child: ScreenUtilInit(
-        designSize: designScreenSize,
-        builder: (context, child) => MaterialApp(home: screen),
-      ),
+      child: buildDesignScreenApp(home: screen),
     ),
   );
   // 첫 로드 실패 반영 (무한 애니메이션 위젯이 있어 pumpAndSettle 대신 고정 pump)

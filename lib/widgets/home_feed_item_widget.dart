@@ -3,19 +3,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
-import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/home_feed_ai_sort_button.dart';
-import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
-import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_image_indicator.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_item_like_button.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_item_summary.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
@@ -140,8 +138,6 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
 
   @override
   Widget build(BuildContext context) {
-    String formattedPrice = formatPrice(widget.item.price);
-    String formattedDate = formatDate(widget.item.date);
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -241,20 +237,9 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
               bottom: 236.h,
               left: 0,
               right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  widget.item.imageUrls.length,
-                  (index) => Container(
-                    width: 6.w,
-                    height: 6.w,
-                    margin: EdgeInsets.symmetric(horizontal: 2.w),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _currentImageIndex == index ? AppColors.primaryYellow : AppColors.opacity50White,
-                    ),
-                  ),
-                ),
+              child: HomeFeedImageIndicator(
+                imageCount: widget.item.imageUrls.length,
+                currentImageIndex: _currentImageIndex,
               ),
             ),
 
@@ -263,50 +248,16 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
             Positioned(
               right: 33.w,
               bottom: 232.h,
-              child: Column(
-                children: [
-                  SizedBox.square(
-                    dimension: 32.w,
-                    child: OverflowBox(
-                      maxWidth: 56.w,
-                      maxHeight: 56.w,
-                      child: Material(
-                        color: Colors.transparent,
-                        shape: const CircleBorder(),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkResponse(
-                          radius: 18.w,
-                          containedInkWell: false,
-                          onTap: () {
-                            final id = widget.item.itemUuid;
-                            if (id == null || id.isEmpty) return;
+              child: HomeFeedItemLikeButton(
+                isLiked: liked,
+                likeCount: likeCount,
+                onTap: () {
+                  final id = widget.item.itemUuid;
+                  if (id == null || id.isEmpty) return;
 
-                            // 본인글 차단은 toggle 내부에서 동기 처리 — await 없이 즉시 하트 반응
-                            ref.read(itemLikeProvider.notifier).toggle(id, authorMemberId: widget.item.authorMemberId);
-                          },
-                          customBorder: const CircleBorder(),
-                          highlightColor: AppColors.buttonHighlightColorGray,
-                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                          child: SizedBox.square(
-                            dimension: 56.w, // 리플/터치 캔버스
-                            child: Center(
-                              child: SizedBox.square(
-                                dimension: 30.w,
-                                child: SvgPicture.asset(
-                                  liked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg',
-                                  fit: BoxFit.contain,
-                                  semanticsLabel: liked ? '좋아요 취소' : '좋아요',
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(likeCount.toString(), style: CustomTextStyles.p2),
-                ],
+                  // 본인글 차단은 toggle 내부에서 동기 처리 — await 없이 즉시 하트 반응
+                  ref.read(itemLikeProvider.notifier).toggle(id, authorMemberId: widget.item.authorMemberId);
+                },
               ),
             ),
 
@@ -324,66 +275,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                   Expanded(
                     child: BlurWrapper(
                       enabled: widget.showBlur,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 물품 이름
-                          Text(
-                            widget.item.name.trim(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
-                          ),
-
-                          SizedBox(height: 8.h),
-
-                          // 위치 및 날짜 정보
-                          Row(
-                            children: [
-                              Icon(AppIcons.location, color: AppColors.opacity80White, size: 13.sp),
-                              SizedBox(width: 4.w),
-                              Text(
-                                '${widget.item.location} • $formattedDate',
-                                style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 12.h),
-
-                          Row(
-                            children: [
-                              // 사용감 태그 - ItemDetail과 동일한 위젯 사용
-                              ItemDetailConditionTag(condition: widget.item.itemCondition.label),
-                              SizedBox(width: 4.w),
-                              // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
-                              Wrap(
-                                spacing: 4.w,
-                                children: widget.item.transactionTypes
-                                    .map((type) => ItemDetailTradeOptionTag(option: type.label))
-                                    .toList(),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 10.h),
-
-                          Row(
-                            children: [
-                              // 물품 가격
-                              Text(
-                                "$formattedPrice원",
-                                style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600),
-                              ),
-
-                              SizedBox(width: 8.w),
-
-                              _useAiPrice ? const AiBadgeWidget() : const SizedBox(),
-                            ],
-                          ),
-                        ],
-                      ),
+                      child: HomeFeedItemSummary(item: widget.item, isAiPrice: _useAiPrice),
                     ),
                   ),
 

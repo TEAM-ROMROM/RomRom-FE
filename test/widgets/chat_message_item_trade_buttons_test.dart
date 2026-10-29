@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
-
-// 디자인 기준 화면 (iPhone 393x852)
-const Size designScreenSize = Size(393, 852);
+import '../helpers/pump_design_screen.dart';
 
 /// 상대방이 보낸 활성 교환 완료 요청 카드 렌더
 Future<void> pumpOpponentTradeRequestCard(
@@ -15,26 +12,21 @@ Future<void> pumpOpponentTradeRequestCard(
   required VoidCallback onRejectTradeRequest,
   required VoidCallback onConfirmTradeRequest,
 }) async {
-  tester.view.devicePixelRatio = 1.0;
-  tester.view.physicalSize = designScreenSize;
-  addTearDown(tester.view.reset);
+  useDesignScreenView(tester);
 
   await tester.pumpWidget(
-    ScreenUtilInit(
-      designSize: designScreenSize,
-      builder: (context, child) => MaterialApp(
-        home: Scaffold(
-          body: ChatMessageItem(
-            message: ChatMessage(senderId: 'opponent', type: MessageType.tradeCompleteRequest),
-            myMemberId: 'me',
-            topGap: 0,
-            showTime: false,
-            isUploading: false,
-            opponentNickname: '상대',
-            onRejectTradeRequest: onRejectTradeRequest,
-            onConfirmTradeRequest: onConfirmTradeRequest,
-            isTradeActionPending: isTradeActionPending,
-          ),
+    buildDesignScreenApp(
+      home: Scaffold(
+        body: ChatMessageItem(
+          message: ChatMessage(senderId: 'opponent', type: MessageType.tradeCompleteRequest),
+          myMemberId: 'me',
+          topGap: 0,
+          showTime: false,
+          isUploading: false,
+          opponentNickname: '상대',
+          onRejectTradeRequest: onRejectTradeRequest,
+          onConfirmTradeRequest: onConfirmTradeRequest,
+          isTradeActionPending: isTradeActionPending,
         ),
       ),
     ),

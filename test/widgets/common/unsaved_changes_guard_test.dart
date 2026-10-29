@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/widgets/common/unsaved_changes_guard.dart';
-
-// 디자인 기준 화면 (iPhone 393x852)
-const Size designScreenSize = Size(393, 852);
+import '../../helpers/pump_design_screen.dart';
 
 /// 런처 화면 > 'open' 탭 시 가드 화면 push (가드 화면 닫힘 횟수는 [onLeaveCalled]로 통지)
 Future<void> pumpGuardedScreen(
@@ -13,33 +10,28 @@ Future<void> pumpGuardedScreen(
   ValueNotifier<bool>? isLeaveBlockedNotifier,
   required VoidCallback onLeaveCalled,
 }) async {
-  tester.view.devicePixelRatio = 1.0;
-  tester.view.physicalSize = designScreenSize;
-  addTearDown(tester.view.reset);
+  useDesignScreenView(tester);
 
   await tester.pumpWidget(
-    ScreenUtilInit(
-      designSize: designScreenSize,
-      builder: (context, child) => MaterialApp(
-        home: Builder(
-          builder: (launcherContext) => Scaffold(
-            body: Center(
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(launcherContext).push(
-                  MaterialPageRoute<void>(
-                    builder: (guardedContext) => UnsavedChangesGuard(
-                      hasUnsavedChangesListenable: hasUnsavedChangesNotifier,
-                      isLeaveBlockedListenable: isLeaveBlockedNotifier,
-                      onLeave: () {
-                        onLeaveCalled();
-                        Navigator.of(guardedContext).pop();
-                      },
-                      child: const Scaffold(body: Text('guarded')),
-                    ),
+    buildDesignScreenApp(
+      home: Builder(
+        builder: (launcherContext) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(launcherContext).push(
+                MaterialPageRoute<void>(
+                  builder: (guardedContext) => UnsavedChangesGuard(
+                    hasUnsavedChangesListenable: hasUnsavedChangesNotifier,
+                    isLeaveBlockedListenable: isLeaveBlockedNotifier,
+                    onLeave: () {
+                      onLeaveCalled();
+                      Navigator.of(guardedContext).pop();
+                    },
+                    child: const Scaffold(body: Text('guarded')),
                   ),
                 ),
-                child: const Text('open'),
               ),
+              child: const Text('open'),
             ),
           ),
         ),
@@ -176,20 +168,17 @@ void main() {
     testWidgets('requestLeave 차단 중 > 모달·onLeave 없음 (앱바 뒤로가기 경로)', (tester) async {
       var leaveCallCount = 0;
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: designScreenSize,
-          builder: (context, child) => MaterialApp(
-            home: Builder(
-              builder: (screenContext) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => UnsavedChangesGuard.requestLeave(
-                    context: screenContext,
-                    hasUnsavedChanges: true,
-                    isLeaveBlocked: true,
-                    onLeave: () => leaveCallCount++,
-                  ),
-                  child: const Text('back'),
+        buildDesignScreenApp(
+          home: Builder(
+            builder: (screenContext) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => UnsavedChangesGuard.requestLeave(
+                  context: screenContext,
+                  hasUnsavedChanges: true,
+                  isLeaveBlocked: true,
+                  onLeave: () => leaveCallCount++,
                 ),
+                child: const Text('back'),
               ),
             ),
           ),

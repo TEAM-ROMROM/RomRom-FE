@@ -60,11 +60,7 @@ class RequestReceivedList extends StatelessWidget {
                         address: giveItem.address ?? '주소 미등록',
                         createdDate: giveItem.createdDate ?? DateTime.now(),
                         isNew: request.isNew ?? false,
-                        tradeOptions: giveItem.itemTradeOptions != null
-                            ? giveItem.itemTradeOptions!
-                                  .map((s) => ItemTradeOption.values.firstWhere((e) => e.serverName == s))
-                                  .toList()
-                            : [],
+                        tradeOptions: ItemTradeOption.fromServerNamesSkippingUnknown(giveItem.itemTradeOptions),
                         tradeStatus: request.tradeStatus != null
                             ? TradeStatus.values.firstWhere(
                                 (e) => e.serverName == request.tradeStatus,

@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
-
-// 디자인 기준 화면 (iPhone 393x852)
-const Size designScreenSize = Size(393, 852);
+import '../../helpers/pump_design_screen.dart';
 
 /// 테스트 앱 렌더 (ScreenUtil 초기화 포함)
 Future<void> pumpEmptyStateView(WidgetTester tester, Widget emptyStateView) async {
-  await tester.pumpWidget(
-    ScreenUtilInit(
-      designSize: designScreenSize,
-      builder: (context, child) => MaterialApp(home: Scaffold(body: emptyStateView)),
-    ),
-  );
+  await tester.pumpWidget(buildDesignScreenApp(home: Scaffold(body: emptyStateView)));
 }
 
 void main() {

@@ -10,7 +10,6 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/notification_history.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
@@ -20,14 +19,15 @@ import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/notification_mute_rules.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
-import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/notification/notification_header_actions.dart';
+import 'package:romrom_fe/widgets/notification/notification_history_list.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
-import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/widgets/skeletons/notification_skeleton.dart';
 
@@ -252,37 +252,11 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     }
   }
 
-  /// NotificationType → 대응하는 NotificationSettingType 목록
-  List<NotificationSettingType> _settingTypesFor(NotificationType type) {
-    switch (type) {
-      case NotificationType.tradeRequestReceived:
-        return [NotificationSettingType.transaction];
-      case NotificationType.chatMessageReceived:
-        return [NotificationSettingType.chat];
-      case NotificationType.itemLiked:
-        return [NotificationSettingType.activity];
-      case NotificationType.systemNotice:
-        // systemNotice는 content + marketing 묶음
-        return [NotificationSettingType.content, NotificationSettingType.marketing];
-      case NotificationType.itemDeletedByAdmin:
-        // 관리자 제재 통보는 끌 수 없는 강제 알림 → 대응 설정 없음(항상 활성으로 간주)
-        return const [];
-    }
-  }
-
-  /// provider 상태에서 NotificationType의 muted 여부 계산
-  /// systemNotice: content 또는 marketing 중 하나라도 꺼져 있으면 muted
-  bool _isMuted(Map<NotificationSettingType, bool> settings, NotificationType type) {
-    final settingTypes = _settingTypesFor(type);
-    // 모두 enabled여야 unmuted. 하나라도 false면 muted.
-    return !settingTypes.every((t) => settings[t] ?? false);
-  }
-
   /// 알림 끄기/켜기 토글
   /// 지정된 알림 유형의 현재 상태를 반전시켜 업데이트합니다.
   Future<void> _onToggleMuteNotification(NotificationType notificationType) async {
     final settings = ref.read(notificationSettingProvider);
-    final bool isMuted = _isMuted(settings, notificationType);
+    final bool isMuted = isNotificationTypeMuted(settings, notificationType);
 
     // 음소거 해제(켜기) 시도 시 시스템 권한 확인
     if (isMuted) {
@@ -308,7 +282,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     // provider.setEnabled 경유 (optimistic + API + dedup 내장)
     final bool newEnabled = isMuted; // muted → 켜기(true), unmuted → 끄기(false)
     final notifier = ref.read(notificationSettingProvider.notifier);
-    final settingTypes = _settingTypesFor(notificationType);
+    final settingTypes = toNotificationSettingTypes(notificationType);
     for (final settingType in settingTypes) {
       await notifier.setEnabled(settingType, newEnabled);
     }
@@ -426,37 +400,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                         semanticLabel: '뒤로 가기',
                       ),
                     ),
-                    trailingWidget: Row(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
-                          child: AppPressable(
-                            onTap: _onDeleteAllNotificationTap,
-                            scaleDown: AppPressable.scaleIcon,
-                            enableRipple: false,
-                            child: Icon(
-                              AppIcons.trash,
-                              size: 30.sp,
-                              color: AppColors.textColorWhite,
-                              semanticLabel: '알림 전체 삭제',
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(right: 8.w), // 기본 16 + 8 = 24px 우측 패딩
-                          child: AppPressable(
-                            onTap: _onSettingsTap,
-                            scaleDown: AppPressable.scaleIcon,
-                            enableRipple: false,
-                            child: Icon(
-                              AppIcons.setting,
-                              size: 30.sp,
-                              color: AppColors.textColorWhite,
-                              semanticLabel: '알림 설정',
-                            ),
-                          ),
-                        ),
-                      ],
+                    trailingWidget: NotificationHeaderActions(
+                      onDeleteAllTap: _onDeleteAllNotificationTap,
+                      onSettingsTap: _onSettingsTap,
                     ),
                   ),
                 ),
@@ -493,60 +439,15 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   }
 
   Widget _buildNotificationList(Map<NotificationSettingType, bool> settings, NotificationListState notificationList) {
-    final notifications = _toNotificationItems(notificationList.notifications, isRomromNewsTab: _isRightSelected);
-
-    if (notifications.isEmpty) {
-      return AppFadeSlideIn(
-        child: Container(
-          height: 300.h,
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
-          child: Center(
-            child: Text(
-              _isRightSelected ? '롬롬 소식이 없습니다' : '알림이 없습니다',
-              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(0.w, 4.h, 0.w, 0),
-      child: MediaQuery.removePadding(
-        context: context,
-        removeTop: true,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: notifications.length,
-              separatorBuilder: (_, index) => const SizedBox.shrink(),
-              itemBuilder: (context, index) {
-                final notification = notifications[index];
-                return AppFadeSlideIn(
-                  // 페이지마다 stagger 처음부터 (뒤에 붙은 페이지 등장 지연 방지)
-                  delay: Duration(milliseconds: (index % notificationPageSize) * AppMotion.staggerDelayMs),
-                  child: NotificationItemWidget(
-                    data: notification,
-                    isMuted: _isMuted(settings, notification.type),
-                    onTap: () => _onNotificationTap(notification),
-                    onMuteTap: () => _onToggleMuteNotification(notification.type),
-                    onDeleteTap: () => _onDeleteNotification(notification.id),
-                  ),
-                );
-              },
-            ),
-            // 다음 페이지 조회 중
-            if (notificationList.isLoadingMore)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: CommonLoadingIndicator()),
-              ),
-          ],
-        ),
-      ),
+    return NotificationHistoryList(
+      notifications: _toNotificationItems(notificationList.notifications, isRomromNewsTab: _isRightSelected),
+      isRomromNewsTab: _isRightSelected,
+      isLoadingMore: notificationList.isLoadingMore,
+      pageSize: notificationPageSize,
+      isMutedFor: (type) => isNotificationTypeMuted(settings, type),
+      onNotificationTap: _onNotificationTap,
+      onMuteTap: _onToggleMuteNotification,
+      onDeleteTap: _onDeleteNotification,
     );
   }
 }

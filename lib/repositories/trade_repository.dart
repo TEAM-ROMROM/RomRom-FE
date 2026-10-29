@@ -1,4 +1,5 @@
 // lib/repositories/trade_repository.dart
+import 'package:romrom_fe/enums/request_sort_type.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/requests/trade_request.dart';
@@ -10,20 +11,40 @@ class TradeRepository {
 
   TradeRepository(this._api);
 
-  /// 현재 카드(takeItemId)의 받은 거래 요청 목록 조회.
-  Future<List<TradeRequestHistory>> getReceived({required String takeItemId, int pageSize = 10}) async {
-    final res = await _api.getReceivedTradeRequests(
-      TradeRequest(takeItemId: takeItemId, pageNumber: 0, pageSize: pageSize),
+  /// 현재 카드(takeItemId)의 받은 거래 요청 목록 조회 (정렬 기준 포함)
+  Future<List<TradeRequestHistory>> getReceived({
+    required String takeItemId,
+    RequestSortType sortType = RequestSortType.latest,
+  }) async {
+    final response = await _api.getReceivedTradeRequests(
+      TradeRequest(
+        takeItemId: takeItemId,
+        sortField: sortType.serverSortField,
+        sortDirection: sortType.serverDirection,
+      ),
     );
-    return res.content;
+    return response.content;
   }
 
-  /// 특정 카드(giveItemId)의 보낸 거래 요청 목록 조회.
-  Future<List<TradeRequestHistory>> getSent({required String giveItemId, int pageSize = 10}) async {
-    final res = await _api.getSentTradeRequests(
-      TradeRequest(giveItemId: giveItemId, pageNumber: 0, pageSize: pageSize),
+  /// 특정 카드(giveItemId)의 보낸 거래 요청 목록 조회 (정렬 기준 포함)
+  Future<List<TradeRequestHistory>> getSent({
+    required String giveItemId,
+    RequestSortType sortType = RequestSortType.latest,
+  }) async {
+    final response = await _api.getSentTradeRequests(
+      TradeRequest(
+        giveItemId: giveItemId,
+        sortField: sortType.serverSortField,
+        sortDirection: sortType.serverDirection,
+      ),
     );
-    return res.content;
+    return response.content;
+  }
+
+  /// 거래 요청 상세 조회 (서버 읽음 처리 후 이력 반환, 없으면 null)
+  Future<TradeRequestHistory?> getDetail(String tradeRequestHistoryId) async {
+    final response = await _api.getDetailedTradeRequest(TradeRequest(tradeRequestHistoryId: tradeRequestHistoryId));
+    return response.tradeRequestHistory;
   }
 
   /// 거래 요청 취소.

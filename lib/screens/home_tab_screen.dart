@@ -1,17 +1,12 @@
 import 'dart:async';
 import 'dart:io' show Platform;
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
@@ -26,8 +21,8 @@ import 'package:romrom_fe/screens/trade_request_screen.dart';
 import 'package:romrom_fe/states/home_feed_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/home_feed_ad_slot_schedule.dart';
 import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
-import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
@@ -35,6 +30,9 @@ import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 import 'package:romrom_fe/widgets/home_feed_refresh_indicator.dart';
+import 'package:romrom_fe/widgets/home_tab/home_tab_empty_feed_view.dart';
+import 'package:romrom_fe/widgets/home_tab/home_tab_register_button.dart';
+import 'package:romrom_fe/widgets/home_tab/home_tab_top_actions.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/native_ad_widget.dart';
 import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
@@ -75,43 +73,8 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   /// onLoaded 콜백을 정확히 1회만 부르기 위한 가드.
   bool _onLoadedFired = false;
 
-  // ─── 광고 슬롯 (화면 로컬) ─────────────────────────────────────────
-  static const int _adFreeCount = 5;
-  static const int _adMinInterval = 8;
-  static const int _adMaxInterval = 11;
-
-  final Set<int> _adVirtualIndices = {};
-  final List<int> _adVirtualIndicesSorted = [];
-  int _nextAdAfterFeedIndex = _adFreeCount;
-  final Random _random = Random();
-
-  int _virtualItemCount(int feedLen) => feedLen + _adVirtualIndices.length;
-  bool _isAdAtVirtualIndex(int vi) => _adVirtualIndices.contains(vi);
-
-  int _feedIndexAtVirtualIndex(int vi) {
-    int adsBefore = 0;
-    for (final ai in _adVirtualIndicesSorted) {
-      if (ai > vi) break;
-      adsBefore++;
-    }
-    return vi - adsBefore;
-  }
-
-  void _resetAdSlots() {
-    _adVirtualIndices.clear();
-    _adVirtualIndicesSorted.clear();
-    _nextAdAfterFeedIndex = _adFreeCount;
-  }
-
-  void _scheduleAdsForFeedLength(int feedLen) {
-    while (_nextAdAfterFeedIndex < feedLen) {
-      final vi = _nextAdAfterFeedIndex + _adVirtualIndices.length;
-      _adVirtualIndices.add(vi);
-      _adVirtualIndicesSorted.add(vi);
-      _nextAdAfterFeedIndex += _adMinInterval + _random.nextInt(_adMaxInterval - _adMinInterval + 1);
-    }
-  }
-  // ────────────────────────────────────────────────────────────────
+  // 광고 슬롯 배치 (화면 로컬)
+  final HomeFeedAdSlotSchedule _adSlotSchedule = HomeFeedAdSlotSchedule();
 
   @override
   void initState() {
@@ -211,8 +174,8 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         _currentFeedIndex = 0;
         _currentVirtualIndex = 0;
         _aiHighlightedItemIds = [];
-        _resetAdSlots();
-        _scheduleAdsForFeedLength(newLen);
+        _adSlotSchedule.reset();
+        _adSlotSchedule.scheduleAdsForFeedLength(newLen);
       });
     });
   }
@@ -220,7 +183,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   /// 피드 items가 append될 때 (loadMore) — 광고 슬롯만 추가 스케줄.
   void _onFeedItemsAppended(int newLen) {
     setState(() {
-      _scheduleAdsForFeedLength(newLen);
+      _adSlotSchedule.scheduleAdsForFeedLength(newLen);
     });
   }
 
@@ -357,27 +320,8 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     final isRefreshing = asyncFeed.isLoading && asyncFeed.hasValue;
 
     if (feedItems.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('물품이 없습니다.', style: CustomTextStyles.h3),
-            const SizedBox(height: 16),
-            AppPressable(
-              onTap: () => ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry),
-              scaleDown: AppPressable.scaleButton,
-              enableRipple: false,
-              child: Material(
-                color: AppColors.primaryYellow,
-                borderRadius: BorderRadius.circular(4.r),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  child: Text('새로고침', style: CustomTextStyles.p2.copyWith(color: AppColors.textColorBlack)),
-                ),
-              ),
-            ),
-          ],
-        ),
+      return HomeTabEmptyFeedView(
+        onRefreshTap: () => ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry),
       );
     }
 
@@ -396,13 +340,14 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
               scrollDirection: Axis.vertical,
               controller: _pageController,
               physics: isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
-              itemCount: _virtualItemCount(feedItems.length) + (hasMoreItems ? 1 : 0),
+              itemCount: _adSlotSchedule.virtualItemCount(feedItems.length) + (hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 if (isBlurShown) return;
                 setState(() {
                   _currentVirtualIndex = index;
-                  if (index < _virtualItemCount(feedItems.length) && !_isAdAtVirtualIndex(index)) {
-                    _currentFeedIndex = _feedIndexAtVirtualIndex(index);
+                  if (index < _adSlotSchedule.virtualItemCount(feedItems.length) &&
+                      !_adSlotSchedule.isAdAtVirtualIndex(index)) {
+                    _currentFeedIndex = _adSlotSchedule.feedIndexAtVirtualIndex(index);
                     final uuid = feedItems[_currentFeedIndex].itemUuid;
                     if (uuid != null) {
                       ref.read(homeFeedProvider.notifier).markSeen(uuid);
@@ -412,13 +357,13 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                 });
               },
               itemBuilder: (context, index) {
-                if (index >= _virtualItemCount(feedItems.length)) {
+                if (index >= _adSlotSchedule.virtualItemCount(feedItems.length)) {
                   return const Center(child: CommonLoadingIndicator());
                 }
-                if (_isAdAtVirtualIndex(index)) {
+                if (_adSlotSchedule.isAdAtVirtualIndex(index)) {
                   return const NativeAdWidget();
                 }
-                final feedIndex = _feedIndexAtVirtualIndex(index);
+                final feedIndex = _adSlotSchedule.feedIndexAtVirtualIndex(index);
                 final feedItem = feedItems[feedIndex];
                 return HomeFeedItemWidget(
                   key: ValueKey('${feedItem.itemUuid ?? feedItem.id}_$feedIndex'),
@@ -451,68 +396,14 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                 (Platform.isAndroid ? 16.h : 8.h) -
                 ReportMenuButton.rowTopCompensation(32.w),
             child: Offstage(
-              offstage: _isAdAtVirtualIndex(_currentVirtualIndex),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox.square(
-                    dimension: 32.w,
-                    child: OverflowBox(
-                      maxWidth: 56.w,
-                      maxHeight: 56.w,
-                      child: Material(
-                        color: AppColors.transparent,
-                        shape: const CircleBorder(),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkResponse(
-                          onTap: () async {
-                            // 복귀 후 배지는 알림 화면 dispose의 전체 읽음 > 재조회로 provider가 갱신
-                            await context.navigateTo(screen: const NotificationScreen());
-                          },
-                          radius: 18.w,
-                          customBorder: const CircleBorder(),
-                          highlightColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.5),
-                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                          child: SizedBox.square(
-                            dimension: 56.w,
-                            child: Center(
-                              child: hasUnreadNotification
-                                  ? SvgPicture.asset(
-                                      'assets/images/alertWithBadge.svg',
-                                      width: 30.w,
-                                      height: 30.w,
-                                      semanticsLabel: '읽지 않은 알림 있음, 알림 목록',
-                                    )
-                                  : Icon(
-                                      AppIcons.alert,
-                                      size: 30.w,
-                                      color: AppColors.textColorWhite,
-                                      semanticLabel: '알림',
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: max(0.0, 10.w - ReportMenuButton.tapTargetExtraInset)),
-                  ReportMenuButton(
-                    onReportPressed: () async {
-                      if (feedItems.isEmpty) return;
-                      final currentItem = feedItems[_currentFeedIndex];
-                      final bool? reported = await context.navigateTo(
-                        screen: ReportScreen(itemId: currentItem.itemUuid ?? ''),
-                      );
-                      if (reported == true && mounted) {
-                        await CommonModal.success(
-                          context: context,
-                          message: '신고가 접수되었습니다.',
-                          onConfirm: () => Navigator.of(context).pop(),
-                        );
-                      }
-                    },
-                  ),
-                ],
+              offstage: _adSlotSchedule.isAdAtVirtualIndex(_currentVirtualIndex),
+              child: HomeTabTopActions(
+                hasUnreadNotification: hasUnreadNotification,
+                onNotificationTap: () async {
+                  // 복귀 후 배지는 알림 화면 dispose의 전체 읽음 > 재조회로 provider가 갱신
+                  await context.navigateTo(screen: const NotificationScreen());
+                },
+                onReportPressed: () => _onReportPressed(feedItems),
               ),
             ),
           ),
@@ -528,51 +419,42 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
               cards: myCards,
               onCardDrop: _handleCardDrop,
               highlightedItemIds: _aiHighlightedItemIds,
-              dragEnabled: !_isAdAtVirtualIndex(_currentVirtualIndex),
+              dragEnabled: !_adSlotSchedule.isAdAtVirtualIndex(_currentVirtualIndex),
             ),
           )
-        else if (!_isAdAtVirtualIndex(_currentVirtualIndex))
+        else if (!_adSlotSchedule.isAdAtVirtualIndex(_currentVirtualIndex))
           Positioned(
             left: 0,
             right: 0,
             bottom: 24.h,
-            child: Center(
-              child: AppPressable(
-                onTap: () async {
-                  final result = await context.navigateTo<Map<String, dynamic>>(
-                    screen: ItemRegisterScreen(onClose: () => Navigator.pop(context)),
-                  );
-                  if (!mounted) return;
-                  if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
-                    showCoachMark();
-                  }
-                },
-                scaleDown: AppPressable.scaleButton,
-                enableRipple: false,
-                child: Container(
-                  width: 123.w,
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryYellow,
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: const [BoxShadow(color: AppColors.opacity20Black, blurRadius: 4, offset: Offset(0, 4))],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add, size: 24.sp, color: AppColors.primaryBlack),
-                      SizedBox(width: 4.w),
-                      Text(
-                        '등록하기',
-                        style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            child: HomeTabRegisterButton(onTap: _onRegisterButtonPressed),
           ),
       ],
     );
+  }
+
+  /// 현재 카드 신고: 신고 화면 > 접수되면 완료 안내
+  Future<void> _onReportPressed(List<HomeFeedItem> feedItems) async {
+    if (feedItems.isEmpty) return;
+    final currentItem = feedItems[_currentFeedIndex];
+    final bool? reported = await context.navigateTo(screen: ReportScreen(itemId: currentItem.itemUuid ?? ''));
+    if (reported == true && mounted) {
+      await CommonModal.success(
+        context: context,
+        message: '신고가 접수되었습니다.',
+        onConfirm: () => Navigator.of(context).pop(),
+      );
+    }
+  }
+
+  /// 블러 상태 등록 버튼: 등록 화면 > 첫 등록이면 코치마크
+  Future<void> _onRegisterButtonPressed() async {
+    final result = await context.navigateTo<Map<String, dynamic>>(
+      screen: ItemRegisterScreen(onClose: () => Navigator.pop(context)),
+    );
+    if (!mounted) return;
+    if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+      showCoachMark();
+    }
   }
 }

@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
-
-// 디자인 기준 화면 (iPhone 393x852)
-const Size designScreenSize = Size(393, 852);
+import '../helpers/pump_design_screen.dart';
 
 // 초기 팬 애니메이션 시작 지연(500ms) 이후 시점
 const Duration afterFanStartDelay = Duration(milliseconds: 600);
@@ -29,20 +26,15 @@ List<Item> buildTestCards(int count) {
 
 /// 카드 핸드 렌더 > 팬 애니메이션 종료까지 대기
 Future<void> pumpCardHand(WidgetTester tester, {required int cardCount}) async {
-  tester.view.physicalSize = designScreenSize;
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
+  useDesignScreenView(tester);
 
   await tester.pumpWidget(
-    ScreenUtilInit(
-      designSize: designScreenSize,
-      builder: (context, child) => MaterialApp(
-        home: Scaffold(
-          body: Stack(
-            children: [
-              Positioned(left: 0, right: 0, bottom: 0, child: HomeTabCardHand(cards: buildTestCards(cardCount))),
-            ],
-          ),
+    buildDesignScreenApp(
+      home: Scaffold(
+        body: Stack(
+          children: [
+            Positioned(left: 0, right: 0, bottom: 0, child: HomeTabCardHand(cards: buildTestCards(cardCount))),
+          ],
         ),
       ),
     ),

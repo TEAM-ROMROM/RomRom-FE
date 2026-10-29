@@ -1,33 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/widgets/common/unsaved_changes_guard.dart';
-
-// 디자인 기준 화면 (iPhone 393x852)
-const Size designScreenSize = Size(393, 852);
+import '../helpers/pump_design_screen.dart';
 
 /// 런처 > 'open' 탭 시 물품 등록 화면 push
 Future<void> pumpItemRegisterScreen(WidgetTester tester) async {
-  tester.view.devicePixelRatio = 1.0;
-  tester.view.physicalSize = designScreenSize;
-  addTearDown(tester.view.reset);
+  useDesignScreenView(tester);
 
   await tester.pumpWidget(
     ProviderScope(
-      child: ScreenUtilInit(
-        designSize: designScreenSize,
-        builder: (context, child) => MaterialApp(
-          home: Builder(
-            builder: (launcherContext) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(
-                    launcherContext,
-                  ).push(MaterialPageRoute<void>(builder: (_) => const ItemRegisterScreen())),
-                  child: const Text('open'),
-                ),
+      child: buildDesignScreenApp(
+        home: Builder(
+          builder: (launcherContext) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(
+                  launcherContext,
+                ).push(MaterialPageRoute<void>(builder: (_) => const ItemRegisterScreen())),
+                child: const Text('open'),
               ),
             ),
           ),
