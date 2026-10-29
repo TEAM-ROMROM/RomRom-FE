@@ -27,7 +27,9 @@ class FirebaseService {
   void dispose() {
     try {
       _foregroundMessageController.close();
-    } catch (_) {}
+    } catch (_) {
+      // 이미 닫힌 스트림 (중복 dispose 무시)
+    }
   }
 
   // 알림 권한 요청 1회분 (첫 호출 Future 공유)

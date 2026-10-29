@@ -12,6 +12,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/profile_image_crop/profile_crop_corner_handle.dart';
 import 'package:romrom_fe/widgets/profile_image_crop/profile_crop_overlay_painter.dart';
@@ -381,7 +382,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
 
   Widget _buildImageLayer() {
     if (_image == null) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+      return const Center(child: CommonLoadingIndicator());
     }
     return Center(
       child: RawImage(

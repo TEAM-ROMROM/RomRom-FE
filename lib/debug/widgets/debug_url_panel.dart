@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 class DebugUrlPanel extends StatefulWidget {
   final VoidCallback onClose;
@@ -200,11 +201,7 @@ class _DebugUrlPanelState extends State<DebugUrlPanel> {
                   decoration: BoxDecoration(color: AppColors.primaryYellow, borderRadius: BorderRadius.circular(6)),
                   child: Center(
                     child: _isLoading
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                          )
+                        ? const CommonLoadingIndicator(color: AppColors.primaryBlack, size: 14)
                         : Text(
                             '연결',
                             style: CustomTextStyles.debugBase.copyWith(

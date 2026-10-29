@@ -44,7 +44,9 @@ class RomAuthApi {
         final androidInfo = await deviceInfo.androidInfo;
         deviceModel = androidInfo.model;
       }
-    } catch (_) {}
+    } catch (_) {
+      // 기기 모델 조회 실패는 로그인 요청에 영향 없음 (기본값 유지)
+    }
 
     return {'platform': platform, 'appVersion': appVersion, 'deviceModel': deviceModel, 'locale': locale};
   }
