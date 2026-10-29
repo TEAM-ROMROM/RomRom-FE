@@ -179,6 +179,9 @@ class _CommonModalState extends State<CommonModal> {
   static const double _buttonHeight = 44;
   // 확인 버튼 자리 로딩 스피너 크기
   static const double _confirmLoadingIndicatorSize = 18;
+  // 본문·버튼 글자 크기 (고정 px — 박스가 고정 폭이라 .sp 확대 시 태블릿에서 줄바꿈 깨짐)
+  static const double _messageFontSize = 14;
+  static const double _buttonFontSize = 16;
 
   // 비동기 onConfirm 진행 여부 (true면 확인·취소 비활성)
   bool _isConfirmInProgress = false;
@@ -258,6 +261,7 @@ class _CommonModalState extends State<CommonModal> {
               Text(
                 widget.message,
                 style: CustomTextStyles.p2.copyWith(
+                  fontSize: _messageFontSize,
                   fontWeight: FontWeight.w600,
                   height: 1.3,
                   color: AppColors.opacity80White,
@@ -295,7 +299,11 @@ class _CommonModalState extends State<CommonModal> {
           decoration: BoxDecoration(color: widget.confirmButtonColor, borderRadius: BorderRadius.circular(10)),
           alignment: Alignment.center,
           child: _buildConfirmContent(
-            CustomTextStyles.p1.copyWith(color: widget.confirmTextColor, fontWeight: FontWeight.w700),
+            CustomTextStyles.p1.copyWith(
+              fontSize: _buttonFontSize,
+              color: widget.confirmTextColor,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -321,7 +329,11 @@ class _CommonModalState extends State<CommonModal> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
-                child: Text(widget.cancelText!, style: CustomTextStyles.p1, textAlign: TextAlign.center),
+                child: Text(
+                  widget.cancelText!,
+                  style: CustomTextStyles.p1.copyWith(fontSize: _buttonFontSize),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           ),
@@ -338,7 +350,7 @@ class _CommonModalState extends State<CommonModal> {
               child: Container(
                 decoration: BoxDecoration(color: widget.confirmButtonColor, borderRadius: BorderRadius.circular(10)),
                 alignment: Alignment.center,
-                child: _buildConfirmContent(CustomTextStyles.p1),
+                child: _buildConfirmContent(CustomTextStyles.p1.copyWith(fontSize: _buttonFontSize)),
               ),
             ),
           ),
