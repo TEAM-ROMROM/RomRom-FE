@@ -74,6 +74,9 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
   /// 거래 요청 존재 여부 확인 중 여부
   bool _isCheckingExistence = false;
 
+  /// 존재 여부 확인 회차 (빠른 슬라이드 시 이전 카드 응답 무시용)
+  int _existenceCheckGeneration = 0;
+
   @override
   void initState() {
     super.initState();
@@ -146,25 +149,29 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
   Future<void> _checkTradeRequestExistence(int cardIndex) async {
     if (_myItems.isEmpty) return;
 
+    final generation = ++_existenceCheckGeneration;
     setState(() {
       _tradeRequestExists = null;
       _isCheckingExistence = true;
     });
+
+    // 최신 회차 응답만 반영 (이전 카드 응답이 늦게 와도 현재 카드 상태 유지)
+    bool isLatestCheck() => mounted && generation == _existenceCheckGeneration;
 
     try {
       final exists = await ref
           .read(tradeRepositoryProvider)
           .hasTradeRequest(takeItemId: widget.targetItem.itemId, giveItemId: _myItems[cardIndex].itemId);
 
-      if (!mounted) return;
+      if (!isLatestCheck()) return;
 
       setState(() => _tradeRequestExists = exists);
     } catch (e) {
       debugPrint('거래 요청 존재 여부 확인 실패: $e');
-      if (!mounted) return;
+      if (!isLatestCheck()) return;
       setState(() => _tradeRequestExists = false);
     } finally {
-      if (mounted) setState(() => _isCheckingExistence = false);
+      if (isLatestCheck()) setState(() => _isCheckingExistence = false);
     }
   }
 
