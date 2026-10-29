@@ -13,7 +13,6 @@ class ItemRequest {
   String? itemCondition;
   List<String>? itemTradeOptions;
   int? itemPrice;
-  List<String>? itemCustomTags;
   String? itemId;
   int pageNumber;
   int pageSize;
@@ -39,7 +38,6 @@ class ItemRequest {
     this.itemCondition,
     this.itemTradeOptions,
     this.itemPrice,
-    this.itemCustomTags,
     this.itemId,
     this.pageNumber = 0,
     this.pageSize = 10,

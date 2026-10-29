@@ -25,7 +25,6 @@ class ItemApi {
       'itemCondition': request.itemCondition,
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
-      'itemCustomTags': request.itemCustomTags?.join(','),
       'itemImageUrls': request.itemImageUrls?.join(','),
       'isAiPredictedPrice': request.isAiPredictedPrice,
     };
@@ -241,7 +240,6 @@ class ItemApi {
       'itemCondition': request.itemCondition,
       'itemTradeOptions': request.itemTradeOptions?.join(','),
       'itemPrice': request.itemPrice?.toString(),
-      'itemCustomTags': request.itemCustomTags?.join(','),
       'isAiPredictedPrice': request.isAiPredictedPrice?.toString() ?? 'false',
       'itemImageUrls': request.itemImageUrls?.join(','),
     };
