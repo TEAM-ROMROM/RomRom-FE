@@ -574,3 +574,8 @@ html.dark .hero2-section {
   height: auto;
   filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.9));
 }
+
+/* 로고 워드마크: 어두운 글자색 SVG 를 다크모드에서 밝게 반전 (노란 포인트는 hue 복원) */
+html.dark .logo-wordmark {
+  filter: invert(1) hue-rotate(180deg);
+}

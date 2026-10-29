@@ -1,6 +1,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google-site-verification" content="5DLbns2x0A3RFv27FOYbvG772cGc4-lH2xZgD1eeOy8" />
     <title>롬롬(romrom) - 가치를 교환하는 새로운 방법</title>
+    <meta
+      name="description"
+      content="내 물건과 네 물건을 교환해보세요! 롬롬에서 물물교환 하세요."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="롬롬" />
+    <meta property="og:title" content="롬롬(romrom) - 가치를 교환하는 새로운 방법" />
+    <meta
+      property="og:description"
+      content="내 물건과 네 물건을 교환해보세요! 롬롬에서 물물교환 하세요."
+    />
+    <meta property="og:image" content="https://romrom-c4008.web.app/images/og-default.png" />
+    <meta property="og:url" content="https://romrom-c4008.web.app/" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -35,32 +50,8 @@
       };
     </script>
 
-    <!-- 딥링크 처리 -->
-    <script>
-      (function () {
-        var ua = navigator.userAgent.toLowerCase();
-        var isAndroid = ua.indexOf("android") > -1;
-        var isIOS = /iphone|ipad|ipod/.test(ua);
-        var isMobile = isAndroid || isIOS;
-        var itemId = new URLSearchParams(window.location.search).get("itemId");
-        var cfg = window.APP_CONFIG || {};
-        var androidUrl =
-          cfg.androidStoreUrl ||
-          "https://play.google.com/store/apps/details?id=com.alom.romrom";
-        var iosUrl =
-          cfg.iosStoreUrl || "https://apps.apple.com/kr/app/id6748823976";
-
-        if (itemId && isMobile) {
-          window.location =
-            "romrom://item/detail?itemId=" + encodeURIComponent(itemId);
-          setTimeout(function () {
-            window.location = isIOS ? iosUrl : androidUrl;
-          }, 1500);
-        }
-
-        window._romrom = { isMobile, isIOS, androidUrl, iosUrl };
-      })();
-    </script>
+    <!-- 딥링크 처리 (파라미터 보존, 앱 열기, 스토어 폴백) -->
+    <script src="/js/deeplink.js"></script>
 
     <!-- 다크모드 플래시 방지 (렌더 전 초기화) -->
     <script>

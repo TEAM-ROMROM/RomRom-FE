@@ -9,7 +9,7 @@ const IOS_STORE_URL = appConfig.iosStoreUrl;
 // 백엔드 API 실패 시 사용하는 기본값
 const DEFAULT_TITLE = '롬롬 - 물물교환 앱';
 const DEFAULT_DESCRIPTION = '내 물건과 네 물건을 교환해보세요! 롬롬에서 물물교환 하세요.';
-const DEFAULT_OG_IMAGE = `${HOSTING_URL}/og-default.png`;
+const DEFAULT_OG_IMAGE = `${HOSTING_URL}/images/og-default.png`;
 
 /**
  * 아이템 공개 정보 조회
@@ -125,7 +125,16 @@ function buildHtml({ itemId, itemName, itemDescription, primaryImageUrl, price }
       var deepLink = '${escapeJs(deepLinkUrl)}';
       var storeUrl = isAndroid ? '${ANDROID_STORE_URL}' : '${IOS_STORE_URL}';
 
-      if (!isAndroid && !isIOS) return;
+      // 데스크탑: 앱 소개 랜딩(QR 다운로드)으로 이동, itemId 유지
+      if (!isAndroid && !isIOS) {
+        window.location.replace('${HOSTING_URL}/?itemId=${encodedItemId}');
+        return;
+      }
+
+      // 파라미터 보존 (Deferred, 랜딩 deeplink.js 와 동일 키)
+      try {
+        localStorage.setItem('romrom-pending-deeplink', JSON.stringify({ itemId: '${escapeJs(itemId)}', savedAt: Date.now() }));
+      } catch (e) {}
 
       var appOpened = false;
       var storeTimer = null;
