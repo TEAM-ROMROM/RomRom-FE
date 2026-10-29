@@ -1,0 +1,4 @@
+description=서버·이미지 호스트 하드코딩 금지 (AppUrls 단일 원본)
+paths=lib/
+extensions=.dart
+pattern=suh-project\.synology\.me|api\.romrom\.suhsaechan\.kr

@@ -1,0 +1,32 @@
+# presentation-must-not-import-api freeze list: lines can only be removed, never added
+# Remove a file from this list once it is fixed (the rule test flags leftover lines)
+lib/screens/chat_room_screen.dart
+lib/screens/home_tab_screen.dart
+lib/screens/item_detail_description_screen.dart
+lib/screens/item_modification_screen.dart
+lib/screens/item_price_input_screen.dart
+lib/screens/main_screen.dart
+lib/screens/member_report_screen.dart
+lib/screens/my_page/block_management_screen.dart
+lib/screens/my_page/my_category_settings_screen.dart
+lib/screens/my_page/my_like_list_screen.dart
+lib/screens/my_page/my_location_verification_screen.dart
+lib/screens/notification_screen.dart
+lib/screens/notification_settings_screen.dart
+lib/screens/onboarding/category_selection_step.dart
+lib/screens/onboarding/location_verification_step.dart
+lib/screens/onboarding/term_agreement_step.dart
+lib/screens/profile/member_profile_screen.dart
+lib/screens/report_screen.dart
+lib/screens/request_management_tab_screen.dart
+lib/screens/search_range_setting_screen.dart
+lib/screens/splash_screen.dart
+lib/screens/trade_complete_partner_select_screen.dart
+lib/screens/trade_request_screen.dart
+lib/screens/trade_review_screen.dart
+lib/widgets/home_feed_item_widget.dart
+lib/widgets/login_button.dart
+lib/widgets/profile/profile_exchange_section.dart
+lib/widgets/profile/profile_overview_section.dart
+lib/widgets/profile/profile_review_section.dart
+lib/widgets/register_input_form.dart

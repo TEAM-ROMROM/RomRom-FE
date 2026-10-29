@@ -1,0 +1,4 @@
+description=SnackBar·showDialog·AlertDialog 직접 사용 금지 (CommonSnackBar·CommonModal)
+paths=lib/screens/,lib/widgets/
+extensions=.dart
+pattern=\b(?:SnackBar|AlertDialog)\(|\bshowDialog\(

@@ -1,0 +1,4 @@
+# services-must-not-import-screens freeze list: lines can only be removed, never added
+# Remove a file from this list once it is fixed (the rule test flags leftover lines)
+lib/services/api_client.dart
+lib/services/auth_service.dart

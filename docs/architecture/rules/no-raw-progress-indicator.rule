@@ -1,0 +1,4 @@
+description=직접 로딩 인디케이터 금지 (CommonLoadingIndicator)
+paths=lib/screens/,lib/widgets/
+extensions=.dart
+pattern=\b(?:CircularProgressIndicator|CupertinoActivityIndicator)\(

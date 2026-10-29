@@ -1,0 +1,8 @@
+# no-placeholder-image-url freeze list: lines can only be removed, never added
+# Remove a file from this list once it is fixed (the rule test flags leftover lines)
+lib/screens/my_page/my_register_item_screen.dart
+lib/screens/register_tab_screen.dart
+lib/screens/request_management_tab_screen.dart
+lib/widgets/home_tab_card_hand.dart
+lib/widgets/request_management/request_received_list.dart
+lib/widgets/request_management/request_sent_list.dart

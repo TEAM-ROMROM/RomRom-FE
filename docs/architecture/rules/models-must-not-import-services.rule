@@ -1,0 +1,4 @@
+description=models는 services import 금지 (모델 안 네트워크 호출 금지)
+paths=lib/models/
+extensions=.dart
+pattern=^import .*/services/
