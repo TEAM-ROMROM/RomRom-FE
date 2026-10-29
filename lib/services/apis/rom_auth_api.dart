@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
+import 'package:romrom_fe/exceptions/api_exception.dart';
 import 'package:romrom_fe/exceptions/email_already_registered_exception.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/apis/responses/auth_response.dart';
@@ -16,6 +16,8 @@ import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/installed_app_version.dart';
+import 'package:romrom_fe/utils/log_masking.dart';
 
 // AuthApi -> RomAuthApi 이름 변경 : kakao SDK ApiAuth 와 충돌
 class RomAuthApi {
@@ -30,11 +32,7 @@ class RomAuthApi {
     final platform = Platform.isIOS ? 'ios' : 'android';
     final locale = Platform.localeName.replaceAll('_', '-');
 
-    String appVersion = 'unknown';
-    try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      appVersion = packageInfo.version;
-    } catch (_) {}
+    final appVersion = await fetchInstalledAppVersion(fallbackVersion: 'unknown');
 
     String deviceModel = 'unknown';
     try {
@@ -107,7 +105,7 @@ class RomAuthApi {
         String refreshToken = responseData[TokenKeys.refreshToken.name];
 
         await _tokenManager.saveTokens(accessToken, refreshToken);
-        debugPrint('토큰 저장 성공: accessToken=${accessToken.substring(0, 15)}...');
+        debugPrint('토큰 저장 성공');
 
         // 로그인 상태 저장
         await UserInfo().saveLoginStatus(
@@ -120,11 +118,6 @@ class RomAuthApi {
         );
 
         return; // 정상 계정
-      } else if (response.statusCode == 409) {
-        // 동일 이메일이 다른 소셜 플랫폼으로 이미 가입된 경우
-        final Map<String, dynamic> errorData = jsonDecode(response.body);
-        final String registeredSocialPlatform = errorData['registeredSocialPlatform'] ?? '';
-        throw EmailAlreadyRegisteredException(registeredSocialPlatform: registeredSocialPlatform);
       } else {
         throw Exception('소셜 로그인 실패: ${response.statusCode}, ${response.body}');
       }
@@ -132,79 +125,47 @@ class RomAuthApi {
       rethrow; // 제재 예외는 LoginButton에서 처리
     } on EmailAlreadyRegisteredException {
       rethrow; // 이메일 중복 예외는 LoginButton에서 처리
+    } on ApiException catch (e) {
+      // 409: 동일 이메일이 다른 소셜 플랫폼으로 이미 가입됨 / 그 외는 기존 래핑 유지
+      if (e.statusCode == 409) throw toEmailAlreadyRegisteredException(e);
+      throw Exception('Error during sign-in: $e');
     } catch (error) {
       throw Exception('Error during sign-in: $error');
     }
   }
 
   /// ### POST : `/api/auth/reissue` (accessToken 재발급)
+  /// ApiClient.reissueTokens 위임 > 성공 시 로그인 상태·회원 정보 갱신 / 실패 시 false (토큰 유지, 화면 이동은 호출부)
   Future<bool> refreshAccessToken() async {
-    //토큰 재발급 api 요청 주소
-    String url = '${AppUrls.baseUrl}/api/auth/reissue';
     try {
-      String? refreshToken = await _tokenManager.getRefreshToken();
+      final reissueResult = await ApiClient.reissueTokens();
+      final responseData = reissueResult.responseData;
 
-      if (refreshToken == null) {
-        debugPrint('No refresh token found for user.');
+      // 실패·만료 > 토큰 유지 후 false (스플래시: 로그인 화면 이동, 웹소켓: 다음 API 401에서 세션 만료 처리)
+      if (responseData == null) {
+        if (reissueResult.isRefreshTokenExpired) debugPrint('refresh 만료');
         return false;
       }
 
-      // 요청 파라미터 준비
-      Map<String, dynamic> fields = {TokenKeys.refreshToken.name: refreshToken};
-
-      // 요청 보냄
-      http.Response response = await ApiClient.sendMultipartRequest(
-        url: url,
-        method: 'POST',
-        fields: fields,
-        isAuthRequired: false, // 토큰 갱신에는 인증이 필요하지 않음
-        onSuccess: (responseData) {
-          // onSuccess는 필요하지만 여기서 실제 처리는 하지 않음
-        },
+      // 회원 상태 정보 업데이트
+      await UserInfo().saveLoginStatus(
+        isFirstLogin: responseData['isFirstLogin'] ?? false,
+        isFirstItemPosted: responseData['isFirstItemPosted'] ?? false,
+        isItemCategorySaved: responseData['isItemCategorySaved'] ?? false,
+        isMemberLocationSaved: responseData['isMemberLocationSaved'] ?? false,
+        isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
+        isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
       );
 
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      // 토큰 갱신 후에도 회원 정보 업데이트
+      await fetchAndSaveMemberInfo();
 
-      if (response.statusCode == 200) {
-        // 로컬 저장소에 토큰 저장
-        String accessToken = responseData[TokenKeys.accessToken.name];
-
-        // API 응답에서 refreshToken이 있으면 새 토큰 사용, 아니면 기존 토큰 유지
-        String? newRefreshToken = responseData[TokenKeys.refreshToken.name];
-        String tokenToSave = newRefreshToken ?? refreshToken;
-
-        await _tokenManager.saveTokens(accessToken, tokenToSave);
-
-        // 회원 상태 정보 업데이트
-        await UserInfo().saveLoginStatus(
-          isFirstLogin: responseData['isFirstLogin'] ?? false,
-          isFirstItemPosted: responseData['isFirstItemPosted'] ?? false,
-          isItemCategorySaved: responseData['isItemCategorySaved'] ?? false,
-          isMemberLocationSaved: responseData['isMemberLocationSaved'] ?? false,
-          isMarketingInfoAgreed: responseData['isMarketingInfoAgreed'] ?? false,
-          isRequiredTermsAgreed: responseData['isRequiredTermsAgreed'] ?? false,
-        );
-
-        // 토큰 갱신 후에도 회원 정보 업데이트
-        await fetchAndSaveMemberInfo();
-
-        debugPrint('====================================');
-        debugPrint('access token 이 성공적으로 재발급됨');
-        debugPrint('====================================');
-        return true;
-      }
-      // refresh 만료 -> 강제 로그아웃시키기
-      else if (response.statusCode == 401) {
-        debugPrint('refresh 만료');
-        // 토큰 삭제
-        _tokenManager.deleteTokens();
-
-        return false;
-      }
+      debugPrint('access token 재발급 성공');
+      return true;
     } catch (e) {
-      debugPrint('Token refresh failed: $e');
+      debugPrint('Token refresh failed: ${LogMasking.describeErrorForLog(e)}');
+      return false;
     }
-    return false;
   }
 
   /// 회원 정보를 가져와서 CurrentMemberService에 저장
@@ -237,33 +198,51 @@ class RomAuthApi {
         onSuccess: (_) {},
       );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final String customToken = responseData['customToken'] as String;
-        debugPrint('Firebase Custom Token 발급 성공');
-        return customToken;
-      } else {
-        final Map<String, dynamic> errorData = jsonDecode(response.body);
-        final String errorCode = errorData['code'] ?? 'UNKNOWN';
-
-        if (response.statusCode == 409 || errorCode == 'EMAIL_ALREADY_REGISTERED') {
-          final String registeredSocialPlatform = errorData['registeredSocialPlatform'] ?? '';
-          throw EmailAlreadyRegisteredException(registeredSocialPlatform: registeredSocialPlatform);
-        }
-
-        if (errorCode == 'SUSPENDED_MEMBER') {
-          throw AccountSuspendedException(
-            suspendReason: errorData['suspendReason'] ?? '',
-            suspendedUntil: errorData['suspendedUntil'] ?? '',
-          );
-        }
-
-        throw Exception('Firebase Custom Token 발급 실패: $errorCode (${response.statusCode})');
-      }
+      // ApiClient가 non-2xx를 ApiException으로 던지므로 여기는 2xx만 도달
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final String customToken = responseData['customToken'] as String;
+      debugPrint('Firebase Custom Token 발급 성공');
+      return customToken;
+    } on ApiException catch (e) {
+      debugPrint('getKakaoFirebaseToken 실패: ${LogMasking.describeErrorForLog(e)}');
+      throw toKakaoFirebaseTokenException(e) ?? e;
     } catch (e) {
-      debugPrint('getKakaoFirebaseToken 실패: $e');
+      debugPrint('getKakaoFirebaseToken 실패: ${LogMasking.describeErrorForLog(e)}');
       rethrow;
     }
+  }
+
+  /// ApiException(409) > EmailAlreadyRegisteredException (registeredSocialPlatform 누락 시 빈 문자열)
+  @visibleForTesting
+  static EmailAlreadyRegisteredException toEmailAlreadyRegisteredException(ApiException exception) {
+    final registeredSocialPlatform = exception.responseJson?['registeredSocialPlatform'];
+    return EmailAlreadyRegisteredException(
+      registeredSocialPlatform: registeredSocialPlatform is String ? registeredSocialPlatform : '',
+    );
+  }
+
+  /// 카카오 Firebase 토큰 발급 실패 > 도메인 예외 (이메일 중복, 정지 계정) / 해당 없으면 null
+  /// 에러 코드 키 2개: errorCode(현행), code(구버전 응답)
+  @visibleForTesting
+  static Exception? toKakaoFirebaseTokenException(ApiException exception) {
+    final responseJson = exception.responseJson;
+    final legacyCode = responseJson?['code'];
+    final errorCode = exception.errorCode ?? (legacyCode is String ? legacyCode : null);
+
+    if (exception.statusCode == 409 || errorCode == 'EMAIL_ALREADY_REGISTERED') {
+      return toEmailAlreadyRegisteredException(exception);
+    }
+
+    if (errorCode == 'SUSPENDED_MEMBER') {
+      final suspendReason = responseJson?['suspendReason'];
+      final suspendedUntil = responseJson?['suspendedUntil'];
+      return AccountSuspendedException(
+        suspendReason: suspendReason is String ? suspendReason : '',
+        suspendedUntil: suspendedUntil is String ? suspendedUntil : '',
+      );
+    }
+
+    return null;
   }
 
   /// POST : `/api/auth/logout` 서버 로그아웃 API 호출

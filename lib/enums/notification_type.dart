@@ -27,10 +27,8 @@ enum NotificationType {
     }
   }
 
-  static NotificationType fromServerName(String name) {
-    return NotificationType.values.firstWhere(
-      (e) => e.serverName == name,
-      orElse: () => throw ArgumentError('No NotificationType with serverName $name'),
-    );
+  /// 서버 이름 > 알림 타입 (모르는 값·null > null)
+  static NotificationType? fromServerName(String? name) {
+    return NotificationType.values.where((e) => e.serverName == name).firstOrNull;
   }
 }

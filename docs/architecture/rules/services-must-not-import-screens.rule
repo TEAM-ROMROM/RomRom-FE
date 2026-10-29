@@ -1,0 +1,4 @@
+description=services·models는 screens import 금지 (의존 방향 역전, 화면 전환은 상위 계층에서)
+paths=lib/services/,lib/models/,lib/repositories/,lib/providers/,lib/states/
+extensions=.dart
+pattern=^import .*/screens/

@@ -1,7 +1,6 @@
 # 코드 스타일 가이드
 
 ## 중요 원칙
-- **항상 코드 스타일 가이드라인을 참고**: `@prompts/코드_스타일_가이드라인.md` 파일을 모든 코드 작성 시 참고
 - **텍스트 스타일은 항상 CustomTextStyles 사용**: 직접 TextStyle 정의 금지
 - **색상은 항상 AppColors 사용**: 직접 Color 코드 사용 금지
 - **파일명 규칙**: 위젯 파일명에 불필요한 `_widget` 접미사 사용 금지
@@ -92,6 +91,5 @@ await CommonModal.confirm(
 ```
 
 ## 주요 참고 파일
-- `prompts/코드_스타일_가이드라인.md` - 필수 참고
 - `lib/models/app_theme.dart` - 텍스트 스타일 정의
 - `lib/models/app_colors.dart` - 색상 상수 정의

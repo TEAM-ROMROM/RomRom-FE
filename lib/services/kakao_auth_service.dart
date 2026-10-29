@@ -9,6 +9,7 @@ import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
+import 'package:romrom_fe/utils/log_masking.dart';
 
 /// 카카오 인증 관련 서비스
 class KakaoAuthService {
@@ -74,7 +75,7 @@ class KakaoAuthService {
       final UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
       debugPrint('[KakaoAuth] Firebase 로그인 성공: uid=${_maskUid(userCredential.user?.uid)}');
     } catch (error) {
-      debugPrint('Firebase Custom Token 로그인 실패: $error');
+      debugPrint('Firebase Custom Token 로그인 실패: ${LogMasking.describeErrorForLog(error)}');
       rethrow;
     }
   }

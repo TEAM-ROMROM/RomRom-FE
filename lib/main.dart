@@ -24,10 +24,11 @@ import 'package:romrom_fe/services/apis/app_version_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
-import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/device_type.dart';
+import 'package:romrom_fe/utils/text_scale_utils.dart';
+import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 백그라운드에서 알림 설정(최상단에 위치 해야 함)
@@ -44,23 +45,11 @@ void main() async {
     await RuntimeUrlManager().init();
   }
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  await initialize(); // 초기화 실행
+  // 서로 의존 없는 초기화 병렬 (env·SDK <-> Firebase 메시징, Firebase 옵션은 env 미사용)
+  await Future.wait([initialize(), _initFirebaseMessaging()]);
 
   // 시스템 UI 설정 : 네비게이션바 충돌 방지 (EdgeToEdge)
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Initialize local notifications plugin (sets default small icon)
-  await initNotificationPlugin();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true, // 배너/알림창 보이기
-    badge: true,
-    sound: true,
-  );
-
-  // 알림 권한 요청 설정
-  await FirebaseService().setupPushNotifications();
 
   // 시스템 오버레이 색상 설정
   SystemChrome.setSystemUIOverlayStyle(
@@ -78,19 +67,36 @@ void main() async {
   }
 
   runApp(ProviderScope(child: MyApp(isGestureMode: isGestureMode)));
+
+  // 첫 프레임(스플래시) 이후 알림 권한 요청 1회 (권한 응답이 스플래시 표시를 막지 않게)
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(FirebaseService().requestNotificationPermission());
+  });
+}
+
+/// Firebase 메시징 초기화: Firebase 앱 > 백그라운드 핸들러 > 포그라운드 표시 옵션 > 메시지 리스너 (권한 요청 제외)
+Future<void> _initFirebaseMessaging() async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+    alert: true, // 배너/알림창 보이기
+    badge: true,
+    sound: true,
+  );
+  FirebaseService().registerPushMessageListeners();
 }
 
 /// 앱의 루트 위젯
-class MyApp extends StatefulWidget {
+class MyApp extends ConsumerStatefulWidget {
   final bool isGestureMode;
 
   const MyApp({super.key, required this.isGestureMode});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   static const String _lastVersionCheckKey = 'last_version_check_timestamp';
   static const Duration _checkInterval = Duration(hours: 24);
 
@@ -107,8 +113,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       DebugOverlayManager().init(navigatorKey);
     }
 
+    registerSessionEndNavigation(invalidate: ref.invalidate, navigate: _navigateFromRoot, isActive: () => mounted);
     _initAppLinks();
     _initFcmInitialMessage();
+  }
+
+  /// 루트 navigator 화면 전환 (세션 종료용, 컨텍스트 없음·해제 시 무시)
+  void _navigateFromRoot(Widget screen, NavigationTypes type) {
+    final navigatorContext = navigatorKey.currentContext;
+    if (navigatorContext != null && navigatorContext.mounted) {
+      navigatorContext.navigateTo(screen: screen, type: type);
+    }
   }
 
   /// 앱이 종료된 상태에서 알림 탭으로 실행된 경우 (콜드 스타트) 라우팅 처리
@@ -129,14 +144,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final uri = Uri.tryParse(deepLink);
       if (uri == null) return;
 
-      NotificationType? notificationType;
       final typeRaw = message.data['notificationType'] as String?;
-      if (typeRaw != null) {
-        try {
-          notificationType = NotificationType.fromServerName(typeRaw);
-        } catch (_) {
-          debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
-        }
+      final notificationType = NotificationType.fromServerName(typeRaw);
+      if (typeRaw != null && notificationType == null) {
+        debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
       }
 
       ColdStartDeepLinkData.setPending(uri, notificationType: notificationType, extraData: message.data);
@@ -229,7 +240,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             top: false,
             bottom: Platform.isAndroid,
             child: MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+              data: MediaQuery.of(context).copyWith(textScaler: clampAppTextScaler(MediaQuery.textScalerOf(context))),
               child: MaterialApp(
                 title: 'RomRom',
                 theme: AppTheme.defaultTheme,

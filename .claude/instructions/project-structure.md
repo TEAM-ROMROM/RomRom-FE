@@ -8,9 +8,8 @@
 - `/lib/widgets/` - 재사용 가능한 위젯
   - `/common/` - 공통 위젯
 - `/lib/screens/` - 화면 구성 파일
-- `/prompts/` - 개발 가이드라인 문서
 
 ## 주요 참고 파일
-- `prompts/코드_스타일_가이드라인.md` - 필수 참고
+- `.claude/instructions/code-style.md` - 필수 참고
 - `lib/models/app_theme.dart` - 텍스트 스타일 정의
 - `lib/models/app_colors.dart` - 색상 상수 정의

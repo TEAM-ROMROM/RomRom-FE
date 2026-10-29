@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/services/apis/chat_api.dart';
+import 'package:romrom_fe/providers/chat_repository_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
@@ -18,16 +19,16 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/skeletons/trade_partner_select_skeleton.dart';
 
 /// 교환 완료 처리 시 교환 상대를 선택하는 화면
-class TradeCompletePartnerSelectScreen extends StatefulWidget {
+class TradeCompletePartnerSelectScreen extends ConsumerStatefulWidget {
   final Item item;
 
   const TradeCompletePartnerSelectScreen({super.key, required this.item});
 
   @override
-  State<TradeCompletePartnerSelectScreen> createState() => _TradeCompletePartnerSelectScreenState();
+  ConsumerState<TradeCompletePartnerSelectScreen> createState() => _TradeCompletePartnerSelectScreenState();
 }
 
-class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerSelectScreen> {
+class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeCompletePartnerSelectScreen> {
   bool _isLoading = true;
   List<ChatRoomDetailDto> _chatRooms = [];
   String? _selectedChatRoomId;
@@ -47,7 +48,7 @@ class _TradeCompletePartnerSelectScreenState extends State<TradeCompletePartnerS
     }
 
     try {
-      final result = await ChatApi().getChatRoomsByItemId(itemId: itemId);
+      final result = await ref.read(chatRepositoryProvider).getChatRoomsByItemId(itemId: itemId);
       if (mounted) {
         setState(() {
           _chatRooms = result.content;

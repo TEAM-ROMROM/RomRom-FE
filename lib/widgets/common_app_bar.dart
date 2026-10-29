@@ -68,7 +68,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         enableRipple: false,
         child: SizedBox.square(
           dimension: 32.w,
-          child: const Icon(AppIcons.navigateBefore, size: 24, color: AppColors.textColorWhite),
+          child: const Icon(AppIcons.navigateBefore, size: 24, color: AppColors.textColorWhite, semanticLabel: '뒤로 가기'),
         ),
       ),
       bottom: bottomWidgets,

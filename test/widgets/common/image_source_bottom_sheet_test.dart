@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/image_pick_source.dart';
 import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
+import '../../helpers/pump_design_screen.dart';
 
 void main() {
   testWidgets('카메라 항목 탭 → ImagePickSource.camera 반환', (tester) async {
     ImagePickSource? result;
     await tester.pumpWidget(
-      ScreenUtilInit(
-        designSize: const Size(393, 852),
-        builder: (context, child) => MaterialApp(
-          home: Builder(
-            builder: (c) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () async => result = await showImageSourceBottomSheet(c),
-                  child: const Text('open'),
-                ),
+      buildDesignScreenApp(
+        home: Builder(
+          builder: (c) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async => result = await showImageSourceBottomSheet(c),
+                child: const Text('open'),
               ),
             ),
           ),
@@ -40,16 +37,13 @@ void main() {
   testWidgets('앨범 항목 탭 → ImagePickSource.gallery 반환', (tester) async {
     ImagePickSource? result;
     await tester.pumpWidget(
-      ScreenUtilInit(
-        designSize: const Size(393, 852),
-        builder: (context, child) => MaterialApp(
-          home: Builder(
-            builder: (c) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () async => result = await showImageSourceBottomSheet(c),
-                  child: const Text('open'),
-                ),
+      buildDesignScreenApp(
+        home: Builder(
+          builder: (c) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async => result = await showImageSourceBottomSheet(c),
+                child: const Text('open'),
               ),
             ),
           ),

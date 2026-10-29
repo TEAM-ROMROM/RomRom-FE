@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 
-import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
-import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
+import 'package:romrom_fe/providers/trade_repository_provider.dart';
+import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -27,7 +26,7 @@ import 'package:romrom_fe/widgets/trade_request_trade_option_selector.dart';
 
 /// 요청하기 화면
 /// 내 물품 카드 선택 후 거래방식을 선택하여 요청을 전송하는 화면
-class TradeRequestScreen extends StatefulWidget {
+class TradeRequestScreen extends ConsumerStatefulWidget {
   /// 교환 대상 물품 (상대방 물품)
   final Item targetItem;
 
@@ -41,10 +40,10 @@ class TradeRequestScreen extends StatefulWidget {
   const TradeRequestScreen({super.key, required this.targetItem, this.targetImageUrl, this.preSelectedCardId});
 
   @override
-  State<TradeRequestScreen> createState() => _TradeRequestScreenState();
+  ConsumerState<TradeRequestScreen> createState() => _TradeRequestScreenState();
 }
 
-class _TradeRequestScreenState extends State<TradeRequestScreen> {
+class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
   /// 선택된 카드가 있는지 여부에 따라 초기값 설정
   bool _hasSelectedCard = false;
 
@@ -93,14 +92,11 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final itemApi = ItemApi();
-      final response = await itemApi.getMyItems(
-        ItemRequest(pageNumber: 0, pageSize: 20, itemStatus: ItemStatus.available.serverName),
-      );
+      // 판매중 내 물품 1페이지 20건 (화면 진입 시마다 서버 최신값)
+      final items = await ref.read(itemRepositoryProvider).getMyItems(ItemStatus.available, pageSize: 20);
 
       if (!mounted) return;
 
-      final items = response.itemPage?.content ?? [];
       final cards = _convertToItemCards(items);
 
       setState(() {
@@ -143,24 +139,7 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
 
   /// Item 목록을 RequestManagementItemCard 목록으로 변환
   List<RequestManagementItemCard> _convertToItemCards(List<Item> items) {
-    return items.map((item) {
-      String category;
-      try {
-        category = ItemCategories.fromServerName(item.itemCategory ?? '').label;
-      } catch (_) {
-        category = '기타';
-      }
-
-      return RequestManagementItemCard(
-        itemId: item.itemId ?? '',
-        imageUrl: item.primaryImageUrl ?? '',
-        category: category,
-        title: item.itemName ?? '',
-        price: item.price ?? 0,
-        likeCount: item.likeCount ?? 0,
-        aiPrice: item.isAiPredictedPrice ?? false,
-      );
-    }).toList();
+    return items.map((item) => RequestManagementItemCard.fromItem(item, titleFallback: '')).toList();
   }
 
   /// 선택한 카드에 거래 요청이 존재하는지 확인
@@ -173,9 +152,9 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
     });
 
     try {
-      final exists = await TradeApi().checkTradeRequestExistence(
-        TradeRequest(takeItemId: widget.targetItem.itemId, giveItemId: _myItems[cardIndex].itemId),
-      );
+      final exists = await ref
+          .read(tradeRepositoryProvider)
+          .hasTradeRequest(takeItemId: widget.targetItem.itemId, giveItemId: _myItems[cardIndex].itemId);
 
       if (!mounted) return;
 
@@ -192,20 +171,20 @@ class _TradeRequestScreenState extends State<TradeRequestScreen> {
   /// 거래 요청 API 호출
   Future<void> _submitTradeRequest() async {
     if (_selectedTradeOptions.isEmpty) {
-      CommonSnackBar.show(context: context, message: '교환방식을 선택해주세요.', type: SnackBarType.info);
+      CommonSnackBar.show(context: context, message: '교환 방식을 선택해주세요.', type: SnackBarType.info);
       return;
     }
 
     setState(() => _isSubmitting = true);
 
     try {
-      await TradeApi().requestTrade(
-        TradeRequest(
-          takeItemId: widget.targetItem.itemId,
-          giveItemId: _myItems[_selectedCardIndex].itemId,
-          itemTradeOptions: _selectedTradeOptions.map((o) => o.serverName).toList(),
-        ),
-      );
+      await ref
+          .read(tradeRequestsProvider.notifier)
+          .sendRequest(
+            takeItemId: widget.targetItem.itemId,
+            giveItemId: _myItems[_selectedCardIndex].itemId,
+            itemTradeOptions: _selectedTradeOptions.map((o) => o.serverName).toList(),
+          );
 
       if (!mounted) return;
 

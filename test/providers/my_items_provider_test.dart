@@ -14,10 +14,14 @@ class FakeItemRepository implements ItemRepository {
   int deleteCount = 0;
   int postCount = 0;
   int statusCount = 0;
+  int updateCount = 0;
+  int getMyItemsCount = 0;
 
   @override
-  Future<List<Item>> getMyItems(ItemStatus status, {int pageSize = 100}) async =>
-      status == ItemStatus.available ? available : exchanged;
+  Future<List<Item>> getMyItems(ItemStatus status, {int pageSize = 100}) async {
+    getMyItemsCount++;
+    return status == ItemStatus.available ? available : exchanged;
+  }
 
   @override
   Future<ItemResponse> postItem(ItemRequest request) async {
@@ -42,7 +46,19 @@ class FakeItemRepository implements ItemRepository {
   }
 
   @override
+  Future<void> updateItem(ItemRequest request) async {
+    updateCount++;
+    // 수정 결과를 서버 데이터에 반영 (재조회로만 화면에 보여야 함)
+    available = available
+        .map((item) => item.itemId == request.itemId ? Item(itemId: item.itemId, itemName: request.itemName) : item)
+        .toList();
+  }
+
+  @override
   Future<ItemResponse> postLike(String itemId) async => throw UnimplementedError();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -84,6 +100,19 @@ void main() {
       await container.read(myItemsProvider.future);
       await container.read(myItemsProvider.notifier).changeStatus(ItemRequest(itemId: 'a'));
       expect(fake.statusCount, 1);
+    });
+
+    test('edit 후 updateItem 1회 호출 + 서버 재조회로 수정 내용이 반영된다', () async {
+      fake.available = [Item(itemId: 'a', itemName: 'before')];
+      await container.read(myItemsProvider.future);
+      final fetchCountBeforeUpdate = fake.getMyItemsCount;
+
+      await container.read(myItemsProvider.notifier).edit(ItemRequest(itemId: 'a', itemName: 'after'));
+
+      expect(fake.updateCount, 1);
+      // 재조회 1회 = available + exchanged 2건
+      expect(fake.getMyItemsCount, fetchCountBeforeUpdate + 2);
+      expect(container.read(myItemsProvider).value!.available.single.itemName, 'after');
     });
   });
 }

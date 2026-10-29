@@ -48,6 +48,12 @@ class FakeItemRepository implements ItemRepository {
 
   @override
   Future<ItemResponse> updateItemStatus(ItemRequest request) async => throw UnimplementedError();
+
+  @override
+  Future<void> updateItem(ItemRequest request) async => throw UnimplementedError();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -175,6 +181,22 @@ void main() {
       notifier.seed(itemId: 'A', isLiked: true, likeCount: 5);
       notifier.seed(itemId: 'A', isLiked: false, likeCount: 0, force: true);
       expect(container.read(itemLikeProvider)['A']?.isLiked, isFalse);
+    });
+
+    test('세션 초기화(invalidate) 후 > 이전 세션 진행 중 요청이 새 토글을 막지 않음', () async {
+      final notifier = container.read(itemLikeProvider.notifier);
+      notifier.seed(itemId: 'A', isLiked: false, likeCount: 0);
+      fake.gate = Completer<ItemResponse>();
+      final previousSessionToggle = notifier.toggle('A');
+
+      container.invalidate(itemLikeProvider);
+      final nextNotifier = container.read(itemLikeProvider.notifier);
+      nextNotifier.seed(itemId: 'A', isLiked: false, likeCount: 0);
+      final nextSessionToggle = nextNotifier.toggle('A');
+
+      expect(fake.callCount, 2, reason: '새 세션 토글은 이전 진행 중 표시에 묶이지 않고 바로 요청');
+      fake.gate!.complete(ItemResponse(isLiked: true, item: Item(itemId: 'A', likeCount: 1)));
+      await Future.wait([previousSessionToggle, nextSessionToggle]);
     });
   });
 }

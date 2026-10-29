@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
@@ -8,24 +9,24 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/term_contents.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/screens/onboarding/term_detail_screen.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
-class TermAgreementStep extends StatefulWidget {
+class TermAgreementStep extends ConsumerStatefulWidget {
   final VoidCallback onNext;
 
   const TermAgreementStep({super.key, required this.onNext});
 
   @override
-  State<TermAgreementStep> createState() => _TermAgreementStepState();
+  ConsumerState<TermAgreementStep> createState() => _TermAgreementStepState();
 }
 
-class _TermAgreementStepState extends State<TermAgreementStep> {
+class _TermAgreementStepState extends ConsumerState<TermAgreementStep> {
   // enum 활용한 약관 동의 상태 관리
   final Map<TermsType, bool> _termsChecked = {
     TermsType.service: false,
@@ -38,8 +39,6 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
   Map<TermsType, TermContents>? _termsContents;
   bool _isLoading = true;
   bool _isSaving = false; // API 호출 중 상태
-
-  final MemberApi _memberApi = MemberApi();
 
   // 필수 약관만 체크하는 getter
   bool get _allRequiredChecked =>
@@ -83,7 +82,9 @@ class _TermAgreementStepState extends State<TermAgreementStep> {
       final isMarketingAgreed = _termsChecked[TermsType.marketing] ?? false;
 
       // 약관 동의 정보 전송
-      final isSuccess = await _memberApi.saveTermsAgreement(isMarketingInfoAgreed: isMarketingAgreed);
+      final isSuccess = await ref
+          .read(memberProfileProvider.notifier)
+          .saveTermsAgreement(isMarketingInfoAgreed: isMarketingAgreed);
 
       if (isSuccess) {
         // 사용자 정보 업데이트

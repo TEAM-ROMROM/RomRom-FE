@@ -3,8 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart' hide UserInfo;
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/enums/navigation_types.dart';
-import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
@@ -14,8 +12,8 @@ import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
+import 'package:romrom_fe/services/session_navigation_handler.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 
 class AuthService {
   final TokenManager _tokenManager = TokenManager();
@@ -34,7 +32,7 @@ class AuthService {
       ApiClient.resetSuspendedFlag();
       ApiClient.resetSessionExpiredFlag();
       if (context.mounted) {
-        context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
+        SessionNavigationHandler.notifyLoggedOut();
       }
     }
   }

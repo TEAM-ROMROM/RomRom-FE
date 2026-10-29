@@ -119,7 +119,7 @@ class _ImageFullscreenViewerState extends State<ImageFullscreenViewer> {
                   onTap: () => Navigator.of(context).pop(),
                   child: Padding(
                     padding: EdgeInsets.all(16.w),
-                    child: Icon(AppIcons.cancel, color: AppColors.textColorWhite, size: 24.sp),
+                    child: Icon(AppIcons.cancel, color: AppColors.textColorWhite, size: 24.sp, semanticLabel: '닫기'),
                   ),
                 ),
                 // 페이지 인디케이터

@@ -1,0 +1,4 @@
+description=직접 Color 리터럴·Colors.xxx 금지 (AppColors 사용)
+paths=lib/screens/,lib/widgets/,lib/debug/
+extensions=.dart
+pattern=\bColor\(0x|\bColors\.(?!transparent\b)[a-z]

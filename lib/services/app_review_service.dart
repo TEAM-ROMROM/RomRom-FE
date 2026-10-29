@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:romrom_fe/models/app_urls.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,12 +26,6 @@ class AppReviewService with WidgetsBindingObserver {
   static const int _kMaxShownCount = 3;
   static const int _kMinLaunchCount = 2;
   static const int _kMinUsageDays = 3;
-
-  static const String _kIosStoreUrl = 'https://apps.apple.com/app/id6748823976';
-  static const String _kAndroidStoreUrl = 'https://play.google.com/store/apps/details?id=com.alom.romrom';
-
-  /// iOS App Store ID (openStoreListing iOS 필수 인자)
-  static const String _kIosAppStoreId = '6748823976';
 
   /// 인앱 리뷰 카드 표출 여부를 라이프사이클로 추정할 때 대기 시간.
   /// 이 시간 내 앱이 inactive/paused로 안 바뀌면 "카드 안 떴다"로 추정 → 스토어 폴백.
@@ -218,7 +213,7 @@ class AppReviewService with WidgetsBindingObserver {
     try {
       await InAppReview.instance.openStoreListing(
         // iOS/MacOS에서 필수. Android는 무시됨.
-        appStoreId: _kIosAppStoreId,
+        appStoreId: AppUrls.iosAppStoreId,
       );
       debugPrint('[AppReview] openStoreListing 성공');
       return;
@@ -226,7 +221,7 @@ class AppReviewService with WidgetsBindingObserver {
       debugPrint('[AppReview] openStoreListing 실패: $e → URL 폴백');
     }
 
-    final url = Uri.parse(Platform.isIOS ? _kIosStoreUrl : _kAndroidStoreUrl);
+    final url = Uri.parse(Platform.isIOS ? AppUrls.iosStoreReviewUrl : AppUrls.androidStoreReviewUrl);
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);

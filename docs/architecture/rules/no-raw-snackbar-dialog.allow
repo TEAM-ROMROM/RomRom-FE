@@ -1,0 +1,4 @@
+# no-raw-snackbar-dialog freeze list: lines can only be removed, never added
+# Remove a file from this list once it is fixed (the rule test flags leftover lines)
+lib/screens/my_page/profile_image_crop_screen.dart
+lib/widgets/login_button.dart

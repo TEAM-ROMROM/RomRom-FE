@@ -13,7 +13,8 @@ class CapturedLog {
 
 /// 앱 전체 debugPrint 출력을 캡처하여 링버퍼에 저장하고 실시간 스트림으로 전달
 class LogCapture {
-  static const int _maxBufferSize = 1000;
+  // 로그 버퍼 최대 보관 건수 (초과 시 오래된 것부터 제거, 서버 로그 버퍼도 공용)
+  static const int maximumBufferedLogCount = 1000;
 
   static final LogCapture _instance = LogCapture._internal();
   factory LogCapture() => _instance;
@@ -41,7 +42,7 @@ class LogCapture {
       if (message == null || message.isEmpty) return;
 
       final log = CapturedLog(time: DateTime.now(), message: message);
-      if (_buffer.length >= _maxBufferSize) {
+      if (_buffer.length >= maximumBufferedLogCount) {
         _buffer.removeFirst();
       }
       _buffer.addLast(log);

@@ -17,11 +17,27 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 ///   1. 채팅방 진입 시 [start] 호출
 ///   2. [stream]을 구독해 갱신된 [Member]를 수신
 ///   3. 채팅방 퇴장 시 [stop] 호출
-class ChatMemberStatusPoller {
-  ChatMemberStatusPoller._();
+class ChatMemberStatusPoller with WidgetsBindingObserver {
+  ChatMemberStatusPoller._() : _fetchMemberProfile = _fetchMemberProfileFromServer;
+
+  /// 폴링 간격 (30초)
+  @visibleForTesting
+  static const Duration pollInterval = Duration(seconds: 30);
+
+  /// 테스트용 인스턴스: 서버 조회 함수를 대체
+  @visibleForTesting
+  ChatMemberStatusPoller.forTest({required Future<Member> Function(String memberId) fetchMemberProfile})
+    : _fetchMemberProfile = fetchMemberProfile;
 
   /// 앱 전역에서 하나의 인스턴스만 사용 (싱글톤)
   static final instance = ChatMemberStatusPoller._();
+
+  final Future<Member> Function(String memberId) _fetchMemberProfile;
+
+  static Future<Member> _fetchMemberProfileFromServer(String memberId) async {
+    final response = await MemberApi().getMemberProfile(memberId);
+    return response.member!;
+  }
 
   Timer? _timer;
   String? _targetMemberId;
@@ -39,15 +55,37 @@ class ChatMemberStatusPoller {
   void start(String memberId) {
     stop(); // 혹시 이전 것 정리
     _targetMemberId = memberId;
+    WidgetsBinding.instance.addObserver(this); // 백그라운드 전환 감지
 
     _fetch(); // 진입 즉시 1회 호출 (첫 폴링 응답 전에 UI 공백 방지)
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _fetch()); // 이후 30초마다 반복
+    _startTimer(); // 이후 30초마다 반복
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(pollInterval, (_) => _fetch());
+  }
+
+  /// 백그라운드(paused, hidden): 타이머 중단 > 복귀(resumed): 즉시 1회 조회 후 주기 재개
+  /// inactive(알림창·권한 팝업 등 일시 가림)는 중단하지 않음
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_targetMemberId == null) return;
+
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _timer?.cancel();
+      _timer = null;
+    } else if (state == AppLifecycleState.resumed && _timer == null) {
+      _fetch(); // 백그라운드 동안 낡은 상태 즉시 갱신
+      _startTimer();
+    }
   }
 
   /// 폴링 중단
   ///
   /// 채팅방 퇴장 또는 [start] 재호출 시 타이머와 타겟 초기화
   void stop() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _timer = null;
     _targetMemberId = null;
@@ -58,10 +96,12 @@ class ChatMemberStatusPoller {
   /// 실패 시 조용히 무시하고 다음 주기에 재시도
   /// (온라인 상태 표시 실패는 치명적이지 않으므로 에러를 전파하지 않음)
   Future<void> _fetch() async {
-    if (_targetMemberId == null) return;
+    final targetMemberId = _targetMemberId;
+    if (targetMemberId == null) return;
     try {
-      final member = await MemberApi().getMemberProfile(_targetMemberId!);
-      _controller.add(member.member!); // 새 Member를 스트림에 방출
+      final member = await _fetchMemberProfile(targetMemberId);
+      if (_controller.isClosed) return;
+      _controller.add(member); // 새 Member를 스트림에 방출
     } catch (e) {
       debugPrint('[StatusPoller] failed: $e');
     }

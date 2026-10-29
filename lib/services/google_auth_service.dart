@@ -49,7 +49,7 @@ class GoogleAuthService {
           await googleUser.authorizationClient.authorizeScopes(['email', 'profile']);
       final String accessToken = authorization.accessToken;
 
-      debugPrint('구글로 로그인 성공: idToken=$idToken');
+      debugPrint('구글로 로그인 성공');
 
       // OAuthCredential 생성
       final OAuthCredential googleCredential = GoogleAuthProvider.credential(

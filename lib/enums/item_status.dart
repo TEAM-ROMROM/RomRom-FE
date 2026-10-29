@@ -11,7 +11,7 @@
 ///   ItemStatus.values.forEach((status) => print(status.name));
 ///   final serverValue = selectedStatus.serverName; // API 전송용
 enum ItemStatus {
-  available(id: 1, label: '판매중', serverName: 'AVAILABLE'),
+  available(id: 1, label: '교환 가능', serverName: 'AVAILABLE'),
   exchanged(id: 2, label: '교환완료', serverName: 'EXCHANGED');
 
   final int id;
@@ -20,12 +20,8 @@ enum ItemStatus {
 
   const ItemStatus({required this.id, required this.label, required this.serverName});
 
-  /// serverName으로부터 ItemStatus를 찾는 헬퍼 메서드
-  static ItemStatus? fromServerName(String serverName) {
-    try {
-      return ItemStatus.values.firstWhere((status) => status.serverName == serverName);
-    } catch (e) {
-      return null;
-    }
+  /// 서버 이름 > 물품 거래 상태 (모르는 값·null > null)
+  static ItemStatus? fromServerName(String? serverName) {
+    return ItemStatus.values.where((status) => status.serverName == serverName).firstOrNull;
   }
 }

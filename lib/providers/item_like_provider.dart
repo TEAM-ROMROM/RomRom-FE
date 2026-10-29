@@ -25,8 +25,13 @@ class ItemLikeNotifier extends Notifier<Map<String, ItemLikeState>> {
   /// 여기에 최종 의도만 덮어쓴 뒤, 요청 완료 시점에 서버 결과와 비교해 1회만 보정한다.
   final Map<String, bool> _pendingIntent = <String, bool>{};
 
+  /// 세션 시작 상태 (invalidate 시 notifier 인스턴스 재사용 > 세션별 필드도 여기서 초기화)
   @override
-  Map<String, ItemLikeState> build() => const {};
+  Map<String, ItemLikeState> build() {
+    _inFlight.clear();
+    _pendingIntent.clear();
+    return const {};
+  }
 
   /// 캐시 시드. 이미 키가 있으면 [force]가 true가 아닐 때 덮어쓰지 않는다.
   void seed({required String itemId, required bool isLiked, required int likeCount, bool force = false}) {

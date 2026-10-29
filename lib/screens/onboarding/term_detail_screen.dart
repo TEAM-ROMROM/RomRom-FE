@@ -26,7 +26,12 @@ class TermDetailScreen extends StatelessWidget {
               // 뒤로가기 버튼
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
+                child: Icon(
+                  AppIcons.navigateBefore,
+                  size: 24.h,
+                  color: AppColors.textColorWhite,
+                  semanticLabel: '뒤로 가기',
+                ),
               ),
 
               SizedBox(height: 36.h),

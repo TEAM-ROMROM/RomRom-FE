@@ -1,0 +1,8 @@
+# no-direct-text-style freeze list: lines can only be removed, never added
+# Remove a file from this list once it is fixed (the rule test flags leftover lines)
+lib/widgets/coach_mark/pages/coach_mark_page1.dart
+lib/widgets/coach_mark/pages/coach_mark_page2.dart
+lib/widgets/coach_mark/pages/coach_mark_page3.dart
+lib/widgets/coach_mark/pages/coach_mark_page4.dart
+lib/widgets/coach_mark/pages/coach_mark_page5.dart
+lib/widgets/common/notification_bottom_sheet.dart

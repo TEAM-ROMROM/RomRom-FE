@@ -83,7 +83,7 @@ class _CoachMarkPage1State extends State<CoachMarkPage1> with TickerProviderStat
                     children: [
                       const TextSpan(text: '상 ・ 하 스크롤로\n'),
                       const TextSpan(
-                        text: '다음 물건과 이전 물건',
+                        text: '다음 물품과 이전 물품',
                         style: TextStyle(color: AppColors.primaryYellow),
                       ),
                       const TextSpan(text: '을\n확인하세요'),
