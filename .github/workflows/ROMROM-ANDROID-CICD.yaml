@@ -130,6 +130,9 @@ jobs:
       # Android SDK 설정 및 확인
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # 기본값 'tools'는 SDK 저장소에서 제거됨 > platform-tools만 설치
+          packages: platform-tools
 
       - name: Verify Android SDK setup
         run: echo "Android SDK setup completed"
