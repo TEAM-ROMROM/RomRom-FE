@@ -1,13 +1,13 @@
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -17,7 +17,7 @@ import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 아이템 가격 입력 화면
-class ItemPriceInputScreen extends StatefulWidget {
+class ItemPriceInputScreen extends ConsumerStatefulWidget {
   final int initialPrice;
   final bool initialUseAiPrice;
   final bool canUseAiPrice;
@@ -38,10 +38,10 @@ class ItemPriceInputScreen extends StatefulWidget {
   });
 
   @override
-  State<ItemPriceInputScreen> createState() => _ItemPriceInputScreenState();
+  ConsumerState<ItemPriceInputScreen> createState() => _ItemPriceInputScreenState();
 }
 
-class _ItemPriceInputScreenState extends State<ItemPriceInputScreen> {
+class _ItemPriceInputScreenState extends ConsumerState<ItemPriceInputScreen> {
   late final TextEditingController _priceController;
   late bool _useAiPrice;
   bool _isAiPriceLoading = false;
@@ -78,13 +78,13 @@ class _ItemPriceInputScreenState extends State<ItemPriceInputScreen> {
     _pendingRequests.add('pricePredict');
     setState(() => _isAiPriceLoading = true);
     try {
-      final predictedPrice = await ItemApi().pricePredict(
-        ItemRequest(
-          itemName: widget.itemName,
-          itemDescription: widget.itemDescription,
-          itemCondition: widget.itemCondition,
-        ),
-      );
+      final predictedPrice = await ref
+          .read(itemRepositoryProvider)
+          .predictPrice(
+            itemName: widget.itemName,
+            itemDescription: widget.itemDescription,
+            itemCondition: widget.itemCondition,
+          );
 
       if (predictedPrice <= 0) {
         if (mounted) {

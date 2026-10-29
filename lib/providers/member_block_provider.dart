@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/repositories/member_block_repository.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/states/member_block_state.dart';
@@ -21,13 +22,24 @@ final memberBlockProvider = NotifierProvider<MemberBlockNotifier, MemberBlockSta
 class MemberBlockNotifier extends Notifier<MemberBlockState> {
   final Set<String> _inFlight = <String>{};
 
+  /// 세션 시작 상태 (invalidate 시 notifier 인스턴스 재사용 > 세션별 필드도 여기서 초기화)
   @override
-  MemberBlockState build() => const MemberBlockState();
+  MemberBlockState build() {
+    _inFlight.clear();
+    return const MemberBlockState();
+  }
 
   /// 차단 목록 시드. force=false일 땐 비어있을 때만 시드.
   void seed(Set<String> ids, {bool force = false}) {
     if (!force && state.blockedIds.isNotEmpty) return;
     state = MemberBlockState(blockedIds: {...ids});
+  }
+
+  /// 서버 차단 회원 목록 조회 > 차단 id 강제 시드 > 목록 반환 (실패 시 예외 전달, 상태 유지)
+  Future<List<Member>> fetchBlockedMembers() async {
+    final blockedMembers = await ref.read(memberBlockRepositoryProvider).getBlockedMembers();
+    seed(blockedMembers.map((member) => member.memberId).whereType<String>().toSet(), force: true);
+    return blockedMembers;
   }
 
   /// Optimistic 차단/차단해제 토글 > 서버 확정 여부 반환 (실패·진행 중 중복 호출 시 false)

@@ -363,5 +363,40 @@ void main() {
       expect(c.read(homeFeedProvider).hasError, false);
       expect(c.read(homeFeedProvider).value!.currentPage, 1);
     });
+
+    test('세션 초기화(invalidate) 후 > 이전 loadMore 실패 대기 시간 무시하고 바로 loadMore', () async {
+      final repo = _LoadMoreFailRepo();
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      notifier.now = () => DateTime(2026, 10, 29, 12);
+      await notifier.loadMore();
+      expect(repo.loadMoreCallCount, 1);
+
+      c.invalidate(homeFeedProvider);
+      await c.read(homeFeedProvider.future);
+      await c.read(homeFeedProvider.notifier).loadMore();
+
+      expect(repo.loadMoreCallCount, 2);
+    });
+
+    test('세션 초기화(invalidate) 후 > 이전 세션 진행 중 loadMore가 새 loadMore를 막지 않고, 늦은 결과는 버림', () async {
+      final repo = _GatedRepo();
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final previousSessionLoad = c.read(homeFeedProvider.notifier).loadMore();
+
+      c.invalidate(homeFeedProvider);
+      await c.read(homeFeedProvider.future);
+      final callsBeforeNextLoad = repo.callCount;
+      final nextSessionLoad = c.read(homeFeedProvider.notifier).loadMore();
+      expect(repo.callCount - callsBeforeNextLoad, 1, reason: '이전 세션 진행 중 표시에 묶이지 않음');
+
+      repo.gate.complete();
+      await Future.wait([previousSessionLoad, nextSessionLoad]);
+
+      final itemIds = c.read(homeFeedProvider).value!.items.map((item) => item.itemUuid);
+      expect(itemIds, ['p0', 'p1'], reason: '이전 세션 loadMore 결과는 새 피드에 붙지 않음');
+    });
   });
 }

@@ -1,6 +1,9 @@
 // lib/providers/chat_rooms_provider.dart
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
+import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/providers/chat_repository_provider.dart';
 import 'package:romrom_fe/repositories/chat_repository.dart';
@@ -28,6 +31,23 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
   Future<void> reload() async {
     final next = await AsyncValue.guard(_fetchPage0);
     state = next.hasError ? next.copyWithPrevious(state) : next;
+  }
+
+  /// 채팅방 생성 > 목록 재조회 > 생성(또는 기존) 방 반환
+  /// (재조회는 기다리지 않음: 채팅방 이동 지연 방지, 실패해도 이전 목록 유지)
+  Future<ChatRoom> createRoom({required String opponentMemberId, required String tradeRequestHistoryId}) async {
+    final createdRoom = await _repo.createChatRoom(
+      opponentMemberId: opponentMemberId,
+      tradeRequestHistoryId: tradeRequestHistoryId,
+    );
+    unawaited(reload());
+    return createdRoom;
+  }
+
+  /// 채팅방 삭제(나가기) > 목록 재조회 (삭제 실패 시 예외 전달, 재조회 생략)
+  Future<void> deleteRoom(String chatRoomId) async {
+    await _repo.deleteChatRoom(chatRoomId: chatRoomId);
+    unawaited(reload());
   }
 
   /// 다음 페이지 로드 (무한스크롤).
@@ -84,12 +104,5 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
     final newRooms = [...cur.rooms];
     newRooms[idx] = updated;
     state = AsyncData(cur.copyWith(rooms: newRooms));
-  }
-
-  /// 방 나가기/삭제 후 목록에서 즉시 제거.
-  void removeRoom(String chatRoomId) {
-    final cur = state.valueOrNull;
-    if (cur == null) return;
-    state = AsyncData(cur.copyWith(rooms: cur.rooms.where((r) => r.chatRoomId != chatRoomId).toList()));
   }
 }

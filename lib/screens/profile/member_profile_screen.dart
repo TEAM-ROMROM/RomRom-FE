@@ -10,9 +10,10 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
+import 'package:romrom_fe/providers/member_repository_provider.dart';
+import 'package:romrom_fe/repositories/member_repository.dart';
 import 'package:romrom_fe/screens/member_report_screen.dart';
 import 'package:romrom_fe/states/member_profile_state.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
@@ -67,6 +68,8 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   }
 
   Future<void> _loadProfileData() async {
+    // 첫 await 전 캡처 (조회 중 화면 종료 대비)
+    final memberRepository = ref.read(memberRepositoryProvider);
     try {
       // 내 프로필인지 확인
       _isMyProfile = await UserInfo().isSameMember(widget.memberId);
@@ -75,8 +78,8 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
         // 본인: provider 값을 로컬 편집 state에 복사 (reload 완료 후 isLoading=false 처리)
         await _syncFromProvider();
       } else {
-        // 타인: 기존 직접 API 조회 유지
-        await _loadOtherProfileFromApi();
+        // 타인: 프로필 1회 조회 (공유 상태 아님 > 로컬 보관)
+        await _loadOtherProfile(memberRepository);
       }
 
       if (mounted) {
@@ -154,10 +157,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
     }
   }
 
-  /// 타인 프로필 API 조회 (기존 그대로 유지)
-  Future<void> _loadOtherProfileFromApi() async {
-    final memberApi = MemberApi();
-    final memberResponse = await memberApi.getMemberProfile(widget.memberId);
+  /// 타인 프로필 조회 > 화면 로컬 상태 반영
+  Future<void> _loadOtherProfile(MemberRepository memberRepository) async {
+    final memberResponse = await memberRepository.getMemberProfile(widget.memberId);
 
     if (mounted) {
       setState(() {

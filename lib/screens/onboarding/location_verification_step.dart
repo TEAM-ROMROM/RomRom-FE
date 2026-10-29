@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -16,16 +17,16 @@ import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:shadex/shadex.dart';
 
-class LocationVerificationStep extends StatefulWidget {
+class LocationVerificationStep extends ConsumerStatefulWidget {
   final VoidCallback onNext;
 
   const LocationVerificationStep({super.key, required this.onNext});
 
   @override
-  State<LocationVerificationStep> createState() => _LocationVerificationStepState();
+  ConsumerState<LocationVerificationStep> createState() => _LocationVerificationStepState();
 }
 
-class _LocationVerificationStepState extends State<LocationVerificationStep> {
+class _LocationVerificationStepState extends ConsumerState<LocationVerificationStep> {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
   LocationAddress? _selectedAddress;
@@ -86,14 +87,16 @@ class _LocationVerificationStepState extends State<LocationVerificationStep> {
     if (_isVerifying || _selectedAddress == null || _selectedPosition == null) return;
     setState(() => _isVerifying = true);
     try {
-      await MemberApi().saveMemberLocation(
-        longitude: _selectedPosition!.longitude,
-        latitude: _selectedPosition!.latitude,
-        siDo: _selectedAddress!.siDo,
-        siGunGu: _selectedAddress!.siGunGu,
-        eupMyoenDong: _selectedAddress!.eupMyoenDong,
-        ri: _selectedAddress!.ri,
-      );
+      await ref
+          .read(memberProfileProvider.notifier)
+          .saveLocation(
+            longitude: _selectedPosition!.longitude,
+            latitude: _selectedPosition!.latitude,
+            siDo: _selectedAddress!.siDo,
+            siGunGu: _selectedAddress!.siGunGu,
+            eupMyoenDong: _selectedAddress!.eupMyoenDong,
+            ri: _selectedAddress!.ri,
+          );
       widget.onNext();
     } catch (e) {
       if (!mounted) return;

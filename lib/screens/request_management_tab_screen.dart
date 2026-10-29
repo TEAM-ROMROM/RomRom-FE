@@ -15,6 +15,7 @@ import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
+import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
@@ -196,10 +197,11 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
 
       // 주소 캐싱 (UI 관심사 — screen에서 수행)
       if (list.isNotEmpty) {
+        final addressResolver = ref.read(itemAddressResolverProvider);
         await Future.wait(
           list.map((r) async {
-            await r.takeItem.resolveAndCacheAddress();
-            await r.giveItem.resolveAndCacheAddress();
+            await addressResolver.resolveAndCacheAddress(r.takeItem);
+            await addressResolver.resolveAndCacheAddress(r.giveItem);
           }),
         );
       }
@@ -228,6 +230,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
       }
 
       final api = TradeApi();
+      final addressResolver = ref.read(itemAddressResolverProvider);
 
       // 모든 카드에 대해 병렬로 요청을 보내고 결과를 합칩니다.
       final pagedResults = await Future.wait<PagedTradeRequestHistory?>(
@@ -257,12 +260,12 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
           await Future.wait(
             list.map((r) async {
               try {
-                await r.takeItem.resolveAndCacheAddress();
+                await addressResolver.resolveAndCacheAddress(r.takeItem);
               } catch (e) {
                 debugPrint('takeItem 주소 해석 실패: $e');
               }
               try {
-                await r.giveItem.resolveAndCacheAddress();
+                await addressResolver.resolveAndCacheAddress(r.giveItem);
               } catch (e) {
                 debugPrint('giveItem 주소 해석 실패: $e');
               }

@@ -1,4 +1,2 @@
 # models-must-not-import-services freeze list: lines can only be removed, never added
 # Remove a file from this list once it is fixed (the rule test flags leftover lines)
-lib/models/apis/objects/item.dart
-lib/models/home_feed_item.dart

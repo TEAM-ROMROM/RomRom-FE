@@ -10,7 +10,6 @@ import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -18,12 +17,12 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/providers/notification_list_provider.dart';
+import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
-import 'package:romrom_fe/services/apis/notification_api.dart';
-import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/states/home_feed_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -67,9 +66,6 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
 
   int _currentFeedIndex = 0;
   int _currentVirtualIndex = 0;
-
-  bool _hasUnreadNotification = false;
-  bool _isLoadingUnreadNotification = false;
 
   OverlayEntry? _overlayEntry;
 
@@ -120,7 +116,8 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   @override
   void initState() {
     super.initState();
-    unawaited(_loadUnreadNotificationStatus());
+    // 미확인 알림 배지 최신화 (첫 로드 진행 중이면 notifier가 무시, 재로그인 등 이전 값은 재조회)
+    Future.microtask(ref.read(notificationListProvider.notifier).reload);
   }
 
   @override
@@ -144,28 +141,6 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         _checkAndShowCoachMark();
       }
     });
-  }
-
-  Future<void> _loadUnreadNotificationStatus() async {
-    if (_isLoadingUnreadNotification) return;
-    _isLoadingUnreadNotification = true;
-    try {
-      final response = await NotificationApi().getUnreadNotificationCount();
-      if (mounted) {
-        setState(() {
-          _hasUnreadNotification = (response?.unReadCount ?? 0) > 0;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _hasUnreadNotification = false;
-        });
-      }
-      debugPrint('미확인 알림 조회 실패: $e');
-    } finally {
-      _isLoadingUnreadNotification = false;
-    }
   }
 
   Future<void> _checkAndShowCoachMark() async {
@@ -264,10 +239,9 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     );
 
     try {
-      final tradeApi = TradeApi();
-      final exists = await tradeApi.checkTradeRequestExistence(
-        TradeRequest(takeItemId: feedItem.itemUuid, giveItemId: cardId),
-      );
+      final exists = await ref
+          .read(tradeRepositoryProvider)
+          .hasTradeRequest(takeItemId: feedItem.itemUuid, giveItemId: cardId);
 
       if (!mounted) return;
 
@@ -373,6 +347,10 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     required bool isBlurShown,
   }) {
     final feed = asyncFeed.valueOrNull;
+    // 미확인 알림 배지 (조회 실패·로딩 중엔 미표시, 배지 여부 바뀔 때만 재빌드)
+    final hasUnreadNotification = ref.watch(
+      notificationListProvider.select((notificationList) => (notificationList.valueOrNull?.unreadCount ?? 0) > 0),
+    );
     final feedItems = feed?.items ?? const <HomeFeedItem>[];
     final hasMoreItems = feed?.hasMoreItems ?? false;
     // 자동 새로고침 중 = 데이터는 있고 다음 로딩 중
@@ -488,9 +466,8 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                         clipBehavior: Clip.antiAlias,
                         child: InkResponse(
                           onTap: () async {
+                            // 복귀 후 배지는 알림 화면 dispose의 전체 읽음 > 재조회로 provider가 갱신
                             await context.navigateTo(screen: const NotificationScreen());
-                            if (!mounted) return;
-                            _loadUnreadNotificationStatus();
                           },
                           radius: 18.w,
                           customBorder: const CircleBorder(),
@@ -499,7 +476,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                           child: SizedBox.square(
                             dimension: 56.w,
                             child: Center(
-                              child: _hasUnreadNotification
+                              child: hasUnreadNotification
                                   ? SvgPicture.asset(
                                       'assets/images/alertWithBadge.svg',
                                       width: 30.w,

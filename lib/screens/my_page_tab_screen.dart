@@ -3,17 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:romrom_fe/enums/account_status.dart';
-import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
-import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_like_list_screen.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/auth_service.dart';
+import 'package:romrom_fe/services/session_navigation_handler.dart';
 import 'package:romrom_fe/screens/my_page/my_category_settings_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/screens/my_page/terms_screen.dart';
@@ -353,7 +352,7 @@ class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
     final isSuccess = await AuthService().deleteAccount();
     if (!context.mounted) return;
     if (isSuccess) {
-      context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.pushAndRemoveUntil);
+      SessionNavigationHandler.notifyLoggedOut(); // 로그인 화면 전환 + 회원별 provider 초기화 (앱 루트)
     } else {
       CommonSnackBar.show(context: context, message: '회원 탈퇴에 실패했습니다. 다시 시도해주세요.', type: SnackBarType.error);
     }

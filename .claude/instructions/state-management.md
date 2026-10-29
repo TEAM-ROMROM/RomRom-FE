@@ -113,6 +113,11 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 //   await ref.read(fooProvider.notifier).delete(id);
 ```
 
+### 5. 로그아웃 초기화 등록 (회원별 데이터 provider 필수)
+- 로그인 회원의 데이터를 들고 있는 Notifier provider는 `lib/providers/user_scoped_providers.dart`의 `userScopedProviders`에 추가한다 (누락 시 이전 계정 데이터 노출).
+- 회원과 무관한 UI 전용 provider는 `test/architecture/user_scoped_providers_rule_test.dart`의 예외 목록에 이유와 함께 등록한다 (미등록 시 테스트 실패).
+- riverpod 2.6.1은 invalidate 후에도 Notifier 인스턴스를 재사용한다 > 세션별 private 인스턴스 필드(`_inFlight`, 페이지 커서, 캐시 등)는 `build()` 맨 앞에서 초기화한다.
+
 ## 현재 provider 현황
 
 | Provider | 파일 | 종류 | 상태 |
@@ -124,6 +129,21 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
 | `imageRepositoryProvider` | `providers/image_repository_provider.dart` | Provider | ImageRepository 주입 (이미지 업로드·삭제 공용) |
 | `coachMarkTriggerProvider` | `providers/coach_mark_trigger_provider.dart` | Notifier(bool) | 첫 등록 후 코치마크 일회성 신호 |
+| `notificationListProvider` | `providers/notification_list_provider.dart` | AsyncNotifier(페이징) | 알림 목록 `{notifications, unreadCount, nextPageNumber, hasMore, isLoadingMore}` — 페이지 크기 `notificationPageSize`(20) |
+| `notificationRepositoryProvider` | `providers/notification_repository_provider.dart` | Provider | NotificationRepository 주입 |
+| `tradeRepositoryProvider` | `providers/trade_repository_provider.dart` | Provider | TradeRepository 주입 (요청 존재 확인·AI 추천·거래 후기 작성/조회) |
+| `authRepositoryProvider` | `providers/auth_repository_provider.dart` | Provider | AuthRepository 주입 (RomAuthApi 래핑: 토큰 재발급, 로그인 후 회원 정보 저장) — 스플래시·로그인 버튼·온보딩 |
+| `reportRepositoryProvider` | `providers/report_repository_provider.dart` | Provider | ReportRepository 주입 (물품·회원 신고) |
+| `appVersionRepositoryProvider` | `providers/app_version_repository_provider.dart` | Provider | AppVersionRepository 주입 (스플래시 업데이트 판정) |
+
+> 화면·위젯은 `services/apis/*`를 직접 import하지 않는다 (`presentation-must-not-import-api` 규칙). 공유 상태 변경은 notifier 메서드(`memberBlockProvider.fetchBlockedMembers`, `tradeRequestsProvider.sendRequest` 등), 1회성 조회·제출(신고·가격 예측·후기·타인 프로필·좋아요 목록)은 `ref.read(xxxRepositoryProvider)`로 호출한다. 요청관리 탭만 5단계 대상으로 동결 목록에 남아 있다.
+
+### notificationList 구독/사용 현황 (알림 도메인)
+| 화면 | 방식 |
+|---|---|
+| `home_tab_screen` | `ref.watch(...select(unreadCount > 0))` → 알림 배지. `initState`에서 `reload()`(첫 로드 중이면 무시) |
+| `notification_screen` | `ref.watch` → 목록(로딩=스켈레톤, 첫 로드 실패=`EmptyStateView.error`), 스크롤 끝 근처 `loadMore()`, `ref.listen` → 재조회·다음 페이지 실패 스낵바 |
+| mutation: `notification_screen` | `markAsRead`·`delete`·`deleteAll`·`reload`, dispose 시 `markAllAsRead`(initState에서 보관한 notifier로 fire-and-forget) — 전부 서버 재조회(불러온 페이지 수만큼 page 0에서 한 번에) |
 
 ### myItems 구독/사용 현황 (내 물건 도메인)
 | 화면 | 방식 |

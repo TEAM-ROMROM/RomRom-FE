@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/enums/item_report_reason.dart';
-import 'package:romrom_fe/services/apis/report_api.dart';
+import 'package:romrom_fe/providers/report_repository_provider.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 신고하기 페이지
-class ReportScreen extends StatefulWidget {
+class ReportScreen extends ConsumerStatefulWidget {
   final String itemId; // 신고 대상 아이템 ID
 
   const ReportScreen({super.key, required this.itemId});
 
   @override
-  State<ReportScreen> createState() => _ReportScreenState();
+  ConsumerState<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState extends State<ReportScreen> {
+class _ReportScreenState extends ConsumerState<ReportScreen> {
   // 선택된 신고 사유 집합
   final Set<ItemReportReason> _selectedReasons = {};
   late final TextEditingController _extraCommentController;
@@ -136,12 +137,13 @@ class _ReportScreenState extends State<ReportScreen> {
                 if (_isSubmitting) return;
                 setState(() => _isSubmitting = true);
                 try {
-                  final api = ReportApi();
-                  await api.reportItem(
-                    itemId: widget.itemId,
-                    itemReportReasons: _selectedReasons.map((e) => e.id).toSet(),
-                    extraComment: _extraCommentController.text.trim(),
-                  );
+                  await ref
+                      .read(reportRepositoryProvider)
+                      .reportItem(
+                        itemId: widget.itemId,
+                        itemReportReasons: _selectedReasons.map((e) => e.id).toSet(),
+                        extraComment: _extraCommentController.text.trim(),
+                      );
                 } catch (e) {
                   debugPrint('신고 요청 중 오류: $e');
                   // 에러 코드 파싱

@@ -1,9 +1,7 @@
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_condition.dart' as item_cond;
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/services/location_service.dart';
 
 class HomeFeedItem {
   final int id;
@@ -48,13 +46,11 @@ class HomeFeedItem {
     this.authorMemberId,
   });
 
-  /// API 응답(Item)을 HomeFeedItem 리스트로 변환.
-  /// 위치 좌표를 주소 텍스트로 변환하기 위해 비동기.
+  /// API 응답(Item) > HomeFeedItem 리스트 ([locationTexts]: 같은 순서의 표시 주소, ItemAddressResolver가 생성)
   /// [startIndex]는 id 생성 기점 (기존 코드와 호환).
-  static Future<List<HomeFeedItem>> fromItems(List<Item> details, {int startIndex = 0}) async {
+  static List<HomeFeedItem> fromItems(List<Item> details, {int startIndex = 0, required List<String> locationTexts}) {
+    assert(details.length == locationTexts.length, 'locationTexts must match details order and length');
     final feedItems = <HomeFeedItem>[];
-    // 주소 변환 병렬 처리 (결과 순서 = 입력 순서)
-    final locationTexts = await Future.wait(details.map(_toLocationText));
 
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
@@ -97,13 +93,5 @@ class HomeFeedItem {
     }
 
     return feedItems;
-  }
-
-  /// 물품 좌표 > 표시 주소 '시도 시군구 읍면동' (좌표 없음·변환 실패 > '미지정')
-  static Future<String> _toLocationText(Item detail) async {
-    if (detail.latitude == null || detail.longitude == null) return '미지정';
-    final address = await LocationService().getAddressFromCoordinates(NLatLng(detail.latitude!, detail.longitude!));
-    if (address == null) return '미지정';
-    return '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
   }
 }

@@ -26,10 +26,10 @@ import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
@@ -44,7 +44,6 @@ import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
-import 'package:romrom_fe/services/apis/chat_api.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/screens/trade_location_detail_screen.dart';
@@ -131,9 +130,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
         hasError = false;
       });
 
-      final ItemApi itemApi = ItemApi();
-      final ItemRequest request = ItemRequest(itemId: widget.itemId);
-      final ItemResponse response = await itemApi.getItemDetail(request);
+      final ItemResponse response = await ref.read(itemRepositoryProvider).getItemDetail(widget.itemId);
 
       if (!mounted) return;
 
@@ -1112,19 +1109,14 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
 
     setState(() => _isChatCreationInProgress = true);
     try {
-      // 1. 채팅방 생성 (이미 있으면 기존 방 반환)
-      final chatApi = ChatApi();
-      final chatRoom = await chatApi.createChatRoom(
-        opponentMemberId: item!.member!.memberId!,
-        tradeRequestHistoryId: widget.tradeRequestHistoryId!,
-      );
+      // 1. 채팅방 생성 + 채팅 목록 재조회 (이미 있으면 기존 방 반환, chatRoomsProvider 경유)
+      final chatRoom = await ref
+          .read(chatRoomsProvider.notifier)
+          .createRoom(opponentMemberId: item!.member!.memberId!, tradeRequestHistoryId: widget.tradeRequestHistoryId!);
 
       if (!mounted) return;
 
-      // 2. chatRoomsProvider 갱신 (ItemDetail→ChatRoom 경로에서 생성된 새 방 반영)
-      ref.read(chatRoomsProvider.notifier).reload();
-
-      // 3. 채팅방 화면으로 이동
+      // 2. 채팅방 화면으로 이동
       context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoom.chatRoomId!));
     } catch (e) {
       debugPrint('채팅방 생성 실패: $e');

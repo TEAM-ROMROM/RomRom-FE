@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/enums/member_report_reason.dart';
-import 'package:romrom_fe/services/apis/report_api.dart';
+import 'package:romrom_fe/providers/report_repository_provider.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 회원 신고하기 페이지
-class MemberReportScreen extends StatefulWidget {
+class MemberReportScreen extends ConsumerStatefulWidget {
   final String memberId; // 신고 대상 회원 ID
 
   const MemberReportScreen({super.key, required this.memberId});
 
   @override
-  State<MemberReportScreen> createState() => _MemberReportScreenState();
+  ConsumerState<MemberReportScreen> createState() => _MemberReportScreenState();
 }
 
-class _MemberReportScreenState extends State<MemberReportScreen> {
+class _MemberReportScreenState extends ConsumerState<MemberReportScreen> {
   // 선택된 신고 사유 집합
   final Set<MemberReportReason> _selectedReasons = {};
   late final TextEditingController _extraCommentController;
@@ -136,12 +137,13 @@ class _MemberReportScreenState extends State<MemberReportScreen> {
                 if (_isSubmitting) return;
                 setState(() => _isSubmitting = true);
                 try {
-                  final api = ReportApi();
-                  await api.reportMember(
-                    targetMemberId: widget.memberId,
-                    memberReportReasons: _selectedReasons.map((e) => e.id).toSet(),
-                    extraComment: _extraCommentController.text.trim(),
-                  );
+                  await ref
+                      .read(reportRepositoryProvider)
+                      .reportMember(
+                        targetMemberId: widget.memberId,
+                        memberReportReasons: _selectedReasons.map((e) => e.id).toSet(),
+                        extraComment: _extraCommentController.text.trim(),
+                      );
                 } catch (e) {
                   debugPrint('회원 신고 요청 중 오류: $e');
                   // 에러 코드 파싱

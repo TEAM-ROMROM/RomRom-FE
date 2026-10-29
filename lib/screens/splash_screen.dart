@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -11,31 +12,33 @@ import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/app_version_repository_provider.dart';
+import 'package:romrom_fe/providers/auth_repository_provider.dart';
+import 'package:romrom_fe/repositories/auth_repository.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
 import 'package:romrom_fe/services/splash_startup_sequence.dart';
 import 'package:romrom_fe/screens/app_update_screen.dart';
-import 'package:romrom_fe/services/apis/app_version_api.dart';
-import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
+import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _loginTransitionController;
   late Animation<Alignment> _logoAlignmentAnim;
   late Animation<double> _loginUIFadeAnim;
@@ -114,9 +117,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   static const Duration _minimumSplashDuration = Duration(seconds: 2);
 
   Future<void> _runInitFlow() async {
+    // 첫 await 전 캡처 (타임아웃으로 화면이 닫힌 뒤에도 흐름이 이어짐 > 이후 ref 사용 불가)
+    final appVersionRepository = ref.read(appVersionRepositoryProvider);
+    final authRepository = ref.read(authRepositoryProvider);
     final startupResult = await runSplashStartupSequence<Widget>(
-      checkUpdateType: AppVersionApi().checkUpdateType,
-      determineInitialScreen: _determineInitialScreen,
+      checkUpdateType: appVersionRepository.checkUpdateType,
+      determineInitialScreen: () => _determineInitialScreen(authRepository),
       // _aborted: timeout 또는 오류로 _initAndNavigate()가 이미 로그인 화면을 표시한 경우
       isAborted: () => _aborted,
       minimumSplashDuration: _minimumSplashDuration,
@@ -134,7 +140,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       ColdStartDeepLinkData.clear(); // 미인증 상태 → 딥링크 데이터 폐기
       await _playLoginTransitionAnimation();
     } else {
-      context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition);
+      startUserSession(
+        invalidate: ref.invalidate,
+        navigateToSessionScreen: () => context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition),
+      );
       // MainScreen 이동 후 콜드 스타트 FCM/AppLinks 딥링크 처리
       // (pushAndRemoveUntil이 완료된 다음 프레임에 navigatorKey로 push)
       if (nextScreen is MainScreen && ColdStartDeepLinkData.hasPending) {
@@ -217,14 +226,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     return (logoCenterInBody / (bodyHeight / 2)) - 1;
   }
 
-  Future<Widget> _determineInitialScreen() async {
-    final romAuthApi = RomAuthApi();
+  Future<Widget> _determineInitialScreen(AuthRepository authRepository) async {
     final tokenManager = TokenManager();
     final String? refreshToken = await tokenManager.getRefreshToken();
 
     if (refreshToken == null) return const LoginScreen();
 
-    final isLoggedIn = await romAuthApi.refreshAccessToken();
+    final isLoggedIn = await authRepository.refreshAccessToken();
     if (!isLoggedIn) return const LoginScreen();
 
     final userInfo = UserInfo();

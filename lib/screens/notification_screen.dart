@@ -8,13 +8,14 @@ import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
-import 'package:romrom_fe/models/apis/requests/notification_history_request.dart';
+import 'package:romrom_fe/models/apis/objects/notification_history.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
+import 'package:romrom_fe/providers/notification_list_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
-import 'package:romrom_fe/services/apis/notification_api.dart';
+import 'package:romrom_fe/states/notification_list_state.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
@@ -22,11 +23,11 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
-import 'package:romrom_fe/widgets/common/app_skeleton.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/widgets/skeletons/notification_skeleton.dart';
 
@@ -40,10 +41,15 @@ class NotificationScreen extends ConsumerStatefulWidget {
 
 class _NotificationScreenState extends ConsumerState<NotificationScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  // 다음 페이지 선행 로드 기준: 끝에서 뷰포트 높이의 몇 배 전인지
+  static const double _loadMorePrefetchViewportRatio = 1.5;
+
   final ScrollController _scrollController = ScrollController();
 
-  // 로딩 상태
-  bool _isLoading = false;
+  // 알림 목록 notifier (dispose 시 전체 읽음 호출용 — 해제 후 ref 사용 불가라 initState에서 보관)
+  late final NotificationListNotifier _notificationListNotifier;
+  // 삭제 요청 진행 중인 알림 id (중복 탭 방지)
+  final Set<String> _pendingDeleteIds = {};
 
   // 스크롤 상태 관리
   bool _isScrolled = false;
@@ -54,10 +60,6 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
 
   // 토글 상태 (false: 활동 및 채팅, true: 롬롬 소식)
   bool _isRightSelected = false;
-
-  // 알림 데이터 (임시)
-  final List<NotificationItemData> _activityNotifications = [];
-  final List<NotificationItemData> _romromNotifications = [];
 
   // 시스템 설정 복귀 후 처리할 대기 중인 알림 타입
   NotificationType? _pendingNotificationEnableType;
@@ -75,16 +77,19 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _toggleAnimationController, curve: AppMotion.standard));
 
-    _loadNotifications();
+    _notificationListNotifier = ref.read(notificationListProvider.notifier);
+    // 진입 시 최신화 (빌드 중 provider 변경 금지 > 다음 틱, 첫 로드 진행 중이면 notifier가 무시)
+    Future.microtask(_notificationListNotifier.reload);
     _loadNotificationSettings();
   }
 
-  /// 알림 설정 상태 로드 — notificationSettingProvider에 seed(force: false).
+  /// 알림 설정 상태 로드 — memberProfileProvider 회원 정보로 notificationSettingProvider에 seed(force: false).
   /// notification_settings_screen이 force:true로 최신화하므로, 여기선 미시드 상태일 때만 적용.
   Future<void> _loadNotificationSettings() async {
     try {
-      final response = await MemberApi().getMemberInfo();
-      final member = response.member;
+      // 공유 프로필 (조회 실패 상태로 남아 있으면 재조회)
+      final memberProfile = await ref.read(memberProfileProvider.notifier).fetchCachedOrReload();
+      final member = memberProfile.member;
       if (member != null && mounted) {
         ref.read(notificationSettingProvider.notifier).seed({
           NotificationSettingType.marketing: member.isMarketingInfoAgreed ?? false,
@@ -107,9 +112,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     _toggleAnimationController.dispose();
 
     // 화면이 사라질 때(팝 등) 모든 알림을 읽음 처리
-    unawaited(
-      NotificationApi().updateAllNotificationsAsRead().catchError((e) => debugPrint('모든 알림 읽음 처리 실패(dispose): $e')),
-    );
+    unawaited(_notificationListNotifier.markAllAsRead().catchError((e) => debugPrint('모든 알림 읽음 처리 실패(dispose): $e')));
     super.dispose();
   }
 
@@ -160,72 +163,61 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
         _isScrolled = false;
       });
     }
+    _loadMoreIfNearListEnd();
   }
 
-  /// 알림 데이터 로드
-  Future<void> _loadNotifications() async {
-    setState(() {
-      _isLoading = true;
+  /// 목록 끝에서 뷰포트 1.5배 전부터 다음 페이지 조회 (화면 자체 세로 스크롤 기준)
+  /// 화면을 못 채운 경우(스크롤 불가)도 끝 근처로 판정 > 탭에 보일 알림이 찰 때까지 이어서 조회
+  void _loadMoreIfNearListEnd() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final prefetchThresholdPixels =
+        position.maxScrollExtent - position.viewportDimension * _loadMorePrefetchViewportRatio;
+    if (position.pixels >= prefetchThresholdPixels) _notificationListNotifier.loadMore();
+  }
+
+  /// 목록 갱신·탭 전환 후 레이아웃 반영된 다음 프레임에 끝 근처 여부 재확인
+  void _scheduleLoadMoreCheck() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadMoreIfNearListEnd();
     });
+  }
 
-    NotificationApi notificationApi = NotificationApi();
-    try {
-      // 실제 API 호출 예시 (주석 처리)
-      final notificationResponse = await notificationApi.getUserNotifications(
-        NotificationHistoryRequest(pageNumber: 0, pageSize: 10),
+  /// 서버 알림 > 화면 표시 데이터 (탭 필터, 필수값 없는 알림 제외)
+  /// 롬롬 소식 탭: systemNotice만, 활동 및 채팅 탭: 그 외 전부
+  List<NotificationItemData> _toNotificationItems(
+    List<NotificationHistory> notificationHistories, {
+    required bool isRomromNewsTab,
+  }) {
+    final notificationItems = <NotificationItemData>[];
+    for (final item in notificationHistories) {
+      final id = item.notificationHistoryId;
+      final title = item.title;
+      final body = item.body;
+      if (id == null || title == null || body == null) continue;
+
+      final isRomromNews = item.notificationType == NotificationType.systemNotice.serverName;
+      if (isRomromNews != isRomromNewsTab) continue;
+
+      final type = NotificationType.values.firstWhere(
+        (e) => e.serverName == item.notificationType,
+        orElse: () => NotificationType.systemNotice,
       );
-      debugPrint(
-        '알림 데이터 로드 성공: ${notificationResponse.notificationHistoryPage?.content?.length ?? 0}개',
-      ); // API에서 알림 데이터 로그 출력
 
-      if (mounted) {
-        setState(() {
-          _activityNotifications.clear();
-          _romromNotifications.clear();
-
-          // API에서 받은 데이터를 기반으로 알림 리스트 업데이트
-          if (notificationResponse.notificationHistoryPage?.content != null) {
-            for (var item in notificationResponse.notificationHistoryPage!.content!) {
-              final id = item.notificationHistoryId;
-              final title = item.title;
-              final body = item.body;
-              if (id == null || title == null || body == null) continue;
-
-              final type = NotificationType.values.firstWhere(
-                (e) => e.serverName == item.notificationType,
-                orElse: () => NotificationType.systemNotice,
-              );
-
-              final notificationData = NotificationItemData(
-                id: id,
-                type: type,
-                title: title,
-                description: body,
-                time: item.publishedAt ?? DateTime.now(),
-                imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출
-                isRead: item.isRead ?? false, // 읽음 상태 API에서 받아온 값 사용
-                deepLink: item.payload?['deepLink'], // payload에서 딥링크 추출
-              );
-
-              if (item.notificationType == NotificationType.systemNotice.serverName) {
-                _romromNotifications.add(notificationData);
-              } else {
-                _activityNotifications.add(notificationData);
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('알림 데이터 로드 실패: $e');
-      if (mounted) {
-        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      notificationItems.add(
+        NotificationItemData(
+          id: id,
+          type: type,
+          title: title,
+          description: body,
+          time: item.publishedAt ?? DateTime.now(),
+          imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출
+          isRead: item.isRead ?? false, // 읽음 상태 API에서 받아온 값 사용
+          deepLink: item.payload?['deepLink'], // payload에서 딥링크 추출
+        ),
+      );
     }
+    return notificationItems;
   }
 
   /// 토글 변경 처리
@@ -238,6 +230,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
         _toggleAnimationController.reverse();
       }
     });
+    _scheduleLoadMoreCheck();
   }
 
   /// 설정 화면으로 이동
@@ -250,12 +243,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   /// 설정 화면으로 이동
   Future<void> _onDeleteAllNotificationTap() async {
     try {
-      await NotificationApi().deleteAllNotifications();
+      await _notificationListNotifier.deleteAll();
       if (!mounted) return;
-      setState(() {
-        _activityNotifications.clear();
-        _romromNotifications.clear();
-      });
       CommonSnackBar.show(context: context, message: '모든 알림이 삭제되었습니다.', type: SnackBarType.success);
     } catch (e) {
       if (!mounted) return;
@@ -332,7 +321,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   /// 알림 아이템 탭 처리 - 읽음 처리 후 딥링크 이동, 복귀 시 알림 목록 갱신
   Future<void> _onNotificationTap(NotificationItemData notification) async {
     try {
-      await NotificationApi().updateNotificationsAsRead(notification.id);
+      await _notificationListNotifier.markAsRead(notification.id);
     } catch (e) {
       debugPrint('알림 읽음 처리 실패: $e');
       if (mounted) {
@@ -349,26 +338,26 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       }
     } finally {
       if (mounted) {
-        await _loadNotifications();
+        await _notificationListNotifier.reload();
       }
     }
   }
 
   /// 알림 삭제
   void _onDeleteNotification(String notificationId) async {
+    // 삭제 진행 중인 알림 > 중복 요청 무시
+    if (_pendingDeleteIds.contains(notificationId)) return;
+    _pendingDeleteIds.add(notificationId);
     try {
-      await NotificationApi().deleteNotification(NotificationHistoryRequest(notificationHistoryId: notificationId));
-
-      if (mounted) {
-        setState(() {
-          _activityNotifications.removeWhere((n) => n.id == notificationId);
-          _romromNotifications.removeWhere((n) => n.id == notificationId);
-        });
-      }
+      await _notificationListNotifier.delete(notificationId);
+      if (!mounted) return;
       CommonSnackBar.show(context: context, message: '알림이 삭제되었습니다.', type: SnackBarType.success);
     } catch (e) {
       debugPrint('알림 삭제 실패: $e');
+      if (!mounted) return;
       CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+    } finally {
+      _pendingDeleteIds.remove(notificationId);
     }
   }
 
@@ -376,6 +365,19 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   Widget build(BuildContext context) {
     // provider 공유 — notification_settings_screen과 동일한 소스
     final settings = ref.watch(notificationSettingProvider);
+    final notificationListAsync = ref.watch(notificationListProvider);
+
+    ref.listen<AsyncValue<NotificationListState>>(notificationListProvider, (previous, next) {
+      // 다시 불러오기·다음 페이지 실패 (기존 목록 유지 중) > 스낵바
+      if (next.hasError && next.hasValue && !identical(previous?.error, next.error)) {
+        CommonSnackBar.show(
+          context: context,
+          message: ErrorUtils.getErrorMessage(next.error!),
+          type: SnackBarType.error,
+        );
+      }
+      if (next.hasValue) _scheduleLoadMoreCheck();
+    });
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(statusBarColor: AppColors.transparent),
@@ -389,7 +391,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
             color: AppColors.primaryYellow,
             backgroundColor: AppColors.transparent,
             onRefresh: () async {
-              await Future.wait([_loadNotifications(), _loadNotificationSettings()]);
+              await Future.wait([_notificationListNotifier.reload(), _loadNotificationSettings()]);
             },
             child: CustomScrollView(
               controller: _scrollController,
@@ -458,7 +460,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                     ),
                   ),
                 ),
-                SliverToBoxAdapter(child: _buildNotificationList(settings)),
+                _buildNotificationSliver(settings, notificationListAsync),
               ],
             ),
           ),
@@ -467,15 +469,31 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     );
   }
 
-  Widget _buildNotificationList(Map<NotificationSettingType, bool> settings) {
-    final notifications = _isRightSelected ? _romromNotifications : _activityNotifications;
+  /// 알림 목록 영역: 첫 로드 중 스켈레톤, 첫 로드 실패 에러 뷰, 그 외 목록
+  Widget _buildNotificationSliver(
+    Map<NotificationSettingType, bool> settings,
+    AsyncValue<NotificationListState> notificationListAsync,
+  ) {
+    final notificationList = notificationListAsync.valueOrNull;
 
-    if (_isLoading) {
-      return SizedBox(
-        height: 300.h,
-        child: const Center(child: CommonLoadingIndicator()),
+    // 첫 로드·재시도 중 (데이터 없음)
+    if (notificationList == null && notificationListAsync.isLoading) {
+      return const SliverToBoxAdapter(child: NotificationListSkeleton());
+    }
+
+    // 첫 로드 실패 (데이터 없음) — 재시도 중엔 스켈레톤이라 중복 탭 불가
+    if (notificationList == null) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: EmptyStateView.error(centerText: '알림을 불러오지 못했어요', onRetry: _notificationListNotifier.reload),
       );
     }
+
+    return SliverToBoxAdapter(child: _buildNotificationList(settings, notificationList));
+  }
+
+  Widget _buildNotificationList(Map<NotificationSettingType, bool> settings, NotificationListState notificationList) {
+    final notifications = _toNotificationItems(notificationList.notifications, isRomromNewsTab: _isRightSelected);
 
     if (notifications.isEmpty) {
       return AppFadeSlideIn(
@@ -492,33 +510,41 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       );
     }
 
-    return AppSkeleton(
-      isLoading: _isLoading,
-      skeleton: const NotificationListSkeleton(),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(0.w, 4.h, 0.w, 0),
-        child: MediaQuery.removePadding(
-          context: context,
-          removeTop: true,
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: notifications.length,
-            separatorBuilder: (_, index) => const SizedBox.shrink(),
-            itemBuilder: (context, index) {
-              final notification = notifications[index];
-              return AppFadeSlideIn(
-                delay: Duration(milliseconds: index * AppMotion.staggerDelayMs),
-                child: NotificationItemWidget(
-                  data: notification,
-                  isMuted: _isMuted(settings, notification.type),
-                  onTap: () => _onNotificationTap(notification),
-                  onMuteTap: () => _onToggleMuteNotification(notification.type),
-                  onDeleteTap: () => _onDeleteNotification(notification.id),
-                ),
-              );
-            },
-          ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(0.w, 4.h, 0.w, 0),
+      child: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: notifications.length,
+              separatorBuilder: (_, index) => const SizedBox.shrink(),
+              itemBuilder: (context, index) {
+                final notification = notifications[index];
+                return AppFadeSlideIn(
+                  // 페이지마다 stagger 처음부터 (뒤에 붙은 페이지 등장 지연 방지)
+                  delay: Duration(milliseconds: (index % notificationPageSize) * AppMotion.staggerDelayMs),
+                  child: NotificationItemWidget(
+                    data: notification,
+                    isMuted: _isMuted(settings, notification.type),
+                    onTap: () => _onNotificationTap(notification),
+                    onMuteTap: () => _onToggleMuteNotification(notification.type),
+                    onDeleteTap: () => _onDeleteNotification(notification.id),
+                  ),
+                );
+              },
+            ),
+            // 다음 페이지 조회 중
+            if (notificationList.isLoadingMore)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CommonLoadingIndicator()),
+              ),
+          ],
         ),
       ),
     );

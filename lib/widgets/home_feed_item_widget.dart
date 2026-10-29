@@ -6,21 +6,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
-import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/home_feed_ai_sort_button.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
+import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
@@ -75,8 +73,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
         return;
       }
 
-      final itemApi = ItemApi();
-      final response = await itemApi.getItemDetail(ItemRequest(itemId: widget.item.itemUuid));
+      final response = await ref.read(itemRepositoryProvider).getItemDetail(widget.item.itemUuid);
 
       if (!mounted) return;
       setState(() {
@@ -113,10 +110,9 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
     });
     try {
       debugPrint('AI 물품 정렬 리스트 요청');
-      final response = await TradeApi().getAiRecommendItemList(TradeRequest(takeItemId: widget.item.itemUuid));
+      final items = await ref.read(tradeRepositoryProvider).getAiRecommendedItems(widget.item.itemUuid);
 
       // 상위 3개 itemId 추출
-      final items = response.itemPage?.content ?? [];
       final topIds = items.take(3).map((item) => item.itemId).whereType<String>().toList();
 
       debugPrint('AI 추천 상위 3개 itemId: $topIds, ${items.length}');

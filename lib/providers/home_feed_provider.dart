@@ -8,6 +8,7 @@ import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/providers/home_feed_repository_provider.dart';
+import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
 import 'package:romrom_fe/repositories/home_feed_repository.dart';
 import 'package:romrom_fe/states/home_feed_state.dart';
 
@@ -48,12 +49,21 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   // 마지막 loadMore 실패 시각 (재시도 대기 판정용, 성공 시 초기화)
   DateTime? _lastLoadMoreFailedAt;
 
+  // build 세대 (세션 초기화(invalidate)마다 증가 > 이전 세션의 늦은 loadMore·refresh 결과 폐기)
+  int _buildGeneration = 0;
+
   // 현재 시각 공급자 (테스트에서 교체)
   @visibleForTesting
   DateTime Function() now = DateTime.now;
 
+  /// 첫 페이지 로드 (invalidate 시 notifier 인스턴스 재사용 > 세션별 필드 초기화 후 조회)
   @override
-  Future<HomeFeedState> build() => _fetchInitial(seenItemIds: LinkedHashSet<String>());
+  Future<HomeFeedState> build() {
+    _buildGeneration++;
+    _isLoadMoreInFlight = false;
+    _lastLoadMoreFailedAt = null;
+    return _fetchInitial(seenItemIds: LinkedHashSet<String>());
+  }
 
   /// 정렬 폴백을 돌아 첫 비어있지 않은 결과를 반환.
   /// 시간 함수(DateTime.now())는 호출하지 않는다 — lastRefreshAt는 호출자가 결정.
@@ -70,7 +80,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
       }
     }
 
-    final feedItems = await HomeFeedItem.fromItems(items, startIndex: 0);
+    final feedItems = await _toFeedItems(items, startIndex: 0);
     final reordered = _reorderBySeen(feedItems, seenItemIds);
 
     return HomeFeedState(
@@ -91,6 +101,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     if (_isInLoadMoreRetryCooldown()) return;
 
     _isLoadMoreInFlight = true;
+    final buildGeneration = _buildGeneration;
     try {
       var nextPage = current.currentPage + 1;
       var fetched = await _repo.fetchPage(
@@ -112,7 +123,8 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
         );
       }
 
-      final converted = await HomeFeedItem.fromItems(fetched, startIndex: current.items.length);
+      final converted = await _toFeedItems(fetched, startIndex: current.items.length);
+      if (buildGeneration != _buildGeneration) return; // 세션 초기화됨 > 결과 폐기
       final reordered = _reorderBySeen(converted, seen);
 
       state = AsyncData(
@@ -125,11 +137,13 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
       );
       _lastLoadMoreFailedAt = null;
     } catch (e, st) {
+      if (buildGeneration != _buildGeneration) return;
       _lastLoadMoreFailedAt = now();
       // loadMore 실패는 사용자 가시 액션 — 에러로 surface하여 화면에서 SnackBar 처리.
       state = AsyncError<HomeFeedState>(e, st).copyWithPrevious(state);
     } finally {
-      _isLoadMoreInFlight = false; // (성공·실패 공통)
+      // (성공·실패 공통, 세션 초기화 뒤면 새 세션 표시 유지)
+      if (buildGeneration == _buildGeneration) _isLoadMoreInFlight = false;
     }
   }
 
@@ -146,16 +160,19 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     }
 
     debugPrint('[HomeFeed] refresh start (trigger=$trigger)');
+    final buildGeneration = _buildGeneration;
     try {
       // 새로고침 중 loading 표시를 위해 loading 상태로 전환 (이전 데이터는 보존)
       state = const AsyncLoading<HomeFeedState>().copyWithPrevious(state);
 
       final next = await _fetchInitial(seenItemIds: current.seenItemIds);
+      if (buildGeneration != _buildGeneration) return; // 세션 초기화됨 > 결과 폐기
       // feedRevision 증가 = 화면에 "통째 교체(replace)"임을 명시적으로 통지 (page 0 점프 + 광고 슬롯 리셋 트리거)
       state = AsyncData(next.copyWith(lastRefreshAt: DateTime.now(), feedRevision: current.feedRevision + 1));
     } catch (e) {
       // silent fail — 기존 데이터 유지
       debugPrint('[HomeFeed] refresh failed silently: $e');
+      if (buildGeneration != _buildGeneration) return;
       state = AsyncData(current);
     }
   }
@@ -183,6 +200,12 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     }
 
     state = AsyncData(current.copyWith(seenItemIds: next));
+  }
+
+  /// 물품 > 피드 항목 변환 (표시 주소 병렬 조회 > 순수 변환)
+  Future<List<HomeFeedItem>> _toFeedItems(List<Item> items, {required int startIndex}) async {
+    final locationTexts = await ref.read(itemAddressResolverProvider).resolveLocationTexts(items);
+    return HomeFeedItem.fromItems(items, startIndex: startIndex, locationTexts: locationTexts);
   }
 
   bool _isInLoadMoreRetryCooldown() {

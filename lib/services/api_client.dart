@@ -4,19 +4,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
 import 'package:romrom_fe/exceptions/api_exception.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/token_reissue_result.dart';
-import 'package:romrom_fe/screens/account_suspended_screen.dart';
-import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/services/session_navigation_handler.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
 import 'package:romrom_fe/utils/log_masking.dart';
 import 'package:romrom_fe/utils/single_flight.dart';
@@ -71,13 +68,7 @@ class ApiClient {
           debugPrint('제재된 회원 감지 (403 SUSPENDED_MEMBER)');
           _tokenManager.deleteTokens();
 
-          final context = navigatorKey.currentContext;
-          if (context != null && context.mounted) {
-            context.navigateTo(
-              screen: AccountSuspendedScreen(suspendReason: suspendReason, suspendedUntil: suspendedUntil),
-              type: NavigationTypes.clearStackImmediate,
-            );
-          }
+          SessionNavigationHandler.notifyAccountSuspended(suspendReason: suspendReason, suspendedUntil: suspendedUntil);
           return AccountSuspendedException(suspendReason: suspendReason, suspendedUntil: suspendedUntil);
         }
       } catch (e) {
@@ -379,10 +370,7 @@ class ApiClient {
       await _tokenManager.deleteTokens();
       HeartbeatManager.instance.stop();
       await MemberManager.clearMemberInfo();
-      final context = navigatorKey.currentContext;
-      if (context != null && context.mounted) {
-        context.navigateTo(screen: const LoginScreen(), type: NavigationTypes.fadeTransition);
-      }
+      SessionNavigationHandler.notifySessionExpired();
     } catch (e) {
       debugPrint('세션 만료 처리 실패: $e');
     }

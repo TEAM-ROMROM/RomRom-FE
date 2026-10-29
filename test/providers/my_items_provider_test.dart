@@ -56,6 +56,9 @@ class FakeItemRepository implements ItemRepository {
 
   @override
   Future<ItemResponse> postLike(String itemId) async => throw UnimplementedError();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {

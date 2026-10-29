@@ -39,6 +39,16 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     }
   }
 
+  /// 교환 요청 전송 (실패 시 예외 전달)
+  /// 보낸 요청 목록은 요청관리 탭이 정렬·주소 변환 후 setSent로 채움 > 여기서 재조회하지 않음
+  Future<void> sendRequest({
+    required String? takeItemId,
+    required String? giveItemId,
+    required List<String> itemTradeOptions,
+  }) {
+    return _repo.requestTrade(takeItemId: takeItemId, giveItemId: giveItemId, itemTradeOptions: itemTradeOptions);
+  }
+
   /// 거래 요청 취소 — 서버 호출 후 현재 카드 received 재조회.
   /// sent는 giveItemIds가 없어 로컬 제거로 폴백하되, received는 서버 기준으로 갱신.
   Future<void> cancel({required String tradeRequestHistoryId}) async {

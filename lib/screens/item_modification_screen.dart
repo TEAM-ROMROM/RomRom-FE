@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
@@ -12,17 +12,17 @@ import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/register_input_form.dart';
 
 /// 물품 수정 화면 (수정 중 이탈 시 확인 모달)
-class ItemModificationScreen extends StatefulWidget {
+class ItemModificationScreen extends ConsumerStatefulWidget {
   final VoidCallback? onClose;
   final String? itemId;
 
   const ItemModificationScreen({super.key, required this.itemId, this.onClose});
 
   @override
-  State<ItemModificationScreen> createState() => _ItemModificationScreenState();
+  ConsumerState<ItemModificationScreen> createState() => _ItemModificationScreenState();
 }
 
-class _ItemModificationScreenState extends State<ItemModificationScreen> {
+class _ItemModificationScreenState extends ConsumerState<ItemModificationScreen> {
   bool _isLoading = true;
   Item? _myItem;
   // 폼이 갱신하는 미저장 변경 여부 (불러온 물품 기준)
@@ -37,9 +37,8 @@ class _ItemModificationScreenState extends State<ItemModificationScreen> {
     });
 
     try {
-      final itemApi = ItemApi();
-      final request = ItemRequest(itemId: widget.itemId);
-      final response = await itemApi.getItemDetail(request);
+      final response = await ref.read(itemRepositoryProvider).getItemDetail(widget.itemId);
+      if (!mounted) return;
 
       setState(() {
         _myItem = response.item!;
@@ -57,8 +56,8 @@ class _ItemModificationScreenState extends State<ItemModificationScreen> {
 
   @override
   void initState() {
-    _loadMyItems();
     super.initState();
+    _loadMyItems();
   }
 
   @override

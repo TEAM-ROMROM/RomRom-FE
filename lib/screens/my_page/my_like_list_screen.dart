@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
@@ -11,17 +10,16 @@ import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
+import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/states/item_like_state.dart';
-import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -88,10 +86,9 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
 
     try {
       final pageToRequest = reset ? 0 : _currentPage;
-      final itemApi = ItemApi();
-      final itemResponse = await itemApi.getLikeList(ItemRequest(pageNumber: pageToRequest, pageSize: _pageSize));
-
-      final serverItems = itemResponse.itemPage?.content ?? [];
+      final serverItems = await ref
+          .read(itemRepositoryProvider)
+          .getLikedItems(pageNumber: pageToRequest, pageSize: _pageSize);
       final likeItems = await _convertToLikeItems(serverItems);
 
       if (!mounted) return;
@@ -141,7 +138,7 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
   Future<List<_LikedItem>> _convertToLikeItems(List<Item> details) async {
     List<_LikedItem> likeItems = <_LikedItem>[];
     // 주소 변환 병렬 처리 (결과 순서 = 입력 순서)
-    final locationTexts = await Future.wait(details.map(_toLocationText));
+    final locationTexts = await ref.read(itemAddressResolverProvider).resolveLocationTexts(details);
 
     for (int index = 0; index < details.length; index++) {
       final d = details[index];
@@ -176,14 +173,6 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
     }
 
     return likeItems;
-  }
-
-  /// 물품 좌표 > 표시 주소 '시도 시군구 읍면동' (좌표 없음·변환 실패 > '미지정')
-  Future<String> _toLocationText(Item detail) async {
-    if (detail.latitude == null || detail.longitude == null) return '미지정';
-    final address = await LocationService().getAddressFromCoordinates(NLatLng(detail.latitude!, detail.longitude!));
-    if (address == null) return '미지정';
-    return '${address.siDo} ${address.siGunGu} ${address.eupMyoenDong}';
   }
 
   @override

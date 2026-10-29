@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/item_status.dart';
-import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/repositories/item_repository.dart';
 import 'package:romrom_fe/states/my_items_state.dart';
@@ -18,10 +18,7 @@ class MyItemsNotifier extends AsyncNotifier<MyItemsState> {
     final results = await Future.wait([_repo.getMyItems(ItemStatus.available), _repo.getMyItems(ItemStatus.exchanged)]);
     final available = results[0];
     final exchanged = results[1];
-    await Future.wait([
-      ...available.map((item) => item.resolveAndCacheAddress()),
-      ...exchanged.map((item) => item.resolveAndCacheAddress()),
-    ]);
+    await ref.read(itemAddressResolverProvider).resolveAndCacheAddresses([...available, ...exchanged]);
     return MyItemsState(available: available, exchanged: exchanged);
   }
 

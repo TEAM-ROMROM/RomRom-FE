@@ -4,9 +4,9 @@ import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
@@ -76,12 +76,16 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     const requestKey = 'sync_notification_permission';
     if (_pendingRequests.contains(requestKey)) return;
     _pendingRequests.add(requestKey);
+    // await 이후 ref 사용 방지 (notifier 선확보)
+    final memberProfileNotifier = ref.read(memberProfileProvider.notifier);
+    final notificationSettingNotifier = ref.read(notificationSettingProvider.notifier);
     try {
       final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
       if (permissionGranted) return;
 
-      final memberResponse = await MemberApi().getMemberInfo();
-      final member = memberResponse.member;
+      // 공유 회원 프로필 (알림 설정 변경 시 notificationSettingProvider가 무효화)
+      final memberProfile = await memberProfileNotifier.fetchCachedOrReload();
+      final member = memberProfile.member;
       if (member == null) return;
 
       final bool anyEnabled =
@@ -93,7 +97,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
 
       if (anyEnabled) {
         // 5개 항목 전체 false: notificationSettingProvider 일괄 요청 1회 (백그라운드라 실패 스낵바 없음)
-        final isSyncSucceeded = await ref.read(notificationSettingProvider.notifier).setAll({
+        final isSyncSucceeded = await notificationSettingNotifier.setAll({
           for (final settingType in NotificationSettingType.values) settingType: false,
         }, isSilent: true);
         if (isSyncSucceeded) {

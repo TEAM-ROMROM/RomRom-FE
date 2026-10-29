@@ -4,12 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/screens/my_page/my_register_item_screen.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
@@ -56,9 +56,9 @@ class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection>
   /// 타인 교환 물건 로드
   Future<void> _loadMemberItems() async {
     try {
-      final res = await ItemApi().getMemberItems(ItemRequest(memberId: widget.memberId));
-      final List<Item> items = res.itemPage?.content ?? [];
-      await Future.wait(items.map((item) => item.resolveAndCacheAddress()));
+      final addressResolver = ref.read(itemAddressResolverProvider);
+      final List<Item> items = await ref.read(itemRepositoryProvider).getMemberItems(widget.memberId);
+      await addressResolver.resolveAndCacheAddresses(items);
       if (mounted) {
         setState(() {
           _memberItems = items;

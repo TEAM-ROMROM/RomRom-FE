@@ -28,6 +28,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/utils/text_scale_utils.dart';
+import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 백그라운드에서 알림 설정(최상단에 위치 해야 함)
@@ -86,16 +87,16 @@ Future<void> _initFirebaseMessaging() async {
 }
 
 /// 앱의 루트 위젯
-class MyApp extends StatefulWidget {
+class MyApp extends ConsumerStatefulWidget {
   final bool isGestureMode;
 
   const MyApp({super.key, required this.isGestureMode});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   static const String _lastVersionCheckKey = 'last_version_check_timestamp';
   static const Duration _checkInterval = Duration(hours: 24);
 
@@ -112,8 +113,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       DebugOverlayManager().init(navigatorKey);
     }
 
+    registerSessionEndNavigation(invalidate: ref.invalidate, navigate: _navigateFromRoot, isActive: () => mounted);
     _initAppLinks();
     _initFcmInitialMessage();
+  }
+
+  /// 루트 navigator 화면 전환 (세션 종료용, 컨텍스트 없음·해제 시 무시)
+  void _navigateFromRoot(Widget screen, NavigationTypes type) {
+    final navigatorContext = navigatorKey.currentContext;
+    if (navigatorContext != null && navigatorContext.mounted) {
+      navigatorContext.navigateTo(screen: screen, type: type);
+    }
   }
 
   /// 앱이 종료된 상태에서 알림 탭으로 실행된 경우 (콜드 스타트) 라우팅 처리
