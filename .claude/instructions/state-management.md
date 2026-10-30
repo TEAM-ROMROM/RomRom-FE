@@ -135,6 +135,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `notificationSettingProvider` | `providers/notification_setting_provider.dart` | Notifier(토글) | 알림설정 `Map<type, bool>` |
 | `currentTabIndexProvider` | `providers/current_tab_index_provider.dart` | Notifier(int) | MainScreen 탭 인덱스 (0 홈, 1 요청관리, 2 등록, 3 채팅, 4 마이페이지) |
 | `coachMarkTriggerProvider` | `providers/coach_mark_trigger_provider.dart` | Notifier(bool) | 첫 등록 후 코치마크 일회성 신호 |
+| `homePopupProvider` | `providers/home_popup_provider.dart` | Notifier | 홈 공지·이벤트 팝업 `{hasCheckedThisSession, displayedPopup}` — 세션 1회 노출 판정, 다시 보지 않기 저장 (회원 무관 > userScoped 예외) |
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
 | `homeFeedRepositoryProvider` | `providers/home_feed_repository_provider.dart` | Provider | HomeFeedRepository 주입 |
 | `imageRepositoryProvider` | `providers/image_repository_provider.dart` | Provider | ImageRepository 주입 (이미지 업로드·삭제 공용) |
@@ -147,6 +148,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `authRepositoryProvider` | `providers/auth_repository_provider.dart` | Provider | AuthRepository 주입 (RomAuthApi 래핑: 토큰 재발급, 로그인 후 회원 정보 저장) — 스플래시·로그인 버튼·온보딩 |
 | `reportRepositoryProvider` | `providers/report_repository_provider.dart` | Provider | ReportRepository 주입 (물품·회원 신고) |
 | `appVersionRepositoryProvider` | `providers/app_version_repository_provider.dart` | Provider | AppVersionRepository 주입 (스플래시 업데이트 판정) |
+| `homePopupRepositoryProvider` | `providers/home_popup_repository_provider.dart` | Provider | HomePopupRepository 주입 (활성 팝업 조회, 다시 보지 않기 id 로컬 저장) |
 | `itemAddressResolverProvider` | `providers/item_address_resolver_provider.dart` | Provider | ItemAddressResolver 주입 (주소 변환, 테스트 override) |
 
 > 화면·위젯은 `services/apis/*`를 직접 import하지 않는다 (`presentation-must-not-import-api` 규칙). 공유 상태 변경은 notifier 메서드(`memberBlockProvider.fetchBlockedMembers`, `tradeRequestsProvider.sendRequest` 등), 1회성 조회·제출(신고·가격 예측·후기·타인 프로필·좋아요 목록)은 `ref.read(xxxRepositoryProvider)`로 호출한다.
