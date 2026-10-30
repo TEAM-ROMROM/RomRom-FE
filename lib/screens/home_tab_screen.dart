@@ -34,6 +34,7 @@ import 'package:romrom_fe/widgets/home_tab/home_tab_empty_feed_view.dart';
 import 'package:romrom_fe/widgets/home_tab/home_tab_register_button.dart';
 import 'package:romrom_fe/widgets/home_tab/home_tab_top_actions.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
+import 'package:romrom_fe/widgets/common/smooth_page_scroll_physics.dart';
 import 'package:romrom_fe/widgets/native_ad_widget.dart';
 import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
@@ -339,7 +340,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
             child: PageView.builder(
               scrollDirection: Axis.vertical,
               controller: _pageController,
-              physics: isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
+              physics: isBlurShown ? const NeverScrollableScrollPhysics() : const SmoothPageScrollPhysics(),
               itemCount: _adSlotSchedule.virtualItemCount(feedItems.length) + (hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 if (isBlurShown) return;

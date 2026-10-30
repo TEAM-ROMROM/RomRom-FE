@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 앱 전역 공통 터치 위젯 — 물리 기반 Spring 인터랙션
 ///
 /// 토스 스타일 인터랙션:
-/// - 누르는 순간: 즉각 scale down (애니메이션 없음 → 즉각 반응 느낌)
-/// - 손 떼는 순간: SpringSimulation으로 탄성 있게 복귀 (살짝 bounce)
+/// - 누르는 순간: 80ms 감속 축소 (즉각 반응, 끊김 없음)
+/// - 손 떼는 순간: SpringSimulation(AppMotion.pressSpring)으로 복귀 (거의 튀지 않음)
 ///
 /// 사용 예:
 /// ```dart
@@ -77,37 +78,23 @@ class AppPressable extends StatefulWidget {
   /// 아이콘 버튼 (닫기, 뒤로가기 등 소형 터치 영역)
   static const double scaleIcon = 0.93;
 
-  // ─────────────────────────────────────────────
-  // Spring 파라미터 (토스 스타일)
-  // ─────────────────────────────────────────────
-
-  /// 버튼/카드용 spring — 빠르고 살짝 bounce (damping ratio ≈ 0.65)
-  static const _springButton = SpringDescription(mass: 1.0, stiffness: 300.0, damping: 20.0);
-
-  /// 아이콘 버튼용 spring — 더 강하고 안정적 (damping ratio ≈ 0.87)
-  static const _springIcon = SpringDescription(mass: 1.0, stiffness: 300.0, damping: 30.0);
+  // 눌림 축소 시간 (80ms — 즉시 점프 대신 짧게 감속해 뚝 끊기는 느낌 제거)
+  static const Duration pressDownDuration = Duration(milliseconds: 80);
 
   @override
   State<AppPressable> createState() => _AppPressableState();
 }
 
 class _AppPressableState extends State<AppPressable> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  double _currentScale = 1.0;
+  // 눌림 정도 (0 = 원래 크기, 1 = scaleDown)
+  late final AnimationController _controller;
   bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
-    // duration/upperBound은 SpringSimulation이 직접 제어하므로 여기선 의미 없음
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 1));
-    _controller.addListener(() {
-      if (mounted) {
-        setState(() {
-          _currentScale = 1.0 - ((1.0 - widget.scaleDown) * _controller.value);
-        });
-      }
-    });
+    // unbounded: spring 복귀 중 살짝 넘는 값 허용
+    _controller = AnimationController.unbounded(vsync: this);
   }
 
   @override
@@ -119,10 +106,8 @@ class _AppPressableState extends State<AppPressable> with SingleTickerProviderSt
   void _onTapDown(TapDownDetails _) {
     if (!widget.enabled || widget.onTap == null) return;
     _isPressed = true;
-    // 즉각 scale down — 애니메이션 없이 바로 적용 (토스 스타일: 누름 순간 즉각 반응)
-    _controller.stop();
-    _controller.value = 1.0;
-    setState(() => _currentScale = widget.scaleDown);
+    // 눌림: 80ms 감속 축소
+    _controller.animateTo(1.0, duration: AppPressable.pressDownDuration, curve: AppMotion.decelerate);
   }
 
   void _onTapUp(TapUpDetails _) {
@@ -137,15 +122,9 @@ class _AppPressableState extends State<AppPressable> with SingleTickerProviderSt
     _springBack();
   }
 
+  /// 손 뗌: 현재 눌림 정도에서 spring으로 원래 크기 복귀
   void _springBack() {
-    _controller.stop();
-    // 현재 scale에서 1.0으로 복귀 — spring 물리 적용
-    final startValue = (1.0 - _currentScale) / (1.0 - widget.scaleDown);
-    _controller.value = startValue.clamp(0.0, 1.0);
-
-    final spring = widget.scaleDown <= AppPressable.scaleIcon ? AppPressable._springIcon : AppPressable._springButton;
-
-    _controller.animateWith(SpringSimulation(spring, _controller.value, 0.0, 0.0));
+    _controller.animateWith(SpringSimulation(AppMotion.pressSpring, _controller.value, 0.0, 0.0));
   }
 
   @override
@@ -160,8 +139,9 @@ class _AppPressableState extends State<AppPressable> with SingleTickerProviderSt
       onTap: widget.enableRipple ? null : (widget.enabled ? widget.onTap : null),
       onLongPress: widget.enableRipple ? null : (widget.enabled ? widget.onLongPress : null),
       behavior: HitTestBehavior.opaque,
-      child: Transform.scale(
-        scale: _currentScale,
+      // 크기만 매 프레임 갱신 (자식 위젯 재빌드 없음)
+      child: ScaleTransition(
+        scale: _controller.drive(Tween<double>(begin: 1.0, end: widget.scaleDown)),
         child: widget.enableRipple
             ? Material(
                 color: Colors.transparent,
