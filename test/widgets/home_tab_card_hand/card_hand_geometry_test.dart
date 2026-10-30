@@ -287,6 +287,46 @@ void main() {
       expect(topLeft.dy, closeTo(-10.0, valueTolerance));
     });
 
+    test('손가락 추종 모드 > 변위는 진행도와 무관하게 1:1, 상승 높이만 진행도 반영', () {
+      final topLeft = CardHandGeometry.calculatePulledCardTopLeft(
+        layout: designLayout,
+        transform: calculateDesignTransform(3, 7),
+        pullOffset: const Offset(12, -40),
+        pullProgress: 0.5,
+        isPullOffsetFollowingFinger: true,
+      );
+      expect(topLeft.dx, closeTo(162.50000000000003, valueTolerance));
+      expect(topLeft.dy, closeTo(-30.0, valueTolerance));
+
+      // 렌더 자세: 기존 모드 대비 변위 미반영분(변위 x (1 - 진행도))만큼 더 이동
+      CardHandCardPose calculatePulledPose({required bool isPullOffsetFollowingFinger}) {
+        return CardHandGeometry.calculateCardPose(
+          layout: designLayout,
+          screenWidth: designScreenWidth,
+          transform: calculateDesignTransform(3, 7),
+          index: 3,
+          fanProgress: 1.0,
+          preReorderTransform: null,
+          reorderProgress: 0.0,
+          isGatheringReorder: false,
+          isPulled: true,
+          isHovered: false,
+          isPressed: false,
+          pullProgress: 0.5,
+          pullOffset: const Offset(12, -40),
+          isPullOffsetFollowingFinger: isPullOffsetFollowingFinger,
+          isAiHighlighted: false,
+          highlightFloatOffsetPixels: 0.0,
+        );
+      }
+
+      final followingPose = calculatePulledPose(isPullOffsetFollowingFinger: true);
+      final progressScaledPose = calculatePulledPose(isPullOffsetFollowingFinger: false);
+      expect(followingPose.left - progressScaledPose.left, closeTo(6.0, valueTolerance));
+      expect(followingPose.top - progressScaledPose.top, closeTo(-20.0, valueTolerance));
+      expect(followingPose.scale, closeTo(progressScaledPose.scale, valueTolerance));
+    });
+
     test('그림자 강도 > 이전 70% + 목표 30%', () {
       expect(
         CardHandGeometry.calculateNextDropShadowStrength(currentStrength: 0.0, isOverDropZone: true),
@@ -299,6 +339,16 @@ void main() {
       expect(
         CardHandGeometry.calculateNextDropShadowStrength(currentStrength: 1.0, isOverDropZone: true),
         closeTo(1.0, 1e-12),
+      );
+    });
+  });
+
+  group('CardHandGeometry 복귀 크기 보정', () {
+    test('복귀 진행도 1 > 보정 없음, 0 > 뽑힌 기본 배율(1.15)을 1.0으로', () {
+      expect(CardHandGeometry.calculateReturningCardScaleFactor(returnProgress: 1.0), closeTo(1.0, valueTolerance));
+      expect(
+        CardHandGeometry.pulledCardBaseScale * CardHandGeometry.calculateReturningCardScaleFactor(returnProgress: 0.0),
+        closeTo(1.0, valueTolerance),
       );
     });
   });

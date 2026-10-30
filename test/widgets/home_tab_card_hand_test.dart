@@ -9,6 +9,9 @@ import '../helpers/pump_design_screen.dart';
 // 초기 팬 애니메이션 시작 지연(500ms) 이후 시점
 const Duration afterFanStartDelay = Duration(milliseconds: 600);
 
+// 카드 뽑기 떠오름(200ms) 완료 이후 시점
+const Duration pullLiftSettleDuration = Duration(milliseconds: 300);
+
 /// 테스트 카드 목록 (이미지 없음 > 네트워크 미사용 플레이스홀더)
 List<Item> buildTestCards(int count) {
   return List.generate(
@@ -51,6 +54,25 @@ double readDropGuideIconTopPadding(WidgetTester tester) {
   return (padding.padding as EdgeInsets).top;
 }
 
+/// 카드 위에서 위로 당겨 뽑기 > 떠오름 완료까지 대기 > 위로 60px 더 이동 (손가락은 누른 채 반환)
+Future<TestGesture> startCardPull(WidgetTester tester, Finder card) async {
+  final gesture = await tester.startGesture(tester.getCenter(card));
+  // 수직 판별 8px, 당기기 시작 -15px 초과
+  await gesture.moveBy(const Offset(0, -20));
+  await tester.pump();
+  await gesture.moveBy(const Offset(0, -20));
+  await tester.pump();
+  await tester.pump(pullLiftSettleDuration);
+  await gesture.moveBy(const Offset(0, -60));
+  await tester.pump();
+  return gesture;
+}
+
+/// 화면상 카드 대각선 길이 (회전 무관, 표시 배율 비교용)
+double readCardDiagonal(WidgetTester tester, Finder card) {
+  return (tester.getBottomRight(card) - tester.getTopLeft(card)).distance;
+}
+
 void main() {
   group('HomeTabCardHand 애니메이션 프레임', () {
     testWidgets('초기 상태 > 드롭 안내 아이콘 없음, 예약 프레임 없음(상시 반복 애니메이션 없음)', (tester) async {
@@ -81,6 +103,62 @@ void main() {
       // 놓기 (드롭존 밖) > 원위치 후 프레임 종료
       await gesture.up();
       await tester.pumpAndSettle();
+      expect(find.byIcon(AppIcons.cardDrag), findsNothing);
+      expect(tester.binding.hasScheduledFrame, isFalse);
+    });
+  });
+
+  group('HomeTabCardHand 뽑기·spring 복귀', () {
+    testWidgets('떠오름 완료 후 드래그 > 카드가 손가락을 1:1로 따라감', (tester) async {
+      await pumpCardHand(tester, cardCount: 3);
+      final pulledCard = find.byType(RequestManagementItemCardWidget).first;
+
+      final gesture = await startCardPull(tester, pulledCard);
+      final Offset centerAfterLift = tester.getCenter(pulledCard);
+
+      // 위로 30px, 오른쪽 25px 이동 > 카드 중심도 같은 만큼 이동 (보간·지연 없음)
+      await gesture.moveBy(const Offset(25, -30));
+      await tester.pump();
+      final Offset fingerFollowDelta = tester.getCenter(pulledCard) - centerAfterLift;
+      expect(fingerFollowDelta.dx, closeTo(25, 0.01));
+      expect(fingerFollowDelta.dy, closeTo(-30, 0.01));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('놓기(드롭존 밖) > 놓은 자리에서 끊김 없이 출발해 spring으로 원위치 수렴', (tester) async {
+      await pumpCardHand(tester, cardCount: 3);
+      final pulledCard = find.byType(RequestManagementItemCardWidget).first;
+      final Offset restingCenter = tester.getCenter(pulledCard);
+      final double restingDiagonal = readCardDiagonal(tester, pulledCard);
+
+      final gesture = await startCardPull(tester, pulledCard);
+      final Offset releaseCenter = tester.getCenter(pulledCard);
+      final double releaseDistance = (releaseCenter - restingCenter).distance;
+      expect(releaseDistance, greaterThan(50));
+
+      // 놓은 직후 첫 프레임: 순간이동 없이 놓은 자리 근처
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      final double distanceAfterFirstFrame = (tester.getCenter(pulledCard) - restingCenter).distance;
+      expect(distanceAfterFirstFrame, greaterThan(releaseDistance * 0.7));
+
+      // 복귀 중간: 원위치로 단조롭게 다가감 (감쇠비 1.0 > 넘침 없음)
+      double previousDistance = distanceAfterFirstFrame;
+      for (int frame = 0; frame < 10; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        final double currentDistance = (tester.getCenter(pulledCard) - restingCenter).distance;
+        expect(currentDistance, lessThanOrEqualTo(previousDistance + 0.01));
+        previousDistance = currentDistance;
+      }
+      expect(previousDistance, lessThan(releaseDistance));
+
+      // 정착: 원래 자리·원래 크기, 예약 프레임 없음
+      await tester.pumpAndSettle();
+      expect((tester.getCenter(pulledCard) - restingCenter).distance, lessThan(0.01));
+      expect(readCardDiagonal(tester, pulledCard), closeTo(restingDiagonal, 0.01));
       expect(find.byIcon(AppIcons.cardDrag), findsNothing);
       expect(tester.binding.hasScheduledFrame, isFalse);
     });

@@ -43,6 +43,10 @@ class CardHandGeometry {
   // 궤도 기본 각도 (화면 위쪽 정중앙, -90도)
   static const double baseOrbitAngle = -math.pi / 2;
 
+  // 뽑힌 카드 크기: 기본 1.15배 + 뽑기 진행도만큼 최대 0.20 추가
+  static const double pulledCardBaseScale = 1.15;
+  static const double pulledCardScaleGain = 0.20;
+
   /// 카드 위치 및 회전 계산: 인덱스·궤도 각도 > 원호 위 좌표 > 세로 보정 > tangent + tilt
   static CardHandCardTransform calculateCardTransform({
     required CardHandLayout layout,
@@ -155,6 +159,7 @@ class CardHandGeometry {
     required Offset pullOffset,
     required bool isAiHighlighted,
     required double highlightFloatOffsetPixels,
+    bool isPullOffsetFollowingFinger = false,
   }) {
     // 스태거드 애니메이션 효과
     final staggerDelay = index * 0.03;
@@ -216,13 +221,12 @@ class CardHandGeometry {
       }
     }
 
-    // 카드 뽑기 효과
+    // 카드 뽑기 효과 (손가락 추종 모드: 당김 변위 1:1, 아니면 진행도만큼)
     if (isPulled) {
-      left += pullOffset.dx * pullProgress;
-      top += pullOffset.dy * pullProgress - layout.pullLift * pullProgress;
-      const double dragBaseScale = 1.15;
-      const double dragScaleGain = 0.20;
-      scale = dragBaseScale + (dragScaleGain * pullProgress);
+      final double pullOffsetFactor = isPullOffsetFollowingFinger ? 1.0 : pullProgress;
+      left += pullOffset.dx * pullOffsetFactor;
+      top += pullOffset.dy * pullOffsetFactor - layout.pullLift * pullProgress;
+      scale = pulledCardBaseScale + (pulledCardScaleGain * pullProgress);
       angle *= (1 - pullProgress);
     }
 
@@ -243,10 +247,17 @@ class CardHandGeometry {
     required CardHandCardTransform transform,
     required Offset pullOffset,
     required double pullProgress,
+    bool isPullOffsetFollowingFinger = false,
   }) {
-    final cardLeft = transform.left + pullOffset.dx * pullProgress;
-    final cardTop = transform.top + pullOffset.dy * pullProgress - layout.pullLift * pullProgress;
+    final double pullOffsetFactor = isPullOffsetFollowingFinger ? 1.0 : pullProgress;
+    final cardLeft = transform.left + pullOffset.dx * pullOffsetFactor;
+    final cardTop = transform.top + pullOffset.dy * pullOffsetFactor - layout.pullLift * pullProgress;
     return Offset(cardLeft, cardTop);
+  }
+
+  /// 덱으로 돌아가는 카드 크기 보정 배율: 복귀 진행도 1 > 1.0, 0 > 1/1.15 (복귀 끝에 1.15 > 1.0 점프 제거)
+  static double calculateReturningCardScaleFactor({required double returnProgress}) {
+    return lerpDouble(1.0 / pulledCardBaseScale, 1.0, returnProgress.clamp(0.0, 1.0))!;
   }
 
   /// 드롭존 그림자 강도 스무딩 (이전 70% + 목표 30%, 0~1 제한)

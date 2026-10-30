@@ -6,8 +6,10 @@ import 'package:flutter/physics.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand/card_hand_geometry.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand/card_hand_layout.dart';
+import 'package:romrom_fe/widgets/home_tab_card_hand/card_hand_motion.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand/home_tab_card_body.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand/home_tab_card_decoration.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand/home_tab_card_drop_zone.dart';
@@ -44,12 +46,20 @@ class HomeTabCardHand extends StatefulWidget {
 abstract class _HomeTabCardHandStateFields extends State<HomeTabCardHand> with TickerProviderStateMixin {
   // 애니메이션 컨트롤러들
   late AnimationController _fanController;
+  // 뽑기 진행도 0~1 (뽑을 때 곡선, 놓으면 spring 복귀)
   late AnimationController _pullController;
   AnimationController? _orbitController;
 
+  // 당김 변위 축별 값 (드래그 중 손가락 1:1, 놓으면 spring 복귀)
+  late AnimationController _pullOffsetXController;
+  late AnimationController _pullOffsetYController;
+
+  // 드롭존 그림자 강도 0~1 (진입·이탈 시 감속 전환)
+  late AnimationController _dropZoneHighlightController;
+
   // 애니메이션들
   late Animation<double> _fanAnimation;
-  late Animation<double> _pullAnimation;
+  Animation<double> get _pullAnimation => _pullController;
 
   // 덱/제스처 상태
   double _orbitAngle = -math.pi / 2;
@@ -66,7 +76,15 @@ abstract class _HomeTabCardHandStateFields extends State<HomeTabCardHand> with T
   String? _hoveredCardId;
   String? _pulledCardId;
   Offset _panStartPosition = Offset.zero;
-  Offset _pullOffset = Offset.zero;
+
+  // 뽑기 시작 순간의 손가락 변위 (뽑기 진행도만큼 따라잡아 시작 순간 점프 방지)
+  Offset _pullStartLagOffset = Offset.zero;
+
+  // 놓은 카드가 덱으로 돌아가는 중 (새 카드 선택 차단, 크기 보정)
+  bool _isPulledCardReturning = false;
+
+  // 놓는 순간의 뽑기 진행도 (복귀 진행도 계산 기준)
+  double _pullProgressAtRelease = 1.0;
 
   // 카드 리스트
   List<Item> _allCards = []; // 전체 카드 리스트
@@ -82,7 +100,6 @@ abstract class _HomeTabCardHandStateFields extends State<HomeTabCardHand> with T
   final GlobalKey _deckKey = GlobalKey(); // 카드 스택 영역
   final GlobalKey _dropZoneKey = GlobalKey(); // 흰색 드롭존
 
-  double _dropShadowT = 0.0; // 0~1, 드롭존 그림자 강도
   bool _wasOverDropZone = false; // 진입/이탈 감지용(햅틱 등)
 
   late AnimationController _iconAnimationController;
@@ -101,7 +118,7 @@ abstract class _HomeTabCardHandStateFields extends State<HomeTabCardHand> with T
   // - _reorderAnimController: 카드가 old 위치 → new 위치로 이동하는 보간 제어
   // - _preReorderTransforms: 재정렬 직전 각 카드의 transform 스냅샷 (cardId → transform)
   late AnimationController _reorderAnimController;
-  late Animation<double> _reorderAnimation;
+  Animation<double> get _reorderAnimation => _reorderAnimController;
   Map<String, CardHandCardTransform> _preReorderTransforms = {};
   int _reorderGeneration = 0;
 
@@ -119,6 +136,24 @@ abstract class _HomeTabCardHandStateFields extends State<HomeTabCardHand> with T
   double _getMinOrbitAngle() => CardHandGeometry.calculateMinOrbitAngle(_cards.length);
 
   double _getMaxOrbitAngle() => CardHandGeometry.calculateMaxOrbitAngle(_cards.length);
+
+  /// 화면에 반영할 당김 변위: 손가락 변위 - 시작 지연분 (뽑기 진행도만큼 해소)
+  Offset _calculateVisiblePullOffset() {
+    final fingerOffset = Offset(_pullOffsetXController.value, _pullOffsetYController.value);
+    return fingerOffset - _pullStartLagOffset * (1 - _pullAnimation.value);
+  }
+
+  /// 뽑힌 카드 상태 즉시 초기화: 변위·진행도·드롭존 강도 0, 복귀 해제 (진행 중 spring 정지, setState 안에서 호출)
+  void _resetPulledCard() {
+    _pullOffsetXController.value = 0.0;
+    _pullOffsetYController.value = 0.0;
+    _pullController.value = 0.0;
+    _dropZoneHighlightController.value = 0.0;
+    _pulledCardId = null;
+    _isPulledCardReturning = false;
+    _pullStartLagOffset = Offset.zero;
+    _wasOverDropZone = false;
+  }
 }
 
 /// 카드 핸드: 수명주기·애니메이션 초기화·화면 구성 (로직은 mixin 3개: 카드 로드, AI 하이라이트, 제스처)
@@ -136,32 +171,37 @@ class _HomeTabCardHandState extends _HomeTabCardHandStateFields
       ..value = _orbitAngle;
 
     // 드롭 안내 아이콘 위아래 반복 (카드 당김 중에만 실행, _syncDropGuideIconWithPulledCard)
-    _iconAnimationController = AnimationController(duration: const Duration(milliseconds: 700), vsync: this);
+    _iconAnimationController = AnimationController(
+      duration: CardHandMotion.dropGuideIconHalfCycleDuration,
+      vsync: this,
+    );
 
     _iconAnimation = Tween<double>(
       begin: 0.0,
       end: 10.0,
-    ).animate(CurvedAnimation(parent: _iconAnimationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _iconAnimationController, curve: AppMotion.standard));
 
     // glow 밝기 반복 (0.5 ~ 1.0 사이를 계속 왔다갔다)
-    _highlightPulseController = AnimationController(duration: const Duration(milliseconds: 1400), vsync: this);
+    _highlightPulseController = AnimationController(
+      duration: CardHandMotion.highlightPulseHalfCycleDuration,
+      vsync: this,
+    );
 
     _highlightPulseAnimation = Tween<double>(
       begin: 0.5,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _highlightPulseController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _highlightPulseController, curve: AppMotion.standard));
 
-    // float: 0 → -10h 로 한 번만 올라옴 (easeOut으로 자연스럽게 감속)
-    _highlightFloatController = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
+    // float: 0 → -10h 로 한 번만 올라옴 (출발 빠르고 길게 감속)
+    _highlightFloatController = AnimationController(duration: CardHandMotion.highlightFloatUpDuration, vsync: this);
 
     _highlightFloatAnimation = Tween<double>(
       begin: 0.0,
       end: -10.0,
-    ).animate(CurvedAnimation(parent: _highlightFloatController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _highlightFloatController, curve: AppMotion.entry));
 
-    // 재정렬 위치 보간 (900ms: 360ms 집결 + 90ms 홀드 + 450ms 팬아웃)
-    _reorderAnimController = AnimationController(duration: const Duration(milliseconds: 900), vsync: this);
-    _reorderAnimation = CurvedAnimation(parent: _reorderAnimController, curve: Curves.linear);
+    // 재정렬 위치 보간 (선형 진행도, 집결·홀드·팬아웃 구간 곡선은 CardHandGeometry)
+    _reorderAnimController = AnimationController(duration: CardHandMotion.reorderDuration, vsync: this);
     _reorderAnimController.addStatusListener((status) {
       if ((status == AnimationStatus.completed || status == AnimationStatus.dismissed) && mounted) {
         setState(() => _preReorderTransforms = {});
@@ -195,17 +235,13 @@ class _HomeTabCardHandState extends _HomeTabCardHandStateFields
     if (oldWidget.dragEnabled && !widget.dragEnabled) {
       _longPressTimer?.cancel();
       _longPressTimer = null;
-      _pullController.reverse();
       setState(() {
         _panStartedOnCard = false;
         _startCardId = null;
         _hasStartedCardDrag = false;
         _pressedCardId = null;
         _hoveredCardId = null;
-        _pulledCardId = null;
-        _pullOffset = Offset.zero;
-        _dropShadowT = 0.0;
-        _wasOverDropZone = false;
+        _resetPulledCard();
       });
       _syncDropGuideIconWithPulledCard();
     }
@@ -224,24 +260,34 @@ class _HomeTabCardHandState extends _HomeTabCardHandStateFields
       } else {
         _highlightPulseController.stop();
         _highlightPulseController.value = 0.0;
-        // 하이라이트 해제 시 float 슥 내려가기 (600ms easeInOut), 재정렬 애니메이션 역방향
-        _highlightFloatController.animateTo(0.0, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut);
+        // 하이라이트 해제 시 float 슥 내려가기, 재정렬 애니메이션 역방향
+        _highlightFloatController.animateTo(
+          0.0,
+          duration: CardHandMotion.highlightFloatDownDuration,
+          curve: AppMotion.standard,
+        );
         _reorderAnimController.reverse();
       }
     }
   }
 
   void _initializeAnimations() {
-    // 팬 애니메이션 (카드 펼치기)
-    _fanController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
-    _fanAnimation = CurvedAnimation(parent: _fanController, curve: Curves.easeOutExpo);
+    // 팬 애니메이션 (카드 펼치기, 강한 감속)
+    _fanController = AnimationController(duration: CardHandMotion.fanDuration, vsync: this);
+    _fanAnimation = CurvedAnimation(parent: _fanController, curve: AppMotion.decelerate);
 
-    // 카드 뽑기 애니메이션
-    _pullController = AnimationController(duration: const Duration(milliseconds: 150), vsync: this);
-    _pullAnimation = CurvedAnimation(parent: _pullController, curve: Curves.easeOut);
+    // 카드 뽑기 진행도 (곡선은 뽑을 때 animateTo에서, 복귀는 spring)
+    _pullController = AnimationController(vsync: this);
+
+    // 당김 변위 (unbounded: 손가락 위치·spring 복귀 중 넘침 허용)
+    _pullOffsetXController = AnimationController.unbounded(vsync: this);
+    _pullOffsetYController = AnimationController.unbounded(vsync: this);
+
+    // 드롭존 그림자 강도
+    _dropZoneHighlightController = AnimationController(duration: CardHandMotion.dropZoneHighlightDuration, vsync: this);
 
     // 초기 팬 애니메이션 실행
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(CardHandMotion.fanStartDelay, () {
       if (mounted) _fanController.forward();
     });
   }
@@ -254,6 +300,9 @@ class _HomeTabCardHandState extends _HomeTabCardHandStateFields
     _reorderAnimController.dispose();
     _fanController.dispose();
     _pullController.dispose();
+    _pullOffsetXController.dispose();
+    _pullOffsetYController.dispose();
+    _dropZoneHighlightController.dispose();
     _orbitController?.dispose();
     _longPressTimer?.cancel();
     super.dispose();
@@ -271,14 +320,14 @@ class _HomeTabCardHandState extends _HomeTabCardHandStateFields
     final bool isAiHighlighted = cardId != null && widget.highlightedItemIds.contains(cardId);
 
     return AnimatedBuilder(
-      // float 컨트롤러도 함께 listen, 궤도 회전(_orbitController)은 카드 변환만 갱신
+      // 공통: 팬·하이라이트·재정렬·궤도 / 뽑힌 카드만: 뽑기 진행도·당김 변위 (드래그 중 나머지 카드 재빌드 없음)
       animation: Listenable.merge([
         _fanAnimation,
-        _pullAnimation,
         _highlightPulseAnimation,
         _highlightFloatAnimation,
         _reorderAnimation,
         _orbitController,
+        if (isPulled) ...[_pullAnimation, _pullOffsetXController, _pullOffsetYController],
       ]),
       // 카드 본문 (애니메이션 값 무관 > 프레임마다 재빌드하지 않도록 child로 재사용)
       child: HomeTabCardBody(item: cardData, width: _layout.cardWidth, height: _layout.cardHeight),
@@ -296,40 +345,59 @@ class _HomeTabCardHandState extends _HomeTabCardHandStateFields
           isPulled: isPulled,
           isHovered: isHovered,
           isPressed: isPressed,
-          pullProgress: _pullAnimation.value,
-          pullOffset: _pullOffset,
+          pullProgress: isPulled ? _pullAnimation.value : 0.0,
+          pullOffset: isPulled ? _calculateVisiblePullOffset() : Offset.zero,
+          isPullOffsetFollowingFinger: true,
           isAiHighlighted: isAiHighlighted,
           highlightFloatOffsetPixels: _highlightFloatAnimation.value.h,
         );
 
+        // 복귀 중인 카드: 덱 도착 시 1.0배가 되도록 크기 보정
+        final bool isReturning = isPulled && _isPulledCardReturning;
+        final double cardScale = isReturning
+            ? pose.scale *
+                  CardHandGeometry.calculateReturningCardScaleFactor(returnProgress: _calculateReturnProgress())
+            : pose.scale;
+
         return Positioned(
           left: pose.left,
           top: pose.top,
-          child: Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..rotateZ(pose.angle)
-              // ignore: deprecated_member_use
-              ..scale(pose.scale),
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: isPulled ? 100 : 200),
-              curve: Curves.easeOutCubic,
-              width: _layout.cardWidth,
-              height: _layout.cardHeight,
-              decoration: HomeTabCardDecoration.create(
-                isPulled: isPulled,
-                isHovered: isHovered,
-                isAiHighlighted: isAiHighlighted,
-                highlightPulse: _highlightPulseAnimation.value,
-                scale: pose.scale,
-                cardWidth: _layout.cardWidth,
+          child: Transform.rotate(
+            angle: pose.angle,
+            // 누름·선택 확대는 감속 전환, 뽑힌 카드는 매 프레임 값 그대로 (지연 없음)
+            child: AnimatedScale(
+              scale: cardScale,
+              duration: isPulled ? Duration.zero : CardHandMotion.cardScaleDuration,
+              curve: AppMotion.decelerate,
+              child: AnimatedContainer(
+                duration: isPulled
+                    ? CardHandMotion.pulledCardDecorationDuration
+                    : CardHandMotion.cardDecorationDuration,
+                curve: AppMotion.decelerate,
+                width: _layout.cardWidth,
+                height: _layout.cardHeight,
+                decoration: HomeTabCardDecoration.create(
+                  // 복귀 시작과 함께 강조 테두리·그림자 해제
+                  isPulled: isPulled && !isReturning,
+                  isHovered: isHovered,
+                  isAiHighlighted: isAiHighlighted,
+                  highlightPulse: _highlightPulseAnimation.value,
+                  scale: cardScale,
+                  cardWidth: _layout.cardWidth,
+                ),
+                child: child,
               ),
-              child: child,
             ),
           ),
         );
       },
     );
+  }
+
+  /// 복귀 진행도: 놓는 순간 1 > 덱 도착 0 (뽑기 진행도 기준)
+  double _calculateReturnProgress() {
+    if (_pullProgressAtRelease <= 0) return 0.0;
+    return (_pullAnimation.value / _pullProgressAtRelease).clamp(0.0, 1.0);
   }
 
   @override
@@ -350,25 +418,35 @@ class _HomeTabCardHandState extends _HomeTabCardHandStateFields
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                if (_hasStartedCardDrag)
-                  Positioned(
-                    top: -MediaQuery.of(context).size.height,
-                    child: Container(
-                      height: MediaQuery.of(context).size.height + 50.h,
-                      width: MediaQuery.of(context).size.width,
-                      color: AppColors.opacity30PrimaryBlack,
+                // 카드 선택 중 배경 어둡게 (페이드 인·아웃, 터치는 덱 제스처가 처리)
+                Positioned(
+                  top: -MediaQuery.of(context).size.height,
+                  child: IgnorePointer(
+                    child: AnimatedOpacity(
+                      opacity: _hasStartedCardDrag ? 1.0 : 0.0,
+                      duration: CardHandMotion.dimOverlayFadeDuration,
+                      curve: AppMotion.standard,
+                      child: Container(
+                        height: MediaQuery.of(context).size.height + 50.h,
+                        width: MediaQuery.of(context).size.width,
+                        color: AppColors.opacity30PrimaryBlack,
+                      ),
                     ),
                   ),
-                // 드롭 영역 표시 (카드 뽑기 중일 때만)
+                ),
+                // 드롭 영역 표시 (카드 뽑기 중일 때만, 뽑기 진행도만큼 페이드)
                 if (_pulledCardId != null)
                   Positioned(
                     top: -408.h,
                     left: 0,
                     right: 0,
-                    child: HomeTabCardDropZone(
-                      dropTargetKey: _dropZoneKey,
-                      dropShadowStrength: _dropShadowT,
-                      guideIconAnimation: _iconAnimation,
+                    child: FadeTransition(
+                      opacity: _pullAnimation,
+                      child: HomeTabCardDropZone(
+                        dropTargetKey: _dropZoneKey,
+                        dropShadowAnimation: _dropZoneHighlightController,
+                        guideIconAnimation: _iconAnimation,
+                      ),
                     ),
                   ),
 

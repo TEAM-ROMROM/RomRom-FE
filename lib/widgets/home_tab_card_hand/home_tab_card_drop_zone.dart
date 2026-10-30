@@ -11,14 +11,14 @@ class HomeTabCardDropZone extends StatelessWidget {
   // 드롭 판정용 전역 좌표 키 (흰색 드롭존 영역에 부착)
   final GlobalKey dropTargetKey;
 
-  // 0~1, 드롭존 그림자 강도
-  final double dropShadowStrength;
+  // 0~1, 드롭존 그림자 강도 (카드 진입·이탈 시 애니메이션)
+  final Animation<double> dropShadowAnimation;
   final Animation<double> guideIconAnimation;
 
   const HomeTabCardDropZone({
     super.key,
     required this.dropTargetKey,
-    required this.dropShadowStrength,
+    required this.dropShadowAnimation,
     required this.guideIconAnimation,
   });
 
@@ -28,20 +28,28 @@ class HomeTabCardDropZone extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 136.w),
-          child: Container(
-            key: dropTargetKey,
-            width: 122.w,
-            height: 189.h,
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cardDropZoneShadow.withValues(alpha: 0.8 * dropShadowStrength),
-                  blurRadius: 30 * (0.5 + 0.5 * dropShadowStrength),
-                  spreadRadius: 2 * dropShadowStrength,
-                  offset: const Offset(0, 0),
+          // 그림자만 프레임마다 갱신 (유리 영역은 child로 재사용)
+          child: AnimatedBuilder(
+            animation: dropShadowAnimation,
+            builder: (context, glassChild) {
+              final double dropShadowStrength = dropShadowAnimation.value;
+              return Container(
+                key: dropTargetKey,
+                width: 122.w,
+                height: 189.h,
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardDropZoneShadow.withValues(alpha: 0.8 * dropShadowStrength),
+                      blurRadius: 30 * (0.5 + 0.5 * dropShadowStrength),
+                      spreadRadius: 2 * dropShadowStrength,
+                      offset: const Offset(0, 0),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+                child: glassChild,
+              );
+            },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Stack(

@@ -8,8 +8,8 @@ mixin _HomeTabCardHandAiHighlight on _HomeTabCardHandStateFields {
   /// 1. 추천 카드 중 _cards에 없는 것을 _allCards에서 찾아 _cards에 추가
   /// 2. 현재 카드 위치 스냅샷 저장 (_preReorderTransforms)
   /// 3. _cards를 [추천카드..., 나머지...] 순으로 재구성
-  /// 4. orbit 중앙 복귀 + 재정렬 보간 동시 시작 (400ms)
-  /// 5. 450ms 후 float 애니메이션 시작
+  /// 4. orbit 복귀 + 재정렬 보간 동시 시작
+  /// 5. 재정렬 보간 완료 후 float 애니메이션 시작
   void _reorderForAiHighlight(List<String> highlightedItemIds) {
     if (highlightedItemIds.isEmpty || !mounted) return;
     if (_allCards.isEmpty) return;
@@ -58,14 +58,17 @@ mixin _HomeTabCardHandAiHighlight on _HomeTabCardHandStateFields {
           _rightLoadedCount = 0;
         });
 
-        // orbit → 첫 번째 카드가 화면 왼쪽 끝에 오도록 + 재정렬 보간 동시 시작 (400ms)
+        // orbit → 첫 번째 카드가 화면 왼쪽 끝에 오도록 + 재정렬 보간 동시 시작
         final targetOrbit = _getHighlightOrbitAngle(reordered.length);
         _orbitAccumulated = targetOrbit;
-        _orbitController?.animateTo(targetOrbit, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
-        _reorderAnimController.forward(from: 0.0);
+        _orbitController?.animateTo(
+          targetOrbit,
+          duration: CardHandMotion.highlightOrbitDuration,
+          curve: AppMotion.entry,
+        );
 
-        // 750ms 후 float 시작 (집결+팬아웃 완료 직후)
-        Future.delayed(const Duration(milliseconds: 750), () {
+        // 집결+팬아웃 완료 직후 float 시작 (중간에 해제·재실행되면 건너뜀)
+        _reorderAnimController.forward(from: 0.0).then((_) {
           if (!mounted || generation != _reorderGeneration) return;
           _highlightFloatController.forward(from: 0.0);
         });
