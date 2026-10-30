@@ -297,7 +297,11 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
   void _onToggleChanged(MyItemToggleStatus newStatus) {
     if (_currentTabStatus == newStatus) return;
     setState(() => _currentTabStatus = newStatus);
-    _toggleAnimationController.animateTo(newStatus.id.toDouble(), duration: AppMotion.normal, curve: Curves.easeInOut);
+    _toggleAnimationController.animateTo(
+      newStatus.id.toDouble(),
+      duration: AppMotion.normal,
+      curve: AppMotion.standard,
+    );
   }
 
   Widget _buildImage(String? imageUrl) {

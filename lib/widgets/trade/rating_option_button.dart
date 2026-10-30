@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -26,42 +27,42 @@ class _RatingOptionButtonState extends State<RatingOptionButton> with SingleTick
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 340));
+    _controller = AnimationController(vsync: this, duration: AppMotion.normal);
 
     _popScale = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: _targetScale).chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(begin: 1.0, end: _targetScale).chain(CurveTween(curve: AppMotion.entry)),
         weight: 45,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: _targetScale, end: 0.96).chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween(begin: _targetScale, end: 0.96).chain(CurveTween(curve: AppMotion.standard)),
         weight: 20,
       ),
-      TweenSequenceItem(tween: Tween(begin: 0.96, end: 1.0).chain(CurveTween(curve: Curves.easeOutBack)), weight: 35),
+      TweenSequenceItem(tween: Tween(begin: 0.96, end: 1.0).chain(CurveTween(curve: AppMotion.springOut)), weight: 35),
     ]).animate(_controller);
 
     _moveY = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: _targetLift).chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(begin: 0.0, end: _targetLift).chain(CurveTween(curve: AppMotion.entry)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: _targetLift, end: 0.0).chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(begin: _targetLift, end: 0.0).chain(CurveTween(curve: AppMotion.accelerate)),
         weight: 50,
       ),
     ]).animate(_controller);
 
     _rotation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: _targetRotation).chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(begin: 0.0, end: _targetRotation).chain(CurveTween(curve: AppMotion.entry)),
         weight: 30,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: _targetRotation, end: -_targetRotation * 0.6).chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween(begin: _targetRotation, end: -_targetRotation * 0.6).chain(CurveTween(curve: AppMotion.standard)),
         weight: 30,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -_targetRotation * 0.6, end: 0.0).chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(begin: -_targetRotation * 0.6, end: 0.0).chain(CurveTween(curve: AppMotion.entry)),
         weight: 40,
       ),
     ]).animate(_controller);
@@ -105,16 +106,16 @@ class _RatingOptionButtonState extends State<RatingOptionButton> with SingleTick
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: _pressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 80),
-        curve: Curves.easeOut,
+        duration: AppMotion.instant,
+        curve: AppMotion.entry,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 10.w),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOut,
+                duration: AppMotion.fast,
+                curve: AppMotion.entry,
                 width: 90.w,
                 height: 90.w,
                 padding: EdgeInsets.all(10.w),
@@ -153,8 +154,8 @@ class _RatingOptionButtonState extends State<RatingOptionButton> with SingleTick
               ),
               SizedBox(height: 24.h),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
+                duration: AppMotion.fast,
+                curve: AppMotion.entry,
                 style: CustomTextStyles.h3.copyWith(
                   color: isSelected ? widget.rating.selectedColor : AppColors.reviewRatingUnselected,
                 ),

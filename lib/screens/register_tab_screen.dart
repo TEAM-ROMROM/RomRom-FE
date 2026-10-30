@@ -43,6 +43,8 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   bool _isScrolling = false;
+  // 스크롤 종료 판정 대기 시간
+  static const Duration _scrollIdleDelay = Duration(milliseconds: 500);
   Timer? _scrollTimer;
 
   // 물품 등록 제한
@@ -91,7 +93,7 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
     // 값이 바뀔 때만 리빌드 (스크롤 이벤트마다 setState 금지)
     if (!_isScrolling) setState(() => _isScrolling = true);
     _scrollTimer?.cancel();
-    _scrollTimer = Timer(const Duration(milliseconds: 500), () {
+    _scrollTimer = Timer(_scrollIdleDelay, () {
       if (mounted && _isScrolling) setState(() => _isScrolling = false);
     });
 

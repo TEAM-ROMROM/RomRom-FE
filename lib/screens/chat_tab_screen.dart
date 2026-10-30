@@ -37,6 +37,8 @@ class ChatTabScreen extends ConsumerStatefulWidget {
 class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
+  // 스크롤 이벤트 디바운스 시간
+  static const Duration _scrollDebounceDelay = Duration(milliseconds: 100);
   Timer? _scrollTimer;
   final ChatWebSocketService _wsService = ChatWebSocketService();
 
@@ -70,11 +72,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
   void initState() {
     super.initState();
 
-    _toggleAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-      upperBound: 2.0,
-    );
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this, upperBound: 2.0);
     _toggleAnimation = _toggleAnimationController;
 
     _initializeWebSocket();
@@ -122,11 +120,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
 
   void _onTabChanged(int index) {
     setState(() => _selectedTabIndex = index);
-    _toggleAnimationController.animateTo(
-      index.toDouble(),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    _toggleAnimationController.animateTo(index.toDouble(), duration: AppMotion.normal, curve: AppMotion.standard);
   }
 
   /// 무한 스크롤 트리거
@@ -136,7 +130,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     }
 
     _scrollTimer?.cancel();
-    _scrollTimer = Timer(const Duration(milliseconds: 100), () {});
+    _scrollTimer = Timer(_scrollDebounceDelay, () {});
 
     if (_scrollController.offset > 50 && !_isScrolled) {
       setState(() => _isScrolled = true);

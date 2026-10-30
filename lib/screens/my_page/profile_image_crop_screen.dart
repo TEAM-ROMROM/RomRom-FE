@@ -9,6 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
@@ -63,18 +64,10 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
   void initState() {
     super.initState();
     _loadImage();
-    _zoomController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-    _gridController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 160),
-      reverseDuration: const Duration(milliseconds: 180),
-    );
+    _zoomController = AnimationController(vsync: this, duration: AppMotion.slow);
+    _gridController = AnimationController(vsync: this, duration: AppMotion.fast, reverseDuration: AppMotion.fast);
 
-    _gridOpacity = CurvedAnimation(
-      parent: _gridController,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
+    _gridOpacity = CurvedAnimation(parent: _gridController, curve: AppMotion.entry, reverseCurve: AppMotion.accelerate);
   }
 
   @override

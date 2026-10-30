@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/enums/finger_direction.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 
@@ -25,7 +26,7 @@ class _FingerWidgetState extends State<FingerWidget> with SingleTickerProviderSt
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat(reverse: true);
-    _anim = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _anim = CurvedAnimation(parent: _controller, curve: AppMotion.standard);
   }
 
   @override

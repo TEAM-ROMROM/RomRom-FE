@@ -54,6 +54,8 @@ class _DebugLogViewerPanelState extends State<DebugLogViewerPanel> {
 
   // 로그 데이터
   StreamSubscription<CapturedLog>? _subscription;
+  // 로그 갱신 디바운스 시간
+  static const Duration _debounceDelay = Duration(milliseconds: 100);
   Timer? _debounceTimer;
   List<CapturedLog> _filteredLogs = [];
 
@@ -77,7 +79,7 @@ class _DebugLogViewerPanelState extends State<DebugLogViewerPanel> {
     _subscription = widget.logStream.listen((log) {
       // 디바운스: 빈번한 로그 유입 시 UI 업데이트 최적화
       _debounceTimer?.cancel();
-      _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+      _debounceTimer = Timer(_debounceDelay, () {
         _applyFilters();
         if (_isAutoScrollEnabled && mounted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {

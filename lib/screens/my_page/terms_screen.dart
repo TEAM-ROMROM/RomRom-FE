@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/term_type.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/term_contents.dart';
@@ -91,7 +92,7 @@ class _TermsScreenState extends State<TermsScreen> {
                 // 펼침/접힘 아이콘
                 AnimatedRotation(
                   turns: isExpanded ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 200),
+                  duration: AppMotion.fast,
                   child: Icon(Icons.chevron_right, size: 24.sp, color: AppColors.textColorWhite),
                 ),
                 SizedBox(width: 8.w),
@@ -125,7 +126,7 @@ class _TermsScreenState extends State<TermsScreen> {
             ),
           ),
           crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.fast,
         ),
 
         // 구분선

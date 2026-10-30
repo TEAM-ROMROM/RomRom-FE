@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/finger_direction.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/coach_mark/animations/finger_widget.dart';
@@ -27,7 +28,7 @@ class _CoachMarkPage1State extends State<CoachMarkPage1> with TickerProviderStat
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _fadeController,
-          curve: Interval(start, end, curve: Curves.easeOut),
+          curve: Interval(start, end, curve: AppMotion.entry),
         ),
       );
     });
