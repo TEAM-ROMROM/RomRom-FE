@@ -147,6 +147,9 @@ class AppColors {
     Color(0xB35889F2), // 파란 테두리(Gradient 3)
   ];
 
+  // 홈 피드 카드 바탕 (물품 카드·네이티브 광고 카드 공통)
+  static const Color homeFeedCardBackground = Colors.black;
+
   // 홈 피드 - blackGradient container 그라데이션
   static List<Color> blackGradient1 = [
     Colors.black,
