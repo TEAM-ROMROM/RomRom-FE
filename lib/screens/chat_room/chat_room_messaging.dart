@@ -1,6 +1,11 @@
 // 채팅방 메시지 송수신: 수신 반영(중복·낙관적 교체), 텍스트·이미지 전송, WS 이미지 보완, 재연결 동기화
 part of '../chat_room_screen.dart';
 
+// WS 이미지 URL 일괄 조회 대기 시간 (연속 수신 묶음)
+const Duration _wsImageFetchBatchDelay = Duration(milliseconds: 500);
+// 하단 스크롤 전 레이아웃 반영 대기 시간
+const Duration _scrollToBottomLayoutDelay = Duration(milliseconds: 100);
+
 mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
   /// 재연결 시 호출: 서버에서 최신 메시지를 재조회해 유실분을 병합한다.
   Future<void> _resyncMessages() async {
@@ -75,7 +80,7 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
       _messages.insert(0, newMessage.copyWith(chatMessageId: tempId));
       _pendingWsImageTempIds.add(tempId);
       _wsImageFetchTimer?.cancel();
-      _wsImageFetchTimer = Timer(const Duration(milliseconds: 500), _batchFetchWsImageUrls);
+      _wsImageFetchTimer = Timer(_wsImageFetchBatchDelay, _batchFetchWsImageUrls);
     } else {
       _messages.insert(0, newMessage);
     }
@@ -175,7 +180,7 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
+      Future.delayed(_scrollToBottomLayoutDelay, () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(0.0, duration: AppMotion.normal, curve: AppMotion.entry);
         }

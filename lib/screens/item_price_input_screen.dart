@@ -13,8 +13,8 @@ import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/gradient_text.dart';
-import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/register_input_form/ai_price_analyzing_field.dart';
 
 /// 아이템 가격 입력 화면
 class ItemPriceInputScreen extends ConsumerStatefulWidget {
@@ -152,11 +152,13 @@ class _ItemPriceInputScreenState extends ConsumerState<ItemPriceInputScreen> {
                   onTapWhenDisabled: _onToggleTapWhenDisabled,
                 ),
                 SizedBox(height: 16.h),
-                _PriceTextField(
-                  controller: _priceController,
-                  readOnly: _useAiPrice || _isAiPriceLoading,
-                  isLoading: _isAiPriceLoading,
-                  onChanged: (_) => setState(() {}),
+                AiPriceAnalyzingField(
+                  isAnalyzing: _isAiPriceLoading,
+                  priceField: _PriceTextField(
+                    controller: _priceController,
+                    readOnly: _useAiPrice || _isAiPriceLoading,
+                    onChanged: (_) => setState(() {}),
+                  ),
                 ),
                 const Spacer(),
                 CompletionButton(
@@ -271,15 +273,9 @@ class _AiPriceCard extends StatelessWidget {
 class _PriceTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool readOnly;
-  final bool isLoading;
   final void Function(String) onChanged;
 
-  const _PriceTextField({
-    required this.controller,
-    required this.readOnly,
-    required this.isLoading,
-    required this.onChanged,
-  });
+  const _PriceTextField({required this.controller, required this.readOnly, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -309,10 +305,6 @@ class _PriceTextField extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 hintText: '0',
                 hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity40White),
-                suffixIcon: isLoading
-                    ? const Padding(padding: EdgeInsets.only(left: 8), child: CommonLoadingIndicator(size: 16.0))
-                    : null,
-                suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
               ),
             ),
           ),

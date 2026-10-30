@@ -1,0 +1,55 @@
+    <!-- 다운로드 모달 (데스크탑 전용) -->
+    <div
+      id="download-modal"
+      class="fixed inset-0 z-[60] hidden"
+      aria-hidden="true"
+    >
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="relative w-full h-full flex items-center justify-center px-6">
+        <div
+          id="download-modal-card"
+          class="w-full max-w-[640px] bg-white rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.2)] p-8 sm:p-10"
+        >
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-black">모바일에서만 이용 가능해요</h3>
+            <button
+              id="download-modal-close"
+              class="w-9 h-9 rounded-full border border-borderLight flex items-center justify-center text-textMuted hover:text-textMain"
+              aria-label="닫기"
+            >
+              ×
+            </button>
+          </div>
+          <p class="text-textMuted text-sm mb-8">
+            휴대전화로 스캔하거나 이미지를 저장해 스토어에서 앱을 받아주세요.
+          </p>
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 gap-6"
+            id="download-modal-grid"
+          >
+            <div
+              class="download-qr flex flex-col items-center text-center"
+              data-store="appstore"
+            >
+              <img
+                src="/images/qr-appstore.png"
+                alt="App Store QR"
+                class="w-44 h-44 object-contain"
+              />
+              <span class="mt-3 text-sm font-bold">App Store</span>
+            </div>
+            <div
+              class="download-qr flex flex-col items-center text-center"
+              data-store="googleplay"
+            >
+              <img
+                src="/images/qr-googleplay.png"
+                alt="Google Play QR"
+                class="w-44 h-44 object-contain"
+              />
+              <span class="mt-3 text-sm font-bold">Google Play</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>

@@ -37,6 +37,7 @@ import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/providers/image_repository_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/utils/app_test_keys.dart';
 import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -364,6 +365,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.title.label,
                   field: RegisterCustomTextField(
+                    key: AppTestKeys.itemRegisterField(ItemTextFieldPhrase.title),
                     phrase: ItemTextFieldPhrase.title,
                     maxLength: 20,
                     controller: titleController,
@@ -388,6 +390,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.description.label,
                   field: RegisterCustomTextField(
+                    key: AppTestKeys.itemRegisterField(ItemTextFieldPhrase.description),
                     phrase: ItemTextFieldPhrase.description,
                     controller: descriptionController,
                     maxLength: 1000,
@@ -430,6 +433,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.price.label,
                   field: RegisterCustomTextField(
+                    key: AppTestKeys.itemRegisterField(ItemTextFieldPhrase.price),
                     phrase: ItemTextFieldPhrase.price,
                     prefixText: '₩',
                     readOnly: true,
@@ -446,6 +450,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
                 RegisterCustomLabeledField(
                   label: ItemTextFieldPhrase.location.label,
                   field: RegisterCustomTextField(
+                    key: AppTestKeys.itemRegisterField(ItemTextFieldPhrase.location),
                     readOnly: true,
                     phrase: ItemTextFieldPhrase.location,
                     suffixIcon: Icon(AppIcons.detailView, color: AppColors.opacity30White, size: 18.w),

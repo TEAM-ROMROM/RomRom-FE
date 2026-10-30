@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_card_layout.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 
@@ -18,6 +19,11 @@ class HomeFeedItemSummary extends StatelessWidget {
 
   const HomeFeedItemSummary({super.key, required this.item, required this.isAiPrice});
 
+  // 글자 스타일 3개: 이름, 위치·등록일, 가격 (네이티브 광고 카드도 같은 값 사용)
+  static TextStyle get titleTextStyle => CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600);
+  static TextStyle get metaTextStyle => CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500);
+  static TextStyle get priceTextStyle => CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600);
+
   @override
   Widget build(BuildContext context) {
     final String formattedPrice = formatPrice(item.price);
@@ -27,25 +33,20 @@ class HomeFeedItemSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 물품 이름
-        Text(
-          item.name.trim(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
-        ),
+        Text(item.name.trim(), maxLines: 1, overflow: TextOverflow.ellipsis, style: titleTextStyle),
 
-        SizedBox(height: 8.h),
+        SizedBox(height: HomeFeedCardLayout.titleToMetaGap),
 
         // 위치 및 날짜 정보
         Row(
           children: [
             Icon(AppIcons.location, color: AppColors.opacity80White, size: 13.sp),
             SizedBox(width: 4.w),
-            Text('${item.location} • $formattedDate', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500)),
+            Text('${item.location} • $formattedDate', style: metaTextStyle),
           ],
         ),
 
-        SizedBox(height: 12.h),
+        SizedBox(height: HomeFeedCardLayout.metaToTagGap),
 
         Row(
           children: [
@@ -60,12 +61,12 @@ class HomeFeedItemSummary extends StatelessWidget {
           ],
         ),
 
-        SizedBox(height: 10.h),
+        SizedBox(height: HomeFeedCardLayout.tagToPriceGap),
 
         Row(
           children: [
             // 물품 가격
-            Text("$formattedPrice원", style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600)),
+            Text("$formattedPrice원", style: priceTextStyle),
 
             SizedBox(width: 8.w),
 

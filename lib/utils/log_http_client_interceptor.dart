@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:romrom_fe/utils/client_platform_header.dart';
 import 'package:romrom_fe/utils/log_masking.dart';
 
 class LoggingHttpClient extends http.BaseClient {
@@ -15,6 +16,8 @@ class LoggingHttpClient extends http.BaseClient {
   /// 요청별 타임아웃을 지정해 전송한다.
   /// send(헤더 수신)와 stream.toBytes()(body 읽기) 전 구간에 동일 deadline을 적용한다.
   Future<http.StreamedResponse> sendWithTimeout(http.BaseRequest request, Duration timeout) async {
+    // 서버 API 요청 공통 헤더 (앱 플랫폼, #949)
+    ClientPlatformHeader.addTo(request);
     final startTime = DateTime.now();
     final deadline = startTime.add(timeout);
     final requestId = request.hashCode.toRadixString(16).padLeft(8, '0');

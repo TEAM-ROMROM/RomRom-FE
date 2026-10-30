@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/widgets/coach_mark/pages/coach_mark_page1.dart';
 import 'package:romrom_fe/widgets/coach_mark/pages/coach_mark_page2.dart';
@@ -29,11 +30,11 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> with SingleTickerPr
   void initState() {
     super.initState();
     _pageController = PageController();
-    _fadeOutController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _fadeOutController = AnimationController(vsync: this, duration: AppMotion.fast);
     _fadeOutAnim = Tween<double>(
       begin: 1.0,
       end: 0.0,
-    ).animate(CurvedAnimation(parent: _fadeOutController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _fadeOutController, curve: AppMotion.accelerate));
     _pages = [
       const CoachMarkPage1(),
       const CoachMarkPage2(),
@@ -59,11 +60,7 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> with SingleTickerPr
 
   void _nextOrClose(int currentIndex) {
     if (currentIndex < _pageCount - 1) {
-      _pageController.animateToPage(
-        currentIndex + 1,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOut,
-      );
+      _pageController.animateToPage(currentIndex + 1, duration: AppMotion.slow, curve: AppMotion.standard);
     } else {
       _close();
     }
@@ -95,7 +92,7 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> with SingleTickerPr
                           ? 'assets/images/coach-background-screen-2.png'
                           : 'assets/images/coach-background-screen-3.png';
                       return AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 500),
+                        duration: AppMotion.emphasis,
                         child: Image.asset(
                           bg,
                           key: ValueKey(bg),
@@ -128,8 +125,8 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> with SingleTickerPr
                           } else if (index > 0) {
                             _pageController.animateToPage(
                               index - 1,
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeInOut,
+                              duration: AppMotion.slow,
+                              curve: AppMotion.standard,
                             );
                           }
                         },
@@ -185,13 +182,10 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> with SingleTickerPr
                       children: List.generate(_pageCount, (i) {
                         final isActive = i == page;
                         return GestureDetector(
-                          onTap: () => _pageController.animateToPage(
-                            i,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          ),
+                          onTap: () =>
+                              _pageController.animateToPage(i, duration: AppMotion.normal, curve: AppMotion.standard),
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 250),
+                            duration: AppMotion.normal,
                             margin: const EdgeInsets.symmetric(horizontal: 4),
                             width: isActive ? 20 : 6,
                             height: 6,

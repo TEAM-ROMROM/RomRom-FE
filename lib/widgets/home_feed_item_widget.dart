@@ -11,6 +11,7 @@ import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
 import 'package:romrom_fe/widgets/home_feed_ai_sort_button.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_card_layout.dart';
 import 'package:romrom_fe/widgets/home_feed_item/home_feed_image_indicator.dart';
 import 'package:romrom_fe/widgets/home_feed_item/home_feed_item_like_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item/home_feed_item_summary.dart';
@@ -161,7 +162,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
     return Container(
       height: screenHeight,
       width: screenWidth,
-      color: Colors.black,
+      color: AppColors.homeFeedCardBackground,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -201,10 +202,10 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                         tag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                         child: ClipRRect(
                           borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(4.r),
-                            topRight: Radius.circular(4.r),
-                            bottomRight: Radius.circular(20.r),
-                            bottomLeft: Radius.circular(20.r),
+                            topLeft: HomeFeedCardLayout.imageTopCornerRadius,
+                            topRight: HomeFeedCardLayout.imageTopCornerRadius,
+                            bottomRight: HomeFeedCardLayout.imageBottomCornerRadius,
+                            bottomLeft: HomeFeedCardLayout.imageBottomCornerRadius,
                           ),
                           child: _buildImage(
                             widget.item.imageUrls[index],
@@ -265,9 +266,9 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 110.h,
+            bottom: HomeFeedCardLayout.infoPanelBottomInset,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              padding: EdgeInsets.symmetric(horizontal: HomeFeedCardLayout.infoPanelHorizontalPadding),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,7 +304,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                             child: BlurWrapper(
                               enabled: widget.showBlur,
                               child: UserProfileCircularAvatar(
-                                avatarSize: const Size(50, 50),
+                                avatarSize: const Size.square(HomeFeedCardLayout.profileAvatarSize),
                                 profileUrl: widget.item.profileUrl.isNotEmpty ? widget.item.profileUrl : null,
                                 isDeleteAccount: widget.item.accountStatus == AccountStatus.deleteAccount.serverName,
                               ),

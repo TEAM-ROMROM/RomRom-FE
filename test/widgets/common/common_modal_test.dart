@@ -221,6 +221,27 @@ void main() {
 
         expect(tester.getSize(find.byKey(CommonModal.modalBoxKey)).width, 312);
       });
+
+      testWidgets('화면 ${screenSize.width.toInt()}x${screenSize.height.toInt()} → 본문 14·버튼 16 고정, 문구 3줄 유지', (
+        tester,
+      ) async {
+        setLogicalScreenSize(tester, screenSize);
+        isTablet = screenSize.width > 600;
+        addTearDown(() => isTablet = false);
+        const message = '이미 Apple 계정으로\n가입된 이메일입니다.\n해당 계정으로 로그인해주세요.';
+
+        await pumpModalLauncher(
+          tester,
+          openModal: (context) => CommonModal.error(context: context, message: message, onConfirm: () {}),
+        );
+
+        final messageText = tester.widget<Text>(find.text(message));
+        final confirmText = tester.widget<Text>(find.text('확인'));
+        expect(messageText.style?.fontSize, 14);
+        expect(confirmText.style?.fontSize, 16);
+        // 본문 높이 = 3줄 (줄 높이 14 × 1.3), 태블릿에서도 추가 줄바꿈 없음
+        expect(tester.getSize(find.text(message)).height, closeTo(14 * 1.3 * 3, 1));
+      });
     }
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 
 /// 동심원 3개가 바깥으로 퍼지는 ripple 애니메이션 위젯
 class RippleWidget extends StatefulWidget {
@@ -33,12 +34,12 @@ class _RippleWidgetState extends State<RippleWidget> with TickerProviderStateMix
       ),
     );
     _scaleAnims = _controllers
-        .map((c) => Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: c, curve: Curves.easeOut)))
+        .map((c) => Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: c, curve: AppMotion.entry)))
         .toList();
     _opacityAnims = _controllers.map((c) {
       return TweenSequence<double>([
         TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.8), weight: 15),
-        TweenSequenceItem(tween: Tween(begin: 0.8, end: 0.0).chain(CurveTween(curve: Curves.ease)), weight: 85),
+        TweenSequenceItem(tween: Tween(begin: 0.8, end: 0.0).chain(CurveTween(curve: AppMotion.standard)), weight: 85),
       ]).animate(c);
     }).toList();
 

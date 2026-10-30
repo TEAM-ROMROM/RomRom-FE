@@ -1,5 +1,6 @@
 // 물품 상세 세로 스크롤 + 상단 당김 시 헤더 늘림 효과 (당긴 픽셀 1:1 확대, 손 떼면 300ms 복귀)
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 
 class ItemDetailStretchScrollView extends StatefulWidget {
   // 늘림 비율 기준 높이 (헤더 이미지 높이)
@@ -21,7 +22,7 @@ class ItemDetailStretchScrollView extends StatefulWidget {
 class _ItemDetailStretchScrollViewState extends State<ItemDetailStretchScrollView> with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<double> _stretchScaleNotifier = ValueNotifier<double>(1.0);
-  static const Duration _returnAnimationDuration = Duration(milliseconds: 300);
+  static const Duration _returnAnimationDuration = AppMotion.normal;
   late final AnimationController _returnAnimation;
   double _scaleAtRelease = 1.0;
 
@@ -34,7 +35,7 @@ class _ItemDetailStretchScrollViewState extends State<ItemDetailStretchScrollVie
   }
 
   void _onReturnAnimationTick() {
-    final progress = Curves.easeOutCubic.transform(_returnAnimation.value);
+    final progress = AppMotion.entry.transform(_returnAnimation.value);
     _stretchScaleNotifier.value = _scaleAtRelease + (1.0 - _scaleAtRelease) * progress;
   }
 

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,12 +27,14 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_card_layout.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 import 'package:romrom_fe/widgets/home_feed_refresh_indicator.dart';
 import 'package:romrom_fe/widgets/home_tab/home_tab_empty_feed_view.dart';
 import 'package:romrom_fe/widgets/home_tab/home_tab_register_button.dart';
 import 'package:romrom_fe/widgets/home_tab/home_tab_top_actions.dart';
 import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
+import 'package:romrom_fe/widgets/common/smooth_page_scroll_physics.dart';
 import 'package:romrom_fe/widgets/native_ad_widget.dart';
 import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
@@ -339,7 +340,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
             child: PageView.builder(
               scrollDirection: Axis.vertical,
               controller: _pageController,
-              physics: isBlurShown ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
+              physics: isBlurShown ? const NeverScrollableScrollPhysics() : const SmoothPageScrollPhysics(),
               itemCount: _adSlotSchedule.virtualItemCount(feedItems.length) + (hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 if (isBlurShown) return;
@@ -390,10 +391,10 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
         if (!isBlurShown)
           Positioned(
             // 신고 버튼 터치 영역 확대분만큼 위치 보정 (아이콘 시각 위치 유지)
-            right: 16.w - ReportMenuButton.tapTargetExtraInset,
+            right: HomeFeedCardLayout.topActionsTrailingInset - ReportMenuButton.tapTargetExtraInset,
             top:
                 MediaQuery.of(context).padding.top +
-                (Platform.isAndroid ? 16.h : 8.h) -
+                HomeFeedCardLayout.topActionsTopOffset -
                 ReportMenuButton.rowTopCompensation(32.w),
             child: Offstage(
               offstage: _adSlotSchedule.isAdAtVirtualIndex(_currentVirtualIndex),

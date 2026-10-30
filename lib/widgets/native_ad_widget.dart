@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/ad_mob_service.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_native_ad_style.dart';
 import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
 /// 홈 피드용 네이티브 광고 위젯
-/// PageView 한 페이지를 채우는 전체화면 크기로 표시됨
+/// PageView 한 페이지를 물품 카드와 같은 크기로 채움 (레이아웃은 HomeFeedNativeAdStyle > 네이티브 팩토리)
 class NativeAdWidget extends StatefulWidget {
   const NativeAdWidget({super.key});
 
@@ -16,12 +17,17 @@ class NativeAdWidget extends StatefulWidget {
 class _NativeAdWidgetState extends State<NativeAdWidget> {
   NativeAd? _nativeAd;
   bool _isLoaded = false;
+  // 광고 요청 1회 제한 (didChangeDependencies 반복 호출 대비)
+  bool _hasRequestedAd = false;
 
   static const String _factoryId = 'feedNativeAd';
 
+  // 글자 배율·안전영역을 읽어야 해서 initState 대신 첫 didChangeDependencies에서 요청
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasRequestedAd) return;
+    _hasRequestedAd = true;
     _loadAd();
   }
 
@@ -35,6 +41,10 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
     _nativeAd = NativeAd(
       adUnitId: adUnitId,
       factoryId: _factoryId,
+      customOptions: HomeFeedNativeAdStyle.buildCustomOptions(
+        textScaler: MediaQuery.textScalerOf(context),
+        topSafeAreaInset: MediaQuery.paddingOf(context).top,
+      ),
       listener: NativeAdListener(
         onAdLoaded: (ad) {
           debugPrint('[AdMob] 네이티브 광고 로드 성공');
@@ -69,9 +79,10 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       return const HomeFeedSkeleton();
     }
 
-    return Center(
+    // 물품 카드(HomeFeedItemWidget)와 같은 페이지 전체 크기·바탕
+    return SizedBox.expand(
       child: ColoredBox(
-        color: AppColors.primaryBlack,
+        color: AppColors.homeFeedCardBackground,
         child: AdWidget(ad: _nativeAd!),
       ),
     );

@@ -28,23 +28,41 @@ class AppMotion {
   static const Duration emphasis = Duration(milliseconds: 500);
 
   // ─────────────────────────────────────────────
-  // Curve 토큰 (4종)
+  // Curve 토큰 — 토스 스타일 (빠르게 출발해 길게 감속, 끝이 튀지 않음)
   // ─────────────────────────────────────────────
 
-  /// 일반적인 상태 변화 — 토글, 색상 전환
-  static const Curve standard = Curves.easeInOut;
+  /// 일반적인 상태 변화 — 토글, 색상 전환 (대칭 ease, easeInOut보다 끝이 부드러움)
+  static const Curve standard = Cubic(0.4, 0.0, 0.2, 1.0);
 
-  /// 등장/진입 — 리스트 아이템, 카드 등장 (빠른 시작, 부드러운 끝)
-  static const Curve entry = Curves.easeOut;
+  /// 등장/진입 — 리스트 아이템, 카드 등장 (출발 빠르고 끝을 길게 감속)
+  static const Curve entry = Cubic(0.2, 0.0, 0.0, 1.0);
 
-  /// 감속 — 컨텍스트 메뉴, 오버레이 (물리적 자연스러움)
-  static const Curve decelerate = Curves.easeOutCubic;
+  /// 감속 — 컨텍스트 메뉴, 오버레이, 시트 등장 (강한 감속)
+  static const Curve decelerate = Cubic(0.05, 0.7, 0.1, 1.0);
 
   /// 가속 — 오버레이 닫힘, decelerate의 역방향
-  static const Curve accelerate = Curves.easeInCubic;
+  static const Curve accelerate = Cubic(0.3, 0.0, 0.8, 0.15);
 
-  /// 버튼 눌림 spring back — AppPressable의 복귀 애니메이션
-  static const Curve springOut = ElasticOutCurve(0.5);
+  /// 살짝 넘쳤다 돌아오는 강조 — 좋아요·선택 확정 (튕김 1회, 탄성 반복 없음)
+  static const Curve springOut = Cubic(0.34, 1.36, 0.64, 1.0);
+
+  // ─────────────────────────────────────────────
+  // Spring 토큰 — 물리 기반 (손 뗀 뒤 복귀·스냅)
+  // ─────────────────────────────────────────────
+
+  /// 버튼·카드 눌림 복귀 — 빠르고 거의 튀지 않음 (감쇠비 0.8)
+  static final SpringDescription pressSpring = SpringDescription.withDampingRatio(
+    mass: 1.0,
+    stiffness: 400.0,
+    ratio: 0.8,
+  );
+
+  /// 페이지·카드 스냅 — 피드 넘김, 드래그 후 제자리 (감쇠비 1.0, 넘침 없음)
+  static final SpringDescription snapSpring = SpringDescription.withDampingRatio(
+    mass: 0.5,
+    stiffness: 180.0,
+    ratio: 1.0,
+  );
 
   // ─────────────────────────────────────────────
   // 스켈레톤 shimmer 설정

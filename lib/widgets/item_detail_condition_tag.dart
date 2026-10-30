@@ -10,20 +10,27 @@ class ItemDetailConditionTag extends StatelessWidget {
 
   const ItemDetailConditionTag({super.key, required this.condition});
 
+  // 태그 모양 (홈 피드 네이티브 광고 "광고" 배지도 같은 값 사용)
+  static EdgeInsets get padding => EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h);
+  static BoxConstraints get constraints => BoxConstraints(minWidth: 50.w, minHeight: 23.h);
+  static const Color backgroundColor = AppColors.conditionTagBackground;
+  static double get borderRadius => 100.r;
+  static TextStyle get textStyle => CustomTextStyles.p3.copyWith(
+    fontSize: 10.sp,
+    fontWeight: FontWeight.w600,
+    color: AppColors.primaryBlack,
+    height: 1.0,
+  );
+
   @override
   Widget build(BuildContext context) {
     return AppTag(
       label: condition,
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-      constraints: BoxConstraints(minWidth: 50.w, minHeight: 23.h),
-      backgroundColor: AppColors.conditionTagBackground,
-      borderRadius: 100.r,
-      textStyle: CustomTextStyles.p3.copyWith(
-        fontSize: 10.sp,
-        fontWeight: FontWeight.w600,
-        color: AppColors.primaryBlack,
-        height: 1.0,
-      ),
+      padding: padding,
+      constraints: constraints,
+      backgroundColor: backgroundColor,
+      borderRadius: borderRadius,
+      textStyle: textStyle,
       textAlign: TextAlign.center,
     );
   }

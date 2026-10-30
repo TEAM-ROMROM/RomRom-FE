@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 알림 바텀시트 교환 요청 - 알림 미리보기 위젯
@@ -68,20 +69,20 @@ class _NotificationBottomSheetRequestCardAnimationState extends State<_Notificat
   @override
   void initState() {
     super.initState();
-    _shadowController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
-    _cardController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _shadowController = AnimationController(vsync: this, duration: AppMotion.normal);
+    _cardController = AnimationController(vsync: this, duration: AppMotion.normal);
 
-    _shadowFade = CurvedAnimation(parent: _shadowController, curve: Curves.easeOut);
-    _cardFade = CurvedAnimation(parent: _cardController, curve: Curves.easeOut);
+    _shadowFade = CurvedAnimation(parent: _shadowController, curve: AppMotion.entry);
+    _cardFade = CurvedAnimation(parent: _cardController, curve: AppMotion.entry);
 
     _shadowSlide = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _shadowController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _shadowController, curve: AppMotion.entry));
     _cardSlide = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _cardController, curve: AppMotion.entry));
 
     _shadowController.forward().then((_) {
       if (mounted) _cardController.forward();

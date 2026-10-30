@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
@@ -95,8 +96,8 @@ class _TradeOptionChipState extends State<_TradeOptionChip> {
           width: 80.w,
           height: 34.h,
           child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeOut,
+            duration: AppMotion.slow,
+            curve: AppMotion.entry,
             style: CustomTextStyles.p2.copyWith(color: _pressed ? pressedText : baseText, letterSpacing: -0.32.sp),
             child: Center(
               child: Padding(

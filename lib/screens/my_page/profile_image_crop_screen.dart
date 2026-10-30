@@ -9,9 +9,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/profile_image_crop/profile_crop_corner_handle.dart';
 import 'package:romrom_fe/widgets/profile_image_crop/profile_crop_overlay_painter.dart';
@@ -62,18 +64,10 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
   void initState() {
     super.initState();
     _loadImage();
-    _zoomController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-    _gridController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 160),
-      reverseDuration: const Duration(milliseconds: 180),
-    );
+    _zoomController = AnimationController(vsync: this, duration: AppMotion.slow);
+    _gridController = AnimationController(vsync: this, duration: AppMotion.fast, reverseDuration: AppMotion.fast);
 
-    _gridOpacity = CurvedAnimation(
-      parent: _gridController,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
+    _gridOpacity = CurvedAnimation(parent: _gridController, curve: AppMotion.entry, reverseCurve: AppMotion.accelerate);
   }
 
   @override
@@ -381,7 +375,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
 
   Widget _buildImageLayer() {
     if (_image == null) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+      return const Center(child: CommonLoadingIndicator());
     }
     return Center(
       child: RawImage(

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
 import 'package:romrom_fe/enums/trade_review_tag.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
@@ -360,8 +361,8 @@ class _ExpandableCommentState extends State<_ExpandableComment> {
             children: [
               Expanded(
                 child: AnimatedSize(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeInOut,
+                  duration: AppMotion.fast,
+                  curve: AppMotion.standard,
                   alignment: Alignment.topLeft,
                   child: Text(
                     widget.text,
@@ -376,8 +377,8 @@ class _ExpandableCommentState extends State<_ExpandableComment> {
                   padding: EdgeInsets.only(left: 4.w),
                   child: AnimatedRotation(
                     turns: _isExpanded ? -0.5 : 0,
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeInOut,
+                    duration: AppMotion.fast,
+                    curve: AppMotion.standard,
                     child: const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.opacity60White),
                   ),
                 ),

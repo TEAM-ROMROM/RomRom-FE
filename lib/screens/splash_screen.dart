@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/utils/installed_app_version.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -51,19 +52,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
   void initState() {
     super.initState();
 
-    _loginTransitionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _loginTransitionController = AnimationController(vsync: this, duration: AppMotion.slow);
 
     // 로고 이동: 화면 중앙(-0.075) → 로그인 화면 로고 위치
     // end 값은 postFrameCallback에서 실제 레이아웃 측정값으로 교체됨
     _logoAlignmentAnim = AlignmentTween(
       begin: const Alignment(0, -0.075),
       end: const Alignment(0, -0.52),
-    ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _loginTransitionController, curve: AppMotion.standard));
 
     // 로그인 UI fade in: 30~100% 구간
     _loginUIFadeAnim = CurvedAnimation(
       parent: _loginTransitionController,
-      curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
+      curve: const Interval(0.3, 1.0, curve: AppMotion.entry),
     );
 
     unawaited(_initAndNavigate());
@@ -183,7 +184,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
       _logoAlignmentAnim = AlignmentTween(
         begin: const Alignment(0, -0.075),
         end: Alignment(0, endY),
-      ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
+      ).animate(CurvedAnimation(parent: _loginTransitionController, curve: AppMotion.standard));
       completer.complete();
     });
     await completer.future;
