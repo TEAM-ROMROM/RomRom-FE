@@ -31,7 +31,7 @@ on:
   workflow_dispatch:
 
 env:
-  FLUTTER_VERSION: "3.35.5"
+  FLUTTER_VERSION: "3.38.9"
   JAVA_VERSION: "17"
   PROJECT_TYPE: "flutter"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

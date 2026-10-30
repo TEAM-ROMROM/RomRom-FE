@@ -76,6 +76,29 @@
 	<string>교환할 물건의 사진을 게시글에 등록하거나 채팅으로 보내기 위해 접근합니다.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>교환할 물건의 사진을 직접 촬영해 게시글에 등록하기 위해 카메라를 사용합니다.</string>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>FlutterSceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
