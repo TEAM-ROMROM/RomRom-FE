@@ -12,6 +12,7 @@ import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
+import 'package:romrom_fe/utils/app_test_keys.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -437,6 +438,7 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
                     color: requestButtonColor,
                     borderRadius: BorderRadius.circular(10.r),
                     child: InkWell(
+                      key: AppTestKeys.tradeRequestSubmitButton,
                       customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
                       onTap: isRequestDisabled ? null : _submitTradeRequest,
                       highlightColor: requestButtonHighlightColor,

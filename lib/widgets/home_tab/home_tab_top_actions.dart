@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/utils/app_test_keys.dart';
 import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 
 /// 홈 탭 상단 버튼: 알림 아이콘(배지 여부 표시), 신고 메뉴, 탭 동작은 화면 콜백
@@ -37,6 +38,7 @@ class HomeTabTopActions extends StatelessWidget {
               shape: const CircleBorder(),
               clipBehavior: Clip.antiAlias,
               child: InkResponse(
+                key: AppTestKeys.homeNotificationButton,
                 onTap: onNotificationTap,
                 radius: 18.w,
                 customBorder: const CircleBorder(),
