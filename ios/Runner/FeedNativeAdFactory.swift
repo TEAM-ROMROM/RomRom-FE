@@ -97,6 +97,9 @@ class FeedNativeAdFactory: NSObject, FLTNativeAdFactory {
         infoRow.axis = .horizontal
         infoRow.alignment = .top
         infoRow.translatesAutoresizingMaskIntoConstraints = false
+        // 세로: 미디어 고유 높이(이미지 비율)를 가장 약하게 > 남는 높이는 미디어가 차지 (물품 카드처럼 글자 하단 정렬)
+        mediaView.setContentHuggingPriority(.fittingSizeLevel, for: .vertical)
+        mediaView.setContentCompressionResistancePriority(.fittingSizeLevel, for: .vertical)
 
         // ── AdChoices: 광고 슬롯에서 숨긴 신고 버튼 자리 (정책상 필수, nativeAd 지정 전에 설정) ──
         let adChoicesView = AdChoicesView()
@@ -114,6 +117,9 @@ class FeedNativeAdFactory: NSObject, FLTNativeAdFactory {
         let iconHeight = iconImageView.heightAnchor.constraint(equalToConstant: iconSize)
         iconWidth.priority = UILayoutPriority(999)
         iconHeight.priority = UILayoutPriority(999)
+        // 정보 패널 높이: 내용만큼만 (스택뷰는 고유 크기가 없어 약한 0 높이로 최소화, 글자 압축 저항이 이김)
+        let infoRowMinimumHeight = infoRow.heightAnchor.constraint(equalToConstant: 0)
+        infoRowMinimumHeight.priority = UILayoutPriority(UILayoutPriority.defaultLow.rawValue - 1)
         let adChoicesWidth = adChoicesView.widthAnchor.constraint(equalToConstant: 15)
         let adChoicesHeight = adChoicesView.heightAnchor.constraint(equalToConstant: 15)
         adChoicesWidth.priority = .defaultHigh
@@ -141,6 +147,7 @@ class FeedNativeAdFactory: NSObject, FLTNativeAdFactory {
 
             iconWidth,
             iconHeight,
+            infoRowMinimumHeight,
 
             // 광고 배지 최소 크기 (사용감 태그 50x23, 정책 최소 15x15 충족)
             adBadge.widthAnchor.constraint(greaterThanOrEqualToConstant: badgeOptions.number("minWidth", fallback: 50)),

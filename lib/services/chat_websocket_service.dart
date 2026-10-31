@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/models/apis/objects/chat_action_recommendation.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
+import 'package:romrom_fe/services/chat_topic_subscription_registry.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
@@ -24,9 +26,18 @@ class ChatWebSocketService {
   final Map<String, int> _subscriptionRefCounts = {};
 
   // 읽음 이벤트 구독 (/sub/chat.read.{chatRoomId})
-  final Map<String, StreamController<ChatUserState>> _readSubscriptions = {};
-  final Map<String, StompUnsubscribe> _stompReadSubscriptions = {};
-  final Map<String, int> _readSubscriptionRefCounts = {};
+  final ChatTopicSubscriptionRegistry<ChatUserState> _readEventRegistry = ChatTopicSubscriptionRegistry(
+    destinationOf: (chatRoomId) => '/sub/chat.read.$chatRoomId',
+    parseBody: ChatUserState.fromJson,
+    topicLabel: 'read event',
+  );
+
+  // AI 행동 추천 구독: 사용자 전용 큐 (BE convertAndSendToUser '/queue/chat.recommend.{chatRoomId}', #759)
+  final ChatTopicSubscriptionRegistry<ChatActionRecommendation> _recommendationRegistry = ChatTopicSubscriptionRegistry(
+    destinationOf: (chatRoomId) => '/user/queue/chat.recommend.$chatRoomId',
+    parseBody: ChatActionRecommendation.fromJson,
+    topicLabel: 'recommendation',
+  );
 
   // 토큰 갱신 중 중복 실행 방지
   bool _isRefreshingToken = false;
@@ -173,8 +184,12 @@ class ChatWebSocketService {
     for (var chatRoomId in _subscriptions.keys) {
       _subscribeToRoom(chatRoomId);
     }
-    for (var chatRoomId in _readSubscriptions.keys) {
-      _subscribeToReadRoom(chatRoomId);
+    final stompClient = _stompClient;
+    if (stompClient == null) return;
+    for (final registry in [_readEventRegistry, _recommendationRegistry]) {
+      for (final chatRoomId in registry.subscribedChatRoomIds) {
+        registry.subscribeOnStomp(chatRoomId, stompClient);
+      }
     }
   }
 
@@ -204,73 +219,18 @@ class ChatWebSocketService {
   }
 
   /// 읽음 이벤트 구독 (/sub/chat.read.{chatRoomId})
-  Stream<ChatUserState> subscribeToReadEvents(String chatRoomId) {
-    _readSubscriptionRefCounts[chatRoomId] = (_readSubscriptionRefCounts[chatRoomId] ?? 0) + 1;
-    debugPrint(
-      '[WebSocket] Subscribe to read events $chatRoomId (refCount: ${_readSubscriptionRefCounts[chatRoomId]})',
-    );
-
-    if (_readSubscriptions.containsKey(chatRoomId)) {
-      return _readSubscriptions[chatRoomId]!.stream;
-    }
-
-    final controller = StreamController<ChatUserState>.broadcast();
-    _readSubscriptions[chatRoomId] = controller;
-
-    if (_isConnected) {
-      _subscribeToReadRoom(chatRoomId);
-    }
-
-    return controller.stream;
-  }
+  Stream<ChatUserState> subscribeToReadEvents(String chatRoomId) =>
+      _readEventRegistry.subscribe(chatRoomId, stompClient: _stompClient, isConnected: _isConnected);
 
   /// 읽음 이벤트 구독 해제
-  void unsubscribeFromReadEvents(String chatRoomId) {
-    try {
-      final currentCount = _readSubscriptionRefCounts[chatRoomId] ?? 0;
-      if (currentCount <= 0) return;
+  void unsubscribeFromReadEvents(String chatRoomId) => _readEventRegistry.unsubscribe(chatRoomId);
 
-      _readSubscriptionRefCounts[chatRoomId] = currentCount - 1;
-      final newCount = _readSubscriptionRefCounts[chatRoomId]!;
-      debugPrint('[WebSocket] Unsubscribe from read events $chatRoomId (refCount: $newCount)');
+  /// AI 행동 추천 구독 (/user/queue/chat.recommend.{chatRoomId}, 현재 사용자 전용)
+  Stream<ChatActionRecommendation> subscribeToRecommendations(String chatRoomId) =>
+      _recommendationRegistry.subscribe(chatRoomId, stompClient: _stompClient, isConnected: _isConnected);
 
-      if (newCount <= 0) {
-        _readSubscriptionRefCounts.remove(chatRoomId);
-        _stompReadSubscriptions[chatRoomId]?.call();
-        _stompReadSubscriptions.remove(chatRoomId);
-        _readSubscriptions[chatRoomId]?.close();
-        _readSubscriptions.remove(chatRoomId);
-        debugPrint('[WebSocket] ✅ Fully unsubscribed from read events $chatRoomId');
-      }
-    } catch (e) {
-      debugPrint('[WebSocket] Read unsubscribe error: $e');
-    }
-  }
-
-  /// 실제 읽음 이벤트 토픽 구독 실행
-  void _subscribeToReadRoom(String chatRoomId) {
-    if (_stompClient == null || !_isConnected) return;
-
-    final destination = '/sub/chat.read.$chatRoomId';
-    debugPrint('[WebSocket] ✅ Subscribing to: $destination');
-
-    final unsubscribe = _stompClient!.subscribe(
-      destination: destination,
-      callback: (StompFrame frame) {
-        if (frame.body == null) return;
-        try {
-          final jsonBody = jsonDecode(frame.body!);
-          final state = ChatUserState.fromJson(jsonBody);
-          debugPrint('[WebSocket] 📨 Read event: isPresent=${state.isPresent}, leftAt=${state.leftAt}');
-          _readSubscriptions[chatRoomId]?.add(state);
-        } catch (e) {
-          debugPrint('[WebSocket] Read event 파싱 실패: $e');
-        }
-      },
-    );
-
-    _stompReadSubscriptions[chatRoomId] = unsubscribe;
-  }
+  /// AI 행동 추천 구독 해제
+  void unsubscribeFromRecommendations(String chatRoomId) => _recommendationRegistry.unsubscribe(chatRoomId);
 
   /// 실제 채팅방 구독 실행
   void _subscribeToRoom(String chatRoomId) {
@@ -444,22 +404,15 @@ class ChatWebSocketService {
       }
       _stompSubscriptions.clear();
 
-      for (var unsubscribe in _stompReadSubscriptions.values) {
-        unsubscribe();
-      }
-      _stompReadSubscriptions.clear();
+      // 읽음·추천 구독 정리
+      await _readEventRegistry.closeAll();
+      await _recommendationRegistry.closeAll();
 
       // 모든 스트림 컨트롤러 닫기
       for (var controller in _subscriptions.values) {
         await controller.close();
       }
       _subscriptions.clear();
-
-      for (var controller in _readSubscriptions.values) {
-        await controller.close();
-      }
-      _readSubscriptions.clear();
-      _readSubscriptionRefCounts.clear();
 
       debugPrint('[WebSocket] ✅ Disconnected');
     } catch (e) {

@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/responses/member_response.dart';
+import 'package:romrom_fe/providers/chat_recommendation_provider.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
 import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
@@ -76,6 +77,7 @@ void main() {
         myItemsProvider,
         memberProfileProvider,
         chatRoomsProvider,
+        chatRecommendationProvider,
         notificationListProvider,
         notificationSettingProvider,
         itemLikeProvider,

@@ -1,6 +1,7 @@
 // lib/models/apis/responses/chat_response.dart
 import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/models/apis/objects/api_pageable.dart';
+import 'package:romrom_fe/models/apis/objects/chat_action_recommendation.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
@@ -16,6 +17,9 @@ class ChatRoomResponse {
   final PagedChatRoomDetail? chatRoomDetailDtoPage; // 채팅방 목록 페이지 (detail dto)
   final bool isOpponentDeleted; // 상대방 탈퇴 여부
   final ChatUserState? opponentState; // 상대방 채팅방 상태
+  // 현재 사용자 기준 AI 행동 추천 (messages/get 응답만, 상대 탈퇴 시 null)
+  @JsonKey(fromJson: _chatActionRecommendationFromJson, toJson: _chatActionRecommendationToJson)
+  final ChatActionRecommendation? latestRecommendation;
 
   ChatRoomResponse({
     this.chatRoom,
@@ -23,6 +27,7 @@ class ChatRoomResponse {
     this.chatRoomDetailDtoPage,
     this.isOpponentDeleted = false,
     this.opponentState,
+    this.latestRecommendation,
   });
 
   factory ChatRoomResponse.fromJson(Map<String, dynamic> json) => _$ChatRoomResponseFromJson(json);
@@ -68,6 +73,14 @@ class PagedChatRoomDetail {
 }
 
 // ---------- converters ----------
+
+ChatActionRecommendation? _chatActionRecommendationFromJson(Object? value) {
+  if (value is Map<String, dynamic>) return ChatActionRecommendation.fromJson(value);
+  return null;
+}
+
+Map<String, dynamic>? _chatActionRecommendationToJson(ChatActionRecommendation? recommendation) =>
+    recommendation?.toJson();
 
 List<ChatMessage> _chatMessageListFromJson(Object? value) {
   if (value is List) {
