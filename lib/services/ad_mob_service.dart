@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:romrom_fe/debug/debug_config.dart';
@@ -30,16 +30,23 @@ class AdMobService {
     return null; // 실제 광고 ID는 .env에서 관리
   }
 
-  // 보상형 광고 ID (실제 광고 ID는 .env에서 관리)
+  // .env: 보상형(롬업) 실제 광고 단위 ID (AdMob 콘솔 발급, 미설정 시 릴리스 광고 미노출)
+  static const String rewardedAdUnitIdAndroidEnvKey = 'REWARDED_ADMOB_UNIT_ID_ANDROID';
+  static const String rewardedAdUnitIdIosEnvKey = 'REWARDED_ADMOB_UNIT_ID_IOS';
+
+  // 보상형 광고 ID: 디버그·테스트 빌드 > 구글 테스트 ID, 릴리스 > .env 실제 ID (없으면 null)
   static String? get rewardedAdUnitId {
-    if (DebugConfig.isTestBuild) {
+    if (kDebugMode || DebugConfig.isTestBuild) {
       if (Platform.isAndroid) {
         return 'ca-app-pub-3940256099942544/5224354917'; // 테스트 보상형 광고 ID (Android)
       } else if (Platform.isIOS) {
         return 'ca-app-pub-3940256099942544/1712485313'; // 테스트 보상형 광고 ID (iOS)
       }
+      return null;
     }
-    return null; // 실제 광고 ID는 .env에서 관리
+    final envKey = Platform.isIOS ? rewardedAdUnitIdIosEnvKey : rewardedAdUnitIdAndroidEnvKey;
+    final unitId = dotenv.maybeGet(envKey)?.trim();
+    return (unitId == null || unitId.isEmpty) ? null : unitId;
   }
 
   // 네이티브 광고 ID (실제 광고 ID는 .env에서 관리)

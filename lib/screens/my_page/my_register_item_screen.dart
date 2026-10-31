@@ -22,6 +22,7 @@ import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dar
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/my_page/my_item_promote_control.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 
 class MyRegisterItemScreen extends ConsumerStatefulWidget {
@@ -284,6 +285,14 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
                           )
                           .toList(),
                     ),
+                    // 우선노출 컨트롤 — 교환완료 물건엔 표시하지 않음
+                    if (item.itemStatus != ItemStatus.exchanged.serverName) ...[
+                      SizedBox(height: 8.h),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: MyItemPromoteControl(item: item),
+                      ),
+                    ],
                   ],
                 ),
               ),
