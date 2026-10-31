@@ -1,8 +1,9 @@
-// 채팅방 진입 초기화: 메시지·읽음 상태 조회, 상대 접속 폴링, 소켓 구독(메시지·읽음·재연결), 알림 안내, 안내 모달
+// 채팅방 진입 초기화: 메시지·읽음 상태 조회, 상대 접속 폴링, 소켓 구독(메시지·읽음·AI 추천·재연결), 알림 안내, 안내 모달
 part of '../chat_room_screen.dart';
 
-mixin _ChatRoomInitialLoad on _ChatRoomScreenStateFields, _ChatRoomMessaging, _ChatRoomTradeActions {
-  /// 채팅방 초기화: 메시지·읽음 상태 조회 > 상대 상태 폴링 > 메시지 구독 > 알림 안내 > 읽음·재연결 구독 > 안내 모달
+mixin _ChatRoomInitialLoad
+    on _ChatRoomScreenStateFields, _ChatRoomMessaging, _ChatRoomTradeActions, _ChatRoomRecommendationActions {
+  /// 채팅방 초기화: 메시지·읽음 상태·AI 추천 조회 > 상대 상태 폴링 > 메시지·추천 구독 > 알림 안내 > 읽음·재연결 구독 > 안내 모달
   Future<void> _loadInitialData() async {
     try {
       setState(() {
@@ -25,9 +26,11 @@ mixin _ChatRoomInitialLoad on _ChatRoomScreenStateFields, _ChatRoomMessaging, _C
         _messages = response.messages?.content ?? [];
         _opponentState = opponentState;
       });
+      _recommendationNotifier.applyServerRecommendation(widget.chatRoomId, response.latestRecommendation);
 
       _startOpponentStatusPolling();
       _messageSubscription = _wsService.subscribeToChatRoom(widget.chatRoomId).listen(_onChatRoomMessageReceived);
+      _subscribeToRecommendations();
 
       setState(() => _isLoading = false);
       _scrollToBottom();

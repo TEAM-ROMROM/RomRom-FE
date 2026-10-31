@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/account_status.dart';
+import 'package:romrom_fe/enums/chat_recommended_action.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
+import 'package:romrom_fe/models/apis/objects/chat_action_recommendation.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/screens/chat_location_picker_screen.dart';
@@ -21,6 +23,7 @@ import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/chat_recommendation_provider.dart';
 import 'package:romrom_fe/providers/chat_repository_provider.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
 import 'package:romrom_fe/providers/image_repository_provider.dart';
@@ -31,6 +34,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/common/error_scaffold.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_recommendation_banner.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_room_message_list.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
@@ -45,6 +49,7 @@ part 'chat_room/chat_room_messaging.dart';
 part 'chat_room/chat_room_trade_actions.dart';
 part 'chat_room/chat_room_attachment_sending.dart';
 part 'chat_room/chat_room_exit_actions.dart';
+part 'chat_room/chat_room_recommendation_actions.dart';
 part 'chat_room/chat_room_initial_load.dart';
 
 class ChatRoomScreen extends ConsumerStatefulWidget {
@@ -148,6 +153,9 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   ChatUserState? _opponentState;
   StreamSubscription<ChatUserState>? _readEventSubscription;
 
+  // AI 행동 추천 이벤트 구독 (추천 상태는 chatRecommendationProvider 소유)
+  StreamSubscription<ChatActionRecommendation>? _recommendationSubscription;
+
   // 채팅 API 접근 (핸들러 전용, build에서 사용 안 함)
   ChatRepository get _chatRepository => ref.read(chatRepositoryProvider);
 
@@ -155,7 +163,7 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   bool _isLeaving = false;
 }
 
-/// 채팅방 화면: 수명주기·입력 높이·화면 구성 (로직은 mixin 5개: 송수신, 교환 액션, 첨부, 나가기, 초기화)
+/// 채팅방 화면: 수명주기·입력 높이·화면 구성 (로직은 mixin 6개: 송수신, 교환 액션, 첨부, 나가기, AI 추천, 초기화)
 class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     with
         WidgetsBindingObserver,
@@ -163,6 +171,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
         _ChatRoomTradeActions,
         _ChatRoomAttachmentSending,
         _ChatRoomExitActions,
+        _ChatRoomRecommendationActions,
         _ChatRoomInitialLoad {
   @override
   void initState() {
@@ -212,6 +221,8 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     _readEventSubscription?.cancel();
     _reconnectSubscription?.cancel();
     _wsService.unsubscribeFromReadEvents(widget.chatRoomId);
+    _recommendationSubscription?.cancel();
+    _wsService.unsubscribeFromRecommendations(widget.chatRoomId);
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
     if (chatRoom.chatRoomId != null) {
@@ -226,6 +237,10 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
 
   @override
   Widget build(BuildContext context) {
+    final ChatActionRecommendation? currentRecommendation = ref.watch(
+      chatRecommendationProvider.select((state) => state.recommendationOf(widget.chatRoomId)),
+    );
+
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primaryBlack,
@@ -277,6 +292,11 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
                   onRejectTradeRequest: _onRejectTradeRequest,
                   onConfirmTradeRequest: _onConfirmTradeRequest,
                 ),
+              ),
+              ChatRecommendationBanner(
+                action: _resolveVisibleRecommendedAction(currentRecommendation),
+                onActionPressed: _onRecommendedActionPressed,
+                onDismissed: _onRecommendationDismissed,
               ),
               ChatInputBar(
                 controller: _messageController,
