@@ -4,8 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
-import 'package:romrom_fe/enums/promote_result.dart';
-import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -13,12 +11,10 @@ import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
-import 'package:romrom_fe/providers/promotion_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
@@ -26,6 +22,7 @@ import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dar
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/my_page/my_item_promote_control.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 
 class MyRegisterItemScreen extends ConsumerStatefulWidget {
@@ -291,7 +288,10 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
                     // 우선노출 컨트롤 — 교환완료 물건엔 표시하지 않음
                     if (item.itemStatus != ItemStatus.exchanged.serverName) ...[
                       SizedBox(height: 8.h),
-                      Align(alignment: Alignment.centerRight, child: _buildPromoteControl(item)),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: MyItemPromoteControl(item: item),
+                      ),
                     ],
                   ],
                 ),
@@ -310,54 +310,6 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
       newStatus.id.toDouble(),
       duration: AppMotion.normal,
       curve: AppMotion.standard,
-    );
-  }
-
-  // 우선노출(롬업) 버튼 핸들러. 광고 시청 → 백엔드 활성화. 결과 enum으로 토스트 분기.
-  Future<void> _onPromoteTap(Item item) async {
-    final itemId = item.itemId;
-    if (itemId == null) return;
-    final result = await ref.read(promotionProvider.notifier).promoteItem(itemId);
-    if (!mounted) return;
-    switch (result) {
-      case PromoteResult.success:
-        CommonSnackBar.show(context: context, message: '내 물건이 우선 노출돼요 ⚡', type: SnackBarType.success);
-      case PromoteResult.adNotEarned:
-        CommonSnackBar.show(context: context, message: '광고를 끝까지 시청해야 적립돼요', type: SnackBarType.info);
-      case PromoteResult.failed:
-        CommonSnackBar.show(context: context, message: '잠시 후 다시 시도해주세요', type: SnackBarType.error);
-      case PromoteResult.alreadyInFlight:
-        break; // 중복 요청 — 무시
-    }
-  }
-
-  // 우선노출 버튼(활성 전) / 노출 중 뱃지(활성 후).
-  Widget _buildPromoteControl(Item item) {
-    final itemId = item.itemId;
-    if (itemId == null) return const SizedBox.shrink();
-    final isPromoted = ref.watch(promotionProvider).isPromoted(itemId);
-
-    if (isPromoted) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: AppColors.opacity10White, borderRadius: BorderRadius.circular(8)),
-        child: Text(
-          '⚡ 노출 중',
-          style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w600),
-        ),
-      );
-    }
-
-    return AppPressable(
-      onTap: () => _onPromoteTap(item),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: AppColors.primaryYellow, borderRadius: BorderRadius.circular(8)),
-        child: Text(
-          '⚡ 우선 노출',
-          style: CustomTextStyles.p3.copyWith(color: AppColors.primaryBlack, fontWeight: FontWeight.w600),
-        ),
-      ),
     );
   }
 

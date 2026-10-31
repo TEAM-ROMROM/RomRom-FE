@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:romrom_fe/enums/rewarded_ad_outcome.dart';
 import 'package:romrom_fe/services/ad_mob_service.dart';
 
 /// AdMob 보상형 광고의 로드·표시·보상 콜백을 캡슐화한다.
-/// 비즈니스 로직(우선노출)을 전혀 모른다 — 결과는 "보상 받았나" boolean 하나.
+/// 비즈니스 로직(우선노출)을 전혀 모른다 — 결과는 RewardedAdOutcome 하나.
 ///
 /// 주의: 동시 호출에 안전하지 않다(단일 `_ad` 인스턴스 공유). 동시 호출 dedup은
 /// 호출자 책임이다(`PromotionNotifier`가 `_inFlight`로 보장). 단일 탭 흐름만 가정.
@@ -17,7 +18,7 @@ class RewardedAdService {
   Future<void> load() async {
     if (_ad != null || _isLoading) return;
     final unitId = AdMobService.rewardedAdUnitId;
-    if (unitId == null) return; // 실제 unit ID는 .env 기반(테스트 빌드만 테스트 ID 반환)
+    if (unitId == null) return; // 릴리스 광고 단위 미설정 > 로드 생략 (AdMobService.rewardedAdUnitId)
     _isLoading = true;
     final completer = Completer<void>();
     RewardedAd.load(
@@ -40,14 +41,13 @@ class RewardedAdService {
     return completer.future;
   }
 
-  /// 광고를 표시하고 보상 여부를 반환한다.
-  /// true = 보상 적립 / false = 미적립(이탈·실패·미로드).
-  Future<bool> showAndAwaitReward() async {
+  /// 광고 표시 > 결과 (적립 / 시청 중 이탈 / 미설정·로드·표시 실패)
+  Future<RewardedAdOutcome> showAndAwaitReward() async {
     if (_ad == null) await load();
     final ad = _ad;
-    if (ad == null) return false; // 로드 실패
+    if (ad == null) return RewardedAdOutcome.unavailable; // 미설정·로드 실패
 
-    final completer = Completer<bool>();
+    final completer = Completer<RewardedAdOutcome>();
     var earned = false;
 
     ad.fullScreenContentCallback = FullScreenContentCallback(
@@ -55,13 +55,15 @@ class RewardedAdService {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _ad = null;
-        if (!completer.isCompleted) completer.complete(earned);
+        if (!completer.isCompleted) {
+          completer.complete(earned ? RewardedAdOutcome.earned : RewardedAdOutcome.notEarned);
+        }
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         debugPrint('[RewardedAd] 표시 실패: $error');
         ad.dispose();
         _ad = null;
-        if (!completer.isCompleted) completer.complete(false);
+        if (!completer.isCompleted) completer.complete(RewardedAdOutcome.unavailable);
       },
     );
 

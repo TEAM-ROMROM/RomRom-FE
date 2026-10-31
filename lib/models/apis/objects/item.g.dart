@@ -25,6 +25,8 @@ Item _$ItemFromJson(Map<String, dynamic> json) => Item(
   longitude: (json['longitude'] as num?)?.toDouble(),
   latitude: (json['latitude'] as num?)?.toDouble(),
   isAiPredictedPrice: json['isAiPredictedPrice'] as bool?,
+  promotionExpiresAt: json['promotionExpiresAt'] == null ? null : DateTime.parse(json['promotionExpiresAt'] as String),
+  isPromoted: json['isPromoted'] as bool?,
   address: json['address'] as String?,
 );
 
@@ -45,5 +47,7 @@ Map<String, dynamic> _$ItemToJson(Item instance) => <String, dynamic>{
   'longitude': instance.longitude,
   'latitude': instance.latitude,
   'isAiPredictedPrice': instance.isAiPredictedPrice,
+  'promotionExpiresAt': instance.promotionExpiresAt?.toIso8601String(),
+  'isPromoted': instance.isPromoted,
   'address': instance.address,
 };
