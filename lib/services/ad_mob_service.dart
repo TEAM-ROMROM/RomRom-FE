@@ -44,21 +44,30 @@ class AdMobService {
       }
       return null;
     }
-    final envKey = Platform.isIOS ? rewardedAdUnitIdIosEnvKey : rewardedAdUnitIdAndroidEnvKey;
-    final unitId = dotenv.maybeGet(envKey)?.trim();
-    return (unitId == null || unitId.isEmpty) ? null : unitId;
+    return _releaseAdUnitId(androidEnvKey: rewardedAdUnitIdAndroidEnvKey, iosEnvKey: rewardedAdUnitIdIosEnvKey);
   }
 
-  // 네이티브 광고 ID (실제 광고 ID는 .env에서 관리)
+  // .env: 홈 피드 네이티브 실제 광고 단위 ID (광고 단위는 앱별 발급이라 플랫폼별 키)
+  static const String nativeAdUnitIdAndroidEnvKey = 'NATIVE_ADMOB_UNIT_ID_ANDROID';
+  static const String nativeAdUnitIdIosEnvKey = 'NATIVE_ADMOB_UNIT_ID_IOS';
+
+  // 네이티브 광고 ID: 디버그·테스트 빌드 > 구글 테스트 ID (개발 중 실제 광고 요청 방지), 릴리스 > .env 실제 ID
   static String? get nativeAdUnitId {
-    if (DebugConfig.isTestBuild) {
+    if (kDebugMode || DebugConfig.isTestBuild) {
       if (Platform.isAndroid) {
         return 'ca-app-pub-3940256099942544/2247696110'; // 테스트 네이티브 광고 ID (Android)
       } else if (Platform.isIOS) {
         return 'ca-app-pub-3940256099942544/3986624511'; // 테스트 네이티브 광고 ID (iOS)
       }
+      return null;
     }
-    return dotenv.get('NATIVE_ADMOB_APP_ID'); // 실제 광고 ID는 .env에서 관리
+    return _releaseAdUnitId(androidEnvKey: nativeAdUnitIdAndroidEnvKey, iosEnvKey: nativeAdUnitIdIosEnvKey);
+  }
+
+  /// 릴리스 광고 단위 ID: 현재 플랫폼 .env 키 > 값 (없거나 빈 값이면 null = 광고 미노출)
+  static String? _releaseAdUnitId({required String androidEnvKey, required String iosEnvKey}) {
+    final unitId = dotenv.maybeGet(Platform.isIOS ? iosEnvKey : androidEnvKey)?.trim();
+    return (unitId == null || unitId.isEmpty) ? null : unitId;
   }
 
   // 광고 이벤트 리스너 (공통)
