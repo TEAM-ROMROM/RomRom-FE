@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:animations/animations.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
@@ -24,13 +22,9 @@ extension NavigationExtension on BuildContext {
     RouteSettings? routeSettings, // routing할 때 화면에 넘겨줄 값
     bool Function(Route<dynamic>)? predicate, // pushAndRemoveUntil, fadeTransition, clearStackImmediate 용
   }) {
-    // iOS에서는 CupertinoPageRoute, 안드로이드에서는 MaterialPageRoute 사용
+    // 두 플랫폼 모두 가로 슬라이드(이전 화면 시차) — Android 기본 Material 전환의 위로 튀는 느낌 제거
     PageRoute<T> createRoute(Widget screen, RouteSettings? settings) {
-      if (Platform.isIOS) {
-        return CupertinoPageRoute<T>(builder: (context) => screen, settings: settings);
-      } else {
-        return MaterialPageRoute<T>(builder: (context) => screen, settings: settings);
-      }
+      return CupertinoPageRoute<T>(builder: (context) => screen, settings: settings);
     }
 
     switch (type) {

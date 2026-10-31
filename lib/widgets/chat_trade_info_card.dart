@@ -116,15 +116,11 @@ class ChatTradeInfoCard extends StatelessWidget {
                   SizedBox(height: 8.h),
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: tradeOptions.map((serverName) {
-                      try {
-                        return Padding(
-                          padding: EdgeInsets.only(right: 4.w),
-                          child: RequestManagementTradeOptionTag(option: ItemTradeOption.fromServerName(serverName)),
-                        );
-                      } catch (_) {
-                        return const SizedBox.shrink();
-                      }
+                    children: ItemTradeOption.fromServerNamesSkippingUnknown(tradeOptions).map((option) {
+                      return Padding(
+                        padding: EdgeInsets.only(right: 4.w),
+                        child: RequestManagementTradeOptionTag(option: option),
+                      );
                     }).toList(),
                   ),
                 ],

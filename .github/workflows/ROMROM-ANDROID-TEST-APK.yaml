@@ -38,7 +38,7 @@ on:
     types: [build-android-app]
 
 env:
-  FLUTTER_VERSION: "3.35.5"
+  FLUTTER_VERSION: "3.38.9"
   JAVA_VERSION: "17"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   FIREBASE_APP_ID: "1:905325245238:android:86db75164e0df29a1f3997"
@@ -325,6 +325,9 @@ jobs:
       # Android SDK 설정
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # 기본값 'tools'는 SDK 저장소에서 제거됨 > platform-tools만 설치
+          packages: platform-tools
 
       - name: Verify Android SDK setup
         run: echo "Android SDK setup completed"
@@ -345,7 +348,7 @@ jobs:
       - name: Install Fastlane
         working-directory: android
         run: |
-          printf 'source "https://rubygems.org"\ngem "fastlane"\n' > Gemfile
+          printf 'source "https://rubygems.org"\ngem "fastlane"\ngem "multi_json"\n' > Gemfile
           bundle install
           echo "Fastlane installed"
           bundle exec fastlane --version

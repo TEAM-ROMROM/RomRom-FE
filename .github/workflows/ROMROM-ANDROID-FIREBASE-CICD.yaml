@@ -31,7 +31,7 @@ on:
   workflow_dispatch:
 
 env:
-  FLUTTER_VERSION: "3.35.5"
+  FLUTTER_VERSION: "3.38.9"
   JAVA_VERSION: "17"
   PROJECT_TYPE: "flutter"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -266,12 +266,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Android build.gradle.kts 수정 (release 서명 설정)
+      # Android build.gradle 수정 (release 서명 설정)
       - name: Configure Android build for release
         run: |
-          # build.gradle.kts에 release 서명 설정이 없으면 추가
-          if ! grep -q "signingConfigs" android/app/build.gradle.kts; then
-            echo "⚠️ build.gradle.kts에 서명 설정 추가 필요"
+          # build.gradle에 release 서명 설정이 없으면 추가
+          if ! grep -q "signingConfigs" android/app/build.gradle; then
+            echo "⚠️ build.gradle에 서명 설정 추가 필요"
             # 서명 설정은 이미 되어있다고 가정 (수동으로 미리 설정해야 함)
           fi
           echo "✅ Android 빌드 설정 확인 완료"

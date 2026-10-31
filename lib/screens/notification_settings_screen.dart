@@ -5,8 +5,8 @@ import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
@@ -22,8 +22,6 @@ class NotificationSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _NotificationSettingsScreenState extends ConsumerState<NotificationSettingsScreen> with WidgetsBindingObserver {
-  final MemberApi _memberApi = MemberApi();
-
   bool _isLoading = true;
 
   // 시스템 설정 복귀 후 처리할 대기 중인 알림 설정 타입
@@ -63,8 +61,8 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
   /// 서버에서 현재 알림 설정 값 로딩
   Future<void> _loadNotificationSettings() async {
     try {
-      final response = await _memberApi.getMemberInfo();
-      final Member? member = response.member;
+      final memberProfile = await ref.read(memberProfileProvider.notifier).fetchLatest();
+      final Member? member = memberProfile.member;
       if (member != null && mounted) {
         ref.read(notificationSettingProvider.notifier).seed({
           NotificationSettingType.marketing: member.isMarketingInfoAgreed ?? false,

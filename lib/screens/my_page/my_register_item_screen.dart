@@ -20,6 +20,7 @@ import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
@@ -36,6 +37,9 @@ class MyRegisterItemScreen extends ConsumerStatefulWidget {
 
 class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
+
+  // 불러오기 실패 뷰 재시도 진행 중 여부 (중복 탭 차단)
+  bool _isRetryingMyItems = false;
 
   // 토글 상태
   MyItemToggleStatus _currentTabStatus = MyItemToggleStatus.all;
@@ -67,13 +71,15 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
   @override
   Widget build(BuildContext context) {
     final myItemsAsync = ref.watch(myItemsProvider);
-    final myItems = myItemsAsync.value;
+    final myItems = myItemsAsync.valueOrNull;
     final isLoading = myItemsAsync.isLoading && myItems == null;
+    // 불러오기 실패 + 이전 값 없음 > 에러 뷰 (이전 값 있으면 목록 유지)
+    final hasLoadErrorWithoutItems = myItemsAsync.hasError && myItems == null;
 
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(
-        title: '나의 등록된 물건',
+        title: '나의 등록된 물품',
         appBarHeight: 120.h,
         bottomWidgets: PreferredSize(
           preferredSize: Size.fromHeight(62.h),
@@ -84,7 +90,7 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
             onSecondTap: () => _onToggleChanged(MyItemToggleStatus.selling),
             onThirdTap: () => _onToggleChanged(MyItemToggleStatus.completed),
             firstText: '전체',
-            secondText: '등록 물건',
+            secondText: '등록 물품',
             thirdText: '교환 완료',
           ),
         ),
@@ -96,15 +102,34 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
         child: CustomScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          slivers: [..._buildItemSlivers(isLoading: isLoading, myItems: myItems)],
+          slivers: [
+            ..._buildItemSlivers(
+              isLoading: isLoading,
+              hasLoadErrorWithoutItems: hasLoadErrorWithoutItems,
+              myItems: myItems,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildItemSlivers({required bool isLoading, required myItems}) {
+  List<Widget> _buildItemSlivers({required bool isLoading, required bool hasLoadErrorWithoutItems, required myItems}) {
     if (isLoading) {
       return const [RegisterTabSkeletonSliver()];
+    }
+
+    if (hasLoadErrorWithoutItems) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: EmptyStateView.error(
+            centerText: '물품을 불러오지 못했어요',
+            onRetry: _onRetryMyItemsPressed,
+            isRetrying: _isRetryingMyItems,
+          ),
+        ),
+      ];
     }
 
     final List<Item> displayItems = switch (_currentTabStatus) {
@@ -145,10 +170,21 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
     ];
   }
 
+  /// 불러오기 실패 뷰 재시도: 중복 탭 차단 > 서버 재조회
+  Future<void> _onRetryMyItemsPressed() async {
+    if (_isRetryingMyItems) return;
+    setState(() => _isRetryingMyItems = true);
+    try {
+      await ref.read(myItemsProvider.notifier).reload();
+    } finally {
+      if (mounted) setState(() => _isRetryingMyItems = false);
+    }
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Text(
-        '등록된 물건이 없어요.',
+        '등록된 물품이 없어요.',
         style: CustomTextStyles.p1.copyWith(color: AppColors.opacity40White, fontWeight: FontWeight.w500),
         textAlign: TextAlign.center,
       ),
@@ -156,10 +192,10 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
   }
 
   Widget _buildItemTile(Item item, int index) {
-    final imageUrl = item.primaryImageUrl != null ? item.primaryImageUrl! : 'https://picsum.photos/400/300';
+    final imageUrl = item.primaryImageUrl ?? '';
     final isAiPredictedPrice = item.isAiPredictedPrice ?? false;
     final tradeOptions = item.itemTradeOptions ?? const <String>[];
-    final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : 'Unknown';
+    final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : '';
 
     return Stack(
       children: [
@@ -215,19 +251,21 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        Container(
-                          margin: EdgeInsets.symmetric(horizontal: 4.w),
-                          width: 4.w,
-                          height: 4.w,
-                          decoration: const BoxDecoration(color: AppColors.opacity60White, shape: BoxShape.circle),
-                        ),
-                        Text(
-                          uploadTime,
-                          style: CustomTextStyles.p3.copyWith(
-                            color: AppColors.opacity60White,
-                            fontWeight: FontWeight.w500,
+                        if (uploadTime.isNotEmpty) ...[
+                          Container(
+                            margin: EdgeInsets.symmetric(horizontal: 4.w),
+                            width: 4.w,
+                            height: 4.w,
+                            decoration: const BoxDecoration(color: AppColors.opacity60White, shape: BoxShape.circle),
                           ),
-                        ),
+                          Text(
+                            uploadTime,
+                            style: CustomTextStyles.p3.copyWith(
+                              color: AppColors.opacity60White,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     Padding(
@@ -241,11 +279,11 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
                       ),
                     ),
                     Row(
-                      children: tradeOptions
+                      children: ItemTradeOption.fromServerNamesSkippingUnknown(tradeOptions)
                           .map(
                             (option) => Padding(
                               padding: EdgeInsets.only(right: 4.w),
-                              child: RequestManagementTradeOptionTag(option: ItemTradeOption.fromServerName(option)),
+                              child: RequestManagementTradeOptionTag(option: option),
                             ),
                           )
                           .toList(),
@@ -268,7 +306,11 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
   void _onToggleChanged(MyItemToggleStatus newStatus) {
     if (_currentTabStatus == newStatus) return;
     setState(() => _currentTabStatus = newStatus);
-    _toggleAnimationController.animateTo(newStatus.id.toDouble(), duration: AppMotion.normal, curve: Curves.easeInOut);
+    _toggleAnimationController.animateTo(
+      newStatus.id.toDouble(),
+      duration: AppMotion.normal,
+      curve: AppMotion.standard,
+    );
   }
 
   // 우선노출(롬업) 버튼 핸들러. 광고 시청 → 백엔드 활성화. 결과 enum으로 토스트 분기.

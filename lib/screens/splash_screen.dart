@@ -3,65 +3,81 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:romrom_fe/utils/installed_app_version.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/app_version_repository_provider.dart';
+import 'package:romrom_fe/providers/auth_repository_provider.dart';
+import 'package:romrom_fe/repositories/auth_repository.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/screens/onboarding/onboarding_flow_screen.dart';
-import 'package:romrom_fe/enums/app_update_type.dart';
+import 'package:romrom_fe/services/splash_startup_sequence.dart';
 import 'package:romrom_fe/screens/app_update_screen.dart';
-import 'package:romrom_fe/services/apis/app_version_api.dart';
-import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
+import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _loginTransitionController;
   late Animation<Alignment> _logoAlignmentAnim;
   late Animation<double> _loginUIFadeAnim;
   bool _showLoginUI = false;
   bool _loginTransitionStarted = false;
   bool _aborted = false;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
 
-    _loginTransitionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _loginTransitionController = AnimationController(vsync: this, duration: AppMotion.slow);
 
     // 로고 이동: 화면 중앙(-0.075) → 로그인 화면 로고 위치
     // end 값은 postFrameCallback에서 실제 레이아웃 측정값으로 교체됨
     _logoAlignmentAnim = AlignmentTween(
       begin: const Alignment(0, -0.075),
       end: const Alignment(0, -0.52),
-    ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _loginTransitionController, curve: AppMotion.standard));
 
     // 로그인 UI fade in: 30~100% 구간
     _loginUIFadeAnim = CurvedAnimation(
       parent: _loginTransitionController,
-      curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
+      curve: const Interval(0.3, 1.0, curve: AppMotion.entry),
     );
 
     unawaited(_initAndNavigate());
+    unawaited(_loadAppVersion());
+  }
+
+  /// 로그인 UI 우하단에 표시할 앱 버전 로드 (LoginScreen과 동일 구현)
+  Future<void> _loadAppVersion() async {
+    // 조회 실패 시 빈 문자열 > 버전 문구 미표시
+    final installedAppVersion = await fetchInstalledAppVersion();
+    if (mounted) {
+      setState(() => _appVersion = installedAppVersion);
+    }
   }
 
   /// 스플래시 초기화 전체 타임아웃 (15초)
@@ -97,18 +113,26 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     CommonSnackBar.show(context: context, message: '서버 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.', type: SnackBarType.error);
   }
 
+  /// 스플래시 최소 노출 시간 (2초, 버전 확인과 동시에 시작)
+  static const Duration _minimumSplashDuration = Duration(seconds: 2);
+
   Future<void> _runInitFlow() async {
-    final updateType = await AppVersionApi().checkUpdateType();
-    // _aborted: timeout 또는 오류로 _initAndNavigate()가 이미 로그인 화면을 표시한 경우
-    if (_aborted) return;
-    if (updateType == UpdateType.force && mounted) {
-      context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+    // 첫 await 전 캡처 (타임아웃으로 화면이 닫힌 뒤에도 흐름이 이어짐 > 이후 ref 사용 불가)
+    final appVersionRepository = ref.read(appVersionRepositoryProvider);
+    final authRepository = ref.read(authRepositoryProvider);
+    final startupResult = await runSplashStartupSequence<Widget>(
+      checkUpdateType: appVersionRepository.checkUpdateType,
+      determineInitialScreen: () => _determineInitialScreen(authRepository),
+      // _aborted: timeout 또는 오류로 _initAndNavigate()가 이미 로그인 화면을 표시한 경우
+      isAborted: () => _aborted,
+      minimumSplashDuration: _minimumSplashDuration,
+    );
+    if (startupResult.isAborted) return;
+    if (startupResult.isForcedUpdate) {
+      if (mounted) context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
       return;
     }
-
-    final results = await Future.wait([_determineInitialScreen(), Future.delayed(const Duration(seconds: 2))]);
-    if (_aborted) return; // Future.wait 대기 중 타임아웃이 발생했을 수 있음
-    final nextScreen = results[0]! as Widget;
+    final nextScreen = startupResult.nextScreen!;
 
     if (!mounted) return;
 
@@ -116,18 +140,22 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       ColdStartDeepLinkData.clear(); // 미인증 상태 → 딥링크 데이터 폐기
       await _playLoginTransitionAnimation();
     } else {
-      context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition);
+      startUserSession(
+        invalidate: ref.invalidate,
+        navigateToSessionScreen: () => context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition),
+      );
       // MainScreen 이동 후 콜드 스타트 FCM/AppLinks 딥링크 처리
       // (pushAndRemoveUntil이 완료된 다음 프레임에 navigatorKey로 push)
       if (nextScreen is MainScreen && ColdStartDeepLinkData.hasPending) {
         final pendingUri = ColdStartDeepLinkData.pendingUri!;
         final pendingType = ColdStartDeepLinkData.pendingNotificationType;
+        final pendingExtra = ColdStartDeepLinkData.pendingExtraData; // clear() 전에 보관 (itemName/deleteReason 등)
         ColdStartDeepLinkData.clear();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_aborted) return; // 프레임 콜백 실행 전 중단됐을 경우 딥링크 라우팅 차단
           final ctx = navigatorKey.currentContext;
           if (ctx != null) {
-            RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType);
+            RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType, extraData: pendingExtra);
           }
         });
       } else {
@@ -156,7 +184,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       _logoAlignmentAnim = AlignmentTween(
         begin: const Alignment(0, -0.075),
         end: Alignment(0, endY),
-      ).animate(CurvedAnimation(parent: _loginTransitionController, curve: Curves.easeInOut));
+      ).animate(CurvedAnimation(parent: _loginTransitionController, curve: AppMotion.standard));
       completer.complete();
     });
     await completer.future;
@@ -198,14 +226,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     return (logoCenterInBody / (bodyHeight / 2)) - 1;
   }
 
-  Future<Widget> _determineInitialScreen() async {
-    final romAuthApi = RomAuthApi();
+  Future<Widget> _determineInitialScreen(AuthRepository authRepository) async {
     final tokenManager = TokenManager();
     final String? refreshToken = await tokenManager.getRefreshToken();
 
     if (refreshToken == null) return const LoginScreen();
 
-    final isLoggedIn = await romAuthApi.refreshAccessToken();
+    final isLoggedIn = await authRepository.refreshAccessToken();
     if (!isLoggedIn) return const LoginScreen();
 
     final userInfo = UserInfo();
@@ -217,7 +244,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         return OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
       }
 
-      await FirebaseService().handleFcmToken();
+      // FCM 토큰 저장은 화면 이동과 무관 (권한 응답 대기 포함, 실패 로그는 handleFcmToken 내부)
+      unawaited(FirebaseService().handleFcmToken());
       return const MainScreen();
     } catch (e) {
       // 네트워크 예외는 재throw → _initAndNavigate()의 catch에서 SnackBar 표시
@@ -248,36 +276,50 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             if (_showLoginUI)
               FadeTransition(
                 opacity: _loginUIFadeAnim,
-                child: SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Spacer(flex: 2),
-                      SizedBox(height: 108.w), // 로고 자리 확보
-                      SizedBox(height: 45.h),
-                      Text(
-                        '손쉬운 물건 교환',
-                        style: CustomTextStyles.p1.copyWith(
-                          color: AppColors.textColorWhite.withValues(alpha: 0.6),
-                          fontWeight: FontWeight.w600,
+                child: Stack(
+                  children: [
+                    SafeArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Spacer(flex: 2),
+                          SizedBox(height: 108.w), // 로고 자리 확보
+                          SizedBox(height: 45.h),
+                          Text(
+                            '손쉬운 물품 교환',
+                            style: CustomTextStyles.p1.copyWith(
+                              color: AppColors.textColorWhite.withValues(alpha: 0.6),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 17.h),
+                          SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
+                          const Spacer(flex: 3),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 24.w),
+                            child: AuthButtonGroup(
+                              buttons: [
+                                LoginPlatforms.kakao,
+                                if (Platform.isIOS) LoginPlatforms.apple,
+                                LoginPlatforms.google,
+                              ].map((platform) => LoginButton(platform: platform)).toList(),
+                            ),
+                          ),
+                          SizedBox(height: 48.h),
+                        ],
+                      ),
+                    ),
+                    // 우하단 버전 정보 (LoginScreen과 동일 — 고정 픽셀 사용, iPad 대응)
+                    if (_appVersion.isNotEmpty)
+                      Positioned(
+                        right: 20,
+                        bottom: 40,
+                        child: Text(
+                          'v$_appVersion',
+                          style: CustomTextStyles.p4.copyWith(color: AppColors.textColorWhite.withValues(alpha: 0.4)),
                         ),
                       ),
-                      SizedBox(height: 17.h),
-                      SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
-                      const Spacer(flex: 3),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 24.w),
-                        child: AuthButtonGroup(
-                          buttons: [
-                            LoginPlatforms.kakao,
-                            if (Platform.isIOS) LoginPlatforms.apple,
-                            LoginPlatforms.google,
-                          ].map((platform) => LoginButton(platform: platform)).toList(),
-                        ),
-                      ),
-                      SizedBox(height: 48.h),
-                    ],
-                  ),
+                  ],
                 ),
               ),
 

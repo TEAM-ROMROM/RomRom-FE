@@ -45,9 +45,9 @@ jobs:
         id: setup-flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.5"
+          flutter-version: "3.38.9"
           cache: true
-          cache-key: flutter-${{ runner.os }}-3.35.5
+          cache-key: flutter-${{ runner.os }}-3.38.9
 
       - name: Flutter 의존성 캐싱
         id: cache-flutter
@@ -93,6 +93,9 @@ jobs:
       - name: Android SDK 설정
         id: setup-android
         uses: android-actions/setup-android@v3
+        with:
+          # 기본값 'tools'는 SDK 저장소에서 제거됨 > platform-tools만 설치
+          packages: platform-tools
       
       - name: google-services.json 설정
         shell: bash

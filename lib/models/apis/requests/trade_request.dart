@@ -15,6 +15,8 @@ class TradeRequest {
   String? tradeReviewRating;
   List<String>? tradeReviewTags;
   String? reviewComment;
+  String? sortField; // BE TradeRequestSortField enum name (CREATED_DATE/PRICE/AI_RECOMMENDED)
+  String? sortDirection; // BE Sort.Direction (ASC/DESC)
 
   TradeRequest({
     this.member,
@@ -27,6 +29,8 @@ class TradeRequest {
     this.tradeReviewRating,
     this.tradeReviewTags,
     this.reviewComment,
+    this.sortField,
+    this.sortDirection,
   });
 
   // API 전송을 위한 setMember 메서드 (백엔드 패턴 따라)

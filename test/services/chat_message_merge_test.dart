@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
-import 'package:romrom_fe/screens/chat_room_screen.dart';
+import 'package:romrom_fe/utils/chat_room_message_rules.dart';
 
 void main() {
   // mergeServerMessages: reverse 정렬(index 0 = 최신) 목록 기준.

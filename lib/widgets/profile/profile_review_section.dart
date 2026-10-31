@@ -2,34 +2,35 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
 import 'package:romrom_fe/enums/trade_review_tag.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
-import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
-import 'package:romrom_fe/services/apis/trade_api.dart';
+import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-class ProfileReviewSection extends StatefulWidget {
+class ProfileReviewSection extends ConsumerStatefulWidget {
   final String? memberId;
   final VoidCallback? onLoaded;
 
   const ProfileReviewSection({super.key, this.memberId, this.onLoaded});
 
   @override
-  State<ProfileReviewSection> createState() => _ProfileReviewSectionState();
+  ConsumerState<ProfileReviewSection> createState() => _ProfileReviewSectionState();
 }
 
-class _ProfileReviewSectionState extends State<ProfileReviewSection> {
+class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
   List<TradeReview> _reviews = [];
   bool _isLoading = true;
   final Map<String, String> _fetchedAddresses = {};
@@ -41,13 +42,13 @@ class _ProfileReviewSectionState extends State<ProfileReviewSection> {
   }
 
   Future<void> _loadReviews() async {
+    // 첫 await 전 캡처 (내 회원 id 조회 중 화면 종료 대비)
+    final tradeRepository = ref.read(tradeRepositoryProvider);
     try {
       final memberId = widget.memberId ?? await UserInfo().getCurrentMemberId();
-      final response = await TradeApi().getTradeReview(
-        TradeRequest(member: Member(memberId: memberId), pageNumber: 0, pageSize: 10),
-      );
+      final reviews = await tradeRepository.getTradeReviews(memberId: memberId, pageNumber: 0, pageSize: 10);
       if (mounted) {
-        setState(() => _reviews = response.tradeReviewPage?.content ?? []);
+        setState(() => _reviews = reviews);
       }
       await _fetchMissingAddresses();
     } catch (e) {
@@ -360,8 +361,8 @@ class _ExpandableCommentState extends State<_ExpandableComment> {
             children: [
               Expanded(
                 child: AnimatedSize(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeInOut,
+                  duration: AppMotion.fast,
+                  curve: AppMotion.standard,
                   alignment: Alignment.topLeft,
                   child: Text(
                     widget.text,
@@ -376,8 +377,8 @@ class _ExpandableCommentState extends State<_ExpandableComment> {
                   padding: EdgeInsets.only(left: 4.w),
                   child: AnimatedRotation(
                     turns: _isExpanded ? -0.5 : 0,
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeInOut,
+                    duration: AppMotion.fast,
+                    curve: AppMotion.standard,
                     child: const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.opacity60White),
                   ),
                 ),

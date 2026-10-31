@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
 /// 알림 바텀시트 채팅 - 알림 미리보기 위젯
-class NotificationBotomSheetChattingPreview extends StatelessWidget {
-  const NotificationBotomSheetChattingPreview({super.key});
+class NotificationBottomSheetChattingPreview extends StatelessWidget {
+  const NotificationBottomSheetChattingPreview({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -40,26 +41,26 @@ class _NotificationBottomSheetCardAnimationState extends State<_NotificationBott
   @override
   void initState() {
     super.initState();
-    _shadow1Controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-    _shadow2Controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
-    _cardController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _shadow1Controller = AnimationController(vsync: this, duration: AppMotion.fast);
+    _shadow2Controller = AnimationController(vsync: this, duration: AppMotion.normal);
+    _cardController = AnimationController(vsync: this, duration: AppMotion.normal);
 
-    _shadow1Fade = CurvedAnimation(parent: _shadow1Controller, curve: Curves.easeOut);
-    _shadow2Fade = CurvedAnimation(parent: _shadow2Controller, curve: Curves.easeOut);
-    _cardFade = CurvedAnimation(parent: _cardController, curve: Curves.easeOut);
+    _shadow1Fade = CurvedAnimation(parent: _shadow1Controller, curve: AppMotion.entry);
+    _shadow2Fade = CurvedAnimation(parent: _shadow2Controller, curve: AppMotion.entry);
+    _cardFade = CurvedAnimation(parent: _cardController, curve: AppMotion.entry);
 
     _shadow1Slide = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _shadow1Controller, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _shadow1Controller, curve: AppMotion.entry));
     _shadow2Slide = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _shadow2Controller, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _shadow2Controller, curve: AppMotion.entry));
     _cardSlide = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _cardController, curve: AppMotion.entry));
 
     _shadow1Controller.forward().then((_) {
       if (mounted) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
@@ -38,13 +39,13 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
     if (_previousStep < 1) _previousStep = 1;
 
     // 애니메이션 컨트롤러 설정 (0.5초 지속)
-    _animationController = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
+    _animationController = AnimationController(duration: AppMotion.emphasis, vsync: this);
 
     // 프로그레스 애니메이션 설정
     _progressAnimation = Tween<double>(
       begin: _previousStep / widget.totalSteps,
       end: widget.currentStep / widget.totalSteps,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _animationController, curve: AppMotion.standard));
 
     // 위젯 생성 시 자동으로 애니메이션 시작
     _animationController.forward();
@@ -62,7 +63,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
       _progressAnimation = Tween<double>(
         begin: _previousStep / widget.totalSteps,
         end: widget.currentStep / widget.totalSteps,
-      ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+      ).animate(CurvedAnimation(parent: _animationController, curve: AppMotion.standard));
 
       // 애니메이션 재시작
       _animationController.reset();
@@ -88,7 +89,7 @@ class _OnboardingProgressHeaderState extends State<OnboardingProgressHeader> wit
             onTap: widget.onBackPressed ?? () => Navigator.of(context).pop(),
             scaleDown: AppPressable.scaleIcon,
             enableRipple: false,
-            child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite),
+            child: Icon(AppIcons.navigateBefore, size: 24.h, color: AppColors.textColorWhite, semanticLabel: '뒤로 가기'),
           ),
           SizedBox(width: 81.w),
           // 애니메이션 프로그레스 표시기

@@ -74,9 +74,9 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.5"
+          flutter-version: "3.38.9"
           cache: true
-          cache-key: flutter-${{ runner.os }}-3.35.5
+          cache-key: flutter-${{ runner.os }}-3.38.9
 
       - name: Verify Flutter version
         run: |
@@ -130,6 +130,9 @@ jobs:
       # Android SDK 설정 및 확인
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # 기본값 'tools'는 SDK 저장소에서 제거됨 > platform-tools만 설치
+          packages: platform-tools
 
       - name: Verify Android SDK setup
         run: echo "Android SDK setup completed"

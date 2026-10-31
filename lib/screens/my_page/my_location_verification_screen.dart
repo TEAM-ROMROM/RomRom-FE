@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -17,14 +18,14 @@ import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:shadex/shadex.dart';
 
-class MyLocationVerificationScreen extends StatefulWidget {
+class MyLocationVerificationScreen extends ConsumerStatefulWidget {
   const MyLocationVerificationScreen({super.key});
 
   @override
-  State<MyLocationVerificationScreen> createState() => _MyLocationVerificationScreenState();
+  ConsumerState<MyLocationVerificationScreen> createState() => _MyLocationVerificationScreenState();
 }
 
-class _MyLocationVerificationScreenState extends State<MyLocationVerificationScreen> {
+class _MyLocationVerificationScreenState extends ConsumerState<MyLocationVerificationScreen> {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
   LocationAddress? _selectedAddress;
@@ -85,14 +86,16 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
     if (_isVerifying || _selectedAddress == null || _selectedPosition == null) return;
     setState(() => _isVerifying = true);
     try {
-      await MemberApi().saveMemberLocation(
-        longitude: _selectedPosition!.longitude,
-        latitude: _selectedPosition!.latitude,
-        siDo: _selectedAddress!.siDo,
-        siGunGu: _selectedAddress!.siGunGu,
-        eupMyoenDong: _selectedAddress!.eupMyoenDong,
-        ri: _selectedAddress!.ri,
-      );
+      await ref
+          .read(memberProfileProvider.notifier)
+          .saveLocation(
+            longitude: _selectedPosition!.longitude,
+            latitude: _selectedPosition!.latitude,
+            siDo: _selectedAddress!.siDo,
+            siGunGu: _selectedAddress!.siGunGu,
+            eupMyoenDong: _selectedAddress!.eupMyoenDong,
+            ri: _selectedAddress!.ri,
+          );
       if (!mounted) return;
       CommonSnackBar.show(context: context, message: '위치가 등록되었습니다.', type: SnackBarType.success);
       Navigator.pop(context, true);
@@ -191,10 +194,7 @@ class _MyLocationVerificationScreenState extends State<MyLocationVerificationScr
                       color: AppColors.locationVerificationAreaLabel,
                       borderRadius: BorderRadius.circular(100.r),
                     ),
-                    child: Text(
-                      '${_selectedAddress!.siDo} ${_selectedAddress!.siGunGu} ${_selectedAddress!.eupMyoenDong}',
-                      style: CustomTextStyles.p2,
-                    ),
+                    child: Text(_selectedAddress!.siDoSiGunGuEupMyoenDongText, style: CustomTextStyles.p2),
                   ),
                 CompletionButton(
                   isEnabled: _selectedAddress != null,

@@ -15,4 +15,15 @@ class NotificationSettingRepository {
       isTradeNotificationAgreed: type == NotificationSettingType.transaction ? value : null,
     );
   }
+
+  /// 여러 항목 일괄 변경: 요청 1회 (맵에 없는 항목은 null = 변경 없음)
+  Future<void> updateAll(Map<NotificationSettingType, bool> values) async {
+    await _api.updateNotificationSetting(
+      isMarketingInfoAgreed: values[NotificationSettingType.marketing],
+      isActivityNotificationAgreed: values[NotificationSettingType.activity],
+      isChatNotificationAgreed: values[NotificationSettingType.chat],
+      isContentNotificationAgreed: values[NotificationSettingType.content],
+      isTradeNotificationAgreed: values[NotificationSettingType.transaction],
+    );
+  }
 }

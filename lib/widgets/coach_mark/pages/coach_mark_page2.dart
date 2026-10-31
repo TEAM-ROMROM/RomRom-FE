@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/finger_direction.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/coach_mark/animations/finger_widget.dart';
@@ -29,7 +30,7 @@ class _CoachMarkPage2State extends State<CoachMarkPage2> with SingleTickerProvid
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _fadeController,
-          curve: Interval(start.clamp(0.0, 1.0), end, curve: Curves.easeOut),
+          curve: Interval(start.clamp(0.0, 1.0), end, curve: AppMotion.entry),
         ),
       );
     });
@@ -81,7 +82,7 @@ class _CoachMarkPage2State extends State<CoachMarkPage2> with SingleTickerProvid
                         children: [
                           const TextSpan(text: '이미지를 누르면\n'),
                           const TextSpan(
-                            text: '물건의 상세 정보',
+                            text: '물품의 상세 정보',
                             style: TextStyle(color: AppColors.primaryYellow),
                           ),
                           const TextSpan(text: '를 확인할 수 있어요'),
@@ -109,7 +110,7 @@ class _CoachMarkPage2State extends State<CoachMarkPage2> with SingleTickerProvid
                         children: [
                           const TextSpan(text: '좋아요를 눌러\n'),
                           const TextSpan(
-                            text: '물건을 저장',
+                            text: '물품을 저장',
                             style: TextStyle(color: AppColors.primaryYellow),
                           ),
                           const TextSpan(text: '하세요'),
@@ -148,7 +149,7 @@ class _CoachMarkPage2State extends State<CoachMarkPage2> with SingleTickerProvid
                         children: [
                           const TextSpan(text: 'AI 분석으로 '),
                           const TextSpan(
-                            text: '교환 가능성이\n높은 물건을 확인',
+                            text: '교환 가능성이\n높은 물품을 확인',
                             style: TextStyle(color: AppColors.primaryYellow),
                           ),
                           const TextSpan(text: '하세요'),

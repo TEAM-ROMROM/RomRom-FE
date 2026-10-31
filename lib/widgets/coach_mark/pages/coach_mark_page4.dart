@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/coach_mark/animations/ripple_widget.dart';
 import 'package:romrom_fe/widgets/coach_mark/coach_mark_coords.dart';
@@ -44,7 +45,7 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
     // 0~33%: 정지, 33~82%: 위로 슬라이드, 82~100%: 정지
     _cardSlide = TweenSequence<double>([
       TweenSequenceItem(tween: ConstantTween(0.0), weight: 33),
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 49),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: AppMotion.standard)), weight: 49),
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 18),
     ]).animate(_controller);
 
@@ -58,7 +59,7 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
     // 0~33%: scale 1.0, 33~82%: 드래그하며 점점 커짐, 82~100%: 유지
     _pressAnim = TweenSequence<double>([
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 33),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3).chain(CurveTween(curve: Curves.easeInOut)), weight: 49),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3).chain(CurveTween(curve: AppMotion.standard)), weight: 49),
       TweenSequenceItem(tween: ConstantTween(1.3), weight: 18),
     ]).animate(_controller);
   }
@@ -165,7 +166,7 @@ class _CoachMarkPage4State extends State<CoachMarkPage4> with SingleTickerProvid
                   style: CustomTextStyles.h2.copyWith(height: 1.3),
                   children: [
                     const TextSpan(
-                      text: '내 물건을 꾹 누른 다음\n위로 드래그',
+                      text: '내 물품을 꾹 누른 다음\n위로 드래그',
                       style: TextStyle(color: AppColors.primaryYellow),
                     ),
                     const TextSpan(text: '하여 요청하세요'),

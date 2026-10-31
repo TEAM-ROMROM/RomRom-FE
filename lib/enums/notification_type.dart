@@ -3,7 +3,8 @@ enum NotificationType {
   tradeRequestReceived(label: '교환 요청', serverName: 'TRADE_REQUEST_RECEIVED'),
   chatMessageReceived(label: '채팅', serverName: 'CHAT_MESSAGE_RECEIVED'),
   itemLiked(label: '좋아요', serverName: 'ITEM_LIKED'),
-  systemNotice(label: '공지사항', serverName: 'SYSTEM_NOTICE');
+  announcement(label: '공지사항', serverName: 'ANNOUNCEMENT'),
+  itemDeletedByAdmin(label: '게시글 삭제', serverName: 'ITEM_DELETED_BY_ADMIN');
 
   final String label;
   final String serverName;
@@ -19,15 +20,15 @@ enum NotificationType {
         return 'assets/images/notificationChat.svg';
       case NotificationType.itemLiked:
         return 'assets/images/notificationLike.svg';
-      case NotificationType.systemNotice:
+      case NotificationType.announcement:
+        return 'assets/images/notificationAnnouncement.svg';
+      case NotificationType.itemDeletedByAdmin:
         return 'assets/images/notificationAnnouncement.svg';
     }
   }
 
-  static NotificationType fromServerName(String name) {
-    return NotificationType.values.firstWhere(
-      (e) => e.serverName == name,
-      orElse: () => throw ArgumentError('No NotificationType with serverName $name'),
-    );
+  /// 서버 이름 > 알림 타입 (모르는 값·null > null)
+  static NotificationType? fromServerName(String? name) {
+    return NotificationType.values.where((e) => e.serverName == name).firstOrNull;
   }
 }

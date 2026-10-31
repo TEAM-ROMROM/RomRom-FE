@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 
 /// 알림 바텀시트 교환 요청 - 알림 미리보기 위젯
-class NotificationBotomSheetRequestPreview extends StatelessWidget {
-  const NotificationBotomSheetRequestPreview({super.key});
+class NotificationBottomSheetRequestPreview extends StatelessWidget {
+  const NotificationBottomSheetRequestPreview({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -68,20 +69,20 @@ class _NotificationBottomSheetRequestCardAnimationState extends State<_Notificat
   @override
   void initState() {
     super.initState();
-    _shadowController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
-    _cardController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _shadowController = AnimationController(vsync: this, duration: AppMotion.normal);
+    _cardController = AnimationController(vsync: this, duration: AppMotion.normal);
 
-    _shadowFade = CurvedAnimation(parent: _shadowController, curve: Curves.easeOut);
-    _cardFade = CurvedAnimation(parent: _cardController, curve: Curves.easeOut);
+    _shadowFade = CurvedAnimation(parent: _shadowController, curve: AppMotion.entry);
+    _cardFade = CurvedAnimation(parent: _cardController, curve: AppMotion.entry);
 
     _shadowSlide = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _shadowController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _shadowController, curve: AppMotion.entry));
     _cardSlide = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _cardController, curve: AppMotion.entry));
 
     _shadowController.forward().then((_) {
       if (mounted) _cardController.forward();
@@ -150,7 +151,7 @@ class _NotificationBottomSheetRequestCardAnimationState extends State<_Notificat
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('내 물건에 교환 요청', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
+                          Text('내 물품에 교환 요청', style: CustomTextStyles.p2.copyWith(fontSize: 13.sp)),
                           const SizedBox(height: 4),
                           Text('받은 요청을 지금 확인해볼까요?', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w400)),
                         ],

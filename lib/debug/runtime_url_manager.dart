@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:romrom_fe/models/app_urls.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RuntimeUrlManager {
@@ -6,7 +7,7 @@ class RuntimeUrlManager {
   factory RuntimeUrlManager() => _instance;
   RuntimeUrlManager._internal();
 
-  static const String _prodUrl = 'https://api.romrom.suhsaechan.kr';
+  static const String _prodUrl = AppUrls.productionApiBaseUrl;
   static const String _prefsKey = 'debug_base_url';
 
   String _currentBaseUrl = _prodUrl;

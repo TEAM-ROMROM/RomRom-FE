@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -12,16 +13,15 @@ import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 선호 카테고리 설정 화면
-class MyCategorySettingsScreen extends StatefulWidget {
+class MyCategorySettingsScreen extends ConsumerStatefulWidget {
   const MyCategorySettingsScreen({super.key});
 
   @override
-  State<MyCategorySettingsScreen> createState() => _MyCategorySettingsScreenState();
+  ConsumerState<MyCategorySettingsScreen> createState() => _MyCategorySettingsScreenState();
 }
 
-class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
+class _MyCategorySettingsScreenState extends ConsumerState<MyCategorySettingsScreen> {
   final List<int> selectedCategories = [];
-  final memberApi = MemberApi();
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -36,18 +36,18 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
   /// 기존 선호 카테고리 로드
   Future<void> _loadPreferredCategories() async {
     try {
-      final memberResponse = await memberApi.getMemberInfo();
-      final categories = memberResponse.memberItemCategories;
+      final memberProfile = await ref.read(memberProfileProvider.notifier).fetchLatest();
+      final categories = memberProfile.itemCategories;
       if (categories != null && mounted) {
         setState(() {
           selectedCategories.clear();
           for (final category in categories) {
             if (category.itemCategory != null) {
-              try {
-                final itemCategory = ItemCategories.fromServerName(category.itemCategory!);
-                selectedCategories.add(itemCategory.id);
-              } catch (e) {
+              final itemCategory = ItemCategories.fromServerName(category.itemCategory);
+              if (itemCategory == null) {
                 debugPrint('카테고리 변환 실패: ${category.itemCategory}');
+              } else {
+                selectedCategories.add(itemCategory.id);
               }
             }
           }
@@ -103,7 +103,9 @@ class _MyCategorySettingsScreenState extends State<MyCategorySettingsScreen> {
                         if (_isSaving) return;
                         setState(() => _isSaving = true);
                         try {
-                          final isSuccess = await memberApi.savePreferredCategories(selectedCategories);
+                          final isSuccess = await ref
+                              .read(memberProfileProvider.notifier)
+                              .savePreferredCategories(selectedCategories);
                           if (!mounted) return;
                           if (isSuccess) {
                             CommonSnackBar.show(

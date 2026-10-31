@@ -149,3 +149,9 @@ windows/flutter/generated_plugins.cmake
 
 # codegraph local index
 .codegraph/
+
+# gstack local files
+.gstack/
+
+# Firebase Hosting 로컬 배포 캐시
+.firebase/

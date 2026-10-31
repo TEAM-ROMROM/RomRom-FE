@@ -33,7 +33,7 @@ class ExchangeRequestBottomSheet {
       context: context,
       title: Text('교환을 완료할까요?', style: NotificationBottomSheet.titleStyle),
       description: Text(
-        '교환한 물건이 맞는지 확인 후 요청해주세요!\n승인 요청 후에는 물건 상태 변경이 불가능해요.',
+        '교환한 물품이 맞는지 확인 후 요청해주세요!\n승인 요청 후에는 물품 상태 변경이 불가능해요.',
         style: NotificationBottomSheet.descriptionStyle,
       ),
       body: _ExchangeRequestBody(opponentItem: opponentItem, myItem: myItem),
@@ -52,12 +52,7 @@ class _ExchangeRequestBody extends StatelessWidget {
   const _ExchangeRequestBody({required this.opponentItem, required this.myItem});
 
   String _categoryLabel(String? serverName) {
-    if (serverName == null) return '';
-    try {
-      return ItemCategories.fromServerName(serverName).label;
-    } catch (_) {
-      return '';
-    }
+    return ItemCategories.fromServerName(serverName)?.label ?? '';
   }
 
   @override
@@ -110,7 +105,7 @@ class _ItemColumn extends StatelessWidget {
             itemId: item.itemId ?? '',
             imageUrl: item.primaryImageUrl ?? '',
             category: categoryLabel,
-            title: item.itemName ?? '아이템',
+            title: item.itemName ?? '물품',
             price: item.price ?? 0,
             likeCount: item.likeCount ?? 0,
             aiPrice: item.isAiPredictedPrice ?? false,

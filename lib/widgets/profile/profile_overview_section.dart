@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/account_status.dart';
@@ -7,7 +8,7 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/my_page/profile_image_crop_screen.dart';
-import 'package:romrom_fe/services/apis/image_api.dart';
+import 'package:romrom_fe/providers/image_repository_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/image_compressor.dart';
@@ -15,7 +16,7 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-class ProfileOverviewSection extends StatefulWidget {
+class ProfileOverviewSection extends ConsumerStatefulWidget {
   final String nickname;
   final String imageUrl;
   final String location;
@@ -42,10 +43,10 @@ class ProfileOverviewSection extends StatefulWidget {
   });
 
   @override
-  State<ProfileOverviewSection> createState() => _ProfileOverviewSectionState();
+  ConsumerState<ProfileOverviewSection> createState() => _ProfileOverviewSectionState();
 }
 
-class _ProfileOverviewSectionState extends State<ProfileOverviewSection> {
+class _ProfileOverviewSectionState extends ConsumerState<ProfileOverviewSection> {
   bool _hasImageBeenTouched = false;
   bool _isEditingNickname = false;
   String _nickname = '';
@@ -110,7 +111,7 @@ class _ProfileOverviewSectionState extends State<ProfileOverviewSection> {
 
       try {
         final XFile compressed = await ImageCompressor.toWebp(croppedFile);
-        final List<String> urls = await ImageApi().uploadImages([compressed]);
+        final List<String> urls = await ref.read(imageRepositoryProvider).uploadImages([compressed]);
         if (mounted) {
           if (urls.isNotEmpty) {
             setState(() => _imageUrl = urls.first);
@@ -249,7 +250,12 @@ class _ProfileOverviewSectionState extends State<ProfileOverviewSection> {
                               height: 16.w,
                               decoration: const BoxDecoration(color: AppColors.secondaryBlack2, shape: BoxShape.circle),
                               child: Center(
-                                child: Icon(AppIcons.cancel, size: 11.sp, color: AppColors.textColorWhite),
+                                child: Icon(
+                                  AppIcons.cancel,
+                                  size: 11.sp,
+                                  color: AppColors.textColorWhite,
+                                  semanticLabel: '닉네임 지우기',
+                                ),
                               ),
                             ),
                           ),

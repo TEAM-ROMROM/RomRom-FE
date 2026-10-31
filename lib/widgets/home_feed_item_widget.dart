@@ -3,31 +3,25 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
-import 'package:romrom_fe/enums/snack_bar_type.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
-import 'package:romrom_fe/models/apis/requests/trade_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/services/apis/trade_api.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/blur_wrapper.dart';
-import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/home_feed_ai_sort_button.dart';
-import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
-import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
-import 'package:romrom_fe/models/apis/requests/item_request.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_card_layout.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_image_indicator.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_item_like_button.dart';
+import 'package:romrom_fe/widgets/home_feed_item/home_feed_item_summary.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
-import 'package:romrom_fe/services/apis/item_api.dart';
+import 'package:romrom_fe/providers/item_repository_provider.dart';
+import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
-import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
 /// 홈 피드 아이템 위젯
@@ -78,8 +72,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
         return;
       }
 
-      final itemApi = ItemApi();
-      final response = await itemApi.getItemDetail(ItemRequest(itemId: widget.item.itemUuid));
+      final response = await ref.read(itemRepositoryProvider).getItemDetail(widget.item.itemUuid);
 
       if (!mounted) return;
       setState(() {
@@ -116,10 +109,9 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
     });
     try {
       debugPrint('AI 물품 정렬 리스트 요청');
-      final response = await TradeApi().getAiRecommendItemList(TradeRequest(takeItemId: widget.item.itemUuid));
+      final items = await ref.read(tradeRepositoryProvider).getAiRecommendedItems(widget.item.itemUuid);
 
       // 상위 3개 itemId 추출
-      final items = response.itemPage?.content ?? [];
       final topIds = items.take(3).map((item) => item.itemId).whereType<String>().toList();
 
       debugPrint('AI 추천 상위 3개 itemId: $topIds, ${items.length}');
@@ -147,8 +139,6 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
 
   @override
   Widget build(BuildContext context) {
-    String formattedPrice = formatPrice(widget.item.price);
-    String formattedDate = formatDate(widget.item.date);
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -172,7 +162,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
     return Container(
       height: screenHeight,
       width: screenWidth,
-      color: Colors.black,
+      color: AppColors.homeFeedCardBackground,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -194,19 +184,16 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                       scaleDown: AppPressable.scaleCard,
                       enableRipple: false,
                       onTap: () async {
-                        await Navigator.push<void>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ItemDetailDescriptionScreen(
-                              itemId: widget.item.itemUuid ?? '',
-                              imageSize: Size(screenWidth, screenWidth),
-                              currentImageIndex: index,
-                              heroTag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
-                              homeFeedItem: widget.item,
-                              isMyItem: false,
-                              isRequestManagement: false,
-                              isTradeRequestAllowed: true,
-                            ),
+                        await context.navigateTo<void>(
+                          screen: ItemDetailDescriptionScreen(
+                            itemId: widget.item.itemUuid ?? '',
+                            imageSize: Size(screenWidth, screenWidth),
+                            currentImageIndex: index,
+                            heroTag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
+                            homeFeedItem: widget.item,
+                            isMyItem: false,
+                            isRequestManagement: false,
+                            isTradeRequestAllowed: true,
                           ),
                         );
                         // 캐시(itemLikeProvider)로 좋아요 상태가 자동 전파됨
@@ -215,10 +202,10 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                         tag: 'itemImage_${widget.item.itemUuid ?? widget.item.id}_$index',
                         child: ClipRRect(
                           borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(4.r),
-                            topRight: Radius.circular(4.r),
-                            bottomRight: Radius.circular(20.r),
-                            bottomLeft: Radius.circular(20.r),
+                            topLeft: HomeFeedCardLayout.imageTopCornerRadius,
+                            topRight: HomeFeedCardLayout.imageTopCornerRadius,
+                            bottomRight: HomeFeedCardLayout.imageBottomCornerRadius,
+                            bottomLeft: HomeFeedCardLayout.imageBottomCornerRadius,
                           ),
                           child: _buildImage(
                             widget.item.imageUrls[index],
@@ -251,20 +238,9 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
               bottom: 236.h,
               left: 0,
               right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  widget.item.imageUrls.length,
-                  (index) => Container(
-                    width: 6.w,
-                    height: 6.w,
-                    margin: EdgeInsets.symmetric(horizontal: 2.w),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _currentImageIndex == index ? AppColors.primaryYellow : AppColors.opacity50White,
-                    ),
-                  ),
-                ),
+              child: HomeFeedImageIndicator(
+                imageCount: widget.item.imageUrls.length,
+                currentImageIndex: _currentImageIndex,
               ),
             ),
 
@@ -273,61 +249,16 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
             Positioned(
               right: 33.w,
               bottom: 232.h,
-              child: Column(
-                children: [
-                  SizedBox.square(
-                    dimension: 32.w,
-                    child: OverflowBox(
-                      maxWidth: 56.w,
-                      maxHeight: 56.w,
-                      child: Material(
-                        color: Colors.transparent,
-                        shape: const CircleBorder(),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkResponse(
-                          radius: 18.w,
-                          containedInkWell: false,
-                          onTap: () async {
-                            final id = widget.item.itemUuid;
-                            if (id == null || id.isEmpty) return;
+              child: HomeFeedItemLikeButton(
+                isLiked: liked,
+                likeCount: likeCount,
+                onTap: () {
+                  final id = widget.item.itemUuid;
+                  if (id == null || id.isEmpty) return;
 
-                            // 내가 작성한 게시글인지 확인
-                            final isCurrentMember = await MemberManager.isCurrentMember(widget.item.authorMemberId);
-                            if (isCurrentMember) {
-                              if (mounted) {
-                                CommonSnackBar.show(
-                                  context: context,
-                                  message: '본인 게시글에는 좋아요를 누를 수 없습니다.',
-                                  type: SnackBarType.error,
-                                );
-                              }
-                              return;
-                            }
-
-                            await ref.read(itemLikeProvider.notifier).toggle(id);
-                          },
-                          customBorder: const CircleBorder(),
-                          highlightColor: AppColors.buttonHighlightColorGray,
-                          splashColor: AppColors.buttonHighlightColorGray.withValues(alpha: 0.3),
-                          child: SizedBox.square(
-                            dimension: 56.w, // 리플/터치 캔버스
-                            child: Center(
-                              child: SizedBox.square(
-                                dimension: 30.w,
-                                child: SvgPicture.asset(
-                                  liked ? 'assets/images/like-heart-icon.svg' : 'assets/images/dislike-heart-icon.svg',
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(likeCount.toString(), style: CustomTextStyles.p2),
-                ],
+                  // 본인글 차단은 toggle 내부에서 동기 처리 — await 없이 즉시 하트 반응
+                  ref.read(itemLikeProvider.notifier).toggle(id, authorMemberId: widget.item.authorMemberId);
+                },
               ),
             ),
 
@@ -335,9 +266,9 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 110.h,
+            bottom: HomeFeedCardLayout.infoPanelBottomInset,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              padding: EdgeInsets.symmetric(horizontal: HomeFeedCardLayout.infoPanelHorizontalPadding),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,66 +276,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                   Expanded(
                     child: BlurWrapper(
                       enabled: widget.showBlur,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 물품 이름
-                          Text(
-                            widget.item.name.trim(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: CustomTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
-                          ),
-
-                          SizedBox(height: 8.h),
-
-                          // 위치 및 날짜 정보
-                          Row(
-                            children: [
-                              Icon(AppIcons.location, color: AppColors.opacity80White, size: 13.sp),
-                              SizedBox(width: 4.w),
-                              Text(
-                                '${widget.item.location} • $formattedDate',
-                                style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 12.h),
-
-                          Row(
-                            children: [
-                              // 사용감 태그 - ItemDetail과 동일한 위젯 사용
-                              ItemDetailConditionTag(condition: widget.item.itemCondition.label),
-                              SizedBox(width: 4.w),
-                              // 거래 방식 태그들 - ItemDetail과 동일한 위젯 사용
-                              Wrap(
-                                spacing: 4.w,
-                                children: widget.item.transactionTypes
-                                    .map((type) => ItemDetailTradeOptionTag(option: type.label))
-                                    .toList(),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 10.h),
-
-                          Row(
-                            children: [
-                              // 물품 가격
-                              Text(
-                                "$formattedPrice원",
-                                style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600),
-                              ),
-
-                              SizedBox(width: 8.w),
-
-                              _useAiPrice ? const AiBadgeWidget() : const SizedBox(),
-                            ],
-                          ),
-                        ],
-                      ),
+                      child: HomeFeedItemSummary(item: widget.item, isAiPrice: _useAiPrice),
                     ),
                   ),
 
@@ -432,7 +304,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                             child: BlurWrapper(
                               enabled: widget.showBlur,
                               child: UserProfileCircularAvatar(
-                                avatarSize: const Size(50, 50),
+                                avatarSize: const Size.square(HomeFeedCardLayout.profileAvatarSize),
                                 profileUrl: widget.item.profileUrl.isNotEmpty ? widget.item.profileUrl : null,
                                 isDeleteAccount: widget.item.accountStatus == AccountStatus.deleteAccount.serverName,
                               ),
@@ -464,7 +336,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '교환을 시작하려면\n먼저 나의 물건을 등록해 주세요!',
+                    '교환을 시작하려면\n먼저 나의 물품을 등록해 주세요!',
                     textAlign: TextAlign.center,
                     style: CustomTextStyles.h2.copyWith(
                       fontWeight: FontWeight.w600,

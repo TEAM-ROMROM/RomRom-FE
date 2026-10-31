@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/chat_room_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -18,6 +19,7 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
@@ -35,6 +37,8 @@ class ChatTabScreen extends ConsumerStatefulWidget {
 class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
+  // 스크롤 이벤트 디바운스 시간
+  static const Duration _scrollDebounceDelay = Duration(milliseconds: 100);
   Timer? _scrollTimer;
   final ChatWebSocketService _wsService = ChatWebSocketService();
 
@@ -54,6 +58,9 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
   // 중복 요청 방지
   final Set<String> _pendingRequests = {};
 
+  // 에러 뷰 다시 시도 진행 중 여부 (버튼 스피너·중복 탭 차단)
+  bool _isRetryingChatRooms = false;
+
   // WebSocket 구독 관리
   final Map<String, StreamSubscription<ChatMessage>> _roomSubscriptions = {};
   String? _myMemberId;
@@ -65,11 +72,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
   void initState() {
     super.initState();
 
-    _toggleAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-      upperBound: 2.0,
-    );
+    _toggleAnimationController = AnimationController(duration: AppMotion.normal, vsync: this, upperBound: 2.0);
     _toggleAnimation = _toggleAnimationController;
 
     _initializeWebSocket();
@@ -117,11 +120,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
 
   void _onTabChanged(int index) {
     setState(() => _selectedTabIndex = index);
-    _toggleAnimationController.animateTo(
-      index.toDouble(),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    _toggleAnimationController.animateTo(index.toDouble(), duration: AppMotion.normal, curve: AppMotion.standard);
   }
 
   /// 무한 스크롤 트리거
@@ -131,7 +130,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     }
 
     _scrollTimer?.cancel();
-    _scrollTimer = Timer(const Duration(milliseconds: 100), () {});
+    _scrollTimer = Timer(_scrollDebounceDelay, () {});
 
     if (_scrollController.offset > 50 && !_isScrolled) {
       setState(() => _isScrolled = true);
@@ -143,7 +142,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
   /// 다음 페이지 로드 (중복 방지)
   Future<void> _triggerLoadMore() async {
     if (_pendingRequests.contains('loadMore')) return;
-    final cur = ref.read(chatRoomsProvider).value;
+    final cur = ref.read(chatRoomsProvider).valueOrNull;
     if (cur == null || !cur.hasMore) return;
 
     _pendingRequests.add('loadMore');
@@ -151,7 +150,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     try {
       await ref.read(chatRoomsProvider.notifier).loadMore();
       // 새로 로드된 방들 구독
-      final updated = ref.read(chatRoomsProvider).value;
+      final updated = ref.read(chatRoomsProvider).valueOrNull;
       if (updated != null) _subscribeToRooms(updated.rooms);
     } finally {
       if (mounted) setState(() => _pagingLoading = false);
@@ -178,11 +177,17 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
       await ref.read(chatRoomsProvider.notifier).reload();
       if (!mounted) return;
 
+      // 재조회 실패 + 기존 목록 있음 > 목록 유지 + 스낵바 (목록 없으면 에러 뷰가 대신 표시, 재구독은 계속)
+      final reloaded = ref.read(chatRoomsProvider);
+      if (reloaded.hasError && (reloaded.valueOrNull?.rooms.isNotEmpty ?? false)) {
+        CommonSnackBar.show(context: context, type: SnackBarType.error, message: '채팅방을 불러오는 중 오류가 발생했습니다');
+      }
+
       // 초기 로드와 마찬가지로 스크롤 가능해질 때까지 프리패치
       _autoPrefetchCount = 0;
       await _autoPrefetch();
 
-      final updated = ref.read(chatRoomsProvider).value;
+      final updated = ref.read(chatRoomsProvider).valueOrNull;
       if (updated != null) _subscribeToRooms(updated.rooms);
     } catch (e) {
       debugPrint('채팅방 목록 새로고침 실패: $e');
@@ -194,10 +199,21 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     }
   }
 
+  /// 에러 뷰 다시 시도: 진행 중이면 무시 > 전체 새로고침
+  Future<void> _onRetryChatRoomsPressed() async {
+    if (_isRetryingChatRooms) return;
+    setState(() => _isRetryingChatRooms = true);
+    try {
+      await _triggerReload();
+    } finally {
+      if (mounted) setState(() => _isRetryingChatRooms = false);
+    }
+  }
+
   /// 초기 로드 / 리프레시 후 스크롤 가능해질 때까지 자동 프리패치
   Future<void> _autoPrefetch() async {
     while (true) {
-      final cur = ref.read(chatRoomsProvider).value;
+      final cur = ref.read(chatRoomsProvider).valueOrNull;
       if (cur == null || !cur.hasMore) break;
       if (_autoPrefetchCount >= _autoPrefetchMax) break;
 
@@ -208,7 +224,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
         _autoPrefetchCount++;
         setState(() => _prefetchLoading = true);
         await ref.read(chatRoomsProvider.notifier).loadMore();
-        final updated = ref.read(chatRoomsProvider).value;
+        final updated = ref.read(chatRoomsProvider).valueOrNull;
         if (updated != null) _subscribeToRooms(updated.rooms);
         continue;
       }
@@ -219,7 +235,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
       setState(() => _prefetchLoading = true);
       _autoPrefetchCount++;
       await ref.read(chatRoomsProvider.notifier).loadMore();
-      final updated = ref.read(chatRoomsProvider).value;
+      final updated = ref.read(chatRoomsProvider).valueOrNull;
       if (updated != null) _subscribeToRooms(updated.rooms);
     }
 
@@ -255,8 +271,10 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
       }
     });
 
-    final rooms = chatAsync.value?.rooms ?? const [];
+    final rooms = chatAsync.valueOrNull?.rooms ?? const [];
     final isInitialLoading = chatAsync is AsyncLoading && rooms.isEmpty;
+    // 불러오기 실패 + 보여줄 목록 없음 > 에러 뷰 (목록 있으면 목록 유지)
+    final hasLoadErrorWithoutRooms = chatAsync.hasError && rooms.isEmpty;
     final filteredRooms = _getFilteredChatRooms(rooms);
 
     return Scaffold(
@@ -293,11 +311,26 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
                 ),
               ),
 
-              // 초기 로딩: 스켈레톤 표시
-              if (isInitialLoading) const ChatRoomListSkeletonSliver(itemCount: 5),
+              // 3상태: 초기 로딩 스켈레톤 / 에러 뷰 / 빈 상태 (필터 탭별 공통)
+              if (isInitialLoading)
+                const ChatRoomListSkeletonSliver(itemCount: 5)
+              else if (hasLoadErrorWithoutRooms)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: EmptyStateView.error(
+                    centerText: '채팅을 불러오지 못했어요',
+                    onRetry: _onRetryChatRoomsPressed,
+                    isRetrying: _isRetryingChatRooms,
+                  ),
+                )
+              else if (filteredRooms.isEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: EmptyStateView(icon: AppIcons.chat, centerText: '아직 채팅이 없어요'),
+                ),
 
               // 데이터 있을 때: 채팅방 리스트
-              if (rooms.isNotEmpty)
+              if (filteredRooms.isNotEmpty)
                 SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final chatRoomDetail = filteredRooms[index];
