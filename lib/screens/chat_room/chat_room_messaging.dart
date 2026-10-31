@@ -22,6 +22,10 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
       setState(() {
         _messages = mergeServerMessages(current: _messages, serverMessages: serverMessages);
       });
+      // 단절 구간에 놓친 AI 추천 교정 (닫은 추천은 provider가 재노출 차단)
+      ref
+          .read(chatRecommendationProvider.notifier)
+          .applyServerRecommendation(widget.chatRoomId, response.latestRecommendation);
       debugPrint('[ChatRoom] 🔁 재연결 동기화 완료: 서버 ${serverMessages.length}건 병합');
     } catch (e) {
       // 백그라운드 동기화이므로 사용자에게 노출하지 않음. 다음 재연결 때 재시도.

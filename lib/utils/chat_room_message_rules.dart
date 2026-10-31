@@ -1,5 +1,6 @@
 // lib/utils/chat_room_message_rules.dart
 // 채팅방 메시지 목록 판정 순수 함수 (목록은 reverse 정렬: index 0 = 최신)
+import 'package:romrom_fe/enums/chat_recommended_action.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
@@ -91,6 +92,45 @@ bool hasActiveTradeRequest({required List<ChatMessage> messages, required bool i
   final latestRequestIndex = messages.indexWhere((m) => m.type == MessageType.tradeCompleteRequest);
   return latestRequestIndex != -1 &&
       isActiveTradeRequestAt(messages: messages, index: latestRequestIndex, isTradeCompleted: isTradeCompleted);
+}
+
+/// 활성 교환 완료 요청의 발신자 ID (활성 요청 없으면 null)
+String? findActiveTradeRequestSenderId({required List<ChatMessage> messages, required bool isTradeCompleted}) {
+  final latestRequestIndex = messages.indexWhere((m) => m.type == MessageType.tradeCompleteRequest);
+  if (latestRequestIndex == -1) return null;
+  final isActive = isActiveTradeRequestAt(
+    messages: messages,
+    index: latestRequestIndex,
+    isTradeCompleted: isTradeCompleted,
+  );
+  return isActive ? messages[latestRequestIndex].senderId : null;
+}
+
+/// AI 추천 행동 지금 실행 가능 여부 (불가하면 배너 미노출, 서버 추천 이후 로컬 상태 변화 대비)
+/// 조건: 위치 > 입력 가능, 요청 > 입력 가능·미완료·활성 요청 없음, 취소 > 내 활성 요청, 거절·완료 > 상대 활성 요청
+bool canPerformRecommendedAction({
+  required ChatRecommendedAction action,
+  required bool isInputDisabled,
+  required bool isTradeCompleted,
+  required bool isTradeActionPending,
+  required String? activeTradeRequestSenderId,
+  required String? myMemberId,
+}) {
+  final bool hasActiveTradeRequest = activeTradeRequestSenderId != null;
+  final bool isMyActiveTradeRequest = hasActiveTradeRequest && activeTradeRequestSenderId == myMemberId;
+  switch (action) {
+    case ChatRecommendedAction.none:
+      return false;
+    case ChatRecommendedAction.sendLocation:
+      return !isInputDisabled;
+    case ChatRecommendedAction.requestTradeCompletion:
+      return !isInputDisabled && !isTradeCompleted && !isTradeActionPending && !hasActiveTradeRequest;
+    case ChatRecommendedAction.cancelTradeCompletionRequest:
+      return !isTradeActionPending && isMyActiveTradeRequest;
+    case ChatRecommendedAction.rejectTradeCompletionRequest:
+    case ChatRecommendedAction.confirmTradeCompletion:
+      return !isTradeActionPending && hasActiveTradeRequest && !isMyActiveTradeRequest;
+  }
 }
 
 /// 상대방이 읽은 내 메시지 중 가장 최근 메시지 ID (읽음 상태 없으면 null)
