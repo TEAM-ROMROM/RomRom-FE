@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_date_divider.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_room_message_list.dart';
 import '../../helpers/pump_design_screen.dart';
 
@@ -105,6 +106,36 @@ void main() {
       );
 
       expect(find.text('읽음'), findsOneWidget);
+    });
+
+    testWidgets('날짜가 바뀌는 지점마다 날짜 구분선 (같은 날은 1개)', (tester) async {
+      await pumpChatRoomMessageList(
+        tester,
+        messages: [
+          ChatMessage(
+            chatMessageId: 'm3',
+            senderId: 'me',
+            type: MessageType.text,
+            createdDate: DateTime(2026, 11, 1, 9),
+          ),
+          ChatMessage(
+            chatMessageId: 'm2',
+            senderId: 'me',
+            type: MessageType.text,
+            createdDate: DateTime(2026, 11, 1, 8),
+          ),
+          ChatMessage(
+            chatMessageId: 'm1',
+            senderId: 'other',
+            type: MessageType.text,
+            createdDate: DateTime(2026, 10, 31, 23, 59),
+          ),
+        ],
+      );
+
+      expect(find.byType(ChatDateDivider), findsNWidgets(2));
+      expect(find.text('2026년 11월 1일 일요일'), findsOneWidget);
+      expect(find.text('2026년 10월 31일 토요일'), findsOneWidget);
     });
   });
 }

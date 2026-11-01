@@ -62,10 +62,10 @@ void main() {
       expect(find.byType(AiBadgeWidget), findsNothing);
     });
 
-    testWidgets('1분 미만 등록 > 방금 전', (tester) async {
+    testWidgets('1초 미만 등록 > 방금 (공통 경과 시간 규칙)', (tester) async {
       await pumpItemDetailWidget(tester, ItemDetailInfoSection(item: Item(createdDate: DateTime.now())));
 
-      expect(findRichTextContaining('· 방금 전'), findsOneWidget);
+      expect(findRichTextContaining('· 방금'), findsOneWidget);
     });
   });
 

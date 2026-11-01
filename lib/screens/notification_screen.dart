@@ -208,7 +208,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
           type: type,
           title: title,
           description: body,
-          time: item.publishedAt ?? DateTime.now(),
+          time: item.publishedAt,
           imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출
           isRead: item.isRead ?? false, // 읽음 상태 API에서 받아온 값 사용
           deepLink: item.payload?['deepLink'], // payload에서 딥링크 추출

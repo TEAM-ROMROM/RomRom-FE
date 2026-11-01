@@ -1,4 +1,4 @@
-// 채팅방 메시지 목록: 빈 목록 안내 / 최신이 아래인 reverse 목록 (간격·시각·읽음·교환 요청 버튼 판정)
+// 채팅방 메시지 목록: 빈 목록 안내 / 최신이 아래인 reverse 목록 (날짜 구분선·간격·시각·읽음·교환 요청 버튼 판정)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/message_type.dart';
@@ -7,6 +7,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/chat_room_message_rules.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_date_divider.dart';
 
 class ChatRoomMessageList extends StatelessWidget {
   // reverse 정렬 (index 0 = 최신)
@@ -58,10 +59,15 @@ class ChatRoomMessageList extends StatelessWidget {
     );
   }
 
-  /// 메시지 1건: 간격(같은 발신자·종류 8.h, 그 외 24.h) > 시각 표시 > 교환 요청 버튼 콜백 > 메시지 아이템
+  /// 메시지 1건: 날짜 구분선 > 간격(구분선 아래 16.h, 같은 발신자·종류 8.h, 그 외 24.h) > 시각 표시 > 교환 요청 버튼 콜백 > 메시지 아이템
   Widget _buildMessageItem(BuildContext context, int index) {
     final message = messages[index];
-    final double topGap = isGroupedWithOlderMessage(messages: messages, index: index) ? 8.h : 24.h;
+    final bool showDateDivider = shouldShowDateDivider(messages: messages, index: index);
+    final double topGap = showDateDivider
+        ? 16.h
+        : isGroupedWithOlderMessage(messages: messages, index: index)
+        ? 8.h
+        : 24.h;
     final bool showTime = shouldShowMessageTime(messages: messages, index: index);
 
     // 교환 완료 요청 활성 상태면 버튼 콜백 결정
@@ -78,7 +84,7 @@ class ChatRoomMessageList extends StatelessWidget {
       }
     }
 
-    return ChatMessageItem(
+    final messageItem = ChatMessageItem(
       key: ValueKey(message.chatMessageId ?? '${message.senderId}_${message.createdDate?.millisecondsSinceEpoch}'),
       message: message,
       myMemberId: myMemberId,
@@ -91,6 +97,16 @@ class ChatRoomMessageList extends StatelessWidget {
       onRejectTradeRequest: rejectTradeRequestCallback,
       onConfirmTradeRequest: confirmTradeRequestCallback,
       isTradeActionPending: isTradeActionPending,
+    );
+    if (!showDateDivider) return messageItem;
+
+    // reverse 목록이라 Column 위쪽 = 더 오래된 쪽 (구분선이 그날 첫 메시지 위에 위치)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ChatDateDivider(date: message.createdDate!),
+        messageItem,
+      ],
     );
   }
 }

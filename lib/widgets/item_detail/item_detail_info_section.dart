@@ -96,20 +96,9 @@ class ItemDetailInfoSection extends StatelessWidget {
     return ItemTradeOption.fromServerName(serverName)?.label ?? serverName;
   }
 
-  /// 등록 시각 > 상대 표기 (N일 전 / N시간 전 / N분 전 / 방금 전)
+  /// 등록 시각 > 경과 시간 문구 (공통 getTimeAgo 규칙, 시각 없으면 날짜 정보 없음)
   static String _toCreatedTimeLabel(DateTime? dateTime) {
     if (dateTime == null) return '날짜 정보 없음';
-
-    final difference = DateTime.now().difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}일 전';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}시간 전';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}분 전';
-    } else {
-      return '방금 전';
-    }
+    return getTimeAgo(dateTime);
   }
 }
