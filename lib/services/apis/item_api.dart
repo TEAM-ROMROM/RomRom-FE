@@ -95,6 +95,15 @@ class ItemApi {
       fields['sortField'] = request.sortField!;
     }
 
+    // 홈 피드 다양성 (#966): 최근 본 물품은 서버가 목록 뒤로, 시드는 추천순 섞기 (구버전 서버는 무시)
+    final recentlySeenItemIds = request.recentlySeenItemIds;
+    if (recentlySeenItemIds != null && recentlySeenItemIds.isNotEmpty) {
+      fields['recentlySeenItemIds'] = recentlySeenItemIds.join(',');
+    }
+    if (request.feedSeed != null) {
+      fields['feedSeed'] = request.feedSeed.toString();
+    }
+
     await ApiClient.sendMultipartRequest(
       url: url,
       fields: fields,

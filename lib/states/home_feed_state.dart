@@ -28,6 +28,12 @@ class HomeFeedState {
   /// 화면은 이 값의 변화로 append/replace를 명시적으로 구분한다 (위치기반 id 역추론의 오분류 방지, #904).
   final int feedRevision;
 
+  /// 이번 세션 추천순 섞기 시드 (첫 페이지 조회 시 새로 생성, loadMore는 같은 값 유지) (#966)
+  final int? feedSeed;
+
+  /// 이번 세션 요청에 보내는 최근 본 물품 스냅샷 (최근 본 순, 세션 시작 시 고정 > 페이지 경계 중복·누락 방지) (#966)
+  final List<String> sessionRecentlySeenItemIds;
+
   HomeFeedState({
     List<HomeFeedItem> items = const [],
     this.currentPage = 0,
@@ -36,7 +42,10 @@ class HomeFeedState {
     LinkedHashSet<String>? seenItemIds,
     this.lastRefreshAt,
     this.feedRevision = 0,
+    this.feedSeed,
+    List<String> sessionRecentlySeenItemIds = const [],
   }) : items = List.unmodifiable(items),
+       sessionRecentlySeenItemIds = List.unmodifiable(sessionRecentlySeenItemIds),
        // LinkedHashSet 타입 명시가 필요 (Set 리터럴은 LinkedHashSet 타입 보장 안 함)
        // ignore: prefer_collection_literals
        seenItemIds = seenItemIds ?? LinkedHashSet<String>();
@@ -49,6 +58,8 @@ class HomeFeedState {
     LinkedHashSet<String>? seenItemIds,
     DateTime? lastRefreshAt,
     int? feedRevision,
+    int? feedSeed,
+    List<String>? sessionRecentlySeenItemIds,
   }) {
     return HomeFeedState(
       items: items ?? this.items,
@@ -58,6 +69,8 @@ class HomeFeedState {
       seenItemIds: seenItemIds ?? this.seenItemIds,
       lastRefreshAt: lastRefreshAt ?? this.lastRefreshAt,
       feedRevision: feedRevision ?? this.feedRevision,
+      feedSeed: feedSeed ?? this.feedSeed,
+      sessionRecentlySeenItemIds: sessionRecentlySeenItemIds ?? this.sessionRecentlySeenItemIds,
     );
   }
 
@@ -72,7 +85,9 @@ class HomeFeedState {
           currentSortField == other.currentSortField &&
           setEquals(seenItemIds, other.seenItemIds) &&
           lastRefreshAt == other.lastRefreshAt &&
-          feedRevision == other.feedRevision;
+          feedRevision == other.feedRevision &&
+          feedSeed == other.feedSeed &&
+          listEquals(sessionRecentlySeenItemIds, other.sessionRecentlySeenItemIds);
 
   @override
   int get hashCode => Object.hash(
@@ -83,9 +98,11 @@ class HomeFeedState {
     Object.hashAll(seenItemIds),
     lastRefreshAt,
     feedRevision,
+    feedSeed,
+    Object.hashAll(sessionRecentlySeenItemIds),
   );
 
   @override
   String toString() =>
-      'HomeFeedState(items=${items.length}, page=$currentPage, hasMore=$hasMoreItems, sort=$currentSortField, seen=${seenItemIds.length}, lastRefresh=$lastRefreshAt, rev=$feedRevision)';
+      'HomeFeedState(items=${items.length}, page=$currentPage, hasMore=$hasMoreItems, sort=$currentSortField, seen=${seenItemIds.length}, lastRefresh=$lastRefreshAt, rev=$feedRevision, seed=$feedSeed, sessionSeen=${sessionRecentlySeenItemIds.length})';
 }
