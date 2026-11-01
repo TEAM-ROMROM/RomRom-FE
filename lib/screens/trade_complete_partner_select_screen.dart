@@ -139,7 +139,8 @@ class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeComplete
     final member = room.targetMember;
     final nickname = member?.nickname ?? '알 수 없음';
     final location = room.targetMemberEupMyeonDong ?? '';
-    final timeAgo = room.lastMessageTime != null ? getTimeAgo(room.lastMessageTime!) : '';
+    // 채팅 목록과 같은 날짜 기준 표시 (오늘 시각·어제·날짜)
+    final timeAgo = formatListTimestamp(room.lastMessageTime);
     final messagePreview = room.lastMessageContent ?? '';
 
     return GestureDetector(

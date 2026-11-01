@@ -14,7 +14,7 @@ class ChatRoomListItem extends StatelessWidget {
   final String? memberId;
   final String nickname;
   final String location;
-  final String timeAgo;
+  final String lastMessageTimeLabel;
   final String messagePreview;
   final String? targetItemImageUrl;
   final String? myItemImageUrl;
@@ -30,7 +30,7 @@ class ChatRoomListItem extends StatelessWidget {
     this.memberId,
     required this.nickname,
     required this.location,
-    required this.timeAgo,
+    required this.lastMessageTimeLabel,
     required this.messagePreview,
     this.targetItemImageUrl,
     this.myItemImageUrl,
@@ -142,7 +142,7 @@ class ChatRoomListItem extends StatelessWidget {
                       SizedBox(width: 2.w),
                       // 시간
                       Text(
-                        timeAgo,
+                        lastMessageTimeLabel,
                         style: CustomTextStyles.p3.copyWith(
                           color: AppColors.chatLocationTimeMessage,
                           fontWeight: FontWeight.w500,

@@ -192,7 +192,7 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
     final imageUrl = item.primaryImageUrl ?? '';
     final isAiPredictedPrice = item.isAiPredictedPrice ?? false;
     final tradeOptions = item.itemTradeOptions ?? const <String>[];
-    final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : '';
+    final uploadTime = getTimeAgo(item.createdDate);
 
     return Stack(
       children: [

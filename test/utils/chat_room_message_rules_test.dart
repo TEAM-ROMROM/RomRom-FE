@@ -125,6 +125,74 @@ void main() {
     });
   });
 
+  group('shouldShowDateDivider (reverse 목록: index 0 = 최신)', () {
+    test('메시지 1개 > 가장 오래된 메시지라 구분선 표시', () {
+      final messages = [buildChatMessage('m1', createdDate: baseTime)];
+      expect(shouldShowDateDivider(messages: messages, index: 0), isTrue);
+    });
+
+    test('같은 날짜 > 가장 오래된 메시지 위에만 구분선', () {
+      final messages = [
+        buildChatMessage('m3', createdDate: DateTime(2026, 11, 1, 23, 59)),
+        buildChatMessage('m2', createdDate: DateTime(2026, 11, 1, 9, 5)),
+        buildChatMessage('m1', createdDate: DateTime(2026, 11, 1, 0, 0)),
+      ];
+      expect(shouldShowDateDivider(messages: messages, index: 0), isFalse);
+      expect(shouldShowDateDivider(messages: messages, index: 1), isFalse);
+      expect(shouldShowDateDivider(messages: messages, index: 2), isTrue);
+    });
+
+    test('자정 경계 (23:59 > 00:00) > 새 날짜 첫 메시지 위에 구분선', () {
+      final messages = [
+        buildChatMessage('m2', createdDate: DateTime(2026, 11, 1, 0, 0)),
+        buildChatMessage('m1', createdDate: DateTime(2026, 10, 31, 23, 59)),
+      ];
+      expect(shouldShowDateDivider(messages: messages, index: 0), isTrue);
+      expect(shouldShowDateDivider(messages: messages, index: 1), isTrue);
+    });
+
+    test('UTC 시각도 로컬 날짜로 판정 (시간대 무관)', () {
+      final messages = [
+        buildChatMessage('m2', createdDate: DateTime(2026, 11, 1, 0, 5).toUtc()),
+        buildChatMessage('m1', createdDate: DateTime(2026, 10, 31, 23, 55).toUtc()),
+      ];
+      expect(shouldShowDateDivider(messages: messages, index: 0), isTrue);
+
+      final sameLocalDate = [
+        buildChatMessage('m2', createdDate: DateTime(2026, 11, 1, 23, 55).toUtc()),
+        buildChatMessage('m1', createdDate: DateTime(2026, 11, 1, 0, 5)),
+      ];
+      expect(shouldShowDateDivider(messages: sameLocalDate, index: 0), isFalse);
+    });
+
+    test('시각 없는 메시지 > 구분선 없음, 비교는 시각 있는 더 오래된 메시지와', () {
+      final messages = [
+        buildChatMessage('m3', createdDate: DateTime(2026, 11, 1, 10)),
+        buildChatMessage('local_1'),
+        buildChatMessage('m1', createdDate: DateTime(2026, 11, 1, 9)),
+      ];
+      expect(shouldShowDateDivider(messages: messages, index: 1), isFalse);
+      expect(shouldShowDateDivider(messages: messages, index: 0), isFalse);
+
+      final nextDay = [buildChatMessage('m3', createdDate: DateTime(2026, 11, 2, 10)), ...messages.skip(1)];
+      expect(shouldShowDateDivider(messages: nextDay, index: 0), isTrue);
+    });
+
+    test('여러 날짜 > 날짜가 바뀌는 메시지마다 구분선 (구분선 수 = 날짜 수)', () {
+      final messages = [
+        buildChatMessage('m4', createdDate: DateTime(2026, 11, 3, 8)),
+        buildChatMessage('m3', createdDate: DateTime(2026, 11, 1, 20)),
+        buildChatMessage('m2', createdDate: DateTime(2026, 11, 1, 8)),
+        buildChatMessage('m1', createdDate: DateTime(2025, 12, 31, 22)),
+      ];
+      final dividerIndexes = [
+        for (int index = 0; index < messages.length; index++)
+          if (shouldShowDateDivider(messages: messages, index: index)) index,
+      ];
+      expect(dividerIndexes, [0, 2, 3]);
+    });
+  });
+
   group('findMatchingPendingLocalMessageId', () {
     final pendingLocalMessages = {
       'local_1': buildChatMessage('local_1', content: '안녕', createdDate: baseTime),

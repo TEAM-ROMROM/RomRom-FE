@@ -16,7 +16,8 @@ class NotificationItemData {
   final NotificationType type;
   final String title;
   final String description;
-  final DateTime time;
+  // 발행 시각 (없으면 시각 문구 빈 값)
+  final DateTime? time;
   final String? imageUrl;
   final bool isRead;
   final String? deepLink;
@@ -109,7 +110,10 @@ class NotificationItemWidget extends StatelessWidget {
                 ],
               ),
 
-              Text(getTimeAgo(data.time), style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
+              Text(
+                formatListTimestamp(data.time),
+                style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+              ),
             ],
           ),
         ),
