@@ -28,6 +28,11 @@ class ItemRequest {
   String? sortField;
   String? sortDirection;
   String? searchKeyword;
+  // 홈 피드 전용 (#966): 최근 본 물품 id (최근 본 순), 추천순 섞기 시드 > item_api가 직접 전송
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String>? recentlySeenItemIds;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  int? feedSeed;
 
   ItemRequest({
     this.memberId,
@@ -53,6 +58,8 @@ class ItemRequest {
     this.sortField,
     this.sortDirection,
     this.searchKeyword,
+    this.recentlySeenItemIds,
+    this.feedSeed,
   });
 
   factory ItemRequest.fromJson(Map<String, dynamic> json) => _$ItemRequestFromJson(json);
