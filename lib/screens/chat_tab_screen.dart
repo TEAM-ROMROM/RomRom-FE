@@ -345,7 +345,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
                             memberId: chatRoomDetail.targetMember?.memberId,
                             nickname: chatRoomDetail.targetMember?.nickname ?? '',
                             location: chatRoomDetail.targetMemberEupMyeonDong ?? '',
-                            timeAgo: getTimeAgo(chatRoomDetail.lastMessageTime ?? DateTime.now()),
+                            lastMessageTimeLabel: formatListTimestamp(chatRoomDetail.lastMessageTime),
                             messagePreview: chatRoomDetail.lastMessageContent ?? '',
                             unreadCount: chatRoomDetail.unreadCount ?? 0,
                             targetItemImageUrl: chatRoomDetail.targetItemImageUrl,

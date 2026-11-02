@@ -37,7 +37,7 @@ class RegisterTabItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = item.primaryImageUrl ?? '';
-    final uploadTime = item.createdDate != null ? getTimeAgo(item.createdDate!) : '';
+    final uploadTime = getTimeAgo(item.createdDate);
 
     return Stack(
       children: [

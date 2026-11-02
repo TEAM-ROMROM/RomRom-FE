@@ -10,6 +10,9 @@ import 'package:share_plus/share_plus.dart';
 import '../widgets/common/common_modal.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 
+// 날짜·시각 표시 함수 원본은 date_time_display_utils.dart (기존 common_utils import 호출부 유지용 재노출)
+export 'package:romrom_fe/utils/date_time_display_utils.dart';
+
 /// 앱 전역 navigatorKey (ApiClient, FirebaseService 등에서 글로벌 네비게이션에 사용)
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -172,74 +175,6 @@ extension ContextExtension on BuildContext {
       onConfirm: () => Navigator.of(this).pop(true),
     );
   }
-}
-
-/// 날짜 변환 함수
-/// 2025-07-14T17:53:08.807506 -> 2025년 7월 14일
-String formatDate(DateTime date) {
-  return DateFormat('yyyy년 M월 d일').format(date);
-}
-
-/// 시간 경과 표시 함수
-/// DateTime을 받아서 "방금", "N초 전", "N분 전", "N시간 전", "N일 전", "N주 전", "N달 전", "N년 전" 형식으로 반환
-String getTimeAgo(DateTime createdDate) {
-  final now = DateTime.now();
-  final difference = now.difference(createdDate);
-
-  if (difference.inSeconds < 1) {
-    return '방금';
-  } else if (difference.inSeconds < 60) {
-    return '${difference.inSeconds}초 전';
-  } else if (difference.inMinutes < 60) {
-    return '${difference.inMinutes}분 전';
-  } else if (difference.inHours < 24) {
-    return '${difference.inHours}시간 전';
-  } else if (difference.inDays < 7) {
-    return '${difference.inDays}일 전';
-  } else if (difference.inDays < 30) {
-    final weeks = (difference.inDays / 7).floor();
-    return '$weeks주 전';
-  } else if (difference.inDays < 365) {
-    final months = (difference.inDays / 30).floor();
-    return '$months달 전';
-  } else {
-    final years = (difference.inDays / 365).floor();
-    return '$years년 전';
-  }
-}
-
-// 동일한 '분'인지 체크
-bool isSameMinute(DateTime? a, DateTime? b) {
-  if (a == null || b == null) return false;
-  final la = a.isUtc ? a.toLocal() : a;
-  final lb = b.isUtc ? b.toLocal() : b;
-  return la.year == lb.year && la.month == lb.month && la.day == lb.day && la.hour == lb.hour && la.minute == lb.minute;
-}
-
-String formatMessageTime(DateTime? dt) {
-  if (dt == null) return '';
-
-  // UTC에서 넘어올 수 있으니 로컬화
-  final local = dt.isUtc ? dt.toLocal() : dt;
-
-  final hour = local.hour;
-  final minute = local.minute.toString().padLeft(2, '0');
-
-  final period = hour < 12 ? '오전' : '오후';
-  // 12시간제 변환: 0시→12, 13시→1, 12시→12
-  final h12 = (hour % 12 == 0) ? 12 : (hour % 12);
-
-  return '$period $h12:$minute'; // 예: "오전 9:05", "오후 12:30"
-}
-
-// 마지막 활동 시간을 텍스트로 변환
-String getLastActivityTime(DateTime? lastActiveAt) {
-  if (lastActiveAt == null) return '오래 전 활동';
-  final diff = DateTime.now().difference(lastActiveAt);
-  if (diff.inMinutes < 1) return '방금 전 활동';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}분 전 활동';
-  if (diff.inHours < 24) return '${diff.inHours}시간 전 활동';
-  return '${diff.inDays}일 전 활동';
 }
 
 // 색상을 어둡게 만드는 함수(버튼 highlight용)

@@ -4,7 +4,7 @@ import 'package:romrom_fe/enums/chat_recommended_action.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/date_time_display_utils.dart';
 
 // 서버 에코 <-> 낙관적 로컬 메시지 매칭 허용 시각 차 (초)
 const int pendingLocalMessageMatchToleranceSeconds = 10;
@@ -167,6 +167,18 @@ bool shouldShowMessageTime({required List<ChatMessage> messages, required int in
       (index > 0 &&
           (messages[index].senderId != messages[index - 1].senderId ||
               !isSameMinute(messages[index].createdDate, messages[index - 1].createdDate)));
+}
+
+/// [index] 메시지 위 날짜 구분선 표시 여부 (가장 오래된 메시지, 또는 더 오래된 메시지와 로컬 날짜가 다를 때)
+/// 시각 없는 메시지는 구분선 없음, 비교 상대도 시각 있는 가장 가까운 더 오래된 메시지
+bool shouldShowDateDivider({required List<ChatMessage> messages, required int index}) {
+  final createdDate = messages[index].createdDate;
+  if (createdDate == null) return false;
+  for (int olderIndex = index + 1; olderIndex < messages.length; olderIndex++) {
+    final olderCreatedDate = messages[olderIndex].createdDate;
+    if (olderCreatedDate != null) return !isSameLocalDate(createdDate, olderCreatedDate);
+  }
+  return true;
 }
 
 /// 내 서버 에코와 짝인 낙관적 로컬 메시지 ID 찾기 (내용 동일 + 시각 차 10초 이내, 없으면 null)
