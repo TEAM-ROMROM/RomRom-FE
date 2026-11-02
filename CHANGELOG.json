@@ -1,11 +1,41 @@
 {
   "metadata": {
-    "lastUpdated": "2026-11-01T12:43:34Z",
-    "currentVersion": "1.10.127",
-    "totalReleases": 125,
+    "lastUpdated": "2026-11-02T00:50:57Z",
+    "currentVersion": "1.10.129",
+    "totalReleases": 126,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.129",
+      "project_type": "flutter",
+      "date": "2026-11-02",
+      "pr_number": 968,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 채팅방에서 날짜가 바뀌는 곳에 날짜 구분선이 표시돼요\n\n* **버그 수정**\n  * 1년 가까이 지난 시간이 '12달 전'으로 보이던 문제를 고쳤어요\n\n* **개선**\n  * 홈 피드에 이미 본 물품보다 새로운 물품이 먼저 보여요\n  * 홈 피드를 새로고침할 때마다 다른 순서로 물품을 보여줘요\n  * 채팅·알림 목록 시간을 오늘은 시각, 어제는 '어제', 그 전은 날짜로 보여줘요",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "채팅방에서 날짜가 바뀌는 곳에 날짜 구분선이 표시돼요"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "1년 가까이 지난 시간이 '12달 전'으로 보이던 문제를 고쳤어요"
+          ]
+        },
+        "개선": {
+          "title": "개선",
+          "items": [
+            "홈 피드에 이미 본 물품보다 새로운 물품이 먼저 보여요",
+            "홈 피드를 새로고침할 때마다 다른 순서로 물품을 보여줘요",
+            "채팅·알림 목록 시간을 오늘은 시각, 어제는 '어제', 그 전은 날짜로 보여줘요"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.127",
       "project_type": "flutter",
