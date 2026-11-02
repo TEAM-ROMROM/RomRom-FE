@@ -115,6 +115,13 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     await _loadReceived(_requestedTakeItemId);
   }
 
+  /// 푸시 수신 등 외부 신호 시 현재 카드 받은 요청 재조회 (카드 선택 전이면 무시)
+  Future<void> reloadReceivedOfRequestedCard() async {
+    final requestedTakeItemId = _requestedTakeItemId;
+    if (requestedTakeItemId == null || requestedTakeItemId.isEmpty) return;
+    await _loadReceived(requestedTakeItemId);
+  }
+
   /// 받은 요청 조회: 정렬 반영 > 주소 변환 > 최신 요청일 때만 반영 (카드 없음 > 빈 목록)
   Future<void> _loadReceived(String? takeItemId) async {
     final generation = ++_receivedLoadGeneration;
