@@ -5,15 +5,17 @@ import 'package:romrom_fe/enums/snack_bar_type.dart';
 
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/enums/navigation_tab_items.dart';
+import 'package:romrom_fe/enums/trade_request_existence_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
+import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
+import 'package:romrom_fe/providers/sent_requests_focus_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
-import 'package:romrom_fe/utils/app_test_keys.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
@@ -21,8 +23,12 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/request_management/request_page_indicator.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
+import 'package:romrom_fe/widgets/trade_request_action_buttons.dart';
+import 'package:romrom_fe/widgets/trade_request_existence_notice.dart';
 import 'package:romrom_fe/widgets/trade_request_target_preview.dart';
+import 'package:romrom_fe/widgets/trade_request_text_action_button.dart';
 import 'package:romrom_fe/widgets/trade_request_trade_option_selector.dart';
 
 /// 요청하기 화면
@@ -45,6 +51,15 @@ class TradeRequestScreen extends ConsumerStatefulWidget {
 }
 
 class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
+  // 내 물품 한 페이지 크기
+  static const int myItemsPageSize = 20;
+
+  // 끝에서 이 장수 이내 카드 도달 시 다음 페이지 로드
+  static const int loadMoreThresholdCardCount = 3;
+
+  // 홈에서 고른 카드 탐색 최대 페이지 수 (첫 페이지 포함, 무한 조회 방지)
+  static const int maximumPreSelectedSearchPageCount = 10;
+
   /// 선택된 카드가 있는지 여부에 따라 초기값 설정
   bool _hasSelectedCard = false;
 
@@ -56,6 +71,11 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
 
   /// 로딩 상태
   bool _isLoading = true;
+
+  // 내 물품 페이지 상태: 다음 조회 페이지 번호, 다음 페이지 여부, 다음 페이지 조회 중 여부
+  int _nextMyItemsPageNumber = 0;
+  bool _hasMoreMyItems = false;
+  bool _isLoadingMoreMyItems = false;
 
   /// PageView 컨트롤러
   late PageController _pageController;
@@ -69,11 +89,8 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
   /// API 요청 진행 중 여부
   bool _isSubmitting = false;
 
-  /// 선택한 카드에 대한 거래 요청 존재 여부 (null = 확인 중)
-  bool? _tradeRequestExists;
-
-  /// 거래 요청 존재 여부 확인 중 여부
-  bool _isCheckingExistence = false;
+  /// 선택한 카드 > 상대 물품 거래 요청 존재 확인 상태
+  TradeRequestExistenceStatus _existenceStatus = TradeRequestExistenceStatus.checking;
 
   /// 존재 여부 확인 회차 (빠른 슬라이드 시 이전 카드 응답 무시용)
   int _existenceCheckGeneration = 0;
@@ -91,53 +108,85 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
     super.dispose();
   }
 
-  /// 내 물품 목록 로드
+  /// 내 물품 첫 로드: 첫 페이지 > 홈에서 고른 카드 탐색 > 초기 카드 선택·요청 존재 확인 (조회 실패해도 받은 카드로 진행)
   Future<void> _loadMyItems() async {
     setState(() => _isLoading = true);
 
     try {
-      // 판매중 내 물품 1페이지 20건 (화면 진입 시마다 서버 최신값)
-      final items = await ref.read(itemRepositoryProvider).getMyItems(ItemStatus.available, pageSize: 20);
-
-      if (!mounted) return;
-
-      final cards = _convertToItemCards(items);
-
-      setState(() {
-        _myItems = items;
-        _myItemCards = cards;
-        _isLoading = false;
-      });
-
-      // preSelectedCardId가 있으면 해당 카드 찾아서 선택 후 _hasSelectedCard를 true로 설정
-      int initialIndex = 0;
-      if (widget.preSelectedCardId != null && items.isNotEmpty) {
-        final preSelectedIndex = items.indexWhere((item) => item.itemId == widget.preSelectedCardId);
-        if (preSelectedIndex >= 0) {
-          initialIndex = preSelectedIndex;
-          setState(() {
-            _selectedCardIndex = preSelectedIndex;
-            _hasSelectedCard = true;
-          });
-          // PageController 위치도 업데이트
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_pageController.hasClients) {
-              _pageController.jumpToPage(preSelectedIndex);
-            }
-          });
-        }
-      }
-
-      if (items.isNotEmpty) {
-        _checkTradeRequestExistence(initialIndex);
-      }
+      await _fetchNextMyItemsPage();
+      await _searchPreSelectedCard();
     } catch (e) {
       debugPrint('내 물품 목록 로드 실패: $e');
+      if (mounted) {
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+      }
+    }
+
+    if (!mounted) return;
+    _selectInitialCard();
+  }
+
+  /// 홈에서 고른 카드 탐색: 찾을 때까지 다음 페이지 (최대 페이지 수·마지막 페이지·새 물품 없는 페이지 > 중단)
+  Future<void> _searchPreSelectedCard() async {
+    final preSelectedCardId = widget.preSelectedCardId;
+    if (preSelectedCardId == null) return;
+    while (mounted &&
+        _hasMoreMyItems &&
+        _nextMyItemsPageNumber < maximumPreSelectedSearchPageCount &&
+        !_myItems.any((item) => item.itemId == preSelectedCardId)) {
+      final addedItemCount = await _fetchNextMyItemsPage();
+      if (addedItemCount == 0) return;
+    }
+  }
+
+  /// 초기 카드 선택: 고른 카드 있음 > 그 카드 선택 완료 상태, 없음 > 첫 카드 > 요청 존재 확인 (카드 없으면 생략)
+  void _selectInitialCard() {
+    final preSelectedIndex = _myItems.indexWhere((item) => item.itemId == widget.preSelectedCardId);
+    final initialIndex = preSelectedIndex >= 0 ? preSelectedIndex : 0;
+    // 카드 선택 모드로 돌아갈 때 고른 카드 위치에서 시작
+    if (preSelectedIndex >= 0) _recreatePageController(preSelectedIndex);
+    setState(() {
+      _selectedCardIndex = initialIndex;
+      _hasSelectedCard = preSelectedIndex >= 0;
+      _isLoading = false;
+    });
+
+    if (_myItems.isNotEmpty) _checkTradeRequestExistence(initialIndex);
+  }
+
+  /// 내 물품 다음 페이지 조회 > 이미 받은 물품 제외하고 뒤에 추가 > 추가된 개수 반환
+  /// (새 물품 없는 페이지 > 마지막 페이지로 처리)
+  Future<int> _fetchNextMyItemsPage() async {
+    final myItemsPage = await ref
+        .read(itemRepositoryProvider)
+        .getMyItemsPage(ItemStatus.available, pageNumber: _nextMyItemsPageNumber, pageSize: myItemsPageSize);
+    if (!mounted) return 0;
+
+    final loadedItemIds = _myItems.map((item) => item.itemId).toSet();
+    final newItems = myItemsPage.items.where((item) => loadedItemIds.add(item.itemId)).toList();
+    setState(() {
+      _myItems = [..._myItems, ...newItems];
+      _myItemCards = [..._myItemCards, ..._convertToItemCards(newItems)];
+      _nextMyItemsPageNumber++;
+      _hasMoreMyItems = myItemsPage.hasMore && newItems.isNotEmpty;
+    });
+    return newItems.length;
+  }
+
+  /// 끝 근처 카드 도달 > 다음 페이지 로드 (조회 중·마지막 페이지면 무시, 실패 시 안내 후 다음 슬라이드에 재시도)
+  Future<void> _loadMoreMyItemsIfNeeded(int cardIndex) async {
+    final isNearLastCard = cardIndex >= _myItemCards.length - loadMoreThresholdCardCount;
+    if (!isNearLastCard || !_hasMoreMyItems || _isLoadingMoreMyItems) return;
+
+    setState(() => _isLoadingMoreMyItems = true);
+    try {
+      await _fetchNextMyItemsPage();
+    } catch (e) {
+      debugPrint('내 물품 다음 페이지 로드 실패: $e');
       if (!mounted) return;
-
-      setState(() => _isLoading = false);
-
       CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+    } finally {
+      if (mounted) setState(() => _isLoadingMoreMyItems = false);
     }
   }
 
@@ -146,15 +195,31 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
     return items.map((item) => RequestManagementItemCard.fromItem(item, titleFallback: '')).toList();
   }
 
-  /// 선택한 카드에 거래 요청이 존재하는지 확인
+  /// 카드 PageView 컨트롤러 재생성 (카드 선택 모드 진입 시 지정 카드에서 시작)
+  void _recreatePageController(int initialPage) {
+    _pageController.dispose();
+    _pageController = PageController(initialPage: initialPage, viewportFraction: 227.w / 345.w);
+  }
+
+  /// 다른 물품 선택: 선택 완료 카드 > 카드 선택 모드 (현재 카드 위치 유지)
+  void _showCardSelection() {
+    _recreatePageController(_selectedCardIndex);
+    setState(() => _hasSelectedCard = false);
+  }
+
+  /// 카드 슬라이드 > 선택 변경 > 요청 존재 확인 > 끝 근처면 다음 페이지
+  void _onCardPageChanged(int index) {
+    setState(() => _selectedCardIndex = index);
+    _checkTradeRequestExistence(index);
+    _loadMoreMyItemsIfNeeded(index);
+  }
+
+  /// 선택한 카드 > 상대 물품 요청 존재 확인 (실패 > 확인 실패 상태, 요청 없음으로 처리하지 않음)
   Future<void> _checkTradeRequestExistence(int cardIndex) async {
     if (_myItems.isEmpty) return;
 
     final generation = ++_existenceCheckGeneration;
-    setState(() {
-      _tradeRequestExists = null;
-      _isCheckingExistence = true;
-    });
+    setState(() => _existenceStatus = TradeRequestExistenceStatus.checking);
 
     // 최신 회차 응답만 반영 (이전 카드 응답이 늦게 와도 현재 카드 상태 유지)
     bool isLatestCheck() => mounted && generation == _existenceCheckGeneration;
@@ -166,14 +231,23 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
 
       if (!isLatestCheck()) return;
 
-      setState(() => _tradeRequestExists = exists);
+      setState(
+        () => _existenceStatus = exists
+            ? TradeRequestExistenceStatus.alreadyRequested
+            : TradeRequestExistenceStatus.notRequested,
+      );
     } catch (e) {
       debugPrint('거래 요청 존재 여부 확인 실패: $e');
       if (!isLatestCheck()) return;
-      setState(() => _tradeRequestExists = false);
-    } finally {
-      if (isLatestCheck()) setState(() => _isCheckingExistence = false);
+      setState(() => _existenceStatus = TradeRequestExistenceStatus.checkFailed);
     }
+  }
+
+  /// 보낸 요청 보기: 요청관리 탭 보낸 요청 신호 > 요청관리 탭 선택 > 메인 화면까지 닫기
+  void _openSentRequests() {
+    ref.read(sentRequestsFocusTriggerProvider.notifier).trigger();
+    ref.read(currentTabIndexProvider.notifier).set(NavigationTabItems.requestManagement.index);
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   /// 거래 요청 API 호출
@@ -303,21 +377,7 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
 
   /// 거래방식 선택 및 요청
   Widget _buildTradeRequestStep() {
-    final bool isRequestDisabled = _isSubmitting || _tradeRequestExists == true || _isCheckingExistence;
-
-    // 요청하기 버튼 색
-    Color requestButtonColor = isRequestDisabled
-        ? AppColors.primaryYellow.withValues(alpha: 0.5)
-        : AppColors.primaryYellow;
-    // 요청하기 버튼 highlightColor
-    Color requestButtonHighlightColor = darkenBlend(requestButtonColor);
-    Color requestButtonSplashColor = requestButtonHighlightColor.withValues(alpha: 0.3);
-
-    // 취소 버튼 색
-    Color cancelButtonColor = AppColors.secondaryBlack1;
-    // 취소 버튼 highlightColor
-    Color cancelButtonHighlightColor = darkenBlend(AppColors.buttonHighlightColorGray);
-    Color cancelButtonSplashColor = darkenBlend(AppColors.buttonHighlightColorGray).withValues(alpha: 0.3);
+    final bool isRequestDisabled = _isSubmitting || _existenceStatus != TradeRequestExistenceStatus.notRequested;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.0.w),
@@ -346,10 +406,7 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
                         child: PageView.builder(
                           controller: _pageController,
                           itemCount: _myItemCards.length,
-                          onPageChanged: (index) {
-                            setState(() => _selectedCardIndex = index);
-                            _checkTradeRequestExistence(index);
-                          },
+                          onPageChanged: _onCardPageChanged,
                           itemBuilder: (context, index) {
                             return Padding(
                               padding: EdgeInsets.symmetric(vertical: 4.0.h, horizontal: 4.w),
@@ -362,120 +419,77 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
                         ),
                       ),
 
-                      // 페이지 인디케이터
-                      Padding(
+                      // 페이지 인디케이터 (불러온 카드 기준)
+                      RequestPageIndicator(
+                        itemCount: _myItemCards.length,
+                        currentIndex: _selectedCardIndex,
                         padding: EdgeInsets.only(top: 24.h),
-                        child: _buildPageIndicator(),
                       ),
                     ],
                   )
                 :
-                  // 카드 선택 완료: 선택한 내 물품 카드만 표시
-                  Center(
-                    child: RequestManagementItemCardWidget(card: _myItemCards[_selectedCardIndex], isActive: true),
+                  // 카드 선택 완료: 선택한 내 물품 카드 + 다른 물품 선택
+                  Column(
+                    children: [
+                      Center(
+                        child: RequestManagementItemCardWidget(card: _myItemCards[_selectedCardIndex], isActive: true),
+                      ),
+                      SizedBox(height: 12.h),
+                      TradeRequestTextActionButton(text: '다른 물품 선택', onTap: _showCardSelection),
+                    ],
                   ),
           ),
 
-          SizedBox(height: _hasSelectedCard ? 31.h : 23.h),
+          SizedBox(height: _hasSelectedCard ? 16.h : 23.h),
 
-          // 거래방식 선택 섹션
-          // 확인 중에는 선택 탭 대신 같은 높이의 로딩을 표시해 깜빡임 방지 (#855)
-          // _tradeRequestExists == null(확인 중)일 때 곧바로 선택 탭을 렌더링하면
-          // 이미 요청한 물품이어도 응답 직전까지 선택 탭이 잠깐 노출되는 문제 발생
-          if (_isCheckingExistence)
-            SizedBox(
-              height: 90.h,
-              child: const Center(child: CommonLoadingIndicator()),
-            )
-          else if (_tradeRequestExists == true)
-            Container(
-              height: 90.h,
-              alignment: Alignment.center,
-              child: Text('이미 교환을 요청한 물품입니다.', style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500)),
-            )
-          else
-            TradeRequestTradeOptionSelector(
-              selectedOptions: _selectedTradeOptions,
-              onChanged: (next) {
-                setState(() {
-                  _selectedTradeOptions
-                    ..clear()
-                    ..addAll(next);
-                });
-              },
-            ),
+          // 거래방식 선택 섹션 (확인 중에는 선택 탭 대신 로딩 > 이미 요청한 물품의 선택 탭 깜빡임 방지, #855)
+          _buildTradeOptionSection(),
 
           SizedBox(height: _hasSelectedCard ? 24.h : 16.h),
 
           // 하단 버튼 (취소, 요청하기)
-          Row(
-            children: [
-              // 취소 버튼
-              Expanded(
-                flex: 1,
-                child: SizedBox(
-                  height: 56.h,
-                  child: Material(
-                    color: cancelButtonColor,
-                    borderRadius: BorderRadius.circular(10.r),
-                    child: InkWell(
-                      onTap: () => Navigator.pop(context),
-                      customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                      highlightColor: cancelButtonHighlightColor,
-                      splashColor: cancelButtonSplashColor,
-                      child: Center(child: Text('취소', style: CustomTextStyles.p1)),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 7.w),
-              // 요청하기 버튼
-              Expanded(
-                flex: 1,
-                child: SizedBox(
-                  height: 56.h,
-                  child: Material(
-                    color: requestButtonColor,
-                    borderRadius: BorderRadius.circular(10.r),
-                    child: InkWell(
-                      key: AppTestKeys.tradeRequestSubmitButton,
-                      customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                      onTap: isRequestDisabled ? null : _submitTradeRequest,
-                      highlightColor: requestButtonHighlightColor,
-                      splashColor: requestButtonSplashColor,
-                      child: Center(
-                        // 요청 중이면 검정 스피너, 아니면 버튼 텍스트
-                        child: (_isSubmitting || _isCheckingExistence)
-                            ? const CommonLoadingIndicator(color: AppColors.textColorBlack)
-                            : Text('요청하기', style: CustomTextStyles.p1.copyWith(color: AppColors.textColorBlack)),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          TradeRequestActionButtons(
+            isRequestDisabled: isRequestDisabled,
+            isRequestLoading: _isSubmitting || _existenceStatus == TradeRequestExistenceStatus.checking,
+            onCancel: () => Navigator.pop(context),
+            onRequest: _submitTradeRequest,
           ),
         ],
       ),
     );
   }
 
-  /// 페이지 인디케이터 빌드
-  Widget _buildPageIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        _myItemCards.length,
-        (index) => Container(
-          width: 8.w,
-          height: 8.w,
-          margin: EdgeInsets.symmetric(horizontal: 4.w),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: index == _selectedCardIndex ? AppColors.primaryYellow : AppColors.opacity30White,
-          ),
-        ),
-      ),
-    );
+  /// 거래 방식 영역: 확인 중 로딩, 이미 요청 > 보낸 요청 보기, 확인 실패 > 다시 확인, 요청 없음 > 선택 탭
+  Widget _buildTradeOptionSection() {
+    switch (_existenceStatus) {
+      case TradeRequestExistenceStatus.checking:
+        return SizedBox(
+          height: 90.h,
+          child: const Center(child: CommonLoadingIndicator()),
+        );
+      case TradeRequestExistenceStatus.alreadyRequested:
+        return TradeRequestExistenceNotice(
+          message: '이미 교환을 요청한 물품입니다.',
+          actionText: '보낸 요청 보기',
+          onActionTap: _openSentRequests,
+        );
+      case TradeRequestExistenceStatus.checkFailed:
+        return TradeRequestExistenceNotice(
+          message: '요청 여부를 확인하지 못했어요.',
+          actionText: '다시 확인',
+          onActionTap: () => _checkTradeRequestExistence(_selectedCardIndex),
+        );
+      case TradeRequestExistenceStatus.notRequested:
+        return TradeRequestTradeOptionSelector(
+          selectedOptions: _selectedTradeOptions,
+          onChanged: (next) {
+            setState(() {
+              _selectedTradeOptions
+                ..clear()
+                ..addAll(next);
+            });
+          },
+        );
+    }
   }
 }

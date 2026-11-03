@@ -127,7 +127,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `myItemsProvider` | `providers/my_items_provider.dart` | AsyncNotifier | 내 물건 `{available, exchanged}` |
 | `memberProfileProvider` | `providers/member_profile_provider.dart` | AsyncNotifier | 내 회원 정보 `{member, location, itemCategories}` |
 | `chatRoomsProvider` | `providers/chat_rooms_provider.dart` | AsyncNotifier(페이징) | 채팅방 목록 `{rooms, currentPage, hasMore}` |
-| `tradeRequestsProvider` | `providers/trade_requests_provider.dart` | AsyncNotifier | 요청관리 `{received, sent, myItemIds, 정렬 기준}` |
+| `tradeRequestsProvider` | `providers/trade_requests_provider.dart` | AsyncNotifier | 요청관리 `{received, sent, myItemIds, 정렬 기준, 받은 조회 실패 여부, 보낸 조회 실패 카드 ID}` — 보낸 요청은 카드 5개씩 묶어 조회, 다시 시도는 실패 카드만 |
 | `homeFeedProvider` | `providers/home_feed_provider.dart` | AsyncNotifier(페이징) | 홈 피드 `{items, currentPage, hasMoreItems, 정렬 기준, seenItemIds}` |
 | `notificationListProvider` | `providers/notification_list_provider.dart` | AsyncNotifier(페이징) | 알림 목록 `{notifications, unreadCount, nextPageNumber, hasMore, isLoadingMore}` — 페이지 크기 `notificationPageSize`(20) |
 | `itemLikeProvider` | `providers/item_like_provider.dart` | Notifier(토글) | 좋아요 `Map<itemId, ItemLikeState>` |
@@ -135,6 +135,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `notificationSettingProvider` | `providers/notification_setting_provider.dart` | Notifier(토글) | 알림설정 `Map<type, bool>` |
 | `currentTabIndexProvider` | `providers/current_tab_index_provider.dart` | Notifier(int) | MainScreen 탭 인덱스 (0 홈, 1 요청관리, 2 등록, 3 채팅, 4 마이페이지) |
 | `coachMarkTriggerProvider` | `providers/coach_mark_trigger_provider.dart` | Notifier(bool) | 첫 등록 후 코치마크 일회성 신호 |
+| `sentRequestsFocusTriggerProvider` | `providers/sent_requests_focus_trigger_provider.dart` | Notifier(bool) | 교환 요청 화면 '보낸 요청 보기' > 요청관리 탭 보낸 요청 토글 일회성 신호 |
 | `homePopupProvider` | `providers/home_popup_provider.dart` | Notifier | 홈 공지·이벤트 팝업 `{hasCheckedThisSession, displayedPopup}` — 세션 1회 노출 판정, 다시 보지 않기 저장 (회원 무관 > userScoped 예외) |
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
 | `homeFeedRepositoryProvider` | `providers/home_feed_repository_provider.dart` | Provider | HomeFeedRepository 주입 |

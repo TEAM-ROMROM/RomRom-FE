@@ -33,4 +33,22 @@ void main() {
       expect(ErrorUtils.getErrorMessage(Exception('plain')), ErrorCode.unknown.koMessage);
     });
   });
+
+  group('ErrorUtils.getErrorCode', () {
+    test('ApiException > errorCode enum', () {
+      final exception = ApiException(statusCode: 404, responseBody: '{"errorCode":"DELETED_ITEM"}');
+
+      expect(ErrorUtils.getErrorCode(exception), ErrorCode.deletedItem);
+    });
+
+    test('기존 문자열 Exception > 정규식 폴백으로 enum', () {
+      final exception = Exception('API 요청 실패: 404, {"errorCode":"ITEM_NOT_FOUND"}');
+
+      expect(ErrorUtils.getErrorCode(exception), ErrorCode.itemNotFound);
+    });
+
+    test('JSON 없는 Exception > unknown', () {
+      expect(ErrorUtils.getErrorCode(Exception('plain')), ErrorCode.unknown);
+    });
+  });
 }

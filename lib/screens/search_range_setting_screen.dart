@@ -4,15 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/latest_value_save_queue.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/range_slider_widget.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -34,8 +38,18 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
 
   NLatLng? _currentPosition;
   int _selectedRangeIndex = 0;
+  // 서버에 마지막으로 저장된 범위 index (저장 실패 시 화면 값 복원 기준)
+  int _savedRangeIndex = 0;
+  // 범위 저장 직렬화 (슬라이더 연속 변경 시 진행 중 저장 뒤 마지막 값만 저장)
+  late final LatestValueSaveQueue<int> _rangeSaveQueue = LatestValueSaveQueue<int>(
+    saveValue: (rangeIndex) => ref
+        .read(memberProfileProvider.notifier)
+        .saveSearchRadius(defaultSearchRangeOptions[rangeIndex].distanceKm * 1000),
+  );
   NCircleOverlay? _rangeCircle;
   bool _locationNotSet = false;
+  // 위치·범위 조회 실패 (위치 미설정 안내와 구분 > 다시 시도)
+  bool _hasLoadError = false;
 
   @override
   void initState() {
@@ -43,8 +57,9 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
     _initializeData();
   }
 
-  /// 서버에서 위치 및 탐색 범위 로드
+  /// 서버에서 위치 및 탐색 범위 로드: 위치 없음 > 위치 설정 안내, 조회 실패 > 다시 시도
   Future<void> _initializeData() async {
+    if (_hasLoadError) setState(() => _hasLoadError = false);
     try {
       final memberProfile = await ref.read(memberProfileProvider.notifier).fetchLatest();
       final location = memberProfile.location;
@@ -59,11 +74,12 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
 
       setState(() {
         _currentPosition = NLatLng(location!.latitude!, location.longitude!);
-        _selectedRangeIndex = _getRangeIndex(searchRadiusInMeters);
+        _selectedRangeIndex = searchRangeIndexForRadius(searchRadiusInMeters);
+        _savedRangeIndex = _selectedRangeIndex;
       });
     } catch (e) {
       debugPrint('위치/탐색 범위 조회 실패: $e');
-      if (mounted) setState(() => _locationNotSet = true);
+      if (mounted) setState(() => _hasLoadError = true);
     }
   }
 
@@ -72,7 +88,9 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
       appBar: const CommonAppBar(title: '탐색 범위 설정', showBottomBorder: true),
-      body: _locationNotSet
+      body: _hasLoadError
+          ? EmptyStateView.error(centerText: '탐색 범위를 불러오지 못했어요', onRetry: _initializeData)
+          : _locationNotSet
           ? _buildLocationNotSetView()
           : _currentPosition == null
           ? const Center(child: CommonLoadingIndicator())
@@ -188,26 +206,39 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
     );
   }
 
-  /// 범위 변경 처리
+  /// 범위 변경 처리: 화면 즉시 반영 > 저장
   void _onRangeChanged(int index) {
     setState(() => _selectedRangeIndex = index);
     _updateRangeCircle();
     _updateCameraZoom();
     _saveSearchRadius(index);
-    widget.onRangeChanged?.call(index);
   }
 
-  /// 탐색 범위 저장
+  /// 탐색 범위 저장 (직렬): 성공 값은 항상 저장 기준에 반영 > 홈 피드 새로고침, 마지막 시도 실패 시 마지막 저장 값으로 복원 + 안내
   Future<void> _saveSearchRadius(int index) async {
-    try {
-      final radiusInMeters = defaultSearchRangeOptions[index].distanceKm * 1000;
-      await ref.read(memberProfileProvider.notifier).saveSearchRadius(radiusInMeters);
-    } catch (e) {
-      debugPrint('탐색 범위 저장 실패: $e');
-      if (mounted) {
-        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
-      }
+    final saveResult = await _rangeSaveQueue.save(index);
+    // 진행 중 저장 뒤로 합쳐진 요청 > 결과는 앞선 호출이 처리
+    if (saveResult == null || !mounted) return;
+
+    final lastSavedRangeIndex = saveResult.lastSavedValue;
+    if (lastSavedRangeIndex != null) {
+      _savedRangeIndex = lastSavedRangeIndex;
+      widget.onRangeChanged?.call(lastSavedRangeIndex);
+      // 조회 조건 변경 > 홈 피드 즉시 갱신 (30초 제한 우회)
+      ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.searchRangeChanged);
     }
+    if (!saveResult.isLatestSaveFailed) return;
+
+    final saveError = saveResult.latestSaveError;
+    debugPrint('탐색 범위 저장 실패: $saveError');
+    setState(() => _selectedRangeIndex = _savedRangeIndex);
+    _updateRangeCircle();
+    _updateCameraZoom();
+    CommonSnackBar.show(
+      context: context,
+      message: saveError != null ? ErrorUtils.getErrorMessage(saveError) : '탐색 범위를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+      type: SnackBarType.error,
+    );
   }
 
   /// 범위 원 업데이트
@@ -257,15 +288,5 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
       default:
         return 12.0;
     }
-  }
-
-  /// 서버 반환 반경(m) → 슬라이더 인덱스 변환
-  int _getRangeIndex(double searchRadiusInMeters) {
-    final radiusInMeters = searchRadiusInMeters.round();
-    if (radiusInMeters <= 2500) return 0;
-    if (radiusInMeters <= 5000) return 1;
-    if (radiusInMeters <= 7500) return 2;
-    if (radiusInMeters <= 10000) return 3;
-    return 0;
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -19,6 +20,7 @@ import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/register_tab/register_tab_floating_register_button.dart';
 import 'package:romrom_fe/widgets/register_tab/register_tab_item_tile.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'dart:async';
@@ -252,13 +254,12 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
     }
   }
 
+  /// 탭별 빈 목록 안내 (교환 가능·전체 > 등록 안내, 교환 완료 > 교환 완료 안내)
   Widget _buildEmptyState() {
-    return Center(
-      child: Text(
-        '등록된 물품이 없어요.',
-        style: CustomTextStyles.p1.copyWith(color: AppColors.opacity40White, fontWeight: FontWeight.w500),
-        textAlign: TextAlign.center,
-      ),
+    return EmptyStateView(
+      icon: AppIcons.register,
+      centerText: _currentTabStatus.emptyItemsTitle,
+      descriptionText: _currentTabStatus.emptyItemsDescription,
     );
   }
 
@@ -299,12 +300,13 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
         }
         return;
       }
+      // 한도 도달: 이유 + 해결 방법(교환 완료 처리·삭제) 안내
       if (myItemsValue.available.length >= _maxAvailableItemCount) {
         if (mounted) {
-          CommonSnackBar.show(
+          await CommonModal.error(
             context: context,
-            message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
-            type: SnackBarType.error,
+            message: '교환 가능한 물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있어요.\n교환이 끝난 물품은 교환 완료로 바꾸거나\n삭제한 뒤 등록해 주세요.',
+            onConfirm: () => Navigator.of(context).pop(),
           );
         }
         return;
@@ -404,7 +406,7 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
   }
 
   Future<void> _showDeleteConfirmDialog(Item item) async {
-    final result = await context.showDeleteDialog(title: '물품을 삭제하시겠습니까?', description: '삭제된 물품은 복구할 수 없습니다.');
+    final result = await context.showItemDeleteConfirmDialog();
     if (result == true) {
       await _deleteItem(item);
     }

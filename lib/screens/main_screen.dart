@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/notification_setting_type.dart';
@@ -5,7 +8,12 @@ import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
+import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/providers/notification_list_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
+import 'package:romrom_fe/providers/trade_requests_provider.dart';
+import 'package:romrom_fe/services/firebase_service.dart';
+import 'package:romrom_fe/services/foreground_push_refresher.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
@@ -31,9 +39,13 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   late final List<Widget> _navigationTabScreens;
   final Set<String> _pendingRequests = <String>{};
 
+  // 앱 사용 중 푸시 구독 (dispose에서 해제)
+  StreamSubscription<RemoteMessage>? _foregroundPushSubscription;
+
   @override
   void initState() {
     super.initState();
+    _listenForegroundPush();
     _navigationTabScreens = [
       HomeTabScreen(onLoaded: _onHomeLoaded),
       const RequestManagementTabScreen(),
@@ -146,8 +158,23 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
 
   @override
   void dispose() {
+    _foregroundPushSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// 앱 사용 중 푸시 > 종류별 상태 재조회 (알림 목록·배지, 받은 요청, 내 물품) (#964)
+  void _listenForegroundPush() {
+    // 호출 시점에 notifier를 읽음 (세션 초기화 뒤에도 최신 인스턴스 사용)
+    final foregroundPushRefresher = ForegroundPushRefresher(
+      reloadNotificationList: () => ref.read(notificationListProvider.notifier).reload(),
+      refreshNotificationUnreadCount: () => ref.read(notificationListProvider.notifier).refreshUnreadCount(),
+      reloadReceivedTradeRequests: () => ref.read(tradeRequestsProvider.notifier).reloadReceivedOfRequestedCard(),
+      reloadMyItems: () => ref.read(myItemsProvider.notifier).reload(),
+    );
+    _foregroundPushSubscription = FirebaseService().onForegroundMessage.listen(
+      (message) => foregroundPushRefresher.onForegroundPush(message.data),
+    );
   }
 
   @override
