@@ -16,7 +16,7 @@ class HomeFeedState {
   /// 정렬 폴백으로 결정된 현재 정렬 필드 (loadMore 시 동일 필드 유지)
   final ItemSortField currentSortField;
 
-  /// 직전 자동 새로고침 완료 시각 (throttle 계산용). null이면 한 번도 안 함.
+  /// 직전 새로고침 완료 시각 (자동·사용자 요청 공통, 자동 새로고침 throttle 계산용). null이면 한 번도 안 함.
   final DateTime? lastRefreshAt;
 
   /// 피드가 통째로 교체(refresh)된 횟수. loadMore(append)에서는 증가하지 않는다.

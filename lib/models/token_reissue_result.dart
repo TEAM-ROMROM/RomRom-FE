@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'package:romrom_fe/exceptions/api_exception.dart';
 
 /// 토큰 재발급 결과: 성공 시 reissue 응답 데이터, 실패 시 null + refresh 토큰 만료 여부 + 재시도 가능 여부
 class TokenReissueResult {
@@ -28,19 +28,9 @@ class TokenReissueResult {
   /// 실패 응답 분류: 401 EXPIRED_REFRESH_TOKEN > 만료, 408·429·5xx > 재시도 가능, 그 외(403 제재 포함) > 거절
   factory TokenReissueResult.fromFailedResponse({required int statusCode, required String responseBody}) {
     return TokenReissueResult.failed(
-      isRefreshTokenExpired: statusCode == 401 && _readErrorCode(responseBody) == 'EXPIRED_REFRESH_TOKEN',
+      isRefreshTokenExpired: statusCode == 401 && ApiException.parseErrorCode(responseBody) == 'EXPIRED_REFRESH_TOKEN',
       isRetryableFailure: statusCode >= 500 || _retryableClientErrorStatusCodes.contains(statusCode),
     );
-  }
-
-  /// 응답 body JSON의 errorCode (비JSON·누락이면 null)
-  static String? _readErrorCode(String responseBody) {
-    try {
-      final decoded = jsonDecode(responseBody);
-      return decoded is Map && decoded['errorCode'] is String ? decoded['errorCode'] as String : null;
-    } on FormatException {
-      return null;
-    }
   }
 
   bool get isSuccess => responseData != null;

@@ -30,11 +30,11 @@ Future<ItemAccessFlags> resolveItemAccessFlags({
 }) async {
   const unresolvedFlags = (isMyItem: false, isTradeRequestAllowed: false);
   try {
-    final item = await readItem();
-    final authorMemberId = item?.member?.memberId;
-    if (item == null || authorMemberId == null) return unresolvedFlags;
+    final linkedItem = await readItem();
+    final authorMemberId = linkedItem?.member?.memberId;
+    if (linkedItem == null || authorMemberId == null) return unresolvedFlags;
     if (authorMemberId == await readCurrentMemberId()) return (isMyItem: true, isTradeRequestAllowed: false);
-    final isExchanged = item.itemStatus == ItemStatus.exchanged.serverName;
+    final isExchanged = linkedItem.itemStatus == ItemStatus.exchanged.serverName;
     return (isMyItem: false, isTradeRequestAllowed: !isExchanged);
   } catch (error) {
     debugPrint('[deep link] item access check failed : $error');

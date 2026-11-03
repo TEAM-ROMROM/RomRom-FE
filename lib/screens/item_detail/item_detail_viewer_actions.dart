@@ -37,9 +37,9 @@ mixin _ItemDetailViewerActions on _ItemDetailDescriptionScreenStateFields {
 
   /// 신고: 신고 화면 > 접수 시 완료 모달 > 상세 닫기
   Future<void> _openReportScreen() async {
-    final bool? reported = await context.navigateTo(screen: ReportScreen.item(itemId: widget.itemId));
+    final bool? isReported = await context.navigateTo(screen: ReportScreen.item(itemId: widget.itemId));
 
-    if (reported == true && mounted) {
+    if (isReported == true && mounted) {
       await CommonModal.success(
         context: context,
         message: '신고가 접수되었습니다.',

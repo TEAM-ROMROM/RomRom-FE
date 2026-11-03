@@ -49,9 +49,9 @@ class HomeFeedItem {
 
   /// 상세 화면 첫 표시용 목록 원본 (같은 물품일 때만, 상세 응답 오면 교체)
   Item? previewItemFor(String itemId) {
-    final item = sourceItem;
-    if (itemId.isEmpty || item == null || item.itemId != itemId) return null;
-    return item;
+    final previewItem = sourceItem;
+    if (itemId.isEmpty || previewItem == null || previewItem.itemId != itemId) return null;
+    return previewItem;
   }
 
   /// API 응답(Item) > HomeFeedItem 리스트 ([locationTexts]: 같은 순서의 표시 주소, ItemAddressResolver가 생성)

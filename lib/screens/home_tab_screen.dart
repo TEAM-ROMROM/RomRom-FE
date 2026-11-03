@@ -222,7 +222,7 @@ class _HomeTabScreenState extends _HomeTabScreenStateFields
     );
     final feedItems = feed?.items ?? const <HomeFeedItem>[];
     final hasMoreItems = feed?.hasMoreItems ?? false;
-    // 자동 새로고침 중 = 데이터는 있고 다음 로딩 중
+    // 새로고침 중 = 데이터는 있고 다음 로딩 중 (자동·사용자 요청 공통)
     final isRefreshing = asyncFeed.isLoading && asyncFeed.hasValue;
 
     if (feedItems.isEmpty) {
@@ -277,7 +277,7 @@ class _HomeTabScreenState extends _HomeTabScreenStateFields
           ),
         ),
 
-        // 상단 progress 바 (자동 새로고침 중에만)
+        // 상단 progress 바 (새로고침 중에만)
         Positioned(
           top: MediaQuery.of(context).padding.top,
           left: 0,
@@ -301,7 +301,7 @@ class _HomeTabScreenState extends _HomeTabScreenStateFields
               child: HomeTabTopActions(
                 hasUnreadNotification: hasUnreadNotification,
                 onNotificationTap: () async {
-                  // 복귀 후 배지는 알림 화면 dispose의 전체 읽음 > 재조회로 provider가 갱신
+                  // 복귀 후 배지는 알림 화면 dispose의 방문 탭 읽음 > 재조회로 provider가 갱신
                   await context.navigateTo(screen: const NotificationScreen());
                 },
                 onReportPressed: () => _onReportPressed(feedItems),

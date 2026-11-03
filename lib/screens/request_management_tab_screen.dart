@@ -378,7 +378,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
     return RequestListHeader(
       isRightSelected: _isRightSelected,
       currentSort: receivedSortType,
-      showCompletedRequests: _shouldShowCompletedRequests,
+      shouldShowCompletedRequests: _shouldShowCompletedRequests,
       onSortChanged: (selected) {
         if (selected == receivedSortType) return; // 동일 정렬 재선택 시 무시
         unawaited(ref.read(tradeRequestsProvider.notifier).changeReceivedSort(selected));

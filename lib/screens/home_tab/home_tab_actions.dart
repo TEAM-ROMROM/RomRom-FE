@@ -82,8 +82,8 @@ mixin _HomeTabActions on _HomeTabScreenStateFields, _HomeTabCoachMark {
     if (_currentFeedIndex >= feedItems.length) return;
     final reportedItemId = feedItems[_currentFeedIndex].itemUuid;
     if (reportedItemId == null) return;
-    final bool? reported = await context.navigateTo(screen: ReportScreen.item(itemId: reportedItemId));
-    if (reported == true && mounted) {
+    final bool? isReported = await context.navigateTo(screen: ReportScreen.item(itemId: reportedItemId));
+    if (isReported == true && mounted) {
       ref.read(homeFeedProvider.notifier).excludeReportedItem(reportedItemId);
       await CommonModal.success(
         context: context,
@@ -95,11 +95,11 @@ mixin _HomeTabActions on _HomeTabScreenStateFields, _HomeTabCoachMark {
 
   /// 블러 상태 등록 버튼: 등록 화면 > 첫 등록이면 코치마크
   Future<void> _onRegisterButtonPressed() async {
-    final result = await context.navigateTo<Map<String, dynamic>>(
+    final registerResult = await context.navigateTo<Map<String, dynamic>>(
       screen: ItemRegisterScreen(onClose: () => Navigator.pop(context)),
     );
     if (!mounted) return;
-    if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
+    if (registerResult is Map<String, dynamic> && registerResult['isFirstItemPosted'] == true) {
       showCoachMark();
     }
   }

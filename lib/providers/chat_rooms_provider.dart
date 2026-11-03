@@ -33,10 +33,7 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
     return _fetchPage0();
   }
 
-  Future<List<ChatRoomDetailDto>> _fetchFirstPageRooms() async {
-    final paged = await _repo.getChatRooms(pageNumber: 0, pageSize: _pageSize);
-    return paged.content.where((r) => r.blocked != true).toList();
-  }
+  Future<List<ChatRoomDetailDto>> _fetchFirstPageRooms() async => (await _fetchPage0()).rooms;
 
   Future<ChatRoomsState> _fetchPage0() async {
     final paged = await _repo.getChatRooms(pageNumber: 0, pageSize: _pageSize);

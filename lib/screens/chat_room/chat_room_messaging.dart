@@ -102,7 +102,7 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
 
     // WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API로 보완
     if (newMessage.type == MessageType.image && (newMessage.imageUrls == null || newMessage.imageUrls!.isEmpty)) {
-      final tempId = 'ws_img_${DateTime.now().microsecondsSinceEpoch}';
+      final tempId = '$webSocketImageMessageIdPrefix${DateTime.now().microsecondsSinceEpoch}';
       _messages.insert(0, newMessage.copyWith(chatMessageId: tempId));
       _pendingWsImageTempIds.add(tempId);
       _wsImageFetchTimer?.cancel();

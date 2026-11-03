@@ -50,10 +50,10 @@ mixin _ItemDetailOwnerActions on _ItemDetailDescriptionScreenStateFields, _ItemD
 
   /// 수정: 수정 화면 > 변경됐으면 상세 재조회
   Future<void> _openItemModification() async {
-    final result = await context.navigateTo<Map<String, dynamic>>(
+    final modificationResult = await context.navigateTo<Map<String, dynamic>>(
       screen: ItemModificationScreen(itemId: item?.itemId!, onClose: () => Navigator.pop(context)),
     );
-    if (result != null && result['updated'] == true && mounted) {
+    if (modificationResult != null && modificationResult['updated'] == true && mounted) {
       _loadItemDetail();
     }
   }

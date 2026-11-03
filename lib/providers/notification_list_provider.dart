@@ -145,8 +145,8 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
 
     final unreadNotificationIds = findUnreadNotificationIdsInTabs(
       state.valueOrNull?.notifications ?? const <NotificationHistory>[],
-      includeActivityTab: hasVisitedActivityTab,
-      includeNewsTab: hasVisitedNewsTab,
+      isActivityTabIncluded: hasVisitedActivityTab,
+      isNewsTabIncluded: hasVisitedNewsTab,
     );
     if (unreadNotificationIds.isEmpty) return;
     // 동시 실행 수 제한 묶음 순차 처리 (건별 실패는 로그만, 나머지 계속)

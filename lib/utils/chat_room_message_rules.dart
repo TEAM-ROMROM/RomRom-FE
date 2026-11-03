@@ -10,9 +10,10 @@ import 'package:romrom_fe/utils/date_time_display_utils.dart';
 // 메시지 목록 한 페이지 크기 (진입·재연결 동기화·이전 메시지 페이징 공통)
 const int chatMessagePageSize = 50;
 
-// 낙관적 로컬 메시지 ID 접두어: 텍스트·사진·위치 / 업로드 중 사진 / 교환 완료 요청
+// 낙관적 로컬 메시지 ID 접두어: 텍스트·사진·위치 / 업로드 중 사진 / WS 이미지 URL 보완 대기 / 교환 완료 요청
 const String localMessageIdPrefix = 'local_';
 const String uploadingMessageIdPrefix = 'uploading_';
+const String webSocketImageMessageIdPrefix = 'ws_img_';
 const String localTradeRequestIdPrefix = 'local_trade_request_';
 
 // 같은 마이크로초 안 연속 생성 시 ID 충돌 방지 순번
@@ -53,7 +54,7 @@ bool _isLocalOptimisticId(String? id) =>
     id != null &&
     (id.startsWith(localMessageIdPrefix) ||
         id.startsWith(uploadingMessageIdPrefix) ||
-        id.startsWith('ws_img_') ||
+        id.startsWith(webSocketImageMessageIdPrefix) ||
         id.startsWith(localTradeRequestIdPrefix));
 
 /// 재연결 동기화용 메시지 병합 (순수 함수, 테스트 대상).
