@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/image_decode_size.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 
 /// 사진 목록 순서: 기존 서버 사진 > 새로 고른 로컬 사진 (index 공통)
@@ -50,7 +51,7 @@ class RegisterImagePickerSection extends StatelessWidget {
                   itemCount: _totalImageCount,
                   separatorBuilder: (_, index) => SizedBox(width: 8.w),
                   padding: EdgeInsets.only(top: 8.h),
-                  itemBuilder: (context, index) => _buildThumbnail(index),
+                  itemBuilder: (context, index) => _buildThumbnail(context, index),
                 ),
               ),
             ),
@@ -94,7 +95,7 @@ class RegisterImagePickerSection extends StatelessWidget {
   }
 
   /// 썸네일 1장: 탭 > 전체 보기, 우상단 X > 삭제
-  Widget _buildThumbnail(int index) {
+  Widget _buildThumbnail(BuildContext context, int index) {
     return SizedBox(
       height: 88.h,
       child: Stack(
@@ -104,7 +105,7 @@ class RegisterImagePickerSection extends StatelessWidget {
             onTap: () => onImageTap(index),
             child: Hero(
               tag: 'item_image_$index',
-              child: ClipRRect(borderRadius: BorderRadius.circular(10.r), child: _buildThumbnailImage(index)),
+              child: ClipRRect(borderRadius: BorderRadius.circular(10.r), child: _buildThumbnailImage(context, index)),
             ),
           ),
           Positioned(
@@ -131,8 +132,8 @@ class RegisterImagePickerSection extends StatelessWidget {
     );
   }
 
-  /// 기존 서버 사진 > CachedImage, 새 로컬 사진 > Image.file
-  Widget _buildThumbnailImage(int index) {
+  /// 기존 서버 사진 > CachedImage, 새 로컬 사진 > Image.file (썸네일 크기로 디코딩)
+  Widget _buildThumbnailImage(BuildContext context, int index) {
     final int existingCount = existingImageUrls.length;
     if (index < existingCount) {
       return CachedImage(
@@ -146,11 +147,19 @@ class RegisterImagePickerSection extends StatelessWidget {
         ),
       );
     }
+    final thumbnailDecodeSize = ImageDecodeSize.forDisplay(
+      width: 80.w,
+      height: 80.h,
+      fit: BoxFit.cover,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+    );
     return Image.file(
       File(newImagePaths[index - existingCount]),
       width: 80.w,
       height: 80.h,
       fit: BoxFit.cover,
+      cacheWidth: thumbnailDecodeSize.width,
+      cacheHeight: thumbnailDecodeSize.height,
       errorBuilder: (_, error, stackTrace) => Container(
         width: 80.w,
         height: 80.h,

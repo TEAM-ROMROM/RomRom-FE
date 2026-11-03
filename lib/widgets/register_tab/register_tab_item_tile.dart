@@ -145,6 +145,13 @@ class RegisterTabItemTile extends StatelessWidget {
     if (imageUrl == null || imageUrl.trim().isEmpty) {
       return const ErrorImagePlaceholder();
     }
-    return CachedImage(imageUrl: imageUrl.trim(), fit: BoxFit.cover, errorWidget: const ErrorImagePlaceholder());
+    // 썸네일 박스 크기 그대로 디코딩 (레이아웃 측정 없음)
+    return CachedImage(
+      imageUrl: imageUrl.trim(),
+      width: 90.w,
+      height: 90.w,
+      fit: BoxFit.cover,
+      errorWidget: const ErrorImagePlaceholder(),
+    );
   }
 }

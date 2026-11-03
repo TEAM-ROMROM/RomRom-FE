@@ -7,8 +7,6 @@ import 'package:romrom_fe/providers/user_scoped_providers.dart';
 
 // 회원별 데이터가 아니라 초기화 불필요한 provider (이름 > 이유)
 const exemptProviderReasons = <String, String>{
-  // 화면 위젯 크기·스케일 UI 상태 (회원 데이터 아님)
-  'itemCardProvider': 'UI 전용 카드 스케일 상태, 회원별 데이터 아님',
   // 비로그인 포함 공통 공지 팝업, 노출 기록은 앱 실행 단위 (재로그인 시 같은 실행 재노출 방지)
   'homePopupProvider': '회원 무관 공지·이벤트 팝업, 세션 노출 기록은 앱 실행 단위',
 };

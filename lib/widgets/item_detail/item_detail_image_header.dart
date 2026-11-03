@@ -3,9 +3,12 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_viewer/photo_viewer.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/services/app_image_cache_manager.dart';
+import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
@@ -77,33 +80,68 @@ class ItemDetailImageHeader extends StatelessWidget {
       controller: pageController,
       onPageChanged: (pageIndex) => currentIndexNotifier.value = pageIndex,
       itemBuilder: (context, pageIndex) {
-        final hasImages = imageUrls.isNotEmpty;
-        final safeIndex = hasImages ? pageIndex : 0;
-
-        return PhotoViewerMultipleImage(
-          // 이미지가 없으면 더미 URL을 넘겨서 로딩 실패 → errorWidget 호출
-          imageUrls: hasImages ? imageUrls : const ['__NO_IMAGE__'],
-          index: safeIndex,
-          id: heroBaseId + safeIndex.toString(),
-          onPageChanged: (viewerIndex) {
-            currentIndexNotifier.value = viewerIndex;
-            if (pageController.hasClients) {
-              final currentPage = pageController.page?.round();
-              if (currentPage != viewerIndex) {
-                pageController.jumpToPage(viewerIndex); // 닫기 전에 목적지 미리 맞추기
-              }
-            }
-          },
-
-          // 로딩 인디케이터
-          placeholder: (ctx, url) => const Center(child: CommonLoadingIndicator(size: 32.0)),
-
-          // 이미지 없음/로딩 실패 시
-          errorWidget: (ctx, url, err) => Center(child: ErrorImagePlaceholder(size: imageSize)),
-        );
+        if (imageUrls.isEmpty) return Center(child: ErrorImagePlaceholder(size: imageSize));
+        return _buildPageImage(context, pageIndex);
       },
     );
   }
+
+  /// 페이지 이미지 1장: 탭 > 전체 보기 (Hero 연결)
+  /// 피드·목록과 같은 디스크 캐시(AppImageCacheManager) 사용 > 상세 진입 시 재다운로드 없음
+  /// 원본 해상도 디코딩 > 전체 보기(확대)와 같은 메모리 캐시 키 공유
+  Widget _buildPageImage(BuildContext context, int pageIndex) {
+    return GestureDetector(
+      onTap: () => _openPhotoViewer(context, pageIndex),
+      child: Hero(
+        tag: _toViewerHeroTag(openedPageIndex: pageIndex, viewerPageIndex: pageIndex),
+        child: CachedImage(
+          imageUrl: imageUrls[pageIndex],
+          fit: BoxFit.cover,
+          shouldDecodeAtFullResolution: true,
+          placeholder: const Center(child: CommonLoadingIndicator(size: 32.0)),
+          errorWidget: Center(child: ErrorImagePlaceholder(size: imageSize)),
+        ),
+      ),
+    );
+  }
+
+  /// 전체 보기: 사진 넘김 > 상세 인디케이터·페이지 동기화 (닫기 전에 목적지 미리 맞춤)
+  void _openPhotoViewer(BuildContext context, int initialPage) {
+    showPhotoViewer(
+      context: context,
+      builders: imageUrls
+          .map<WidgetBuilder>(
+            (url) =>
+                (_) => _buildViewerImage(url),
+          )
+          .toList(),
+      heroTagBuilder: (viewerPageIndex) =>
+          _toViewerHeroTag(openedPageIndex: initialPage, viewerPageIndex: viewerPageIndex),
+      initialPage: initialPage,
+      onPageChanged: (viewerIndex) {
+        currentIndexNotifier.value = viewerIndex;
+        if (pageController.hasClients) {
+          final currentPage = pageController.page?.round();
+          if (currentPage != viewerIndex) pageController.jumpToPage(viewerIndex);
+        }
+      },
+    );
+  }
+
+  /// 전체 보기 이미지 (상세 헤더와 같은 캐시·원본 해상도)
+  Widget _buildViewerImage(String url) {
+    return CachedNetworkImage(
+      imageUrl: url,
+      cacheManager: AppImageCacheManager.instance,
+      fit: BoxFit.cover,
+      placeholder: (_, _) => const Center(child: CommonLoadingIndicator(size: 32.0)),
+      errorWidget: (_, _, _) => Center(child: ErrorImagePlaceholder(size: imageSize)),
+    );
+  }
+
+  /// 전체 보기 Hero 태그: 'photo_viewer_{heroBaseId}{연 페이지}_{보기 페이지}_{url}' (photo_viewer 패키지 형식 유지)
+  String _toViewerHeroTag({required int openedPageIndex, required int viewerPageIndex}) =>
+      'photo_viewer_$heroBaseId${openedPageIndex}_${viewerPageIndex}_${imageUrls[viewerPageIndex]}';
 
   /// 현재 페이지 점 표시 (선택: 노랑, 나머지: 흰색 50%)
   Widget _buildPageIndicator() {

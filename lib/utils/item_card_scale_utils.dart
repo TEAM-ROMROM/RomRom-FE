@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 물품 카드 비율 계산 유틸리티 클래스
 class ItemCardScale {
@@ -39,61 +38,3 @@ class ItemCardScaleProvider with ChangeNotifier {
 
   ItemCardScale get scale => _scale;
 }
-
-/// 카드의 상태를 나타내는 State 클래스
-class ItemCardState {
-  final ItemCardScale scale; // 크기 비율 정보
-  final List<String> selectedOptions; // 선택된 옵션 목록
-
-  ItemCardState({required this.scale, this.selectedOptions = const []});
-
-  // state 복사 후 일부 속성만 업데이트
-  ItemCardState copyWith({ItemCardScale? scale, List<String>? selectedOptions}) {
-    return ItemCardState(scale: scale ?? this.scale, selectedOptions: selectedOptions ?? this.selectedOptions);
-  }
-}
-
-/// StateNotifier: 카드 상태 변경 로직을 관리
-/// : AsyncValue를 사용하여 비동기 상태 관리
-class ItemCardNotifier extends StateNotifier<AsyncValue<ItemCardState>> {
-  ItemCardNotifier() : super(const AsyncValue.loading()) {
-    // 초기 상태 설정
-    _initialize();
-  }
-
-  void _initialize() {
-    state = AsyncValue.data(ItemCardState(scale: const ItemCardScale(1.0)));
-  }
-
-  // baseWidth 대비 currentWidth로 scale 계산 후 상태 업데이트
-  void setScale(double baseWidth, double currentWidth) {
-    state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(scale: ItemCardScale(currentWidth / baseWidth)));
-    });
-  }
-
-  // 옵션 선택/해제 toggle 로직
-  void toggleOption(String option) {
-    state.whenData((currentState) {
-      final currentOptions = List<String>.from(currentState.selectedOptions);
-      if (currentOptions.contains(option)) {
-        currentOptions.remove(option);
-      } else {
-        currentOptions.add(option);
-      }
-      state = AsyncValue.data(currentState.copyWith(selectedOptions: currentOptions));
-    });
-  }
-
-  // 선택된 옵션 초기화
-  void clearOptions() {
-    state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(selectedOptions: const []));
-    });
-  }
-}
-
-/// 카드별 Provider: cardId별로 독립적인 상태 관리 가능
-final itemCardProvider = StateNotifierProvider.family<ItemCardNotifier, AsyncValue<ItemCardState>, String>(
-  (ref, itemId) => ItemCardNotifier(),
-);

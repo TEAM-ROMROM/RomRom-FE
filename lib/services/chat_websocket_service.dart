@@ -6,16 +6,46 @@ import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/apis/objects/chat_action_recommendation.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
+import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/chat_topic_subscription_registry.dart';
 import 'package:romrom_fe/services/token_manager.dart';
+import 'package:romrom_fe/utils/single_flight.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 /// STOMP + WebSocket 서비스 (stomp_dart_client 사용)
+/// 연결은 회원 단위: 연결한 회원과 현재 회원이 다르면(로그아웃 후 다른 계정) 이전 연결·구독 정리 후 새로 연결
 class ChatWebSocketService {
   static final ChatWebSocketService _instance = ChatWebSocketService._internal();
   factory ChatWebSocketService() => _instance;
-  ChatWebSocketService._internal();
+  ChatWebSocketService._internal({
+    Future<String?> Function()? readAccessToken,
+    Future<String?> Function()? readCurrentMemberId,
+    Future<bool> Function()? refreshAccessToken,
+    StompClient Function(StompConfig config)? createStompClient,
+  }) : _readAccessToken = readAccessToken ?? TokenManager().getAccessToken,
+       _readCurrentMemberId = readCurrentMemberId ?? UserInfo().getCurrentMemberId,
+       _refreshAccessToken = refreshAccessToken ?? RomAuthApi().refreshAccessToken,
+       _createStompClient = createStompClient ?? ((config) => StompClient(config: config));
+
+  /// 테스트용: 토큰·회원 ID 읽기, 토큰 재발급, STOMP 클라이언트 생성을 교체한 독립 인스턴스
+  @visibleForTesting
+  factory ChatWebSocketService.forTesting({
+    required Future<String?> Function() readAccessToken,
+    required Future<String?> Function() readCurrentMemberId,
+    required Future<bool> Function() refreshAccessToken,
+    required StompClient Function(StompConfig config) createStompClient,
+  }) => ChatWebSocketService._internal(
+    readAccessToken: readAccessToken,
+    readCurrentMemberId: readCurrentMemberId,
+    refreshAccessToken: refreshAccessToken,
+    createStompClient: createStompClient,
+  );
+
+  final Future<String?> Function() _readAccessToken;
+  final Future<String?> Function() _readCurrentMemberId;
+  final Future<bool> Function() _refreshAccessToken;
+  final StompClient Function(StompConfig config) _createStompClient;
 
   StompClient? _stompClient;
   bool _isConnected = false;
@@ -51,13 +81,31 @@ class ChatWebSocketService {
   /// 재연결 이벤트 스트림. 화면은 이를 구독해 getChatMessages 재조회를 수행한다.
   Stream<void> get onReconnected => _reconnectController.stream;
 
-  final TokenManager _tokenManager = TokenManager();
+  // 현재 연결(또는 연결 시도)을 만든 회원 ID
+  String? _connectedMemberId;
+
+  // 연결 세대 (새 StompClient마다 증가) > 정리된 이전 클라이언트의 늦은 콜백 무시
+  int _connectionGeneration = 0;
+
+  // 동시 connect 호출은 같은 연결 시도 공유 (채팅 탭·채팅방 동시 진입 시 중복 클라이언트 방지)
+  final SingleFlight<void> _connectFlight = SingleFlight<void>();
 
   /// 연결 상태 확인
   bool get isConnected => _isConnected;
 
-  ///  STOMP 연결
-  Future<void> connect() async {
+  ///  STOMP 연결 (진행 중이면 같은 시도 공유)
+  Future<void> connect() => _connectFlight.run(_connectForCurrentMember);
+
+  /// 다른 회원 연결 정리 > 기존 연결 있으면 유지 > 없으면 새 연결
+  Future<void> _connectForCurrentMember() async {
+    final currentMemberId = await _readCurrentMemberId();
+    // 연결 여부와 무관 (토큰 재발급 실패로 클라이언트만 비워진 경우도 이전 회원 구독 정리)
+    final previousMemberId = _connectedMemberId;
+    if (previousMemberId != null && previousMemberId != currentMemberId) {
+      debugPrint('[WebSocket] Member changed > reset previous connection');
+      await disconnect();
+    }
+
     // _stompClient != null 이면 이미 연결 중이거나 재연결 대기 중
     // 이 경우 새 StompClient를 생성하면 중복 세션 문제가 발생하므로 early return
     if (_isConnected || _stompClient != null) {
@@ -69,7 +117,7 @@ class ChatWebSocketService {
       debugPrint('[WebSocket] Starting connection...');
 
       // 1. JWT 토큰 가져오기
-      final accessToken = await _tokenManager.getAccessToken();
+      final accessToken = await _readAccessToken();
       if (accessToken == null) {
         throw Exception('Access token not found');
       }
@@ -78,14 +126,25 @@ class ChatWebSocketService {
       final wsUrl = AppUrls.chatWebSocketUrl;
       debugPrint('[WebSocket] 연결 시도: $wsUrl');
 
-      // 3. StompClient 생성
-      _stompClient = StompClient(
-        config: StompConfig(
+      // 3. StompClient 생성 (콜백은 이 연결 세대일 때만 처리)
+      final connectionGeneration = ++_connectionGeneration;
+      bool isCurrentConnection() => connectionGeneration == _connectionGeneration;
+      _connectedMemberId = currentMemberId;
+      _stompClient = _createStompClient(
+        StompConfig(
           url: wsUrl,
-          onConnect: _onConnect,
-          onDisconnect: _onDisconnect,
-          onStompError: _onStompError,
-          onWebSocketError: _onWebSocketError,
+          onConnect: (frame) {
+            if (isCurrentConnection()) _onConnect(frame);
+          },
+          onDisconnect: (frame) {
+            if (isCurrentConnection()) _onDisconnect(frame);
+          },
+          onStompError: (frame) {
+            if (isCurrentConnection()) _onStompError(frame);
+          },
+          onWebSocketError: (error) {
+            if (isCurrentConnection()) _onWebSocketError(error);
+          },
           stompConnectHeaders: {'Authorization': 'Bearer $accessToken'},
           webSocketConnectHeaders: {'Authorization': 'Bearer $accessToken'},
           reconnectDelay: const Duration(seconds: 2),
@@ -160,12 +219,13 @@ class ChatWebSocketService {
     try {
       debugPrint('[WebSocket] 토큰 재발급 시도...');
 
-      // auto-reconnect가 구 토큰으로 재시도하지 않도록 먼저 비활성화
+      // auto-reconnect가 구 토큰으로 재시도하지 않도록 먼저 비활성화 (이전 세대 콜백 무시)
+      _connectionGeneration++;
       _stompClient?.deactivate();
       _stompClient = null;
       _isConnected = false;
 
-      final success = await RomAuthApi().refreshAccessToken();
+      final success = await _refreshAccessToken();
       if (success) {
         debugPrint('[WebSocket] 토큰 재발급 성공 - WebSocket 재연결');
         await connect();
@@ -386,37 +446,43 @@ class ChatWebSocketService {
     }
   }
 
-  /// 연결 해제
+  /// 연결 해제: 클라이언트·구독·스트림·참조 카운트·재연결 판정 전부 초기화 (다음 connect는 최초 연결)
+  /// 첫 await 전에 상태·목록을 비움 > 정리 도중 새로 들어온 구독은 닫지 않고 다음 연결 때 구독
   Future<void> disconnect() async {
-    if (!_isConnected && _stompClient == null) return;
+    debugPrint('[WebSocket] Disconnecting...');
 
+    // 동기 구간: 클라이언트 비활성화 (이전 세대 콜백 무시), 상태 초기화, 정리 대상 목록 복사 후 비움
+    _connectionGeneration++;
     try {
-      debugPrint('[WebSocket] Disconnecting...');
-
-      // StompClient 비활성화
       _stompClient?.deactivate();
-      _isConnected = false;
-      _stompClient = null;
-
-      // 모든 STOMP 구독 해제
-      for (var unsubscribe in _stompSubscriptions.values) {
-        unsubscribe();
-      }
-      _stompSubscriptions.clear();
-
-      // 읽음·추천 구독 정리
-      await _readEventRegistry.closeAll();
-      await _recommendationRegistry.closeAll();
-
-      // 모든 스트림 컨트롤러 닫기
-      for (var controller in _subscriptions.values) {
-        await controller.close();
-      }
-      _subscriptions.clear();
-
-      debugPrint('[WebSocket] ✅ Disconnected');
     } catch (e) {
-      debugPrint('[WebSocket] Disconnect error: $e');
+      debugPrint('[WebSocket] Deactivate error: $e');
     }
+    _isConnected = false;
+    _stompClient = null;
+    _connectedMemberId = null;
+    _hasConnectedBefore = false;
+    _subscriptionRefCounts.clear();
+    final stompUnsubscribes = _stompSubscriptions.values.toList();
+    _stompSubscriptions.clear();
+    final roomControllers = _subscriptions.values.toList();
+    _subscriptions.clear();
+
+    // STOMP 구독 해제 (건별 실패 무시)
+    for (final unsubscribe in stompUnsubscribes) {
+      try {
+        unsubscribe();
+      } catch (e) {
+        debugPrint('[WebSocket] Unsubscribe error: $e');
+      }
+    }
+
+    // 읽음·추천 구독, 채팅방 스트림 닫기
+    await _readEventRegistry.closeAll();
+    await _recommendationRegistry.closeAll();
+    for (final controller in roomControllers) {
+      await controller.close();
+    }
+    debugPrint('[WebSocket] ✅ Disconnected');
   }
 }

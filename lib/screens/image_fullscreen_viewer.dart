@@ -75,6 +75,8 @@ class _ImageFullscreenViewerState extends State<ImageFullscreenViewer> {
                       imageUrl: widget.existingImageUrls[index],
                       width: double.infinity,
                       fit: BoxFit.contain,
+                      // 핀치 줌 확대용 원본 해상도
+                      shouldDecodeAtFullResolution: true,
                       errorWidget: const Icon(Icons.broken_image, color: AppColors.textColorWhite, size: 48),
                     )
                   : Image.file(

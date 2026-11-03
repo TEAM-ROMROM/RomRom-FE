@@ -28,6 +28,20 @@ class ProfileImageCropScreen extends StatefulWidget {
 
   final XFile imageFile;
 
+  // 결과 이미지 한 변 (px)
+  static const int outputSizePixels = 500;
+  // 최대 확대 배율
+  static const double maximumZoomScale = 5.0;
+
+  /// 디코딩 목표 폭: max(화면 물리 폭, 결과 크기 × 최대 확대) > 원본이 그 이하면 null (원본 그대로, 확대 안 함)
+  /// 최대로 확대해 작게 잘라도 결과 500px 화질 유지
+  @visibleForTesting
+  static int? toDecodeTargetWidth({required int intrinsicWidth, required int? screenPhysicalWidth}) {
+    final zoomedOutputWidth = (outputSizePixels * maximumZoomScale).round();
+    final targetWidth = math.max(screenPhysicalWidth ?? 0, zoomedOutputWidth);
+    return intrinsicWidth <= targetWidth ? null : targetWidth;
+  }
+
   @override
   State<ProfileImageCropScreen> createState() => _ProfileImageCropScreenState();
 }
@@ -54,9 +68,9 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
   late final Animation<double> _gridOpacity;
 
   static const double _minScale = 1.0;
-  static const double _maxScale = 5.0;
+  static const double _maxScale = ProfileImageCropScreen.maximumZoomScale;
   static const double _minRectSize = 60.0;
-  static const int _outputSize = 500;
+  static const int _outputSize = ProfileImageCropScreen.outputSizePixels;
 
   static const double _handleHitSize = ProfileCropCornerHandle.hitSizePixels; // 터치 영역
 
@@ -82,7 +96,7 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
   Future<void> _loadImage() async {
     try {
       final bytes = await widget.imageFile.readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
+      final codec = await _instantiateScreenWidthCodec(bytes);
       final frame = await codec.getNextFrame();
       if (mounted) {
         setState(() {
@@ -102,6 +116,22 @@ class _ProfileImageCropScreenState extends State<ProfileImageCropScreen> with Ti
         Navigator.of(context).pop(null);
       }
     }
+  }
+
+  /// 원본 바이트 > 목표 폭 이하로 디코딩한 codec (원본이 더 작으면 그대로, 비율 유지)
+  /// initState에서 호출 > context 대신 앱 화면(implicitView) 물리 크기 사용
+  Future<ui.Codec> _instantiateScreenWidthCodec(Uint8List bytes) async {
+    final screenPhysicalWidth = WidgetsBinding.instance.platformDispatcher.implicitView?.physicalSize.width.round();
+    final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+    return ui.instantiateImageCodecWithSize(
+      buffer,
+      getTargetSize: (intrinsicWidth, intrinsicHeight) => ui.TargetImageSize(
+        width: ProfileImageCropScreen.toDecodeTargetWidth(
+          intrinsicWidth: intrinsicWidth,
+          screenPhysicalWidth: screenPhysicalWidth,
+        ),
+      ),
+    );
   }
 
   double get _imageAspect {

@@ -35,7 +35,7 @@ class AppFadeSlideIn extends StatefulWidget {
 
   final Widget child;
 
-  /// stagger를 위한 지연 시간
+  /// stagger를 위한 지연 시간 (최대 [AppMotion.maximumStaggerDelay])
   final Duration delay;
 
   /// 애니메이션 지속 시간 (기본: 300ms)
@@ -68,16 +68,21 @@ class _AppFadeSlideInState extends State<AppFadeSlideIn> with SingleTickerProvid
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
-    if (widget.delay == Duration.zero) {
+    final startDelay = _toCappedDelay(widget.delay);
+    if (startDelay == Duration.zero) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _controller.forward();
       });
     } else {
-      Future.delayed(widget.delay, () {
+      Future.delayed(startDelay, () {
         if (mounted) _controller.forward();
       });
     }
   }
+
+  /// 호출부 지연 > 최대 지연 이하로 제한 (index × 간격이 끝없이 커지는 긴 목록 대비)
+  static Duration _toCappedDelay(Duration requestedDelay) =>
+      requestedDelay > AppMotion.maximumStaggerDelay ? AppMotion.maximumStaggerDelay : requestedDelay;
 
   @override
   void dispose() {

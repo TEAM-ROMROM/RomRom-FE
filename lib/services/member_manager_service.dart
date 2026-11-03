@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/utils/single_flight.dart';
 
-/// 현재 로그인한 회원 정보를 관리 (UserInfo에 위임)
+/// 현재 로그인한 회원 정보: 저장은 UserInfo(SharedPreferences) 단일 원본, 화면용 회원 상태는 memberProfileProvider
+/// 이 서비스는 Member 객체를 따로 캐시하지 않음 (두 곳 캐시 불일치 방지, #975)
 class MemberManagerService {
   static final MemberManagerService _instance = MemberManagerService._internal();
   factory MemberManagerService() => _instance;
@@ -12,85 +14,48 @@ class MemberManagerService {
   // UserInfo 인스턴스 사용
   final UserInfo _userInfo = UserInfo();
 
-  // 캐시된 회원 정보
-  Member? _cachedMember;
-
-  // 로딩 상태 관리
-  bool _isLoading = false;
-  bool _isInitialized = false;
-
-  // 리스너들 (상태 변화 감지용)
-  final List<VoidCallback> _listeners = [];
-
-  /// 상태 변화 리스너 추가
-  void addListener(VoidCallback listener) {
-    _listeners.add(listener);
-  }
-
-  /// 상태 변화 리스너 제거
-  void removeListener(VoidCallback listener) {
-    _listeners.remove(listener);
-  }
-
-  /// 리스너들에게 상태 변화 알림
-  void _notifyListeners() {
-    for (final listener in _listeners) {
-      listener();
-    }
-  }
+  // 서버 회원 정보 조회 단일 실행 (동시 호출은 같은 결과 공유)
+  final SingleFlight<Member?> _memberFetchFlight = SingleFlight<Member?>();
 
   /// 현재 회원 ID 가져오기 (UserInfo에 위임)
   Future<String?> getCurrentMemberId() async {
     return await _userInfo.getCurrentMemberId();
   }
 
-  /// 현재 회원 정보 가져오기 (캐시 우선, 없으면 API 호출)
+  /// 현재 회원 정보: 저장된 정보 있으면 UserInfo로 구성, 없거나 강제 새로고침이면 서버 조회
   Future<Member?> getCurrentMember({bool forceRefresh = false}) async {
-    // 이미 로딩 중이면 대기
-    if (_isLoading && !forceRefresh) {
-      return _cachedMember;
+    if (!forceRefresh) {
+      await _userInfo.getUserInfo();
+      if (_userInfo.memberId?.isNotEmpty == true) return _toMemberFromUserInfo();
     }
+    return _memberFetchFlight.run(_fetchMemberInfo);
+  }
 
-    // 캐시된 데이터가 있고 강제 새로고침이 아니면 캐시 반환
-    if (_cachedMember != null && !forceRefresh) {
-      return _cachedMember;
-    }
-
-    // UserInfo에서 정보를 가져와서 Member 객체 생성
-    await _userInfo.getUserInfo();
-    if (_userInfo.memberId?.isNotEmpty == true) {
-      _cachedMember = Member(
-        memberId: _userInfo.memberId,
-        email: _userInfo.email,
-        nickname: _userInfo.nickname,
-        profileUrl: _userInfo.profileUrl,
-        socialPlatform: _userInfo.socialPlatform,
-        role: _userInfo.role,
-        accountStatus: _userInfo.accountStatus,
-        latitude: _userInfo.latitude,
-        longitude: _userInfo.longitude,
-        isFirstLogin: _userInfo.isFirstLogin,
-        isItemCategorySaved: _userInfo.isItemCategorySaved,
-        isFirstItemPosted: _userInfo.isFirstItemPosted,
-        isMemberLocationSaved: _userInfo.isMemberLocationSaved,
-        isRequiredTermsAgreed: _userInfo.isRequiredTermsAgreed,
-        isMarketingInfoAgreed: _userInfo.isMarketingInfoAgreed,
-        createdDate: _userInfo.createdDate,
-        updatedDate: _userInfo.updatedDate,
-      );
-      _isInitialized = true;
-    }
-
-    return _cachedMember ?? await _fetchMemberInfo();
+  /// UserInfo 저장 값 > Member
+  Member _toMemberFromUserInfo() {
+    return Member(
+      memberId: _userInfo.memberId,
+      email: _userInfo.email,
+      nickname: _userInfo.nickname,
+      profileUrl: _userInfo.profileUrl,
+      socialPlatform: _userInfo.socialPlatform,
+      role: _userInfo.role,
+      accountStatus: _userInfo.accountStatus,
+      latitude: _userInfo.latitude,
+      longitude: _userInfo.longitude,
+      isFirstLogin: _userInfo.isFirstLogin,
+      isItemCategorySaved: _userInfo.isItemCategorySaved,
+      isFirstItemPosted: _userInfo.isFirstItemPosted,
+      isMemberLocationSaved: _userInfo.isMemberLocationSaved,
+      isRequiredTermsAgreed: _userInfo.isRequiredTermsAgreed,
+      isMarketingInfoAgreed: _userInfo.isMarketingInfoAgreed,
+      createdDate: _userInfo.createdDate,
+      updatedDate: _userInfo.updatedDate,
+    );
   }
 
   /// 서버에서 회원 정보 가져오기
   Future<Member?> _fetchMemberInfo() async {
-    if (_isLoading) return _cachedMember;
-
-    _isLoading = true;
-    _notifyListeners();
-
     try {
       final memberApi = MemberApi();
       final response = await memberApi.getMemberInfo();
@@ -127,18 +92,12 @@ class MemberManagerService {
             isRequiredTermsAgreed: response.member!.isRequiredTermsAgreed ?? false,
           );
         }
-
-        _cachedMember = response.member;
-        _isInitialized = true;
       }
 
-      return _cachedMember;
+      return response.member;
     } catch (e) {
       debugPrint('회원 정보 조회 실패: $e');
       return null;
-    } finally {
-      _isLoading = false;
-      _notifyListeners();
     }
   }
 
@@ -168,42 +127,12 @@ class MemberManagerService {
       isMarketingInfoAgreed: member.isMarketingInfoAgreed ?? false,
       isRequiredTermsAgreed: member.isRequiredTermsAgreed ?? false,
     );
-
-    _cachedMember = member;
-    _isInitialized = true;
-    _notifyListeners();
-  }
-
-  /// 두 회원 ID가 같은지 비교하는 헬퍼 메서드 (UserInfo에 위임)
-  Future<bool> isSameMember(String? targetMemberId) async {
-    return await _userInfo.isSameMember(targetMemberId);
-  }
-
-  /// 현재 로그인한 회원이 작성자인지 확인 (UserInfo에 위임)
-  Future<bool> isAuthor(String? authorMemberId) async {
-    return await _userInfo.isAuthor(authorMemberId);
   }
 
   /// 로그아웃 시 캐시 및 저장된 정보 삭제 (UserInfo에 위임)
   Future<void> clearMemberInfo() async {
     await _userInfo.clearUserInfoExceptIsCoachMarkShown();
-
-    _cachedMember = null;
-    _isInitialized = false;
-    _notifyListeners();
   }
-
-  /// 현재 로딩 상태
-  bool get isLoading => _isLoading;
-
-  /// 초기화 여부
-  bool get isInitialized => _isInitialized;
-
-  /// 캐시된 회원 정보 (즉시 접근용)
-  Member? get cachedMember => _cachedMember;
-
-  /// 현재 회원 정보 (동기 접근용, cachedMember와 동일)
-  Member? get currentMember => _cachedMember;
 
   /// 캐시된 회원 ID (즉시 접근용)
   String? get cachedMemberId => _userInfo.memberId;
@@ -224,16 +153,6 @@ class MemberManager {
     return await _service.getCurrentMemberId();
   }
 
-  /// 두 회원 ID가 동일한지 확인
-  static Future<bool> hasSameMemberId(String? targetMemberId) async {
-    return await _service.isSameMember(targetMemberId);
-  }
-
-  /// 현재 회원이 지정된 회원과 동일한지 확인 (작성자 체크용)
-  static Future<bool> isCurrentMember(String? memberId) async {
-    return await _service.isSameMember(memberId);
-  }
-
   /// 회원 정보 저장 (로그인 시 호출)
   static Future<void> saveMemberInfo(Member member) async {
     return await _service.saveMemberInfo(member);
@@ -244,13 +163,6 @@ class MemberManager {
     return await _service.clearMemberInfo();
   }
 
-  /// 즉시 접근 가능한 캐시된 정보
-  static Member? get cachedMember => _service.cachedMember;
+  /// 즉시 접근 가능한 캐시된 회원 ID
   static String? get cachedMemberId => _service.cachedMemberId;
-  static bool get isLoading => _service.isLoading;
-  static bool get isInitialized => _service.isInitialized;
-
-  /// 상태 변화 리스너
-  static void addListener(VoidCallback listener) => _service.addListener(listener);
-  static void removeListener(VoidCallback listener) => _service.removeListener(listener);
 }
