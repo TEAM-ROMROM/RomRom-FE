@@ -26,9 +26,6 @@ class ChatLocationPickerScreen extends StatefulWidget {
   State<ChatLocationPickerScreen> createState() => _ChatLocationPickerScreenState();
 }
 
-// 현재 위치를 못 구할 때 지도 시작 위치 (서울시청)
-const NLatLng _fallbackPosition = NLatLng(37.5665, 126.9780);
-
 class _ChatLocationPickerScreenState extends State<ChatLocationPickerScreen> {
   final _locationService = LocationService();
   NLatLng? _currentPosition;
@@ -59,7 +56,7 @@ class _ChatLocationPickerScreenState extends State<ChatLocationPickerScreen> {
 
   /// 서울시청 기준 시작 + 지도를 움직여 고르도록 안내 (권한 거부·위치 실패 문구 구분)
   Future<void> _startFromFallbackLocation({required bool hasPermission}) async {
-    setState(() => _currentPosition = _fallbackPosition);
+    setState(() => _currentPosition = LocationService.fallbackPosition);
     CommonSnackBar.show(
       context: context,
       message: hasPermission
@@ -67,7 +64,7 @@ class _ChatLocationPickerScreenState extends State<ChatLocationPickerScreen> {
           : '위치 권한이 없어 서울시청 기준으로 보여드려요. 지도를 움직여 위치를 골라주세요.',
       type: SnackBarType.info,
     );
-    await _updateAddress(_fallbackPosition);
+    await _updateAddress(LocationService.fallbackPosition);
   }
 
   Future<void> _updateAddress(NLatLng position) async {
