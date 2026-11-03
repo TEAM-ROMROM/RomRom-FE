@@ -140,7 +140,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
 | `homeFeedRepositoryProvider` | `providers/home_feed_repository_provider.dart` | Provider | HomeFeedRepository 주입 |
 | `imageRepositoryProvider` | `providers/image_repository_provider.dart` | Provider | ImageRepository 주입 (이미지 업로드·삭제 공용) |
-| `memberRepositoryProvider` | `providers/member_repository_provider.dart` | Provider | MemberRepository 주입 |
+| `memberRepositoryProvider` | `providers/member_repository_provider.dart` | Provider | MemberRepository 주입 (내 정보 조회마다 `UserInfo` 프로필 필드 동기화, 회원 ID·온보딩 플래그 제외) |
 | `memberBlockRepositoryProvider` | `providers/member_block_provider.dart` | Provider | MemberBlockRepository 주입 |
 | `notificationSettingRepositoryProvider` | `providers/notification_setting_provider.dart` | Provider | NotificationSettingRepository 주입 |
 | `notificationRepositoryProvider` | `providers/notification_repository_provider.dart` | Provider | NotificationRepository 주입 |

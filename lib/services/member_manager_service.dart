@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
+import 'package:romrom_fe/models/apis/responses/member_response.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/services/splash_startup_sequence.dart';
 import 'package:romrom_fe/utils/single_flight.dart';
 
 /// 현재 로그인한 회원 정보: 저장은 UserInfo(SharedPreferences) 단일 원본, 화면용 회원 상태는 memberProfileProvider
@@ -9,7 +11,17 @@ import 'package:romrom_fe/utils/single_flight.dart';
 class MemberManagerService {
   static final MemberManagerService _instance = MemberManagerService._internal();
   factory MemberManagerService() => _instance;
-  MemberManagerService._internal();
+  MemberManagerService._internal() : _fetchMemberInfoFromServer = _fetchMemberInfoFromMemberApi;
+
+  /// 테스트용 독립 인스턴스: 서버 회원 정보 조회 대체
+  @visibleForTesting
+  MemberManagerService.forTesting({required Future<MemberResponse> Function() fetchMemberInfo})
+    : _fetchMemberInfoFromServer = fetchMemberInfo;
+
+  // 서버 회원 정보 조회 (기본: MemberApi)
+  final Future<MemberResponse> Function() _fetchMemberInfoFromServer;
+
+  static Future<MemberResponse> _fetchMemberInfoFromMemberApi() => MemberApi().getMemberInfo();
 
   // UserInfo 인스턴스 사용
   final UserInfo _userInfo = UserInfo();
@@ -54,11 +66,11 @@ class MemberManagerService {
     );
   }
 
-  /// 서버에서 회원 정보 가져오기
+  /// 서버에서 회원 정보 가져오기 > UserInfo 저장
+  /// 연결 실패·시간 초과·5xx·408·429 > 호출부 전파 (스플래시 다시 시도 화면), 그 외 오류 > null
   Future<Member?> _fetchMemberInfo() async {
     try {
-      final memberApi = MemberApi();
-      final response = await memberApi.getMemberInfo();
+      final response = await _fetchMemberInfoFromServer();
 
       if (response.member != null) {
         // UserInfo에 저장 (FlutterSecureStorage 대신 SharedPreferences 사용)
@@ -96,6 +108,7 @@ class MemberManagerService {
 
       return response.member;
     } catch (e) {
+      if (isRetryableMemberLoadError(e)) rethrow;
       debugPrint('회원 정보 조회 실패: $e');
       return null;
     }
@@ -129,6 +142,24 @@ class MemberManagerService {
     );
   }
 
+  /// 서버 최신 내 정보 > UserInfo 프로필 필드 반영 (memberProfileProvider 조회마다, 두 저장소 불일치 방지)
+  /// 회원 ID 없음·다른 회원 > 무시, 회원 ID·온보딩 플래그는 바꾸지 않음 (온보딩 흐름 소유)
+  Future<void> syncProfileFromServer(Member member) async {
+    final fetchedMemberId = member.memberId;
+    if (fetchedMemberId == null || fetchedMemberId.isEmpty) return;
+    if (await _userInfo.getCurrentMemberId() != fetchedMemberId) return;
+    await _userInfo.saveMemberInfo(
+      nickname: member.nickname,
+      email: member.email,
+      profileUrl: member.profileUrl,
+      role: member.role,
+      accountStatus: member.accountStatus,
+      latitude: member.latitude,
+      longitude: member.longitude,
+      updatedDate: member.updatedDate,
+    );
+  }
+
   /// 로그아웃 시 캐시 및 저장된 정보 삭제 (UserInfo에 위임)
   Future<void> clearMemberInfo() async {
     await _userInfo.clearUserInfoExceptIsCoachMarkShown();
@@ -157,6 +188,9 @@ class MemberManager {
   static Future<void> saveMemberInfo(Member member) async {
     return await _service.saveMemberInfo(member);
   }
+
+  /// 서버 최신 내 정보 > 로컬 프로필 필드 반영 (회원 provider 조회 후 호출)
+  static Future<void> syncProfileFromServer(Member member) => _service.syncProfileFromServer(member);
 
   /// 회원 정보 삭제 (로그아웃 시 호출)
   static Future<void> clearMemberInfo() async {

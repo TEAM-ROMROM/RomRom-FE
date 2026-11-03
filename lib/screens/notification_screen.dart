@@ -414,7 +414,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                       rightText: '롬롬 소식',
                     ),
                     headerTitle: '알림함',
-                    statusBarHeight: MediaQuery.of(context).padding.top,
+                    statusBarHeight: MediaQuery.paddingOf(context).top,
                     toolbarHeight: 64.h,
                     toggleHeight: 62.h, // 실제 토글 높이 (bottom padding 제거)
                     expandedExtra: 0.h, // 토글-알림목록 간격 제거
@@ -466,7 +466,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       );
     }
 
-    return SliverToBoxAdapter(child: _buildNotificationList(settings, notificationList));
+    return _buildNotificationList(settings, notificationList);
   }
 
   Widget _buildNotificationList(Map<NotificationSettingType, bool> settings, NotificationListState notificationList) {

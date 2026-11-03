@@ -138,6 +138,20 @@ void main() {
     expect(isRoomStreamDone, isTrue);
   });
 
+  test('disconnect 연속 2회 (로그아웃 + 세션 종료 정리) > 오류 없음, 이후 connect는 새 클라이언트', () async {
+    await webSocketService.connect();
+    createdClients.first.simulateConnected();
+    webSocketService.subscribeToChatRoom('room-1');
+
+    await webSocketService.disconnect();
+    await webSocketService.disconnect();
+    await webSocketService.connect();
+
+    expect(webSocketService.isConnected, isFalse);
+    expect(createdClients.length, 2);
+    expect(createdClients.first.isDeactivated, isTrue);
+  });
+
   test('토큰 재발급 실패로 클라이언트가 비워진 뒤 다른 회원 connect > 이전 회원 구독 정리', () async {
     await webSocketService.connect();
     createdClients.first.simulateConnected();

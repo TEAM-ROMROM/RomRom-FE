@@ -61,7 +61,7 @@ class ChatInputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = Platform.isIOS ? 8.h + MediaQuery.of(context).padding.bottom : 21.h;
+    final bottomPadding = Platform.isIOS ? 8.h + MediaQuery.paddingOf(context).bottom : 21.h;
     final bool sendDisabled = !hasText || isInputDisabled || isSendingMessage;
 
     // 동적 라운드 계산: 1줄(캡슐형) → 여러 줄(20.r 둥근 사각형)

@@ -73,6 +73,22 @@ Size photoGridCellSize({required int photoCount, required int index, required do
 /// 그리드 칸 간격 (논리 px)
 double get photoGridGap => _gapBase.w;
 
+/// 셀 디코딩 크기 (물리 px): 셀 표시 크기 + cover 규칙 (서버 이미지 셀·업로드 중 말풍선 공통)
+ImageDecodeSize photoGridCellDecodeSize({
+  required int photoCount,
+  required int index,
+  required double width,
+  required double devicePixelRatio,
+}) {
+  final cellSize = photoGridCellSize(photoCount: photoCount, index: index, width: width, gap: photoGridGap);
+  return ImageDecodeSize.forDisplay(
+    width: cellSize.width,
+    height: cellSize.height,
+    fit: BoxFit.cover,
+    devicePixelRatio: devicePixelRatio,
+  );
+}
+
 /// 1~10장 이미지를 그리드 레이아웃으로 표시하는 공통 빌더
 /// [photoCount] 실제 이미지 수 (1~10 클램프됨)
 /// [cellBuilder] 각 인덱스에 해당하는 셀 위젯 빌더
@@ -156,15 +172,12 @@ Widget chatImageBubble(BuildContext context, ChatMessage message) {
   // 셀별 디코딩 크기: 셀 표시 크기 기준 고정 (전체 보기 로딩 중 미리보기도 같은 메모리 캐시 키 사용)
   final bubbleWidth = 264.w;
   final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
-  ImageDecodeSize cellDecodeSize(int index) {
-    final cellSize = photoGridCellSize(photoCount: urls.length, index: index, width: bubbleWidth, gap: photoGridGap);
-    return ImageDecodeSize.forDisplay(
-      width: cellSize.width,
-      height: cellSize.height,
-      fit: BoxFit.cover,
-      devicePixelRatio: devicePixelRatio,
-    );
-  }
+  ImageDecodeSize cellDecodeSize(int index) => photoGridCellDecodeSize(
+    photoCount: urls.length,
+    index: index,
+    width: bubbleWidth,
+    devicePixelRatio: devicePixelRatio,
+  );
 
   void onTap(int initialPage) {
     showPhotoViewer(

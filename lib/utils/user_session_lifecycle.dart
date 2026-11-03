@@ -8,6 +8,7 @@ import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/services/deep_link_gate.dart';
 import 'package:romrom_fe/services/session_navigation_handler.dart';
+import 'package:romrom_fe/services/user_session_resources.dart';
 
 /// 화면 전환 함수 (루트: navigatorKey 컨텍스트 + navigateTo)
 typedef SessionScreenNavigator = void Function(Widget screen, NavigationTypes type);
@@ -18,14 +19,21 @@ const Duration previousScreensDisposeWait = Duration(seconds: 1);
 // 대기 중인 세션 종료 초기화 (빠른 재로그인 시 startUserSession이 취소)
 Timer? _pendingSessionEndReset;
 
-/// 세션 종료 전환 등록 (앱 루트 1회): 제재·세션 만료·로그아웃(탈퇴 포함) > 대상 화면 전환 > 정리 대기 후 회원별 provider 초기화
+/// 세션 종료 전환 등록 (앱 루트 1회): 제재·세션 만료·로그아웃(탈퇴 포함) > 회원 단위 자원 정리 > 대상 화면 전환 > 정리 대기 후 회원별 provider 초기화
 /// 전환 전 초기화 금지: 사라지는 MainScreen 탭 구독이 토큰 없이 재조회 > 오류 상태·스낵바 잔류
 void registerSessionEndNavigation({
   required void Function(ProviderOrFamily provider) invalidate,
   required SessionScreenNavigator navigate,
   required bool Function() isActive,
+  Future<void> Function() releaseUserResources = releaseUserSessionResources,
 }) {
   void navigateThenReset(Widget screen, NavigationTypes type) {
+    // 웹소켓·하트비트·폴러 즉시 정리 (토큰 삭제 후라 유지 이유 없음, 실패해도 전환 진행)
+    unawaited(
+      Future.sync(
+        releaseUserResources,
+      ).catchError((Object error) => debugPrint('[session end] release user resources failed : $error')),
+    );
     // 로그인·정지 화면 위 딥링크 차단 (이후 링크는 다음 메인 진입까지 보관)
     DeepLinkGate.instance.leaveMainScreen();
     navigate(screen, type);

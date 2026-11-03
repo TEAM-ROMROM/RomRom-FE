@@ -19,6 +19,7 @@ import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/chat_message_send_rules.dart';
 import 'package:romrom_fe/utils/chat_room_message_rules.dart';
 import 'package:romrom_fe/utils/image_compressor.dart';
+import 'package:romrom_fe/utils/widget_instance_cache.dart';
 import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
@@ -53,6 +54,8 @@ part 'chat_room/chat_room_exit_actions.dart';
 part 'chat_room/chat_room_recommendation_actions.dart';
 part 'chat_room/chat_room_initial_load.dart';
 part 'chat_room/chat_room_older_messages_paging.dart';
+part 'chat_room/chat_room_header.dart';
+part 'chat_room/chat_room_scroll_to_bottom.dart';
 
 class ChatRoomScreen extends ConsumerStatefulWidget {
   final String chatRoomId;
@@ -192,15 +195,17 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   bool _isLeaving = false;
 }
 
-/// 채팅방 화면: 수명주기·입력 높이·화면 구성 (로직은 mixin 7개: 송수신, 이전 메시지 페이징, 교환 액션, 첨부, 나가기, AI 추천, 초기화)
+/// 채팅방 화면: 수명주기·입력 높이·화면 구성 (로직은 mixin 9개: 맨 아래 스크롤, 송수신, 이전 메시지 페이징, 교환 액션, 첨부, 나가기, 상단 캐시, AI 추천, 초기화)
 class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     with
         WidgetsBindingObserver,
+        _ChatRoomScrollToBottom,
         _ChatRoomMessaging,
         _ChatRoomOlderMessagesPaging,
         _ChatRoomTradeActions,
         _ChatRoomAttachmentSending,
         _ChatRoomExitActions,
+        _ChatRoomHeader,
         _ChatRoomRecommendationActions,
         _ChatRoomInitialLoad {
   @override
@@ -238,7 +243,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
   void _updateInputFieldHeight() {
     final newHeight = ChatInputBar.calculateInputFieldHeight(
       text: _messageController.text,
-      screenWidth: MediaQuery.of(context).size.width,
+      screenWidth: MediaQuery.sizeOf(context).width,
     );
     if (_inputFieldHeight != newHeight && mounted) {
       setState(() => _inputFieldHeight = newHeight);
@@ -300,19 +305,10 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           backgroundColor: AppColors.primaryBlack,
-          appBar: buildChatRoomAppBar(
-            context: context,
-            opponentNickname: _opponentNickname,
-            opponentId: _opponentId,
-            isOpponentOnline: _isOpponentOnline,
-            opponentLastActiveAt: _opponentLastActiveAt,
-            onBackPressed: () => _leaveRoom(shouldPop: true),
-            onBlockConfirm: _blockOpponentAndLeave,
-            onLeaveChatRoomConfirm: _deleteRoomAndLeave,
-          ),
+          appBar: _buildCachedAppBar(),
           body: Column(
             children: [
-              ChatTradeInfoCard(chatRoom: chatRoom, myMemberId: _myId),
+              _buildCachedTradeInfoCard(),
               Expanded(
                 child: ChatRoomMessageList(
                   messages: _messages,
