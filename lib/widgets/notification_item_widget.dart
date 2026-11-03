@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/expandable_text.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 
 /// 알림 데이터 모델
@@ -21,6 +22,8 @@ class NotificationItemData {
   final String? imageUrl;
   final bool isRead;
   final String? deepLink;
+  // 서버 payload 원본 (딥링크 화면 표시값, 예: 게시글 삭제 itemName·deleteReason)
+  final Map<String, dynamic>? payload;
 
   NotificationItemData({
     required this.id,
@@ -31,6 +34,7 @@ class NotificationItemData {
     this.imageUrl,
     this.isRead = false,
     this.deepLink,
+    this.payload,
   });
 }
 
@@ -152,6 +156,13 @@ class NotificationItemWidget extends StatelessWidget {
     );
   }
 
+  TextStyle get _descriptionStyle => CustomTextStyles.p3.copyWith(
+    fontSize: 13.sp,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textColorWhite,
+    height: 1.4,
+  );
+
   /// 하단 섹션 (시간 + 메뉴 + 썸네일)
   Widget _buildBottomRow() {
     return Row(
@@ -173,18 +184,11 @@ class NotificationItemWidget extends StatelessWidget {
               ),
               SizedBox(height: 8.h),
 
-              // 설명
-              Text(
-                data.description,
-                style: CustomTextStyles.p3.copyWith(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textColorWhite,
-                  height: 1.4,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              // 설명 (공지는 상세 화면이 없어 목록 안에서 펼치기, 본문 탭은 항목 탭 유지)
+              if (data.type == NotificationType.announcement)
+                ExpandableText(text: data.description, style: _descriptionStyle, isToggleOnArrowOnly: true)
+              else
+                Text(data.description, style: _descriptionStyle, maxLines: 2, overflow: TextOverflow.ellipsis),
             ],
           ),
         ),

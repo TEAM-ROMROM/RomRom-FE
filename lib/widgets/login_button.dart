@@ -21,6 +21,7 @@ import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
@@ -114,6 +115,8 @@ class _LoginButtonState extends ConsumerState<LoginButton> {
             navigateToSessionScreen: () =>
                 context.navigateTo(screen: nextScreen, type: NavigationTypes.pushReplacement),
           );
+          // 로그인 전 받은 링크 > 메인 진입 후 열기 (온보딩이면 완료 시점까지 보관)
+          if (nextScreen is MainScreen) RomRomDeepLinkRouter.onMainScreenEntered();
         }
       }
     } on AccountSuspendedException catch (e) {

@@ -9,6 +9,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:romrom_fe/utils/installed_app_version.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
+import 'package:romrom_fe/utils/app_store_launcher.dart';
+import 'package:romrom_fe/services/recommended_update_prompt_service.dart';
+import 'package:romrom_fe/services/session_navigation_handler.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/enums/token_refresh_outcome.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -27,9 +34,7 @@ import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/user_session_lifecycle.dart';
-import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -45,8 +50,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
   late Animation<double> _loginUIFadeAnim;
   bool _showLoginUI = false;
   bool _loginTransitionStarted = false;
-  bool _aborted = false;
   String _appVersion = '';
+
+  // 시작 실행 세대 (다시 시도·실패마다 증가 > 이전 실행의 늦은 완료 무시)
+  int _startupGeneration = 0;
+  // 시작 실패 설명 문구 (null이면 실패 아님)
+  String? _startupFailureDescription;
+  // 실패 화면에서 로그인 화면 이동 진행 중 (중복 탭 차단)
+  bool _isLeavingToLogin = false;
 
   @override
   void initState() {
@@ -84,84 +95,113 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
   /// 개별 HTTP 요청 타임아웃(10초)이 1차 방어, 이 값은 2차 안전망
   static const Duration _splashTimeout = Duration(seconds: 15);
 
-  Future<void> _initAndNavigate() async {
-    try {
-      // timeout() onTimeout 미제공 시 TimeoutException을 자동으로 throw
-      await _runInitFlow().timeout(_splashTimeout);
-    } on TimeoutException {
-      debugPrint('[SplashScreen] 초기화 타임아웃 (${_splashTimeout.inSeconds}초) — 로그인 화면으로 이동');
-      _aborted = true; // _runInitFlow()가 백그라운드에서 완료되더라도 navigation/딥링크 차단
-      ColdStartDeepLinkData.clear(); // 중단 시 대기 중인 딥링크 폐기
-      if (!mounted) return;
-      await _playLoginTransitionAnimation();
-      _showNetworkErrorSnackBar();
-    } catch (e, st) {
-      debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
-      _aborted = true; // _runInitFlow()가 백그라운드에서 완료되더라도 navigation/딥링크 차단
-      ColdStartDeepLinkData.clear(); // 중단 시 대기 중인 딥링크 폐기
-      if (!mounted) return;
-      await _playLoginTransitionAnimation();
-      // 네트워크 관련 오류(연결 불가, 타임아웃)일 때만 SnackBar 표시
-      if (e is SocketException || e is TimeoutException) {
-        _showNetworkErrorSnackBar();
-      }
-    }
-  }
-
-  void _showNetworkErrorSnackBar() {
-    if (!mounted) return;
-    CommonSnackBar.show(context: context, message: '서버 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.', type: SnackBarType.error);
-  }
-
   /// 스플래시 최소 노출 시간 (2초, 버전 확인과 동시에 시작)
   static const Duration _minimumSplashDuration = Duration(seconds: 2);
 
-  Future<void> _runInitFlow() async {
-    // 첫 await 전 캡처 (타임아웃으로 화면이 닫힌 뒤에도 흐름이 이어짐 > 이후 ref 사용 불가)
-    final appVersionRepository = ref.read(appVersionRepositoryProvider);
-    final authRepository = ref.read(authRepositoryProvider);
-    final startupResult = await runSplashStartupSequence<Widget>(
-      checkUpdateType: appVersionRepository.checkUpdateType,
-      determineInitialScreen: () => _determineInitialScreen(authRepository),
-      // _aborted: timeout 또는 오류로 _initAndNavigate()가 이미 로그인 화면을 표시한 경우
-      isAborted: () => _aborted,
-      minimumSplashDuration: _minimumSplashDuration,
-    );
-    if (startupResult.isAborted) return;
-    if (startupResult.isForcedUpdate) {
-      if (mounted) context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+  /// 시작 흐름: 버전·초기 화면 결정(타임아웃) > 실패 시 다시 시도 화면 > 권장 업데이트 안내 > 다음 화면 이동
+  /// 다시 시도마다 세대 증가 > 타임아웃된 이전 실행이 늦게 끝나도 화면 이동 안 함
+  Future<void> _initAndNavigate() async {
+    final generation = ++_startupGeneration;
+    bool isStale() => generation != _startupGeneration || !mounted;
+
+    final SplashStartupResult<Widget> startupResult;
+    try {
+      // timeout() onTimeout 미제공 시 TimeoutException을 자동으로 throw
+      startupResult = await _runStartupSequence(isStale).timeout(_splashTimeout);
+    } catch (e, st) {
+      debugPrint('[SplashScreen] 초기화 실패: $e\n$st');
+      if (isStale()) return;
+      _startupGeneration++; // 진행 중 실행 무효화
+      setState(() => _startupFailureDescription = describeStartupFailure(e));
       return;
     }
-    final nextScreen = startupResult.nextScreen!;
+    if (isStale() || startupResult.isAborted) return;
 
-    if (!mounted) return;
-
-    if (nextScreen is LoginScreen) {
-      ColdStartDeepLinkData.clear(); // 미인증 상태 → 딥링크 데이터 폐기
-      await _playLoginTransitionAnimation();
-    } else {
-      startUserSession(
-        invalidate: ref.invalidate,
-        navigateToSessionScreen: () => context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition),
-      );
-      // MainScreen 이동 후 콜드 스타트 FCM/AppLinks 딥링크 처리
-      // (pushAndRemoveUntil이 완료된 다음 프레임에 navigatorKey로 push)
-      if (nextScreen is MainScreen && ColdStartDeepLinkData.hasPending) {
-        final pendingUri = ColdStartDeepLinkData.pendingUri!;
-        final pendingType = ColdStartDeepLinkData.pendingNotificationType;
-        final pendingExtra = ColdStartDeepLinkData.pendingExtraData; // clear() 전에 보관 (itemName/deleteReason 등)
-        ColdStartDeepLinkData.clear();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_aborted) return; // 프레임 콜백 실행 전 중단됐을 경우 딥링크 라우팅 차단
-          final ctx = navigatorKey.currentContext;
-          if (ctx != null) {
-            RomRomDeepLinkRouter.openFromUri(ctx, pendingUri, notificationType: pendingType, extraData: pendingExtra);
-          }
-        });
-      } else {
-        ColdStartDeepLinkData.clear(); // 온보딩 등 비대상 화면 → 딥링크 데이터 폐기
-      }
+    if (startupResult.isForcedUpdate) {
+      context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+      return;
     }
+    if (startupResult.isRecommendedUpdate) {
+      // 안내 실패(저장소·모달 오류)는 시작을 막지 않음
+      try {
+        await _showRecommendedUpdatePromptIfDue();
+      } catch (error) {
+        debugPrint('[SplashScreen] recommended update prompt failed : $error');
+      }
+      if (isStale()) return;
+    }
+    await _navigateToNextScreen(startupResult.nextScreen!);
+  }
+
+  /// 다시 시도: 실패 화면 해제 > 시작 흐름 재실행
+  void _retryStartup() {
+    setState(() => _startupFailureDescription = null);
+    unawaited(_initAndNavigate());
+  }
+
+  /// 반복 실패 탈출: 로컬 토큰만 삭제 > 로그인 화면 (세션 종료 전환 경유, 서버 로그아웃은 연결 불가 상황이라 생략)
+  Future<void> _moveToLoginAfterStartupFailure() async {
+    if (_isLeavingToLogin) return;
+    setState(() => _isLeavingToLogin = true);
+    _startupGeneration++;
+    try {
+      await TokenManager().deleteTokens();
+      SessionNavigationHandler.notifyLoggedOut();
+    } catch (error) {
+      debugPrint('[SplashScreen] leave to login failed : $error');
+    } finally {
+      // (성공·실패 공통)
+      if (mounted) setState(() => _isLeavingToLogin = false);
+    }
+  }
+
+  Future<SplashStartupResult<Widget>> _runStartupSequence(bool Function() isStale) {
+    // 첫 await 전 캡처 (타임아웃으로 흐름이 이어져도 이후 ref 사용 불가)
+    final appVersionRepository = ref.read(appVersionRepositoryProvider);
+    final authRepository = ref.read(authRepositoryProvider);
+    return runSplashStartupSequence<Widget>(
+      checkUpdateType: appVersionRepository.checkUpdateType,
+      determineInitialScreen: () => _determineInitialScreen(authRepository),
+      isAborted: isStale,
+      minimumSplashDuration: _minimumSplashDuration,
+    );
+  }
+
+  /// 권장 업데이트 안내 (주기 경과 시 1회, 닫으면 그대로 진행)
+  Future<void> _showRecommendedUpdatePromptIfDue() async {
+    final promptService = RecommendedUpdatePromptService();
+    if (!await promptService.shouldShowPrompt() || !mounted) return;
+    await promptService.markPromptShown();
+    if (!mounted) return;
+    await CommonModal.confirm(
+      context: context,
+      message: '새 버전이 나왔어요.\n업데이트하고 더 편하게 이용해 보세요.',
+      cancelText: '나중에',
+      confirmText: '업데이트',
+      icon: AppIcons.infoCircle,
+      iconColor: AppColors.primaryYellow,
+      confirmButtonColor: AppColors.primaryYellow,
+      confirmTextColor: AppColors.textColorBlack,
+      onCancel: () => Navigator.of(context).pop(),
+      // 스토어 열기 끝난 뒤 닫기 (실패 안내 스낵바가 루트 오버레이에 남도록 화면 이동 전에 표시)
+      onConfirm: () async {
+        await openAppStorePage(context);
+        if (mounted) Navigator.of(context).pop();
+      },
+    );
+  }
+
+  /// 다음 화면 이동: 로그인 > 로그인 UI 전환 (링크 보관 유지), 그 외 > 세션 시작 (메인이면 보관 링크 열기)
+  Future<void> _navigateToNextScreen(Widget nextScreen) async {
+    if (nextScreen is LoginScreen) {
+      await _playLoginTransitionAnimation();
+      return;
+    }
+    startUserSession(
+      invalidate: ref.invalidate,
+      navigateToSessionScreen: () => context.navigateTo(screen: nextScreen, type: NavigationTypes.fadeTransition),
+    );
+    if (nextScreen is MainScreen) RomRomDeepLinkRouter.onMainScreenEntered();
   }
 
   /// 로고 이동 + 로그인 UI fade in.
@@ -226,33 +266,40 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
     return (logoCenterInBody / (bodyHeight / 2)) - 1;
   }
 
+  /// 초기 화면 결정: 토큰 없음·재발급 거절 > 로그인, 재발급 연결 실패·서버 오류 > 예외(다시 시도 화면)
   Future<Widget> _determineInitialScreen(AuthRepository authRepository) async {
     final tokenManager = TokenManager();
     final String? refreshToken = await tokenManager.getRefreshToken();
 
     if (refreshToken == null) return const LoginScreen();
 
-    final isLoggedIn = await authRepository.refreshAccessToken();
-    if (!isLoggedIn) return const LoginScreen();
+    switch (await authRepository.tryRefreshAccessToken()) {
+      case TokenRefreshOutcome.rejected:
+        return const LoginScreen();
+      case TokenRefreshOutcome.retryableFailure:
+        throw const SplashStartupRetryableException();
+      case TokenRefreshOutcome.success:
+        break;
+    }
 
+    // 회원 정보 조회: 연결·서버 오류 > 예외 전달(다시 시도 화면), 4xx·로컬 오류 > 로그인 화면
     final userInfo = UserInfo();
     try {
       await userInfo.getUserInfo();
       await MemberManager.getCurrentMember();
-
-      if (userInfo.needsOnboarding) {
-        return OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
-      }
-
-      // FCM 토큰 저장은 화면 이동과 무관 (권한 응답 대기 포함, 실패 로그는 handleFcmToken 내부)
-      unawaited(FirebaseService().handleFcmToken());
-      return const MainScreen();
-    } catch (e) {
-      // 네트워크 예외는 재throw → _initAndNavigate()의 catch에서 SnackBar 표시
-      if (e is SocketException || e is TimeoutException) rethrow;
-      debugPrint('[SplashScreen] 사용자 정보 로드 실패: $e');
+    } catch (error) {
+      if (isRetryableMemberLoadError(error)) rethrow;
+      debugPrint('[SplashScreen] member load failed, move to login : $error');
       return const LoginScreen();
     }
+
+    if (userInfo.needsOnboarding) {
+      return OnboardingFlowScreen(initialStep: userInfo.nextOnboardingStep);
+    }
+
+    // FCM 토큰 저장은 화면 이동과 무관 (권한 응답 대기 포함, 실패 로그는 handleFcmToken 내부)
+    unawaited(FirebaseService().handleFcmToken());
+    return const MainScreen();
   }
 
   @override
@@ -270,69 +317,102 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
       ),
       child: Scaffold(
         backgroundColor: AppColors.primaryBlack,
-        body: Stack(
-          children: [
-            // 로그인 UI (애니메이션 중에만 표시) — 로그인 화면과 동일한 SafeArea + Spacer 구조
-            if (_showLoginUI)
-              FadeTransition(
-                opacity: _loginUIFadeAnim,
-                child: Stack(
-                  children: [
-                    SafeArea(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+        body: _startupFailureDescription != null
+            ? _buildStartupFailureView(_startupFailureDescription!)
+            : Stack(
+                children: [
+                  // 로그인 UI (애니메이션 중에만 표시) — 로그인 화면과 동일한 SafeArea + Spacer 구조
+                  if (_showLoginUI)
+                    FadeTransition(
+                      opacity: _loginUIFadeAnim,
+                      child: Stack(
                         children: [
-                          const Spacer(flex: 2),
-                          SizedBox(height: 108.w), // 로고 자리 확보
-                          SizedBox(height: 45.h),
-                          Text(
-                            '손쉬운 물품 교환',
-                            style: CustomTextStyles.p1.copyWith(
-                              color: AppColors.textColorWhite.withValues(alpha: 0.6),
-                              fontWeight: FontWeight.w600,
+                          SafeArea(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Spacer(flex: 2),
+                                SizedBox(height: 108.w), // 로고 자리 확보
+                                SizedBox(height: 45.h),
+                                Text(
+                                  '손쉬운 물품 교환',
+                                  style: CustomTextStyles.p1.copyWith(
+                                    color: AppColors.textColorWhite.withValues(alpha: 0.6),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 17.h),
+                                SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
+                                const Spacer(flex: 3),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                                  child: AuthButtonGroup(
+                                    buttons: [
+                                      LoginPlatforms.kakao,
+                                      if (Platform.isIOS) LoginPlatforms.apple,
+                                      LoginPlatforms.google,
+                                    ].map((platform) => LoginButton(platform: platform)).toList(),
+                                  ),
+                                ),
+                                SizedBox(height: 48.h),
+                              ],
                             ),
                           ),
-                          SizedBox(height: 17.h),
-                          SvgPicture.asset('assets/images/login-romrom-text.svg', width: 124.w, height: 17.h),
-                          const Spacer(flex: 3),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24.w),
-                            child: AuthButtonGroup(
-                              buttons: [
-                                LoginPlatforms.kakao,
-                                if (Platform.isIOS) LoginPlatforms.apple,
-                                LoginPlatforms.google,
-                              ].map((platform) => LoginButton(platform: platform)).toList(),
+                          // 우하단 버전 정보 (LoginScreen과 동일 — 고정 픽셀 사용, iPad 대응)
+                          if (_appVersion.isNotEmpty)
+                            Positioned(
+                              right: 20,
+                              bottom: 40,
+                              child: Text(
+                                'v$_appVersion',
+                                style: CustomTextStyles.p4.copyWith(
+                                  color: AppColors.textColorWhite.withValues(alpha: 0.4),
+                                ),
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 48.h),
                         ],
                       ),
                     ),
-                    // 우하단 버전 정보 (LoginScreen과 동일 — 고정 픽셀 사용, iPad 대응)
-                    if (_appVersion.isNotEmpty)
-                      Positioned(
-                        right: 20,
-                        bottom: 40,
-                        child: Text(
-                          'v$_appVersion',
-                          style: CustomTextStyles.p4.copyWith(color: AppColors.textColorWhite.withValues(alpha: 0.4)),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
 
-            // 로고: 항상 Align으로 표시, 애니메이션 중 이동
-            AnimatedBuilder(
-              animation: _loginTransitionController,
-              builder: (context, child) {
-                return Align(alignment: _logoAlignmentAnim.value, child: child);
-              },
-              child: SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 108.w),
+                  // 로고: 항상 Align으로 표시, 애니메이션 중 이동
+                  AnimatedBuilder(
+                    animation: _loginTransitionController,
+                    builder: (context, child) {
+                      return Align(alignment: _logoAlignmentAnim.value, child: child);
+                    },
+                    child: SvgPicture.asset('assets/images/romrom-logo.svg', width: 108.w, height: 108.w),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  /// 시작 실패 화면: 다시 시도 + 로그인 화면 이동 (서버 오류 반복 시 탈출 경로)
+  Widget _buildStartupFailureView(String failureDescription) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: EmptyStateView.error(
+              centerText: '롬롬을 시작하지 못했어요',
+              descriptionText: failureDescription,
+              onRetry: _retryStartup,
             ),
-          ],
-        ),
+          ),
+          TextButton(
+            onPressed: _isLeavingToLogin ? null : _moveToLoginAfterStartupFailure,
+            child: Text(
+              '로그인 화면으로 이동',
+              style: CustomTextStyles.p2.copyWith(
+                color: AppColors.opacity60White,
+                decoration: TextDecoration.underline,
+                decorationColor: AppColors.opacity60White,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }

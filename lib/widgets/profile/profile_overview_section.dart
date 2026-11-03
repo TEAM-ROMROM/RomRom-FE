@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:romrom_fe/enums/account_status.dart';
+import 'package:romrom_fe/enums/image_pick_source.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/my_page/profile_image_crop_screen.dart';
 import 'package:romrom_fe/providers/image_repository_provider.dart';
+import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/image_compressor.dart';
+import 'package:romrom_fe/utils/nickname_rules.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -85,10 +90,24 @@ class _ProfileOverviewSectionState extends ConsumerState<ProfileOverviewSection>
     super.dispose();
   }
 
-  /// 갤러리에서 이미지 선택 및 크롭 후 업로드
+  /// 사진 소스(촬영·앨범) 선택 > 촬영이면 카메라 권한 확인 > 사진 선택 (취소·권한 거부는 null)
+  Future<XFile?> _pickProfileImage() async {
+    final ImagePickSource? source = await showImageSourceBottomSheet(context);
+    if (source == null || !mounted) return null;
+    switch (source) {
+      case ImagePickSource.camera:
+        final bool isCameraGranted = await ensureCameraPermission(context);
+        if (!isCameraGranted) return null;
+        return _picker.pickImage(source: ImageSource.camera);
+      case ImagePickSource.gallery:
+        return _picker.pickImage(source: ImageSource.gallery);
+    }
+  }
+
+  /// 프로필 사진 선택(촬영·앨범) 및 크롭 후 업로드
   Future<void> _onPickImage() async {
     try {
-      final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? picked = await _pickProfileImage();
       if (picked == null) {
         debugPrint('프로필 이미지 변경 취소');
         return;
@@ -195,9 +214,10 @@ class _ProfileOverviewSectionState extends ConsumerState<ProfileOverviewSection>
     );
   }
 
-  /// 닉네임 섹션 (편집 모드에서는 TextField, 일반 모드에서는 텍스트 + 편집 아이콘)
+  /// 닉네임 섹션 (편집 모드에서는 TextField + 안내·글자 수, 일반 모드에서는 텍스트 + 편집 아이콘)
   Widget _buildNicknameSection() {
     final TextStyle style = CustomTextStyles.h2;
+    final String? nicknameInputError = findNicknameInputError(_nickname);
 
     if (!widget.isEditable) {
       return Text(_nickname, style: style);
@@ -214,7 +234,7 @@ class _ProfileOverviewSectionState extends ConsumerState<ProfileOverviewSection>
       children: [
         Align(
           alignment: Alignment.center,
-          child: _isEditingNickname || nicknameFocusNode.hasFocus || _nickname.isEmpty
+          child: _isEditingNickname || nicknameFocusNode.hasFocus || nicknameInputError != null
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -229,10 +249,10 @@ class _ProfileOverviewSectionState extends ConsumerState<ProfileOverviewSection>
                         textAlignVertical: TextAlignVertical.bottom,
                         decoration: InputDecoration(
                           border: InputBorder.none,
-                          enabledBorder: _nickname.isEmpty
+                          enabledBorder: nicknameInputError != null
                               ? const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.errorBorder))
                               : InputBorder.none,
-                          focusedBorder: _nickname.isEmpty
+                          focusedBorder: nicknameInputError != null
                               ? const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.errorBorder))
                               : const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.secondaryBlack2)),
                           isDense: true,
@@ -260,6 +280,8 @@ class _ProfileOverviewSectionState extends ConsumerState<ProfileOverviewSection>
                             ),
                           ),
                         ),
+                        // 최대 글자 수 초과 입력 차단 (서버 관리자 수정 규칙과 같은 길이)
+                        inputFormatters: [LengthLimitingTextInputFormatter(maximumNicknameLength)],
                         onTap: widget.onShowSaveButton,
                         onTapOutside: (_) => setState(() {
                           nicknameFocusNode.unfocus();
@@ -271,11 +293,27 @@ class _ProfileOverviewSectionState extends ConsumerState<ProfileOverviewSection>
                         },
                       ),
                     ),
-                    if (_nickname.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text('닉네임을 입력해주세요', style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder)),
+                    // 입력 안내 (빈 값·공백만) + 글자 수
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: SizedBox(
+                        width: 243.w,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                nicknameInputError ?? '',
+                                style: CustomTextStyles.p3.copyWith(color: AppColors.errorBorder),
+                              ),
+                            ),
+                            Text(
+                              '${_nickname.length}/$maximumNicknameLength',
+                              style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White),
+                            ),
+                          ],
+                        ),
                       ),
+                    ),
                   ],
                 )
               : GestureDetector(

@@ -4,6 +4,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:romrom_fe/enums/token_refresh_outcome.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/token_keys.dart';
 import 'package:romrom_fe/exceptions/account_suspended_exception.dart';
@@ -138,15 +139,18 @@ class RomAuthApi {
 
   /// ### POST : `/api/auth/reissue` (accessToken 재발급)
   /// ApiClient.reissueTokens 위임 > 성공 시 로그인 상태·회원 정보 갱신 / 실패 시 false (토큰 유지, 화면 이동은 호출부)
-  Future<bool> refreshAccessToken() async {
+  Future<bool> refreshAccessToken() async => await refreshAccessTokenWithOutcome() == TokenRefreshOutcome.success;
+
+  /// 토큰 재발급 > 결과 3가지 (스플래시: 거절만 로그인 화면, 연결 실패·서버 오류는 다시 시도)
+  Future<TokenRefreshOutcome> refreshAccessTokenWithOutcome() async {
     try {
       final reissueResult = await ApiClient.reissueTokens();
       final responseData = reissueResult.responseData;
 
-      // 실패·만료 > 토큰 유지 후 false (스플래시: 로그인 화면 이동, 웹소켓: 다음 API 401에서 세션 만료 처리)
+      // 실패·만료 > 토큰 유지 (웹소켓: 다음 API 401에서 세션 만료 처리)
       if (responseData == null) {
         if (reissueResult.isRefreshTokenExpired) debugPrint('refresh 만료');
-        return false;
+        return reissueResult.isRetryableFailure ? TokenRefreshOutcome.retryableFailure : TokenRefreshOutcome.rejected;
       }
 
       // 회원 상태 정보 업데이트
@@ -163,10 +167,10 @@ class RomAuthApi {
       await fetchAndSaveMemberInfo();
 
       debugPrint('access token 재발급 성공');
-      return true;
+      return TokenRefreshOutcome.success;
     } catch (e) {
       debugPrint('Token refresh failed: ${LogMasking.describeErrorForLog(e)}');
-      return false;
+      return TokenRefreshOutcome.retryableFailure;
     }
   }
 

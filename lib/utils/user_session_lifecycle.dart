@@ -6,6 +6,7 @@ import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/providers/user_scoped_providers.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/services/deep_link_gate.dart';
 import 'package:romrom_fe/services/session_navigation_handler.dart';
 
 /// 화면 전환 함수 (루트: navigatorKey 컨텍스트 + navigateTo)
@@ -25,6 +26,8 @@ void registerSessionEndNavigation({
   required bool Function() isActive,
 }) {
   void navigateThenReset(Widget screen, NavigationTypes type) {
+    // 로그인·정지 화면 위 딥링크 차단 (이후 링크는 다음 메인 진입까지 보관)
+    DeepLinkGate.instance.leaveMainScreen();
     navigate(screen, type);
     _pendingSessionEndReset?.cancel();
     _pendingSessionEndReset = Timer(previousScreensDisposeWait, () {

@@ -6,9 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/utils/app_store_launcher.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class AppUpdateScreen extends StatefulWidget {
   const AppUpdateScreen({super.key});
@@ -20,15 +19,12 @@ class AppUpdateScreen extends StatefulWidget {
 class _AppUpdateScreenState extends State<AppUpdateScreen> {
   bool _isLaunching = false;
 
+  /// 스토어 열기 (실패 시 스토어 직접 검색 안내는 openAppStorePage 담당)
   Future<void> _launchStore() async {
     if (_isLaunching) return;
     setState(() => _isLaunching = true);
     try {
-      final String storeUrl = Platform.isAndroid ? AppUrls.androidStoreUrl : AppUrls.iosStoreUrl;
-      final Uri uri = Uri.parse(storeUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
+      await openAppStorePage(context);
     } finally {
       if (mounted) setState(() => _isLaunching = false);
     }
@@ -38,6 +34,7 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
     await _showExitConfirmDialog();
   }
 
+  /// 닫기 안내: Android > 앱 닫기, iOS > 안내만 닫고 화면 유지 (강제 종료는 iOS 가이드라인상 비정상 종료로 보임)
   Future<void> _showExitConfirmDialog() async {
     await CommonModal.success(
       context: context,
@@ -47,7 +44,7 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
         if (Platform.isAndroid) {
           SystemNavigator.pop();
         } else {
-          exit(0);
+          Navigator.of(context).pop();
         }
       },
     );

@@ -64,7 +64,7 @@ void main() {
 
       final f = n.setEnabled(NotificationSettingType.marketing, true);
       expect(container.read(notificationSettingProvider)[NotificationSettingType.marketing], isTrue);
-      await f;
+      expect(await f, isTrue, reason: '서버 확정 > true (마케팅 처리 일자 안내 근거)');
       expect(fake.callCount, 1);
     });
 
@@ -72,7 +72,7 @@ void main() {
       final n = container.read(notificationSettingProvider.notifier);
       n.seed({NotificationSettingType.activity: false});
       fake.shouldThrow = true;
-      await n.setEnabled(NotificationSettingType.activity, true);
+      expect(await n.setEnabled(NotificationSettingType.activity, true), isFalse);
       expect(container.read(notificationSettingProvider)[NotificationSettingType.activity], isFalse);
     });
 
@@ -81,7 +81,7 @@ void main() {
       n.seed({NotificationSettingType.chat: false});
       final f1 = n.setEnabled(NotificationSettingType.chat, true);
       final f2 = n.setEnabled(NotificationSettingType.chat, false);
-      await Future.wait([f1, f2]);
+      expect(await Future.wait([f1, f2]), [true, false], reason: '진행 중 중복 호출 > 요청 없이 false');
       expect(fake.callCount, 1);
     });
 

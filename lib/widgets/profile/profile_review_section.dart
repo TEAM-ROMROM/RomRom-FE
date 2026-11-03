@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
-import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
 import 'package:romrom_fe/enums/trade_review_tag.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
@@ -17,6 +16,8 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/location_utils.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
+import 'package:romrom_fe/widgets/common/expandable_text.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
@@ -33,6 +34,8 @@ class ProfileReviewSection extends ConsumerStatefulWidget {
 class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
   List<TradeReview> _reviews = [];
   bool _isLoading = true;
+  // 후기 조회 실패 (후기 0건과 구분 > 다시 시도 표시)
+  bool _hasLoadError = false;
   final Map<String, String> _fetchedAddresses = {};
 
   @override
@@ -48,16 +51,30 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
       final memberId = widget.memberId ?? await UserInfo().getCurrentMemberId();
       final reviews = await tradeRepository.getTradeReviews(memberId: memberId, pageNumber: 0, pageSize: 10);
       if (mounted) {
-        setState(() => _reviews = reviews);
+        setState(() {
+          _reviews = reviews;
+          _hasLoadError = false;
+        });
       }
       await _fetchMissingAddresses();
     } catch (e) {
       debugPrint('거래 후기 로드 실패: $e');
-      if (mounted) setState(() => _reviews = []);
+      if (mounted) {
+        setState(() {
+          _reviews = [];
+          _hasLoadError = true;
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
       widget.onLoaded?.call();
     }
+  }
+
+  /// 다시 시도: 로딩 표시 > 재조회
+  void _retryLoadReviews() {
+    setState(() => _isLoading = true);
+    _loadReviews();
   }
 
   Future<void> _fetchMissingAddresses() async {
@@ -118,6 +135,16 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(child: CommonLoadingIndicator());
+    }
+
+    if (_hasLoadError) {
+      return Container(
+        width: double.infinity,
+        margin: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 24.h),
+        padding: EdgeInsets.symmetric(vertical: 24.h),
+        decoration: BoxDecoration(color: AppColors.secondaryBlack1, borderRadius: BorderRadius.circular(10.r)),
+        child: EmptyStateView.error(centerText: '후기를 불러오지 못했어요', onRetry: _retryLoadReviews),
+      );
     }
 
     final topRadius = BorderRadius.only(topLeft: Radius.circular(10.r), topRight: Radius.circular(10.r));
@@ -319,73 +346,12 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
               ),
               if (review.reviewComment != null && review.reviewComment!.isNotEmpty) ...[
                 SizedBox(height: 8.h),
-                _ExpandableComment(text: review.reviewComment!, style: CustomTextStyles.p2.copyWith(height: 1.2)),
+                ExpandableText(text: review.reviewComment!, style: CustomTextStyles.p2.copyWith(height: 1.2)),
               ],
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ExpandableComment extends StatefulWidget {
-  final String text;
-  final TextStyle style;
-
-  const _ExpandableComment({required this.text, required this.style});
-
-  @override
-  State<_ExpandableComment> createState() => _ExpandableCommentState();
-}
-
-class _ExpandableCommentState extends State<_ExpandableComment> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tp = TextPainter(
-          text: TextSpan(text: widget.text, style: widget.style),
-          maxLines: 2,
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: constraints.maxWidth);
-        final isOverflowing = tp.didExceedMaxLines;
-
-        return GestureDetector(
-          onTap: isOverflowing ? () => setState(() => _isExpanded = !_isExpanded) : null,
-          behavior: HitTestBehavior.opaque,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: AnimatedSize(
-                  duration: AppMotion.fast,
-                  curve: AppMotion.standard,
-                  alignment: Alignment.topLeft,
-                  child: Text(
-                    widget.text,
-                    style: widget.style,
-                    maxLines: _isExpanded ? null : 2,
-                    overflow: _isExpanded ? null : TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              if (isOverflowing)
-                Padding(
-                  padding: EdgeInsets.only(left: 4.w),
-                  child: AnimatedRotation(
-                    turns: _isExpanded ? -0.5 : 0,
-                    duration: AppMotion.fast,
-                    curve: AppMotion.standard,
-                    child: const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.opacity60White),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

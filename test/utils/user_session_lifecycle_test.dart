@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/providers/user_scoped_providers.dart';
 import 'package:romrom_fe/screens/account_suspended_screen.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
+import 'package:romrom_fe/services/deep_link_gate.dart';
 import 'package:romrom_fe/services/session_navigation_handler.dart';
 import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 
@@ -73,6 +74,16 @@ void main() {
       expect(suspendedScreen.suspendedUntil, '2026-11-01T00:00:00');
       expect(navigations.single.$2, NavigationTypes.clearStackImmediate);
       expect(invalidatedProviders, userScopedProviders);
+    });
+
+    testWidgets('세션 종료 > 딥링크 게이트 닫힘 (로그인·정지 화면 위 상세 화면 차단)', (tester) async {
+      registerForTest();
+      DeepLinkGate.instance.enterMainScreen();
+
+      SessionNavigationHandler.notifySessionExpired();
+      await tester.pump(previousScreensDisposeWait);
+
+      expect(DeepLinkGate.instance.isMainScreenEntered, isFalse);
     });
 
     testWidgets('정리 대기 중 루트 해제 > 초기화 안 함', (tester) async {
