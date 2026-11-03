@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/my_page/my_register_item_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
@@ -29,6 +30,8 @@ class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection>
   // 타인 프로필 전용 로컬 목록 (본인 프로필은 myItemsProvider 구독)
   List<Item> _memberItems = [];
   bool _isMemberItemsLoading = true;
+  // 타인 교환 물품 조회 실패 ("등록된 물품 없음"과 구분 > 다시 시도)
+  bool _hasMemberItemsLoadError = false;
   bool _calledOnLoaded = false;
 
   bool get _isMyProfile => widget.memberId == null;
@@ -63,14 +66,44 @@ class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection>
         setState(() {
           _memberItems = items;
           _isMemberItemsLoading = false;
+          _hasMemberItemsLoadError = false;
         });
       }
     } catch (e) {
       debugPrint('타인 교환 물건 로드 실패: $e');
-      if (mounted) setState(() => _isMemberItemsLoading = false);
+      if (mounted) {
+        setState(() {
+          _isMemberItemsLoading = false;
+          _hasMemberItemsLoadError = true;
+        });
+      }
     } finally {
       _notifyLoaded();
     }
+  }
+
+  /// 타인 교환 물품 다시 시도 (진행 중이면 무시)
+  void _retryLoadMemberItems() {
+    if (_isMemberItemsLoading) return;
+    setState(() => _isMemberItemsLoading = true);
+    _loadMemberItems();
+  }
+
+  /// 타인 교환 물품 카드 > 물품 상세 (거래완료 물품은 요청 버튼 숨김)
+  void _openMemberItemDetail(Item item) {
+    final itemId = item.itemId;
+    if (itemId == null) return;
+    context.navigateTo(
+      screen: ItemDetailDescriptionScreen(
+        itemId: itemId,
+        imageSize: Size(MediaQuery.of(context).size.width, 400.h),
+        currentImageIndex: 0,
+        heroTag: 'profile_item_$itemId',
+        isMyItem: false,
+        isRequestManagement: false,
+        isTradeRequestAllowed: item.itemStatus != ItemStatus.exchanged.serverName,
+      ),
+    );
   }
 
   @override
@@ -89,7 +122,7 @@ class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection>
     } else {
       items = _memberItems;
       isLoading = _isMemberItemsLoading;
-      hasLoadErrorWithoutItems = false;
+      hasLoadErrorWithoutItems = _hasMemberItemsLoadError;
     }
 
     return AppPressable(
@@ -131,7 +164,11 @@ class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection>
     }
 
     if (hasLoadErrorWithoutItems) {
-      return _buildCenterMessage('교환 물품을 불러오지 못했어요.');
+      // 타인 > 다시 시도 탭, 본인 > 섹션 탭(등록 물품 화면)에서 재조회
+      return _buildCenterMessage(
+        _isMyProfile ? '교환 물품을 불러오지 못했어요.' : '교환 물품을 불러오지 못했어요.\n눌러서 다시 시도',
+        onTap: _isMyProfile ? null : _retryLoadMemberItems,
+      );
     }
 
     if (items.isEmpty) {
@@ -144,17 +181,32 @@ class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection>
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
         separatorBuilder: (_, _) => SizedBox(width: 12.w),
-        itemBuilder: (_, index) => _buildItemCard(items[index]),
+        itemBuilder: (_, index) => _isMyProfile
+            ? _buildItemCard(items[index])
+            : AppPressable(
+                onTap: () => _openMemberItemDetail(items[index]),
+                scaleDown: AppPressable.scaleCard,
+                enableRipple: false,
+                child: _buildItemCard(items[index]),
+              ),
       ),
     );
   }
 
-  /// 목록 자리 중앙 안내 문구 (빈 상태·실패 공통)
-  Widget _buildCenterMessage(String message) {
-    return SizedBox(
-      height: 163.w,
-      child: Center(
-        child: Text(message, style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White)),
+  /// 목록 자리 중앙 안내 문구 (빈 상태·실패 공통, 탭 동작 선택)
+  Widget _buildCenterMessage(String message, {VoidCallback? onTap}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        height: 163.w,
+        child: Center(
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+          ),
+        ),
       ),
     );
   }

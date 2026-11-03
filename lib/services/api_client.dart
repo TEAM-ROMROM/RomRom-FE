@@ -334,23 +334,11 @@ class ApiClient {
         return TokenReissueResult(responseData: responseData);
       }
 
-      // refresh 토큰 만료 (401 EXPIRED_REFRESH_TOKEN)
-      return TokenReissueResult.failed(isRefreshTokenExpired: _isExpiredRefreshTokenResponse(response));
+      // 만료·재시도 가능·거절 분류 (TokenReissueResult.fromFailedResponse)
+      return TokenReissueResult.fromFailedResponse(statusCode: response.statusCode, responseBody: response.body);
     } catch (e) {
       debugPrint('토큰 갱신 중 오류 발생: $e');
-      return const TokenReissueResult.failed();
-    }
-  }
-
-  /// 401 + errorCode EXPIRED_REFRESH_TOKEN 여부
-  static bool _isExpiredRefreshTokenResponse(http.Response response) {
-    if (response.statusCode != 401) return false;
-    try {
-      final data = jsonDecode(response.body);
-      return data is Map && data['errorCode'] == 'EXPIRED_REFRESH_TOKEN';
-    } catch (e) {
-      debugPrint('세션 만료 응답 파싱 실패: $e');
-      return false;
+      return const TokenReissueResult.connectionFailed();
     }
   }
 

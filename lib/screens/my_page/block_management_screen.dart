@@ -13,6 +13,7 @@ import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
@@ -28,6 +29,8 @@ class BlockManagementScreen extends ConsumerStatefulWidget {
 class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
   List<Member> _blockedMembers = [];
   bool _isLoading = true;
+  // 목록 조회 실패 ("차단한 사용자 없음"과 구분 > 다시 시도 표시)
+  bool _hasLoadError = false;
 
   @override
   void initState() {
@@ -45,6 +48,7 @@ class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
         setState(() {
           _blockedMembers = blockedMembers;
           _isLoading = false;
+          _hasLoadError = false;
         });
       }
     } catch (e) {
@@ -52,10 +56,20 @@ class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _hasLoadError = true;
         });
         CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     }
+  }
+
+  /// 다시 시도: 로딩 표시 > 재조회
+  void _retryLoadBlockedMembers() {
+    setState(() {
+      _isLoading = true;
+      _hasLoadError = false;
+    });
+    _loadBlockedMembers();
   }
 
   /// 차단 해제 처리 - 캐시에 위임
@@ -71,6 +85,8 @@ class _BlockManagementScreenState extends ConsumerState<BlockManagementScreen> {
       appBar: CommonAppBar(title: '차단 관리', showBottomBorder: false, onBackPressed: () => Navigator.pop(context)),
       body: _isLoading
           ? const Center(child: CommonLoadingIndicator())
+          : _hasLoadError
+          ? EmptyStateView.error(centerText: '차단 목록을 불러오지 못했어요', onRetry: _retryLoadBlockedMembers)
           : _blockedMembers.isEmpty
           ? _buildEmptyState()
           : _buildBlockedMembersList(),

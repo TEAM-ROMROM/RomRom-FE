@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -10,7 +8,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/auth_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/utils/support_email_launcher.dart';
 
 /// 제재된 사용자 안내 화면
 /// suspendedUntil >= 2100-01-01 이면 영구 정지, 아니면 일시 정지
@@ -73,27 +71,8 @@ class _AccountSuspendedScreenState extends State<AccountSuspendedScreen> {
     }
   }
 
-  /// 문의하기 mailto 링크 실행
-  Future<void> _launchContactEmail() async {
-    final uri = Uri(
-      scheme: 'mailto',
-      path: 'romrom.noreply@gmail.com',
-      queryParameters: {'subject': '[롬롬 이용 제한 문의] 계정명: $_nickname'},
-    );
-
-    final launched = await canLaunchUrl(uri);
-    if (launched) {
-      await launchUrl(uri);
-    } else {
-      if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '메일 앱이 없습니다. romrom.noreply@gmail.com 으로 문의해 주세요.',
-          type: SnackBarType.info,
-        );
-      }
-    }
-  }
+  /// 문의하기 메일 (메일 앱 없으면 주소 안내)
+  Future<void> _launchContactEmail() => launchSupportEmail(context, subject: '[롬롬 이용 제한 문의] 계정명: $_nickname');
 
   /// X 버튼 터치 시 로그인 화면으로 이동 (로그아웃 처리)
   Future<void> _handleClose(BuildContext context) async {

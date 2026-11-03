@@ -67,22 +67,39 @@ class AppVersionApi {
     return false; // 같으면 false (업데이트 불필요)
   }
 
-  /// 업데이트 타입 결정
+  /// 업데이트 타입 결정: 서버 버전 조회 > 현재 버전 비교 (조회·비교 실패 시 none, 차단하지 않음)
   Future<UpdateType> checkUpdateType() async {
     try {
       final AppVersionResponse? versionInfo = await getAppVersion();
       if (versionInfo == null) return UpdateType.none; // API 실패 시 차단하지 않음
 
       final String currentVersion = await getCurrentAppVersion();
-      debugPrint('[AppVersionApi] 현재 버전: $currentVersion, 최소 버전: ${versionInfo.minimumVersion}');
-
-      if (isVersionLower(currentVersion, versionInfo.minimumVersion)) {
-        return UpdateType.force;
-      }
-      return UpdateType.none;
+      debugPrint(
+        '[AppVersionApi] 현재 버전: $currentVersion, 최소 버전: ${versionInfo.minimumVersion}, 최신 버전: ${versionInfo.latestVersion}',
+      );
+      return resolveUpdateType(
+        currentVersion: currentVersion,
+        minimumVersion: versionInfo.minimumVersion,
+        latestVersion: versionInfo.latestVersion,
+      );
     } catch (e) {
       debugPrint('[AppVersionApi] 버전 체크 실패, 정상 진행: $e');
       return UpdateType.none; // 실패 시 차단하지 않음
+    }
+  }
+
+  /// 현재 <-> 최소 버전 미달 > force, 최신 버전 미달 > recommend, 그 외 none
+  /// 최신 버전 형식 오류는 권장 판정만 생략 (강제 판정 유지)
+  UpdateType resolveUpdateType({
+    required String currentVersion,
+    required String minimumVersion,
+    required String latestVersion,
+  }) {
+    if (isVersionLower(currentVersion, minimumVersion)) return UpdateType.force;
+    try {
+      return isVersionLower(currentVersion, latestVersion) ? UpdateType.recommend : UpdateType.none;
+    } on FormatException {
+      return UpdateType.none;
     }
   }
 }

@@ -43,9 +43,9 @@ class NotificationSettingNotifier extends Notifier<Map<NotificationSettingType, 
     state = {...state, ...values};
   }
 
-  /// Optimistic 토글.
-  Future<void> setEnabled(NotificationSettingType type, bool value) async {
-    if (_inFlight.contains(type)) return;
+  /// Optimistic 토글 > 서버 확정 여부 반환 (실패·진행 중 중복 호출 시 false)
+  Future<bool> setEnabled(NotificationSettingType type, bool value) async {
+    if (_inFlight.contains(type)) return false;
     _inFlight.add(type);
 
     final prev = state[type] ?? !value;
@@ -54,6 +54,7 @@ class NotificationSettingNotifier extends Notifier<Map<NotificationSettingType, 
     try {
       await ref.read(notificationSettingRepositoryProvider).update(type, value);
       _invalidateMemberProfile();
+      return true;
     } catch (e) {
       debugPrint('notificationSettingProvider.setEnabled 실패: $e');
       state = {...state, type: prev};
@@ -61,6 +62,7 @@ class NotificationSettingNotifier extends Notifier<Map<NotificationSettingType, 
       if (ctx != null) {
         CommonSnackBar.show(context: ctx, message: '알림 설정 변경에 실패했어요', type: SnackBarType.error);
       }
+      return false;
     } finally {
       _inFlight.remove(type);
     }

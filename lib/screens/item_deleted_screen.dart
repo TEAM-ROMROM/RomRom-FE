@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/utils/support_email_launcher.dart';
 
 /// 게시글 삭제 제재 안내 화면
 /// 관리자가 게시글을 삭제했을 때 표시되는 알림 화면
@@ -22,32 +20,21 @@ class ItemDeletedScreen extends StatefulWidget {
 }
 
 class _ItemDeletedScreenState extends State<ItemDeletedScreen> {
+  // 알림 값 누락 시 대체 문구 (빈 칸 대신 표시)
+  static const String _missingItemTitleText = '게시글 정보 없음';
+  static const String _missingDeleteReasonText = '사유 정보 없음';
+
+  String get _displayItemTitle => widget.itemTitle.trim().isEmpty ? _missingItemTitleText : widget.itemTitle;
+  String get _displayDeleteReason =>
+      widget.deleteReason.trim().isEmpty ? _missingDeleteReasonText : widget.deleteReason;
+
   /// X 버튼: 화면 닫기 (계정 제재와 달리 로그아웃 없음)
   void _handleClose() {
     Navigator.of(context).pop();
   }
 
-  /// 문의하기 mailto 링크 실행
-  Future<void> _launchContactEmail() async {
-    final uri = Uri(
-      scheme: 'mailto',
-      path: 'romrom.noreply@gmail.com',
-      queryParameters: {'subject': '[롬롬 게시글 삭제 문의] 게시글: ${widget.itemTitle}'},
-    );
-
-    final launched = await canLaunchUrl(uri);
-    if (launched) {
-      await launchUrl(uri);
-    } else {
-      if (mounted) {
-        CommonSnackBar.show(
-          context: context,
-          message: '메일 앱이 없습니다. romrom.noreply@gmail.com 으로 문의해 주세요.',
-          type: SnackBarType.info,
-        );
-      }
-    }
-  }
+  /// 문의하기 메일 (메일 앱 없으면 주소 안내)
+  Future<void> _launchContactEmail() => launchSupportEmail(context, subject: '[롬롬 게시글 삭제 문의] 게시글: $_displayItemTitle');
 
   @override
   Widget build(BuildContext context) {
@@ -105,9 +92,9 @@ class _ItemDeletedScreenState extends State<ItemDeletedScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoRow('콘텐츠 정보', widget.itemTitle),
+                    _buildInfoRow('콘텐츠 정보', _displayItemTitle),
                     SizedBox(height: 8.h),
-                    _buildInfoRow('삭제 사유', widget.deleteReason),
+                    _buildInfoRow('삭제 사유', _displayDeleteReason),
                     SizedBox(height: 16.h),
                     Text(
                       '* 반복적인 가이드라인 위반 시 서비스 이용이 제한될 수 있습니다.'.noBreak,
