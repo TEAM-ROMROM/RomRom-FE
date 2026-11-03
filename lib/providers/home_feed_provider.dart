@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -11,8 +10,11 @@ import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/providers/home_feed_repository_provider.dart';
 import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
+import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/repositories/home_feed_repository.dart';
 import 'package:romrom_fe/states/home_feed_state.dart';
+import 'package:romrom_fe/states/member_block_state.dart';
+import 'package:romrom_fe/utils/home_feed_seen_item_history.dart';
 
 /// 홈 피드 단일 소유 provider.
 /// MainScreen이 IndexedStack이라 탭 전환 시 HomeTabScreen.initState가 재실행되지 않으므로
@@ -25,7 +27,7 @@ const Duration kHomeFeedRefreshThrottle = Duration(seconds: 30);
 
 /// seen-set LRU 최대 크기 — spec §2.1.
 @visibleForTesting
-const int kHomeFeedSeenSetMaxSize = 100;
+const int kHomeFeedSeenSetMaxSize = HomeFeedSeenItemHistory.maximumSeenItemCount;
 
 /// loadMore 실패 후 재시도 대기 시간 (스크롤 알림마다 즉시 재시도 방지)
 @visibleForTesting
@@ -60,6 +62,12 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   // 이번 세션에 신고한 물품 id (서버가 피드에서 빼 준다는 보장이 없어 클라이언트에서 거름)
   final Set<String> _reportedItemIds = {};
 
+  // 본 물품 기록 (화면 상태와 분리 > 넘길 때 피드 상태 변화 없음, 기기 저장은 묶음)
+  HomeFeedSeenItemHistory _seenItemHistory = HomeFeedSeenItemHistory(
+    saveSeenItemIds: (_, {required memberId}) async {},
+    readCurrentMemberId: () async => null,
+  );
+
   // 진행 중 refresh (끝날 때까지 다른 refresh 판단 기준)
   Future<HomeFeedRefreshResult>? _inFlightRefresh;
 
@@ -75,7 +83,12 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   @visibleForTesting
   int Function() generateFeedSeed = () => _feedSeedRandom.nextInt(_kFeedSeedUpperBound);
 
+  /// 본 물품 id (오래된 순, 테스트 확인용)
+  @visibleForTesting
+  Set<String> get seenItemIds => _seenItemHistory.seenItemIds;
+
   /// 첫 페이지 로드 (invalidate 시 notifier 인스턴스 재사용 > 세션별 필드 초기화 > 저장된 최근 본 물품 복원 후 조회)
+  /// 세션 종료(dispose) 때 대기 중 본 물품 기록 즉시 저장, 차단 회원 변경 구독
   @override
   Future<HomeFeedState> build() async {
     _buildGeneration++;
@@ -84,16 +97,33 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     _reportedItemIds.clear();
     _inFlightRefresh = null;
     _queuedBypassRefresh = null;
-    return _fetchInitial(seenItemIds: await _loadPersistedSeenItemIds());
+    final buildGeneration = _buildGeneration;
+    ref.listen<MemberBlockState>(memberBlockProvider, (_, _) => _applyHiddenItemFilter());
+    // 이번 세션 기록 (복원 전 dispose되면 저장할 것 없음)
+    HomeFeedSeenItemHistory? sessionSeenItemHistory;
+    ref.onDispose(() => unawaited(sessionSeenItemHistory?.flush()));
+
+    final repository = _repo;
+    sessionSeenItemHistory = HomeFeedSeenItemHistory(
+      saveSeenItemIds: repository.saveRecentlySeenItemIds,
+      readCurrentMemberId: repository.readCurrentMemberId,
+      restoredSeenItemIds: await repository.loadRecentlySeenItemIds(),
+    );
+    // 복원 중 세션이 바뀌었으면 새 세션 기록 유지
+    if (buildGeneration == _buildGeneration) _seenItemHistory = sessionSeenItemHistory;
+    return _fetchInitial();
   }
+
+  /// 대기 중 본 물품 기록 즉시 저장 (앱 비활성·홈 탭 이탈 시 호출)
+  Future<void> flushSeenItemIds() => _seenItemHistory.flush();
 
   /// 정렬 폴백을 돌아 첫 비어있지 않은 결과를 반환 (새 세션: 새 시드 + 최근 본 물품 스냅샷 고정).
   /// 시간 함수(DateTime.now())는 호출하지 않는다 — lastRefreshAt는 호출자가 결정.
-  Future<HomeFeedState> _fetchInitial({required LinkedHashSet<String> seenItemIds}) async {
+  Future<HomeFeedState> _fetchInitial() async {
     List<Item> items = const [];
     ItemSortField pickedSort = ItemSortField.recommended;
     final feedSeed = generateFeedSeed();
-    final sessionRecentlySeenItemIds = _buildSessionRecentlySeenItemIds(seenItemIds);
+    final sessionRecentlySeenItemIds = _seenItemHistory.toRecentFirstList();
 
     for (final sortField in _kFallbackOrder) {
       items = await _repo.fetchPage(
@@ -111,14 +141,13 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     }
 
     final feedItems = await _toFeedItems(items, startIndex: 0);
-    final reordered = _reorderBySeen(feedItems, seenItemIds);
+    final reordered = _reorderBySeen(feedItems, _seenItemHistory.seenItemIds);
 
     return HomeFeedState(
       items: reordered,
       currentPage: 0,
       hasMoreItems: items.isNotEmpty,
       currentSortField: pickedSort,
-      seenItemIds: seenItemIds,
       lastRefreshAt: null,
       feedSeed: feedSeed,
       sessionRecentlySeenItemIds: sessionRecentlySeenItemIds,
@@ -150,7 +179,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
       if (fetched.isEmpty) {
         nextPage = 0;
         feedSeed = generateFeedSeed();
-        sessionRecentlySeenItemIds = _buildSessionRecentlySeenItemIds(current.seenItemIds);
+        sessionRecentlySeenItemIds = _seenItemHistory.toRecentFirstList();
         fetched = await _repo.fetchPage(
           pageNumber: nextPage,
           pageSize: _kPageSize,
@@ -165,11 +194,11 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
       // 최신 상태 기준으로 붙임 (조회 중 신고 제외·markSeen 반영), 조회 중 refresh로 통째 교체됐으면 결과 폐기
       final latest = state.valueOrNull ?? current;
       if (latest.feedRevision != current.feedRevision) return;
-      final reordered = _reorderBySeen(converted, latest.seenItemIds);
+      final reordered = _reorderBySeen(converted, _seenItemHistory.seenItemIds);
 
       state = AsyncData(
         latest.copyWith(
-          items: _excludeReportedItems([...latest.items, ...reordered]),
+          items: _excludeHiddenItems([...latest.items, ...reordered]),
           currentPage: nextPage,
           hasMoreItems: fetched.isNotEmpty,
           feedSeed: feedSeed,
@@ -236,24 +265,24 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
       // 새로고침 중 loading 표시를 위해 loading 상태로 전환 (이전 데이터는 보존)
       state = const AsyncLoading<HomeFeedState>().copyWithPrevious(state);
 
-      final next = await _fetchInitial(seenItemIds: current.seenItemIds);
+      final next = await _fetchInitial();
       if (buildGeneration != _buildGeneration) return HomeFeedRefreshResult.skipped; // 세션 초기화됨 > 결과 폐기
       // feedRevision 증가 = 화면에 "통째 교체(replace)"임을 명시적으로 통지 (page 0 점프 + 광고 슬롯 리셋 트리거)
-      // 조회 중 신고한 물품도 한 번 더 거름
+      // 조회 중 신고·차단한 물품도 한 번 더 거름
       state = AsyncData(
         next.copyWith(
-          items: _excludeReportedItems(next.items),
+          items: _excludeHiddenItems(next.items),
           lastRefreshAt: DateTime.now(),
           feedRevision: current.feedRevision + 1,
         ),
       );
       return HomeFeedRefreshResult.refreshed;
     } catch (e) {
-      // 기존 데이터 유지 (조회 중 신고 제외 반영된 최신 값)
+      // 기존 데이터 유지 (조회 중 신고·차단 제외 반영된 최신 값)
       debugPrint('[HomeFeed] refresh failed: $e');
       if (buildGeneration != _buildGeneration) return HomeFeedRefreshResult.skipped;
       final latest = state.valueOrNull ?? current;
-      state = AsyncData(latest.copyWith(items: _excludeReportedItems(latest.items)));
+      state = AsyncData(latest.copyWith(items: _excludeHiddenItems(latest.items)));
       return HomeFeedRefreshResult.failed;
     }
   }
@@ -261,17 +290,29 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   /// 신고한 물품 제외: 세션 동안 기억 > 현재 목록에서 제거 (진행 중 로딩 상태 유지, 이후 refresh·loadMore 결과에서도 제외)
   void excludeReportedItem(String itemId) {
     _reportedItemIds.add(itemId);
+    _applyHiddenItemFilter();
+  }
+
+  /// 현재 목록에서 숨김 물품(신고·차단 회원) 제거 (진행 중 로딩 상태 유지, 바뀐 게 없으면 상태 유지)
+  void _applyHiddenItemFilter() {
     final current = state.valueOrNull;
     if (current == null) return;
-    final remainingItems = _excludeReportedItems(current.items);
+    final remainingItems = _excludeHiddenItems(current.items);
     if (remainingItems.length == current.items.length) return;
     final updatedData = AsyncData(current.copyWith(items: remainingItems));
     state = state.isLoading ? const AsyncLoading<HomeFeedState>().copyWithPrevious(updatedData) : updatedData;
   }
 
-  /// 피드 항목 중 신고한 물품 제외
-  List<HomeFeedItem> _excludeReportedItems(List<HomeFeedItem> feedItems) =>
-      feedItems.where((feedItem) => !_reportedItemIds.contains(feedItem.itemUuid)).toList();
+  /// 피드 항목 중 숨김 물품 제외 (신고한 물품, 차단한 회원 물품)
+  List<HomeFeedItem> _excludeHiddenItems(List<HomeFeedItem> feedItems) {
+    final blockedMemberIds = ref.read(memberBlockProvider).blockedIds;
+    return feedItems
+        .where(
+          (feedItem) =>
+              !_reportedItemIds.contains(feedItem.itemUuid) && !blockedMemberIds.contains(feedItem.authorMemberId),
+        )
+        .toList();
+  }
 
   /// 첫 로드 실패 후 재시도: 로딩 전환 > 첫 페이지 조회 > 성공 시 데이터, 실패 시 에러
   /// 데이터가 이미 있거나 진행 중이면 무시 (refresh는 데이터 없으면 무시하므로 별도 경로)
@@ -279,40 +320,21 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     if (state.hasValue || state.isLoading) return;
 
     state = const AsyncLoading<HomeFeedState>();
-    state = await AsyncValue.guard(() async => _fetchInitial(seenItemIds: await _loadPersistedSeenItemIds()));
+    state = await AsyncValue.guard(_fetchInitial);
   }
 
-  /// 사용자가 본 아이템을 seen-set에 추가 (LRU 갱신 > 기기 저장, 저장 실패는 무시).
+  /// 본 물품 기록 (LRU 갱신 > 묶음 저장 예약, 피드 상태는 바꾸지 않음 > 넘길 때 화면 재빌드 없음)
   void markSeen(String itemId) {
-    final current = state.valueOrNull;
-    if (current == null) return;
-
-    final next = LinkedHashSet<String>.from(current.seenItemIds);
-    // 이미 있으면 MRU 갱신을 위해 제거 후 다시 추가
-    next.remove(itemId);
-    next.add(itemId);
-    while (next.length > kHomeFeedSeenSetMaxSize) {
-      next.remove(next.first); // LRU 제거
-    }
-
-    state = AsyncData(current.copyWith(seenItemIds: next));
-    unawaited(_repo.saveRecentlySeenItemIds(next.toList()));
+    if (state.valueOrNull == null) return;
+    _seenItemHistory.markSeen(itemId);
   }
 
-  /// 저장된 최근 본 물품 > seen-set (오래된 순 유지, 최대 [kHomeFeedSeenSetMaxSize]개, 최근 것 우선)
-  Future<LinkedHashSet<String>> _loadPersistedSeenItemIds() async {
-    final persistedSeenItemIds = await _repo.loadRecentlySeenItemIds();
-    final overflowCount = max(0, persistedSeenItemIds.length - kHomeFeedSeenSetMaxSize);
-    return LinkedHashSet<String>.from(persistedSeenItemIds.skip(overflowCount));
-  }
-
-  /// seen-set(오래된 순) > 세션 요청 스냅샷 (최근 본 순)
-  List<String> _buildSessionRecentlySeenItemIds(LinkedHashSet<String> seenItemIds) =>
-      List.unmodifiable(seenItemIds.toList().reversed);
-
-  /// 물품 > 피드 항목 변환 (신고 물품 제외 > 표시 주소 병렬 조회 > 순수 변환)
+  /// 물품 > 피드 항목 변환 (신고 물품·차단 회원 물품 제외 > 표시 주소 병렬 조회 > 순수 변환)
   Future<List<HomeFeedItem>> _toFeedItems(List<Item> items, {required int startIndex}) async {
-    final visibleItems = items.where((item) => !_reportedItemIds.contains(item.itemId)).toList();
+    final blockedMemberIds = ref.read(memberBlockProvider).blockedIds;
+    final visibleItems = items
+        .where((item) => !_reportedItemIds.contains(item.itemId) && !blockedMemberIds.contains(item.member?.memberId))
+        .toList();
     final locationTexts = await ref.read(itemAddressResolverProvider).resolveLocationTexts(visibleItems);
     return HomeFeedItem.fromItems(visibleItems, startIndex: startIndex, locationTexts: locationTexts);
   }

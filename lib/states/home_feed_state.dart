@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -17,9 +15,6 @@ class HomeFeedState {
 
   /// 정렬 폴백으로 결정된 현재 정렬 필드 (loadMore 시 동일 필드 유지)
   final ItemSortField currentSortField;
-
-  /// 본 아이템 itemId 집합 — 삽입순 보존(LRU). 최대 [kHomeFeedSeenSetMaxSize].
-  final LinkedHashSet<String> seenItemIds;
 
   /// 직전 자동 새로고침 완료 시각 (throttle 계산용). null이면 한 번도 안 함.
   final DateTime? lastRefreshAt;
@@ -39,23 +34,18 @@ class HomeFeedState {
     this.currentPage = 0,
     this.hasMoreItems = true,
     this.currentSortField = ItemSortField.recommended,
-    LinkedHashSet<String>? seenItemIds,
     this.lastRefreshAt,
     this.feedRevision = 0,
     this.feedSeed,
     List<String> sessionRecentlySeenItemIds = const [],
   }) : items = List.unmodifiable(items),
-       sessionRecentlySeenItemIds = List.unmodifiable(sessionRecentlySeenItemIds),
-       // LinkedHashSet 타입 명시가 필요 (Set 리터럴은 LinkedHashSet 타입 보장 안 함)
-       // ignore: prefer_collection_literals
-       seenItemIds = seenItemIds ?? LinkedHashSet<String>();
+       sessionRecentlySeenItemIds = List.unmodifiable(sessionRecentlySeenItemIds);
 
   HomeFeedState copyWith({
     List<HomeFeedItem>? items,
     int? currentPage,
     bool? hasMoreItems,
     ItemSortField? currentSortField,
-    LinkedHashSet<String>? seenItemIds,
     DateTime? lastRefreshAt,
     int? feedRevision,
     int? feedSeed,
@@ -66,7 +56,6 @@ class HomeFeedState {
       currentPage: currentPage ?? this.currentPage,
       hasMoreItems: hasMoreItems ?? this.hasMoreItems,
       currentSortField: currentSortField ?? this.currentSortField,
-      seenItemIds: seenItemIds ?? this.seenItemIds,
       lastRefreshAt: lastRefreshAt ?? this.lastRefreshAt,
       feedRevision: feedRevision ?? this.feedRevision,
       feedSeed: feedSeed ?? this.feedSeed,
@@ -83,7 +72,6 @@ class HomeFeedState {
           currentPage == other.currentPage &&
           hasMoreItems == other.hasMoreItems &&
           currentSortField == other.currentSortField &&
-          setEquals(seenItemIds, other.seenItemIds) &&
           lastRefreshAt == other.lastRefreshAt &&
           feedRevision == other.feedRevision &&
           feedSeed == other.feedSeed &&
@@ -95,7 +83,6 @@ class HomeFeedState {
     currentPage,
     hasMoreItems,
     currentSortField,
-    Object.hashAll(seenItemIds),
     lastRefreshAt,
     feedRevision,
     feedSeed,
@@ -104,5 +91,5 @@ class HomeFeedState {
 
   @override
   String toString() =>
-      'HomeFeedState(items=${items.length}, page=$currentPage, hasMore=$hasMoreItems, sort=$currentSortField, seen=${seenItemIds.length}, lastRefresh=$lastRefreshAt, rev=$feedRevision, seed=$feedSeed, sessionSeen=${sessionRecentlySeenItemIds.length})';
+      'HomeFeedState(items=${items.length}, page=$currentPage, hasMore=$hasMoreItems, sort=$currentSortField, lastRefresh=$lastRefreshAt, rev=$feedRevision, seed=$feedSeed, sessionSeen=${sessionRecentlySeenItemIds.length})';
 }

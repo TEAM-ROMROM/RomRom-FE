@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/navigation_tab_items.dart';
 import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
@@ -11,6 +12,7 @@ import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
+import 'package:romrom_fe/providers/notification_unread_count_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/foreground_push_refresher.dart';
@@ -24,6 +26,7 @@ import 'package:romrom_fe/screens/request_management_tab_screen.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/app_review_service.dart';
 import 'package:romrom_fe/widgets/common/app_review_popup.dart';
+import 'package:romrom_fe/widgets/common/lazy_indexed_stack.dart';
 import 'package:romrom_fe/widgets/custom_bottom_navigation_bar.dart';
 import 'package:romrom_fe/widgets/home_popup/home_popup_presenter.dart';
 
@@ -36,7 +39,10 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObserver {
-  late final List<Widget> _navigationTabScreens;
+  // 시작 시 바로 만드는 탭: 홈(첫 화면), 채팅(웹소켓 방 구독으로 하단 탭 안 읽음 점 실시간 갱신)
+  // 나머지(요청관리·등록·마이페이지)는 처음 누를 때 생성 > 첫 화면 요청 몰림 방지
+  static final Set<int> _eagerTabIndices = {NavigationTabItems.home.index, NavigationTabItems.chat.index};
+
   final Set<String> _pendingRequests = <String>{};
 
   // 앱 사용 중 푸시 구독 (dispose에서 해제)
@@ -46,13 +52,6 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     _listenForegroundPush();
-    _navigationTabScreens = [
-      HomeTabScreen(onLoaded: _onHomeLoaded),
-      const RequestManagementTabScreen(),
-      const RegisterTabScreen(),
-      const ChatTabScreen(),
-      const MyPageTabScreen(),
-    ];
     HeartbeatManager.instance.start();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -60,6 +59,22 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
       await _syncNotificationPermissionToBackend();
       await AppReviewService().onAppLaunch();
     });
+  }
+
+  /// 탭 index > 탭 화면 (LazyIndexedStack이 처음 필요할 때 1회 생성)
+  Widget _buildTabScreen(BuildContext context, int tabIndex) {
+    switch (NavigationTabItems.fromIndex(tabIndex)) {
+      case NavigationTabItems.home:
+        return HomeTabScreen(onLoaded: _onHomeLoaded);
+      case NavigationTabItems.requestManagement:
+        return const RequestManagementTabScreen();
+      case NavigationTabItems.register:
+        return const RegisterTabScreen();
+      case NavigationTabItems.chat:
+        return const ChatTabScreen();
+      case NavigationTabItems.myPage:
+        return const MyPageTabScreen();
+    }
   }
 
   /// 홈 피드 첫 로딩 완료 시 바텀시트 1개만: 알림 권한 안내 > (안 띄웠으면) 공지·이벤트 팝업 (#652)
@@ -137,14 +152,17 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _syncNotificationPermissionToBackend();
-      _tryShowReviewPopup();
-      // 현재 탭이 홈이면 피드 자동 새로고침 (throttle 적용)
-      final currentTab = ref.read(currentTabIndexProvider);
-      if (currentTab == 0) {
-        ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
-      }
+    // 비활성·백그라운드·종료 직전: 홈 피드 본 물품 기록 즉시 저장 (묶음 저장 대기분 유실 방지)
+    if (state != AppLifecycleState.resumed) {
+      _flushHomeFeedSeenItems();
+      return;
+    }
+    _syncNotificationPermissionToBackend();
+    _tryShowReviewPopup();
+    // 현재 탭이 홈이면 피드 자동 새로고침 (throttle 적용)
+    final currentTab = ref.read(currentTabIndexProvider);
+    if (currentTab == 0) {
+      ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
     }
   }
 
@@ -163,13 +181,27 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     super.dispose();
   }
 
+  /// 홈 피드 본 물품 기록 즉시 저장 (피드 아직 없으면 저장할 것 없음)
+  void _flushHomeFeedSeenItems() {
+    if (!ref.exists(homeFeedProvider)) return;
+    unawaited(ref.read(homeFeedProvider.notifier).flushSeenItemIds());
+  }
+
   /// 앱 사용 중 푸시 > 종류별 상태 재조회 (알림 목록·배지, 받은 요청, 내 물품) (#964)
+  /// 아직 만든 적 없는 provider(알림 화면·요청관리 탭 미방문)는 건너뜀 > 처음 볼 때 새로 조회 (배지는 미확인 수만)
   void _listenForegroundPush() {
     // 호출 시점에 notifier를 읽음 (세션 초기화 뒤에도 최신 인스턴스 사용)
     final foregroundPushRefresher = ForegroundPushRefresher(
-      reloadNotificationList: () => ref.read(notificationListProvider.notifier).reload(),
-      refreshNotificationUnreadCount: () => ref.read(notificationListProvider.notifier).refreshUnreadCount(),
-      reloadReceivedTradeRequests: () => ref.read(tradeRequestsProvider.notifier).reloadReceivedOfRequestedCard(),
+      reloadNotificationList: () => ref.exists(notificationListProvider)
+          ? ref.read(notificationListProvider.notifier).reload()
+          : _refreshNotificationUnreadCount(),
+      refreshNotificationUnreadCount: () => ref.exists(notificationListProvider)
+          ? ref.read(notificationListProvider.notifier).refreshUnreadCount()
+          : _refreshNotificationUnreadCount(),
+      reloadReceivedTradeRequests: () async {
+        if (!ref.exists(tradeRequestsProvider)) return;
+        await ref.read(tradeRequestsProvider.notifier).reloadReceivedOfRequestedCard();
+      },
       reloadMyItems: () => ref.read(myItemsProvider.notifier).reload(),
     );
     _foregroundPushSubscription = FirebaseService().onForegroundMessage.listen(
@@ -177,21 +209,31 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     );
   }
 
+  /// 홈 알림 배지 미확인 수만 재조회 (결과는 provider가 보관)
+  Future<void> _refreshNotificationUnreadCount() async {
+    await ref.read(notificationUnreadCountProvider.notifier).refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabIndex = ref.watch(currentTabIndexProvider);
 
-    // 다른 탭 → 홈 탭(0) 전환 시 피드 자동 새로고침 (cold start 제외)
-    ref.listen<int>(currentTabIndexProvider, (prev, next) {
-      if (next == 0 && prev != null && prev != 0) {
-        ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
-      }
+    // 홈 탭을 떠날 때 본 물품 기록 즉시 저장 (탭 재진입 새로고침 없음 > 다녀와도 보던 카드 유지)
+    ref.listen<int>(currentTabIndexProvider, (previousTabIndex, nextTabIndex) {
+      final isLeavingHomeTab =
+          previousTabIndex == NavigationTabItems.home.index && nextTabIndex != NavigationTabItems.home.index;
+      if (isLeavingHomeTab) _flushHomeFeedSeenItems();
     });
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: false,
-      body: IndexedStack(index: tabIndex, children: _navigationTabScreens),
+      body: LazyIndexedStack(
+        index: tabIndex,
+        itemCount: NavigationTabItems.values.length,
+        eagerIndices: _eagerTabIndices,
+        itemBuilder: _buildTabScreen,
+      ),
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: tabIndex,
         onTap: (index) {

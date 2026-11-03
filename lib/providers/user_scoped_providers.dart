@@ -9,6 +9,7 @@ import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
+import 'package:romrom_fe/providers/notification_unread_count_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/providers/promotion_provider.dart';
 import 'package:romrom_fe/providers/sent_requests_focus_trigger_provider.dart';
@@ -22,6 +23,7 @@ final List<ProviderOrFamily> userScopedProviders = [
   chatRoomsProvider,
   chatRecommendationProvider,
   notificationListProvider,
+  notificationUnreadCountProvider,
   notificationSettingProvider,
   itemLikeProvider,
   memberBlockProvider,
