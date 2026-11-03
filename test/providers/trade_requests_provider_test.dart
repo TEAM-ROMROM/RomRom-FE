@@ -2,21 +2,28 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:romrom_fe/enums/chat_room_type.dart';
 import 'package:romrom_fe/enums/request_sort_type.dart';
+import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/objects/item_image.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
+import 'package:romrom_fe/models/apis/responses/chat_response.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
+import 'package:romrom_fe/providers/chat_repository_provider.dart';
 import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
+import 'package:romrom_fe/repositories/chat_repository.dart';
 import 'package:romrom_fe/repositories/trade_repository.dart';
 import 'package:romrom_fe/services/item_address_resolver.dart';
 
-/// 거래 요청 이력 생성 (테스트용 최소 필드)
-TradeRequestHistory buildTradeRequestHistory(String tradeRequestHistoryId, {bool? isNew}) {
+/// 거래 요청 이력 생성 (테스트용 최소 필드, 보낸 요청은 giveItemId = 요청관리 카드 ID)
+TradeRequestHistory buildTradeRequestHistory(String tradeRequestHistoryId, {bool? isNew, String? giveItemId}) {
   return TradeRequestHistory(
     tradeRequestHistoryId: tradeRequestHistoryId,
     takeItem: Item(itemId: 'take-$tradeRequestHistoryId'),
-    giveItem: Item(itemId: 'give-$tradeRequestHistoryId'),
+    giveItem: Item(itemId: giveItemId ?? 'give-$tradeRequestHistoryId'),
     itemTradeOptions: const [],
     tradeStatus: 'PENDING',
     isNew: isNew,
@@ -42,6 +49,19 @@ class FakeTradeRepository implements TradeRepository {
   Completer<void>? pendingSent;
   final List<String> sentRequestedGiveItemIds = [];
   final List<RequestSortType> sentRequestedSortTypes = [];
+
+  // 조회 실패시킬 카드 ID (받은: takeItemId, 보낸: giveItemId)
+  Set<String> failingReceivedTakeItemIds = {};
+  Set<String> failingSentGiveItemIds = {};
+
+  // 보낸 요청 동시 호출 수 측정 (true면 호출마다 한 번 양보해 겹치게 함)
+  bool shouldYieldInSent = false;
+  int activeSentCallCount = 0;
+  int maximumActiveSentCallCount = 0;
+
+  // 요청 거래 방식 수정: 호출 기록, 실패 여부
+  final Map<String, List<String>> updatedTradeOptionsById = {};
+  bool shouldFailUpdateTradeOptions = false;
 
   // 상세 조회: 응답, 호출 기록
   TradeRequestHistory? detailResponse;
@@ -69,6 +89,7 @@ class FakeTradeRepository implements TradeRepository {
   }) async {
     receivedRequestedTakeItemIds.add(takeItemId);
     receivedRequestedSortTypes.add(sortType);
+    if (failingReceivedTakeItemIds.contains(takeItemId)) throw Exception('received failed');
     final pendingReceived = pendingReceivedByTakeItemId[takeItemId];
     if (pendingReceived != null) return pendingReceived.future;
     return receivedByTakeItemId[takeItemId] ?? const [];
@@ -81,8 +102,25 @@ class FakeTradeRepository implements TradeRepository {
   }) async {
     sentRequestedGiveItemIds.add(giveItemId);
     sentRequestedSortTypes.add(sortType);
-    if (pendingSent != null) await pendingSent!.future;
-    return sentByGiveItemId[giveItemId] ?? const [];
+    activeSentCallCount++;
+    if (activeSentCallCount > maximumActiveSentCallCount) maximumActiveSentCallCount = activeSentCallCount;
+    try {
+      if (shouldYieldInSent) await Future<void>.delayed(Duration.zero);
+      if (pendingSent != null) await pendingSent!.future;
+      if (failingSentGiveItemIds.contains(giveItemId)) throw Exception('sent failed');
+      return sentByGiveItemId[giveItemId] ?? const [];
+    } finally {
+      activeSentCallCount--;
+    }
+  }
+
+  @override
+  Future<void> updateTradeOptions({
+    required String tradeRequestHistoryId,
+    required List<String> itemTradeOptions,
+  }) async {
+    if (shouldFailUpdateTradeOptions) throw Exception('update failed');
+    updatedTradeOptionsById[tradeRequestHistoryId] = itemTradeOptions;
   }
 
   @override
@@ -98,18 +136,66 @@ class FakeTradeRepository implements TradeRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// 채팅 저장소 대역: 물품별 채팅방 목록 응답, 호출 기록
+class FakeChatRepository implements ChatRepository {
+  List<ChatRoomDetailDto> roomsByItem = [];
+  final List<String> requestedItemIds = [];
+
+  @override
+  Future<PagedChatRoomDetail> getChatRoomsByItemId({required String itemId, int pageSize = 50}) async {
+    requestedItemIds.add(itemId);
+    return PagedChatRoomDetail(content: roomsByItem);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// 보낸 요청 1건: 내 물품(my-item) > 상대(opponent) 물품, 상대 물품 대표 이미지 지정 가능
+TradeRequestHistory buildSentRequest({String takeItemImageUrl = 'take-image'}) {
+  return TradeRequestHistory(
+    tradeRequestHistoryId: 'sent-1',
+    takeItem: Item(
+      itemId: 'take-item',
+      member: Member(memberId: 'opponent'),
+      itemImages: [ItemImage(imageUrl: takeItemImageUrl)],
+    ),
+    giveItem: Item(itemId: 'my-item'),
+    itemTradeOptions: const [],
+    tradeStatus: 'CHATTING',
+  );
+}
+
+/// 채팅방 목록 행 1개 (내가 보낸 요청 방 기본)
+ChatRoomDetailDto buildChatRoom(
+  String chatRoomId, {
+  String targetMemberId = 'opponent',
+  ChatRoomType chatRoomType = ChatRoomType.requested,
+  String targetItemImageUrl = 'take-image',
+}) {
+  return ChatRoomDetailDto(
+    chatRoomId: chatRoomId,
+    targetMember: Member(memberId: targetMemberId),
+    chatRoomType: chatRoomType,
+    targetItemImageUrl: targetItemImageUrl,
+  );
+}
+
 /// 대기 중인 microtask 소진 (await 없이 시작된 재조회 반영)
 Future<void> flushMicrotasks() => Future<void>.delayed(Duration.zero);
 
 void main() {
   late FakeTradeRepository fakeRepository;
+  late FakeChatRepository fakeChatRepository;
   late ProviderContainer container;
 
   setUp(() {
     fakeRepository = FakeTradeRepository();
+    fakeChatRepository = FakeChatRepository();
     container = ProviderContainer(
       overrides: [
         tradeRepositoryProvider.overrideWithValue(fakeRepository),
+        chatRepositoryProvider.overrideWithValue(fakeChatRepository),
         itemAddressResolverProvider.overrideWithValue(ItemAddressResolver(lookupAddress: (_) async => null)),
       ],
     );
@@ -337,6 +423,189 @@ void main() {
       expect(fakeRepository.receivedRequestedTakeItemIds, ['a', 'a']);
       expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'a']);
       expect(container.read(tradeRequestsProvider).valueOrNull?.sent, isEmpty);
+    });
+  });
+
+  group('tradeRequestsProvider 조회 실패·재시도', () {
+    test('받은 요청 조회 실패 > 빈 목록과 구분되는 실패 상태, 재시도 성공 > 실패 해제', () async {
+      await container.read(tradeRequestsProvider.future);
+      fakeRepository.failingReceivedTakeItemIds = {'a'};
+
+      await readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+      expect(container.read(tradeRequestsProvider).valueOrNull?.hasReceivedLoadFailed, isTrue);
+
+      fakeRepository.failingReceivedTakeItemIds = {};
+      fakeRepository.receivedByTakeItemId = {
+        'a': [buildTradeRequestHistory('received-1')],
+      };
+      await readNotifier().reloadReceivedOfRequestedCard();
+
+      final state = container.read(tradeRequestsProvider).valueOrNull!;
+      expect(fakeRepository.receivedRequestedTakeItemIds, ['a', 'a']);
+      expect(state.hasReceivedLoadFailed, isFalse);
+      expect(state.received.map((r) => r.tradeRequestHistoryId), ['received-1']);
+    });
+
+    test('보낸 요청 카드 1개 실패 > 성공 카드 결과 유지 + 실패 카드 기록, 재시도 > 실패 카드만 재조회·카드 순서 유지', () async {
+      await container.read(tradeRequestsProvider.future);
+      fakeRepository.failingSentGiveItemIds = {'a'};
+      fakeRepository.sentByGiveItemId = {
+        'a': [buildTradeRequestHistory('sent-a', giveItemId: 'a')],
+        'b': [buildTradeRequestHistory('sent-b', giveItemId: 'b')],
+      };
+
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a');
+      var state = container.read(tradeRequestsProvider).valueOrNull!;
+      expect(state.hasSentLoadFailed, isTrue);
+      expect(state.sentFailedItemIds, ['a']);
+      expect(state.sent.map((r) => r.tradeRequestHistoryId), ['sent-b']);
+
+      fakeRepository.failingSentGiveItemIds = {};
+      await readNotifier().retrySentLoad();
+
+      state = container.read(tradeRequestsProvider).valueOrNull!;
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'b', 'a']);
+      expect(state.hasSentLoadFailed, isFalse);
+      expect(state.sent.map((r) => r.tradeRequestHistoryId), ['sent-a', 'sent-b']);
+    });
+
+    test('조회 성공 > 실패 상태 아님', () async {
+      await container.read(tradeRequestsProvider.future);
+
+      await readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+
+      final state = container.read(tradeRequestsProvider).valueOrNull!;
+      expect(state.hasReceivedLoadFailed, isFalse);
+      expect(state.hasSentLoadFailed, isFalse);
+    });
+  });
+
+  group('tradeRequestsProvider 보낸 요청 카드 수 제한 없음', () {
+    test('카드 12개 > 12개 모두 조회, 카드 순서대로 합침, 동시 호출은 5개 이하', () async {
+      await container.read(tradeRequestsProvider.future);
+      final myItemIds = [for (var index = 0; index < 12; index++) 'item-$index'];
+      fakeRepository.shouldYieldInSent = true;
+      fakeRepository.sentByGiveItemId = {
+        for (final itemId in myItemIds) itemId: [buildTradeRequestHistory('sent-$itemId')],
+      };
+
+      await readNotifier().loadForItems(myItemIds: myItemIds, takeItemId: 'item-0');
+
+      expect(fakeRepository.sentRequestedGiveItemIds, myItemIds);
+      expect(fakeRepository.maximumActiveSentCallCount, lessThanOrEqualTo(5));
+      // 묶음 안에서는 병렬 (2개 이상 동시 진행)
+      expect(fakeRepository.maximumActiveSentCallCount, greaterThanOrEqualTo(2));
+      final sentIds = container.read(tradeRequestsProvider).valueOrNull?.sent.map((r) => r.tradeRequestHistoryId);
+      expect(sentIds, [for (final itemId in myItemIds) 'sent-$itemId']);
+    });
+  });
+
+  group('tradeRequestsProvider 보낸 요청 묶음 조회 중단', () {
+    test('첫 묶음 조회 중 더 새 조회 시작 > 이전 조회의 남은 묶음 호출 생략', () async {
+      await container.read(tradeRequestsProvider.future);
+      final myItemIds = [for (var index = 0; index < 12; index++) 'item-$index'];
+      final pendingSent = Completer<void>();
+      fakeRepository.pendingSent = pendingSent;
+
+      final firstLoading = readNotifier().loadForItems(myItemIds: myItemIds, takeItemId: 'item-0');
+      await flushMicrotasks();
+      expect(fakeRepository.sentRequestedGiveItemIds, myItemIds.take(5));
+
+      final secondLoading = readNotifier().changeSentSort(RequestSortType.priceLow);
+      await flushMicrotasks();
+      pendingSent.complete();
+      await Future.wait([firstLoading, secondLoading]);
+
+      // 이전 조회 첫 묶음 5 + 새 조회 전체 12 (이전 조회 남은 7 생략)
+      expect(fakeRepository.sentRequestedGiveItemIds.length, 17);
+      expect(fakeRepository.sentRequestedGiveItemIds.sublist(5), myItemIds);
+    });
+  });
+
+  group('tradeRequestsProvider.updateTradeOptions', () {
+    test('저장소에 요청 ID·거래 방식 1회 전달 > 보낸 요청 서버 재조회', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+
+      await readNotifier().updateTradeOptions(
+        tradeRequestHistoryId: 'sent-a',
+        itemTradeOptions: const ['DELIVERY_ONLY'],
+      );
+
+      expect(fakeRepository.updatedTradeOptionsById, {
+        'sent-a': ['DELIVERY_ONLY'],
+      });
+      await flushMicrotasks();
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'a']);
+    });
+
+    test('저장 성공 즉시 반환 (보낸 요청 재조회 완료를 기다리지 않음)', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+      final pendingSent = Completer<void>();
+      fakeRepository.pendingSent = pendingSent;
+
+      var isUpdateReturned = false;
+      unawaited(
+        readNotifier()
+            .updateTradeOptions(tradeRequestHistoryId: 'sent-a', itemTradeOptions: const ['DELIVERY_ONLY'])
+            .then((_) => isUpdateReturned = true),
+      );
+      await flushMicrotasks();
+
+      expect(isUpdateReturned, isTrue);
+      pendingSent.complete();
+      await flushMicrotasks();
+    });
+
+    test('실패 시 예외 전달 + 재조회 없음', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+      fakeRepository.shouldFailUpdateTradeOptions = true;
+
+      await expectLater(
+        readNotifier().updateTradeOptions(tradeRequestHistoryId: 'sent-a', itemTradeOptions: const ['DIRECT_ONLY']),
+        throwsException,
+      );
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a']);
+    });
+  });
+
+  group('tradeRequestsProvider.findChatRoomIdOfSentRequest', () {
+    test('내 물품 채팅방 중 내가 보낸 방 + 상대 회원 일치 1개 > 그 방 ID', () async {
+      fakeChatRepository.roomsByItem = [
+        buildChatRoom('received-room', chatRoomType: ChatRoomType.received),
+        buildChatRoom('other-member-room', targetMemberId: 'someone-else'),
+        buildChatRoom('target-room'),
+      ];
+
+      final chatRoomId = await readNotifier().findChatRoomIdOfSentRequest(buildSentRequest());
+
+      expect(fakeChatRepository.requestedItemIds, ['my-item']);
+      expect(chatRoomId, 'target-room');
+    });
+
+    test('같은 상대에게 보낸 방이 여러 개 > 상대 물품 대표 이미지로 구분', () async {
+      fakeChatRepository.roomsByItem = [
+        buildChatRoom('other-item-room', targetItemImageUrl: 'other-image'),
+        buildChatRoom('target-room', targetItemImageUrl: 'take-image'),
+      ];
+
+      expect(await readNotifier().findChatRoomIdOfSentRequest(buildSentRequest()), 'target-room');
+    });
+
+    test('일치 방 없음·구분 불가 > null', () async {
+      fakeChatRepository.roomsByItem = [buildChatRoom('received-room', chatRoomType: ChatRoomType.received)];
+      expect(await readNotifier().findChatRoomIdOfSentRequest(buildSentRequest()), isNull);
+
+      fakeChatRepository.roomsByItem = [buildChatRoom('room-1'), buildChatRoom('room-2')];
+      expect(await readNotifier().findChatRoomIdOfSentRequest(buildSentRequest()), isNull);
+    });
+
+    test('같은 상대 보낸 방 1개 + 상대 물품 이미지 불일치 > null (다른 요청 방 열기 방지)', () async {
+      fakeChatRepository.roomsByItem = [buildChatRoom('other-item-room', targetItemImageUrl: 'other-image')];
+
+      expect(await readNotifier().findChatRoomIdOfSentRequest(buildSentRequest()), isNull);
     });
   });
 
