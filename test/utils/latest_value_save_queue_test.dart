@@ -28,13 +28,13 @@ void main() {
       final secondSave = saveQueue.save(2);
       final thirdSave = saveQueue.save(3);
       saver.gateByValue[1]!.complete();
-      final result = await firstSave;
+      final saveResult = await firstSave;
 
       expect(await secondSave, isNull, reason: '대기열로 합쳐진 요청은 결과 없음');
       expect(await thirdSave, isNull);
       expect(saver.savedValues, [1, 3]);
-      expect(result?.lastSavedValue, 3);
-      expect(result?.isLatestSaveFailed, false);
+      expect(saveResult?.lastSavedValue, 3);
+      expect(saveResult?.isLatestSaveFailed, false);
     });
 
     test('먼저 저장 성공 + 마지막 저장 실패 > 마지막 성공 값 유지, 실패 표시', () async {
@@ -46,11 +46,11 @@ void main() {
       final firstSave = saveQueue.save(1);
       unawaited(saveQueue.save(2));
       saver.gateByValue[1]!.complete();
-      final result = await firstSave;
+      final saveResult = await firstSave;
 
-      expect(result?.lastSavedValue, 1, reason: '성공 응답은 항상 저장 값에 반영');
-      expect(result?.isLatestSaveFailed, true);
-      expect(result?.latestSaveError, isA<Exception>());
+      expect(saveResult?.lastSavedValue, 1, reason: '성공 응답은 항상 저장 값에 반영');
+      expect(saveResult?.isLatestSaveFailed, true);
+      expect(saveResult?.latestSaveError, isA<Exception>());
     });
 
     test('중간 저장 실패 + 마지막 저장 성공 > 실패 아님', () async {
@@ -62,20 +62,20 @@ void main() {
       final firstSave = saveQueue.save(1);
       unawaited(saveQueue.save(2));
       saver.gateByValue[1]!.complete();
-      final result = await firstSave;
+      final saveResult = await firstSave;
 
-      expect(result?.lastSavedValue, 2);
-      expect(result?.isLatestSaveFailed, false);
+      expect(saveResult?.lastSavedValue, 2);
+      expect(saveResult?.isLatestSaveFailed, false);
     });
 
     test('저장 결과 false > 실패로 처리', () async {
       final saveQueue = LatestValueSaveQueue<int>(saveValue: (_) async => false);
 
-      final result = await saveQueue.save(1);
+      final saveResult = await saveQueue.save(1);
 
-      expect(result?.lastSavedValue, isNull);
-      expect(result?.isLatestSaveFailed, true);
-      expect(result?.latestSaveError, isNull);
+      expect(saveResult?.lastSavedValue, isNull);
+      expect(saveResult?.isLatestSaveFailed, true);
+      expect(saveResult?.latestSaveError, isNull);
     });
 
     test('저장 끝난 뒤 새 요청 > 바로 저장', () async {

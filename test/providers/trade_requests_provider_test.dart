@@ -30,7 +30,7 @@ TradeRequestHistory buildTradeRequestHistory(String tradeRequestHistoryId, {bool
   );
 }
 
-/// 거래 저장소 대역: 호출 기록, 응답 지연(Completer) 조절
+/// 거래 저장소 대역: 호출 기록, 응답 지연(Completer)·실패 주입, 보낸 요청 동시 호출 수 측정
 class FakeTradeRepository implements TradeRepository {
   int requestTradeCallCount = 0;
   bool shouldFailRequestTrade = false;

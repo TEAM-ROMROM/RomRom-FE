@@ -1,5 +1,5 @@
 // lib/utils/chat_room_message_rules.dart
-// 채팅방 메시지 목록 판정 순수 함수 (목록은 reverse 정렬: index 0 = 최신)
+// 채팅방 메시지 목록 판정·병합 순수 함수, 로컬 메시지 ID 생성 (목록은 reverse 정렬: index 0 = 최신)
 import 'package:romrom_fe/enums/chat_message_send_status.dart';
 import 'package:romrom_fe/enums/chat_recommended_action.dart';
 import 'package:romrom_fe/enums/message_type.dart';

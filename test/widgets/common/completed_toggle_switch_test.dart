@@ -28,14 +28,14 @@ void main() {
 
   testWidgets('확장 터치 여백 탭 > 반대 값 전달', (tester) async {
     useDesignScreenView(tester);
-    bool? changedValue;
+    bool? isChangedToOn;
     await tester.pumpWidget(
       buildDesignScreenApp(
         home: Scaffold(
           body: Center(
             child: CompletedToggleSwitch(
               value: false,
-              onChanged: (value) => changedValue = value,
+              onChanged: (value) => isChangedToOn = value,
               touchAreaPadding: const EdgeInsets.all(12),
             ),
           ),
@@ -46,6 +46,6 @@ void main() {
     // 스위치 본체 밖 여백(왼쪽 위 모서리 근처) 탭
     final switchRect = tester.getRect(find.byType(CompletedToggleSwitch));
     await tester.tapAt(switchRect.topLeft + const Offset(4, 4));
-    expect(changedValue, isTrue);
+    expect(isChangedToOn, isTrue);
   });
 }

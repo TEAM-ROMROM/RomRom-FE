@@ -39,7 +39,7 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
   // 화면이 마지막으로 요청한 카드 (정렬 변경·mutation 후 재조회 기준)
   String? _requestedTakeItemId;
 
-  // 같은 카드·물품 목록 전체 로드 진행 중이면 합류 (첫 진입·당겨서 새로고침 중복 방지)
+  // 같은 카드·물품 목록 로드 진행 중이면 합류 (첫 진입·당겨서 새로고침 중복 방지, 보낸 요청 포함 여부 기록)
   Future<void>? _inFlightLoadForItems;
   String? _inFlightLoadForItemsKey;
   bool _isInFlightLoadIncludingSent = false;
@@ -73,8 +73,7 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
   TradeRequestsState get _currentState => state.valueOrNull ?? const TradeRequestsState();
 
   /// 요청관리 카드 로드: 대상 물품 기록 > 받은(현재 카드)·보낸(모든 카드) 병렬 조회
-  /// 보낸 요청은 카드 목록이 바뀌었거나 강제(isSentReloadForced)일 때만 조회
-  /// 같은 카드·물품 목록 로드 진행 중 > 합류 (진행 중 로드에 보낸 요청이 없고 이번에 필요하면 보낸 요청만 추가)
+  /// 보낸 요청: 카드 목록 변경·강제(isSentReloadForced) 때만 조회, 같은 로드 진행 중 > 합류 (보낸 요청 빠졌으면 추가 조회)
   Future<void> loadForItems({
     required List<String> myItemIds,
     required String? takeItemId,

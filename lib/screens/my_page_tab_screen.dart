@@ -106,7 +106,7 @@ class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
               child: Text('마이페이지', style: CustomTextStyles.h1),
             ),
 
-            // 닉네임 박스
+            // 닉네임 박스 (첫 조회 실패 시 다시 시도 박스)
             SizedBox(height: 16.h),
             if (hasProfileLoadError)
               _buildProfileLoadErrorBox()
@@ -201,8 +201,8 @@ class _MyPageTabScreenState extends ConsumerState<MyPageTabScreen> {
 
   /// 위치 인증 화면 > 저장 시 회원 정보 재조회
   Future<void> _openLocationVerification() async {
-    final result = await context.navigateTo<bool>(screen: const MyLocationVerificationScreen());
-    if (result == true) {
+    final bool? isLocationSaved = await context.navigateTo<bool>(screen: const MyLocationVerificationScreen());
+    if (isLocationSaved == true) {
       ref.read(memberProfileProvider.notifier).reload();
     }
   }

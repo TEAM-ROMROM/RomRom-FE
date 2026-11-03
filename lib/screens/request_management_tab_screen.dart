@@ -73,7 +73,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
 
   // 완료된 요청 표시 여부
   @override
-  bool _showCompletedRequests = false;
+  bool _shouldShowCompletedRequests = false;
 
   // 내 물건 카드 목록 (myItemsProvider 판매중 목록에서 변환)
   List<RequestManagementItemCard> _itemCards = const [];
@@ -264,7 +264,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
 
   void _toggleCompletedRequests(bool value) {
     setState(() {
-      _showCompletedRequests = value;
+      _shouldShowCompletedRequests = value;
     });
   }
 
@@ -378,7 +378,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
     return RequestListHeader(
       isRightSelected: _isRightSelected,
       currentSort: receivedSortType,
-      showCompletedRequests: _showCompletedRequests,
+      showCompletedRequests: _shouldShowCompletedRequests,
       onSortChanged: (selected) {
         if (selected == receivedSortType) return; // 동일 정렬 재선택 시 무시
         unawaited(ref.read(tradeRequestsProvider.notifier).changeReceivedSort(selected));

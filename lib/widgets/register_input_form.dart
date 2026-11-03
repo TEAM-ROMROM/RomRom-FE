@@ -296,7 +296,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
     });
   }
 
-  /// 사용감 칩 탭 > 단일 선택 (이미 고른 칩이면 해제)
+  /// 사용감 칩 탭 > 단일 선택 (이미 고른 칩이면 해제) > AI 가격 기준 바뀌면 AI 표시 해제
   void _onConditionOptionTap(ItemCondition option) {
     final newList = <ItemCondition>[];
     if (!selectedItemConditionTypes.contains(option)) newList.add(option);
@@ -321,7 +321,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
     });
   }
 
-  /// 가격 칸 탭 > 가격 입력 화면 (AI 추천 가능 여부 전달) > 고른 가격·AI 사용 여부 반영
+  /// 가격 칸 탭 > 가격 입력 화면 (AI 추천 가능 여부 전달) > 고른 가격·AI 사용 여부·AI 측정 기준 반영
   Future<void> _openPriceInputScreen() async {
     final initialPrice = int.tryParse(priceController.text.replaceAll(',', '')) ?? 0;
     // 가격 화면에 보낸 입력 = AI 측정 기준

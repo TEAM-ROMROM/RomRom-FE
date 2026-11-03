@@ -100,7 +100,7 @@ class AddressLookupCache {
     }
   }
 
-  /// 조회 1회: 성공만 캐시, 예외는 null (진행 중 표시는 성공·실패 공통 제거)
+  /// 조회 1회 (동시 수 제한·제한 시간): 성공만 캐시, 예외·시간 초과는 null (진행 중 표시는 성공·실패 공통 제거)
   Future<LocationAddress?> _fetchAndStore(String cacheKey, double latitude, double longitude) async {
     try {
       // 동시 조회 제한 + 대기 포함 제한 시간 (작업 동기 throw도 비동기 실패로 전달)

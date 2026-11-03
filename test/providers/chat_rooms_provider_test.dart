@@ -16,7 +16,7 @@ class FakeChatRepository implements ChatRepository {
   int createChatRoomCallCount = 0;
   int deleteChatRoomCallCount = 0;
   bool shouldFailDelete = false;
-  // 첫 페이지가 마지막인지 / 다음 페이지(1 이상) 조회 실패 여부
+  // 첫 페이지가 마지막인지, 다음 페이지(1 이상)·첫 페이지 조회 실패 여부
   bool isFirstPageLast = true;
   bool shouldFailNextPage = false;
   bool shouldFailFirstPage = false;

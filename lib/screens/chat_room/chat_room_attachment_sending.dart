@@ -2,7 +2,7 @@
 part of '../chat_room_screen.dart';
 
 mixin _ChatRoomAttachmentSending on _ChatRoomScreenStateFields, _ChatRoomMessaging {
-  /// 사진 전송: 선택 > 업로드 중 버블 표시 > webp 압축·업로드 > 이미지 메시지 전송 (실패 시 버블 제거·안내)
+  /// 사진 전송: 선택 > 업로드 중 버블 표시 > webp 압축·업로드 > 이미지 메시지 전송 (업로드 실패 시 버블 제거·안내, 전송 실패는 실패 말풍선)
   Future<void> _onPickImage() async {
     if (_isPickingImage) return;
     _isPickingImage = true;

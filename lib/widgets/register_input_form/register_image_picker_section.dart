@@ -73,7 +73,7 @@ class RegisterImagePickerSection extends StatelessWidget {
     );
   }
 
-  /// 사진 추가 버튼 (현재 장수/10)
+  /// 사진 추가 버튼 (현재 장수/10, 저장 중 탭 무시)
   Widget _buildAddImageButton() {
     return GestureDetector(
       onTap: isEditingEnabled ? onAddImageTap : null,
@@ -97,7 +97,7 @@ class RegisterImagePickerSection extends StatelessWidget {
     );
   }
 
-  /// 썸네일 1장: 탭 > 전체 보기, 우상단 X > 삭제
+  /// 썸네일 1장: 탭 > 전체 보기, 우상단 X > 삭제 (저장 중 삭제 무시)
   Widget _buildThumbnail(BuildContext context, int index) {
     return SizedBox(
       height: 88.h,

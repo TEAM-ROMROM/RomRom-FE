@@ -44,15 +44,15 @@ class NotificationSettingNotifier extends Notifier<Map<NotificationSettingType, 
   }
 
   /// Optimistic 토글 > 서버 확정 여부 반환 (실패·진행 중 중복 호출 시 false)
-  Future<bool> setEnabled(NotificationSettingType type, bool value) async {
+  Future<bool> setEnabled(NotificationSettingType type, bool isEnabled) async {
     if (_inFlight.contains(type)) return false;
     _inFlight.add(type);
 
-    final prev = state[type] ?? !value;
-    state = {...state, type: value};
+    final prev = state[type] ?? !isEnabled;
+    state = {...state, type: isEnabled};
 
     try {
-      await ref.read(notificationSettingRepositoryProvider).update(type, value);
+      await ref.read(notificationSettingRepositoryProvider).update(type, isEnabled);
       _invalidateMemberProfile();
       return true;
     } catch (e) {

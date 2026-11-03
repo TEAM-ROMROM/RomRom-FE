@@ -156,6 +156,7 @@ class NotificationItemWidget extends StatelessWidget {
     );
   }
 
+  /// 설명 글자 스타일 (공지 펼치기·일반 2줄 공통)
   TextStyle get _descriptionStyle => CustomTextStyles.p3.copyWith(
     fontSize: 13.sp,
     fontWeight: FontWeight.w400,
@@ -163,7 +164,7 @@ class NotificationItemWidget extends StatelessWidget {
     height: 1.4,
   );
 
-  /// 하단 섹션 (시간 + 메뉴 + 썸네일)
+  /// 하단 섹션 (제목 + 설명 + 썸네일, 공지 설명은 펼치기)
   Widget _buildBottomRow() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,

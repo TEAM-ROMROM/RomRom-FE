@@ -24,11 +24,11 @@ class ItemRepository {
     required int pageNumber,
     required int pageSize,
   }) async {
-    final res = await _api.getMyItems(
+    final myItemsResponse = await _api.getMyItems(
       ItemRequest(pageNumber: pageNumber, pageSize: pageSize, itemStatus: status.serverName),
     );
-    final items = res.itemPage?.content ?? const <Item>[];
-    final totalPages = res.itemPage?.page?.totalPages ?? res.itemPage?.totalPages;
+    final items = myItemsResponse.itemPage?.content ?? const <Item>[];
+    final totalPages = myItemsResponse.itemPage?.page?.totalPages ?? myItemsResponse.itemPage?.totalPages;
     final hasMore = totalPages != null ? pageNumber + 1 < totalPages : items.length >= pageSize;
     return (items: items, hasMore: hasMore);
   }

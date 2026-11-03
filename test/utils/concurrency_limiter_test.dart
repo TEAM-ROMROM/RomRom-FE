@@ -18,9 +18,9 @@ void main() {
           maximumObservedRunningCount = runningCount > maximumObservedRunningCount
               ? runningCount
               : maximumObservedRunningCount;
-          final value = await taskCompleters[index].future;
+          final completedIndex = await taskCompleters[index].future;
           runningCount--;
-          return value;
+          return completedIndex;
         }),
     ];
     await pumpEventQueue();

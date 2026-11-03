@@ -8,7 +8,8 @@ import 'package:romrom_fe/utils/concurrency_limiter.dart';
 /// 이미지를 WebP로 압축하는 공통 유틸.
 ///
 /// 산출물은 현 백엔드(ImageCompressionService)와 동일: 가로 1280 축소(비율 유지),
-/// WebP Q80. 압축 실패 시 원본 XFile을 그대로 반환한다(백엔드 조건부 압축이 안전망).
+/// WebP Q80. 압축 실패·시간 초과 시 원본 XFile을 그대로 반환한다(백엔드 조건부 압축이 안전망).
+/// 동시 압축 최대 [maximumConcurrentCompressionCount]건 (초과 요청은 순서대로 대기)
 class ImageCompressor {
   ImageCompressor._();
 

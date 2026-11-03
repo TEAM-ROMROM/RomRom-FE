@@ -64,10 +64,10 @@ class ImageDecodeSize {
     return ImageDecodeSize(width: _roundUpToStep(displaySize.width), height: _roundUpToStep(displaySize.height));
   }
 
-  static double? _toValidLogicalSize(double? logicalSize) {
-    if (logicalSize == null || !logicalSize.isFinite || logicalSize <= 0) return null;
-    return logicalSize;
-  }
+  /// 유한한 양수인 표시 크기인지 (null·무한대·0 이하 > 크기 없음 취급)
+  static bool isValidLogicalSize(double? logicalSize) => logicalSize != null && logicalSize.isFinite && logicalSize > 0;
+
+  static double? _toValidLogicalSize(double? logicalSize) => isValidLogicalSize(logicalSize) ? logicalSize : null;
 
   static int? _roundUpToStep(int? pixels) {
     if (pixels == null) return null;

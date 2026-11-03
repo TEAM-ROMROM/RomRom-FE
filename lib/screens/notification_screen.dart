@@ -272,8 +272,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     }
   }
 
-  /// 알림 끄기/켜기 토글
-  /// 지정된 알림 유형의 현재 상태를 반전시켜 업데이트합니다.
+  /// 알림 유형 끄기/켜기 토글: 켜기면 시스템 권한 확인 > 설정 반전 > 안내 (마케팅 변경 시 처리 일자)
   Future<void> _onToggleMuteNotification(NotificationType notificationType) async {
     final settings = ref.read(notificationSettingProvider);
     final bool isMuted = isNotificationTypeMuted(settings, notificationType);

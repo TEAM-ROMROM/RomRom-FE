@@ -11,7 +11,7 @@ class TokenReissueResult {
   /// 401 EXPIRED_REFRESH_TOKEN 여부 (true면 재로그인 필요)
   final bool isRefreshTokenExpired;
 
-  /// 서버 응답을 못 받았거나 5xx (true면 토큰 유지 후 다시 시도)
+  /// 연결 실패·408·429·5xx (true면 토큰 유지 후 다시 시도)
   final bool isRetryableFailure;
 
   const TokenReissueResult({this.responseData, this.isRefreshTokenExpired = false, this.isRetryableFailure = false});

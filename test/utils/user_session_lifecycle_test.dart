@@ -9,7 +9,7 @@ import 'package:romrom_fe/services/deep_link_gate.dart';
 import 'package:romrom_fe/services/session_navigation_handler.dart';
 import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 
-/// 세션 전환 검증: 종료 3종(제재·만료·로그아웃/탈퇴) 대상 화면·전환 타입 + 전환 후 초기화, 로그인 성공 시 초기화 1회 후 이동
+/// 세션 전환 검증: 종료 3종(제재·만료·로그아웃/탈퇴) 회원 자원 즉시 정리 + 대상 화면·전환 타입 + 전환 후 초기화·딥링크 게이트 닫힘, 로그인 성공 시 초기화 1회 후 이동
 void main() {
   late List<ProviderOrFamily> invalidatedProviders;
   late List<String> callOrder;

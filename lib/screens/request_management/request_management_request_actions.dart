@@ -9,7 +9,7 @@ mixin _RequestManagementRequestActions on ConsumerState<RequestManagementTabScre
   final Set<String> _pendingChatRoomOpenRequestIds = {};
 
   // 완료된 요청 표시 여부 (화면 상태)
-  bool get _showCompletedRequests;
+  bool get _shouldShowCompletedRequests;
 
   /// 로드 동안 로딩 표시 (화면 구현)
   Future<void> _runWithLoading(Future<void> Function() load);
@@ -121,12 +121,12 @@ mixin _RequestManagementRequestActions on ConsumerState<RequestManagementTabScre
       },
       onEditTap: (request) => TradeRequestOptionEditSheet.show(context: context, request: request),
       onCancelTap: (request) async {
-        final result = await context.showDeleteDialog(
+        final isConfirmed = await context.showDeleteDialog(
           title: '교환 요청 취소',
           description: '교환 요청을 취소하시겠습니까?',
           confirmText: '확인',
         );
-        if (result == true) await _cancelTradeRequest(request, successMessage: '요청을 취소했습니다.');
+        if (isConfirmed == true) await _cancelTradeRequest(request, successMessage: '요청을 취소했습니다.');
       },
     );
   }
@@ -138,7 +138,7 @@ mixin _RequestManagementRequestActions on ConsumerState<RequestManagementTabScre
     required bool isLoading,
   }) {
     final receivedRequests = tradeRequests.receivedExcludingRequesters(blockedMemberIds);
-    final filteredRequests = _showCompletedRequests
+    final filteredRequests = _shouldShowCompletedRequests
         ? receivedRequests
         : receivedRequests.where((request) => request.tradeStatus != TradeStatus.traded.serverName).toList();
 
@@ -165,8 +165,8 @@ mixin _RequestManagementRequestActions on ConsumerState<RequestManagementTabScre
         );
       },
       onMenuTap: (request) async {
-        final result = await context.showDeleteDialog(title: '교환 요청 삭제', description: '정말 삭제하시겠습니까?');
-        if (result == true) await _cancelTradeRequest(request, successMessage: '요청을 삭제했습니다.');
+        final isConfirmed = await context.showDeleteDialog(title: '교환 요청 삭제', description: '정말 삭제하시겠습니까?');
+        if (isConfirmed == true) await _cancelTradeRequest(request, successMessage: '요청을 삭제했습니다.');
       },
     );
   }

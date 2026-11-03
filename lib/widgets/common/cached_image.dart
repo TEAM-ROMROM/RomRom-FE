@@ -6,11 +6,8 @@ import 'package:romrom_fe/services/app_image_cache_manager.dart';
 import 'package:romrom_fe/utils/image_decode_size.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-/// 캐싱이 적용된 네트워크 이미지 위젯
-///
-/// [Image.network] 대신 사용하면 이미지가 디스크에 캐싱되어
-/// 재방문 시 네트워크 요청 없이 빠르게 로드됩니다.
-/// 디코딩 크기: 지정 크기 > 없거나 무한대면 레이아웃 제약 첫 유효 크기 고정 (원본 해상도 디코딩 방지, 확대 보기만 원본)
+/// 디스크 캐싱 네트워크 이미지 ([Image.network] 대체, 재방문 시 네트워크 요청 없음)
+/// 디코딩 크기: 확대 보기 > 원본, 지정 크기 > 그 크기, 없거나 무한대 > 레이아웃 제약 첫 유효 크기 고정
 class CachedImage extends StatelessWidget {
   final String imageUrl;
   final double? width;
@@ -38,10 +35,8 @@ class CachedImage extends StatelessWidget {
   });
 
   /// 가로·세로 중 하나라도 유한한 양수로 지정 (레이아웃 측정 없이 디코딩 크기 결정)
-  bool get _hasValidDisplaySize => _isValidLogicalSize(width) || _isValidLogicalSize(height);
-
-  static bool _isValidLogicalSize(double? logicalSize) =>
-      logicalSize != null && logicalSize.isFinite && logicalSize > 0;
+  bool get _hasValidDisplaySize =>
+      ImageDecodeSize.isValidLogicalSize(width) || ImageDecodeSize.isValidLogicalSize(height);
 
   @override
   Widget build(BuildContext context) {

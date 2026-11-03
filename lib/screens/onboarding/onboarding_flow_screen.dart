@@ -84,7 +84,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     }
   }
 
-  // 온보딩 완료 후 메인 화면으로 이동
+  // 온보딩 완료: 메인 화면 이동 > 보관된 딥링크 열기
   void _completeOnboarding() {
     context.navigateTo(screen: const MainScreen(), type: NavigationTypes.pushAndRemoveUntil);
     // 로그인·온보딩 중 받은 링크 > 메인 진입 후 열기

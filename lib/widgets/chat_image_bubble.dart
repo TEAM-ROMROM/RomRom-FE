@@ -92,7 +92,7 @@ ImageDecodeSize photoGridCellDecodeSize({
 /// 1~10장 이미지를 그리드 레이아웃으로 표시하는 공통 빌더
 /// [photoCount] 실제 이미지 수 (1~10 클램프됨)
 /// [cellBuilder] 각 인덱스에 해당하는 셀 위젯 빌더
-/// [width] 버블 전체 너비 (기본 264.w)
+/// [width] 버블 전체 너비 (채팅 말풍선 264.w)
 Widget buildPhotoGrid({
   required int photoCount,
   required Widget Function(int index) cellBuilder,

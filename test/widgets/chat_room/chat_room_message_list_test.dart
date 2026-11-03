@@ -7,7 +7,7 @@ import 'package:romrom_fe/widgets/chat_room/chat_room_message_list.dart';
 import '../../helpers/pump_design_screen.dart';
 
 /// 교환 요청·실패 메시지·후기 쓰기 콜백 호출 기록
-class TradeRequestCallbackCounts {
+class MessageListCallbackRecords {
   int cancelCount = 0;
   int rejectCount = 0;
   int confirmCount = 0;
@@ -18,7 +18,7 @@ class TradeRequestCallbackCounts {
 }
 
 /// 메시지 목록 렌더 (ScreenUtil 초기화 포함)
-Future<TradeRequestCallbackCounts> pumpChatRoomMessageList(
+Future<MessageListCallbackRecords> pumpChatRoomMessageList(
   WidgetTester tester, {
   required List<ChatMessage> messages,
   String? lastReadMyMessageId,
@@ -29,7 +29,7 @@ Future<TradeRequestCallbackCounts> pumpChatRoomMessageList(
   bool hasOlderMessagesLoadFailed = false,
 }) async {
   useDesignScreenView(tester);
-  final callbackCounts = TradeRequestCallbackCounts();
+  final callbackCounts = MessageListCallbackRecords();
   final scrollController = ScrollController();
   addTearDown(scrollController.dispose);
 

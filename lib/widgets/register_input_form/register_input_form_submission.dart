@@ -62,7 +62,7 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
   /// 새 로컬 사진 > 안 올린 압축본만 업로드 > 서버 주소 목록 (이전 시도에 올린 사진은 재사용, 일부 실패 시 예외)
   Future<List<String>> _uploadNewImages() async {
     if (_newImageFiles.isEmpty) return [];
-    // 선택 시 시작한 압축 순서 보존 수거 (_compressing <-> _newImageFiles 인덱스 1:1, 보통 대기 0)
+    // 선택 시 시작한 압축본 전달 > 업로드 기억이 순서 보존 수거 (_compressing <-> _newImageFiles 인덱스 1:1, 보통 대기 0)
     return _newImageUploadCache.uploadPendingImages(
       originalFiles: _newImageFiles,
       compressedFiles: _compressing,

@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/request_sort_type.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 
-/// 요청관리 탭 거래 요청 상태: 현재 카드 받은 요청, 모든 카드 보낸 요청, 정렬 기준, 받은 요청 로딩·조회 실패 여부
+/// 요청관리 탭 거래 요청 상태: 현재 카드 받은 요청, 모든 카드 보낸 요청, 정렬 기준, 받은 요청 로딩·조회 실패 여부, 보낸 요청 실패 카드
 @immutable
 class TradeRequestsState {
   /// 현재 보고 있는 카드(takeItemId) — 받은 요청이 어느 카드 기준인지 추적.

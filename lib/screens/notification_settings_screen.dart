@@ -273,12 +273,12 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
   }
 
   /// 설정 변경 요청 > 마케팅 수신 변경 성공 시 처리 일자 안내 (실패 안내는 provider 담당)
-  Future<void> _applySettingChange(NotificationSettingType type, bool newValue) async {
-    final isChanged = await ref.read(notificationSettingProvider.notifier).setEnabled(type, newValue);
+  Future<void> _applySettingChange(NotificationSettingType type, bool isEnabled) async {
+    final isChanged = await ref.read(notificationSettingProvider.notifier).setEnabled(type, isEnabled);
     if (!isChanged || type != NotificationSettingType.marketing || !mounted) return;
     CommonSnackBar.show(
       context: context,
-      message: buildMarketingConsentMessage(isAgreed: newValue, processedAt: DateTime.now()),
+      message: buildMarketingConsentMessage(isAgreed: isEnabled, processedAt: DateTime.now()),
       type: SnackBarType.success,
     );
   }

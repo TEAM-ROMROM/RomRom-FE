@@ -83,7 +83,7 @@ class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeComplete
     }
   }
 
-  /// 채팅방으로 이동하여 교환 완료 요청 전송
+  /// 전송하기: 선택한 채팅 상대 결과 반환 (호출부가 채팅방 이동 > 교환 완료 요청)
   void _onConfirm() {
     final selectedChatRoomId = _selectedChatRoomId;
     if (selectedChatRoomId == null) return;
