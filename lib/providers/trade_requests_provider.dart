@@ -14,16 +14,19 @@ import 'package:romrom_fe/repositories/chat_repository.dart';
 import 'package:romrom_fe/repositories/trade_repository.dart';
 import 'package:romrom_fe/services/item_address_resolver.dart';
 import 'package:romrom_fe/states/trade_requests_state.dart';
+import 'package:romrom_fe/utils/sent_requests_reload_policy.dart';
 
 final tradeRequestsProvider = AsyncNotifierProvider<TradeRequestsNotifier, TradeRequestsState>(
   TradeRequestsNotifier.new,
 );
 
 /// 요청관리 거래 요청 단일 소유: 받은·보낸 조회(정렬·주소 변환), 읽음 처리, 전송·수정·취소·거절 후 재조회
-/// 조회 실패 시 해당 목록 빈 목록 + 실패 플래그 (상태는 AsyncData 유지, 화면은 다시 시도 표시)
+/// 받은 요청은 카드별 캐시 먼저 표시 후 서버 재조회, 조회 실패 시 해당 목록 빈 목록 + 실패 플래그 (상태는 AsyncData 유지)
 class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
   // 보낸 요청 동시 조회 카드 수 (카드 수 제한 없음 > 카드별 호출이 한 번에 몰리지 않게 묶음 처리)
   static const int sentLoadConcurrency = 5;
+  // 탭 진입·앱 복귀 보낸 요청 재조회 최소 간격 (연속 진입 시 카드 수만큼 호출 반복 방지)
+  static const Duration sentBackgroundReloadMinimumInterval = Duration(seconds: 10);
 
   TradeRepository get _repository => ref.read(tradeRepositoryProvider);
   ChatRepository get _chatRepository => ref.read(chatRepositoryProvider);
@@ -39,6 +42,19 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
   // 같은 카드·물품 목록 전체 로드 진행 중이면 합류 (첫 진입·당겨서 새로고침 중복 방지)
   Future<void>? _inFlightLoadForItems;
   String? _inFlightLoadForItemsKey;
+  bool _isInFlightLoadIncludingSent = false;
+
+  // 보낸 요청 전체 조회 기록 (같은 카드 목록 재조회 생략, 백그라운드 재조회 최소 간격)
+  final SentRequestsReloadPolicy _sentReloadPolicy = SentRequestsReloadPolicy(
+    minimumBackgroundReloadInterval: sentBackgroundReloadMinimumInterval,
+  );
+
+  // 현재 시각 공급자 (테스트에서 교체)
+  @visibleForTesting
+  DateTime Function() now = DateTime.now;
+
+  // 카드 ID > 받은 요청 마지막 서버 결과 (카드 전환 시 즉시 표시용, 현재 정렬 기준)
+  final Map<String, List<TradeRequestHistory>> _receivedCacheByTakeItemId = {};
 
   @override
   FutureOr<TradeRequestsState> build() {
@@ -48,34 +64,62 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     _requestedTakeItemId = null;
     _inFlightLoadForItems = null;
     _inFlightLoadForItemsKey = null;
+    _isInFlightLoadIncludingSent = false;
+    _sentReloadPolicy.reset();
+    _receivedCacheByTakeItemId.clear();
     return const TradeRequestsState();
   }
 
   TradeRequestsState get _currentState => state.valueOrNull ?? const TradeRequestsState();
 
-  /// 요청관리 카드 전체 로드: 대상 물품 기록 > 받은(현재 카드)·보낸(모든 카드) 병렬 조회
-  Future<void> loadForItems({required List<String> myItemIds, required String? takeItemId}) {
+  /// 요청관리 카드 로드: 대상 물품 기록 > 받은(현재 카드)·보낸(모든 카드) 병렬 조회
+  /// 보낸 요청은 카드 목록이 바뀌었거나 강제(isSentReloadForced)일 때만 조회
+  /// 같은 카드·물품 목록 로드 진행 중 > 합류 (진행 중 로드에 보낸 요청이 없고 이번에 필요하면 보낸 요청만 추가)
+  Future<void> loadForItems({
+    required List<String> myItemIds,
+    required String? takeItemId,
+    bool isSentReloadForced = false,
+  }) {
     final loadKey = '${takeItemId ?? ''}|${myItemIds.join(',')}';
+    final shouldLoadSent = _sentReloadPolicy.shouldLoadForItems(myItemIds, isForced: isSentReloadForced);
     final inFlightLoad = _inFlightLoadForItems;
-    if (inFlightLoad != null && _inFlightLoadForItemsKey == loadKey) return inFlightLoad;
+    if (inFlightLoad != null && _inFlightLoadForItemsKey == loadKey) {
+      if (!shouldLoadSent || _isInFlightLoadIncludingSent) return inFlightLoad;
+      return _trackInFlightLoad(loadKey, Future.wait([inFlightLoad, _loadSent()]), isIncludingSent: true);
+    }
 
+    final myItemIdSet = myItemIds.toSet();
+    _receivedCacheByTakeItemId.removeWhere((cachedTakeItemId, _) => !myItemIdSet.contains(cachedTakeItemId));
     state = AsyncData(_currentState.copyWith(myItemIds: List.unmodifiable(myItemIds)));
-    final load = Future.wait([_loadReceived(takeItemId), _loadSent()]).whenComplete(() {
-      if (_inFlightLoadForItemsKey != loadKey) return;
+    return _trackInFlightLoad(
+      loadKey,
+      Future.wait([_loadReceived(takeItemId), if (shouldLoadSent) _loadSent()]),
+      isIncludingSent: shouldLoadSent,
+    );
+  }
+
+  /// 진행 중 로드 기록 (합류 판단용) > 끝나면 같은 로드일 때만 기록 해제
+  Future<void> _trackInFlightLoad(String loadKey, Future<void> load, {required bool isIncludingSent}) {
+    late final Future<void> trackedLoad;
+    trackedLoad = load.whenComplete(() {
+      if (!identical(_inFlightLoadForItems, trackedLoad)) return;
       _inFlightLoadForItems = null;
       _inFlightLoadForItemsKey = null;
+      _isInFlightLoadIncludingSent = false;
     });
-    _inFlightLoadForItems = load;
+    _inFlightLoadForItems = trackedLoad;
     _inFlightLoadForItemsKey = loadKey;
-    return load;
+    _isInFlightLoadIncludingSent = isIncludingSent;
+    return trackedLoad;
   }
 
   /// 카드 전환: 해당 카드 받은 요청만 재조회
   Future<void> selectItem(String? takeItemId) => _loadReceived(takeItemId);
 
-  /// 받은 요청 정렬 변경 > 현재 카드 재조회 (같은 정렬 무시)
+  /// 받은 요청 정렬 변경 > 카드별 캐시 비움 > 현재 카드 재조회 (같은 정렬 무시)
   Future<void> changeReceivedSort(RequestSortType sortType) async {
     if (sortType == _currentState.receivedSortType) return;
+    _receivedCacheByTakeItemId.clear();
     state = AsyncData(_currentState.copyWith(receivedSortType: sortType));
     await _loadReceived(_requestedTakeItemId);
   }
@@ -87,10 +131,20 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     await _loadSent();
   }
 
+  /// 탭 진입·앱 복귀: 보낸 요청 모든 카드 백그라운드 재조회 (첫 로드 전·마지막 전체 조회 후 최소 간격 미만 > 생략)
+  /// 상대 수락·취소 반영용, 화면은 기존 목록 유지 후 교체 (로딩 표시 없음)
+  Future<void> reloadSentIfStale() async {
+    if (!_sentReloadPolicy.shouldReloadInBackground(now())) return;
+    await _loadSent();
+  }
+
+  /// 거래 상태 변경(채팅 거래완료 거절 등) 후 현재 카드 받은 요청 + 모든 카드 보낸 요청 서버 재조회
+  Future<void> reloadReceivedAndSent() => Future.wait([reloadReceivedOfRequestedCard(), _loadSent()]);
+
   /// 보낸 요청 다시 시도 (실패 카드 있음 > 그 카드만 재조회, 없음 > 모든 카드)
   Future<void> retrySentLoad() => _loadSent(isFailedItemsOnly: _currentState.hasSentLoadFailed);
 
-  /// 받은 요청 읽음 처리: 서버 상세 조회 > 해당 요청만 isNew 바꾼 새 목록 (실패 시 예외 전달)
+  /// 받은 요청 읽음 처리: 서버 상세 조회 > 해당 요청만 isNew 바꾼 새 목록 (현재 카드 캐시도 갱신, 실패 시 예외 전달)
   Future<void> markReceivedAsRead(String tradeRequestHistoryId) async {
     final detail = await _repository.getDetail(tradeRequestHistoryId);
     final updatedId = detail?.tradeRequestHistoryId;
@@ -100,6 +154,10 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
       for (final request in current.received)
         request.tradeRequestHistoryId == updatedId ? request.copyWithIsNew(detail.isNew) : request,
     ];
+    final currentTakeItemId = current.currentTakeItemId;
+    if (currentTakeItemId != null && _receivedCacheByTakeItemId.containsKey(currentTakeItemId)) {
+      _receivedCacheByTakeItemId[currentTakeItemId] = updatedReceived;
+    }
     state = AsyncData(current.copyWith(received: updatedReceived));
   }
 
@@ -163,16 +221,34 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     await _loadReceived(requestedTakeItemId);
   }
 
-  /// 받은 요청 조회: 정렬 반영 > 주소 변환 > 최신 요청일 때만 반영 (카드 없음 > 빈 목록, 실패 > 빈 목록 + 실패 플래그)
+  /// 받은 요청 조회: 캐시 즉시 표시(없으면 로딩 표시) > 정렬 반영 > 주소 변환 > 최신 요청일 때만 반영·캐시
+  /// 카드 없음 > 빈 목록, 실패 > 빈 목록 + 실패 플래그 + 해당 카드 캐시 비움
   Future<void> _loadReceived(String? takeItemId) async {
     final generation = ++_receivedLoadGeneration;
     _requestedTakeItemId = takeItemId;
     if (takeItemId == null || takeItemId.isEmpty) {
       state = AsyncData(
-        _currentState.copyWith(currentTakeItemId: null, received: const [], hasReceivedLoadFailed: false),
+        _currentState.copyWith(
+          currentTakeItemId: null,
+          received: const [],
+          hasReceivedLoadFailed: false,
+          isReceivedLoading: false,
+        ),
       );
       return;
     }
+
+    final cachedReceived = _receivedCacheByTakeItemId[takeItemId];
+    state = AsyncData(
+      cachedReceived == null
+          ? _currentState.copyWith(isReceivedLoading: true)
+          : _currentState.copyWith(
+              currentTakeItemId: takeItemId,
+              received: cachedReceived,
+              hasReceivedLoadFailed: false,
+              isReceivedLoading: false,
+            ),
+    );
 
     List<TradeRequestHistory> received;
     try {
@@ -181,12 +257,21 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     } catch (error, stackTrace) {
       debugPrint('[trade requests] received load failed : $error\n$stackTrace');
       if (generation != _receivedLoadGeneration) return;
-      state = AsyncData(_currentState.copyWith(received: const [], hasReceivedLoadFailed: true));
+      _receivedCacheByTakeItemId.remove(takeItemId);
+      state = AsyncData(
+        _currentState.copyWith(received: const [], hasReceivedLoadFailed: true, isReceivedLoading: false),
+      );
       return;
     }
     if (generation != _receivedLoadGeneration) return;
+    _receivedCacheByTakeItemId[takeItemId] = received;
     state = AsyncData(
-      _currentState.copyWith(currentTakeItemId: takeItemId, received: received, hasReceivedLoadFailed: false),
+      _currentState.copyWith(
+        currentTakeItemId: takeItemId,
+        received: received,
+        hasReceivedLoadFailed: false,
+        isReceivedLoading: false,
+      ),
     );
   }
 
@@ -197,6 +282,7 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     final generation = ++_sentLoadGeneration;
     final current = _currentState;
     final myItemIds = current.myItemIds;
+    if (!isFailedItemsOnly) _sentReloadPolicy.recordFullLoad(myItemIds, startedAt: now());
     final sortType = current.sentSortType;
     final targetItemIds = isFailedItemsOnly ? current.sentFailedItemIds.where(myItemIds.contains).toList() : myItemIds;
 

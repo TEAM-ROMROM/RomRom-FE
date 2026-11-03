@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -14,8 +13,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
-import 'package:romrom_fe/services/location_service.dart';
-import 'package:romrom_fe/utils/location_utils.dart';
+import 'package:romrom_fe/services/reviewer_address_resolver.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/expandable_text.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
@@ -77,24 +75,11 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
     _loadReviews();
   }
 
+  /// 주소 없는 후기 작성자 주소 병렬 변환 > 결과 1회 반영
   Future<void> _fetchMissingAddresses() async {
-    for (final review in _reviews) {
-      final member = review.reviewerMember;
-      if (member == null) continue;
-      if (member.locationAddress != null && member.locationAddress!.isNotEmpty) continue;
-      final lat = member.latitude;
-      final lng = member.longitude;
-      final id = member.memberId;
-      if (lat == null || lng == null || id == null) continue;
-      try {
-        final address = await LocationService().getAddressFromCoordinates(NLatLng(lat, lng));
-        if (address != null && mounted) {
-          setState(() => _fetchedAddresses[id] = LocationUtils.formatMediumAddress(address));
-        }
-      } catch (e) {
-        debugPrint('주소 변환 실패 ($id): $e');
-      }
-    }
+    final fetchedAddressByMemberId = await ReviewerAddressResolver().resolveMissingAddresses(_reviews);
+    if (fetchedAddressByMemberId.isEmpty || !mounted) return;
+    setState(() => _fetchedAddresses.addAll(fetchedAddressByMemberId));
   }
 
   Map<TradeReviewRating, int> get _ratingCounts {
