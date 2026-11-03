@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/item_status.dart';
+import 'package:romrom_fe/enums/my_item_toggle_status.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/providers/chat_repository_provider.dart';
@@ -73,7 +74,7 @@ void main() {
 
       expect(find.text('물품을 불러오지 못했어요'), findsOneWidget);
       expect(find.text('다시 시도'), findsOneWidget);
-      expect(find.text('등록된 물품이 없어요.'), findsNothing);
+      expect(find.text(MyItemToggleStatus.selling.emptyItemsTitle), findsNothing);
     });
 
     testWidgets('다시 시도 진행 중 스피너 + 중복 탭 무시 > 성공 시 목록 표시', (tester) async {
@@ -104,7 +105,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('물품을 불러오지 못했어요'), findsNothing);
-      expect(find.text('등록된 물품이 없어요.'), findsOneWidget);
+      expect(find.text('교환 가능한 물품이 없어요'), findsOneWidget);
+
+      // 교환 완료 탭 > 탭별 빈 문구
+      await tester.tap(find.text('교환 완료'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('교환 완료된 물품이 없어요'), findsOneWidget);
     });
   });
 

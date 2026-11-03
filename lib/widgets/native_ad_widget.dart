@@ -7,8 +7,11 @@ import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
 
 /// 홈 피드용 네이티브 광고 위젯
 /// PageView 한 페이지를 물품 카드와 같은 크기로 채움 (레이아웃은 HomeFeedNativeAdStyle > 네이티브 팩토리)
+/// 광고 ID 없음·로드 실패 > onLoadFailed (화면이 광고 칸을 접음, 스켈레톤이 남아 조작이 막히는 것 방지)
 class NativeAdWidget extends StatefulWidget {
-  const NativeAdWidget({super.key});
+  final VoidCallback? onLoadFailed;
+
+  const NativeAdWidget({super.key, this.onLoadFailed});
 
   @override
   State<NativeAdWidget> createState() => _NativeAdWidgetState();
@@ -35,6 +38,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
     final adUnitId = AdMobService.nativeAdUnitId;
     if (adUnitId == null) {
       debugPrint('[AdMob] 네이티브 광고 ID 없음 (프로덕션 .env 미설정)');
+      _notifyLoadFailedAfterFrame();
       return;
     }
 
@@ -57,6 +61,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
             setState(() {
               _nativeAd = null;
             });
+            _notifyLoadFailedAfterFrame();
           }
         },
         onAdOpened: (_) => debugPrint('[AdMob] 네이티브 광고 열림'),
@@ -64,6 +69,13 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       ),
       request: const AdRequest(),
     )..load();
+  }
+
+  /// 로드 실패 알림 (빌드 중 부모 setState 방지 > 다음 프레임, 최신 콜백 사용)
+  void _notifyLoadFailedAfterFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onLoadFailed?.call();
+    });
   }
 
   @override

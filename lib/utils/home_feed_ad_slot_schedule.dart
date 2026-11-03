@@ -39,6 +39,22 @@ class HomeFeedAdSlotSchedule {
     _nextAdAfterFeedIndex = adFreeFeedCount;
   }
 
+  /// 광고 실패 칸 접기: 해당 광고 제거 > 뒤 광고 가상 index 1씩 당김 (광고 아니면 false)
+  bool removeAdAtVirtualIndex(int virtualIndex) {
+    if (!_adVirtualIndices.remove(virtualIndex)) return false;
+    final shiftedAdVirtualIndices = [
+      for (final adVirtualIndex in _adVirtualIndicesSorted)
+        if (adVirtualIndex != virtualIndex) adVirtualIndex > virtualIndex ? adVirtualIndex - 1 : adVirtualIndex,
+    ];
+    _adVirtualIndicesSorted
+      ..clear()
+      ..addAll(shiftedAdVirtualIndices);
+    _adVirtualIndices
+      ..clear()
+      ..addAll(shiftedAdVirtualIndices);
+    return true;
+  }
+
   /// 늘어난 피드 길이까지 광고 자리 추가 (기존 자리 유지)
   void scheduleAdsForFeedLength(int feedLength) {
     while (_nextAdAfterFeedIndex < feedLength) {

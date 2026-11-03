@@ -110,5 +110,28 @@ void main() {
       await tester.tap(find.text('0/10'));
       expect(addTapCount, 1);
     });
+
+    testWidgets('저장 중(편집 막힘) > 추가·삭제 탭 무시', (tester) async {
+      int addTapCount = 0;
+      int deleteTapCount = 0;
+      await pumpRegisterSection(
+        tester,
+        RegisterImagePickerSection(
+          existingImageUrls: const ['https://image/a.webp'],
+          newImagePaths: const [],
+          shouldShowEmptyImageError: false,
+          isEditingEnabled: false,
+          onAddImageTap: () => addTapCount++,
+          onImageTap: (_) {},
+          onDeleteImageTap: (_) => deleteTapCount++,
+        ),
+      );
+
+      await tester.tap(find.text('1/10'));
+      await tester.tap(find.bySemanticsLabel('사진 삭제'), warnIfMissed: false);
+
+      expect(addTapCount, 0);
+      expect(deleteTapCount, 0);
+    });
   });
 }
