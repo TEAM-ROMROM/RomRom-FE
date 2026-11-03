@@ -306,3 +306,12 @@ const List<RangeOption> defaultSearchRangeOptions = [
   RangeOption(label: '7.5km 이내', description: '조금 먼 동네', distanceKm: 7.5),
   RangeOption(label: '10km 이내', description: '먼 동네', distanceKm: 10.0),
 ];
+
+/// 서버 반경(m) > 탐색 범위 index (반경 이하 첫 범위, 가장 넓은 범위 초과 > 마지막 범위)
+int searchRangeIndexForRadius(double searchRadiusInMeters) {
+  final radiusInMeters = searchRadiusInMeters.round();
+  for (var index = 0; index < defaultSearchRangeOptions.length; index++) {
+    if (radiusInMeters <= defaultSearchRangeOptions[index].distanceKm * 1000) return index;
+  }
+  return defaultSearchRangeOptions.length - 1;
+}

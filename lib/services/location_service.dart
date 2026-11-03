@@ -18,6 +18,9 @@ class LocationService {
 
   LocationService._internal();
 
+  // 위치 권한 거부·조회 실패 시 지도 기본 위치 (서울시청)
+  static const NLatLng fallbackPosition = NLatLng(37.5665, 126.9780);
+
   // 역지오코딩 응답 대기 상한 (5초)
   static const Duration reverseGeocodeTimeout = Duration(seconds: 5);
 

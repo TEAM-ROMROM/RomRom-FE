@@ -21,9 +21,10 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
       });
       widget.isSaveInProgressNotifier?.value = true;
 
+      // 기존 서버 이미지 URL (업로드 대기 전 사본) + 새로 업로드된 URL 합치기
+      final existingImageUrlsSnapshot = List<String>.of(_existingImageUrls);
       final List<String> newImageUrls = await _uploadNewImages();
-      // 기존 서버 이미지 URL + 새로 업로드된 URL 합치기
-      final itemRequest = _buildItemRequest([..._existingImageUrls, ...newImageUrls]);
+      final itemRequest = _buildItemRequest([...existingImageUrlsSnapshot, ...newImageUrls]);
 
       if (widget.isEditMode) {
         await _submitEditedItem(itemRequest);
@@ -58,16 +59,15 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
     });
   }
 
-  /// 새 로컬 사진 압축본 수거 > 업로드 > 서버 주소 목록 (일부 실패 시 예외)
+  /// 새 로컬 사진 > 안 올린 압축본만 업로드 > 서버 주소 목록 (이전 시도에 올린 사진은 재사용, 일부 실패 시 예외)
   Future<List<String>> _uploadNewImages() async {
     if (_newImageFiles.isEmpty) return [];
     // 선택 시 시작한 압축 순서 보존 수거 (_compressing <-> _newImageFiles 인덱스 1:1, 보통 대기 0)
-    final List<XFile> compressed = await Future.wait(_compressing);
-    final List<String> newImageUrls = await ref.read(imageRepositoryProvider).uploadImages(compressed);
-    if (newImageUrls.length != compressed.length) {
-      throw Exception('일부 이미지 업로드에 실패했습니다 (${newImageUrls.length}/${compressed.length})');
-    }
-    return newImageUrls;
+    return _newImageUploadCache.uploadPendingImages(
+      originalFiles: _newImageFiles,
+      compressedFiles: _compressing,
+      uploadImages: ref.read(imageRepositoryProvider).uploadImages,
+    );
   }
 
   /// 현재 폼 값 + 전체 사진 주소 > 등록·수정 요청
