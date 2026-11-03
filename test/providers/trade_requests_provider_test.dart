@@ -635,4 +635,238 @@ void main() {
       expect(container.read(tradeRequestsProvider).valueOrNull?.received.length, 2);
     });
   });
+  group('tradeRequestsProvider 보낸 요청 재조회 조건', () {
+    test('같은 카드 목록으로 다시 로드 > 받은 요청만 재조회, 보낸 요청 재조회 없음', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a');
+
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a');
+
+      expect(fakeRepository.receivedRequestedTakeItemIds, ['a', 'a']);
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'b']);
+    });
+
+    test('카드 목록 변경 > 보낸 요청 모든 카드 재조회', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a');
+
+      await readNotifier().loadForItems(myItemIds: const ['a', 'c'], takeItemId: 'a');
+
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'b', 'a', 'c']);
+    });
+
+    test('강제 재조회 > 같은 카드 목록이어도 보낸 요청 재조회', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a');
+
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a', isSentReloadForced: true);
+
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'b', 'a', 'b']);
+    });
+
+    test('받은 요청만 하는 로드 진행 중 강제 재조회 > 받은 요청 중복 없이 보낸 요청만 추가', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+      final pendingReceived = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': pendingReceived};
+
+      final receivedOnlyLoading = readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+      final forcedLoading = readNotifier().loadForItems(
+        myItemIds: const ['a'],
+        takeItemId: 'a',
+        isSentReloadForced: true,
+      );
+      pendingReceived.complete(const []);
+      await Future.wait([receivedOnlyLoading, forcedLoading]);
+
+      expect(fakeRepository.receivedRequestedTakeItemIds, ['a', 'a']);
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'a']);
+    });
+  });
+
+  group('tradeRequestsProvider 받은 요청 카드별 캐시', () {
+    test('이미 본 카드로 돌아오면 응답 전 캐시 즉시 표시(로딩 아님) > 응답 후 서버 값', () async {
+      await container.read(tradeRequestsProvider.future);
+      fakeRepository.receivedByTakeItemId = {
+        'a': [buildTradeRequestHistory('received-a')],
+        'b': [buildTradeRequestHistory('received-b')],
+      };
+      await readNotifier().selectItem('a');
+      await readNotifier().selectItem('b');
+      final pendingReceivedForA = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': pendingReceivedForA};
+
+      final loading = readNotifier().selectItem('a');
+
+      var state = container.read(tradeRequestsProvider).valueOrNull!;
+      expect(state.currentTakeItemId, 'a');
+      expect(state.received.map((r) => r.tradeRequestHistoryId), ['received-a']);
+      expect(state.isReceivedLoading, isFalse);
+
+      pendingReceivedForA.complete([buildTradeRequestHistory('received-a'), buildTradeRequestHistory('received-a2')]);
+      await loading;
+
+      state = container.read(tradeRequestsProvider).valueOrNull!;
+      expect(fakeRepository.receivedRequestedTakeItemIds, ['a', 'b', 'a']);
+      expect(state.received.map((r) => r.tradeRequestHistoryId), ['received-a', 'received-a2']);
+    });
+
+    test('처음 보는 카드 > 응답 전까지 로딩 표시, 응답 후 해제', () async {
+      await container.read(tradeRequestsProvider.future);
+      final pendingReceived = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': pendingReceived};
+
+      final loading = readNotifier().selectItem('a');
+      expect(container.read(tradeRequestsProvider).valueOrNull?.isReceivedLoading, isTrue);
+
+      pendingReceived.complete(const []);
+      await loading;
+      expect(container.read(tradeRequestsProvider).valueOrNull?.isReceivedLoading, isFalse);
+    });
+
+    test('정렬 변경 > 캐시 비움 (새 정렬 응답 전까지 로딩 표시)', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().selectItem('a');
+      final pendingReceived = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': pendingReceived};
+
+      final loading = readNotifier().changeReceivedSort(RequestSortType.priceHigh);
+      expect(container.read(tradeRequestsProvider).valueOrNull?.isReceivedLoading, isTrue);
+
+      pendingReceived.complete(const []);
+      await loading;
+    });
+
+    test('조회 실패 > 실패 표시 + 캐시 비움 (다음 진입은 로딩 표시)', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().selectItem('a');
+      await readNotifier().selectItem('b');
+      fakeRepository.failingReceivedTakeItemIds = {'a'};
+      await readNotifier().selectItem('a');
+      expect(container.read(tradeRequestsProvider).valueOrNull?.hasReceivedLoadFailed, isTrue);
+      expect(container.read(tradeRequestsProvider).valueOrNull?.isReceivedLoading, isFalse);
+
+      fakeRepository.failingReceivedTakeItemIds = {};
+      final pendingReceived = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': pendingReceived};
+      final loading = readNotifier().selectItem('a');
+      expect(container.read(tradeRequestsProvider).valueOrNull?.isReceivedLoading, isTrue);
+
+      pendingReceived.complete(const []);
+      await loading;
+    });
+
+    test('이전 카드의 늦은 응답은 상태·캐시 모두에 쓰지 않음', () async {
+      await container.read(tradeRequestsProvider.future);
+      final staleReceivedForA = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': staleReceivedForA};
+      final staleLoading = readNotifier().selectItem('a');
+      await readNotifier().selectItem('b');
+      staleReceivedForA.complete([buildTradeRequestHistory('stale-a')]);
+      await staleLoading;
+
+      final pendingReceivedForA = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': pendingReceivedForA};
+      final loading = readNotifier().selectItem('a');
+      final state = container.read(tradeRequestsProvider).valueOrNull!;
+      expect(state.isReceivedLoading, isTrue);
+      expect(state.received.map((r) => r.tradeRequestHistoryId), isNot(contains('stale-a')));
+
+      pendingReceivedForA.complete(const []);
+      await loading;
+    });
+
+    test('읽음 처리 > 캐시도 갱신 (카드 복귀 시 읽음 상태 유지)', () async {
+      await container.read(tradeRequestsProvider.future);
+      fakeRepository.receivedByTakeItemId = {
+        'a': [buildTradeRequestHistory('received-1', isNew: true)],
+      };
+      await readNotifier().selectItem('a');
+      fakeRepository.detailResponse = buildTradeRequestHistory('received-1', isNew: false);
+      await readNotifier().markReceivedAsRead('received-1');
+      await readNotifier().selectItem('b');
+      final pendingReceivedForA = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': pendingReceivedForA};
+
+      final loading = readNotifier().selectItem('a');
+      expect(container.read(tradeRequestsProvider).valueOrNull?.received.single.isNew, isFalse);
+
+      pendingReceivedForA.complete(const []);
+      await loading;
+    });
+
+    test('카드 목록에서 빠진 카드 캐시 비움 (다시 생기면 로딩 표시)', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'b');
+      await readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+      final pendingReceivedForB = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'b': pendingReceivedForB};
+
+      final loading = readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'b');
+      expect(container.read(tradeRequestsProvider).valueOrNull?.isReceivedLoading, isTrue);
+
+      pendingReceivedForB.complete(const []);
+      await loading;
+    });
+
+    test('provider 무효화(로그아웃·계정 전환) > 캐시 비움', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().selectItem('a');
+      container.invalidate(tradeRequestsProvider);
+      await container.read(tradeRequestsProvider.future);
+      final pendingReceived = Completer<List<TradeRequestHistory>>();
+      fakeRepository.pendingReceivedByTakeItemId = {'a': pendingReceived};
+
+      final loading = readNotifier().selectItem('a');
+      expect(container.read(tradeRequestsProvider).valueOrNull?.isReceivedLoading, isTrue);
+
+      pendingReceived.complete(const []);
+      await loading;
+    });
+  });
+
+  group('tradeRequestsProvider.reloadSentIfStale (탭 진입·앱 복귀)', () {
+    test('요청관리 첫 로드 전 > 조회 안 함', () async {
+      await container.read(tradeRequestsProvider.future);
+
+      await readNotifier().reloadSentIfStale();
+
+      expect(fakeRepository.sentRequestedGiveItemIds, isEmpty);
+    });
+
+    test('마지막 전체 조회 후 최소 간격 미만 > 생략, 지나면 보낸 요청만 모든 카드 재조회 (로딩 표시 없음)', () async {
+      await container.read(tradeRequestsProvider.future);
+      var now = DateTime(2026, 11, 3, 12);
+      readNotifier().now = () => now;
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a');
+
+      now = now.add(const Duration(seconds: 9));
+      await readNotifier().reloadSentIfStale();
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'b']);
+
+      now = now.add(TradeRequestsNotifier.sentBackgroundReloadMinimumInterval);
+      fakeRepository.sentByGiveItemId = {
+        'b': [buildTradeRequestHistory('sent-b-accepted', giveItemId: 'b')],
+      };
+      await readNotifier().reloadSentIfStale();
+
+      final state = container.read(tradeRequestsProvider).valueOrNull!;
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'b', 'a', 'b']);
+      expect(fakeRepository.receivedRequestedTakeItemIds, ['a']);
+      expect(state.sent.map((r) => r.tradeRequestHistoryId), ['sent-b-accepted']);
+      expect(state.isReceivedLoading, isFalse);
+    });
+  });
+
+  group('tradeRequestsProvider.reloadReceivedAndSent (채팅 거래완료 거절 등)', () {
+    test('현재 카드 받은 요청 + 모든 카드 보낸 요청 서버 재조회', () async {
+      await container.read(tradeRequestsProvider.future);
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'b');
+
+      await readNotifier().reloadReceivedAndSent();
+
+      expect(fakeRepository.receivedRequestedTakeItemIds, ['b', 'b']);
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'b', 'a', 'b']);
+    });
+  });
 }

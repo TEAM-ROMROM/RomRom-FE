@@ -3,7 +3,7 @@ part of '../chat_room_screen.dart';
 
 mixin _ChatRoomInitialLoad
     on _ChatRoomScreenStateFields, _ChatRoomMessaging, _ChatRoomTradeActions, _ChatRoomRecommendationActions {
-  /// 채팅방 초기화: 메시지·읽음 상태·AI 추천 조회 > 상대 상태 폴링 > 메시지·추천 구독 > 알림 안내 > 읽음·재연결 구독 > 안내 모달
+  /// 채팅방 초기화: 회원 ID > 소켓 연결·메시지(AI 추천 포함)·읽음 상태 동시 조회 > 상대 상태 폴링 > 메시지·추천 구독 > 알림 안내 > 읽음·재연결 구독 > 안내 모달
   Future<void> _loadInitialData() async {
     try {
       setState(() {
@@ -14,15 +14,17 @@ mixin _ChatRoomInitialLoad
       _myMemberId = await MemberManager.getCurrentMemberId();
       if (_myMemberId == null) throw Exception('사용자 정보를 불러올 수 없습니다');
 
-      await _wsService.connect();
-
+      // 서로 의존 없는 3개 동시 시작 (구독은 연결 이후), 첫 실패 즉시 아래 catch (나머지 오류는 Future.wait가 처리)
       final chatRepository = _chatRepository;
-      final response = await chatRepository.getChatMessages(
+      final messagesLoading = chatRepository.getChatMessages(
         chatRoomId: widget.chatRoomId,
         pageNumber: 0,
         pageSize: chatMessagePageSize,
       );
-      final opponentState = await chatRepository.getChatRoomReadStatus(chatRoomId: widget.chatRoomId);
+      final readStatusLoading = chatRepository.getChatRoomReadStatus(chatRoomId: widget.chatRoomId);
+      await Future.wait([_wsService.connect(), messagesLoading, readStatusLoading], eagerError: true);
+      final response = await messagesLoading;
+      final opponentState = await readStatusLoading;
       if (!mounted) return;
 
       setState(() {

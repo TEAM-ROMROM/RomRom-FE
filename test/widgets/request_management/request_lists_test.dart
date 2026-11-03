@@ -65,15 +65,27 @@ RequestSentList buildSentList(List<TradeRequestHistory> requests, {bool hasLoadF
   );
 }
 
-/// 테스트 앱 렌더 (ScreenUtil 초기화 포함, 세로 넘침 방지 스크롤)
-Future<void> pumpRequestListWidget(WidgetTester tester, Widget requestListWidget) async {
+/// 테스트 앱 렌더 (ScreenUtil 초기화 포함, 목록 sliver를 스크롤 뷰에 배치)
+Future<void> pumpRequestListWidget(WidgetTester tester, Widget requestListSliver) async {
   await tester.pumpWidget(
     buildDesignScreenApp(
-      home: Scaffold(body: SingleChildScrollView(child: requestListWidget)),
+      home: Scaffold(body: CustomScrollView(slivers: [requestListSliver])),
     ),
   );
   await tester.pump(const Duration(seconds: 1));
 }
+
+/// 거래 요청 N건 (ID만 다름)
+List<TradeRequestHistory> buildRequests(int count) => [
+  for (var index = 0; index < count; index++)
+    TradeRequestHistory(
+      tradeRequestHistoryId: 'history-$index',
+      takeItem: Item(itemId: 'take-$index', itemName: '상대 물품 $index'),
+      giveItem: Item(itemId: 'give-$index', itemName: '내 물품 $index'),
+      itemTradeOptions: const [],
+      tradeStatus: 'PENDING',
+    ),
+];
 
 void main() {
   group('ItemTradeOption.fromServerNamesSkippingUnknown', () {
@@ -144,6 +156,36 @@ void main() {
       final sentCards = tester.widgetList<SentRequestItemCard>(find.byType(SentRequestItemCard)).toList();
       expect(sentCards.first.requestedDate, requestedDate);
       expect(sentCards.map((card) => card.canEdit), [true, false]);
+    });
+  });
+
+  group('요청 목록: 지연 생성', () {
+    // 목록 항목 수 (한 화면을 크게 넘는 수)
+    const int longListCount = 30;
+
+    testWidgets('받은 요청 30건 > 화면 근처 항목만 생성, 스크롤하면 마지막 항목 생성', (tester) async {
+      useDesignScreenView(tester);
+      await pumpRequestListWidget(tester, buildReceivedList(buildRequests(longListCount)));
+
+      final builtCount = find.byType(RequestListItemCardWidget).evaluate().length;
+      expect(builtCount, greaterThan(0));
+      expect(builtCount, lessThan(longListCount));
+
+      await tester.scrollUntilVisible(
+        find.text('내 물품 ${longListCount - 1}'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('내 물품 ${longListCount - 1}'), findsOneWidget);
+    });
+
+    testWidgets('보낸 요청 30건 > 화면 근처 항목만 생성', (tester) async {
+      useDesignScreenView(tester);
+      await pumpRequestListWidget(tester, buildSentList(buildRequests(longListCount)));
+
+      final builtCount = find.byType(SentRequestItemCard).evaluate().length;
+      expect(builtCount, greaterThan(0));
+      expect(builtCount, lessThan(longListCount));
     });
   });
 
