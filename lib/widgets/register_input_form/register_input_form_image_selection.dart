@@ -7,7 +7,7 @@ mixin _RegisterInputFormImageSelection on _RegisterInputFormStateFields {
 
   // 상품사진 추가: 소스(촬영/앨범) 선택 후 처리
   Future<void> onPickImage() async {
-    if (_isPickingSource) return; // 중복 진입 방지
+    if (_isPickingSource || _isLoading) return; // 중복 진입·저장 중 목록 변경 방지
 
     setState(() {
       _hasImageBeenTouched = true;
@@ -64,7 +64,7 @@ mixin _RegisterInputFormImageSelection on _RegisterInputFormStateFields {
 
   /// 이미지 삭제 (로컬에서만 제거, 서버 호출 없음)
   void onDeleteImage(int index) {
-    if (index < 0 || index >= _totalImageCount) return;
+    if (_isLoading || index < 0 || index >= _totalImageCount) return; // 저장 중 목록 변경 방지
 
     final int existingCount = _existingImageUrls.length;
 

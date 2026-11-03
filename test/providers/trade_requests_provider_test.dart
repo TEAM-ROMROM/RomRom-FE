@@ -438,7 +438,7 @@ void main() {
       fakeRepository.receivedByTakeItemId = {
         'a': [buildTradeRequestHistory('received-1')],
       };
-      await readNotifier().retryReceivedLoad();
+      await readNotifier().reloadReceivedOfRequestedCard();
 
       final state = container.read(tradeRequestsProvider).valueOrNull!;
       expect(fakeRepository.receivedRequestedTakeItemIds, ['a', 'a']);
@@ -606,6 +606,33 @@ void main() {
       fakeChatRepository.roomsByItem = [buildChatRoom('other-item-room', targetItemImageUrl: 'other-image')];
 
       expect(await readNotifier().findChatRoomIdOfSentRequest(buildSentRequest()), isNull);
+    });
+  });
+
+  group('tradeRequestsProvider.reloadReceivedOfRequestedCard', () {
+    test('카드 선택 전이면 조회하지 않고 상태를 유지한다', () async {
+      final initialState = await container.read(tradeRequestsProvider.future);
+
+      await readNotifier().reloadReceivedOfRequestedCard();
+
+      expect(fakeRepository.receivedRequestedTakeItemIds, isEmpty);
+      expect(container.read(tradeRequestsProvider).valueOrNull, initialState);
+    });
+
+    test('마지막으로 선택한 카드로 받은 요청을 다시 조회한다', () async {
+      await container.read(tradeRequestsProvider.future);
+      fakeRepository.receivedByTakeItemId = {
+        'item-1': [buildTradeRequestHistory('r1')],
+      };
+      await readNotifier().selectItem('item-1');
+      fakeRepository.receivedByTakeItemId = {
+        'item-1': [buildTradeRequestHistory('r1'), buildTradeRequestHistory('r2')],
+      };
+
+      await readNotifier().reloadReceivedOfRequestedCard();
+
+      expect(fakeRepository.receivedRequestedTakeItemIds, ['item-1', 'item-1']);
+      expect(container.read(tradeRequestsProvider).valueOrNull?.received.length, 2);
     });
   });
 }

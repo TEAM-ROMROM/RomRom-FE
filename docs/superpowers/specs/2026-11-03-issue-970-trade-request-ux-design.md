@@ -35,7 +35,7 @@
 ### B2. 목록 조회 실패 = 없음
 - 문제: 실패 시 빈 목록과 같은 '진행 중인 요청이 없습니다'
 - 변경: 상태에 `hasReceivedLoadFailed`·`sentFailedItemIds`(보낸 요청 실패 카드 ID, `hasSentLoadFailed` getter) 추가
-  - 받은 요청 실패 > `EmptyStateView.error` + 다시 시도(`retryReceivedLoad`)
+  - 받은 요청 실패 > `EmptyStateView.error` + 다시 시도(`reloadReceivedOfRequestedCard`)
   - 보낸 요청: 성공 카드 결과는 유지. 결과 있음 + 일부 실패 > 목록 상단 '일부를 불러오지 못했어요 · 다시 시도' 배너, 보여줄 결과 없이 실패 > 오류 뷰
   - `retrySentLoad`: 실패 카드만 재조회 후 카드 순서대로 다시 합침 (실패 카드 없으면 전체)
 - 테스트: 실패 > 플래그 true, 재시도 성공 > false, 목록 위젯 실패 뷰

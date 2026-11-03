@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
@@ -178,13 +179,12 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
     }
   }
 
+  /// 탭별 빈 목록 안내 (교환 가능·전체 > 등록 안내, 교환 완료 > 교환 완료 안내)
   Widget _buildEmptyState() {
-    return Center(
-      child: Text(
-        '등록된 물품이 없어요.',
-        style: CustomTextStyles.p1.copyWith(color: AppColors.opacity40White, fontWeight: FontWeight.w500),
-        textAlign: TextAlign.center,
-      ),
+    return EmptyStateView(
+      icon: AppIcons.register,
+      centerText: _currentTabStatus.emptyItemsTitle,
+      descriptionText: _currentTabStatus.emptyItemsDescription,
     );
   }
 

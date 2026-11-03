@@ -5,7 +5,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 
-/// 빈 상태·에러 상태 뷰: 아이콘, 중앙 문구, 설명, 버튼(옵션)
+/// 빈 상태·에러 상태 뷰: 아이콘, 중앙 문구, 설명, 버튼(옵션), 보조 글자 버튼(옵션)
 /// 목록 비어있음 > 기본 생성자 / 불러오기 실패 > .error (다시 시도 버튼)
 class EmptyStateView extends StatelessWidget {
   final IconData icon;
@@ -17,6 +17,10 @@ class EmptyStateView extends StatelessWidget {
   // 버튼 동작 진행 중 여부 (true면 스피너 표시 + 탭 무시)
   final bool isButtonLoading;
 
+  // 주 버튼 아래 보조 동작 (예: 빈 피드 > 탐색 범위 넓히기)
+  final String? secondaryButtonText;
+  final VoidCallback? onSecondaryButtonTap;
+
   const EmptyStateView({
     super.key,
     required this.icon,
@@ -25,6 +29,8 @@ class EmptyStateView extends StatelessWidget {
     this.buttonText,
     this.onButtonTap,
     this.isButtonLoading = false,
+    this.secondaryButtonText,
+    this.onSecondaryButtonTap,
   });
 
   /// 불러오기 실패 뷰: 경고 아이콘 + 다시 시도 버튼 (isRetrying이면 재시도 탭 무시)
@@ -37,7 +43,9 @@ class EmptyStateView extends StatelessWidget {
   }) : icon = AppIcons.warning,
        buttonText = '다시 시도',
        onButtonTap = onRetry,
-       isButtonLoading = isRetrying;
+       isButtonLoading = isRetrying,
+       secondaryButtonText = null,
+       onSecondaryButtonTap = null;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +88,22 @@ class EmptyStateView extends StatelessWidget {
                 isLoading: isButtonLoading,
                 buttonText: buttonText!,
                 enabledOnPressed: onButtonTap,
+              ),
+            ],
+
+            // 보조 글자 버튼 (옵션)
+            if (secondaryButtonText != null && onSecondaryButtonTap != null) ...[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: onSecondaryButtonTap,
+                child: Text(
+                  secondaryButtonText!,
+                  style: CustomTextStyles.p2.copyWith(
+                    color: AppColors.opacity60White,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppColors.opacity60White,
+                  ),
+                ),
               ),
             ],
             SizedBox(height: 32.h),

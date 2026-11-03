@@ -87,9 +87,6 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     await _loadSent();
   }
 
-  /// 받은 요청 다시 조회 (마지막으로 요청한 카드 기준, 조회 실패 후 다시 시도)
-  Future<void> retryReceivedLoad() => _loadReceived(_requestedTakeItemId);
-
   /// 보낸 요청 다시 시도 (실패 카드 있음 > 그 카드만 재조회, 없음 > 모든 카드)
   Future<void> retrySentLoad() => _loadSent(isFailedItemsOnly: _currentState.hasSentLoadFailed);
 
@@ -157,6 +154,13 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
   Future<void> reject(String tradeRequestHistoryId) async {
     await _repository.reject(tradeRequestHistoryId);
     await _loadReceived(_requestedTakeItemId);
+  }
+
+  /// 마지막으로 요청한 카드 받은 요청 재조회 (조회 실패 후 재시도·푸시 수신 공통, 카드 선택 전이면 무시)
+  Future<void> reloadReceivedOfRequestedCard() async {
+    final requestedTakeItemId = _requestedTakeItemId;
+    if (requestedTakeItemId == null || requestedTakeItemId.isEmpty) return;
+    await _loadReceived(requestedTakeItemId);
   }
 
   /// 받은 요청 조회: 정렬 반영 > 주소 변환 > 최신 요청일 때만 반영 (카드 없음 > 빈 목록, 실패 > 빈 목록 + 실패 플래그)

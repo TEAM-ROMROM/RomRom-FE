@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/home_feed_refresh_result.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -56,6 +57,15 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   // build 세대 (세션 초기화(invalidate)마다 증가 > 이전 세션의 늦은 loadMore·refresh 결과 폐기)
   int _buildGeneration = 0;
 
+  // 이번 세션에 신고한 물품 id (서버가 피드에서 빼 준다는 보장이 없어 클라이언트에서 거름)
+  final Set<String> _reportedItemIds = {};
+
+  // 진행 중 refresh (끝날 때까지 다른 refresh 판단 기준)
+  Future<HomeFeedRefreshResult>? _inFlightRefresh;
+
+  // 진행 중 refresh 뒤 1회 더 조회할 우회 트리거 요청 (여러 요청은 1회로 합침)
+  Future<HomeFeedRefreshResult>? _queuedBypassRefresh;
+
   // 현재 시각 공급자 (테스트에서 교체)
   @visibleForTesting
   DateTime Function() now = DateTime.now;
@@ -71,6 +81,9 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     _buildGeneration++;
     _isLoadMoreInFlight = false;
     _lastLoadMoreFailedAt = null;
+    _reportedItemIds.clear();
+    _inFlightRefresh = null;
+    _queuedBypassRefresh = null;
     return _fetchInitial(seenItemIds: await _loadPersistedSeenItemIds());
   }
 
@@ -149,16 +162,16 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
 
       final converted = await _toFeedItems(fetched, startIndex: current.items.length);
       if (buildGeneration != _buildGeneration) return; // 세션 초기화됨 > 결과 폐기
-      // 되감기 중 markSeen 반영분 포함 (최신 seen 기준 재정렬)
-      final latestSeenItemIds = state.valueOrNull?.seenItemIds ?? current.seenItemIds;
-      final reordered = _reorderBySeen(converted, latestSeenItemIds);
+      // 최신 상태 기준으로 붙임 (조회 중 신고 제외·markSeen 반영), 조회 중 refresh로 통째 교체됐으면 결과 폐기
+      final latest = state.valueOrNull ?? current;
+      if (latest.feedRevision != current.feedRevision) return;
+      final reordered = _reorderBySeen(converted, latest.seenItemIds);
 
       state = AsyncData(
-        current.copyWith(
-          items: [...current.items, ...reordered],
+        latest.copyWith(
+          items: _excludeReportedItems([...latest.items, ...reordered]),
           currentPage: nextPage,
           hasMoreItems: fetched.isNotEmpty,
-          seenItemIds: latestSeenItemIds,
           feedSeed: feedSeed,
           sessionRecentlySeenItemIds: sessionRecentlySeenItemIds,
         ),
@@ -175,18 +188,48 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     }
   }
 
-  /// 자동 새로고침. throttle 통과 시 page 0 다시 조회.
-  /// 실패는 silent — 기존 items 유지.
-  Future<void> refresh({required RefreshTrigger trigger}) async {
-    final current = state.valueOrNull;
-    if (current == null) return; // 아직 최초 로드도 안 된 상태 — 무시
-    if (state.isLoading) return; // 중복 진행 방지
-
-    if (_shouldThrottle(current.lastRefreshAt)) {
-      debugPrint('[HomeFeed] refresh throttled (trigger=$trigger)');
-      return;
+  /// 새로고침: 진행 중 확인(우회 트리거는 끝난 뒤 1회 더) > 제한 확인(우회 트리거는 통과) > page 0 다시 조회 > 결과 반환
+  /// 실패는 기존 items 유지 (자동 트리거 호출부는 결과 무시, 사용자 요청 화면은 결과로 안내)
+  Future<HomeFeedRefreshResult> refresh({required RefreshTrigger trigger}) async {
+    final inFlightRefresh = _inFlightRefresh;
+    if (inFlightRefresh != null) {
+      if (!trigger.shouldBypassThrottle) return HomeFeedRefreshResult.skipped;
+      return _queuedBypassRefresh ??= _refreshAfterInFlight(inFlightRefresh, trigger);
     }
 
+    final current = state.valueOrNull;
+    if (current == null) return HomeFeedRefreshResult.skipped; // 아직 최초 로드도 안 된 상태 — 무시
+    if (state.isLoading) return HomeFeedRefreshResult.skipped; // 첫 로드 재시도 등 다른 로딩 진행 중
+
+    if (!trigger.shouldBypassThrottle && _shouldThrottle(current.lastRefreshAt)) {
+      debugPrint('[HomeFeed] refresh throttled (trigger=$trigger)');
+      return HomeFeedRefreshResult.skipped;
+    }
+
+    final refreshFuture = _fetchAndReplaceFeed(current, trigger);
+    _inFlightRefresh = refreshFuture;
+    try {
+      return await refreshFuture;
+    } finally {
+      // (성공·실패 공통, 세션 초기화로 바뀐 경우 새 값 유지)
+      if (identical(_inFlightRefresh, refreshFuture)) _inFlightRefresh = null;
+    }
+  }
+
+  /// 진행 중 refresh 완료 대기 > 대기열 비움 > 우회 트리거로 다시 새로고침
+  Future<HomeFeedRefreshResult> _refreshAfterInFlight(
+    Future<HomeFeedRefreshResult> inFlightRefresh,
+    RefreshTrigger trigger,
+  ) async {
+    await inFlightRefresh;
+    // 진행 중 refresh의 finally(진행 표시 해제)가 먼저 끝나도록 한 번 양보
+    await Future<void>.delayed(Duration.zero);
+    _queuedBypassRefresh = null;
+    return refresh(trigger: trigger);
+  }
+
+  /// page 0 다시 조회 > 피드 통째 교체 (실패 시 최신 데이터 유지)
+  Future<HomeFeedRefreshResult> _fetchAndReplaceFeed(HomeFeedState current, RefreshTrigger trigger) async {
     debugPrint('[HomeFeed] refresh start (trigger=$trigger)');
     final buildGeneration = _buildGeneration;
     try {
@@ -194,16 +237,41 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
       state = const AsyncLoading<HomeFeedState>().copyWithPrevious(state);
 
       final next = await _fetchInitial(seenItemIds: current.seenItemIds);
-      if (buildGeneration != _buildGeneration) return; // 세션 초기화됨 > 결과 폐기
+      if (buildGeneration != _buildGeneration) return HomeFeedRefreshResult.skipped; // 세션 초기화됨 > 결과 폐기
       // feedRevision 증가 = 화면에 "통째 교체(replace)"임을 명시적으로 통지 (page 0 점프 + 광고 슬롯 리셋 트리거)
-      state = AsyncData(next.copyWith(lastRefreshAt: DateTime.now(), feedRevision: current.feedRevision + 1));
+      // 조회 중 신고한 물품도 한 번 더 거름
+      state = AsyncData(
+        next.copyWith(
+          items: _excludeReportedItems(next.items),
+          lastRefreshAt: DateTime.now(),
+          feedRevision: current.feedRevision + 1,
+        ),
+      );
+      return HomeFeedRefreshResult.refreshed;
     } catch (e) {
-      // silent fail — 기존 데이터 유지
-      debugPrint('[HomeFeed] refresh failed silently: $e');
-      if (buildGeneration != _buildGeneration) return;
-      state = AsyncData(current);
+      // 기존 데이터 유지 (조회 중 신고 제외 반영된 최신 값)
+      debugPrint('[HomeFeed] refresh failed: $e');
+      if (buildGeneration != _buildGeneration) return HomeFeedRefreshResult.skipped;
+      final latest = state.valueOrNull ?? current;
+      state = AsyncData(latest.copyWith(items: _excludeReportedItems(latest.items)));
+      return HomeFeedRefreshResult.failed;
     }
   }
+
+  /// 신고한 물품 제외: 세션 동안 기억 > 현재 목록에서 제거 (진행 중 로딩 상태 유지, 이후 refresh·loadMore 결과에서도 제외)
+  void excludeReportedItem(String itemId) {
+    _reportedItemIds.add(itemId);
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final remainingItems = _excludeReportedItems(current.items);
+    if (remainingItems.length == current.items.length) return;
+    final updatedData = AsyncData(current.copyWith(items: remainingItems));
+    state = state.isLoading ? const AsyncLoading<HomeFeedState>().copyWithPrevious(updatedData) : updatedData;
+  }
+
+  /// 피드 항목 중 신고한 물품 제외
+  List<HomeFeedItem> _excludeReportedItems(List<HomeFeedItem> feedItems) =>
+      feedItems.where((feedItem) => !_reportedItemIds.contains(feedItem.itemUuid)).toList();
 
   /// 첫 로드 실패 후 재시도: 로딩 전환 > 첫 페이지 조회 > 성공 시 데이터, 실패 시 에러
   /// 데이터가 이미 있거나 진행 중이면 무시 (refresh는 데이터 없으면 무시하므로 별도 경로)
@@ -242,10 +310,11 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   List<String> _buildSessionRecentlySeenItemIds(LinkedHashSet<String> seenItemIds) =>
       List.unmodifiable(seenItemIds.toList().reversed);
 
-  /// 물품 > 피드 항목 변환 (표시 주소 병렬 조회 > 순수 변환)
+  /// 물품 > 피드 항목 변환 (신고 물품 제외 > 표시 주소 병렬 조회 > 순수 변환)
   Future<List<HomeFeedItem>> _toFeedItems(List<Item> items, {required int startIndex}) async {
-    final locationTexts = await ref.read(itemAddressResolverProvider).resolveLocationTexts(items);
-    return HomeFeedItem.fromItems(items, startIndex: startIndex, locationTexts: locationTexts);
+    final visibleItems = items.where((item) => !_reportedItemIds.contains(item.itemId)).toList();
+    final locationTexts = await ref.read(itemAddressResolverProvider).resolveLocationTexts(visibleItems);
+    return HomeFeedItem.fromItems(visibleItems, startIndex: startIndex, locationTexts: locationTexts);
   }
 
   bool _isInLoadMoreRetryCooldown() {

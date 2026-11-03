@@ -472,7 +472,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
       filteredRequests: filteredRequests,
       isLoading: isLoading,
       hasLoadFailed: tradeRequests.hasReceivedLoadFailed,
-      onRetry: () => _runWithLoading(ref.read(tradeRequestsProvider.notifier).retryReceivedLoad),
+      onRetry: () => _runWithLoading(ref.read(tradeRequestsProvider.notifier).reloadReceivedOfRequestedCard),
       onCardTap: (request) {
         final tradeRequestHistoryId = request.tradeRequestHistoryId;
         if (tradeRequestHistoryId != null) {

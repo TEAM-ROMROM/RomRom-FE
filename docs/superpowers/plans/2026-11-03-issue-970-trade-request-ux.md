@@ -10,7 +10,7 @@
 - [x] 테스트(`test/providers/trade_requests_provider_test.dart`): 받은/보낸 실패 플래그, 재시도, 12개 카드 동시 호출 ≤ 5·순서 유지, updateTradeOptions, findChatRoomIdOfSentRequest
 - [x] `TradeRequestsState`에 실패 플래그 2개
 - [x] `TradeRepository.updateTradeOptions`
-- [x] notifier: `retryReceivedLoad`·`retrySentLoad`·`updateTradeOptions`·`findChatRoomIdOfSentRequest`, `_loadSent` 묶음 호출
+- [x] notifier: `reloadReceivedOfRequestedCard`·`retrySentLoad`·`updateTradeOptions`·`findChatRoomIdOfSentRequest`, `_loadSent` 묶음 호출
 
 ## Task 3. 내 물품 페이지 조회 (A1)
 - [x] 테스트(`test/repositories/item_repository_my_items_page_test.dart`): hasMore 계산
