@@ -52,5 +52,41 @@ void main() {
       expect(adSlotSchedule.virtualItemCount(17), 17);
       expect(adSlotSchedule.isAdAtVirtualIndex(5), false);
     });
+
+    test('광고 실패 칸 접기: 해당 광고만 빠지고 뒤 광고는 한 칸 당겨짐, 피드 index 연속', () {
+      final adSlotSchedule = HomeFeedAdSlotSchedule(random: _FixedRandom(0));
+      adSlotSchedule.scheduleAdsForFeedLength(20);
+
+      final isRemoved = adSlotSchedule.removeAdAtVirtualIndex(5);
+
+      expect(isRemoved, true);
+      expect(adSlotSchedule.virtualItemCount(20), 21);
+      expect(adSlotSchedule.isAdAtVirtualIndex(5), false);
+      expect(adSlotSchedule.feedIndexAtVirtualIndex(5), 5, reason: '광고 자리에 다음 물품');
+      // 두 번째 광고: 가상 14 > 13
+      expect(adSlotSchedule.isAdAtVirtualIndex(13), true);
+      expect(adSlotSchedule.isAdAtVirtualIndex(14), false);
+      expect(adSlotSchedule.feedIndexAtVirtualIndex(14), 13);
+    });
+
+    test('광고 실패 칸 접기 후 피드가 늘어도 새 광고 자리 계산이 맞음', () {
+      final adSlotSchedule = HomeFeedAdSlotSchedule(random: _FixedRandom(0));
+      adSlotSchedule.scheduleAdsForFeedLength(6);
+      adSlotSchedule.removeAdAtVirtualIndex(5);
+
+      // 다음 광고: 피드 13개 뒤 > 앞 광고가 없으니 가상 13
+      adSlotSchedule.scheduleAdsForFeedLength(20);
+
+      expect(adSlotSchedule.isAdAtVirtualIndex(13), true);
+      expect(adSlotSchedule.virtualItemCount(20), 21);
+    });
+
+    test('광고 아닌 칸 접기 요청은 무시', () {
+      final adSlotSchedule = HomeFeedAdSlotSchedule(random: _FixedRandom(0));
+      adSlotSchedule.scheduleAdsForFeedLength(20);
+
+      expect(adSlotSchedule.removeAdAtVirtualIndex(4), false);
+      expect(adSlotSchedule.virtualItemCount(20), 22);
+    });
   });
 }

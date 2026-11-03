@@ -4,8 +4,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/models/app_colors.dart';
+import 'package:romrom_fe/models/pending_deep_link.dart';
 import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 import 'package:romrom_fe/services/token_manager.dart';
@@ -112,11 +112,8 @@ class FirebaseService {
     });
   }
 
-  /// FCM data 페이로드에서 deepLink + notificationType을 파싱해 라우팅
+  /// FCM data 페이로드 > deepLink + notificationType 파싱 > 딥링크 게이트 (로그인·온보딩 중이면 보관)
   static void _routeFromFcmData(Map<String, dynamic> data) {
-    final context = navigatorKey.currentContext;
-    if (context == null) return;
-
     final deepLink = data['deepLink'] as String?;
     if (deepLink == null || deepLink.isEmpty) return;
 
@@ -129,7 +126,7 @@ class FirebaseService {
       debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
     }
 
-    RomRomDeepLinkRouter.openFromUri(context, uri, notificationType: notificationType, extraData: data);
+    RomRomDeepLinkRouter.receive(PendingDeepLink(uri: uri, notificationType: notificationType, extraData: data));
   }
 
   /// FCM 토큰 발급 및 갱신

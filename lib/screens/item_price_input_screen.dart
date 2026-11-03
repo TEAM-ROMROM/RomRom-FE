@@ -71,11 +71,13 @@ class _ItemPriceInputScreenState extends ConsumerState<ItemPriceInputScreen> {
 
   bool get _isConfirmEnabled => _currentPrice > 0 && !_isAiPriceLoading;
 
-  final Set<String> _pendingRequests = <String>{};
+  // AI 가격 예측 진행 중 여부 (토글 연타 중복 요청 차단)
+  bool _isPricePredictInFlight = false;
 
+  /// AI 가격 측정: 중복 차단 > 예측 > 0원 이하·실패면 토글 끔(직접 입력 가격 유지) > 진행 중 해제
   Future<void> _measureAiPrice() async {
-    if (_pendingRequests.contains('pricePredict')) return;
-    _pendingRequests.add('pricePredict');
+    if (_isPricePredictInFlight) return;
+    _isPricePredictInFlight = true;
     setState(() => _isAiPriceLoading = true);
     try {
       final predictedPrice = await ref
@@ -105,9 +107,13 @@ class _ItemPriceInputScreenState extends ConsumerState<ItemPriceInputScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // 실패 시 AI 표시 해제 (이전·0원 가격이 AI 가격으로 저장되는 것 방지)
+        setState(() => _useAiPrice = false);
         CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
+      // (성공·실패 공통)
+      _isPricePredictInFlight = false;
       if (mounted) setState(() => _isAiPriceLoading = false);
     }
   }

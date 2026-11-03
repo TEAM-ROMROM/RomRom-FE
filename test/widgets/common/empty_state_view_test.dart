@@ -54,4 +54,32 @@ void main() {
       expect(retryCallCount, 0);
     });
   });
+
+  group('EmptyStateView 보조 버튼', () {
+    testWidgets('보조 버튼 문구 렌더 + 탭 시 콜백 1회', (tester) async {
+      var secondaryTapCount = 0;
+      await pumpEmptyStateView(
+        tester,
+        EmptyStateView(
+          icon: AppIcons.home,
+          centerText: '물품이 없어요',
+          buttonText: '새로고침',
+          onButtonTap: () {},
+          secondaryButtonText: '탐색 범위 넓히기',
+          onSecondaryButtonTap: () => secondaryTapCount++,
+        ),
+      );
+
+      await tester.tap(find.text('탐색 범위 넓히기'));
+      await tester.pumpAndSettle();
+
+      expect(secondaryTapCount, 1);
+    });
+
+    testWidgets('보조 버튼 미지정 시 렌더 안 함', (tester) async {
+      await pumpEmptyStateView(tester, const EmptyStateView(icon: AppIcons.home, centerText: '물품이 없어요'));
+
+      expect(find.text('탐색 범위 넓히기'), findsNothing);
+    });
+  });
 }

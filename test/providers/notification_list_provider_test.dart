@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/models/apis/objects/notification_history.dart';
 import 'package:romrom_fe/models/apis/responses/notification_history_response.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
@@ -9,6 +10,10 @@ import 'package:romrom_fe/providers/notification_repository_provider.dart';
 import 'package:romrom_fe/repositories/notification_repository.dart';
 
 NotificationHistory notification(String id) => NotificationHistory(notificationHistoryId: id);
+
+// 롬롬 소식 탭 알림 (읽지 않음)
+NotificationHistory announcement(String id) =>
+    NotificationHistory(notificationHistoryId: id, notificationType: NotificationType.announcement.serverName);
 
 List<NotificationHistory> notifications(int count, {String prefix = 'n'}) =>
     List.generate(count, (index) => notification('$prefix$index'));
@@ -57,8 +62,16 @@ class FakeNotificationRepository implements NotificationRepository {
     return serverUnreadCount;
   }
 
+  // 단건 읽음 동시 실행 수 (현재·최대)
+  int inFlightMarkAsReadCount = 0;
+  int maxInFlightMarkAsReadCount = 0;
+
   @override
   Future<void> markAsRead(String notificationHistoryId) async {
+    inFlightMarkAsReadCount++;
+    if (inFlightMarkAsReadCount > maxInFlightMarkAsReadCount) maxInFlightMarkAsReadCount = inFlightMarkAsReadCount;
+    await Future<void>.delayed(Duration.zero);
+    inFlightMarkAsReadCount--;
     readIds.add(notificationHistoryId);
     serverUnreadCount = serverUnreadCount > 0 ? serverUnreadCount - 1 : 0;
   }
@@ -355,6 +368,47 @@ void main() {
       await container.read(notificationListProvider.notifier).loadMore();
 
       expect(fake.pageRequests.length, 4, reason: '새 첫 페이지 + 대기 없이 다음 페이지');
+    });
+
+    test('알림함 나갈 때 두 탭 모두 봄 > 전체 읽음 1회', () async {
+      fake.serverNotifications = [notification('a'), announcement('b')];
+      await container.read(notificationListProvider.future);
+
+      await container
+          .read(notificationListProvider.notifier)
+          .markVisitedTabsAsRead(hasVisitedActivityTab: true, hasVisitedNewsTab: true);
+
+      expect(fake.markAllAsReadCount, 1);
+      expect(fake.readIds, isEmpty);
+    });
+
+    test('알림함 나갈 때 활동 탭만 봄 > 그 탭의 읽지 않은 알림만 읽음 (롬롬 소식 유지)', () async {
+      fake.serverNotifications = [
+        notification('a'),
+        NotificationHistory(notificationHistoryId: 'read', isRead: true),
+        announcement('news'),
+      ];
+      await container.read(notificationListProvider.future);
+
+      await container
+          .read(notificationListProvider.notifier)
+          .markVisitedTabsAsRead(hasVisitedActivityTab: true, hasVisitedNewsTab: false);
+
+      expect(fake.markAllAsReadCount, 0);
+      expect(fake.readIds, ['a']);
+    });
+
+    test('한 탭 개별 읽음 > 동시 요청 수 제한', () async {
+      fake.serverNotifications = notifications(10);
+      await container.read(notificationListProvider.future);
+
+      await container
+          .read(notificationListProvider.notifier)
+          .markVisitedTabsAsRead(hasVisitedActivityTab: true, hasVisitedNewsTab: false);
+
+      expect(fake.readIds.length, 10);
+      expect(fake.maxInFlightMarkAsReadCount, lessThanOrEqualTo(notificationMarkAsReadConcurrency));
+      expect(fake.maxInFlightMarkAsReadCount, greaterThan(1), reason: '제한 안에서는 병렬');
     });
   });
 }

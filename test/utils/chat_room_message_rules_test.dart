@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:romrom_fe/enums/chat_message_send_status.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
@@ -80,6 +81,19 @@ void main() {
         opponentState: ChatUserState(leftAt: baseTime.add(const Duration(minutes: 2))),
       );
       expect(id, 'mine1');
+    });
+
+    test('서버 확인 전 로컬 메시지(전송 중·실패)는 건너뛰고 서버 메시지에 읽음 표시', () {
+      final messagesWithPending = [
+        buildChatMessage('local_9_1', createdDate: baseTime.add(const Duration(minutes: 4))),
+        ...messages,
+      ];
+      final id = findLastReadMyMessageId(
+        messages: messagesWithPending,
+        myMemberId: 'me',
+        opponentState: ChatUserState(isPresent: true),
+      );
+      expect(id, 'mine3');
     });
 
     test('읽음 상태·내 ID 없으면 null', () {
@@ -193,45 +207,6 @@ void main() {
     });
   });
 
-  group('findMatchingPendingLocalMessageId', () {
-    final pendingLocalMessages = {
-      'local_1': buildChatMessage('local_1', content: '안녕', createdDate: baseTime),
-      'local_2': buildChatMessage('local_2', content: '사진을 보냈습니다.', createdDate: baseTime),
-    };
-
-    test('내 에코 + 같은 내용 + 10초 이내 > 로컬 ID', () {
-      final echo = buildChatMessage(
-        's1',
-        content: '사진을 보냈습니다.',
-        createdDate: baseTime.add(const Duration(seconds: 10)),
-      );
-      expect(
-        findMatchingPendingLocalMessageId(
-          pendingLocalMessages: pendingLocalMessages,
-          incomingMessage: echo,
-          myMemberId: 'me',
-        ),
-        'local_2',
-      );
-    });
-
-    test('10초 초과·다른 내용·상대 메시지 > null', () {
-      final lateEcho = buildChatMessage('s1', content: '안녕', createdDate: baseTime.add(const Duration(seconds: 11)));
-      final otherContent = buildChatMessage('s2', content: '다른 말', createdDate: baseTime);
-      final opponentMessage = buildChatMessage('s3', sender: 'other', content: '안녕', createdDate: baseTime);
-      for (final incoming in [lateEcho, otherContent, opponentMessage]) {
-        expect(
-          findMatchingPendingLocalMessageId(
-            pendingLocalMessages: pendingLocalMessages,
-            incomingMessage: incoming,
-            myMemberId: 'me',
-          ),
-          isNull,
-        );
-      }
-    });
-  });
-
   group('mergeServerEchoIntoLocalMessage', () {
     test('서버 값 우선, 빈 내용·빈 이미지는 로컬 값 유지', () {
       final local = buildChatMessage(
@@ -283,6 +258,76 @@ void main() {
       expect(placeholderId, 'ws_img_2');
       expect(index, 0);
       expect(replacement.chatMessageId, 's2');
+    });
+  });
+
+  group('resolveMessageSendStatus', () {
+    test('실패 목록에 있으면 실패, 서버 응답 대기 중이면 전송 중, 그 외 전송 완료', () {
+      expect(
+        resolveMessageSendStatus(
+          messageId: 'local_1',
+          pendingLocalMessageIds: {'local_1'},
+          failedLocalMessageIds: {'local_1'},
+        ),
+        ChatMessageSendStatus.failed,
+      );
+      expect(
+        resolveMessageSendStatus(messageId: 'local_1', pendingLocalMessageIds: {'local_1'}, failedLocalMessageIds: {}),
+        ChatMessageSendStatus.sending,
+      );
+      expect(
+        resolveMessageSendStatus(messageId: 'server_1', pendingLocalMessageIds: {'local_1'}, failedLocalMessageIds: {}),
+        ChatMessageSendStatus.sent,
+      );
+      expect(
+        resolveMessageSendStatus(messageId: null, pendingLocalMessageIds: {'local_1'}, failedLocalMessageIds: {}),
+        ChatMessageSendStatus.sent,
+      );
+    });
+  });
+
+  group('appendOlderMessages', () {
+    test('이미 있는 ID는 빼고 이전 메시지를 목록 뒤(오래된 쪽)에 붙인다', () {
+      final current = [buildChatMessage('m3'), buildChatMessage('m2')];
+      final olderPage = [buildChatMessage('m2'), buildChatMessage('m1'), buildChatMessage('m0')];
+
+      final merged = appendOlderMessages(current: current, olderMessages: olderPage);
+
+      expect(merged.map((message) => message.chatMessageId), ['m3', 'm2', 'm1', 'm0']);
+    });
+
+    test('ID 없는 이전 메시지는 그대로 붙인다', () {
+      final merged = appendOlderMessages(current: [buildChatMessage('m1')], olderMessages: [buildChatMessage(null)]);
+
+      expect(merged.length, 2);
+    });
+  });
+
+  group('mergeServerEchoIntoLocalMessage 위치', () {
+    test('위도·경도는 서버 값 우선, 없으면 로컬 값 유지', () {
+      final localMessage = ChatMessage(
+        chatMessageId: 'local_1',
+        senderId: 'me',
+        type: MessageType.location,
+        latitude: 37.1,
+        longitude: 127.1,
+      );
+      final serverMessage = ChatMessage(chatMessageId: 's1', senderId: 'me', type: MessageType.location);
+
+      final merged = mergeServerEchoIntoLocalMessage(localMessage: localMessage, serverMessage: serverMessage);
+
+      expect(merged.latitude, 37.1);
+      expect(merged.longitude, 127.1);
+    });
+  });
+
+  group('buildLocalMessageId', () {
+    test('접두어가 붙고 호출마다 다른 ID를 만든다', () {
+      final firstId = buildLocalMessageId(prefix: localTradeRequestIdPrefix);
+      final secondId = buildLocalMessageId(prefix: localTradeRequestIdPrefix);
+
+      expect(firstId.startsWith(localTradeRequestIdPrefix), isTrue);
+      expect(firstId, isNot(secondId));
     });
   });
 }

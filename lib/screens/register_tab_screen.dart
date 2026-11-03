@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -19,6 +20,7 @@ import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/register_tab/register_tab_floating_register_button.dart';
 import 'package:romrom_fe/widgets/register_tab/register_tab_item_tile.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'dart:async';
@@ -29,6 +31,7 @@ import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
+import 'package:romrom_fe/models/trade_complete_partner_selection.dart';
 import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -251,13 +254,12 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
     }
   }
 
+  /// 탭별 빈 목록 안내 (교환 가능·전체 > 등록 안내, 교환 완료 > 교환 완료 안내)
   Widget _buildEmptyState() {
-    return Center(
-      child: Text(
-        '등록된 물품이 없어요.',
-        style: CustomTextStyles.p1.copyWith(color: AppColors.opacity40White, fontWeight: FontWeight.w500),
-        textAlign: TextAlign.center,
-      ),
+    return EmptyStateView(
+      icon: AppIcons.register,
+      centerText: _currentTabStatus.emptyItemsTitle,
+      descriptionText: _currentTabStatus.emptyItemsDescription,
     );
   }
 
@@ -298,12 +300,13 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
         }
         return;
       }
+      // 한도 도달: 이유 + 해결 방법(교환 완료 처리·삭제) 안내
       if (myItemsValue.available.length >= _maxAvailableItemCount) {
         if (mounted) {
-          CommonSnackBar.show(
+          await CommonModal.error(
             context: context,
-            message: '물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있습니다.',
-            type: SnackBarType.error,
+            message: '교환 가능한 물품은 최대 $_maxAvailableItemCount개까지 등록할 수 있어요.\n교환이 끝난 물품은 교환 완료로 바꾸거나\n삭제한 뒤 등록해 주세요.',
+            onConfirm: () => Navigator.of(context).pop(),
           );
         }
         return;
@@ -379,8 +382,16 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
 
     if (isToCompleted) {
-      final chatRoomId = await context.navigateTo<String>(screen: TradeCompletePartnerSelectScreen(item: item));
-      if (!mounted || chatRoomId == null) return;
+      // 상대 선택 결과: 채팅 상대 > 채팅방에서 교환 완료 요청, 앱 밖 교환 > 물품 상태만 교환 완료로 변경
+      final selection = await context.navigateTo<TradeCompletePartnerSelection>(
+        screen: TradeCompletePartnerSelectScreen(item: item),
+      );
+      if (!mounted || selection == null) return;
+      final chatRoomId = selection.chatRoomId;
+      if (selection.isCompletedOutsideApp || chatRoomId == null) {
+        await _toggleItemStatus(item);
+        return;
+      }
       context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId, autoTriggerExchangeRequest: true));
     } else {
       final result = await context.showDeleteDialog(
@@ -395,7 +406,7 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
   }
 
   Future<void> _showDeleteConfirmDialog(Item item) async {
-    final result = await context.showDeleteDialog(title: '물품을 삭제하시겠습니까?', description: '삭제된 물품은 복구할 수 없습니다.');
+    final result = await context.showItemDeleteConfirmDialog();
     if (result == true) {
       await _deleteItem(item);
     }

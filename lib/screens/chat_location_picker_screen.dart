@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/utils/device_type.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
@@ -38,24 +40,31 @@ class _ChatLocationPickerScreenState extends State<ChatLocationPickerScreen> {
     _initializeLocation();
   }
 
+  /// 지도 시작 위치: 권한 확인 > 현재 위치 > 실패(권한 거부·위치 없음) 시 서울시청 + 안내
   Future<void> _initializeLocation() async {
     final hasPermission = await _locationService.requestPermission();
-    if (!hasPermission) {
-      const seoulCityHall = NLatLng(37.5665, 126.9780);
-      setState(() => _currentPosition = seoulCityHall);
-      await _updateAddress(seoulCityHall);
+    final position = hasPermission ? await _locationService.getCurrentPosition() : null;
+    if (!mounted) return;
+    if (position == null) {
+      await _startFromFallbackLocation(hasPermission: hasPermission);
       return;
     }
-    final position = await _locationService.getCurrentPosition();
-    if (position != null) {
-      final latLng = _locationService.positionToLatLng(position);
-      setState(() => _currentPosition = latLng);
-      await _updateAddress(latLng);
-    } else {
-      const seoulCityHall = NLatLng(37.5665, 126.9780);
-      setState(() => _currentPosition = seoulCityHall);
-      await _updateAddress(seoulCityHall);
-    }
+    final latLng = _locationService.positionToLatLng(position);
+    setState(() => _currentPosition = latLng);
+    await _updateAddress(latLng);
+  }
+
+  /// 서울시청 기준 시작 + 지도를 움직여 고르도록 안내 (권한 거부·위치 실패 문구 구분)
+  Future<void> _startFromFallbackLocation({required bool hasPermission}) async {
+    setState(() => _currentPosition = LocationService.fallbackPosition);
+    CommonSnackBar.show(
+      context: context,
+      message: hasPermission
+          ? '현재 위치를 찾지 못해 서울시청 기준으로 보여드려요. 지도를 움직여 위치를 골라주세요.'
+          : '위치 권한이 없어 서울시청 기준으로 보여드려요. 지도를 움직여 위치를 골라주세요.',
+      type: SnackBarType.info,
+    );
+    await _updateAddress(LocationService.fallbackPosition);
   }
 
   Future<void> _updateAddress(NLatLng position) async {

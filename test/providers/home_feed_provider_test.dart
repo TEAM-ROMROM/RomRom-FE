@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:romrom_fe/enums/home_feed_refresh_result.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -151,6 +152,51 @@ class _LoadMoreFailRepo with _InMemoryRecentlySeenStorage implements HomeFeedRep
 
 /// lat/lng 없는 Item — fromItems에서 LocationService 호출 안 함 ('미지정').
 Item _item(String id) => Item(itemId: id, itemName: 'name-$id', price: 0);
+
+/// 페이지별 응답 + 페이지별 대기 (진행 중 refresh·loadMore 경쟁 재현, gate 없으면 즉시 응답)
+class _GateablePagesRepo with _InMemoryRecentlySeenStorage implements HomeFeedRepository {
+  final Map<int, List<Item>> pages;
+  final Map<int, Completer<void>> gateByPageNumber = {};
+  int callCount = 0;
+
+  _GateablePagesRepo(this.pages);
+
+  @override
+  Future<List<Item>> fetchPage({
+    required int pageNumber,
+    required int pageSize,
+    required ItemSortField sortField,
+    List<String> recentlySeenItemIds = const [],
+    int? feedSeed,
+  }) async {
+    callCount++;
+    final gate = gateByPageNumber[pageNumber];
+    if (gate != null) await gate.future;
+    return pages[pageNumber] ?? const <Item>[];
+  }
+}
+
+/// 페이지별 응답 + 실패 전환 (첫 로드 성공 > 새로고침 실패 재현)
+class _SwitchableRepo with _InMemoryRecentlySeenStorage implements HomeFeedRepository {
+  final Map<int, List<Item>> pages;
+  bool shouldFail = false;
+  int callCount = 0;
+
+  _SwitchableRepo(this.pages);
+
+  @override
+  Future<List<Item>> fetchPage({
+    required int pageNumber,
+    required int pageSize,
+    required ItemSortField sortField,
+    List<String> recentlySeenItemIds = const [],
+    int? feedSeed,
+  }) async {
+    callCount++;
+    if (shouldFail) throw Exception('boom');
+    return pages[pageNumber] ?? const <Item>[];
+  }
+}
 
 ProviderContainer _makeContainer(HomeFeedRepository repo) {
   final c = ProviderContainer(overrides: [homeFeedRepositoryProvider.overrideWithValue(repo)]);
@@ -552,6 +598,196 @@ void main() {
 
       final itemIds = c.read(homeFeedProvider).value!.items.map((item) => item.itemUuid);
       expect(itemIds, ['p0', 'p1'], reason: '이전 세션 loadMore 결과는 새 피드에 붙지 않음');
+    });
+  });
+
+  group('HomeFeedNotifier 수동 새로고침·신고 제외 (#969)', () {
+    test('수동 새로고침: 30초 제한 안이어도 조회 > refreshed', () async {
+      final repo = _SwitchableRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final callsAfterAutoRefresh = repo.callCount;
+
+      final result = await notifier.refresh(trigger: RefreshTrigger.manualRefresh);
+
+      expect(result, HomeFeedRefreshResult.refreshed);
+      expect(repo.callCount, greaterThan(callsAfterAutoRefresh), reason: '수동 새로고침은 제한 우회');
+    });
+
+    test('탐색 범위 변경 새로고침: 30초 제한 우회', () async {
+      final repo = _SwitchableRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final callsAfterAutoRefresh = repo.callCount;
+
+      final result = await notifier.refresh(trigger: RefreshTrigger.searchRangeChanged);
+
+      expect(result, HomeFeedRefreshResult.refreshed);
+      expect(repo.callCount, greaterThan(callsAfterAutoRefresh));
+    });
+
+    test('자동 새로고침: 제한에 걸리면 skipped', () async {
+      final repo = _SwitchableRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+
+      final result = await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+
+      expect(result, HomeFeedRefreshResult.skipped);
+    });
+
+    test('새로고침 실패: failed 반환 + 기존 목록 유지', () async {
+      final repo = _SwitchableRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      repo.shouldFail = true;
+
+      final result = await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.manualRefresh);
+
+      expect(result, HomeFeedRefreshResult.failed);
+      expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a']);
+    });
+
+    test('신고 물품 제외: 현재 목록에서 빠짐', () async {
+      final repo = _SwitchableRepo({
+        0: [_item('a'), _item('b'), _item('c')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+
+      c.read(homeFeedProvider.notifier).excludeReportedItem('b');
+
+      final itemIds = c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid);
+      expect(itemIds, ['a', 'c']);
+    });
+
+    test('신고 물품 제외: 이후 새로고침·다음 페이지 응답에서도 빠짐', () async {
+      final repo = _SwitchableRepo({
+        0: [_item('a'), _item('b')],
+        1: [_item('b'), _item('d')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      notifier.excludeReportedItem('b');
+
+      await notifier.refresh(trigger: RefreshTrigger.manualRefresh);
+      expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a']);
+
+      await notifier.loadMore();
+      expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a', 'd']);
+    });
+  });
+
+  group('HomeFeedNotifier 진행 중 경쟁 (#969 리뷰)', () {
+    test('우회 트리거: 진행 중 refresh가 있으면 끝난 뒤 1회 더 조회 > refreshed', () async {
+      final repo = _GateablePagesRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      repo.gateByPageNumber[0] = Completer<void>();
+
+      final autoRefresh = notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final manualRefresh = notifier.refresh(trigger: RefreshTrigger.manualRefresh);
+      final callsWhileGated = repo.callCount;
+      repo.gateByPageNumber.remove(0)!.complete();
+
+      expect(await autoRefresh, HomeFeedRefreshResult.refreshed);
+      expect(await manualRefresh, HomeFeedRefreshResult.refreshed);
+      expect(repo.callCount, callsWhileGated + 1, reason: '진행 중 조회 뒤 수동 새로고침 1회 추가 조회');
+    });
+
+    test('우회 트리거 여러 번 대기: 추가 조회는 1회로 합침', () async {
+      final repo = _GateablePagesRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      repo.gateByPageNumber[0] = Completer<void>();
+
+      final autoRefresh = notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final firstManualRefresh = notifier.refresh(trigger: RefreshTrigger.manualRefresh);
+      final secondManualRefresh = notifier.refresh(trigger: RefreshTrigger.searchRangeChanged);
+      final callsWhileGated = repo.callCount;
+      repo.gateByPageNumber.remove(0)!.complete();
+      await Future.wait([autoRefresh, firstManualRefresh, secondManualRefresh]);
+
+      expect(repo.callCount, callsWhileGated + 1);
+    });
+
+    test('자동 트리거: 진행 중이면 skipped (추가 조회 없음)', () async {
+      final repo = _GateablePagesRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      repo.gateByPageNumber[0] = Completer<void>();
+
+      final firstRefresh = notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final secondRefresh = notifier.refresh(trigger: RefreshTrigger.foregroundResume);
+      final callsWhileGated = repo.callCount;
+      repo.gateByPageNumber.remove(0)!.complete();
+
+      expect(await secondRefresh, HomeFeedRefreshResult.skipped);
+      await firstRefresh;
+      expect(repo.callCount, callsWhileGated);
+    });
+
+    test('refresh 진행 중 신고 제외: 로딩 상태 유지 + 새 결과에서도 제외', () async {
+      final repo = _GateablePagesRepo({
+        0: [_item('a'), _item('b')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      repo.gateByPageNumber[0] = Completer<void>();
+
+      final refresh = notifier.refresh(trigger: RefreshTrigger.manualRefresh);
+      notifier.excludeReportedItem('b');
+
+      expect(c.read(homeFeedProvider).isLoading, true, reason: '진행 중 로딩 상태를 덮지 않음');
+      expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a']);
+      repo.gateByPageNumber.remove(0)!.complete();
+      await refresh;
+
+      expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a']);
+    });
+
+    test('loadMore 진행 중 신고 제외: 제외한 물품이 다시 붙지 않고 새 페이지에서도 제외', () async {
+      final repo = _GateablePagesRepo({
+        0: [_item('a'), _item('b')],
+        1: [_item('b'), _item('c')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final notifier = c.read(homeFeedProvider.notifier);
+      repo.gateByPageNumber[1] = Completer<void>();
+
+      final loadMore = notifier.loadMore();
+      await Future<void>.delayed(Duration.zero);
+      notifier.excludeReportedItem('b');
+      repo.gateByPageNumber.remove(1)!.complete();
+      await loadMore;
+
+      expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a', 'c']);
     });
   });
 }

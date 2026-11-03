@@ -30,4 +30,24 @@ void main() {
       expect(input.map((r) => r.chatRoomId).toList(), ['a', 'b']);
     });
   });
+
+  group('ChatRoomsState.hasUnreadMessages', () {
+    test('안 읽음 수가 1 이상인 방이 있으면 true, 0·null뿐이면 false', () {
+      final unreadState = ChatRoomsState(
+        rooms: [
+          ChatRoomDetailDto(chatRoomId: 'a', unreadCount: 0),
+          ChatRoomDetailDto(chatRoomId: 'b', unreadCount: 2),
+        ],
+      );
+      final readState = ChatRoomsState(
+        rooms: [
+          ChatRoomDetailDto(chatRoomId: 'a', unreadCount: 0),
+          ChatRoomDetailDto(chatRoomId: 'b'),
+        ],
+      );
+
+      expect(unreadState.hasUnreadMessages, isTrue);
+      expect(readState.hasUnreadMessages, isFalse);
+    });
+  });
 }

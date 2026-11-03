@@ -1,5 +1,6 @@
 // lib/models/apis/responses/trade_response.dart
 import 'package:json_annotation/json_annotation.dart';
+import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/api_page.dart';
 import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -69,6 +70,18 @@ class TradeRequestHistory extends BaseEntity {
     createdDate: createdDate,
     updatedDate: updatedDate,
   );
+}
+
+/// 요청 카드 표시값: 물품 정보가 아니라 요청 자체의 시각·거래 방식·요청자
+extension TradeRequestHistoryDisplayX on TradeRequestHistory {
+  /// 요청 생성 시각 (없으면 null, 물품 등록일로 대체하지 않음)
+  DateTime? get requestedDate => createdDate;
+
+  /// 요청 시 고른 거래 방식 (모르는 서버 값 제외)
+  List<ItemTradeOption> get requestedTradeOptions => ItemTradeOption.fromServerNamesSkippingUnknown(itemTradeOptions);
+
+  /// 요청 보낸 회원 (요청 보낸 물품 giveItem의 회원, 응답에 없으면 null)
+  Member? get requester => giveItem.member;
 }
 
 /// `Paged<TradeRequestHistory>`

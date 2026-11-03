@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
+import 'package:romrom_fe/exceptions/api_exception.dart';
 import 'package:romrom_fe/services/splash_startup_sequence.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 
 void main() {
   // testWidgets: Future.delayed 가 가짜 시계로 동작 (pump 로 시간 진행)
@@ -74,6 +77,7 @@ void main() {
       await tester.pump(minimumSplashDuration);
 
       expect(startupResult?.nextScreen, 'login');
+      expect(startupResult?.isRecommendedUpdate, isTrue, reason: '권장 업데이트는 다음 화면과 함께 전달 (안내 여부는 화면 판단)');
     });
 
     testWidgets('버전 확인 중 중단 > 초기 화면 결정 미호출', (tester) async {
@@ -134,6 +138,37 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 100));
       expect(caughtError, isA<SocketExceptionStub>());
+    });
+  });
+
+  group('isRetryableMemberLoadError (토큰 재발급 성공 후 회원 정보 조회 오류)', () {
+    test('연결 실패·시간 초과·5xx·408·429 > 다시 시도', () {
+      expect(isRetryableMemberLoadError(const SocketException('offline')), isTrue);
+      expect(isRetryableMemberLoadError(TimeoutException('slow')), isTrue);
+      for (final statusCode in [408, 429, 500, 503]) {
+        expect(isRetryableMemberLoadError(ApiException(statusCode: statusCode, responseBody: '')), isTrue);
+      }
+    });
+
+    test('4xx·그 외 오류 > 로그인 화면', () {
+      expect(isRetryableMemberLoadError(ApiException(statusCode: 401, responseBody: '')), isFalse);
+      expect(isRetryableMemberLoadError(ApiException(statusCode: 404, responseBody: '')), isFalse);
+      expect(isRetryableMemberLoadError(const FormatException('bad cache')), isFalse);
+    });
+  });
+
+  group('describeStartupFailure', () {
+    test('연결 실패·시간 초과 > 인터넷 연결 문구', () {
+      expect(describeStartupFailure(const SocketException('offline')), ErrorUtils.networkErrorMessage);
+      expect(describeStartupFailure(TimeoutException('slow')), ErrorUtils.networkErrorMessage);
+    });
+
+    test('토큰 재발급 재시도 가능 실패 > 연결·잠시 후 안내', () {
+      expect(describeStartupFailure(const SplashStartupRetryableException()), splashRetryableFailureDescription);
+    });
+
+    test('그 외 오류 > 잠시 후 다시 시도', () {
+      expect(describeStartupFailure(Exception('boom')), splashUnknownFailureDescription);
     });
   });
 }

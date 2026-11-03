@@ -19,7 +19,9 @@ import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/marketing_consent_message.dart';
 import 'package:romrom_fe/utils/notification_mute_rules.dart';
+import 'package:romrom_fe/utils/notification_read_rules.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
@@ -46,10 +48,14 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
 
   final ScrollController _scrollController = ScrollController();
 
-  // 알림 목록 notifier (dispose 시 전체 읽음 호출용 — 해제 후 ref 사용 불가라 initState에서 보관)
+  // 알림 목록 notifier (dispose 시 읽음 호출용 — 해제 후 ref 사용 불가라 initState에서 보관)
   late final NotificationListNotifier _notificationListNotifier;
   // 삭제 요청 진행 중인 알림 id (중복 탭 방지)
   final Set<String> _pendingDeleteIds = {};
+  // 전체 삭제 진행 중 (중복 탭 방지)
+  bool _isDeletingAll = false;
+  // 롬롬 소식 탭 방문 여부 (활동 및 채팅 탭은 첫 화면이라 항상 방문) > 나갈 때 본 탭만 읽음
+  bool _hasVisitedNewsTab = false;
 
   // 스크롤 상태 관리
   bool _isScrolled = false;
@@ -111,8 +117,12 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     _scrollController.dispose();
     _toggleAnimationController.dispose();
 
-    // 화면이 사라질 때(팝 등) 모든 알림을 읽음 처리
-    unawaited(_notificationListNotifier.markAllAsRead().catchError((e) => debugPrint('모든 알림 읽음 처리 실패(dispose): $e')));
+    // 화면이 사라질 때(팝 등) 방문한 탭 알림만 읽음 처리
+    unawaited(
+      _notificationListNotifier
+          .markVisitedTabsAsRead(hasVisitedActivityTab: true, hasVisitedNewsTab: _hasVisitedNewsTab)
+          .catchError((e) => debugPrint('알림 읽음 처리 실패(dispose): $e')),
+    );
     super.dispose();
   }
 
@@ -196,8 +206,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       final body = item.body;
       if (id == null || title == null || body == null) continue;
 
-      final isRomromNews = item.notificationType == NotificationType.announcement.serverName;
-      if (isRomromNews != isRomromNewsTab) continue;
+      if (isRomromNewsNotification(item) != isRomromNewsTab) continue;
 
       // 모르는 알림 타입 > 공지사항
       final type = NotificationType.fromServerName(item.notificationType) ?? NotificationType.announcement;
@@ -212,6 +221,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
           imageUrl: item.payload?['imageUrl'], // payload에서 이미지 URL 추출
           isRead: item.isRead ?? false, // 읽음 상태 API에서 받아온 값 사용
           deepLink: item.payload?['deepLink'], // payload에서 딥링크 추출
+          payload: item.payload,
         ),
       );
     }
@@ -223,6 +233,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     setState(() {
       _isRightSelected = isRightSelected;
       if (isRightSelected) {
+        _hasVisitedNewsTab = true;
         _toggleAnimationController.forward();
       } else {
         _toggleAnimationController.reverse();
@@ -238,8 +249,17 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     // 별도 재로드 불필요.
   }
 
-  /// 설정 화면으로 이동
+  /// 전체 삭제: 확인 모달 > 삭제 (되돌릴 수 없음, 진행 중 중복 탭 무시)
   Future<void> _onDeleteAllNotificationTap() async {
+    if (_isDeletingAll) return;
+    final isConfirmed = await context.showDeleteDialog(
+      title: '알림 전체 삭제',
+      description: '모든 알림을 삭제할까요?\n삭제한 알림은 되돌릴 수 없어요.',
+      confirmText: '삭제',
+    );
+    if (isConfirmed != true || !mounted) return;
+
+    _isDeletingAll = true;
     try {
       await _notificationListNotifier.deleteAll();
       if (!mounted) return;
@@ -247,6 +267,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     } catch (e) {
       if (!mounted) return;
       CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+    } finally {
+      _isDeletingAll = false;
     }
   }
 
@@ -281,13 +303,18 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     final bool newEnabled = isMuted; // muted → 켜기(true), unmuted → 끄기(false)
     final notifier = ref.read(notificationSettingProvider.notifier);
     final settingTypes = toNotificationSettingTypes(notificationType);
+    var isMarketingChanged = false;
     for (final settingType in settingTypes) {
-      await notifier.setEnabled(settingType, newEnabled);
+      final isChanged = await notifier.setEnabled(settingType, newEnabled);
+      if (isChanged && settingType == NotificationSettingType.marketing) isMarketingChanged = true;
     }
 
-    if (mounted) {
-      CommonSnackBar.show(context: context, message: isMuted ? '알림이 켜졌습니다.' : '알림이 꺼졌습니다.', type: SnackBarType.success);
-    }
+    if (!mounted) return;
+    // 마케팅 수신 변경 > 처리 일자 안내, 그 외 > 켜짐·꺼짐 안내
+    final message = isMarketingChanged
+        ? buildMarketingConsentMessage(isAgreed: newEnabled, processedAt: DateTime.now())
+        : (isMuted ? '알림이 켜졌습니다.' : '알림이 꺼졌습니다.');
+    CommonSnackBar.show(context: context, message: message, type: SnackBarType.success);
   }
 
   /// 알림 아이템 탭 처리 - 읽음 처리 후 딥링크 이동, 복귀 시 알림 목록 갱신
@@ -302,7 +329,13 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     }
     if (!mounted) return;
     try {
-      await RomRomDeepLinkRouter.open(context, notification.deepLink, notificationType: notification.type);
+      await RomRomDeepLinkRouter.open(
+        context,
+        notification.deepLink,
+        notificationType: notification.type,
+        extraData: notification.payload,
+        isNotificationFallbackEnabled: false, // 이미 알림함 > 같은 화면 중복 이동 방지
+      );
     } catch (e) {
       debugPrint('딥링크 이동 실패: $e');
       if (mounted) {

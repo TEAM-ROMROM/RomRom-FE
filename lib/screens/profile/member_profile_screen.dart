@@ -16,8 +16,10 @@ import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/states/member_profile_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/nickname_rules.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/skeletons/profile_screen_skeleton.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -110,6 +112,15 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
     }
   }
 
+  /// 다시 시도: 스켈레톤 표시 > 재조회
+  void _retryLoadProfileData() {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+    _loadProfileData();
+  }
+
   /// 본인 분기: provider 현재 값을 로컬 편집 state로 동기화.
   /// provider가 아직 로딩 중이면 reload 후 재시도.
   Future<void> _syncFromProvider() async {
@@ -178,11 +189,12 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   /// 내 프로필 저장 — provider.updateProfile 경유로 캐시 자동 갱신
   Future<void> _handleSave() async {
     if (_isSaving) return;
-    if (!_isProfileEdited || _nickname.isEmpty) return;
+    if (!_isProfileEdited || findNicknameInputError(_nickname) != null) return;
 
     setState(() => _isSaving = true);
     try {
-      await ref.read(memberProfileProvider.notifier).updateProfile(nickname: _nickname, profileUrl: _profileUrl);
+      // 앞뒤 공백 제거 후 저장 (공백만 입력은 위에서 차단)
+      await ref.read(memberProfileProvider.notifier).updateProfile(nickname: _nickname.trim(), profileUrl: _profileUrl);
       if (mounted) {
         CommonSnackBar.show(context: context, message: '프로필이 업데이트되었습니다.', type: SnackBarType.success);
         setState(() {
@@ -268,16 +280,7 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
       return Scaffold(
         backgroundColor: AppColors.primaryBlack,
         appBar: CommonAppBar(title: '프로필', showBottomBorder: true, onBackPressed: () => _handleBackPressed()),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48.sp, color: AppColors.opacity60White),
-              SizedBox(height: 16.h),
-              Text('프로필을 불러올 수 없습니다', style: CustomTextStyles.p1.copyWith(color: AppColors.opacity60White)),
-            ],
-          ),
-        ),
+        body: EmptyStateView.error(centerText: '프로필을 불러오지 못했어요', onRetry: _retryLoadProfileData),
       );
     }
 
@@ -310,7 +313,7 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
                             child: Text(
                               '저장',
                               style: CustomTextStyles.h2.copyWith(
-                                color: _isProfileEdited && _nickname.isNotEmpty
+                                color: _isProfileEdited && findNicknameInputError(_nickname) == null
                                     ? AppColors.primaryYellow
                                     : AppColors.secondaryBlack2,
                               ),

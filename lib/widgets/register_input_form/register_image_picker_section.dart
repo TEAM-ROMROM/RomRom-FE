@@ -17,6 +17,8 @@ class RegisterImagePickerSection extends StatelessWidget {
   final List<String> newImagePaths;
   // 사진 선택 시도 후 0장이면 안내 표시
   final bool shouldShowEmptyImageError;
+  // 사진 추가·삭제 가능 여부 (저장 중 false > 업로드 중 목록 변경 차단)
+  final bool isEditingEnabled;
   final VoidCallback onAddImageTap;
   final ValueChanged<int> onImageTap;
   final ValueChanged<int> onDeleteImageTap;
@@ -26,6 +28,7 @@ class RegisterImagePickerSection extends StatelessWidget {
     required this.existingImageUrls,
     required this.newImagePaths,
     required this.shouldShowEmptyImageError,
+    this.isEditingEnabled = true,
     required this.onAddImageTap,
     required this.onImageTap,
     required this.onDeleteImageTap,
@@ -73,7 +76,7 @@ class RegisterImagePickerSection extends StatelessWidget {
   /// 사진 추가 버튼 (현재 장수/10)
   Widget _buildAddImageButton() {
     return GestureDetector(
-      onTap: onAddImageTap,
+      onTap: isEditingEnabled ? onAddImageTap : null,
       child: Container(
         width: 80.w,
         height: 80.h,
@@ -112,7 +115,7 @@ class RegisterImagePickerSection extends StatelessWidget {
             top: -6.h,
             right: -6.h,
             child: GestureDetector(
-              onTap: () => onDeleteImageTap(index),
+              onTap: isEditingEnabled ? () => onDeleteImageTap(index) : null,
               child: Container(
                 width: 22.h,
                 height: 22.h,

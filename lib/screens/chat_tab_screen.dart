@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/chat_room_type.dart';
+import 'package:romrom_fe/enums/navigation_tab_items.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
@@ -11,6 +12,7 @@ import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
+import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/states/chat_rooms_state.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
@@ -52,8 +54,13 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
   // 페이지네이션 로딩 표시용
   bool _pagingLoading = false;
   bool _prefetchLoading = false;
+  // 자동 프리패치 루프 실행 중 (필터 전환·새로고침이 겹쳐 같은 페이지 중복 조회 방지)
+  bool _isAutoPrefetching = false;
   int _autoPrefetchCount = 0;
   static const int _autoPrefetchMax = 5;
+  // 다음 페이지 실패 후 재시도 대기 시간 (바닥 스크롤마다 연속 재시도·안내 반복 방지)
+  static const Duration _loadMoreRetryDelay = Duration(seconds: 3);
+  DateTime? _loadMoreFailedAt;
 
   // 중복 요청 방지
   final Set<String> _pendingRequests = {};
@@ -118,9 +125,23 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     }
   }
 
+  /// 필터 탭 전환: 선택 반영 > 불러온 목록에 필터 결과가 모자라면 이어 불러오기
   void _onTabChanged(int index) {
     setState(() => _selectedTabIndex = index);
     _toggleAnimationController.animateTo(index.toDouble(), duration: AppMotion.normal, curve: AppMotion.standard);
+    _autoPrefetchCount = 0;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _autoPrefetch();
+    });
+  }
+
+  /// 채팅 탭 선택 시 첫 페이지 병합 재조회 > 새 방 구독
+  /// (상대가 새로 만든 방은 구독 전이라 실시간 수신 불가, 이후 페이지·페이징 위치는 유지)
+  Future<void> _refreshOnChatTabSelected() async {
+    await ref.read(chatRoomsProvider.notifier).refreshFirstPage();
+    if (!mounted) return;
+    final updated = ref.read(chatRoomsProvider).valueOrNull;
+    if (updated != null) _subscribeToRooms(updated.rooms);
   }
 
   /// 무한 스크롤 트리거
@@ -139,19 +160,26 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     }
   }
 
-  /// 다음 페이지 로드 (중복 방지)
+  /// 다음 페이지 로드 (중복 방지, 실패 직후 재시도 대기, 실패 안내)
   Future<void> _triggerLoadMore() async {
     if (_pendingRequests.contains('loadMore')) return;
     final cur = ref.read(chatRoomsProvider).valueOrNull;
     if (cur == null || !cur.hasMore) return;
+    final lastFailedAt = _loadMoreFailedAt;
+    if (lastFailedAt != null && DateTime.now().difference(lastFailedAt) < _loadMoreRetryDelay) return;
 
     _pendingRequests.add('loadMore');
     setState(() => _pagingLoading = true);
     try {
       await ref.read(chatRoomsProvider.notifier).loadMore();
+      _loadMoreFailedAt = null;
       // 새로 로드된 방들 구독
       final updated = ref.read(chatRoomsProvider).valueOrNull;
       if (updated != null) _subscribeToRooms(updated.rooms);
+    } catch (e) {
+      debugPrint('[ChatTab] next page load failed: $e');
+      _loadMoreFailedAt = DateTime.now();
+      _showLoadMoreFailedSnackBar();
     } finally {
       if (mounted) setState(() => _pagingLoading = false);
       _pendingRequests.remove('loadMore');
@@ -210,8 +238,38 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     }
   }
 
-  /// 초기 로드 / 리프레시 후 스크롤 가능해질 때까지 자동 프리패치
+  void _showLoadMoreFailedSnackBar() {
+    if (!mounted) return;
+    CommonSnackBar.show(context: context, type: SnackBarType.error, message: '채팅방을 더 불러오지 못했어요');
+  }
+
+  /// 다음 페이지 1회 프리패치 (실패 시 안내 후 false > 프리패치 중단)
+  Future<bool> _prefetchNextPage() async {
+    try {
+      await ref.read(chatRoomsProvider.notifier).loadMore();
+    } catch (e) {
+      debugPrint('[ChatTab] prefetch failed: $e');
+      _loadMoreFailedAt = DateTime.now();
+      _showLoadMoreFailedSnackBar();
+      return false;
+    }
+    final updated = ref.read(chatRoomsProvider).valueOrNull;
+    if (updated != null) _subscribeToRooms(updated.rooms);
+    return true;
+  }
+
+  /// 초기 로드 / 리프레시 / 필터 전환 후 스크롤 가능해질 때까지 자동 프리패치
   Future<void> _autoPrefetch() async {
+    if (_isAutoPrefetching) return;
+    _isAutoPrefetching = true;
+    try {
+      await _runAutoPrefetchLoop();
+    } finally {
+      _isAutoPrefetching = false;
+    }
+  }
+
+  Future<void> _runAutoPrefetchLoop() async {
     while (true) {
       final cur = ref.read(chatRoomsProvider).valueOrNull;
       if (cur == null || !cur.hasMore) break;
@@ -220,23 +278,14 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
       await SchedulerBinding.instance.endOfFrame;
       if (!mounted) break;
 
-      if (!_scrollController.hasClients) {
-        _autoPrefetchCount++;
-        setState(() => _prefetchLoading = true);
-        await ref.read(chatRoomsProvider.notifier).loadMore();
-        final updated = ref.read(chatRoomsProvider).valueOrNull;
-        if (updated != null) _subscribeToRooms(updated.rooms);
-        continue;
-      }
-
-      final isScrollable = _scrollController.position.maxScrollExtent > 0;
+      // 스크롤 뷰 미부착이거나 스크롤할 만큼 목록이 없으면 다음 페이지
+      final isScrollable = _scrollController.hasClients && _scrollController.position.maxScrollExtent > 0;
       if (isScrollable) break;
 
-      setState(() => _prefetchLoading = true);
       _autoPrefetchCount++;
-      await ref.read(chatRoomsProvider.notifier).loadMore();
-      final updated = ref.read(chatRoomsProvider).valueOrNull;
-      if (updated != null) _subscribeToRooms(updated.rooms);
+      setState(() => _prefetchLoading = true);
+      if (!await _prefetchNextPage()) break;
+      if (!mounted) break;
     }
 
     if (mounted && _prefetchLoading) setState(() => _prefetchLoading = false);
@@ -271,7 +320,15 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
       }
     });
 
+    // 채팅 탭으로 전환될 때마다 첫 페이지 병합 재조회 (IndexedStack이라 initState 재실행 없음)
+    ref.listen<int>(currentTabIndexProvider, (previousTabIndex, nextTabIndex) {
+      if (nextTabIndex == NavigationTabItems.chat.index && previousTabIndex != nextTabIndex) {
+        _refreshOnChatTabSelected();
+      }
+    });
+
     final rooms = chatAsync.valueOrNull?.rooms ?? const [];
+    final hasMoreRooms = chatAsync.valueOrNull?.hasMore ?? false;
     final isInitialLoading = chatAsync is AsyncLoading && rooms.isEmpty;
     // 불러오기 실패 + 보여줄 목록 없음 > 에러 뷰 (목록 있으면 목록 유지)
     final hasLoadErrorWithoutRooms = chatAsync.hasError && rooms.isEmpty;
@@ -321,6 +378,19 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
                     centerText: '채팅을 불러오지 못했어요',
                     onRetry: _onRetryChatRoomsPressed,
                     isRetrying: _isRetryingChatRooms,
+                  ),
+                )
+              else if (filteredRooms.isEmpty && hasMoreRooms)
+                // 불러온 페이지에 필터 결과 없음 + 다음 페이지 있음 > 빈 상태 대신 이어 불러오기
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: EmptyStateView(
+                    icon: AppIcons.chat,
+                    centerText: '불러온 채팅에는 없어요',
+                    descriptionText: '이전 채팅을 더 불러와 찾아볼게요',
+                    buttonText: '더 불러오기',
+                    onButtonTap: _triggerLoadMore,
+                    isButtonLoading: _pagingLoading || _prefetchLoading,
                   ),
                 )
               else if (filteredRooms.isEmpty)

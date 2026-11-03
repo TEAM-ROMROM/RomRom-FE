@@ -1,4 +1,5 @@
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/models/item_promotion_policy.dart';
 
 /// 우선노출(롬업) 시도 결과 > 토스트 문구·종류 (문구 null > 토스트 없음)
 /// notifier는 결과만 반환, 화면은 이 값으로 토스트 표시 (notifier의 UI 의존 차단)
@@ -11,8 +12,8 @@ enum PromoteResult {
   adUnavailable('지금은 광고를 불러올 수 없어요. 잠시 후 다시 시도해주세요', SnackBarType.error),
   // 409 ITEM_PROMOTION_ALREADY_ACTIVE (같은 물품 24시간 내 재요청)
   alreadyPromoted('이미 노출 중인 물품이에요', SnackBarType.info),
-  // 429 ITEM_PROMOTION_DAILY_LIMIT_EXCEEDED (회원당 하루 3회, KST)
-  dailyLimitExceeded('오늘은 우선 노출을 모두 사용했어요 (하루 3회)', SnackBarType.info),
+  // 429 ITEM_PROMOTION_DAILY_LIMIT_EXCEEDED (회원당 하루 횟수 초과, KST)
+  dailyLimitExceeded('오늘은 우선 노출을 모두 사용했어요 (하루 ${ItemPromotionPolicy.dailyLimitCount}회)', SnackBarType.info),
   // 400 ITEM_NOT_PROMOTABLE (교환 불가·차단 물품)
   notPromotable('교환 가능한 물품만 노출할 수 있어요', SnackBarType.error),
   // 그 외 실패 (404·403·네트워크 등)

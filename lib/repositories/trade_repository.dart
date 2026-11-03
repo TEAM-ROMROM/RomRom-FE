@@ -54,6 +54,10 @@ class TradeRepository {
   /// 거래 요청 거절.
   Future<void> reject(String tradeRequestHistoryId) => _api.rejectTradeRequest(tradeRequestHistoryId);
 
+  /// 보낸 거래 요청의 거래 방식 수정 (서버: 대기 상태 요청만 허용)
+  Future<void> updateTradeOptions({required String tradeRequestHistoryId, required List<String> itemTradeOptions}) =>
+      _api.updateTradeRequest(tradeRequestHistoryId, itemTradeOptions);
+
   /// 내 물품(giveItemId) > 상대 물품(takeItemId) 교환 요청 존재 여부
   Future<bool> hasTradeRequest({required String? takeItemId, required String? giveItemId}) {
     return _api.checkTradeRequestExistence(TradeRequest(takeItemId: takeItemId, giveItemId: giveItemId));

@@ -35,6 +35,8 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
   final Completer<NaverMapController> _mapControllerCompleter = Completer();
 
   bool _isLoading = false; // 로딩 상태 관리
+  // 현재 위치 버튼 처리 중 여부 (연타 시 위치 조회 중복 방지)
+  bool _isMovingToCurrentLocation = false;
 
   @override
   void initState() {
@@ -58,27 +60,66 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
 
     final hasPermission = await _locationService.requestPermission();
     if (!hasPermission) {
-      // FIXME : 디버깅용: 위치 권한 없을 때 서울 시청 좌표로 세팅
-      const seoulCityHall = NLatLng(37.5665, 126.9780);
-      setState(() {
-        _currentPosition = seoulCityHall;
-      });
-      await _updateAddress(seoulCityHall);
+      await _showFallbackPosition(reason: '위치 권한이 없어');
       return;
     }
     final position = await _locationService.getCurrentPosition();
-    if (position != null) {
+    if (!mounted) return;
+    if (position == null) {
+      await _showFallbackPosition(reason: '현재 위치를 찾지 못해');
+      return;
+    }
+    setState(() {
+      _currentPosition = _locationService.positionToLatLng(position);
+    });
+    await _updateAddress(_currentPosition!);
+  }
+
+  /// 위치 권한 거부·조회 실패: 기본 위치(서울시청)로 지도 표시 > 직접 옮기라는 안내
+  Future<void> _showFallbackPosition({required String reason}) async {
+    if (!mounted) return;
+    setState(() {
+      _currentPosition = LocationService.fallbackPosition;
+    });
+    CommonSnackBar.show(
+      context: context,
+      message: '$reason 기본 위치로 표시했어요. 지도를 움직여 교환 위치를 골라 주세요.',
+      type: SnackBarType.info,
+    );
+    await _updateAddress(LocationService.fallbackPosition);
+  }
+
+  /// 현재 위치 버튼: 중복 탭 차단 > 권한·위치 조회 > 지도 이동·주소 갱신, 실패 시 안내
+  Future<void> _onCurrentLocationButtonPressed() async {
+    // 지도 준비 전 탭 무시 (컨트롤러 대기 중 잠김 방지)
+    if (_isMovingToCurrentLocation || !_mapControllerCompleter.isCompleted) return;
+    _isMovingToCurrentLocation = true;
+    try {
+      final hasPermission = await _locationService.requestPermission();
+      final position = hasPermission ? await _locationService.getCurrentPosition() : null;
+      if (!mounted) return;
+      if (position == null) {
+        CommonSnackBar.show(
+          context: context,
+          message: hasPermission ? '현재 위치를 찾지 못했어요. 잠시 후 다시 시도해 주세요.' : '현재 위치를 쓰려면 설정에서 위치 권한을 허용해 주세요.',
+          type: SnackBarType.error,
+        );
+        return;
+      }
+
+      final controller = await _mapControllerCompleter.future;
+      final newPosition = _locationService.positionToLatLng(position);
+      // 지도를 현재 위치로 이동 + 현재 위치 점 표시
+      await controller.updateCamera(NCameraUpdate.fromCameraPosition(NCameraPosition(target: newPosition, zoom: 15)));
+      controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+      if (!mounted) return;
       setState(() {
-        _currentPosition = _locationService.positionToLatLng(position);
+        _currentPosition = newPosition;
       });
-      await _updateAddress(_currentPosition!);
-    } else {
-      //FIXME : 디버깅용: 위치 못 받아올 때 서울 시청 좌표로 세팅
-      const seoulCityHall = NLatLng(37.5665, 126.9780);
-      setState(() {
-        _currentPosition = seoulCityHall;
-      });
-      await _updateAddress(seoulCityHall);
+      await _updateAddress(newPosition);
+    } finally {
+      // (성공·실패 공통)
+      _isMovingToCurrentLocation = false;
     }
   }
 
@@ -215,34 +256,7 @@ class _ItemRegisterLocationScreenState extends State<ItemRegisterLocationScreen>
                 Positioned(
                   bottom: 160.h,
                   left: 24.w,
-                  child: CurrentLocationButton(
-                    onTap: () async {
-                      final controller = await _mapControllerCompleter.future;
-
-                      // 현재 위치 다시 가져오기
-                      final position = await _locationService.getCurrentPosition();
-                      if (position != null) {
-                        final newPosition = _locationService.positionToLatLng(position);
-
-                        // 지도를 현재 위치로 이동
-                        await controller.updateCamera(
-                          NCameraUpdate.fromCameraPosition(NCameraPosition(target: newPosition, zoom: 15)),
-                        );
-
-                        // 현재 위치 추적 활성화 (파란색 점 표시)
-                        controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-
-                        // 현재 위치 업데이트
-                        setState(() {
-                          _currentPosition = newPosition;
-                        });
-
-                        // 주소 정보 업데이트
-                        await _updateAddress(newPosition);
-                      }
-                    },
-                    iconSize: 24.h,
-                  ),
+                  child: CurrentLocationButton(onTap: _onCurrentLocationButtonPressed, iconSize: 24.h),
                 ),
               ],
             ),

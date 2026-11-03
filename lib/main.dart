@@ -18,6 +18,7 @@ import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/firebase_options.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/pending_deep_link.dart';
 import 'package:romrom_fe/screens/app_update_screen.dart';
 import 'package:romrom_fe/screens/splash_screen.dart';
 import 'package:romrom_fe/services/apis/app_version_api.dart';
@@ -126,11 +127,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     }
   }
 
-  /// 앱이 종료된 상태에서 알림 탭으로 실행된 경우 (콜드 스타트) 라우팅 처리
-  ///
-  /// 즉시 라우팅하지 않고 [ColdStartDeepLinkData]에 저장한다.
-  /// SplashScreen이 MainScreen으로 이동 완료 후 해당 데이터로 라우팅하여
-  /// SplashScreen의 pushAndRemoveUntil 이 딥링크 화면을 덮어쓰는 race condition을 방지한다.
+  /// 콜드 스타트 알림 탭: 딥링크 게이트에 전달 (메인 진입 전이면 보관 > 메인 진입 후 열림)
   Future<void> _initFcmInitialMessage() async {
     try {
       final message = await FirebaseMessaging.instance.getInitialMessage();
@@ -150,32 +147,31 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
       }
 
-      ColdStartDeepLinkData.setPending(uri, notificationType: notificationType, extraData: message.data);
+      RomRomDeepLinkRouter.receive(
+        PendingDeepLink(uri: uri, notificationType: notificationType, extraData: message.data),
+      );
     } catch (e) {
       debugPrint('[FCM] 콜드 스타트 초기 메시지 처리 실패: $e');
     }
   }
 
-  /// app_links: 콜드 스타트 + 포그라운드 딥링크 처리
+  /// app_links: 콜드 스타트 + 실행 중 링크 > 딥링크 게이트 (로그인·온보딩 중이면 보관)
   Future<void> _initAppLinks() async {
     // 콜드 스타트: 앱이 링크로 열린 경우
-    // FCM과 동일하게 즉시 라우팅하지 않고 SplashScreen 이동 완료 후 처리
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
-        ColdStartDeepLinkData.setPending(initialUri);
+        RomRomDeepLinkRouter.receive(PendingDeepLink(uri: initialUri));
       }
     } catch (e) {
       debugPrint('[AppLinks] 초기 링크 처리 실패: $e');
     }
 
-    // 포그라운드: 앱 실행 중 링크 수신
-    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      final context = navigatorKey.currentContext;
-      if (context != null) {
-        RomRomDeepLinkRouter.openFromUri(context, uri);
-      }
-    }, onError: (e) => debugPrint('[AppLinks] 링크 스트림 오류: $e'));
+    // 실행 중 링크 수신
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      (uri) => RomRomDeepLinkRouter.receive(PendingDeepLink(uri: uri)),
+      onError: (e) => debugPrint('[AppLinks] 링크 스트림 오류: $e'),
+    );
   }
 
   @override

@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/apis/responses/notification_history_response.da
 import 'package:romrom_fe/providers/notification_repository_provider.dart';
 import 'package:romrom_fe/repositories/notification_repository.dart';
 import 'package:romrom_fe/states/notification_list_state.dart';
+import 'package:romrom_fe/utils/notification_read_rules.dart';
 
 /// 알림 목록·미확인 개수 단일 소유 provider
 /// 구독: 알림 화면(목록), 홈 탭(배지)
@@ -17,6 +18,9 @@ final notificationListProvider = AsyncNotifierProvider<NotificationListNotifier,
 
 /// 알림 목록 1페이지 크기
 const int notificationPageSize = 20;
+
+/// 알림함 나갈 때 개별 읽음 요청 동시 실행 수 (일괄 읽음 API 없음, 서버 부하 제한)
+const int notificationMarkAsReadConcurrency = 4;
 
 /// loadMore 실패 후 재시도 대기 시간 (스크롤 알림마다 즉시 재시도 방지)
 @visibleForTesting
@@ -131,6 +135,34 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
   Future<void> markAllAsRead() async {
     await _repository.markAllAsRead();
     await reload();
+  }
+
+  /// 알림함 나갈 때 읽음: 두 탭 모두 봄 > 전체 읽음, 한 탭만 봄 > 그 탭의 읽지 않은 알림만 읽음 > 재조회
+  /// (보지 않은 탭 알림은 읽지 않음 상태 유지)
+  Future<void> markVisitedTabsAsRead({required bool hasVisitedActivityTab, required bool hasVisitedNewsTab}) async {
+    if (hasVisitedActivityTab && hasVisitedNewsTab) return markAllAsRead();
+
+    final unreadNotificationIds = findUnreadNotificationIdsInTabs(
+      state.valueOrNull?.notifications ?? const <NotificationHistory>[],
+      includeActivityTab: hasVisitedActivityTab,
+      includeNewsTab: hasVisitedNewsTab,
+    );
+    if (unreadNotificationIds.isEmpty) return;
+    // 동시 실행 수 제한 묶음 순차 처리 (건별 실패는 로그만, 나머지 계속)
+    for (var start = 0; start < unreadNotificationIds.length; start += notificationMarkAsReadConcurrency) {
+      final end = min(start + notificationMarkAsReadConcurrency, unreadNotificationIds.length);
+      await Future.wait(unreadNotificationIds.sublist(start, end).map(_markAsReadOrLog));
+    }
+    // 일부 실패해도 서버 기준으로 배지 반영
+    await reload();
+  }
+
+  Future<void> _markAsReadOrLog(String notificationHistoryId) async {
+    try {
+      await _repository.markAsRead(notificationHistoryId);
+    } catch (error) {
+      debugPrint('[notification list] mark as read failed : $error');
+    }
   }
 
   /// 단건 삭제: API > 재조회 (수동 제거 금지)

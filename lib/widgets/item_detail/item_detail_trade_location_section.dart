@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/services/location_service.dart';
 
 class ItemDetailTradeLocationSection extends StatelessWidget {
   // 지도 위젯 key 구분용 (detail_map_{itemId})
@@ -13,10 +14,6 @@ class ItemDetailTradeLocationSection extends StatelessWidget {
   final double? latitude;
   final double? longitude;
   final VoidCallback onMapTapped;
-
-  // 좌표 없을 때 지도 초기 위치 (서울시청)
-  static const double _fallbackLatitude = 37.5666;
-  static const double _fallbackLongitude = 126.9784;
 
   const ItemDetailTradeLocationSection({
     super.key,
@@ -64,7 +61,8 @@ class ItemDetailTradeLocationSection extends StatelessWidget {
       forceGesture: true,
       options: NaverMapViewOptions(
         initialCameraPosition: NCameraPosition(
-          target: NLatLng(latitude ?? _fallbackLatitude, longitude ?? _fallbackLongitude),
+          // 좌표 없음 > 서울시청
+          target: _hasCoordinates ? NLatLng(latitude!, longitude!) : LocationService.fallbackPosition,
           zoom: 15,
         ),
         scrollGesturesEnable: false,
