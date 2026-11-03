@@ -1,13 +1,60 @@
 // lib/utils/chat_room_message_rules.dart
 // 채팅방 메시지 목록 판정 순수 함수 (목록은 reverse 정렬: index 0 = 최신)
+import 'package:romrom_fe/enums/chat_message_send_status.dart';
 import 'package:romrom_fe/enums/chat_recommended_action.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/utils/date_time_display_utils.dart';
 
-// 서버 에코 <-> 낙관적 로컬 메시지 매칭 허용 시각 차 (초)
-const int pendingLocalMessageMatchToleranceSeconds = 10;
+// 메시지 목록 한 페이지 크기 (진입·재연결 동기화·이전 메시지 페이징 공통)
+const int chatMessagePageSize = 50;
+
+// 낙관적 로컬 메시지 ID 접두어: 텍스트·사진·위치 / 업로드 중 사진 / 교환 완료 요청
+const String localMessageIdPrefix = 'local_';
+const String uploadingMessageIdPrefix = 'uploading_';
+const String localTradeRequestIdPrefix = 'local_trade_request_';
+
+// 같은 마이크로초 안 연속 생성 시 ID 충돌 방지 순번
+int _localMessageIdSequence = 0;
+
+/// 낙관적 로컬 메시지 ID 생성: {접두어}{마이크로초}_{순번}
+String buildLocalMessageId({required String prefix}) {
+  _localMessageIdSequence++;
+  return '$prefix${DateTime.now().microsecondsSinceEpoch}_$_localMessageIdSequence';
+}
+
+/// 내 메시지 전송 상태 판정 (실패 목록 > 서버 응답 대기 목록 > 그 외 전송 완료)
+ChatMessageSendStatus resolveMessageSendStatus({
+  required String? messageId,
+  required Set<String> pendingLocalMessageIds,
+  required Set<String> failedLocalMessageIds,
+}) {
+  if (messageId == null) return ChatMessageSendStatus.sent;
+  if (failedLocalMessageIds.contains(messageId)) return ChatMessageSendStatus.failed;
+  if (pendingLocalMessageIds.contains(messageId)) return ChatMessageSendStatus.sending;
+  return ChatMessageSendStatus.sent;
+}
+
+/// 이전 페이지 메시지 > 목록 뒤(오래된 쪽)에 붙임 (이미 있는 ID 제외, 기존 순서 유지 > 역순 목록 스크롤 위치 유지)
+List<ChatMessage> appendOlderMessages({required List<ChatMessage> current, required List<ChatMessage> olderMessages}) {
+  final existingIds = <String>{
+    for (final message in current)
+      if (message.chatMessageId != null) message.chatMessageId!,
+  };
+  final unseenOlderMessages = olderMessages.where(
+    (message) => message.chatMessageId == null || !existingIds.contains(message.chatMessageId),
+  );
+  return [...current, ...unseenOlderMessages];
+}
+
+/// 서버 확인 전 화면 전용 메시지 ID인지 (낙관적 전송·업로드 중·WS 이미지 임시·교환 요청 임시)
+bool _isLocalOptimisticId(String? id) =>
+    id != null &&
+    (id.startsWith(localMessageIdPrefix) ||
+        id.startsWith(uploadingMessageIdPrefix) ||
+        id.startsWith('ws_img_') ||
+        id.startsWith(localTradeRequestIdPrefix));
 
 /// 재연결 동기화용 메시지 병합 (순수 함수, 테스트 대상).
 ///
@@ -20,13 +67,6 @@ const int pendingLocalMessageMatchToleranceSeconds = 10;
 /// - 낙관적 로컬 메시지(id가 'local_'/'uploading_'/'ws_img_'/'local_trade_request_' 접두)는 서버에 없어도 보존
 /// - 결과는 createdDate 내림차순(최신 먼저), null은 맨 뒤
 List<ChatMessage> mergeServerMessages({required List<ChatMessage> current, required List<ChatMessage> serverMessages}) {
-  bool isLocalOptimistic(String? id) =>
-      id != null &&
-      (id.startsWith('local_') ||
-          id.startsWith('uploading_') ||
-          id.startsWith('ws_img_') ||
-          id.startsWith('local_trade_request_'));
-
   final serverById = <String, ChatMessage>{
     for (final m in serverMessages)
       if (m.chatMessageId != null) m.chatMessageId!: m,
@@ -41,7 +81,7 @@ List<ChatMessage> mergeServerMessages({required List<ChatMessage> current, requi
     if (id != null && serverById.containsKey(id)) {
       merged.add(serverById[id]!);
       keptIds.add(id);
-    } else if (isLocalOptimistic(id)) {
+    } else if (_isLocalOptimisticId(id)) {
       merged.add(m);
     } else if (id != null) {
       merged.add(m);
@@ -134,7 +174,7 @@ bool canPerformRecommendedAction({
 }
 
 /// 상대방이 읽은 내 메시지 중 가장 최근 메시지 ID (읽음 상태 없으면 null)
-/// 판정 2개: 상대 재실(isPresent) > 최신 내 메시지, 퇴장 > 퇴장 시각 이전에 보낸 최신 내 메시지
+/// 판정 2개: 상대 재실(isPresent) > 최신 내 메시지, 퇴장 > 퇴장 시각 이전에 보낸 최신 내 메시지 (서버 확인 전 로컬 메시지 제외)
 String? findLastReadMyMessageId({
   required List<ChatMessage> messages,
   required String? myMemberId,
@@ -143,7 +183,7 @@ String? findLastReadMyMessageId({
   if (opponentState == null || myMemberId == null) return null;
   for (final message in messages) {
     if (message.senderId != myMemberId) continue;
-    if (message.chatMessageId == null) continue;
+    if (message.chatMessageId == null || _isLocalOptimisticId(message.chatMessageId)) continue;
     // WS 실시간 이벤트로 isPresent가 즉시 갱신되므로 그대로 신뢰
     // 잠금/백그라운드는 lifecycle observer가 isPresent=false로 갱신
     if (opponentState.isPresent) return message.chatMessageId;
@@ -181,27 +221,7 @@ bool shouldShowDateDivider({required List<ChatMessage> messages, required int in
   return true;
 }
 
-/// 내 서버 에코와 짝인 낙관적 로컬 메시지 ID 찾기 (내용 동일 + 시각 차 10초 이내, 없으면 null)
-String? findMatchingPendingLocalMessageId({
-  required Map<String, ChatMessage> pendingLocalMessages,
-  required ChatMessage incomingMessage,
-  required String? myMemberId,
-}) {
-  if (incomingMessage.senderId != myMemberId) return null;
-  for (final entry in pendingLocalMessages.entries) {
-    final localMessage = entry.value;
-    if (localMessage.senderId != myMemberId) continue;
-    if ((localMessage.content ?? '') != (incomingMessage.content ?? '')) continue;
-    final localSentAt = localMessage.createdDate ?? DateTime.now();
-    final serverSentAt = incomingMessage.createdDate ?? DateTime.now();
-    if (serverSentAt.difference(localSentAt).inSeconds.abs() <= pendingLocalMessageMatchToleranceSeconds) {
-      return entry.key;
-    }
-  }
-  return null;
-}
-
-/// 서버 에코 + 낙관적 로컬 메시지 > 확정 메시지 (서버 값 우선, 빈 내용·빈 이미지는 로컬 값 유지)
+/// 서버 에코 + 낙관적 로컬 메시지 > 확정 메시지 (서버 값 우선, 빈 내용·빈 이미지·없는 좌표는 로컬 값 유지)
 ChatMessage mergeServerEchoIntoLocalMessage({required ChatMessage localMessage, required ChatMessage serverMessage}) {
   return ChatMessage(
     chatRoomId: serverMessage.chatRoomId ?? localMessage.chatRoomId,
@@ -216,6 +236,8 @@ ChatMessage mergeServerEchoIntoLocalMessage({required ChatMessage localMessage, 
         ? serverMessage.imageUrls
         : localMessage.imageUrls,
     isProfanityDetected: serverMessage.isProfanityDetected,
+    latitude: serverMessage.latitude ?? localMessage.latitude,
+    longitude: serverMessage.longitude ?? localMessage.longitude,
   );
 }
 

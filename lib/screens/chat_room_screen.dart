@@ -16,6 +16,7 @@ import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/repositories/chat_repository.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
+import 'package:romrom_fe/utils/chat_message_send_rules.dart';
 import 'package:romrom_fe/utils/chat_room_message_rules.dart';
 import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/services/chat_member_status_poller.dart';
@@ -51,6 +52,7 @@ part 'chat_room/chat_room_attachment_sending.dart';
 part 'chat_room/chat_room_exit_actions.dart';
 part 'chat_room/chat_room_recommendation_actions.dart';
 part 'chat_room/chat_room_initial_load.dart';
+part 'chat_room/chat_room_older_messages_paging.dart';
 
 class ChatRoomScreen extends ConsumerStatefulWidget {
   final String chatRoomId;
@@ -82,8 +84,23 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   // 교환 완료 요청 낙관적 업데이트용 로컬 임시 메시지 ID
   String? _latestLocalTradeRequestId;
 
-  // 낙관적 로컬 메시지(서버 응답 대기)
+  // 낙관적 로컬 메시지(서버 응답 대기, 실패 표시 포함)
   final Map<String, ChatMessage> _pendingLocalMessages = {};
+
+  // 전송 실패 로컬 메시지 ID (말풍선에 다시 보내기·삭제 표시)
+  final Set<String> _failedLocalMessageIds = {};
+
+  // 로컬 메시지별 서버 에코 대기 타이머 (초과 시 실패 표시)
+  final Map<String, Timer> _sendEchoTimeoutTimers = {};
+
+  // 다시 보내기로 대체된 원래 메시지 (서버에 늦게 저장된 경우 그 에코를 흡수해 중복 표시 방지)
+  final Map<String, ChatMessage> _supersededLocalMessages = {};
+
+  // 이전 메시지 페이징: 다음 조회 페이지, 남은 페이지 여부, 조회 중, 실패(자동 조회 멈춤 > 다시 불러오기 행)
+  int _nextOlderMessagePageNumber = 1;
+  bool _hasMoreOlderMessages = false;
+  bool _isLoadingOlderMessages = false;
+  bool _hasOlderMessagesLoadFailed = false;
 
   // 업로드 중인 이미지 버블 ID 추적
   final Set<String> _uploadingLocalIds = {};
@@ -95,8 +112,11 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   // 이미지 선택/업로드 중복 실행 방지
   bool _isPickingImage = false;
 
-  // 텍스트 메시지 전송 중 (서버 에코 대기)
-  bool _isSendingMessage = false;
+  // 텍스트 전송 잠금: 실패 아닌 대기 텍스트가 남았는지 (전송 상태에서 매번 계산 > 해제 누락 없음)
+  bool get _isSendingMessage => hasPendingTextAwaitingEcho(
+    pendingLocalMessages: _pendingLocalMessages,
+    failedLocalMessageIds: _failedLocalMessageIds,
+  );
 
   ChatRoom chatRoom = ChatRoom();
 
@@ -132,6 +152,16 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   // 후기 화면 중복 진입 방지 (수락자가 이미 진입한 경우 WebSocket tradeCompleted 무시)
   bool _reviewNavigated = false;
 
+  // 후기 화면 열림 여부 (확인 API·소켓 완료 동시 도착, 후기 쓰기 연타 시 1개만)
+  bool _isTradeReviewScreenOpen = false;
+
+  // 이번 진입에서 후기 작성 완료 여부 (완료 카드 '후기 쓰기' 숨김, 서버 작성 여부 필드 없음)
+  bool _hasWrittenReviewInThisVisit = false;
+
+  // 완료 카드 '후기 쓰기' 노출 여부 (거래 기록 ID 있고 이번 진입에서 아직 안 씀)
+  bool get _canWriteReview =>
+      chatRoom.tradeRequestHistory?.tradeRequestHistoryId != null && !_hasWrittenReviewInThisVisit;
+
   String _errorMessage = '';
   String? _myMemberId;
 
@@ -147,7 +177,6 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   DateTime? _opponentLastActiveAt;
   bool _isOpponentOnline = false;
   StreamSubscription? _pollerSubscription;
-  Timer? _sendMessageTimeoutTimer;
 
   // 상대방 읽음 상태
   ChatUserState? _opponentState;
@@ -163,11 +192,12 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   bool _isLeaving = false;
 }
 
-/// 채팅방 화면: 수명주기·입력 높이·화면 구성 (로직은 mixin 6개: 송수신, 교환 액션, 첨부, 나가기, AI 추천, 초기화)
+/// 채팅방 화면: 수명주기·입력 높이·화면 구성 (로직은 mixin 7개: 송수신, 이전 메시지 페이징, 교환 액션, 첨부, 나가기, AI 추천, 초기화)
 class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     with
         WidgetsBindingObserver,
         _ChatRoomMessaging,
+        _ChatRoomOlderMessagesPaging,
         _ChatRoomTradeActions,
         _ChatRoomAttachmentSending,
         _ChatRoomExitActions,
@@ -179,6 +209,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     WidgetsBinding.instance.addObserver(this);
     _loadInitialData();
     _messageController.addListener(_onMessageChanged);
+    _scrollController.addListener(_onMessageListScrolled);
   }
 
   @override
@@ -225,11 +256,15 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     _wsService.unsubscribeFromRecommendations(widget.chatRoomId);
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
+    for (final timer in _sendEchoTimeoutTimers.values) {
+      timer.cancel();
+    }
     if (chatRoom.chatRoomId != null) {
       _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
     }
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
+    _scrollController.removeListener(_onMessageListScrolled);
     _scrollController.dispose();
     ChatMemberStatusPoller.instance.stop();
     super.dispose();
@@ -285,12 +320,20 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
                   myMemberId: _myMemberId,
                   opponentNickname: _opponentNickname,
                   uploadingMessageIds: _uploadingLocalIds,
+                  pendingLocalMessageIds: _pendingLocalMessages.keys.toSet(),
+                  failedLocalMessageIds: _failedLocalMessageIds,
+                  isLoadingOlderMessages: _isLoadingOlderMessages,
+                  hasOlderMessagesLoadFailed: _hasOlderMessagesLoadFailed,
+                  onRetryOlderMessages: _retryOlderMessages,
                   lastReadMyMessageId: _lastReadMyMessageId,
                   isTradeCompleted: _isTradeCompleted,
                   isTradeActionPending: _isPendingTradeAction,
                   onCancelTradeRequest: _onCancelTradeRequest,
                   onRejectTradeRequest: _onRejectTradeRequest,
                   onConfirmTradeRequest: _onConfirmTradeRequest,
+                  onRetryFailedMessage: _retryFailedMessage,
+                  onDeleteFailedMessage: _deleteFailedMessage,
+                  onWriteReview: _canWriteReview ? _openTradeReviewScreen : null,
                 ),
               ),
               ChatRecommendationBanner(

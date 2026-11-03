@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:romrom_fe/enums/chat_message_send_status.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
@@ -11,11 +12,13 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_image_bubble.dart';
 import 'package:romrom_fe/widgets/chat_location_bubble.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_message_send_status_view.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_trade_system_message.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 /// 채팅 메시지 아이템 위젯
-/// system / text / image (업로드 중 포함) / 거래 완료 시스템 메시지 모든 타입 처리
+/// system / text / image (업로드 중 포함) / 위치 / 거래 완료 시스템 메시지 모든 타입 처리, 내 메시지 전송 상태 표시
 class ChatMessageItem extends StatelessWidget {
   final ChatMessage message;
   final String? myMemberId;
@@ -34,8 +37,18 @@ class ChatMessageItem extends StatelessWidget {
   /// 거래 완료 요청 확인 콜백 (상대방이 보낸 요청이 활성 상태일 때만 non-null)
   final VoidCallback? onConfirmTradeRequest;
 
+  /// 완료 카드 '후기 쓰기' 콜백 (후기 작성 가능할 때만 non-null)
+  final VoidCallback? onWriteReview;
+
   // 거래 요청 취소·거절·완료 API 진행 중 여부 (true면 버튼 비활성 표시·탭 무시)
   final bool isTradeActionPending;
+
+  // 내 메시지 전송 상태 (전송 중·실패면 시각·읽음 대신 상태 표시)
+  final ChatMessageSendStatus sendStatus;
+
+  /// 실패 메시지 다시 보내기·삭제 콜백
+  final VoidCallback? onRetrySend;
+  final VoidCallback? onDeleteFailedMessage;
 
   const ChatMessageItem({
     super.key,
@@ -49,7 +62,11 @@ class ChatMessageItem extends StatelessWidget {
     this.onCancelTradeRequest,
     this.onRejectTradeRequest,
     this.onConfirmTradeRequest,
+    this.onWriteReview,
     this.isTradeActionPending = false,
+    this.sendStatus = ChatMessageSendStatus.sent,
+    this.onRetrySend,
+    this.onDeleteFailedMessage,
   });
 
   @override
@@ -58,41 +75,20 @@ class ChatMessageItem extends StatelessWidget {
     if (type == MessageType.system) {
       return _buildSimplePill('$opponentNickname님이 채팅방을 나갔습니다.');
     }
-    if (type == MessageType.tradeCompleteRequest ||
-        type == MessageType.tradeCompleteRequestCanceled ||
-        type == MessageType.tradeCompleteRequestRejected ||
-        type == MessageType.tradeCompleted) {
-      return _buildTradeSystemMessage();
+    if (ChatTradeSystemMessage.isTradeSystemMessageType(type)) {
+      return ChatTradeSystemMessage(
+        message: message,
+        myMemberId: myMemberId,
+        topGap: topGap,
+        opponentNickname: opponentNickname,
+        onCancelTradeRequest: onCancelTradeRequest,
+        onRejectTradeRequest: onRejectTradeRequest,
+        onConfirmTradeRequest: onConfirmTradeRequest,
+        onWriteReview: onWriteReview,
+        isTradeActionPending: isTradeActionPending,
+      );
     }
     return _buildRegularMessage(context);
-  }
-
-  // ── 거래 완료 시스템 메시지 ──────────────────────────────────────────────
-
-  Widget _buildTradeSystemMessage() {
-    final type = message.type;
-
-    if (type == MessageType.tradeCompleteRequestCanceled) {
-      return _buildSimpleCard('교환 완료 요청이 취소되었습니다.', '요청이 정상적으로 취소되었습니다.');
-    }
-    if (type == MessageType.tradeCompleteRequestRejected) {
-      return _buildSimpleCard('⛔️ 교환 완료 요청이 거절되었습니다.', '실수로 거절하셨다면, 다시 교환 완료를 요청해주세요');
-    }
-    if (type == MessageType.tradeCompleted) {
-      return _buildSimpleCard('교환이 완료되었습니다!', '거래 횟수가 1회 올라갔어요! 서로에게 남긴 후기는 프로필에서 확인할 수 있습니다.');
-    }
-
-    // TRADE_COMPLETE_REQUEST
-    final isMine = message.senderId == myMemberId;
-    final hasButtons = isMine ? onCancelTradeRequest != null : onRejectTradeRequest != null;
-
-    if (hasButtons) {
-      return _buildTradeRequestCard(isMine: isMine);
-    }
-
-    // 비활성(이미 처리된) 요청 - 심플 텍스트
-    final inactiveText = isMine ? '교환 완료를 요청했습니다.' : '$opponentNickname님이 교환 완료를 요청했습니다.';
-    return _buildSimpleCard(inactiveText, '이미 처리된 요청입니다.');
   }
 
   // 심플 캡슐형 시스템 메시지 (채팅방 나감 등)
@@ -117,135 +113,6 @@ class ChatMessageItem extends StatelessWidget {
     );
   }
 
-  // 교환 완료 요청 카드 (활성 상태)
-  Widget _buildSimpleCard(String text, String subText) {
-    return Padding(
-      padding: EdgeInsets.only(top: topGap),
-      child: Container(
-        padding: EdgeInsets.all(12.w),
-        decoration: BoxDecoration(
-          color: AppColors.exchangeRequestSystemMessageBackground,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(
-            color: AppColors.exchangeRequestSystemMessageBorder,
-            width: 1,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              text,
-              style: CustomTextStyles.p3.copyWith(fontSize: 13.sp, color: AppColors.primaryYellow),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              subText,
-              style: CustomTextStyles.p3.copyWith(
-                fontWeight: FontWeight.w400,
-                color: AppColors.primaryYellow,
-                height: 1.2,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 교환 완료 요청
-  Widget _buildTradeRequestCard({required bool isMine}) {
-    return Padding(
-      padding: EdgeInsets.only(top: topGap),
-      child: Container(
-        padding: EdgeInsets.fromLTRB(8.w, 12.h, 8.w, 8.h),
-        decoration: BoxDecoration(
-          color: AppColors.exchangeRequestSystemMessageBackground,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(
-            color: AppColors.exchangeRequestSystemMessageBorder,
-            width: 1,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isMine ? '$opponentNickname님에게 교환 완료를 요청했습니다.' : '$opponentNickname님이 교환 완료를 요청했습니다.',
-              style: CustomTextStyles.p3.copyWith(fontSize: 13.sp, color: AppColors.primaryYellow),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              isMine ? '상대방이 수락하면 미리 작성한 후기가 전달됩니다.' : '교환한 물품이 맞는지 확인해주세요. 확인 버튼을 누르면 거래가 최종 성사 됩니다.',
-              style: CustomTextStyles.p3.copyWith(
-                fontWeight: FontWeight.w400,
-                color: AppColors.primaryYellow,
-                height: 1.2,
-              ),
-            ),
-            if (isMine)
-              _tradeButton(
-                '요청 취소하기',
-                AppColors.primaryYellow,
-                AppColors.opacity50PrimaryYellow,
-                AppColors.textColorBlack,
-                onCancelTradeRequest,
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: _tradeButton(
-                      '거절하기',
-                      AppColors.opacity40White,
-                      AppColors.opacity20White,
-                      AppColors.textColorBlack,
-                      onRejectTradeRequest,
-                    ),
-                  ),
-                  SizedBox(width: 7.w),
-                  Expanded(
-                    child: _tradeButton(
-                      '확인 및 완료하기',
-                      AppColors.primaryYellow,
-                      AppColors.opacity50PrimaryYellow,
-                      AppColors.textColorBlack,
-                      onConfirmTradeRequest,
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 거래 요청 카드 버튼 (진행 중이면 비활성 배경 + 탭 무시)
-  Widget _tradeButton(String label, Color bg, Color pendingBackgroundColor, Color fg, VoidCallback? onTap) {
-    return Container(
-      height: 44.h,
-      padding: EdgeInsets.only(top: 12.h),
-      child: Material(
-        color: isTradeActionPending ? pendingBackgroundColor : bg,
-        borderRadius: BorderRadius.circular(4.r),
-        child: InkWell(
-          onTap: isTradeActionPending ? null : onTap,
-          borderRadius: BorderRadius.circular(4.r),
-          highlightColor: darkenBlend(bg),
-          splashColor: darkenBlend(bg).withValues(alpha: 0.3),
-          child: Center(
-            child: Text(label, style: CustomTextStyles.p3.copyWith(color: fg)),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildRegularMessage(BuildContext context) {
     final isMine = message.senderId == myMemberId;
     return Padding(
@@ -258,13 +125,17 @@ class ChatMessageItem extends StatelessWidget {
             _buildBubble(context, isMine: false),
             if (showTime) ...[SizedBox(width: 8.w), _buildTimeText()],
           ] else ...[
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (showReadReceipt) ...[_buildReadReceiptText(), SizedBox(height: 4.h)],
-                if (showTime) ...[_buildTimeText()],
-              ],
-            ),
+            // 전송 완료 > 읽음·시각, 전송 중·실패 > 상태 표시
+            if (sendStatus == ChatMessageSendStatus.sent)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (showReadReceipt) ...[_buildReadReceiptText(), SizedBox(height: 4.h)],
+                  if (showTime) ...[_buildTimeText()],
+                ],
+              )
+            else
+              ChatMessageSendStatusView(sendStatus: sendStatus, onRetry: onRetrySend, onDelete: onDeleteFailedMessage),
             SizedBox(width: 8.w),
             _buildBubble(context, isMine: true),
           ],
@@ -304,6 +175,9 @@ class ChatMessageItem extends StatelessWidget {
           decoration: TextDecoration.underline,
         ),
         onOpen: (link) => _openUrl(context, link.url),
+        // flutter_linkify 기본값 null이면 길게 눌러도 메뉴 없음 > 플랫폼 기본 선택 메뉴(복사·전체 선택)
+        contextMenuBuilder: (context, editableTextState) =>
+            AdaptiveTextSelectionToolbar.editableText(editableTextState: editableTextState),
       ),
     );
   }

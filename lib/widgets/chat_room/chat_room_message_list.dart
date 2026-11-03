@@ -1,4 +1,4 @@
-// 채팅방 메시지 목록: 빈 목록 안내 / 최신이 아래인 reverse 목록 (날짜 구분선·간격·시각·읽음·교환 요청 버튼 판정)
+// 채팅방 메시지 목록: 빈 목록 안내 / 최신이 아래인 reverse 목록 (날짜 구분선·간격·시각·읽음·전송 상태·교환 요청 버튼 판정, 맨 위 이전 메시지 로딩)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/message_type.dart';
@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/chat_room_message_rules.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_date_divider.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 class ChatRoomMessageList extends StatelessWidget {
   // reverse 정렬 (index 0 = 최신)
@@ -17,6 +18,13 @@ class ChatRoomMessageList extends StatelessWidget {
   final String opponentNickname;
   // 업로드 중 이미지 버블 메시지 ID
   final Set<String> uploadingMessageIds;
+  // 서버 응답 대기 중인 내 로컬 메시지 ID / 그중 전송 실패 ID
+  final Set<String> pendingLocalMessageIds;
+  final Set<String> failedLocalMessageIds;
+  // 이전 메시지 조회 중 (목록 맨 위 로딩 표시) / 조회 실패 (맨 위 다시 불러오기 행)
+  final bool isLoadingOlderMessages;
+  final bool hasOlderMessagesLoadFailed;
+  final VoidCallback onRetryOlderMessages;
   // 상대방이 읽은 최신 내 메시지 ID (읽음 표시 위치)
   final String? lastReadMyMessageId;
   final bool isTradeCompleted;
@@ -26,6 +34,11 @@ class ChatRoomMessageList extends StatelessWidget {
   final VoidCallback onCancelTradeRequest;
   final VoidCallback onRejectTradeRequest;
   final VoidCallback onConfirmTradeRequest;
+  // 실패 메시지 다시 보내기·삭제 (로컬 메시지 ID)
+  final void Function(String localMessageId) onRetryFailedMessage;
+  final void Function(String localMessageId) onDeleteFailedMessage;
+  // 완료 카드 '후기 쓰기' (작성 불가면 null)
+  final VoidCallback? onWriteReview;
 
   const ChatRoomMessageList({
     super.key,
@@ -34,12 +47,20 @@ class ChatRoomMessageList extends StatelessWidget {
     required this.myMemberId,
     required this.opponentNickname,
     required this.uploadingMessageIds,
+    required this.pendingLocalMessageIds,
+    required this.failedLocalMessageIds,
+    required this.isLoadingOlderMessages,
+    required this.hasOlderMessagesLoadFailed,
+    required this.onRetryOlderMessages,
     required this.lastReadMyMessageId,
     required this.isTradeCompleted,
     required this.isTradeActionPending,
     required this.onCancelTradeRequest,
     required this.onRejectTradeRequest,
     required this.onConfirmTradeRequest,
+    required this.onRetryFailedMessage,
+    required this.onDeleteFailedMessage,
+    required this.onWriteReview,
   });
 
   @override
@@ -54,8 +75,33 @@ class ChatRoomMessageList extends StatelessWidget {
       reverse: true,
       controller: scrollController,
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-      itemCount: messages.length,
-      itemBuilder: _buildMessageItem,
+      // reverse 목록 마지막 index = 화면 맨 위 > 이전 메시지 로딩·다시 불러오기 자리
+      itemCount: messages.length + (isLoadingOlderMessages || hasOlderMessagesLoadFailed ? 1 : 0),
+      itemBuilder: (context, index) =>
+          index == messages.length ? _buildOlderMessagesStatusRow() : _buildMessageItem(context, index),
+    );
+  }
+
+  /// 목록 맨 위 행: 조회 중 > 로딩, 실패 > 다시 불러오기
+  Widget _buildOlderMessagesStatusRow() {
+    if (isLoadingOlderMessages) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(child: CommonLoadingIndicator()),
+      );
+    }
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onRetryOlderMessages,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: Text(
+            '이전 메시지를 불러오지 못했어요 · 다시 불러오기',
+            style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White, decoration: TextDecoration.underline),
+          ),
+        ),
+      ),
     );
   }
 
@@ -84,6 +130,7 @@ class ChatRoomMessageList extends StatelessWidget {
       }
     }
 
+    final String? messageId = message.chatMessageId;
     final messageItem = ChatMessageItem(
       key: ValueKey(message.chatMessageId ?? '${message.senderId}_${message.createdDate?.millisecondsSinceEpoch}'),
       message: message,
@@ -96,7 +143,15 @@ class ChatRoomMessageList extends StatelessWidget {
       onCancelTradeRequest: cancelTradeRequestCallback,
       onRejectTradeRequest: rejectTradeRequestCallback,
       onConfirmTradeRequest: confirmTradeRequestCallback,
+      onWriteReview: message.type == MessageType.tradeCompleted ? onWriteReview : null,
       isTradeActionPending: isTradeActionPending,
+      sendStatus: resolveMessageSendStatus(
+        messageId: messageId,
+        pendingLocalMessageIds: pendingLocalMessageIds,
+        failedLocalMessageIds: failedLocalMessageIds,
+      ),
+      onRetrySend: messageId == null ? null : () => onRetryFailedMessage(messageId),
+      onDeleteFailedMessage: messageId == null ? null : () => onDeleteFailedMessage(messageId),
     );
     if (!showDateDivider) return messageItem;
 

@@ -33,6 +33,9 @@ class ChatRoomsState {
     return sorted;
   }
 
+  /// 안 읽은 메시지가 있는 방 존재 여부 (하단 탭바 채팅 배지, 불러온 페이지 기준)
+  bool get hasUnreadMessages => rooms.any((room) => (room.unreadCount ?? 0) > 0);
+
   ChatRoomsState copyWith({List<ChatRoomDetailDto>? rooms, int? currentPage, bool? hasMore}) => ChatRoomsState(
     rooms: rooms ?? this.rooms,
     currentPage: currentPage ?? this.currentPage,

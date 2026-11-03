@@ -17,7 +17,11 @@ mixin _ChatRoomInitialLoad
       await _wsService.connect();
 
       final chatRepository = _chatRepository;
-      final response = await chatRepository.getChatMessages(chatRoomId: widget.chatRoomId, pageNumber: 0, pageSize: 50);
+      final response = await chatRepository.getChatMessages(
+        chatRoomId: widget.chatRoomId,
+        pageNumber: 0,
+        pageSize: chatMessagePageSize,
+      );
       final opponentState = await chatRepository.getChatRoomReadStatus(chatRoomId: widget.chatRoomId);
       if (!mounted) return;
 
@@ -25,6 +29,8 @@ mixin _ChatRoomInitialLoad
         chatRoom = response.chatRoom!;
         _messages = response.messages?.content ?? [];
         _opponentState = opponentState;
+        _nextOlderMessagePageNumber = 1;
+        _hasMoreOlderMessages = !(response.messages?.last ?? true);
       });
       _recommendationNotifier.applyServerRecommendation(widget.chatRoomId, response.latestRecommendation);
 
@@ -35,6 +41,8 @@ mixin _ChatRoomInitialLoad
       setState(() => _isLoading = false);
       _scrollToBottom();
       chatRepository.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true);
+      // 채팅 목록·탭바 안 읽음 해제 (알림 등 목록 밖 진입 포함)
+      ref.read(chatRoomsProvider.notifier).markRoomAsRead(widget.chatRoomId);
       await _showChatNotificationGuideOnce();
 
       // 읽음 이벤트 WebSocket 구독 (REST 폴링 대체)
