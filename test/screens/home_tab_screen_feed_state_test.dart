@@ -6,10 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/home_feed_repository_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
+import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/notification_repository_provider.dart';
 import 'package:romrom_fe/repositories/home_feed_repository.dart';
 import 'package:romrom_fe/repositories/item_repository.dart';
@@ -21,6 +23,14 @@ import '../helpers/pump_design_screen.dart';
 
 /// 좌표 없는 물품 (주소 조회 없이 '미지정')
 Item _feedItem(String itemId) => Item(itemId: itemId, itemName: 'name-$itemId', price: 1000);
+
+/// 작성자 지정 물품 (차단 제외 검증)
+Item _feedItemBy(String itemId, String authorMemberId) => Item(
+  itemId: itemId,
+  itemName: 'name-$itemId',
+  price: 1000,
+  member: Member(memberId: authorMemberId),
+);
 
 /// 홈 피드 대역: 첫 페이지만 응답, 다음 페이지는 끝나지 않음 (하단 로딩 칸 유지)
 class _FirstPageOnlyFeedRepository implements HomeFeedRepository {
@@ -44,7 +54,10 @@ class _FirstPageOnlyFeedRepository implements HomeFeedRepository {
   Future<List<String>> loadRecentlySeenItemIds() async => const [];
 
   @override
-  Future<void> saveRecentlySeenItemIds(List<String> recentlySeenItemIds) async {}
+  Future<String?> readCurrentMemberId() async => 'member-1';
+
+  @override
+  Future<void> saveRecentlySeenItemIds(List<String> recentlySeenItemIds, {required String memberId}) async {}
 }
 
 /// 내 물품 대역: 교환 가능·교환 완료 목록 지정, 상세 조회는 실패 (카드 좋아요 동기화 생략)
@@ -121,6 +134,29 @@ void main() {
 
       expect(feedPageController(tester).page, 0);
       expect(find.text('name-a'), findsOneWidget);
+    });
+
+    testWidgets('차단으로 보던 물품 앞 물품이 빠짐 > 보던 물품 그대로 표시', (tester) async {
+      final container = await pumpHomeTab(
+        tester,
+        feedItems: [
+          _feedItemBy('a', 'blocked'),
+          _feedItemBy('b', 'other'),
+          _feedItemBy('c', 'other'),
+          _feedItemBy('d', 'blocked'),
+          _feedItemBy('e', 'other'),
+        ],
+        itemRepository: _MyItemsRepository(availableItems: [_feedItem('mine')]),
+      );
+      await jumpToFeedPage(tester, 2);
+      expect(find.text('name-c'), findsOneWidget);
+
+      container.read(memberBlockProvider.notifier).seed({'blocked'}, force: true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(feedPageController(tester).page, 1);
+      expect(find.text('name-c'), findsOneWidget);
     });
 
     testWidgets('보던 광고 칸 로드 실패 > 칸 접히고 그 자리에 다음 물품 표시', (tester) async {

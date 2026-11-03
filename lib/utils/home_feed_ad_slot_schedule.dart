@@ -32,6 +32,24 @@ class HomeFeedAdSlotSchedule {
     return virtualIndex - adsBefore;
   }
 
+  /// 피드 index > 가상 index (앞에 놓인 광고 수만큼 더함)
+  int virtualIndexAtFeedIndex(int feedIndex) {
+    var virtualIndex = feedIndex;
+    for (final adVirtualIndex in _adVirtualIndicesSorted) {
+      if (adVirtualIndex > virtualIndex) break;
+      virtualIndex++;
+    }
+    return virtualIndex;
+  }
+
+  /// 현재 칸 뒤 첫 광고 칸 가상 index (없으면 null, 광고 미리 요청 판단용)
+  int? nextAdVirtualIndexAfter(int virtualIndex) {
+    for (final adVirtualIndex in _adVirtualIndicesSorted) {
+      if (adVirtualIndex > virtualIndex) return adVirtualIndex;
+    }
+    return null;
+  }
+
   /// 피드 통째 교체 시 배치 초기화
   void reset() {
     _adVirtualIndices.clear();

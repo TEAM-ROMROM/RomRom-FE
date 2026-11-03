@@ -52,7 +52,7 @@ void main() {
   });
 
   test('최근 본 물품: 저장 후 같은 회원은 그대로 복원, 다른 회원은 빈 목록', () async {
-    await buildRepository().saveRecentlySeenItemIds(['a', 'b']);
+    await buildRepository().saveRecentlySeenItemIds(['a', 'b'], memberId: 'member-1');
 
     expect(await buildRepository().loadRecentlySeenItemIds(), ['a', 'b']);
     final preferences = await SharedPreferences.getInstance();
@@ -62,13 +62,21 @@ void main() {
     expect(await buildRepository().loadRecentlySeenItemIds(), isEmpty);
   });
 
-  test('최근 본 물품: 회원 정보 없으면 저장·복원 안 함', () async {
+  test('최근 본 물품: 회원 정보 없으면 복원 안 함', () async {
+    await buildRepository().saveRecentlySeenItemIds(['a'], memberId: 'member-1');
     currentMemberId = null;
 
-    await buildRepository().saveRecentlySeenItemIds(['a']);
-
     expect(await buildRepository().loadRecentlySeenItemIds(), isEmpty);
+    expect(await buildRepository().readCurrentMemberId(), isNull);
+  });
+
+  test('최근 본 물품 저장: 지정 회원 키에 저장 (저장 시점 현재 회원과 무관)', () async {
+    currentMemberId = 'member-2';
+
+    await buildRepository().saveRecentlySeenItemIds(['a'], memberId: 'member-1');
+
     final preferences = await SharedPreferences.getInstance();
-    expect(preferences.getKeys(), isEmpty);
+    expect(preferences.getStringList('${StorageKeys.homeFeedRecentlySeenItemIds.key}_member-1'), ['a']);
+    expect(preferences.getStringList('${StorageKeys.homeFeedRecentlySeenItemIds.key}_member-2'), isNull);
   });
 }

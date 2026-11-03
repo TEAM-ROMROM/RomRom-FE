@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/models/apis/objects/notification_history.dart';
 import 'package:romrom_fe/models/apis/responses/notification_history_response.dart';
 import 'package:romrom_fe/providers/notification_repository_provider.dart';
+import 'package:romrom_fe/providers/notification_unread_count_provider.dart';
 import 'package:romrom_fe/repositories/notification_repository.dart';
 import 'package:romrom_fe/states/notification_list_state.dart';
 import 'package:romrom_fe/utils/notification_read_rules.dart';
@@ -177,17 +178,13 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
     await reload();
   }
 
-  /// 미확인 개수만 재조회 (목록 유지, 실패 시 기존 값 유지)
+  /// 미확인 개수만 재조회 (목록 유지, 실패 시 기존 값 유지, 배지 provider와 같은 값)
   Future<void> refreshUnreadCount() async {
     final generation = _listGeneration;
-    try {
-      final unreadCount = await _repository.getUnreadCount();
-      final current = state.valueOrNull;
-      if (current == null || generation != _listGeneration) return;
-      state = AsyncData(current.copyWith(unreadCount: unreadCount));
-    } catch (error) {
-      debugPrint('[notification list] unread count failed : $error');
-    }
+    final unreadCount = await ref.read(notificationUnreadCountProvider.notifier).refresh();
+    final current = state.valueOrNull;
+    if (unreadCount == null || current == null || generation != _listGeneration) return;
+    state = AsyncData(current.copyWith(unreadCount: unreadCount));
   }
 
   /// 첫 [pageCount]페이지 한 번에 조회 + 미확인 개수 (병렬)
@@ -206,15 +203,9 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
     );
   }
 
-  /// 미확인 개수 실패는 목록 로드를 막지 않음 (배지 미표시로 폴백)
-  Future<int> _fetchUnreadCountOrZero() async {
-    try {
-      return await _repository.getUnreadCount();
-    } catch (error) {
-      debugPrint('[notification list] unread count failed : $error');
-      return 0;
-    }
-  }
+  /// 미확인 개수 (배지 provider 경유 > 같은 값 공유), 실패는 목록 로드를 막지 않음 (0으로 폴백)
+  Future<int> _fetchUnreadCountOrZero() async =>
+      await ref.read(notificationUnreadCountProvider.notifier).refresh() ?? 0;
 
   /// 서버 last 값 우선, 없으면 꽉 찬 페이지일 때만 더 있음으로 판단
   bool _hasMorePages(NotificationHistoryPage? page, {required int fetchedCount, required int pageSize}) {

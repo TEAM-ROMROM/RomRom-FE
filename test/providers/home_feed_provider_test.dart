@@ -6,19 +6,27 @@ import 'package:romrom_fe/enums/home_feed_refresh_result.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/home_feed_repository_provider.dart';
+import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/repositories/home_feed_repository.dart';
 
 /// 최근 본 물품 저장소 fake (기기 저장 대신 메모리, 저장 호출 기록)
 mixin _InMemoryRecentlySeenStorage {
   List<String> persistedRecentlySeenItemIds = const [];
   int saveCallCount = 0;
+  // 현재 로그인 회원 (null = 세션 종료로 비워짐), 마지막 저장 회원
+  String? currentMemberId = 'member-1';
+  String? lastSavedMemberId;
+
+  Future<String?> readCurrentMemberId() async => currentMemberId;
 
   Future<List<String>> loadRecentlySeenItemIds() async => persistedRecentlySeenItemIds;
 
-  Future<void> saveRecentlySeenItemIds(List<String> recentlySeenItemIds) async {
+  Future<void> saveRecentlySeenItemIds(List<String> recentlySeenItemIds, {required String memberId}) async {
     saveCallCount++;
+    lastSavedMemberId = memberId;
     persistedRecentlySeenItemIds = List.of(recentlySeenItemIds);
   }
 }
@@ -153,6 +161,14 @@ class _LoadMoreFailRepo with _InMemoryRecentlySeenStorage implements HomeFeedRep
 /// lat/lng 없는 Item — fromItems에서 LocationService 호출 안 함 ('미지정').
 Item _item(String id) => Item(itemId: id, itemName: 'name-$id', price: 0);
 
+/// 작성자 지정 Item (차단 회원 물품 제외 검증)
+Item _itemBy(String id, String authorMemberId) => Item(
+  itemId: id,
+  itemName: 'name-$id',
+  price: 0,
+  member: Member(memberId: authorMemberId),
+);
+
 /// 페이지별 응답 + 페이지별 대기 (진행 중 refresh·loadMore 경쟁 재현, gate 없으면 즉시 응답)
 class _GateablePagesRepo with _InMemoryRecentlySeenStorage implements HomeFeedRepository {
   final Map<int, List<Item>> pages;
@@ -234,12 +250,12 @@ void main() {
       final callsAfterInitial = repo.callCount;
 
       // 최초 refresh — lastRefreshAt 세팅
-      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
       final callsAfterFirstRefresh = repo.callCount;
       expect(callsAfterFirstRefresh, greaterThan(callsAfterInitial));
 
       // 즉시 두 번째 refresh — throttle로 차단
-      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
       expect(repo.callCount, callsAfterFirstRefresh, reason: 'throttle 차단되어 API 호출 없음');
     });
 
@@ -258,7 +274,7 @@ void main() {
       final beforeRev = c.read(homeFeedProvider).value!.feedRevision;
 
       // refresh → 같은 데이터지만 'a'가 끝으로 가야 함
-      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
       final after = c.read(homeFeedProvider).value!;
       expect(after.items.map((e) => e.itemUuid).toList(), ['b', 'c', 'a']);
       // refresh는 replace 신호로 feedRevision을 증가시켜야 함 (#904)
@@ -283,7 +299,7 @@ void main() {
       expect(c.read(homeFeedProvider).value!.feedRevision, initialRev, reason: 'loadMore는 append이므로 revision 불변');
 
       // refresh: revision 증가 (replace) — 초기보다 많은 아이템이어도 append로 오분류되지 않음
-      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
       expect(c.read(homeFeedProvider).value!.feedRevision, initialRev + 1, reason: 'refresh는 replace이므로 revision 증가');
     });
 
@@ -300,10 +316,9 @@ void main() {
       for (int i = 0; i < 105; i++) {
         notifier.markSeen('id-$i');
       }
-      final state = c.read(homeFeedProvider).value!;
-      expect(state.seenItemIds.length, kHomeFeedSeenSetMaxSize);
-      expect(state.seenItemIds.contains('id-0'), false, reason: '가장 오래된 것 제거');
-      expect(state.seenItemIds.contains('id-104'), true);
+      expect(notifier.seenItemIds.length, kHomeFeedSeenSetMaxSize);
+      expect(notifier.seenItemIds.contains('id-0'), false, reason: '가장 오래된 것 제거');
+      expect(notifier.seenItemIds.contains('id-104'), true);
     });
 
     test('loadMore 빈 페이지: page=0 되감기 + seen 기록 유지 + 새 시드·스냅샷으로 새 세션 (#966)', () async {
@@ -323,7 +338,7 @@ void main() {
 
       final after = c.read(homeFeedProvider).value!;
       expect(after.currentPage, 0, reason: '되감기');
-      expect(after.seenItemIds.toList(), ['a', 'b'], reason: 'seen 기록은 지우지 않음 (서버가 본 물품 뒤로)');
+      expect(notifier.seenItemIds.toList(), ['a', 'b'], reason: 'seen 기록은 지우지 않음 (서버가 본 물품 뒤로)');
       final rewindCall = repo.calls.last;
       expect(rewindCall.pageNumber, 0);
       expect(rewindCall.feedSeed, 101, reason: '되감기는 새 세션 > 새 시드');
@@ -342,7 +357,7 @@ void main() {
 
       expect(repo.calls.single.recentlySeenItemIds, ['a', 'old']);
       expect(repo.calls.single.feedSeed, 7);
-      expect(state.seenItemIds.toList(), ['old', 'a']);
+      expect(c.read(homeFeedProvider.notifier).seenItemIds.toList(), ['old', 'a']);
       expect(state.items.map((item) => item.itemUuid).toList(), ['b', 'c', 'a'], reason: '받은 페이지 안에서도 본 물품 뒤로');
     });
 
@@ -352,11 +367,12 @@ void main() {
       })..persistedRecentlySeenItemIds = List.generate(kHomeFeedSeenSetMaxSize + 5, (index) => 'id-$index');
       final c = _makeContainer(repo);
 
-      final state = await c.read(homeFeedProvider.future);
+      await c.read(homeFeedProvider.future);
+      final seenItemIds = c.read(homeFeedProvider.notifier).seenItemIds;
 
-      expect(state.seenItemIds.length, kHomeFeedSeenSetMaxSize);
-      expect(state.seenItemIds.first, 'id-5', reason: '오래된 5건 제외');
-      expect(state.seenItemIds.last, 'id-${kHomeFeedSeenSetMaxSize + 4}');
+      expect(seenItemIds.length, kHomeFeedSeenSetMaxSize);
+      expect(seenItemIds.first, 'id-5', reason: '오래된 5건 제외');
+      expect(seenItemIds.last, 'id-${kHomeFeedSeenSetMaxSize + 4}');
     });
 
     test('loadMore: 중간에 본 물품이 늘어도 같은 세션은 같은 시드·스냅샷 유지 (#966)', () async {
@@ -388,7 +404,7 @@ void main() {
       await c.read(homeFeedProvider.future);
 
       notifier.markSeen('a');
-      await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      await notifier.refresh(trigger: RefreshTrigger.foregroundResume);
 
       final refreshCall = repo.calls.last;
       expect(refreshCall.feedSeed, 2);
@@ -406,13 +422,13 @@ void main() {
       final failingRefreshRepo = _ThrowingRepo();
       c.updateOverrides([homeFeedRepositoryProvider.overrideWithValue(failingRefreshRepo)]);
       notifier.generateFeedSeed = () => 6;
-      await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      await notifier.refresh(trigger: RefreshTrigger.foregroundResume);
 
       expect(failingRefreshRepo.callCount, greaterThan(0));
       expect(c.read(homeFeedProvider).value!.feedSeed, 5, reason: '실패한 새로고침의 시드로 바뀌지 않음');
     });
 
-    test('markSeen: 최근 본 물품을 기기에 저장 (오래된 순)', () async {
+    test('markSeen: 넘길 때마다 저장하지 않고 묶어서 1회 저장 (오래된 순)', () async {
       final repo = _RecordingRepo({
         0: [_item('a')],
       });
@@ -424,9 +440,61 @@ void main() {
       notifier.markSeen('b');
       notifier.markSeen('a');
       await Future<void>.delayed(Duration.zero);
+      expect(repo.saveCallCount, 0, reason: '묶음 저장 대기');
 
-      expect(repo.saveCallCount, 3);
+      await notifier.flushSeenItemIds();
+
+      expect(repo.saveCallCount, 1);
       expect(repo.persistedRecentlySeenItemIds, ['b', 'a'], reason: '다시 본 물품은 최근으로 이동');
+    });
+
+    test('markSeen: 피드 상태를 새로 내보내지 않음 (넘길 때 홈 화면 재빌드 방지)', () async {
+      final repo = _RecordingRepo({
+        0: [_item('a'), _item('b')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      final before = c.read(homeFeedProvider);
+      var emitCount = 0;
+      c.listen(homeFeedProvider, (_, _) => emitCount++);
+
+      c.read(homeFeedProvider.notifier).markSeen('a');
+
+      expect(emitCount, 0);
+      expect(identical(c.read(homeFeedProvider), before), true);
+    });
+
+    test('세션 만료: 회원 정보가 비워진 뒤 세션 초기화돼도 기록 시점 회원 키로 저장', () async {
+      final repo = _RecordingRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      c.read(homeFeedProvider.notifier).markSeen('a');
+      await Future<void>.delayed(Duration.zero);
+
+      repo.currentMemberId = null;
+      c.invalidate(homeFeedProvider);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repo.saveCallCount, 1);
+      expect(repo.lastSavedMemberId, 'member-1');
+      expect(repo.persistedRecentlySeenItemIds, ['a']);
+    });
+
+    test('세션 초기화(invalidate): 대기 중 본 물품 기록 즉시 저장', () async {
+      final repo = _RecordingRepo({
+        0: [_item('a')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      c.read(homeFeedProvider.notifier).markSeen('a');
+
+      c.invalidate(homeFeedProvider);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repo.saveCallCount, 1);
+      expect(repo.persistedRecentlySeenItemIds, ['a']);
     });
 
     test('build 실패 시 AsyncError surface', () async {
@@ -446,8 +514,8 @@ void main() {
       final notifier = c.read(homeFeedProvider.notifier);
 
       // 두 번 연속 호출 — 두 번째는 throttle 또는 isLoading 가드로 차단
-      final f1 = notifier.refresh(trigger: RefreshTrigger.tabReentry);
-      final f2 = notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final f1 = notifier.refresh(trigger: RefreshTrigger.foregroundResume);
+      final f2 = notifier.refresh(trigger: RefreshTrigger.foregroundResume);
       await Future.wait([f1, f2]);
       // 예외 없이 완료, 데이터 유지
       expect(c.read(homeFeedProvider).hasValue, true);
@@ -501,7 +569,7 @@ void main() {
       await expectLater(c.read(homeFeedProvider.future), throwsException);
       final callsAfterInitial = repo.callCount;
 
-      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.tabReentry);
+      await c.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.foregroundResume);
 
       expect(repo.callCount, callsAfterInitial);
       expect(c.read(homeFeedProvider).hasError, true);
@@ -609,7 +677,7 @@ void main() {
       final c = _makeContainer(repo);
       await c.read(homeFeedProvider.future);
       final notifier = c.read(homeFeedProvider.notifier);
-      await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      await notifier.refresh(trigger: RefreshTrigger.foregroundResume);
       final callsAfterAutoRefresh = repo.callCount;
 
       final result = await notifier.refresh(trigger: RefreshTrigger.manualRefresh);
@@ -625,7 +693,7 @@ void main() {
       final c = _makeContainer(repo);
       await c.read(homeFeedProvider.future);
       final notifier = c.read(homeFeedProvider.notifier);
-      await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      await notifier.refresh(trigger: RefreshTrigger.foregroundResume);
       final callsAfterAutoRefresh = repo.callCount;
 
       final result = await notifier.refresh(trigger: RefreshTrigger.searchRangeChanged);
@@ -641,9 +709,9 @@ void main() {
       final c = _makeContainer(repo);
       await c.read(homeFeedProvider.future);
       final notifier = c.read(homeFeedProvider.notifier);
-      await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      await notifier.refresh(trigger: RefreshTrigger.foregroundResume);
 
-      final result = await notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final result = await notifier.refresh(trigger: RefreshTrigger.foregroundResume);
 
       expect(result, HomeFeedRefreshResult.skipped);
     });
@@ -703,7 +771,7 @@ void main() {
       final notifier = c.read(homeFeedProvider.notifier);
       repo.gateByPageNumber[0] = Completer<void>();
 
-      final autoRefresh = notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final autoRefresh = notifier.refresh(trigger: RefreshTrigger.foregroundResume);
       final manualRefresh = notifier.refresh(trigger: RefreshTrigger.manualRefresh);
       final callsWhileGated = repo.callCount;
       repo.gateByPageNumber.remove(0)!.complete();
@@ -722,7 +790,7 @@ void main() {
       final notifier = c.read(homeFeedProvider.notifier);
       repo.gateByPageNumber[0] = Completer<void>();
 
-      final autoRefresh = notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final autoRefresh = notifier.refresh(trigger: RefreshTrigger.foregroundResume);
       final firstManualRefresh = notifier.refresh(trigger: RefreshTrigger.manualRefresh);
       final secondManualRefresh = notifier.refresh(trigger: RefreshTrigger.searchRangeChanged);
       final callsWhileGated = repo.callCount;
@@ -741,7 +809,7 @@ void main() {
       final notifier = c.read(homeFeedProvider.notifier);
       repo.gateByPageNumber[0] = Completer<void>();
 
-      final firstRefresh = notifier.refresh(trigger: RefreshTrigger.tabReentry);
+      final firstRefresh = notifier.refresh(trigger: RefreshTrigger.foregroundResume);
       final secondRefresh = notifier.refresh(trigger: RefreshTrigger.foregroundResume);
       final callsWhileGated = repo.callCount;
       repo.gateByPageNumber.remove(0)!.complete();
@@ -786,6 +854,34 @@ void main() {
       notifier.excludeReportedItem('b');
       repo.gateByPageNumber.remove(1)!.complete();
       await loadMore;
+
+      expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a', 'c']);
+    });
+  });
+
+  group('HomeFeedNotifier 차단 회원 물품 제외', () {
+    test('차단 즉시 현재 피드에서 그 회원 물품 제외 (다른 회원 물품 유지)', () async {
+      final repo = _RecordingRepo({
+        0: [_itemBy('a', 'blocked'), _itemBy('b', 'other'), _itemBy('c', 'blocked')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+
+      c.read(memberBlockProvider.notifier).seed({'blocked'}, force: true);
+
+      expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['b']);
+    });
+
+    test('차단한 회원 물품은 이후 loadMore 결과에서도 제외', () async {
+      final repo = _RecordingRepo({
+        0: [_itemBy('a', 'other')],
+        1: [_itemBy('b', 'blocked'), _itemBy('c', 'other')],
+      });
+      final c = _makeContainer(repo);
+      await c.read(homeFeedProvider.future);
+      c.read(memberBlockProvider.notifier).seed({'blocked'}, force: true);
+
+      await c.read(homeFeedProvider.notifier).loadMore();
 
       expect(c.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a', 'c']);
     });

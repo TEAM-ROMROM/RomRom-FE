@@ -51,22 +51,26 @@ class HomeFeedRepository {
     }
   }
 
-  /// 최근 본 물품 id 전체 교체 저장 (오래된 순, 회원 정보 없으면 저장 안 함, 실패는 무시)
-  Future<void> saveRecentlySeenItemIds(List<String> recentlySeenItemIds) async {
+  /// 최근 본 물품 id 전체 교체 저장 (오래된 순, [memberId] 키: 기록 시점 회원 > 저장 시점에 로그아웃돼도 같은 회원 키, 실패는 무시)
+  Future<void> saveRecentlySeenItemIds(List<String> recentlySeenItemIds, {required String memberId}) async {
     try {
-      final storageKey = await _buildRecentlySeenStorageKey();
-      if (storageKey == null) return;
       final preferences = await SharedPreferences.getInstance();
-      await preferences.setStringList(storageKey, recentlySeenItemIds);
+      await preferences.setStringList(_toRecentlySeenStorageKey(memberId), recentlySeenItemIds);
     } catch (error) {
       debugPrint('[home feed] recently seen save failed : $error');
     }
   }
 
-  /// 회원별 저장 키: '{key}_{memberId}' (다른 계정으로 로그인 시 기록 분리)
+  /// 현재 로그인 회원 ID (없으면 null, 본 물품 기록 시점 저장 키 확정용)
+  Future<String?> readCurrentMemberId() => _readCurrentMemberId();
+
+  /// 현재 회원 저장 키 (회원 정보 없음 > null)
   Future<String?> _buildRecentlySeenStorageKey() async {
     final memberId = await _readCurrentMemberId();
     if (memberId == null || memberId.isEmpty) return null;
-    return '${StorageKeys.homeFeedRecentlySeenItemIds.key}_$memberId';
+    return _toRecentlySeenStorageKey(memberId);
   }
+
+  /// 회원별 저장 키: '{key}_{memberId}' (다른 계정으로 로그인 시 기록 분리)
+  String _toRecentlySeenStorageKey(String memberId) => '${StorageKeys.homeFeedRecentlySeenItemIds.key}_$memberId';
 }

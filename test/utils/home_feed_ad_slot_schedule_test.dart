@@ -81,6 +81,26 @@ void main() {
       expect(adSlotSchedule.virtualItemCount(20), 21);
     });
 
+    test('virtualIndexAtFeedIndex: 피드 index > 앞 광고 수만큼 더한 가상 index', () {
+      final adSlotSchedule = HomeFeedAdSlotSchedule(random: _FixedRandom(0));
+      adSlotSchedule.scheduleAdsForFeedLength(20);
+
+      // 광고 자리: 가상 5, 14
+      expect(adSlotSchedule.virtualIndexAtFeedIndex(4), 4);
+      expect(adSlotSchedule.virtualIndexAtFeedIndex(5), 6);
+      expect(adSlotSchedule.virtualIndexAtFeedIndex(12), 13);
+      expect(adSlotSchedule.virtualIndexAtFeedIndex(13), 15);
+    });
+
+    test('nextAdVirtualIndexAfter: 현재 칸 뒤 첫 광고 칸, 없으면 null', () {
+      final adSlotSchedule = HomeFeedAdSlotSchedule(random: _FixedRandom(0));
+      adSlotSchedule.scheduleAdsForFeedLength(20);
+
+      expect(adSlotSchedule.nextAdVirtualIndexAfter(0), 5);
+      expect(adSlotSchedule.nextAdVirtualIndexAfter(5), 14, reason: '보고 있는 광고 칸은 제외');
+      expect(adSlotSchedule.nextAdVirtualIndexAfter(14), isNull);
+    });
+
     test('광고 아닌 칸 접기 요청은 무시', () {
       final adSlotSchedule = HomeFeedAdSlotSchedule(random: _FixedRandom(0));
       adSlotSchedule.scheduleAdsForFeedLength(20);

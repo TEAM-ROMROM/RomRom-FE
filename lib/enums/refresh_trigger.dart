@@ -1,8 +1,6 @@
-/// 홈 피드 새로고침 트리거 종류 (자동 2개: 30초 제한 적용, 사용자 요청 2개: 제한 우회)
+/// 홈 피드 새로고침 트리거 종류 (자동 1개: 30초 제한 적용, 사용자 요청 2개: 제한 우회)
+/// 탭 재진입은 새로고침하지 않음 (다른 탭에 다녀와도 보던 카드 유지)
 enum RefreshTrigger {
-  /// 다른 탭에서 홈 탭으로 재진입
-  tabReentry(shouldBypassThrottle: false),
-
   /// 앱이 백그라운드 → 포그라운드로 복귀 (현재 탭이 홈일 때만)
   foregroundResume(shouldBypassThrottle: false),
 

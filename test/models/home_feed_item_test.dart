@@ -40,4 +40,28 @@ void main() {
     expect(feedItems[1].transactionTypes, isEmpty);
     expect(feedItems[2].itemCondition, ItemCondition.heavilyUsed);
   });
+
+  test('fromItems > AI 가격 여부는 목록 응답 값 (없으면 false), 상세 첫 표시용 원본 보관', () {
+    final items = [
+      Item(itemId: 'a', isAiPredictedPrice: true),
+      Item(itemId: 'b', isAiPredictedPrice: false),
+      Item(itemId: 'c'),
+    ];
+
+    final feedItems = HomeFeedItem.fromItems(items, locationTexts: const ['', '', '']);
+
+    expect(feedItems.map((feedItem) => feedItem.aiPrice), [true, false, false]);
+    expect(identical(feedItems[0].sourceItem, items[0]), true);
+  });
+
+  test('previewItemFor > 같은 물품이면 목록 원본, 다른 물품·빈 id면 null (상세 첫 표시용)', () {
+    final feedItem = HomeFeedItem.fromItems(
+      [Item(itemId: 'a', itemName: '물품')],
+      locationTexts: const [''],
+    ).single;
+
+    expect(feedItem.previewItemFor('a')?.itemName, '물품');
+    expect(feedItem.previewItemFor('b'), isNull);
+    expect(feedItem.previewItemFor(''), isNull);
+  });
 }
