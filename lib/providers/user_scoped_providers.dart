@@ -11,6 +11,7 @@ import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/providers/promotion_provider.dart';
+import 'package:romrom_fe/providers/sent_requests_focus_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 
 /// 로그인 회원별 상태를 가진 provider 목록 (세션 종료 시 전부 초기화, 새 provider는 여기에 추가)
@@ -28,6 +29,7 @@ final List<ProviderOrFamily> userScopedProviders = [
   homeFeedProvider,
   currentTabIndexProvider,
   coachMarkTriggerProvider,
+  sentRequestsFocusTriggerProvider,
   promotionProvider,
 ];
 

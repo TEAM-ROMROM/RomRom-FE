@@ -20,9 +20,12 @@ class SentRequestItemCard extends StatelessWidget {
   final String otherUserProfileUrl;
   final String title;
   final String location;
-  final DateTime createdDate;
+  // 요청 시각 (null > 시간 표시 생략)
+  final DateTime? requestedDate;
   final List<ItemTradeOption> tradeOptions;
   final TradeStatus? tradeStatus;
+  // 메뉴 '수정' 노출 여부 (서버가 대기 상태 요청만 수정 허용)
+  final bool canEdit;
   final VoidCallback? onEditTap;
   final VoidCallback? onCancelTap;
   final VoidCallback? onTap;
@@ -34,9 +37,10 @@ class SentRequestItemCard extends StatelessWidget {
     required this.otherUserProfileUrl,
     required this.title,
     required this.location,
-    required this.createdDate,
+    required this.requestedDate,
     required this.tradeOptions,
     this.tradeStatus,
+    this.canEdit = true,
     this.onEditTap,
     this.onCancelTap,
     this.onTap,
@@ -168,14 +172,17 @@ class SentRequestItemCard extends StatelessWidget {
     return Row(
       children: [
         Text(location, style: _buildSubTextStyle()),
-        SizedBox(width: 2.w),
-        Container(
-          width: 2.w,
-          height: 2.h,
-          decoration: const BoxDecoration(color: AppColors.opacity60White, shape: BoxShape.circle),
-        ),
-        SizedBox(width: 2.w),
-        Text(getTimeAgo(createdDate), style: _buildSubTextStyle()),
+        // 요청 시각 (없으면 중간점까지 생략)
+        if (requestedDate != null) ...[
+          SizedBox(width: 2.w),
+          Container(
+            width: 2.w,
+            height: 2.h,
+            decoration: const BoxDecoration(color: AppColors.opacity60White, shape: BoxShape.circle),
+          ),
+          SizedBox(width: 2.w),
+          Text(getTimeAgo(requestedDate!), style: _buildSubTextStyle()),
+        ],
       ],
     );
   }
@@ -213,16 +220,17 @@ class SentRequestItemCard extends StatelessWidget {
       right: 9.w,
       child: RomRomContextMenu(
         items: [
-          ContextMenuItem(
-            id: 'edit',
-            icon: AppIcons.edit,
-            title: '수정',
-            onTap: () {
-              // 수정 액션
-              onEditTap?.call();
-            },
-            showDividerAfter: true,
-          ),
+          if (canEdit)
+            ContextMenuItem(
+              id: 'edit',
+              icon: AppIcons.edit,
+              title: '수정',
+              onTap: () {
+                // 수정 액션
+                onEditTap?.call();
+              },
+              showDividerAfter: true,
+            ),
           ContextMenuItem(
             id: 'cancel',
             icon: AppIcons.trash,

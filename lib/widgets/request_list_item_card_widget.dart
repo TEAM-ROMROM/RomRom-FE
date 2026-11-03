@@ -13,13 +13,18 @@ import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-/// 요청 목록 아이템 카드 위젯
+/// 받은 요청 카드: 요청 물품 이미지·이름, 요청자, 주소·요청 시각, 요청 거래 방식, 거래 상태
 class RequestListItemCardWidget extends StatelessWidget {
   final String imageUrl;
   final String title;
   final String address;
-  final DateTime createdDate;
+  // 요청 시각 (null > 시간 표시 생략)
+  final DateTime? requestedDate;
+  // 요청자 닉네임·프로필 (응답에 없으면 null > 요청자 행 생략)
+  final String? requesterNickname;
+  final String? requesterProfileUrl;
   final bool isNew; // 새로운 요청 여부
   final List<ItemTradeOption> tradeOptions;
   final TradeStatus tradeStatus;
@@ -31,7 +36,9 @@ class RequestListItemCardWidget extends StatelessWidget {
     required this.imageUrl,
     required this.title,
     required this.address,
-    required this.createdDate,
+    required this.requestedDate,
+    this.requesterNickname,
+    this.requesterProfileUrl,
     this.isNew = false,
     required this.tradeOptions,
     required this.tradeStatus,
@@ -88,6 +95,8 @@ class RequestListItemCardWidget extends StatelessWidget {
                             ],
                           ),
 
+                          if (_hasRequesterNickname) ...[const SizedBox(height: 6), _buildRequesterRow()],
+
                           const SizedBox(height: 8),
 
                           Row(
@@ -100,25 +109,26 @@ class RequestListItemCardWidget extends StatelessWidget {
                                   color: AppColors.opacity60White,
                                 ),
                               ),
-                              SizedBox(width: 4.w),
-                              // 중간점
-                              Container(
-                                width: 2.w,
-                                height: 2.w,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.opacity60White,
+                              // 요청 시각 (없으면 중간점까지 생략)
+                              if (requestedDate != null) ...[
+                                SizedBox(width: 4.w),
+                                Container(
+                                  width: 2.w,
+                                  height: 2.w,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.opacity60White,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(width: 4.w),
-                              // 시간
-                              Text(
-                                getTimeAgo(createdDate),
-                                style: CustomTextStyles.p3.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.opacity60White,
+                                SizedBox(width: 4.w),
+                                Text(
+                                  getTimeAgo(requestedDate!),
+                                  style: CustomTextStyles.p3.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.opacity60White,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
 
@@ -172,6 +182,31 @@ class RequestListItemCardWidget extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  bool get _hasRequesterNickname => requesterNickname?.isNotEmpty ?? false;
+
+  /// 요청자 행: 프로필 + 닉네임 (한 줄 말줄임)
+  Widget _buildRequesterRow() {
+    return Row(
+      children: [
+        UserProfileCircularAvatar(
+          avatarSize: Size(16.w, 16.w),
+          profileUrl: requesterProfileUrl,
+          hasBorder: false,
+          isDeleteAccount: false,
+        ),
+        SizedBox(width: 4.w),
+        Flexible(
+          child: Text(
+            requesterNickname!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500, color: AppColors.opacity80White),
+          ),
+        ),
+      ],
     );
   }
 

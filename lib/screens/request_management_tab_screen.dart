@@ -12,9 +12,10 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/providers/sent_requests_focus_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
+import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/states/my_items_state.dart';
 import 'package:romrom_fe/states/trade_requests_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
@@ -26,9 +27,10 @@ import 'package:romrom_fe/widgets/request_management/request_list_header.dart';
 import 'package:romrom_fe/widgets/request_management/request_page_indicator.dart';
 import 'package:romrom_fe/widgets/request_management/request_received_list.dart';
 import 'package:romrom_fe/widgets/request_management/request_sent_list.dart';
+import 'package:romrom_fe/widgets/request_management/trade_request_option_edit_sheet.dart';
 
-/// 요청관리 탭: 내 물품 카드(myItemsProvider 구독) + 받은·보낸 요청(tradeRequestsProvider 구독)
-/// 조회·정렬·읽음·취소는 notifier 위임, 화면은 카드 선택·토글·이동·안내만 담당
+/// 요청관리 탭: 내 물품 카드(myItemsProvider 판매중 전체 구독) + 받은·보낸 요청(tradeRequestsProvider 구독)
+/// 조회·정렬·읽음·수정·취소는 notifier 위임, 화면은 카드 선택·토글·이동·안내만 담당
 class RequestManagementTabScreen extends ConsumerStatefulWidget {
   const RequestManagementTabScreen({super.key});
 
@@ -37,9 +39,6 @@ class RequestManagementTabScreen extends ConsumerStatefulWidget {
 }
 
 class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTabScreen> with TickerProviderStateMixin {
-  // 요청관리 카드 최대 개수 (판매중 내 물품 첫 페이지 10개)
-  static const int maximumItemCardCount = 10;
-
   final ScrollController _scrollController = ScrollController();
 
   // 진행 중인 거래 요청 로드 수 (0 초과 = 로딩 표시)
@@ -47,6 +46,9 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
 
   // 진행 중인 취소 요청 ID (중복 탭 방지)
   final Set<String> _pendingCancelRequestIds = {};
+
+  // 채팅방 찾는 중인 보낸 요청 ID (중복 탭 방지)
+  final Set<String> _pendingChatRoomOpenRequestIds = {};
 
   // 스크롤 상태 관리
   bool _isScrolled = false;
@@ -85,6 +87,16 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
 
     // 첫 진입(이미 로드된 경우 즉시) + 이후 내 물품 변경마다 1회 로드
     ref.listenManual<AsyncValue<MyItemsState>>(myItemsProvider, _onMyItemsChanged, fireImmediately: true);
+
+    // 교환 요청 화면 '보낸 요청 보기' 신호 > 신호 소비 > 보낸 요청 토글 (initState 중 setState 금지 > 프레임 이후)
+    ref.listenManual<bool>(sentRequestsFocusTriggerProvider, (previous, isTriggered) {
+      if (!isTriggered) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(sentRequestsFocusTriggerProvider.notifier).consume();
+        if (!_isRightSelected) _onToggleChanged(true);
+      });
+    }, fireImmediately: true);
   }
 
   @override
@@ -115,7 +127,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
       return;
     }
     setState(() {
-      _itemCards = myItems.available.take(maximumItemCardCount).map(RequestManagementItemCard.fromItem).toList();
+      _itemCards = myItems.available.map(RequestManagementItemCard.fromItem).toList();
       // 카드 감소 시 현재 위치 보정 (빈 목록 > 0)
       _currentCardIndex = _itemCards.isEmpty ? 0 : _currentCardIndex.clamp(0, _itemCards.length - 1);
     });
@@ -187,6 +199,46 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
     } finally {
       _pendingCancelRequestIds.remove(tradeRequestHistoryId);
     }
+  }
+
+  /// 교환 완료 보낸 요청: 삭제 확인 > 삭제 (되돌릴 수 없음 > 확인 필수)
+  Future<void> _confirmAndDeleteTradedRequest(TradeRequestHistory request) async {
+    final isConfirmed = await context.showDeleteDialog(title: '교환 요청 삭제', description: '교환 완료된 요청을 목록에서 삭제하시겠습니까?');
+    if (isConfirmed != true) return;
+    await _cancelTradeRequest(request, successMessage: '삭제되었습니다.', failureMessage: '삭제에 실패했습니다');
+  }
+
+  /// 채팅 중 보낸 요청: 채팅방 찾기 > 채팅방 이동 (못 찾음 > 안내 후 상대 물품 상세, 진행 중 같은 요청 무시)
+  Future<void> _openChatRoomOfSentRequest(TradeRequestHistory request) async {
+    final tradeRequestHistoryId = request.tradeRequestHistoryId ?? '';
+    if (_pendingChatRoomOpenRequestIds.contains(tradeRequestHistoryId)) return;
+    _pendingChatRoomOpenRequestIds.add(tradeRequestHistoryId);
+    try {
+      final chatRoomId = await ref.read(tradeRequestsProvider.notifier).findChatRoomIdOfSentRequest(request);
+      if (!mounted) return;
+      if (chatRoomId == null) {
+        CommonSnackBar.show(context: context, message: '채팅방을 찾지 못해 물품 상세로 이동합니다.', type: SnackBarType.info);
+        _openSentRequestItemDetail(request);
+        return;
+      }
+      context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId));
+    } catch (error) {
+      debugPrint('[request management] chat room lookup failed : $error');
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(error), type: SnackBarType.error);
+    } finally {
+      _pendingChatRoomOpenRequestIds.remove(tradeRequestHistoryId);
+    }
+  }
+
+  /// 보낸 요청 상대 물품 상세 (보낸 요청 = 채팅 시작 불가)
+  void _openSentRequestItemDetail(TradeRequestHistory request) {
+    _openItemDetail(
+      itemId: request.takeItem.itemId!,
+      isMyItem: false,
+      tradeRequestHistoryId: request.tradeRequestHistoryId,
+      isChatAccessAllowed: false,
+    );
   }
 
   /// 물품 상세 이동 (요청관리 진입, 첫 이미지 Hero)
@@ -333,7 +385,7 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
                           if (_isRightSelected)
                             _buildSentRequestsList(tradeRequests, isLoading)
                           else
-                            _buildReceivedRequestsList(tradeRequests.received, isLoading),
+                            _buildReceivedRequestsList(tradeRequests, isLoading),
 
                           const SizedBox(height: 100), // 하단 여백
                         ],
@@ -375,33 +427,29 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
     );
   }
 
-  /// 보낸 요청 목록 (정렬 변경 > 모든 카드 재조회, 교환 완료 탭 > 삭제, 그 외 탭 > 상대 물품 상세)
+  /// 보낸 요청 목록 (정렬 변경 > 모든 카드 재조회, 탭: 교환 완료 > 삭제 확인, 채팅 중 > 채팅방, 그 외 > 상대 물품 상세)
   Widget _buildSentRequestsList(TradeRequestsState tradeRequests, bool isLoading) {
     return RequestSentList(
       sentRequests: tradeRequests.sent,
       isLoading: isLoading,
+      hasLoadFailed: tradeRequests.hasSentLoadFailed,
+      onRetry: () => _runWithLoading(ref.read(tradeRequestsProvider.notifier).retrySentLoad),
       currentSort: tradeRequests.sentSortType,
       onSortChanged: (selected) {
         if (selected == tradeRequests.sentSortType) return; // 동일 정렬 재선택 시 무시
         _runWithLoading(() => ref.read(tradeRequestsProvider.notifier).changeSentSort(selected));
       },
       onCardTap: (request) {
-        if (request.tradeStatus == TradeStatus.traded.serverName) {
-          _cancelTradeRequest(request, successMessage: '삭제되었습니다.', failureMessage: '삭제에 실패했습니다');
-          return;
+        final tradeStatus = TradeStatus.fromServerName(request.tradeStatus);
+        if (tradeStatus == TradeStatus.traded) {
+          _confirmAndDeleteTradedRequest(request);
+        } else if (tradeStatus == TradeStatus.chatting) {
+          _openChatRoomOfSentRequest(request);
+        } else {
+          _openSentRequestItemDetail(request);
         }
-        _openItemDetail(
-          itemId: request.takeItem.itemId!,
-          isMyItem: false,
-          tradeRequestHistoryId: request.tradeRequestHistoryId,
-          isChatAccessAllowed: false, // 보낸요청 = 채팅 불가
-        );
       },
-      onEditTap: (request) {
-        context.navigateTo(
-          screen: ItemModificationScreen(itemId: request.giveItem.itemId, onClose: () => Navigator.pop(context)),
-        );
-      },
+      onEditTap: (request) => TradeRequestOptionEditSheet.show(context: context, request: request),
       onCancelTap: (request) async {
         final result = await context.showDeleteDialog(
           title: '교환 요청 취소',
@@ -413,8 +461,9 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
     );
   }
 
-  /// 받은 요청 목록 (완료 표시 OFF: 진행 중만, ON: 전체 / 탭 > 읽음 처리 + 요청 물품 상세)
-  Widget _buildReceivedRequestsList(List<TradeRequestHistory> receivedRequests, bool isLoading) {
+  /// 받은 요청 목록 (완료 표시 OFF: 진행 중만, ON: 전체 / 탭 > 읽음 처리 + 요청 물품 상세 / 실패 > 현재 카드 재조회)
+  Widget _buildReceivedRequestsList(TradeRequestsState tradeRequests, bool isLoading) {
+    final receivedRequests = tradeRequests.received;
     final filteredRequests = _showCompletedRequests
         ? receivedRequests
         : receivedRequests.where((request) => request.tradeStatus != TradeStatus.traded.serverName).toList();
@@ -422,6 +471,8 @@ class _RequestManagementTabScreenState extends ConsumerState<RequestManagementTa
     return RequestReceivedList(
       filteredRequests: filteredRequests,
       isLoading: isLoading,
+      hasLoadFailed: tradeRequests.hasReceivedLoadFailed,
+      onRetry: () => _runWithLoading(ref.read(tradeRequestsProvider.notifier).retryReceivedLoad),
       onCardTap: (request) {
         final tradeRequestHistoryId = request.tradeRequestHistoryId;
         if (tradeRequestHistoryId != null) {

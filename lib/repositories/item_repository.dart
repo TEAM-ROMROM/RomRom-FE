@@ -17,6 +17,22 @@ class ItemRepository {
     return res.itemPage?.content ?? const <Item>[];
   }
 
+  /// 내 물건 목록 한 페이지 (status별) + 다음 페이지 여부
+  /// 다음 페이지: 서버 전체 페이지 수(page 객체 > 최상위) 기준, 없으면 받은 개수 = 페이지 크기
+  Future<({List<Item> items, bool hasMore})> getMyItemsPage(
+    ItemStatus status, {
+    required int pageNumber,
+    required int pageSize,
+  }) async {
+    final res = await _api.getMyItems(
+      ItemRequest(pageNumber: pageNumber, pageSize: pageSize, itemStatus: status.serverName),
+    );
+    final items = res.itemPage?.content ?? const <Item>[];
+    final totalPages = res.itemPage?.page?.totalPages ?? res.itemPage?.totalPages;
+    final hasMore = totalPages != null ? pageNumber + 1 < totalPages : items.length >= pageSize;
+    return (items: items, hasMore: hasMore);
+  }
+
   Future<ItemResponse> postItem(ItemRequest request) => _api.postItem(request);
 
   Future<void> deleteItem(String itemId) => _api.deleteItem(itemId);
