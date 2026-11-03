@@ -59,11 +59,14 @@ mixin _ChatRoomTradeActions on _ChatRoomScreenStateFields, _ChatRoomMessaging {
                   isTradeCompleted: _isTradeCompleted,
                 );
             if (!alreadyReceived) {
+              // 로컬 ID 보관 > 에코 도착 시 이 카드만 제거 (요청 카드 중복 방지)
+              final localTradeRequestId = buildLocalMessageId(prefix: localTradeRequestIdPrefix);
+              _latestLocalTradeRequestId = localTradeRequestId;
               _messages.insert(
                 0,
                 ChatMessage(
                   chatRoomId: widget.chatRoomId,
-                  chatMessageId: _latestLocalTradeRequestId,
+                  chatMessageId: localTradeRequestId,
                   senderId: _myMemberId,
                   createdDate: DateTime.now(),
                   type: MessageType.tradeCompleteRequest,
@@ -137,13 +140,23 @@ mixin _ChatRoomTradeActions on _ChatRoomScreenStateFields, _ChatRoomMessaging {
     ref.read(chatRoomsProvider.notifier).reload();
   }
 
-  /// 후기 작성 화면 이동 (거래 기록 ID 있을 때만, 이동 시 중복 진입 방지 표시)
-  void _openTradeReviewScreen() {
+  /// 후기 작성 화면 이동: 이미 열려 있으면 무시 > 거래 기록 ID 확인 > 이동 > 작성 완료면 완료 카드 '후기 쓰기' 숨김
+  /// 열림 표시는 화면이 닫히면 해제 (성공·실패 공통)
+  Future<void> _openTradeReviewScreen() async {
+    if (_isTradeReviewScreenOpen) return;
     final tradeRequestHistoryId = chatRoom.tradeRequestHistory?.tradeRequestHistoryId;
     if (tradeRequestHistoryId == null) return;
     _reviewNavigated = true;
-    context.navigateTo(
-      screen: TradeReviewScreen(tradeRequestHistoryId: tradeRequestHistoryId, opponentNickname: _opponentNickname),
-    );
+    _isTradeReviewScreenOpen = true;
+    try {
+      final bool? isReviewSubmitted = await context.navigateTo<bool>(
+        screen: TradeReviewScreen(tradeRequestHistoryId: tradeRequestHistoryId, opponentNickname: _opponentNickname),
+      );
+      if (isReviewSubmitted == true && mounted) {
+        setState(() => _hasWrittenReviewInThisVisit = true);
+      }
+    } finally {
+      _isTradeReviewScreenOpen = false;
+    }
   }
 }

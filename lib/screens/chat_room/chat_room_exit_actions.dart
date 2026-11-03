@@ -5,6 +5,8 @@ mixin _ChatRoomExitActions on _ChatRoomScreenStateFields {
   Future<void> _leaveRoom({required bool shouldPop}) async {
     if (_isLeaving) return;
     _isLeaving = true;
+    // 방 안에서 읽은 메시지가 목록 구독으로 안 읽음에 쌓인 것 해제 (탭바 배지 정확도, await 전 > dispose 후 ref 사용 방지)
+    if (mounted) ref.read(chatRoomsProvider.notifier).markRoomAsRead(widget.chatRoomId);
     try {
       // API 호출 전 구독 취소: 서버가 system 메시지를 브로드캐스트할 때 내 클라이언트가 수신하지 않도록 방지
       await _messageSubscription?.cancel();

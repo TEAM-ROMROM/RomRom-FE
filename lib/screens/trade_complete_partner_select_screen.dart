@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/trade_complete_partner_selection.dart';
 import 'package:romrom_fe/providers/chat_repository_provider.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
-import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
-import 'package:romrom_fe/widgets/common/cached_image.dart';
+import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/trade/trade_partner_row.dart';
 import 'package:romrom_fe/widgets/trade_request_target_preview.dart';
-import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/skeletons/trade_partner_select_skeleton.dart';
 
 /// 교환 완료 처리 시 교환 상대를 선택하는 화면
+/// 결과: 채팅 상대(채팅방 ID) 또는 앱 밖에서 교환 (`TradeCompletePartnerSelection`), 닫으면 null
 class TradeCompletePartnerSelectScreen extends ConsumerStatefulWidget {
   final Item item;
 
@@ -30,6 +32,9 @@ class TradeCompletePartnerSelectScreen extends ConsumerStatefulWidget {
 
 class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeCompletePartnerSelectScreen> {
   bool _isLoading = true;
+  // 채팅 상대 목록 조회 실패 (빈 목록 안내 대신 다시 시도)
+  bool _hasLoadError = false;
+  bool _isRetrying = false;
   List<ChatRoomDetailDto> _chatRooms = [];
   String? _selectedChatRoomId;
 
@@ -39,7 +44,7 @@ class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeComplete
     _loadChatRooms();
   }
 
-  /// 물품 ID로 채팅방 목록 불러오기
+  /// 물품 ID로 채팅방 목록 불러오기 (실패 시 다시 시도 뷰)
   Future<void> _loadChatRooms() async {
     final itemId = widget.item.itemId;
     if (itemId == null) {
@@ -52,22 +57,57 @@ class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeComplete
       if (mounted) {
         setState(() {
           _chatRooms = result.content;
+          _hasLoadError = false;
           _isLoading = false;
         });
       }
     } catch (e) {
+      debugPrint('[TradePartnerSelect] chat rooms load failed: $e');
       if (mounted) {
-        setState(() => _isLoading = false);
-        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+        setState(() {
+          _hasLoadError = true;
+          _isLoading = false;
+        });
       }
+    }
+  }
+
+  /// 다시 시도: 진행 중이면 무시 > 재조회
+  Future<void> _onRetryPressed() async {
+    if (_isRetrying) return;
+    setState(() => _isRetrying = true);
+    try {
+      await _loadChatRooms();
+    } finally {
+      if (mounted) setState(() => _isRetrying = false);
     }
   }
 
   /// 채팅방으로 이동하여 교환 완료 요청 전송
   void _onConfirm() {
-    if (_selectedChatRoomId == null) return;
-    Navigator.of(context).pop<String>(_selectedChatRoomId);
+    final selectedChatRoomId = _selectedChatRoomId;
+    if (selectedChatRoomId == null) return;
+    Navigator.of(context).pop(TradeCompletePartnerSelection.chatPartner(chatRoomId: selectedChatRoomId));
   }
+
+  /// 앱 밖에서 교환: 확인 모달 > 결과 반환 (등록 탭이 물품 상태를 교환 완료로 변경)
+  Future<void> _onCompletedOutsideAppPressed() async {
+    final bool? isConfirmed = await CommonModal.confirm(
+      context: context,
+      message: '채팅 없이 교환 완료로 바꿀까요?\n이 경우 후기는 남길 수 없어요.',
+      confirmText: '교환 완료',
+      confirmButtonColor: AppColors.primaryYellow,
+      confirmTextColor: AppColors.textColorBlack,
+      iconColor: AppColors.primaryYellow,
+      onCancel: () => Navigator.of(context).pop(false),
+      onConfirm: () => Navigator.of(context).pop(true),
+    );
+    if (isConfirmed != true || !mounted) return;
+    Navigator.of(context).pop(const TradeCompletePartnerSelection.outsideApp());
+  }
+
+  bool _isDeletedPartner(ChatRoomDetailDto room) =>
+      room.targetMember?.accountStatus == AccountStatus.deleteAccount.serverName;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +119,12 @@ class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeComplete
           Expanded(
             child: _isLoading
                 ? const TradePartnerSelectSkeleton()
+                : _hasLoadError
+                ? EmptyStateView.error(
+                    centerText: '채팅 상대를 불러오지 못했어요',
+                    onRetry: _onRetryPressed,
+                    isRetrying: _isRetrying,
+                  )
                 : ListView(
                     children: [
                       _buildItemCard(),
@@ -106,14 +152,36 @@ class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeComplete
           ),
           Padding(
             padding: EdgeInsets.only(left: 24.w, right: 24.w, bottom: 63.h + MediaQuery.of(context).padding.bottom),
-            child: CompletionButton(
-              isEnabled: _selectedChatRoomId != null,
-              buttonText: '전송하기',
-              isLoading: false,
-              enabledOnPressed: _onConfirm,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildOutsideAppTradeLink(),
+                const SizedBox(height: 12),
+                CompletionButton(
+                  isEnabled: _selectedChatRoomId != null,
+                  buttonText: '전송하기',
+                  isLoading: false,
+                  enabledOnPressed: _onConfirm,
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// '채팅 없이 교환했어요' 링크 (채팅 상대 없음·탈퇴·조회 실패 시에도 교환 완료 가능)
+  Widget _buildOutsideAppTradeLink() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _onCompletedOutsideAppPressed,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          '채팅 없이 앱 밖에서 교환했어요',
+          style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White, decoration: TextDecoration.underline),
+        ),
       ),
     );
   }
@@ -133,137 +201,23 @@ class _TradeCompletePartnerSelectScreenState extends ConsumerState<TradeComplete
     );
   }
 
-  /// 교환 상대 선택 행
+  /// 교환 상대 선택 행 (탈퇴 상대는 흐리게 + 선택 불가 안내)
   Widget _buildPartnerRow(ChatRoomDetailDto room) {
     final isSelected = _selectedChatRoomId == room.chatRoomId;
-    final member = room.targetMember;
-    final nickname = member?.nickname ?? '알 수 없음';
-    final location = room.targetMemberEupMyeonDong ?? '';
-    // 채팅 목록과 같은 날짜 기준 표시 (오늘 시각·어제·날짜)
-    final timeAgo = formatListTimestamp(room.lastMessageTime);
-    final messagePreview = room.lastMessageContent ?? '';
-
+    final isDeletedPartner = _isDeletedPartner(room);
     return GestureDetector(
       onTap: () {
         if (room.chatRoomId == null) return;
+        if (isDeletedPartner) {
+          CommonSnackBar.show(context: context, message: '탈퇴한 사용자에게는 교환 완료를 요청할 수 없어요', type: SnackBarType.info);
+          return;
+        }
         setState(() => _selectedChatRoomId = isSelected ? null : room.chatRoomId);
       },
-      child: Container(
-        margin: EdgeInsets.only(bottom: 16.h, left: 12.w, right: 12.w),
-        padding: EdgeInsets.only(bottom: 14.h, left: 16.w, top: 16.h, right: 16.w),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.1) : AppColors.primaryBlack,
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(
-            color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.3) : AppColors.transparent,
-            width: 1.w,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        child: Row(
-          children: [
-            // 물품 이미지 + 프로필 오버레이
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                SizedBox(
-                  width: 48.w,
-                  height: 48.w,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4.r),
-                    child: room.targetItemImageUrl != null
-                        ? CachedImage(
-                            imageUrl: room.targetItemImageUrl!,
-                            fit: BoxFit.cover,
-                            errorWidget: Container(color: AppColors.imagePlaceholderBackground),
-                          )
-                        : Container(color: AppColors.imagePlaceholderBackground),
-                  ),
-                ),
-                Positioned(
-                  right: -4.w,
-                  bottom: -4.h,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.secondaryBlack1, width: 2.w),
-                    ),
-                    child: UserProfileCircularAvatar(
-                      avatarSize: Size(22.w, 22.w),
-                      profileUrl: member?.profileUrl,
-                      hasBorder: false,
-                      isDeleteAccount: false,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // 가로 간격
-            SizedBox(width: 10.w),
-
-            // 닉네임 + 위치 + 시간 + 채팅내용
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          nickname,
-                          style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w500),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (location.isNotEmpty || timeAgo.isNotEmpty) ...[
-                        SizedBox(width: 8.w),
-                        Text(
-                          location,
-                          style: CustomTextStyles.p3.copyWith(
-                            color: AppColors.chatLocationTimeMessage,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Container(
-                          width: 2.w,
-                          height: 2.w,
-                          margin: EdgeInsets.symmetric(horizontal: 2.w),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.chatLocationTimeMessage,
-                          ),
-                        ),
-                        Text(
-                          timeAgo,
-                          style: CustomTextStyles.p3.copyWith(
-                            color: AppColors.chatLocationTimeMessage,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (messagePreview.isNotEmpty) ...[
-                    SizedBox(height: 8.h),
-                    Text(
-                      messagePreview,
-                      style: CustomTextStyles.p2.copyWith(
-                        color: AppColors.chatLocationTimeMessage,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: Opacity(
+        // 탈퇴 상대 흐리게 (선택 불가 표시)
+        opacity: isDeletedPartner ? 0.4 : 1,
+        child: TradePartnerRow(room: room, isSelected: isSelected, isDeletedPartner: isDeletedPartner),
       ),
     );
   }

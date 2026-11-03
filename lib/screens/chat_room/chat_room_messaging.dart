@@ -1,13 +1,18 @@
-// 채팅방 메시지 송수신: 수신 반영(중복·낙관적 교체), 텍스트·이미지 전송, WS 이미지 보완, 재연결 동기화
+// 채팅방 메시지 송수신: 수신 반영(중복·낙관적 교체), 텍스트·사진·위치 전송(전송 중·실패·다시 보내기), WS 이미지 보완, 재연결 동기화
 part of '../chat_room_screen.dart';
 
 // WS 이미지 URL 일괄 조회 대기 시간 (연속 수신 묶음)
 const Duration _wsImageFetchBatchDelay = Duration(milliseconds: 500);
 // 하단 스크롤 전 레이아웃 반영 대기 시간
 const Duration _scrollToBottomLayoutDelay = Duration(milliseconds: 100);
+// 서버 에코 대기 시간 (초과 시 전송 실패 표시)
+const Duration _sendEchoTimeout = Duration(seconds: 10);
+
+const String _imageMessageContent = '사진을 보냈습니다.';
+const String _sendFailedMessage = '메시지를 보내지 못했어요. 연결 상태를 확인해 주세요.';
 
 mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
-  /// 재연결 시 호출: 서버에서 최신 메시지를 재조회해 유실분을 병합한다.
+  /// 재연결 시 호출: 서버 최신 메시지 재조회 > 서버에 이미 저장된 내 로컬 메시지 정리 > 유실분 병합
   Future<void> _resyncMessages() async {
     if (_isResyncing || !mounted) return;
     _isResyncing = true;
@@ -15,11 +20,22 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
       final response = await _chatRepository.getChatMessages(
         chatRoomId: widget.chatRoomId,
         pageNumber: 0,
-        pageSize: 50,
+        pageSize: chatMessagePageSize,
       );
       if (!mounted) return;
       final serverMessages = response.messages?.content ?? [];
+      // 끊김 중 실패로 표시됐지만 실제로는 전달된 메시지 (서버 버전만 남김, 이미 표시된 서버 메시지는 후보 제외)
+      final confirmedLocalIds = findPendingLocalIdsConfirmedByServer(
+        pendingLocalMessages: _pendingLocalMessages,
+        serverMessages: serverMessages,
+        myMemberId: _myMemberId,
+        displayedMessageIds: {
+          for (final message in _messages)
+            if (message.chatMessageId != null) message.chatMessageId!,
+        },
+      );
       setState(() {
+        confirmedLocalIds.forEach(_forgetLocalMessage);
         _messages = mergeServerMessages(current: _messages, serverMessages: serverMessages);
       });
       // 단절 구간에 놓친 AI 추천 교정 (닫은 추천은 provider가 재노출 차단)
@@ -35,7 +51,8 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
     }
   }
 
-  /// 수신 메시지 반영: 중복 무시 > 텍스트 전송 대기 해제 > 낙관적 로컬 메시지 교체 또는 새로 삽입
+  /// 수신 메시지 반영: 중복 무시 > 내 에코 처리(대기 로컬 확정·대체된 원래 메시지 흡수) > 새로 삽입
+  /// 텍스트 전송 잠금은 전송 상태에서 계산 > 중복으로 무시돼도 잠김 없음
   void _handleIncomingMessage(ChatMessage newMessage) {
     debugPrint('[ChatRoom] _handleIncomingMessage: type=${newMessage.type}, id=${newMessage.chatMessageId}');
     final newId = newMessage.chatMessageId;
@@ -45,19 +62,26 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
       return;
     }
 
-    if (newMessage.senderId == _myMemberId && newMessage.type == MessageType.text) {
-      _isSendingMessage = false;
-      _sendMessageTimeoutTimer?.cancel();
-    }
-
-    // pending 로컬 메시지와 매칭 시도 (이미지 낙관적 업데이트 교체)
-    final matchedLocalId = findMatchingPendingLocalMessageId(
+    final echoDecision = resolveIncomingEcho(
       pendingLocalMessages: _pendingLocalMessages,
+      supersededLocalMessages: _supersededLocalMessages,
       incomingMessage: newMessage,
       myMemberId: _myMemberId,
+      receivedAt: DateTime.now(),
     );
+    // 다시 보내기 전 원래 메시지의 늦은 에코: 재전송분이 이미 화면에 있어 표시하지 않음
+    final absorbedSupersededLocalId = echoDecision.absorbedSupersededLocalId;
+    if (absorbedSupersededLocalId != null) {
+      _supersededLocalMessages.remove(absorbedSupersededLocalId);
+      debugPrint('[ChatRoom] late echo of superseded message absorbed: $absorbedSupersededLocalId');
+      return;
+    }
+
+    // 대기 로컬 메시지 확정 (낙관적 말풍선 > 서버 메시지 교체, 실패 표시였어도 확정)
+    final matchedLocalId = echoDecision.confirmedLocalId;
     if (matchedLocalId != null) {
-      final localMessage = _pendingLocalMessages.remove(matchedLocalId)!;
+      final localMessage = _pendingLocalMessages[matchedLocalId]!;
+      _clearLocalSendState(matchedLocalId);
       final localIndex = _messages.indexWhere((m) => m.chatMessageId == localMessage.chatMessageId);
       final confirmedMessage = mergeServerEchoIntoLocalMessage(localMessage: localMessage, serverMessage: newMessage);
       if (localIndex != -1) {
@@ -90,69 +114,147 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
     }
   }
 
+  /// 텍스트 전송: 소켓 전송 시도 > 즉시 실패면 입력 글 유지·안내 > 성공 시 전송 중 말풍선·입력창 비움
   void _sendMessage() {
     final content = _messageController.text.trim();
     if (content.isEmpty || _isSendingMessage || _isInputDisabled) return;
 
-    // 낙관적 삽입: WS 에코를 기다리지 않고 즉시 화면에 표시한다.
-    // 연결이 끊긴 상태에서도 내 메시지는 바로 보이고, WS 에코 도착 시
-    // _handleIncomingMessage의 매칭 로직이 실제 서버 메시지로 교체한다.
-    final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
-    final localMsg = ChatMessage(
-      chatRoomId: widget.chatRoomId,
-      chatMessageId: localId,
-      senderId: _myMemberId,
-      createdDate: DateTime.now(),
-      content: content,
-      type: MessageType.text,
-    );
-
-    setState(() {
-      _isSendingMessage = true;
-      _messages.insert(0, localMsg);
-      _pendingLocalMessages[localId] = localMsg;
-    });
+    final localMessage = _buildLocalMessage(type: MessageType.text, content: content);
+    if (!_trySendOverWebSocket(localMessage)) {
+      _showSendFailedSnackBar();
+      return;
+    }
+    setState(() => _addLocalMessage(localMessage, isSent: true));
     _messageController.clear();
     _scrollToBottom();
-
-    _sendMessageTimeoutTimer?.cancel();
-    _sendMessageTimeoutTimer = Timer(const Duration(seconds: 10), () {
-      if (mounted && _isSendingMessage) {
-        setState(() => _isSendingMessage = false);
-        CommonSnackBar.show(context: context, message: '메시지 전송에 실패했습니다.', type: SnackBarType.error);
-      }
-    });
-
-    _wsService.sendMessage(chatRoomId: widget.chatRoomId, content: content, type: MessageType.text);
   }
 
-  Future<void> _sendImage({required List<String> imageUrls, String? imageMessage}) async {
+  /// 사진 메시지 전송 (입력창 글은 사진 설명으로 보내지 않고 그대로 둠)
+  void _sendImage({required List<String> imageUrls}) {
     if (imageUrls.isEmpty || !mounted) return;
+    _sendAttachmentMessage(
+      _buildLocalMessage(type: MessageType.image, content: _imageMessageContent, imageUrls: imageUrls),
+    );
+  }
 
-    final content = imageMessage ?? '사진을 보냈습니다.';
-    final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
-    final localMsg = ChatMessage(
+  /// 사진·위치 전송: 즉시 실패해도 실패 말풍선으로 남겨 다시 보내기 제공 (업로드·위치 선택 반복 방지)
+  void _sendAttachmentMessage(ChatMessage localMessage) {
+    final isSent = _trySendOverWebSocket(localMessage);
+    setState(() => _addLocalMessage(localMessage, isSent: isSent));
+    if (!isSent) _showSendFailedSnackBar();
+    _scrollToBottom();
+  }
+
+  /// 실패 말풍선 다시 보내기: 새 로컬 ID·시각으로 맨 아래 재삽입 (즉시 실패면 실패 말풍선 유지)
+  /// 원래 메시지는 대체 목록에 보관 > 실제로는 서버에 저장돼 늦게 온 에코를 흡수
+  void _retryFailedMessage(String localId) {
+    final failedMessage = _pendingLocalMessages[localId];
+    if (failedMessage == null || _isInputDisabled) return;
+    final retryMessage = failedMessage.copyWith(
+      chatMessageId: buildLocalMessageId(prefix: localMessageIdPrefix),
+      createdDate: DateTime.now(),
+    );
+    if (!_trySendOverWebSocket(retryMessage)) {
+      _showSendFailedSnackBar();
+      return;
+    }
+    setState(() {
+      _forgetLocalMessage(localId);
+      _rememberSupersededMessage(localId, failedMessage);
+      _addLocalMessage(retryMessage, isSent: true);
+    });
+    _scrollToBottom();
+  }
+
+  /// 대체된 원래 메시지 보관 (에코 대기 한도 지난 것은 정리)
+  void _rememberSupersededMessage(String localId, ChatMessage originalMessage) {
+    final now = DateTime.now();
+    _supersededLocalMessages.removeWhere(
+      (_, message) => now.difference(message.createdDate ?? now) > pendingLocalMessageEchoWindow,
+    );
+    _supersededLocalMessages[localId] = originalMessage;
+  }
+
+  /// 실패 말풍선 삭제 (서버에 없는 메시지라 화면에서만 제거)
+  void _deleteFailedMessage(String localId) {
+    setState(() => _forgetLocalMessage(localId));
+  }
+
+  /// 낙관적 로컬 메시지 생성 (내 메시지, 현재 시각)
+  ChatMessage _buildLocalMessage({
+    required MessageType type,
+    required String content,
+    List<String>? imageUrls,
+    double? latitude,
+    double? longitude,
+  }) {
+    return ChatMessage(
       chatRoomId: widget.chatRoomId,
-      chatMessageId: localId,
+      chatMessageId: buildLocalMessageId(prefix: localMessageIdPrefix),
       senderId: _myMemberId,
       createdDate: DateTime.now(),
       content: content,
-      type: MessageType.image,
+      type: type,
       imageUrls: imageUrls,
+      latitude: latitude,
+      longitude: longitude,
     );
-    setState(() {
-      _messages.insert(0, localMsg);
-      _pendingLocalMessages[localId] = localMsg;
-    });
-    _scrollToBottom();
+  }
 
-    _wsService.sendMessage(
-      chatRoomId: widget.chatRoomId,
-      type: MessageType.image,
-      content: imageMessage ?? '사진을 보냈습니다.',
-      imageUrls: imageUrls,
-    );
-    _messageController.clear();
+  /// 소켓 전송 시도 (미연결 등 즉시 실패면 false)
+  bool _trySendOverWebSocket(ChatMessage message) {
+    try {
+      _wsService.sendMessage(
+        chatRoomId: widget.chatRoomId,
+        content: message.content ?? '',
+        type: message.type ?? MessageType.text,
+        imageUrls: message.imageUrls,
+        latitude: message.latitude,
+        longitude: message.longitude,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('[ChatRoom] send failed immediately: $e');
+      return false;
+    }
+  }
+
+  /// 로컬 메시지 목록 추가 (setState 안에서 호출): 전송됨 > 에코 대기 타이머, 즉시 실패 > 실패 표시
+  void _addLocalMessage(ChatMessage localMessage, {required bool isSent}) {
+    final localId = localMessage.chatMessageId!;
+    _messages.insert(0, localMessage);
+    _pendingLocalMessages[localId] = localMessage;
+    if (isSent) {
+      _sendEchoTimeoutTimers[localId] = Timer(_sendEchoTimeout, () => _markLocalMessageFailed(localId));
+    } else {
+      _failedLocalMessageIds.add(localId);
+    }
+  }
+
+  /// 에코 대기 시간 초과 > 실패 표시 (그 사이 확정됐으면 무시)
+  void _markLocalMessageFailed(String localId) {
+    _sendEchoTimeoutTimers.remove(localId);
+    if (!mounted || !_pendingLocalMessages.containsKey(localId)) return;
+    setState(() => _failedLocalMessageIds.add(localId));
+    _showSendFailedSnackBar();
+  }
+
+  /// 로컬 메시지 전송 추적 해제 (대기 목록·실패 표시·타이머)
+  void _clearLocalSendState(String localId) {
+    _pendingLocalMessages.remove(localId);
+    _failedLocalMessageIds.remove(localId);
+    _sendEchoTimeoutTimers.remove(localId)?.cancel();
+  }
+
+  /// 로컬 메시지 완전 제거 (전송 추적 해제 + 목록에서 삭제, setState 안에서 호출)
+  void _forgetLocalMessage(String localId) {
+    _clearLocalSendState(localId);
+    _messages.removeWhere((message) => message.chatMessageId == localId);
+  }
+
+  void _showSendFailedSnackBar() {
+    if (!mounted) return;
+    CommonSnackBar.show(context: context, message: _sendFailedMessage, type: SnackBarType.error);
   }
 
   /// 이미지 주소 없는 WS 임시 메시지 > 최근 20건 재조회로 서버 이미지 메시지 교체

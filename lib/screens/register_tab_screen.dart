@@ -29,6 +29,7 @@ import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
+import 'package:romrom_fe/models/trade_complete_partner_selection.dart';
 import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -379,8 +380,16 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
     final isToCompleted = _currentTabStatus == MyItemToggleStatus.selling;
 
     if (isToCompleted) {
-      final chatRoomId = await context.navigateTo<String>(screen: TradeCompletePartnerSelectScreen(item: item));
-      if (!mounted || chatRoomId == null) return;
+      // 상대 선택 결과: 채팅 상대 > 채팅방에서 교환 완료 요청, 앱 밖 교환 > 물품 상태만 교환 완료로 변경
+      final selection = await context.navigateTo<TradeCompletePartnerSelection>(
+        screen: TradeCompletePartnerSelectScreen(item: item),
+      );
+      if (!mounted || selection == null) return;
+      final chatRoomId = selection.chatRoomId;
+      if (selection.isCompletedOutsideApp || chatRoomId == null) {
+        await _toggleItemStatus(item);
+        return;
+      }
       context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId, autoTriggerExchangeRequest: true));
     } else {
       final result = await context.showDeleteDialog(
