@@ -10,6 +10,7 @@ import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_text_field_phrase.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
+import 'package:romrom_fe/models/ai_price_basis.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -21,6 +22,7 @@ import 'package:romrom_fe/screens/image_fullscreen_viewer.dart';
 import 'package:romrom_fe/screens/item_register_location_screen.dart';
 import 'package:romrom_fe/services/location_service.dart';
 import 'package:romrom_fe/utils/image_compressor.dart';
+import 'package:romrom_fe/utils/new_image_upload_cache.dart';
 import 'package:romrom_fe/utils/price_comma_format_utils.dart';
 import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
@@ -114,6 +116,11 @@ abstract class _RegisterInputFormStateFields extends ConsumerState<RegisterInput
   // (path를 key로 쓰면 동일 파일 재선택 시 충돌하므로 인덱스 정렬 리스트를 쓴다.)
   final List<Future<XFile>> _compressing = [];
   final List<String> _existingImageUrls = []; // 수정 모드: 기존 서버 이미지 URL
+  // 새 사진 업로드 기억 (저장 실패 후 재시도 시 이미 올린 사진 재업로드 방지)
+  final NewImageUploadCache _newImageUploadCache = NewImageUploadCache();
+
+  // AI 가격 측정 당시 입력 (AI 가격 사용 중일 때만, 달라지면 AI 표시 해제)
+  AiPriceBasis? _aiPriceBasis;
 
   bool _isInitLoading = true;
   bool _isLoading = false;
@@ -122,6 +129,24 @@ abstract class _RegisterInputFormStateFields extends ConsumerState<RegisterInput
   RegisterFormSnapshot? _initialFormSnapshot;
   // 저장 성공 여부 (true면 이탈 경고 없이 닫기)
   bool _isSubmitSucceeded = false;
+
+  /// 현재 선택한 물건 상태 서버 이름 (미선택 > null)
+  String? get _selectedConditionServerName =>
+      selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null;
+
+  /// AI 가격 기준(제목·설명·상태)이 바뀌었으면 AI 표시 해제 (가격은 유지, setState 안에서 호출)
+  void _clearAiPriceIfBasisChanged() {
+    final aiPriceBasis = _aiPriceBasis;
+    if (!useAiPrice || aiPriceBasis == null) return;
+    final isSameInput = aiPriceBasis.isSameInput(
+      itemName: titleController.text,
+      itemDescription: descriptionController.text,
+      itemCondition: _selectedConditionServerName,
+    );
+    if (isSameInput) return;
+    useAiPrice = false;
+    _aiPriceBasis = null;
+  }
 
   /// 수정 / 등록 (안내 문구용)
   String get _modeText => widget.isEditMode ? '수정' : '등록';
@@ -157,10 +182,11 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
     if (widget.isEditMode && widget.item != null) {
       final item = widget.item;
 
-      // 좌표가 있으면 주소 변환, 없으면 빈 문자열로 초기화
+      // 좌표가 있으면 주소 변환 (실패 시 기존 좌표 유지 안내 > 완료 버튼이 이유 없이 막히지 않게), 없으면 빈 문자열
       if (item?.latitude != null && item?.longitude != null) {
         _selectedAddress = await LocationService().getAddressFromCoordinates(NLatLng(item!.latitude!, item.longitude!));
-        locationController.text = _selectedAddress?.siDoSiGunGuEupMyoenDongText.trim() ?? '';
+        final addressText = _selectedAddress?.siDoSiGunGuEupMyoenDongText.trim() ?? '';
+        locationController.text = addressText.isNotEmpty ? addressText : '기존 위치 (주소를 불러오지 못했어요)';
       } else {
         _selectedAddress = null;
         locationController.text = '';
@@ -202,11 +228,19 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
       _latitude = item?.latitude;
       _longitude = item?.longitude;
       useAiPrice = item?.isAiPredictedPrice ?? false;
+      // 저장된 AI 가격은 불러온 입력 기준
+      _aiPriceBasis = useAiPrice
+          ? AiPriceBasis(
+              itemName: titleController.text,
+              itemDescription: descriptionController.text,
+              itemCondition: _selectedConditionServerName,
+            )
+          : null;
     }
   }
 
   void _onFormValueChanged() {
-    if (mounted) setState(() {});
+    if (mounted) setState(_clearAiPriceIfBasisChanged);
   }
 
   @override
@@ -269,6 +303,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
     setState(() {
       _hasConditionBeenTouched = true;
       selectedItemConditionTypes = newList;
+      _clearAiPriceIfBasisChanged();
     });
   }
 
@@ -289,19 +324,26 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
   /// 가격 칸 탭 > 가격 입력 화면 (AI 추천 가능 여부 전달) > 고른 가격·AI 사용 여부 반영
   Future<void> _openPriceInputScreen() async {
     final initialPrice = int.tryParse(priceController.text.replaceAll(',', '')) ?? 0;
+    // 가격 화면에 보낸 입력 = AI 측정 기준
+    final priceInputBasis = AiPriceBasis(
+      itemName: titleController.text,
+      itemDescription: descriptionController.text,
+      itemCondition: _selectedConditionServerName,
+    );
     await context.navigateTo(
       type: NavigationTypes.slideUp,
       screen: ItemPriceInputScreen(
         initialPrice: initialPrice,
         initialUseAiPrice: useAiPrice,
         canUseAiPrice: canUseAiPrice,
-        itemName: titleController.text,
-        itemDescription: descriptionController.text,
-        itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
+        itemName: priceInputBasis.itemName,
+        itemDescription: priceInputBasis.itemDescription,
+        itemCondition: priceInputBasis.itemCondition,
         onPriceSelected: (price, aiUsed) {
           if (mounted) {
             setState(() {
               useAiPrice = aiUsed;
+              _aiPriceBasis = aiUsed ? priceInputBasis : null;
               priceController.value = const PriceCommaFormatter().formatEditUpdate(
                 const TextEditingValue(),
                 TextEditingValue(text: price.toString()),
@@ -350,6 +392,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
             existingImageUrls: _existingImageUrls,
             newImagePaths: _newImageFiles.map((file) => file.path).toList(growable: false),
             shouldShowEmptyImageError: _hasImageBeenTouched && _totalImageCount == 0,
+            isEditingEnabled: !_isLoading,
             onAddImageTap: onPickImage,
             onImageTap: _openImageFullscreenViewer,
             onDeleteImageTap: onDeleteImage,

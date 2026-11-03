@@ -9,6 +9,7 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/category_chip.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
@@ -23,6 +24,8 @@ class MyCategorySettingsScreen extends ConsumerStatefulWidget {
 class _MyCategorySettingsScreenState extends ConsumerState<MyCategorySettingsScreen> {
   final List<int> selectedCategories = [];
   bool _isLoading = true;
+  // 기존 선호 불러오기 실패 (빈 선택으로 저장해 기존 선호를 덮어쓰지 않게 > 에러 뷰, 저장 버튼 없음)
+  bool _hasLoadError = false;
   bool _isSaving = false;
 
   bool get isSelectedCategories => selectedCategories.isNotEmpty;
@@ -33,31 +36,35 @@ class _MyCategorySettingsScreenState extends ConsumerState<MyCategorySettingsScr
     _loadPreferredCategories();
   }
 
-  /// 기존 선호 카테고리 로드
+  /// 기존 선호 카테고리 로드: 로딩 > 성공(응답 비어도) 시 선택 반영, 실패 시 에러 뷰
   Future<void> _loadPreferredCategories() async {
+    setState(() {
+      _isLoading = true;
+      _hasLoadError = false;
+    });
     try {
       final memberProfile = await ref.read(memberProfileProvider.notifier).fetchLatest();
-      final categories = memberProfile.itemCategories;
-      if (categories != null && mounted) {
-        setState(() {
-          selectedCategories.clear();
-          for (final category in categories) {
-            if (category.itemCategory != null) {
-              final itemCategory = ItemCategories.fromServerName(category.itemCategory);
-              if (itemCategory == null) {
-                debugPrint('카테고리 변환 실패: ${category.itemCategory}');
-              } else {
-                selectedCategories.add(itemCategory.id);
-              }
+      final categories = memberProfile.itemCategories ?? const [];
+      if (!mounted) return;
+      setState(() {
+        selectedCategories.clear();
+        for (final category in categories) {
+          if (category.itemCategory != null) {
+            final itemCategory = ItemCategories.fromServerName(category.itemCategory);
+            if (itemCategory == null) {
+              debugPrint('카테고리 변환 실패: ${category.itemCategory}');
+            } else {
+              selectedCategories.add(itemCategory.id);
             }
           }
-          _isLoading = false;
-        });
-      }
+        }
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint('선호 카테고리 로드 실패: $e');
       if (mounted) {
         setState(() {
+          _hasLoadError = true;
           _isLoading = false;
         });
       }
@@ -71,6 +78,8 @@ class _MyCategorySettingsScreenState extends ConsumerState<MyCategorySettingsScr
       appBar: CommonAppBar(title: '선호 카테고리 설정', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
       body: _isLoading
           ? const Center(child: CommonLoadingIndicator())
+          : _hasLoadError
+          ? EmptyStateView.error(centerText: '선호 카테고리를 불러오지 못했어요', onRetry: _loadPreferredCategories)
           : Stack(
               children: [
                 Padding(

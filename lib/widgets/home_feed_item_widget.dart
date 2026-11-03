@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
+import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
@@ -22,6 +23,7 @@ import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
+import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
 /// 홈 피드 아이템 위젯
@@ -30,10 +32,25 @@ class HomeFeedItemWidget extends ConsumerStatefulWidget {
   final HomeFeedItem item;
   final bool showBlur;
 
+  /// 교환 완료 물품 보유 여부 (블러 안내 문구 분기: 교환 가능 물품 없음 / 첫 등록 안내)
+  final bool hasExchangedItems;
+
   /// AI 추천 버튼 탭 시 추천 itemId 상위 3개를 전달하는 콜백
   final void Function(List<String> itemIds)? onAiRecommend;
 
-  const HomeFeedItemWidget({super.key, required this.item, required this.showBlur, this.onAiRecommend});
+  const HomeFeedItemWidget({
+    super.key,
+    required this.item,
+    required this.showBlur,
+    this.hasExchangedItems = false,
+    this.onAiRecommend,
+  });
+
+  /// 블러 안내 문구: 교환 완료 물품만 있음 > 새 물품 등록 안내, 등록 이력 없음 > 첫 등록 안내
+  @visibleForTesting
+  static String toRegisterPromptMessage({required bool hasExchangedItems}) {
+    return hasExchangedItems ? '교환 가능한 물품이 없어요\n새 물품을 등록해 주세요!' : '교환을 시작하려면\n먼저 나의 물품을 등록해 주세요!';
+  }
 
   @override
   ConsumerState<HomeFeedItemWidget> createState() => _HomeFeedItemWidgetState();
@@ -116,14 +133,22 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
 
       debugPrint('AI 추천 상위 3개 itemId: $topIds, ${items.length}');
 
-      // 상위 컴포넌트로 전달
-      if (mounted) {
-        widget.onAiRecommend?.call(topIds);
+      if (!mounted) return;
+      // 추천 결과 없음 > 안내 + 버튼 해제 (켜진 채 하이라이트 없는 상태 방지)
+      if (topIds.isEmpty) {
+        setState(() => _isAiButtonActive = false);
+        CommonSnackBar.show(context: context, message: '이 물품과 어울리는 내 물품을 찾지 못했어요.', type: SnackBarType.info);
+        return;
       }
+      // 상위 컴포넌트로 전달
+      widget.onAiRecommend?.call(topIds);
     } catch (e) {
       debugPrint('AI 추천 요청 실패: $e');
-      // 실패 시 버튼 비활성화
-      if (mounted) setState(() => _isAiButtonActive = false);
+      // 실패 시 버튼 비활성화 + 안내
+      if (mounted) {
+        setState(() => _isAiButtonActive = false);
+        CommonSnackBar.show(context: context, message: 'AI 추천을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.', type: SnackBarType.error);
+      }
     } finally {
       if (mounted) {
         setState(() => _isAiLoading = false);
@@ -336,7 +361,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '교환을 시작하려면\n먼저 나의 물품을 등록해 주세요!',
+                    HomeFeedItemWidget.toRegisterPromptMessage(hasExchangedItems: widget.hasExchangedItems),
                     textAlign: TextAlign.center,
                     style: CustomTextStyles.h2.copyWith(
                       fontWeight: FontWeight.w600,

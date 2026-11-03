@@ -1,4 +1,4 @@
-// 채팅방 첨부 전송: 사진(선택 > 업로드 중 버블 > 압축·업로드 > 전송), 위치
+// 채팅방 첨부 전송: 사진(선택 > 업로드 중 버블 > 압축·업로드 > 전송), 위치 (전송 실패는 실패 말풍선으로 표시)
 part of '../chat_room_screen.dart';
 
 mixin _ChatRoomAttachmentSending on _ChatRoomScreenStateFields, _ChatRoomMessaging {
@@ -12,8 +12,7 @@ mixin _ChatRoomAttachmentSending on _ChatRoomScreenStateFields, _ChatRoomMessagi
       if (!mounted) return;
       if (picked.isEmpty) return;
 
-      final localId = 'uploading_${DateTime.now().microsecondsSinceEpoch}';
-      _latestLocalTradeRequestId = localId;
+      final localId = buildLocalMessageId(prefix: uploadingMessageIdPrefix);
       setState(() {
         _messages.insert(
           0,
@@ -22,7 +21,7 @@ mixin _ChatRoomAttachmentSending on _ChatRoomScreenStateFields, _ChatRoomMessagi
             chatMessageId: localId,
             senderId: _myMemberId,
             createdDate: DateTime.now(),
-            content: '사진을 보냈습니다.',
+            content: _imageMessageContent,
             type: MessageType.image,
             imageUrls: picked.map((f) => f.path).toList(),
           ),
@@ -47,9 +46,7 @@ mixin _ChatRoomAttachmentSending on _ChatRoomScreenStateFields, _ChatRoomMessagi
           return;
         }
 
-        final textMessage = _messageController.text.trim();
-        if (!mounted) return;
-        await _sendImage(imageUrls: uploadedImageUrls, imageMessage: textMessage.isNotEmpty ? textMessage : null);
+        _sendImage(imageUrls: uploadedImageUrls);
       } catch (e) {
         if (mounted) {
           setState(() {
@@ -66,7 +63,7 @@ mixin _ChatRoomAttachmentSending on _ChatRoomScreenStateFields, _ChatRoomMessagi
     }
   }
 
-  /// 위치 메시지 전송 플로우: 위치 선택 → 메시지 전송
+  /// 위치 메시지 전송: 위치 선택 > 좌표 확인(없으면 안내) > 전송 중 말풍선 (실패 시 실패 말풍선)
   Future<void> _onSendLocation() async {
     if (_isInputDisabled) return;
     FocusScope.of(context).unfocus();
@@ -75,16 +72,15 @@ mixin _ChatRoomAttachmentSending on _ChatRoomScreenStateFields, _ChatRoomMessagi
 
     if (result == null || !mounted) return;
 
-    final lat = result.latitude;
-    final lng = result.longitude;
-    if (lat == null || lng == null) return;
+    final latitude = result.latitude;
+    final longitude = result.longitude;
+    if (latitude == null || longitude == null) {
+      CommonSnackBar.show(context: context, message: '위치 정보를 확인하지 못했어요. 다시 선택해 주세요.', type: SnackBarType.error);
+      return;
+    }
 
-    _wsService.sendMessage(
-      chatRoomId: widget.chatRoomId,
-      content: '위치를 보냈습니다.',
-      type: MessageType.location,
-      latitude: lat,
-      longitude: lng,
+    _sendAttachmentMessage(
+      _buildLocalMessage(type: MessageType.location, content: '위치를 보냈습니다.', latitude: latitude, longitude: longitude),
     );
   }
 }

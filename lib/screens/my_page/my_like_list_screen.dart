@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
-import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -13,12 +12,11 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
+import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/screens/main_screen.dart';
-import 'package:romrom_fe/states/item_like_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -49,6 +47,9 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
 
   // 처음부터 다시 불러오기(reset) 실패 여부 (목록 비어 있으면 에러 뷰)
   bool _hasResetLoadError = false;
+
+  // 다음 페이지 불러오기 실패 여부 (true면 하단 다시 시도, 스크롤 자동 재요청 멈춤)
+  bool _hasNextPageLoadError = false;
   late final ScrollController _scrollController;
 
   @override
@@ -72,7 +73,7 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
     const threshold = 200.0;
 
     if (pos.pixels >= pos.maxScrollExtent - threshold) {
-      if (!_isLoading && _hasMoreItems) {
+      if (!_isLoading && _hasMoreItems && !_hasNextPageLoadError) {
         _loadLikeItems(reset: false);
       }
     }
@@ -107,6 +108,7 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
         // 서버가 pageSize보다 적게 보내면 → 더 없음
         _hasMoreItems = serverItems.length == _pageSize;
         if (reset) _hasResetLoadError = false;
+        _hasNextPageLoadError = false;
       });
 
       // 캐시 시드 (force=true: 좋아요 목록은 항상 isLiked=true 진실원천)
@@ -122,7 +124,13 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
       }
     } catch (e) {
       debugPrint('사용자 좋아요 목록 로드 실패: $e');
-      if (!mounted || !reset) return;
+      if (!mounted) return;
+      // 다음 페이지 실패 > 하단 다시 시도 + 안내
+      if (!reset) {
+        setState(() => _hasNextPageLoadError = true);
+        CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+        return;
+      }
       setState(() => _hasResetLoadError = true);
       // 기존 목록 있음 > 목록 유지 + 스낵바 (없으면 에러 뷰가 대신 표시)
       if (_items.isNotEmpty) {
@@ -153,6 +161,7 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
         location: locationTexts[index],
         itemStatus: d.itemStatus ?? 'unknown',
         imageUrl: (d.imageUrlList.isNotEmpty) ? d.imageUrlList.first : '',
+        price: d.price ?? 0,
         tags: [cond.label, ...opts.map((e) => e.label)],
         isLiked: true,
       );
@@ -163,22 +172,15 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
     return likeItems;
   }
 
+  /// 홈에서 둘러보기: 홈 탭 지정 > 첫 화면(MainScreen)까지 닫기 (마이페이지 탭으로 돌아가는 것 방지)
+  void _navigateToHomeTab() {
+    ref.read(currentTabIndexProvider.notifier).set(0);
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  // 좋아요 해제한 물품은 빈 하트로 목록에 남김 (다시 눌러 되돌리기 가능, 새로고침·재진입 시 정리)
   @override
   Widget build(BuildContext context) {
-    ref.listen<Map<String, ItemLikeState>>(itemLikeProvider, (prev, next) {
-      if (!mounted) return;
-      final removed = <String>[];
-      for (final it in _items) {
-        final liked = next[it.itemId]?.isLiked;
-        if (liked == false) removed.add(it.itemId);
-      }
-      if (removed.isNotEmpty) {
-        setState(() {
-          _items.removeWhere((it) => removed.contains(it.itemId));
-        });
-      }
-    });
-
     return Scaffold(
       backgroundColor: AppColors.primaryBlack,
       appBar: CommonAppBar(title: '좋아요 목록', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
@@ -210,7 +212,7 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
           centerText: '아직 좋아요한 물품이 없어요',
           descriptionText: '마음에 드는 물품을 찾아\n좋아요를 눌러보세요',
           buttonText: '홈에서 둘러보기',
-          onButtonTap: () => context.navigateTo(screen: const MainScreen(), type: NavigationTypes.pushAndRemoveUntil),
+          onButtonTap: _navigateToHomeTab,
         ),
       );
     }
@@ -225,10 +227,7 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
         itemBuilder: (context, index) {
           // ... 기존 itemBuilder 코드 동일
           if (_hasMoreItems && index == _items.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CommonLoadingIndicator(size: 20)),
-            );
+            return _buildNextPageFooter();
           }
           final item = _items[index];
 
@@ -248,7 +247,6 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
                     isTradeRequestAllowed: true,
                   ),
                 );
-                // 좋아요 취소 시 목록에서 제거되는 로직은 ref.listen 이 처리.
               },
               child: Container(
                 padding: EdgeInsets.symmetric(vertical: 8.h),
@@ -335,7 +333,9 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
                               color: AppColors.opacity60White,
                             ),
                           ),
-                          SizedBox(height: 11.h),
+                          SizedBox(height: 6.h),
+                          Text('${formatPrice(item.price)}원', style: CustomTextStyles.p1),
+                          SizedBox(height: 8.h),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -354,8 +354,8 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
                               // 좋아요 버튼 (아이콘+원)
                               GestureDetector(
                                 onTap: () async {
+                                  // 해제·재등록 모두 같은 토글 (실패 시 SnackBar는 itemLikeProvider에서 자동 표시)
                                   await ref.read(itemLikeProvider.notifier).toggle(item.itemId);
-                                  // 실패 시 SnackBar는 itemLikeProvider에서 자동 표시. 성공 시 ref.listen이 항목 제거.
                                 },
                                 child: Center(
                                   child: Builder(
@@ -387,6 +387,22 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
     );
   }
 
+  /// 목록 하단: 다음 페이지 실패 > 다시 시도, 그 외 > 로딩 스피너
+  Widget _buildNextPageFooter() {
+    if (_hasNextPageLoadError) {
+      return Center(
+        child: TextButton(
+          onPressed: _isLoading ? null : () => _loadLikeItems(reset: false),
+          child: Text('다시 시도', style: CustomTextStyles.p2.copyWith(color: AppColors.primaryYellow)),
+        ),
+      );
+    }
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(child: CommonLoadingIndicator(size: 20)),
+    );
+  }
+
   /// 당겨서 새로고침 가능한 화면 채움 뷰 (빈 상태·에러 뷰용, 내용이 짧아도 pull 동작)
   Widget _buildPullableFillView({required Widget child}) {
     return CustomScrollView(
@@ -404,6 +420,7 @@ class _LikedItem {
   final String itemStatus;
   final List<String> tags;
   final String imageUrl;
+  final int price;
   bool isLiked;
 
   _LikedItem({
@@ -414,6 +431,7 @@ class _LikedItem {
     required this.itemStatus,
     required this.tags,
     required this.imageUrl,
+    required this.price,
     required this.isLiked,
   });
 }

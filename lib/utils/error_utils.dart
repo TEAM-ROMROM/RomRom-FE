@@ -20,9 +20,13 @@ class ErrorUtils {
   static String getErrorMessage(Object error) {
     // 네트워크 오류 > 연결 확인 문구 (서버 응답 없음)
     if (isNetworkError(error)) return networkErrorMessage;
+    return getErrorCode(error).koMessage;
+  }
 
+  /// 예외 객체 > 오류 코드 (화면이 코드별로 분기할 때, 모르는 형식 > unknown)
+  static ErrorCode getErrorCode(Object error) {
     // ApiException > 파싱된 errorCode
-    if (error is ApiException) return ErrorCode.fromCode(error.errorCode).koMessage;
+    if (error is ApiException) return ErrorCode.fromCode(error.errorCode);
 
     // 그 외 > toString 안 JSON 정규식 추출 (문자열로 감싼 기존 예외 호환)
     try {
@@ -31,13 +35,12 @@ class ErrorUtils {
       if (match != null) {
         final Map<String, dynamic> json = Map<String, dynamic>.from(jsonDecode(match.group(0)!));
         final code = json['errorCode'] as String?;
-        final mapped = ErrorCode.fromCode(code);
-        return mapped.koMessage;
+        return ErrorCode.fromCode(code);
       }
     } catch (_) {
-      // JSON 아님·형식 불일치 > unknown 메시지로 폴백
+      // JSON 아님·형식 불일치 > unknown으로 폴백
     }
-    return ErrorCode.unknown.koMessage;
+    return ErrorCode.unknown;
   }
 
   /// 서버 응답을 받지 못한 오류인지 (연결 실패, 시간 초과, TLS 실패)

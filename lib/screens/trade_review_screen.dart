@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
 import 'package:romrom_fe/enums/trade_review_tag.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/screens/main_screen.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/trade_review_rules.dart';
 import 'package:romrom_fe/services/app_review_service.dart';
 import 'package:romrom_fe/widgets/common/app_review_popup.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
 import 'package:romrom_fe/widgets/trade/rating_option_button.dart';
+import 'package:romrom_fe/widgets/trade/trade_review_comment_field.dart';
 
-/// 교환 완료 후 리뷰 작성 화면
+/// 교환 완료 후 리뷰 작성 화면: 1단계 만족도 > 2단계 태그(평가별)·한마디 > 제출 후 원래 화면 복귀 (pop(true))
 class TradeReviewScreen extends ConsumerStatefulWidget {
   final String tradeRequestHistoryId;
   final String opponentNickname;
@@ -41,21 +40,28 @@ class _TradeReviewScreenState extends ConsumerState<TradeReviewScreen> {
     super.dispose();
   }
 
+  /// 상세(평가에 맞는 태그·한마디) 작성 여부
+  bool get _hasReviewDetails =>
+      hasReviewDetails(rating: _rating!, selectedTags: _selectedTags, comment: _commentController.text);
+
+  /// 후기 제출: 제출 값 정리 > API > 앱 리뷰 팝업 조건 > 원래 화면 복귀 (실패·중복 작성은 서버 문구 모달)
   Future<void> _submit({bool skipDetails = false}) async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
     try {
+      final submission = buildTradeReviewSubmission(
+        rating: _rating!,
+        selectedTags: _selectedTags,
+        comment: _commentController.text,
+        isSkippingDetails: skipDetails,
+      );
       await ref
           .read(tradeRepositoryProvider)
           .postTradeReview(
             tradeRequestHistoryId: widget.tradeRequestHistoryId,
             tradeReviewRating: _rating!.serverName,
-            tradeReviewTags: skipDetails ? null : _selectedTags.map((t) => t.serverName).toList(),
-            reviewComment: skipDetails
-                ? null
-                : _commentController.text.trim().isEmpty
-                ? null
-                : _commentController.text.trim(),
+            tradeReviewTags: submission.tagServerNames,
+            reviewComment: submission.comment,
           );
       if (!mounted) return;
 
@@ -70,11 +76,7 @@ class _TradeReviewScreenState extends ConsumerState<TradeReviewScreen> {
       }
 
       if (!mounted) return;
-      context.navigateTo(
-        screen: const MainScreen(),
-        type: NavigationTypes.pushAndRemoveUntil,
-        predicate: (route) => false,
-      );
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -84,6 +86,22 @@ class _TradeReviewScreenState extends ConsumerState<TradeReviewScreen> {
         onConfirm: () => Navigator.of(context).pop(),
       );
     }
+  }
+
+  /// 건너뛰기: 쓴 내용이 있으면 버려도 되는지 확인 > 평가만 제출
+  Future<void> _onSkipPressed() async {
+    if (_isSubmitting) return;
+    if (_hasReviewDetails) {
+      final bool? isDiscardConfirmed = await CommonModal.confirm(
+        context: context,
+        message: '작성한 내용은 저장되지 않아요.\n건너뛸까요?',
+        confirmText: '건너뛰기',
+        onCancel: () => Navigator.of(context).pop(false),
+        onConfirm: () => Navigator.of(context).pop(true),
+      );
+      if (isDiscardConfirmed != true || !mounted) return;
+    }
+    await _submit(skipDetails: true);
   }
 
   @override
@@ -110,7 +128,7 @@ class _TradeReviewScreenState extends ConsumerState<TradeReviewScreen> {
                   /// 닫기 버튼
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Icon(AppIcons.cancel, color: Colors.white, size: 24.sp, semanticLabel: '닫기'),
+                    child: Icon(AppIcons.cancel, color: AppColors.textColorWhite, size: 24.sp, semanticLabel: '닫기'),
                   ),
                   SizedBox(height: 40.h),
 
@@ -162,9 +180,11 @@ class _TradeReviewScreenState extends ConsumerState<TradeReviewScreen> {
     );
   }
 
-  // ── 2단계: 칭찬 태그 + 한마디 ───────────────────────────────────────────
+  // ── 2단계: 칭찬 태그(별로예요는 없음) + 한마디 ─────────────────────────
 
   Widget _buildStep2() {
+    final rating = _rating!;
+    final isBadRating = rating == TradeReviewRating.bad;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.primaryBlack,
@@ -184,38 +204,25 @@ class _TradeReviewScreenState extends ConsumerState<TradeReviewScreen> {
                       SizedBox(height: 16.h),
                       GestureDetector(
                         onTap: () => setState(() => _step = 1),
-                        child: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                        child: const Icon(Icons.arrow_back_ios, color: AppColors.textColorWhite),
                       ),
                       SizedBox(height: 40.h),
-                      Text('어떤 점이 좋았나요?', style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        isBadRating ? '어떤 점이 아쉬웠나요?' : '어떤 점이 좋았나요?',
+                        style: CustomTextStyles.h2.copyWith(fontWeight: FontWeight.w600),
+                      ),
                       SizedBox(height: 24.h),
-                      ...TradeReviewTag.values.map((tag) => _buildTagRow(tag)),
+                      ...availableReviewTags(rating).map((tag) => _buildTagRow(tag)),
                       SizedBox(height: 16.h),
                       Text('한마디를 남겨주세요', style: CustomTextStyles.h3),
                       SizedBox(height: 16.h),
-                      Container(
-                        width: double.infinity,
-                        height: 140.h,
-                        padding: EdgeInsets.all(16.w),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondaryBlack1,
-                          borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(color: AppColors.opacity30White, width: 1.5.w),
-                        ),
-                        child: TextField(
-                          controller: _commentController,
-                          maxLines: null,
-                          style: CustomTextStyles.p2,
-                          cursorColor: AppColors.textColorWhite,
-                          decoration: InputDecoration(
-                            isCollapsed: true,
-                            border: InputBorder.none,
-                            hintText: '매너 있는 교환 파트너를 칭찬해주세요',
-                            hintStyle: CustomTextStyles.p2.copyWith(color: AppColors.opacity40White),
-                          ),
-                        ),
+                      TradeReviewCommentField(
+                        controller: _commentController,
+                        hintText: isBadRating ? '아쉬웠던 점을 남겨주세요' : '매너 있는 교환 파트너를 칭찬해주세요',
+                        // 완료 버튼 활성·글자 수 표시 갱신
+                        onChanged: (_) => setState(() {}),
                       ),
-                      SizedBox(height: 180.h),
+                      SizedBox(height: 172.h),
                     ],
                   ),
                 ),
@@ -233,13 +240,13 @@ class _TradeReviewScreenState extends ConsumerState<TradeReviewScreen> {
                       buttonText: '건너뛰기',
                       enabledBackgroundColor: AppColors.secondaryBlack2,
                       enabledTextColor: AppColors.textColorWhite,
-                      enabledOnPressed: () => _submit(skipDetails: true),
+                      enabledOnPressed: _onSkipPressed,
                     ),
                   ),
                   SizedBox(width: 12.w),
                   Expanded(
                     child: CompletionButton(
-                      isEnabled: _selectedTags.isNotEmpty,
+                      isEnabled: _hasReviewDetails,
                       isLoading: _isSubmitting,
                       buttonText: '완료',
                       enabledOnPressed: () => _submit(),

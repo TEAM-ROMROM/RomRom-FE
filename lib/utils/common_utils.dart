@@ -175,6 +175,11 @@ extension ContextExtension on BuildContext {
       onConfirm: () => Navigator.of(this).pop(true),
     );
   }
+
+  /// 물품 삭제 확인 (상세·등록 탭 공용 문구 단일 원본)
+  Future<bool?> showItemDeleteConfirmDialog() {
+    return showDeleteDialog(title: '물품 삭제', description: '물품을 삭제하시겠습니까?\n삭제된 물품은 복구할 수 없습니다.');
+  }
 }
 
 // 색상을 어둡게 만드는 함수(버튼 highlight용)

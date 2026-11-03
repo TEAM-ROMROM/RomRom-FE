@@ -6,11 +6,15 @@ import 'package:romrom_fe/widgets/chat_room/chat_date_divider.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_room_message_list.dart';
 import '../../helpers/pump_design_screen.dart';
 
-/// 교환 요청 버튼 콜백 호출 횟수
+/// 교환 요청·실패 메시지·후기 쓰기 콜백 호출 기록
 class TradeRequestCallbackCounts {
   int cancelCount = 0;
   int rejectCount = 0;
   int confirmCount = 0;
+  int writeReviewCount = 0;
+  int retryOlderMessagesCount = 0;
+  final List<String> retriedMessageIds = [];
+  final List<String> deletedMessageIds = [];
 }
 
 /// 메시지 목록 렌더 (ScreenUtil 초기화 포함)
@@ -19,6 +23,10 @@ Future<TradeRequestCallbackCounts> pumpChatRoomMessageList(
   required List<ChatMessage> messages,
   String? lastReadMyMessageId,
   bool isTradeCompleted = false,
+  Set<String> pendingLocalMessageIds = const {},
+  Set<String> failedLocalMessageIds = const {},
+  bool canWriteReview = false,
+  bool hasOlderMessagesLoadFailed = false,
 }) async {
   useDesignScreenView(tester);
   final callbackCounts = TradeRequestCallbackCounts();
@@ -34,12 +42,20 @@ Future<TradeRequestCallbackCounts> pumpChatRoomMessageList(
           myMemberId: 'me',
           opponentNickname: '상대',
           uploadingMessageIds: const {},
+          pendingLocalMessageIds: pendingLocalMessageIds,
+          failedLocalMessageIds: failedLocalMessageIds,
+          isLoadingOlderMessages: false,
+          hasOlderMessagesLoadFailed: hasOlderMessagesLoadFailed,
+          onRetryOlderMessages: () => callbackCounts.retryOlderMessagesCount++,
           lastReadMyMessageId: lastReadMyMessageId,
           isTradeCompleted: isTradeCompleted,
           isTradeActionPending: false,
           onCancelTradeRequest: () => callbackCounts.cancelCount++,
           onRejectTradeRequest: () => callbackCounts.rejectCount++,
           onConfirmTradeRequest: () => callbackCounts.confirmCount++,
+          onRetryFailedMessage: callbackCounts.retriedMessageIds.add,
+          onDeleteFailedMessage: callbackCounts.deletedMessageIds.add,
+          onWriteReview: canWriteReview ? () => callbackCounts.writeReviewCount++ : null,
         ),
       ),
     ),
@@ -136,6 +152,62 @@ void main() {
       expect(find.byType(ChatDateDivider), findsNWidgets(2));
       expect(find.text('2026년 11월 1일 일요일'), findsOneWidget);
       expect(find.text('2026년 10월 31일 토요일'), findsOneWidget);
+    });
+
+    testWidgets('전송 중 메시지 > 전송 중 문구, 시각·읽음 대신 표시', (tester) async {
+      await pumpChatRoomMessageList(
+        tester,
+        messages: [ChatMessage(chatMessageId: 'local_1', senderId: 'me', type: MessageType.text, content: '안녕')],
+        pendingLocalMessageIds: {'local_1'},
+        lastReadMyMessageId: 'local_1',
+      );
+
+      expect(find.text('전송 중'), findsOneWidget);
+      expect(find.text('읽음'), findsNothing);
+    });
+
+    testWidgets('실패 메시지 > 다시 보내기·삭제가 해당 로컬 ID로 콜백 호출', (tester) async {
+      final callbackCounts = await pumpChatRoomMessageList(
+        tester,
+        messages: [ChatMessage(chatMessageId: 'local_1', senderId: 'me', type: MessageType.text, content: '안녕')],
+        pendingLocalMessageIds: {'local_1'},
+        failedLocalMessageIds: {'local_1'},
+      );
+
+      expect(find.text('전송 실패'), findsOneWidget);
+      await tester.tap(find.text('다시 보내기'));
+      await tester.tap(find.text('삭제'));
+
+      expect(callbackCounts.retriedMessageIds, ['local_1']);
+      expect(callbackCounts.deletedMessageIds, ['local_1']);
+    });
+
+    testWidgets('교환 완료 카드 > 후기 작성 가능하면 후기 쓰기 버튼, 아니면 숨김', (tester) async {
+      final completedMessages = [ChatMessage(chatMessageId: 'c1', senderId: 'other', type: MessageType.tradeCompleted)];
+      final callbackCounts = await pumpChatRoomMessageList(
+        tester,
+        messages: completedMessages,
+        isTradeCompleted: true,
+        canWriteReview: true,
+      );
+
+      await tester.tap(find.text('후기 쓰기'));
+      expect(callbackCounts.writeReviewCount, 1);
+
+      await pumpChatRoomMessageList(tester, messages: completedMessages, isTradeCompleted: true);
+      expect(find.text('후기 쓰기'), findsNothing);
+    });
+
+    testWidgets('이전 메시지 조회 실패 > 목록 맨 위 다시 불러오기 행이 재조회 콜백 호출', (tester) async {
+      final callbackCounts = await pumpChatRoomMessageList(
+        tester,
+        messages: [ChatMessage(chatMessageId: 'm1', senderId: 'other', type: MessageType.text, content: '안녕')],
+        hasOlderMessagesLoadFailed: true,
+      );
+
+      await tester.tap(find.text('이전 메시지를 불러오지 못했어요 · 다시 불러오기'));
+
+      expect(callbackCounts.retryOlderMessagesCount, 1);
     });
   });
 }

@@ -30,10 +30,12 @@ import 'package:romrom_fe/utils/location_utils.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/screens/trade_location_detail_screen.dart';
+import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
 import 'package:romrom_fe/screens/trade_request_screen.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_bottom_action_button.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_bottom_gradient.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_circle_icon_button.dart';
+import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/error_scaffold.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_image_header.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_info_section.dart';
@@ -80,9 +82,12 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
 
   bool deleteModalShown = false; // 삭제/존재하지 않는 사용자 모달 중복 방지 플래그
   bool _isChatCreationInProgress = false; // 채팅방 생성 요청 진행 여부 (채팅하기 중복 탭 방지)
+  bool _isStatusChangeInProgress = false; // 교환 가능 변경 요청 진행 여부 (메뉴 중복 탭 방지)
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
+  // 삭제됐거나 없는 물품 (재시도해도 같은 결과 > 다시 시도 없이 안내만)
+  bool _isDeletedItem = false;
 
   Item? item;
   String locationName = '위치 정보 로딩 중...';
@@ -163,9 +168,11 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
         );
       }
 
+      final errorCode = ErrorUtils.getErrorCode(e);
       setState(() {
         hasError = true;
-        errorMessage = ErrorUtils.getErrorMessage(e);
+        errorMessage = errorCode.koMessage;
+        _isDeletedItem = errorCode == ErrorCode.deletedItem || errorCode == ErrorCode.itemNotFound;
         isLoading = false;
       });
     }
@@ -189,37 +196,49 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
     }
   }
 
-  /// 물품 상태 토글 (판매중 ↔ 거래완료)
-  Future<void> _toggleItemStatus(Item item) async {
+  /// 상태 변경 메뉴: 교환 가능 > 교환 상대 선택 > 채팅방(교환 완료 요청 자동, 등록 탭과 같은 흐름) > 돌아오면 상세 재조회
+  /// 교환 완료 > 확인 후 교환 가능으로
+  Future<void> _onChangeStatusPressed(Item item) async {
+    if (item.itemStatus == ItemStatus.available.serverName) {
+      final chatRoomId = await context.navigateTo<String>(screen: TradeCompletePartnerSelectScreen(item: item));
+      if (!mounted || chatRoomId == null) return;
+      await context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId, autoTriggerExchangeRequest: true));
+      // 채팅방에서 교환 완료됐을 수 있음 > 오래된 상태(메뉴·요청 버튼) 방지
+      if (mounted) await _loadItemDetail();
+      return;
+    }
+
+    final isConfirmed = await context.showDeleteDialog(
+      title: '교환 가능으로 변경',
+      description: '교환 가능으로 변경하시겠습니까?',
+      confirmText: '확인',
+    );
+    if (isConfirmed != true || !mounted) return;
+    await _changeItemStatusToAvailable(item);
+  }
+
+  /// 교환 완료 > 교환 가능: 중복 요청 차단 > 상태 변경(myItemsProvider) > 성공 안내 후 상세 닫기(true)
+  Future<void> _changeItemStatusToAvailable(Item item) async {
+    if (_isStatusChangeInProgress) return;
     if (item.itemId == null) {
       CommonSnackBar.show(context: context, message: '물품 정보를 찾을 수 없어요', type: SnackBarType.error);
       return;
     }
 
+    _isStatusChangeInProgress = true;
     try {
-      // 현재 상태의 반대로 전환
-      final targetStatus = item.itemStatus == ItemStatus.available.serverName
-          ? ItemStatus.exchanged.serverName
-          : ItemStatus.available.serverName;
-
-      final request = ItemRequest(itemId: item.itemId, itemStatus: targetStatus);
-
+      final request = ItemRequest(itemId: item.itemId, itemStatus: ItemStatus.available.serverName);
       await ref.read(myItemsProvider.notifier).changeStatus(request);
-
-      if (mounted) {
-        final successMessage = item.itemStatus == ItemStatus.available.serverName
-            ? '교환 완료로 변경되었습니다'
-            : '교환 가능으로 변경되었습니다';
-
-        CommonSnackBar.show(context: context, message: successMessage);
-
-        // 상태 변경 후 화면 닫기 (성공 시 true 반환)
-        Navigator.of(context).pop(true);
-      }
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '교환 가능으로 변경되었습니다');
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
+    } finally {
+      // (성공·실패 공통)
+      _isStatusChangeInProgress = false;
     }
   }
 
@@ -258,6 +277,19 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
     // 작성자가 탈퇴한 게시글인 경우 별도 화면 표시
     if (errorMessage == ErrorCode.deletedMember.koMessage) {
       return const ErrorScaffold(message: '작성자가 탈퇴한 게시글입니다.');
+    }
+
+    // 삭제됐거나 없는 물품: 다시 시도 없이 안내
+    if (_isDeletedItem) {
+      return const Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        appBar: CommonAppBar(title: ''),
+        body: EmptyStateView(
+          icon: AppIcons.trash,
+          centerText: '삭제된 물품이에요',
+          descriptionText: '판매자가 삭제했거나\n더 이상 볼 수 없는 물품이에요',
+        ),
+      );
     }
 
     if (hasError) {
@@ -339,13 +371,13 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
               isAvailableStatus: item!.itemStatus == ItemStatus.available.serverName,
               onSharePressed: _shareItem,
               onReportPressed: _openReportScreen,
-              onChangeStatusPressed: () => _toggleItemStatus(item!),
+              onChangeStatusPressed: () => _onChangeStatusPressed(item!),
               onEditPressed: _openItemModification,
               onDeletePressed: _confirmAndDeleteItem,
             ),
 
             // 오버레이 그레디언트 + 하단 액션 버튼
-            ItemDetailBottomGradient(isVisible: widget.isChatAccessAllowed || widget.isTradeRequestAllowed),
+            ItemDetailBottomGradient(isVisible: widget.isChatAccessAllowed || _isTradeRequestButtonVisible),
             ItemDetailBottomActionButton(
               isVisible: widget.isChatAccessAllowed,
               isEnabled: !_isChatCreationInProgress,
@@ -353,7 +385,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
               onPressed: _handleChatButtonPressed,
             ),
             ItemDetailBottomActionButton(
-              isVisible: widget.isTradeRequestAllowed,
+              isVisible: _isTradeRequestButtonVisible,
               isEnabled: true,
               buttonText: '요청하기',
               onPressed: _navigateToRequestScreen,
@@ -363,6 +395,10 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
       ),
     );
   }
+
+  /// 요청하기 버튼 노출: 요청 허용 진입 + 교환 완료 아닌 물품 (상태 누락 시 기존처럼 노출)
+  bool get _isTradeRequestButtonVisible =>
+      widget.isTradeRequestAllowed && item?.itemStatus != ItemStatus.exchanged.serverName;
 
   /// 판매자 행 (좋아요 상태·개수는 itemLikeProvider 구독)
   Widget _buildSellerSection() {
@@ -431,7 +467,7 @@ class _ItemDetailDescriptionScreenState extends ConsumerState<ItemDetailDescript
 
   /// 삭제: 확인 모달 > 삭제(myItemsProvider) > 성공 안내 후 상세 닫기(true)
   Future<void> _confirmAndDeleteItem() async {
-    final isConfirmed = await context.showDeleteDialog(title: '물품 삭제', description: '정말 삭제하시겠습니까?');
+    final isConfirmed = await context.showItemDeleteConfirmDialog();
     if (isConfirmed != true) return;
 
     final itemId = item!.itemId;
