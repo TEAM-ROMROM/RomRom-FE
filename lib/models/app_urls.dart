@@ -45,7 +45,7 @@ class AppUrls {
   static const String iosStoreReviewUrl = 'https://apps.apple.com/app/id$iosAppStoreId';
 
   // 고객 문의 메일 (정지·게시글 삭제 안내, 마이페이지 문의하기 공용)
-  static const String supportEmailAddress = 'romrom.noreply@gmail.com';
+  static const String supportEmailAddress = 'chancamera123@gmail.com';
 
   // 운영 API 서버 주소 (RuntimeUrlManager 기본값·릴리스 빌드 고정값)
   static const String productionApiBaseUrl = 'https://api.romrom.suhsaechan.kr';
