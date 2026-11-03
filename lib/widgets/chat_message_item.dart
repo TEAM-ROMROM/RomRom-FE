@@ -149,7 +149,7 @@ class ChatMessageItem extends StatelessWidget {
       return ChatLocationBubble(message: message);
     }
     if (message.type == MessageType.image) {
-      return isUploading ? _buildUploadingBubble() : chatImageBubble(context, message);
+      return isUploading ? _buildUploadingBubble(context) : chatImageBubble(context, message);
     }
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
@@ -215,15 +215,22 @@ class ChatMessageItem extends StatelessWidget {
     );
   }
 
-  Widget _buildUploadingBubble() {
+  /// 업로드 중 사진 말풍선: 압축 전 로컬 사진을 셀 표시 크기로 디코딩 (원본 디코딩 시 장당 수십 MB) + 스피너
+  Widget _buildUploadingBubble(BuildContext context) {
     final paths = message.imageUrls ?? [];
     if (paths.isEmpty) return const SizedBox.shrink();
 
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     Widget localCell(int index) {
       final path = paths[index];
-      return path.isNotEmpty
-          ? Image.file(File(path), fit: BoxFit.cover)
-          : const ColoredBox(color: AppColors.opacity10White);
+      if (path.isEmpty) return const ColoredBox(color: AppColors.opacity10White);
+      final decodeSize = photoGridCellDecodeSize(
+        photoCount: paths.length,
+        index: index,
+        width: 264.w,
+        devicePixelRatio: devicePixelRatio,
+      );
+      return Image.file(File(path), fit: BoxFit.cover, cacheWidth: decodeSize.width, cacheHeight: decodeSize.height);
     }
 
     return ClipRRect(

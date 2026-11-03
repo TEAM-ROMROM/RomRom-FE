@@ -11,6 +11,7 @@
 `MainScreen`은 `IndexedStack`으로 5개 탭을 렌더한다 (`lib/screens/main_screen.dart`).
 
 - 탭 전환은 `_currentTabIndex`만 바꿀 뿐, 탭 위젯은 **계속 메모리에 살아있다**. `initState`는 다시 실행되지 않는다.
+- 탭은 `LazyIndexedStack`(`lib/widgets/common/lazy_indexed_stack.dart`)으로 **처음 방문할 때 생성**된다 (홈·채팅은 시작 시 생성). 늦게 만들어지는 탭은 이미 바뀐 신호·데이터를 놓치지 않도록 `ref.watch` 또는 `listenManual(..., fireImmediately: true)`로 구독한다 (변경 시점만 보는 `ref.listen`만으로 첫 상태를 받으면 안 됨).
 - 따라서 `initState`에서 1회만 데이터를 로드하는 탭은, 다른 탭/화면에서 일어난 변경을 **영원히 반영하지 못한다** (stale).
 - 예) 채팅방에서 거래완료 → 내 물건이 `EXCHANGED`로 바뀌어도, 홈 탭이 로컬 `_myCards`를 `initState`에 1회 로드했다면 거래완료된 물건이 카드 덱에 계속 노출.
 
@@ -128,8 +129,9 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `memberProfileProvider` | `providers/member_profile_provider.dart` | AsyncNotifier | 내 회원 정보 `{member, location, itemCategories}` |
 | `chatRoomsProvider` | `providers/chat_rooms_provider.dart` | AsyncNotifier(페이징) | 채팅방 목록 `{rooms, currentPage, hasMore}` |
 | `tradeRequestsProvider` | `providers/trade_requests_provider.dart` | AsyncNotifier | 요청관리 `{received, sent, myItemIds, 정렬 기준, 받은 조회 실패 여부, 보낸 조회 실패 카드 ID}` — 보낸 요청은 카드 5개씩 묶어 조회, 다시 시도는 실패 카드만 |
-| `homeFeedProvider` | `providers/home_feed_provider.dart` | AsyncNotifier(페이징) | 홈 피드 `{items, currentPage, hasMoreItems, 정렬 기준, seenItemIds}` |
-| `notificationListProvider` | `providers/notification_list_provider.dart` | AsyncNotifier(페이징) | 알림 목록 `{notifications, unreadCount, nextPageNumber, hasMore, isLoadingMore}` — 페이지 크기 `notificationPageSize`(20) |
+| `homeFeedProvider` | `providers/home_feed_provider.dart` | AsyncNotifier(페이징) | 홈 피드 `{items, currentPage, hasMoreItems, 정렬 기준}` — 본 물품 기록은 상태 밖(notifier 소유, 2초 묶음 저장)이라 넘길 때 상태 변화 없음, 신고·차단 회원 물품 제외 |
+| `notificationListProvider` | `providers/notification_list_provider.dart` | AsyncNotifier(페이징) | 알림 목록 `{notifications, unreadCount, nextPageNumber, hasMore, isLoadingMore}` — 페이지 크기 `notificationPageSize`(20), 미확인 수는 `notificationUnreadCountProvider` 경유 조회 |
+| `notificationUnreadCountProvider` | `providers/notification_unread_count_provider.dart` | AsyncNotifier | 미확인 알림 수 `int` — 홈 알림 배지 (목록 조회 없이 개수만) |
 | `itemLikeProvider` | `providers/item_like_provider.dart` | Notifier(토글) | 좋아요 `Map<itemId, ItemLikeState>` |
 | `memberBlockProvider` | `providers/member_block_provider.dart` | Notifier(토글) | 차단 `Set<memberId>` |
 | `notificationSettingProvider` | `providers/notification_setting_provider.dart` | Notifier(토글) | 알림설정 `Map<type, bool>` |
@@ -140,7 +142,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
 | `homeFeedRepositoryProvider` | `providers/home_feed_repository_provider.dart` | Provider | HomeFeedRepository 주입 |
 | `imageRepositoryProvider` | `providers/image_repository_provider.dart` | Provider | ImageRepository 주입 (이미지 업로드·삭제 공용) |
-| `memberRepositoryProvider` | `providers/member_repository_provider.dart` | Provider | MemberRepository 주입 |
+| `memberRepositoryProvider` | `providers/member_repository_provider.dart` | Provider | MemberRepository 주입 (내 정보 조회마다 `UserInfo` 프로필 필드 동기화, 회원 ID·온보딩 플래그 제외) |
 | `memberBlockRepositoryProvider` | `providers/member_block_provider.dart` | Provider | MemberBlockRepository 주입 |
 | `notificationSettingRepositoryProvider` | `providers/notification_setting_provider.dart` | Provider | NotificationSettingRepository 주입 |
 | `notificationRepositoryProvider` | `providers/notification_repository_provider.dart` | Provider | NotificationRepository 주입 |

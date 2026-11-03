@@ -10,7 +10,7 @@ import 'package:romrom_fe/widgets/request_management/request_sort_chip.dart';
 class RequestListHeader extends StatelessWidget {
   final bool isRightSelected;
   final RequestSortType currentSort;
-  final bool showCompletedRequests;
+  final bool shouldShowCompletedRequests;
   final ValueChanged<RequestSortType> onSortChanged;
   final ValueChanged<bool> onToggleCompleted;
 
@@ -18,7 +18,7 @@ class RequestListHeader extends StatelessWidget {
     super.key,
     required this.isRightSelected,
     required this.currentSort,
-    required this.showCompletedRequests,
+    required this.shouldShowCompletedRequests,
     required this.onSortChanged,
     required this.onToggleCompleted,
   });
@@ -56,7 +56,7 @@ class RequestListHeader extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 8.w),
-                  CompletedToggleSwitch(value: showCompletedRequests, onChanged: onToggleCompleted),
+                  CompletedToggleSwitch(value: shouldShowCompletedRequests, onChanged: onToggleCompleted),
                 ],
               ),
             ],

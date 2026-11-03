@@ -9,16 +9,18 @@ import 'package:romrom_fe/services/deep_link_gate.dart';
 import 'package:romrom_fe/services/session_navigation_handler.dart';
 import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 
-/// 세션 전환 검증: 종료 3종(제재·만료·로그아웃/탈퇴) 대상 화면·전환 타입 + 전환 후 초기화, 로그인 성공 시 초기화 1회 후 이동
+/// 세션 전환 검증: 종료 3종(제재·만료·로그아웃/탈퇴) 회원 자원 즉시 정리 + 대상 화면·전환 타입 + 전환 후 초기화·딥링크 게이트 닫힘, 로그인 성공 시 초기화 1회 후 이동
 void main() {
   late List<ProviderOrFamily> invalidatedProviders;
   late List<String> callOrder;
   late List<(Widget, NavigationTypes)> navigations;
+  late int releaseUserResourcesCallCount;
 
   setUp(() {
     invalidatedProviders = [];
     callOrder = [];
     navigations = [];
+    releaseUserResourcesCallCount = 0;
   });
   tearDown(SessionNavigationHandler.unregister);
 
@@ -33,6 +35,10 @@ void main() {
         callOrder.add('navigate');
       },
       isActive: isActive ?? () => true,
+      releaseUserResources: () async {
+        releaseUserResourcesCallCount++;
+        callOrder.add('release');
+      },
     );
   }
 
@@ -49,7 +55,7 @@ void main() {
       await tester.pump(previousScreensDisposeWait);
 
       expect(invalidatedProviders, userScopedProviders);
-      expect(callOrder.first, 'navigate');
+      expect(callOrder.take(2), ['release', 'navigate']);
     });
 
     testWidgets('세션 만료 > LoginScreen fadeTransition, 정리 대기 후 초기화', (tester) async {
@@ -84,6 +90,34 @@ void main() {
       await tester.pump(previousScreensDisposeWait);
 
       expect(DeepLinkGate.instance.isMainScreenEntered, isFalse);
+    });
+
+    testWidgets('종료 3종 > 회원 단위 자원(웹소켓·하트비트·폴러) 정리를 화면 전환 전 즉시 1회씩', (tester) async {
+      registerForTest();
+
+      SessionNavigationHandler.notifyAccountSuspended(suspendReason: '욕설', suspendedUntil: '2026-11-01T00:00:00');
+      expect(releaseUserResourcesCallCount, 1, reason: '정리 대기 없이 즉시');
+      expect(callOrder.first, 'release');
+
+      SessionNavigationHandler.notifySessionExpired();
+      SessionNavigationHandler.notifyLoggedOut();
+      expect(releaseUserResourcesCallCount, 3);
+      await tester.pump(previousScreensDisposeWait);
+    });
+
+    testWidgets('자원 정리 실패 > 화면 전환·초기화는 그대로', (tester) async {
+      registerSessionEndNavigation(
+        invalidate: invalidatedProviders.add,
+        navigate: (screen, type) => navigations.add((screen, type)),
+        isActive: () => true,
+        releaseUserResources: () async => throw StateError('release failed'),
+      );
+
+      SessionNavigationHandler.notifySessionExpired();
+      await tester.pump(previousScreensDisposeWait);
+
+      expect(navigations.single.$1, isA<LoginScreen>());
+      expect(invalidatedProviders, userScopedProviders);
     });
 
     testWidgets('정리 대기 중 루트 해제 > 초기화 안 함', (tester) async {

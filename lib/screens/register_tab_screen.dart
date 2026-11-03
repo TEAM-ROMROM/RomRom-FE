@@ -406,8 +406,8 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
   }
 
   Future<void> _showDeleteConfirmDialog(Item item) async {
-    final result = await context.showItemDeleteConfirmDialog();
-    if (result == true) {
+    final isConfirmed = await context.showItemDeleteConfirmDialog();
+    if (isConfirmed == true) {
       await _deleteItem(item);
     }
   }

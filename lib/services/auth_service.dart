@@ -10,6 +10,7 @@ import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
+import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/heart_beat_manager.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/services/session_navigation_handler.dart';
@@ -28,6 +29,8 @@ class AuthService {
     } finally {
       await _performPlatformLogout();
       await _tokenManager.deleteTokens();
+      // 채팅 웹소켓 해제 (다른 계정 로그인 시 이전 계정 연결 재사용 방지)
+      await ChatWebSocketService().disconnect();
       HeartbeatManager.instance.stop();
       ApiClient.resetSuspendedFlag();
       ApiClient.resetSessionExpiredFlag();
@@ -68,8 +71,9 @@ class AuthService {
     // 플랫폼별 소셜 연결 해제 (내부에서 Firebase signOut + 로그인 플랫폼 삭제 처리)
     await _performPlatformWithdraw(platform);
 
-    // 토큰 삭제
+    // 토큰 삭제 > 채팅 웹소켓 해제
     await _tokenManager.deleteTokens();
+    await ChatWebSocketService().disconnect();
 
     // 사용자 정보 클리어 (회원탈퇴는 새 사용자이므로 isCoachMarkShown, isFirstMainScreen 포함 전체 초기화)
     await UserInfo().clearAllUserInfo();

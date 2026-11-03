@@ -101,8 +101,8 @@ mixin _ChatRoomTradeActions on _ChatRoomScreenStateFields, _ChatRoomMessaging {
     setState(() => _isPendingTradeAction = true);
     try {
       await _chatRepository.rejectTradeCompletion(chatRoomId: widget.chatRoomId);
-      // 거래완료 거절 전파: 요청관리 탭이 myItemsProvider listen으로 받아 받은/보낸 요청 재조회.
-      if (mounted) ref.read(myItemsProvider.notifier).reload();
+      // 거래완료 거절 전파: 요청관리 받은(현재 카드)·보낸 요청 서버 재조회
+      if (mounted) unawaited(ref.read(tradeRequestsProvider.notifier).reloadReceivedAndSent());
     } catch (e) {
       if (mounted) _showErrorSnackBar(e);
     } finally {
@@ -134,10 +134,11 @@ mixin _ChatRoomTradeActions on _ChatRoomScreenStateFields, _ChatRoomMessaging {
     }
   }
 
-  /// 거래완료 전파: 홈 카드 덱 등 구독 화면이 내 물건·채팅 목록을 재조회하도록 알림
+  /// 거래완료 전파: 내 물건(홈 카드 덱 등)·채팅 목록·요청관리 받은·보낸 요청 서버 재조회
   void _reloadTradeAffectedLists() {
     ref.read(myItemsProvider.notifier).reload();
     ref.read(chatRoomsProvider.notifier).reload();
+    unawaited(ref.read(tradeRequestsProvider.notifier).reloadReceivedAndSent());
   }
 
   /// 후기 작성 화면 이동: 이미 열려 있으면 무시 > 거래 기록 ID 확인 > 이동 > 작성 완료면 완료 카드 '후기 쓰기' 숨김

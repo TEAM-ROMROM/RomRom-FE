@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
+import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/notification/notification_history_list.dart';
 import 'package:romrom_fe/widgets/notification_item_widget.dart';
 import '../../helpers/pump_design_screen.dart';
 
-/// 목록 렌더 (ScreenUtil 초기화 포함, 세로 넘침 방지 스크롤)
+/// 목록 렌더 (ScreenUtil 초기화 포함, 화면과 같은 CustomScrollView 안 sliver)
 Future<void> pumpNotificationHistoryList(
   WidgetTester tester, {
   required List<NotificationItemData> notifications,
@@ -17,17 +18,19 @@ Future<void> pumpNotificationHistoryList(
   await tester.pumpWidget(
     buildDesignScreenApp(
       home: Scaffold(
-        body: SingleChildScrollView(
-          child: NotificationHistoryList(
-            notifications: notifications,
-            isRomromNewsTab: isRomromNewsTab,
-            isLoadingMore: isLoadingMore,
-            pageSize: 20,
-            isMutedFor: (type) => false,
-            onNotificationTap: onNotificationTap ?? (_) {},
-            onMuteTap: (_) {},
-            onDeleteTap: (_) {},
-          ),
+        body: CustomScrollView(
+          slivers: [
+            NotificationHistoryList(
+              notifications: notifications,
+              isRomromNewsTab: isRomromNewsTab,
+              isLoadingMore: isLoadingMore,
+              pageSize: 20,
+              isMutedFor: (type) => false,
+              onNotificationTap: onNotificationTap ?? (_) {},
+              onMuteTap: (_) {},
+              onDeleteTap: (_) {},
+            ),
+          ],
         ),
       ),
     ),
@@ -36,8 +39,52 @@ Future<void> pumpNotificationHistoryList(
   await tester.pump(const Duration(seconds: 1));
 }
 
+/// 테스트용 알림 n건 (id·제목에 순번)
+List<NotificationItemData> buildNotifications(int count) => [
+  for (var index = 0; index < count; index++)
+    NotificationItemData(
+      id: 'notification-$index',
+      type: NotificationType.itemLiked,
+      title: '알림 $index',
+      description: '설명 $index',
+      time: DateTime.now(),
+    ),
+];
+
 void main() {
   group('NotificationHistoryList', () {
+    testWidgets('100건 > 화면에 보이는 행만 생성 (지연 생성)', (tester) async {
+      await pumpNotificationHistoryList(tester, notifications: buildNotifications(100));
+
+      final builtRowCount = find.byType(NotificationItemWidget).evaluate().length;
+      expect(builtRowCount, greaterThan(0));
+      expect(builtRowCount, lessThan(100));
+      expect(find.text('알림 0'), findsOneWidget);
+      expect(find.text('알림 99'), findsNothing);
+    });
+
+    testWidgets('끝까지 스크롤 > 마지막 알림·다음 페이지 조회 표시 생성', (tester) async {
+      await pumpNotificationHistoryList(tester, notifications: buildNotifications(100), isLoadingMore: true);
+
+      await tester.dragUntilVisible(find.text('알림 99'), find.byType(CustomScrollView), const Offset(0, -500));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('알림 99'), findsOneWidget);
+      expect(find.byType(CommonLoadingIndicator), findsOneWidget);
+    });
+
+    testWidgets('스크롤로 다시 보이는 행 > 등장 애니메이션 없이 바로 표시 (첫 화면 행만 순차 등장)', (tester) async {
+      await pumpNotificationHistoryList(tester, notifications: buildNotifications(100));
+      Finder fadeInAncestorOf(String title) =>
+          find.ancestor(of: find.text(title), matching: find.byType(AppFadeSlideIn));
+      expect(fadeInAncestorOf('알림 0'), findsOneWidget);
+
+      await tester.dragUntilVisible(find.text('알림 99'), find.byType(CustomScrollView), const Offset(0, -500));
+      expect(fadeInAncestorOf('알림 99'), findsNothing);
+      await tester.dragUntilVisible(find.text('알림 0'), find.byType(CustomScrollView), const Offset(0, 500));
+      expect(fadeInAncestorOf('알림 0'), findsNothing);
+    });
+
     testWidgets('빈 목록: 탭별 안내 문구', (tester) async {
       await pumpNotificationHistoryList(tester, notifications: const []);
       expect(find.text('알림이 없습니다'), findsOneWidget);

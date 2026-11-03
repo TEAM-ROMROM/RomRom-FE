@@ -13,7 +13,7 @@ import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
-import 'package:romrom_fe/providers/notification_list_provider.dart';
+import 'package:romrom_fe/providers/notification_unread_count_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/notification_screen.dart';
@@ -24,6 +24,7 @@ import 'package:romrom_fe/states/home_feed_state.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/home_feed_ad_slot_schedule.dart';
+import 'package:romrom_fe/utils/home_feed_removal_position.dart';
 import 'package:romrom_fe/widgets/coach_mark/coach_mark_overlay.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
@@ -33,6 +34,7 @@ import 'package:romrom_fe/widgets/common/report_menu_button.dart';
 import 'package:romrom_fe/widgets/home_feed_item/home_feed_card_layout.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
 import 'package:romrom_fe/widgets/home_feed_refresh_indicator.dart';
+import 'package:romrom_fe/widgets/home_tab/home_feed_upcoming_page_preparer.dart';
 import 'package:romrom_fe/widgets/home_tab/home_tab_empty_feed_view.dart';
 import 'package:romrom_fe/widgets/home_tab/home_tab_my_items_load_error_button.dart';
 import 'package:romrom_fe/widgets/home_tab/home_tab_register_button.dart';
@@ -41,6 +43,10 @@ import 'package:romrom_fe/widgets/home_tab_card_hand.dart';
 import 'package:romrom_fe/widgets/common/smooth_page_scroll_physics.dart';
 import 'package:romrom_fe/widgets/native_ad_widget.dart';
 import 'package:romrom_fe/widgets/skeletons/home_feed_skeleton.dart';
+
+part 'home_tab/home_tab_coach_mark.dart';
+part 'home_tab/home_tab_feed_paging.dart';
+part 'home_tab/home_tab_actions.dart';
 
 // 다음 페이지 선행 로드 기준: 끝에서 뷰포트 높이의 몇 배 전인지
 const double loadMorePrefetchViewportRatio = 1.5;
@@ -64,7 +70,8 @@ class HomeTabScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeTabScreen> createState() => _HomeTabScreenState();
 }
 
-class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
+/// 홈 탭 화면 상태 필드 (책임별 mixin이 공유, part 파일: home_tab/)
+abstract class _HomeTabScreenStateFields extends ConsumerState<HomeTabScreen> {
   final PageController _pageController = PageController();
 
   int _currentFeedIndex = 0;
@@ -81,205 +88,32 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   // 광고 슬롯 배치 (화면 로컬)
   final HomeFeedAdSlotSchedule _adSlotSchedule = HomeFeedAdSlotSchedule();
 
+  // 다음 카드 이미지·다음 광고 칸 광고 미리 받기 (화면 종료 시 받아 둔 광고 폐기)
+  final HomeFeedUpcomingPagePreparer _upcomingPagePreparer = HomeFeedUpcomingPagePreparer();
+
   // 빈 피드 '새로고침' 진행 중 여부 (중복 탭 차단, 버튼 스피너)
   bool _isManualRefreshInProgress = false;
 
   // 카드 덱 자리 '다시 시도' 진행 중 여부 (reload는 로딩 상태를 내지 않아 화면에서 추적)
   bool _isRetryingMyItems = false;
+}
 
+/// 홈 탭 화면: 피드·카드 덱·상단 버튼 구성 (코치마크·피드 위치·사용자 액션은 mixin)
+class _HomeTabScreenState extends _HomeTabScreenStateFields
+    with _HomeTabCoachMark, _HomeTabFeedPaging, _HomeTabActions {
   @override
   void initState() {
     super.initState();
-    // 미확인 알림 배지 최신화 (첫 로드 진행 중이면 notifier가 무시, 재로그인 등 이전 값은 재조회)
-    Future.microtask(ref.read(notificationListProvider.notifier).reload);
+    // 미확인 알림 배지 최신화 (개수만 조회, 첫 조회 진행 중이면 그 결과 공유)
+    Future.microtask(ref.read(notificationUnreadCountProvider.notifier).refresh);
   }
 
   @override
   void dispose() {
     _removeCoachMarkOverlay();
+    _upcomingPagePreparer.dispose();
     _pageController.dispose();
     super.dispose();
-  }
-
-  void _onAiRecommend(List<String> itemIds) {
-    setState(() {
-      _aiHighlightedItemIds = itemIds;
-    });
-    debugPrint('AI 추천 하이라이트 업데이트: $itemIds');
-  }
-
-  /// 코치마크 표시 (외부 호출용 — 첫 물건 등록 후 홈 탭에서 직접 표시).
-  void showCoachMark() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _checkAndShowCoachMark();
-      }
-    });
-  }
-
-  Future<void> _checkAndShowCoachMark() async {
-    try {
-      final userInfo = UserInfo();
-      await userInfo.getUserInfo();
-      final bool shouldShowCoachMark = (userInfo.isFirstItemPosted == true) && (userInfo.isCoachMarkShown != true);
-      if (shouldShowCoachMark) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _showCoachMarkOverlay();
-        });
-      }
-    } catch (e) {
-      debugPrint('⚠️ 코치마크 체크 실패: $e');
-    }
-  }
-
-  Future<void> _closeCoachMark() async {
-    _removeCoachMarkOverlay();
-    final userInfo = UserInfo();
-    await userInfo.getUserInfo();
-    await userInfo.saveLoginStatus(
-      isFirstLogin: userInfo.isFirstLogin ?? false,
-      isFirstItemPosted: userInfo.isFirstItemPosted ?? false,
-      isItemCategorySaved: userInfo.isItemCategorySaved ?? false,
-      isMemberLocationSaved: userInfo.isMemberLocationSaved ?? false,
-      isMarketingInfoAgreed: userInfo.isMarketingInfoAgreed ?? false,
-      isRequiredTermsAgreed: userInfo.isRequiredTermsAgreed ?? false,
-      isCoachMarkShown: true,
-    );
-  }
-
-  void _showCoachMarkOverlay() {
-    _removeCoachMarkOverlay();
-    _overlayEntry = OverlayEntry(builder: (context) => CoachMarkOverlay(onClose: _closeCoachMark));
-    if (mounted && _overlayEntry != null) {
-      try {
-        Overlay.of(context).insert(_overlayEntry!);
-      } on FlutterError catch (e) {
-        debugPrint('오버레이 삽입 오류: $e');
-        _overlayEntry = null;
-      } catch (e) {
-        debugPrint('오버레이 삽입 알 수 없는 오류: $e');
-        _overlayEntry = null;
-      }
-    }
-  }
-
-  void _removeCoachMarkOverlay() {
-    if (_overlayEntry != null) {
-      try {
-        _overlayEntry!.remove();
-      } catch (e) {
-        debugPrint('오류: 오버레이 제거 실패 - $e');
-      }
-      _overlayEntry = null;
-    }
-  }
-
-  /// 피드 items가 새로 교체될 때 호출 — page 0으로 점프 + 광고 슬롯 리셋.
-  void _onFeedItemsReplaced(int newLen) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_pageController.hasClients) {
-        _pageController.jumpToPage(0);
-      }
-      setState(() {
-        _currentFeedIndex = 0;
-        _currentVirtualIndex = 0;
-        _aiHighlightedItemIds = [];
-        _adSlotSchedule.reset();
-        _adSlotSchedule.scheduleAdsForFeedLength(newLen);
-      });
-    });
-  }
-
-  /// 피드 items가 append될 때 (loadMore) — 광고 슬롯만 추가 스케줄.
-  void _onFeedItemsAppended(int newLen) {
-    setState(() {
-      _adSlotSchedule.scheduleAdsForFeedLength(newLen);
-    });
-  }
-
-  /// 피드 items가 줄었을 때 (신고 물품 제외) — 같은 페이지의 다음 물품 기준으로 index 갱신, 범위 밖이면 마지막 칸으로 이동
-  void _onFeedItemsRemoved(List<HomeFeedItem> feedItems) {
-    var shouldJumpToCurrentPage = false;
-    setState(() => shouldJumpToCurrentPage = _clampCurrentPageToFeed(feedItems));
-    if (shouldJumpToCurrentPage && _pageController.hasClients) _pageController.jumpToPage(_currentVirtualIndex);
-  }
-
-  /// 목록이 줄어 현재 페이지가 물품·광고 범위를 넘으면 마지막 칸으로 보정 (setState 안에서 호출, 페이지 이동 필요 여부 반환)
-  bool _clampCurrentPageToFeed(List<HomeFeedItem> feedItems) {
-    final virtualItemCount = _adSlotSchedule.virtualItemCount(feedItems.length);
-    final isCurrentPageOutOfRange = virtualItemCount > 0 && _currentVirtualIndex >= virtualItemCount;
-    _onFeedPageShown(isCurrentPageOutOfRange ? virtualItemCount - 1 : _currentVirtualIndex, feedItems);
-    // 마지막 칸이 광고면 피드 index가 갱신되지 않음 > 마지막 물품으로 보정
-    if (_currentFeedIndex >= feedItems.length) _currentFeedIndex = max(0, feedItems.length - 1);
-    return isCurrentPageOutOfRange;
-  }
-
-  /// 페이지 표시 처리 (setState 안에서 호출): 가상 index 저장 > 물품 칸이면 피드 index 갱신 + 본 물품 기록
-  void _onFeedPageShown(int virtualIndex, List<HomeFeedItem> feedItems) {
-    _currentVirtualIndex = virtualIndex;
-    if (virtualIndex >= _adSlotSchedule.virtualItemCount(feedItems.length)) return;
-    if (_adSlotSchedule.isAdAtVirtualIndex(virtualIndex)) return;
-    final feedIndex = _adSlotSchedule.feedIndexAtVirtualIndex(virtualIndex);
-    if (feedIndex >= feedItems.length) return;
-    _currentFeedIndex = feedIndex;
-    final uuid = feedItems[feedIndex].itemUuid;
-    if (uuid != null) ref.read(homeFeedProvider.notifier).markSeen(uuid);
-  }
-
-  /// 광고 로드 실패 칸 접기: 슬롯 제거 > 앞 칸이 빠졌으면 같은 물품 유지하도록 한 페이지 당김, 보던 칸이면 다음 물품 표시
-  void _collapseFailedAdSlot(int adVirtualIndex) {
-    final feedItems = ref.read(homeFeedProvider).valueOrNull?.items ?? const <HomeFeedItem>[];
-    if (!_adSlotSchedule.isAdAtVirtualIndex(adVirtualIndex)) return;
-    final isBeforeCurrentPage = adVirtualIndex < _currentVirtualIndex;
-    var shouldJumpToCurrentPage = isBeforeCurrentPage;
-    setState(() {
-      _adSlotSchedule.removeAdAtVirtualIndex(adVirtualIndex);
-      if (isBeforeCurrentPage) _currentVirtualIndex--;
-      if (_clampCurrentPageToFeed(feedItems)) shouldJumpToCurrentPage = true;
-    });
-    if (shouldJumpToCurrentPage && _pageController.hasClients) {
-      _pageController.jumpToPage(_currentVirtualIndex);
-    }
-  }
-
-  Future<void> _handleCardDrop(String cardId) async {
-    final feed = ref.read(homeFeedProvider).valueOrNull;
-    if (feed == null || feed.items.isEmpty) return;
-    if (_currentFeedIndex >= feed.items.length) return;
-
-    final feedItem = feed.items[_currentFeedIndex];
-    final targetItem = Item(
-      itemId: feedItem.itemUuid,
-      itemName: feedItem.name,
-      price: feedItem.price,
-      itemCondition: feedItem.itemCondition.serverName,
-      itemTradeOptions: feedItem.transactionTypes.map((e) => e.serverName).toList(),
-    );
-
-    try {
-      final exists = await ref
-          .read(tradeRepositoryProvider)
-          .hasTradeRequest(takeItemId: feedItem.itemUuid, giveItemId: cardId);
-
-      if (!mounted) return;
-
-      if (exists) {
-        CommonSnackBar.show(context: context, message: '이미 교환 요청이 존재합니다.', type: SnackBarType.error);
-      } else {
-        context.navigateTo(
-          screen: TradeRequestScreen(
-            targetItem: targetItem,
-            targetImageUrl: feedItem.imageUrls.isNotEmpty ? feedItem.imageUrls[0] : null,
-            preSelectedCardId: cardId,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      debugPrint('거래 요청 확인 오류: $e');
-      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
-    }
   }
 
   @override
@@ -305,11 +139,12 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
 
     // 피드 상태 변경 감지 → page 0 점프 + 광고 슬롯 리셋
     ref.listen<AsyncValue<HomeFeedState>>(homeFeedProvider, (prev, next) {
-      // onLoaded는 최초 데이터 진입 시 1회만
+      // onLoaded는 최초 데이터 진입 시 1회만 (첫 카드 뒤 이미지 미리 받기 함께)
       if (!_onLoadedFired && next is AsyncData<HomeFeedState>) {
         _onLoadedFired = true;
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
+          _prepareUpcomingPages(next.value.items);
           await widget.onLoaded?.call();
         });
       }
@@ -338,15 +173,15 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
       // (위치기반 id로 list diff하던 기존 _isPrefix는 초기 페이지<10개 + refresh 시 오분류 → #904에서 폐기)
       if (nextState.feedRevision != prevState.feedRevision) {
         // refresh — 통째 교체 (page 0 점프 + 광고 슬롯 리셋)
-        _onFeedItemsReplaced(nextItems.length);
+        _onFeedItemsReplaced(nextItems);
       } else if (nextItems.length > prevItems.length) {
         // loadMore — 뒤에 append (풀 소진 되감기 포함)
-        _onFeedItemsAppended(nextItems.length);
+        _onFeedItemsAppended(nextItems);
       } else if (nextItems.length < prevItems.length) {
-        // 신고 물품 제외 — 현재 페이지 물품 다시 맞춤
-        _onFeedItemsRemoved(nextItems);
+        // 신고·차단 물품 제외 — 보던 물품 기준으로 위치 다시 맞춤
+        _onFeedItemsRemoved(prevItems, nextItems);
       }
-      // 그 외(markSeen 등 길이·revision 불변)는 슬롯 갱신 불필요
+      // 그 외(길이·revision 불변)는 슬롯 갱신 불필요
     });
 
     final asyncFeed = ref.watch(homeFeedProvider);
@@ -381,13 +216,13 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     required bool hasMyItemsLoadError,
   }) {
     final feed = asyncFeed.valueOrNull;
-    // 미확인 알림 배지 (조회 실패·로딩 중엔 미표시, 배지 여부 바뀔 때만 재빌드)
+    // 미확인 알림 배지 (개수만 조회, 조회 실패·로딩 중엔 미표시, 배지 여부 바뀔 때만 재빌드)
     final hasUnreadNotification = ref.watch(
-      notificationListProvider.select((notificationList) => (notificationList.valueOrNull?.unreadCount ?? 0) > 0),
+      notificationUnreadCountProvider.select((unreadCount) => (unreadCount.valueOrNull ?? 0) > 0),
     );
     final feedItems = feed?.items ?? const <HomeFeedItem>[];
     final hasMoreItems = feed?.hasMoreItems ?? false;
-    // 자동 새로고침 중 = 데이터는 있고 다음 로딩 중
+    // 새로고침 중 = 데이터는 있고 다음 로딩 중 (자동·사용자 요청 공통)
     final isRefreshing = asyncFeed.isLoading && asyncFeed.hasValue;
 
     if (feedItems.isEmpty) {
@@ -416,17 +251,17 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
               itemCount: _adSlotSchedule.virtualItemCount(feedItems.length) + (hasMoreItems ? 1 : 0),
               onPageChanged: (index) {
                 if (isBlurShown) return;
-                setState(() {
-                  _onFeedPageShown(index, feedItems);
-                  _aiHighlightedItemIds = [];
-                });
+                _onFeedPageChanged(index, feedItems);
               },
               itemBuilder: (context, index) {
                 if (index >= _adSlotSchedule.virtualItemCount(feedItems.length)) {
                   return const Center(child: CommonLoadingIndicator());
                 }
                 if (_adSlotSchedule.isAdAtVirtualIndex(index)) {
-                  return NativeAdWidget(onLoadFailed: () => _collapseFailedAdSlot(index));
+                  return NativeAdWidget(
+                    adPreloader: _upcomingPagePreparer.adPreloader,
+                    onLoadFailed: () => _collapseFailedAdSlot(index),
+                  );
                 }
                 final feedIndex = _adSlotSchedule.feedIndexAtVirtualIndex(index);
                 final feedItem = feedItems[feedIndex];
@@ -442,7 +277,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
           ),
         ),
 
-        // 상단 progress 바 (자동 새로고침 중에만)
+        // 상단 progress 바 (새로고침 중에만)
         Positioned(
           top: MediaQuery.of(context).padding.top,
           left: 0,
@@ -466,7 +301,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
               child: HomeTabTopActions(
                 hasUnreadNotification: hasUnreadNotification,
                 onNotificationTap: () async {
-                  // 복귀 후 배지는 알림 화면 dispose의 전체 읽음 > 재조회로 provider가 갱신
+                  // 복귀 후 배지는 알림 화면 dispose의 방문 탭 읽음 > 재조회로 provider가 갱신
                   await context.navigateTo(screen: const NotificationScreen());
                 },
                 onReportPressed: () => _onReportPressed(feedItems),
@@ -504,61 +339,5 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
           ),
       ],
     );
-  }
-
-  /// 빈 피드 새로고침: 중복 탭 차단 > 30초 제한 없이 조회 > 실패·여전히 비어 있음 안내
-  Future<void> _onEmptyFeedRefreshPressed() async {
-    if (_isManualRefreshInProgress) return;
-    setState(() => _isManualRefreshInProgress = true);
-    try {
-      final refreshResult = await ref.read(homeFeedProvider.notifier).refresh(trigger: RefreshTrigger.manualRefresh);
-      if (!mounted) return;
-      final isFeedStillEmpty = ref.read(homeFeedProvider).valueOrNull?.items.isEmpty ?? true;
-      if (refreshResult == HomeFeedRefreshResult.failed) {
-        CommonSnackBar.show(context: context, message: '새로고침하지 못했어요. 잠시 후 다시 시도해 주세요.', type: SnackBarType.error);
-      } else if (refreshResult == HomeFeedRefreshResult.refreshed && isFeedStillEmpty) {
-        CommonSnackBar.show(context: context, message: '아직 보여 드릴 물품이 없어요.', type: SnackBarType.info);
-      }
-    } finally {
-      if (mounted) setState(() => _isManualRefreshInProgress = false);
-    }
-  }
-
-  /// 카드 덱 자리 다시 시도: 진행 중이면 무시 > 내 물품 재조회
-  Future<void> _onRetryMyItemsPressed() async {
-    if (_isRetryingMyItems) return;
-    setState(() => _isRetryingMyItems = true);
-    try {
-      await ref.read(myItemsProvider.notifier).reload();
-    } finally {
-      if (mounted) setState(() => _isRetryingMyItems = false);
-    }
-  }
-
-  /// 현재 카드 신고: 신고 화면 > 접수되면 피드에서 제외 + 완료 안내
-  Future<void> _onReportPressed(List<HomeFeedItem> feedItems) async {
-    if (_currentFeedIndex >= feedItems.length) return;
-    final reportedItemId = feedItems[_currentFeedIndex].itemUuid;
-    if (reportedItemId == null) return;
-    final bool? reported = await context.navigateTo(screen: ReportScreen.item(itemId: reportedItemId));
-    if (reported == true && mounted) {
-      ref.read(homeFeedProvider.notifier).excludeReportedItem(reportedItemId);
-      await CommonModal.success(
-        context: context,
-        message: '신고가 접수되었습니다.',
-        onConfirm: () => Navigator.of(context).pop(),
-      );
-    }
-  }
-
-  /// 블러 상태 등록 버튼: 등록 화면 > 첫 등록이면 코치마크
-  Future<void> _onRegisterButtonPressed() async {
-    final result = await context.navigateTo<Map<String, dynamic>>(
-      screen: ItemRegisterScreen(onClose: () => Navigator.pop(context)),
-    );
-    if (!mounted) return;
-    if (result is Map<String, dynamic> && result['isFirstItemPosted'] == true) {
-      showCoachMark();
-    }
   }
 }

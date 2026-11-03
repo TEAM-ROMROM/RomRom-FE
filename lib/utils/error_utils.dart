@@ -15,7 +15,7 @@ class ErrorUtils {
     r'SocketException|TimeoutException|ClientException|HandshakeException|Failed host lookup|Connection (refused|reset|closed)|Network is unreachable',
   );
 
-  /// 예외 객체에서 errorCode를 추출해 사용자 메시지 반환
+  /// 예외 객체 > 사용자 메시지 (네트워크 오류 > 연결 확인 문구, 그 외 errorCode 매핑)
   /// 백엔드 오류 포맷 예시: {"errorCode":"DUPLICATE_REPORT", "errorMessage":"..."}
   static String getErrorMessage(Object error) {
     // 네트워크 오류 > 연결 확인 문구 (서버 응답 없음)

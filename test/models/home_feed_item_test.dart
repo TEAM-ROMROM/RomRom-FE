@@ -4,7 +4,7 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 
-/// 피드 변환 검증: 결과 순서·id 입력 순서 유지, 주소는 전달받은 표시 문자열 그대로
+/// 피드 변환 검증: 결과 순서·id 입력 순서 유지, 주소는 전달받은 표시 문자열 그대로, AI 가격 여부, 상세 첫 표시용 원본
 void main() {
   test('fromItems > 결과 순서·id 입력 순서 유지, location = 같은 순서의 주소 문자열', () {
     final items = [
@@ -39,5 +39,29 @@ void main() {
     expect(feedItems[1].itemCondition, ItemCondition.sealed);
     expect(feedItems[1].transactionTypes, isEmpty);
     expect(feedItems[2].itemCondition, ItemCondition.heavilyUsed);
+  });
+
+  test('fromItems > AI 가격 여부는 목록 응답 값 (없으면 false), 상세 첫 표시용 원본 보관', () {
+    final items = [
+      Item(itemId: 'a', isAiPredictedPrice: true),
+      Item(itemId: 'b', isAiPredictedPrice: false),
+      Item(itemId: 'c'),
+    ];
+
+    final feedItems = HomeFeedItem.fromItems(items, locationTexts: const ['', '', '']);
+
+    expect(feedItems.map((feedItem) => feedItem.aiPrice), [true, false, false]);
+    expect(identical(feedItems[0].sourceItem, items[0]), true);
+  });
+
+  test('previewItemFor > 같은 물품이면 목록 원본, 다른 물품·빈 id면 null (상세 첫 표시용)', () {
+    final feedItem = HomeFeedItem.fromItems(
+      [Item(itemId: 'a', itemName: '물품')],
+      locationTexts: const [''],
+    ).single;
+
+    expect(feedItem.previewItemFor('a')?.itemName, '물품');
+    expect(feedItem.previewItemFor('b'), isNull);
+    expect(feedItem.previewItemFor(''), isNull);
   });
 }

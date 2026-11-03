@@ -83,7 +83,14 @@ class _UserProfileCircularAvatarState extends State<UserProfileCircularAvatar> {
         child: _isLoading
             ? const Center(child: CommonLoadingIndicator())
             : _avatarUrl != null && _avatarUrl!.isNotEmpty && _avatarUrl != _kDefaultProfileAsset
-            ? CachedImage(imageUrl: _avatarUrl!, fit: BoxFit.cover, errorWidget: _buildDefaultImage())
+            // 아바타 크기로 디코딩 (원본 해상도 방지)
+            ? CachedImage(
+                imageUrl: _avatarUrl!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorWidget: _buildDefaultImage(),
+              )
             : _buildDefaultImage(),
       ),
     );

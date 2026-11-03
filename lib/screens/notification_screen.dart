@@ -272,8 +272,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     }
   }
 
-  /// 알림 끄기/켜기 토글
-  /// 지정된 알림 유형의 현재 상태를 반전시켜 업데이트합니다.
+  /// 알림 유형 끄기/켜기 토글: 켜기면 시스템 권한 확인 > 설정 반전 > 안내 (마케팅 변경 시 처리 일자)
   Future<void> _onToggleMuteNotification(NotificationType notificationType) async {
     final settings = ref.read(notificationSettingProvider);
     final bool isMuted = isNotificationTypeMuted(settings, notificationType);
@@ -414,7 +413,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                       rightText: '롬롬 소식',
                     ),
                     headerTitle: '알림함',
-                    statusBarHeight: MediaQuery.of(context).padding.top,
+                    statusBarHeight: MediaQuery.paddingOf(context).top,
                     toolbarHeight: 64.h,
                     toggleHeight: 62.h, // 실제 토글 높이 (bottom padding 제거)
                     expandedExtra: 0.h, // 토글-알림목록 간격 제거
@@ -466,7 +465,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
       );
     }
 
-    return SliverToBoxAdapter(child: _buildNotificationList(settings, notificationList));
+    return _buildNotificationList(settings, notificationList);
   }
 
   Widget _buildNotificationList(Map<NotificationSettingType, bool> settings, NotificationListState notificationList) {

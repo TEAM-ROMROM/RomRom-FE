@@ -8,15 +8,15 @@ bool isRomromNewsNotification(NotificationHistory notification) =>
 /// 방문한 탭의 읽지 않은 알림 id (불러온 목록 기준)
 List<String> findUnreadNotificationIdsInTabs(
   List<NotificationHistory> notifications, {
-  required bool includeActivityTab,
-  required bool includeNewsTab,
+  required bool isActivityTabIncluded,
+  required bool isNewsTabIncluded,
 }) {
   final unreadNotificationIds = <String>[];
   for (final notification in notifications) {
     final notificationId = notification.notificationHistoryId;
     if (notificationId == null || notification.isRead == true) continue;
     final isNewsNotification = isRomromNewsNotification(notification);
-    final isInVisitedTab = isNewsNotification ? includeNewsTab : includeActivityTab;
+    final isInVisitedTab = isNewsNotification ? isNewsTabIncluded : isActivityTabIncluded;
     if (isInVisitedTab) unreadNotificationIds.add(notificationId);
   }
   return unreadNotificationIds;

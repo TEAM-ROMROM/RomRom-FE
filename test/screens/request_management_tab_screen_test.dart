@@ -1,19 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/item_status.dart';
+import 'package:romrom_fe/enums/navigation_tab_items.dart';
 import 'package:romrom_fe/enums/request_sort_type.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/apis/objects/item_image.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
+import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/item_address_resolver_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
+import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/sent_requests_focus_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
+import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/repositories/item_repository.dart';
 import 'package:romrom_fe/repositories/trade_repository.dart';
 import 'package:romrom_fe/screens/request_management_tab_screen.dart';
 import 'package:romrom_fe/services/item_address_resolver.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
+import 'package:romrom_fe/widgets/request_list_item_card_widget.dart';
 import '../helpers/pump_design_screen.dart';
 
 /// 내 물품 조회 대역: 판매중 카드 기본 2개 (a, b), 테스트에서 교체 가능
@@ -33,11 +43,15 @@ class FakeAvailableItemRepository implements ItemRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// 거래 요청 조회 대역: 호출 기록만 (응답 빈 목록, 받은 요청 실패 지정 가능)
+/// 거래 요청 조회 대역: 호출 기록 (받은 요청 응답·지연·실패 지정 가능, 보낸 요청은 빈 목록)
 class CountingTradeRepository implements TradeRepository {
   final List<String> receivedRequestedTakeItemIds = [];
   final List<String> sentRequestedGiveItemIds = [];
   bool shouldFailReceived = false;
+  // 카드 ID별 받은 요청 응답 (없으면 빈 목록)
+  Map<String, List<TradeRequestHistory>> receivedByTakeItemId = {};
+  // 설정 시 받은 요청 응답을 이 완료 시점까지 지연
+  Completer<void>? pendingReceived;
 
   @override
   Future<List<TradeRequestHistory>> getReceived({
@@ -46,7 +60,8 @@ class CountingTradeRepository implements TradeRepository {
   }) async {
     receivedRequestedTakeItemIds.add(takeItemId);
     if (shouldFailReceived) throw Exception('received failed');
-    return const [];
+    if (pendingReceived != null) await pendingReceived!.future;
+    return receivedByTakeItemId[takeItemId] ?? const [];
   }
 
   @override
@@ -88,6 +103,25 @@ Future<void> pumpRequestManagementTab(
   );
   await pumpFixedFrames(tester);
 }
+
+/// 받은 요청 1건 (요청자 회원 ID·요청 물품 이름 지정)
+TradeRequestHistory buildReceivedRequest(String tradeRequestHistoryId, {required String requesterId}) {
+  return TradeRequestHistory(
+    tradeRequestHistoryId: tradeRequestHistoryId,
+    takeItem: Item(itemId: 'a'),
+    giveItem: Item(
+      itemId: 'give-$tradeRequestHistoryId',
+      itemName: '요청 물품 $tradeRequestHistoryId',
+      member: Member(memberId: requesterId),
+    ),
+    itemTradeOptions: const [],
+    tradeStatus: 'PENDING',
+  );
+}
+
+/// 화면이 쓰는 provider 컨테이너
+ProviderContainer readContainer(WidgetTester tester) =>
+    ProviderScope.containerOf(tester.element(find.byType(RequestManagementTabScreen)));
 
 void main() {
   testWidgets('요청관리 탭 첫 진입 > 받은 요청 1회(첫 카드)·보낸 요청 카드별 1회 조회', (tester) async {
@@ -189,5 +223,172 @@ void main() {
 
     expect(find.text('보낸 요청이 없습니다'), findsOneWidget);
     expect(container.read(sentRequestsFocusTriggerProvider), isFalse);
+  });
+
+  group('보낸 요청 재조회 조건', () {
+    testWidgets('내 물품 재조회(카드·대표 이미지 같음) > 받은 요청만 재조회, 보낸 요청 재조회 없음', (tester) async {
+      final tradeRepository = CountingTradeRepository();
+      await pumpRequestManagementTab(
+        tester,
+        itemRepository: FakeAvailableItemRepository(),
+        tradeRepository: tradeRepository,
+      );
+
+      await readContainer(tester).read(myItemsProvider.notifier).reload();
+      await pumpFixedFrames(tester);
+
+      expect(tradeRepository.receivedRequestedTakeItemIds, ['a', 'a']);
+      expect(tradeRepository.sentRequestedGiveItemIds, ['a', 'b']);
+    });
+
+    testWidgets('내 물품 대표 이미지 변경 > 보낸 요청 재조회 (보낸 요청 카드에 내 물품 이미지 표시)', (tester) async {
+      final itemRepository = FakeAvailableItemRepository();
+      final tradeRepository = CountingTradeRepository();
+      await pumpRequestManagementTab(tester, itemRepository: itemRepository, tradeRepository: tradeRepository);
+
+      itemRepository.availableItems = [
+        Item(
+          itemId: 'a',
+          itemName: '물품 A',
+          itemCategory: 'SHOES',
+          itemImages: [ItemImage(imageUrl: 'https://example.com/new-a.png')],
+        ),
+        Item(itemId: 'b', itemName: '물품 B', itemCategory: 'SHOES'),
+      ];
+      await readContainer(tester).read(myItemsProvider.notifier).reload();
+      await pumpFixedFrames(tester);
+
+      expect(tradeRepository.sentRequestedGiveItemIds, ['a', 'b', 'a', 'b']);
+    });
+
+    testWidgets('당겨서 새로고침 > 보낸 요청 재조회, 받은 요청은 1회만', (tester) async {
+      final tradeRepository = CountingTradeRepository();
+      await pumpRequestManagementTab(
+        tester,
+        itemRepository: FakeAvailableItemRepository(),
+        tradeRepository: tradeRepository,
+      );
+
+      await tester.fling(find.text('물품 A'), const Offset(0, 400), 1000);
+      await pumpFixedFrames(tester);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(tradeRepository.receivedRequestedTakeItemIds, ['a', 'a']);
+      expect(tradeRepository.sentRequestedGiveItemIds, ['a', 'b', 'a', 'b']);
+    });
+  });
+
+  testWidgets('이미 본 카드로 돌아옴 > 응답 전에도 스피너 없이 이전 목록 표시', (tester) async {
+    final tradeRepository = CountingTradeRepository()
+      ..receivedByTakeItemId = {
+        'a': [buildReceivedRequest('1', requesterId: 'requester')],
+      };
+    await pumpRequestManagementTab(
+      tester,
+      itemRepository: FakeAvailableItemRepository(),
+      tradeRepository: tradeRepository,
+    );
+    await tester.drag(find.byType(PageView), const Offset(-219, 0));
+    await pumpFixedFrames(tester);
+
+    tradeRepository.pendingReceived = Completer<void>();
+    await tester.drag(find.byType(PageView), const Offset(219, 0));
+    await pumpFixedFrames(tester);
+
+    expect(tradeRepository.receivedRequestedTakeItemIds, ['a', 'b', 'a']);
+    expect(find.text('요청 물품 1'), findsOneWidget);
+    expect(find.byType(CommonLoadingIndicator), findsNothing);
+    tradeRepository.pendingReceived!.complete();
+    await pumpFixedFrames(tester);
+  });
+
+  testWidgets('회원 차단 > 그 회원이 보낸 받은 요청 즉시 제외 (서버 재조회 없이)', (tester) async {
+    final tradeRepository = CountingTradeRepository()
+      ..receivedByTakeItemId = {
+        'a': [buildReceivedRequest('1', requesterId: 'blocked'), buildReceivedRequest('2', requesterId: 'friend')],
+      };
+    await pumpRequestManagementTab(
+      tester,
+      itemRepository: FakeAvailableItemRepository(),
+      tradeRepository: tradeRepository,
+    );
+    expect(find.byType(RequestListItemCardWidget), findsNWidgets(2));
+
+    readContainer(tester).read(memberBlockProvider.notifier).seed({'blocked'}, force: true);
+    await pumpFixedFrames(tester);
+
+    expect(find.text('요청 물품 1'), findsNothing);
+    expect(find.text('요청 물품 2'), findsOneWidget);
+    expect(tradeRepository.receivedRequestedTakeItemIds, ['a']);
+  });
+
+  group('탭 진입·앱 복귀 > 보낸 요청 백그라운드 재조회', () {
+    final requestManagementTabIndex = NavigationTabItems.requestManagement.index;
+    final homeTabIndex = NavigationTabItems.home.index;
+
+    // 테스트 시계 (notifier 현재 시각, 첫 로드 직후 실제 시각에서 시작)
+    late DateTime fakeNow;
+
+    /// notifier 시각을 테스트 시계로 교체
+    void useFakeClock(WidgetTester tester) {
+      fakeNow = DateTime.now();
+      readContainer(tester).read(tradeRequestsProvider.notifier).now = () => fakeNow;
+    }
+
+    /// 다른 탭 > 요청관리 탭 전환
+    Future<void> enterRequestManagementTab(WidgetTester tester) async {
+      final tabIndexNotifier = readContainer(tester).read(currentTabIndexProvider.notifier);
+      tabIndexNotifier.set(homeTabIndex);
+      await tester.pump();
+      tabIndexNotifier.set(requestManagementTabIndex);
+      await pumpFixedFrames(tester);
+    }
+
+    testWidgets('최소 간격 안 진입 > 생략, 지난 뒤 진입 > 모든 카드 재조회 (받은 요청은 그대로)', (tester) async {
+      final tradeRepository = CountingTradeRepository();
+      await pumpRequestManagementTab(
+        tester,
+        itemRepository: FakeAvailableItemRepository(),
+        tradeRepository: tradeRepository,
+      );
+
+      useFakeClock(tester);
+      fakeNow = fakeNow.add(const Duration(seconds: 5));
+      await enterRequestManagementTab(tester);
+      expect(tradeRepository.sentRequestedGiveItemIds, ['a', 'b']);
+
+      fakeNow = fakeNow.add(TradeRequestsNotifier.sentBackgroundReloadMinimumInterval);
+      await enterRequestManagementTab(tester);
+      expect(tradeRepository.sentRequestedGiveItemIds, ['a', 'b', 'a', 'b']);
+      expect(tradeRepository.receivedRequestedTakeItemIds, ['a']);
+    });
+
+    testWidgets('앱 복귀 > 요청관리 탭이 보이면 재조회, 다른 탭이면 생략', (tester) async {
+      final tradeRepository = CountingTradeRepository();
+      await pumpRequestManagementTab(
+        tester,
+        itemRepository: FakeAvailableItemRepository(),
+        tradeRepository: tradeRepository,
+      );
+      useFakeClock(tester);
+      fakeNow = fakeNow.add(TradeRequestsNotifier.sentBackgroundReloadMinimumInterval);
+
+      Future<void> resumeApp() async {
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+        await pumpFixedFrames(tester);
+      }
+
+      readContainer(tester).read(currentTabIndexProvider.notifier).set(homeTabIndex);
+      await resumeApp();
+      expect(tradeRepository.sentRequestedGiveItemIds, ['a', 'b']);
+
+      readContainer(tester).read(currentTabIndexProvider.notifier).set(requestManagementTabIndex);
+      await pumpFixedFrames(tester);
+      tradeRepository.sentRequestedGiveItemIds.clear();
+      fakeNow = fakeNow.add(TradeRequestsNotifier.sentBackgroundReloadMinimumInterval);
+      await resumeApp();
+      expect(tradeRepository.sentRequestedGiveItemIds, ['a', 'b']);
+    });
   });
 }

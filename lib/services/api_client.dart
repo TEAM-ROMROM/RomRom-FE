@@ -309,7 +309,7 @@ class ApiClient {
   /// 토큰 재발급 단일 실행: 진행 중이면 같은 Future 공유 (예외 없음, 실패 결과 반환)
   static Future<TokenReissueResult> reissueTokens() => _reissueFlight.run(_requestTokenReissue);
 
-  /// reissue 요청 > 제재 확인 > 200 토큰 저장 (rotation) / 401 refresh 만료 판정 (화면 이동은 제재만)
+  /// reissue 요청 > 제재 확인 > 200 토큰 저장 (rotation) / 실패 응답 분류: 만료·재시도 가능·거절 (화면 이동은 제재만)
   static Future<TokenReissueResult> _requestTokenReissue() async {
     try {
       final refreshToken = await _tokenManager.getRefreshToken();

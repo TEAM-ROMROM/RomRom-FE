@@ -33,10 +33,7 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
     return _fetchPage0();
   }
 
-  Future<List<ChatRoomDetailDto>> _fetchFirstPageRooms() async {
-    final paged = await _repo.getChatRooms(pageNumber: 0, pageSize: _pageSize);
-    return paged.content.where((r) => r.blocked != true).toList();
-  }
+  Future<List<ChatRoomDetailDto>> _fetchFirstPageRooms() async => (await _fetchPage0()).rooms;
 
   Future<ChatRoomsState> _fetchPage0() async {
     final paged = await _repo.getChatRooms(pageNumber: 0, pageSize: _pageSize);
@@ -59,11 +56,11 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
   Future<void> _mergeFirstPage() async {
     try {
       final firstPageRooms = await _fetchFirstPageRooms();
-      final cur = state.valueOrNull;
-      if (cur == null) return;
+      final currentState = state.valueOrNull;
+      if (currentState == null) return;
       state = AsyncData(
-        cur.copyWith(
-          rooms: mergeFirstPageRooms(currentRooms: cur.rooms, firstPageRooms: firstPageRooms),
+        currentState.copyWith(
+          rooms: mergeFirstPageRooms(currentRooms: currentState.rooms, firstPageRooms: firstPageRooms),
         ),
       );
     } catch (_) {
@@ -101,8 +98,7 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
   /// WS 새 메시지 도착 시: 해당 방 last*/unread 업데이트.
   /// (목록 순서는 ChatRoomsState 가 lastMessageTime 내림차순 자동 정렬 — 이슈 #884)
   /// [myMemberId]: 내가 보낸 메시지이면 unreadCount 를 증가하지 않음.
-  /// 목록에 없는 roomId > 첫 페이지 병합 재조회 (새로고침 뒤 밀려난 방 등 구독은 남은 방, 연속 수신은 1회로 묶음)
-  /// 상대가 새로 만든 방은 구독 전이라 이 경로로 오지 않음 > 채팅 탭 전환 시 재조회가 보정
+  /// 목록에 없는 roomId > 첫 페이지 병합 재조회 (연속 수신 1회로 묶음, 상대가 새로 만든 방은 탭 전환 재조회가 보정)
   void onMessageReceived({required ChatMessage message, required String? myMemberId}) {
     final cur = state.valueOrNull;
     if (cur == null || message.chatRoomId == null) return;

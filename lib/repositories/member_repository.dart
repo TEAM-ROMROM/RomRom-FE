@@ -1,14 +1,31 @@
 // lib/repositories/member_repository.dart
+import 'package:flutter/foundation.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/responses/member_response.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 
 class MemberRepository {
   final MemberApi _api;
+  // 내 정보 조회 성공 시 로컬 저장 (UserInfo 프로필 동기화, 없으면 저장 안 함)
+  final Future<void> Function(Member member)? _saveFetchedMyMember;
 
-  MemberRepository(this._api);
+  MemberRepository(this._api, {Future<void> Function(Member member)? saveFetchedMyMember})
+    : _saveFetchedMyMember = saveFetchedMyMember;
 
-  /// 본인 회원 정보 조회
-  Future<MemberResponse> getMemberInfo() => _api.getMemberInfo();
+  /// 본인 회원 정보 조회 > 로컬 프로필 동기화 (저장 실패는 조회 결과에 영향 없음)
+  Future<MemberResponse> getMemberInfo() async {
+    final response = await _api.getMemberInfo();
+    final fetchedMember = response.member;
+    final saveFetchedMyMember = _saveFetchedMyMember;
+    if (fetchedMember != null && saveFetchedMyMember != null) {
+      try {
+        await saveFetchedMyMember(fetchedMember);
+      } catch (error) {
+        debugPrint('[member repository] local profile sync failed : $error');
+      }
+    }
+    return response;
+  }
 
   /// 타인 회원 프로필 조회 (차단 여부·위치 문구 포함)
   Future<MemberResponse> getMemberProfile(String memberId) => _api.getMemberProfile(memberId);

@@ -22,6 +22,7 @@ class HomeFeedItem {
   final bool isLiked; // 좋아요 상태
   final String? authorMemberId; // 게시글 작성자 ID
   final String? accountStatus; // 작성자 계정 상태
+  final Item? sourceItem; // 목록 응답 원본 (상세 화면이 응답 전 먼저 그림)
 
   HomeFeedItem({
     required this.id,
@@ -43,7 +44,15 @@ class HomeFeedItem {
     this.longitude,
     this.isLiked = false,
     this.authorMemberId,
+    this.sourceItem,
   });
+
+  /// 상세 화면 첫 표시용 목록 원본 (같은 물품일 때만, 상세 응답 오면 교체)
+  Item? previewItemFor(String itemId) {
+    final previewItem = sourceItem;
+    if (itemId.isEmpty || previewItem == null || previewItem.itemId != itemId) return null;
+    return previewItem;
+  }
 
   /// API 응답(Item) > HomeFeedItem 리스트 ([locationTexts]: 같은 순서의 표시 주소, ItemAddressResolver가 생성)
   /// [startIndex]는 id 생성 기점 (기존 코드와 호환).
@@ -74,9 +83,11 @@ class HomeFeedItem {
           imageUrls: d.imageUrlList,
           description: d.itemDescription ?? '',
           hasAiAnalysis: false,
+          aiPrice: d.isAiPredictedPrice ?? false,
           latitude: d.latitude,
           longitude: d.longitude,
           authorMemberId: d.member?.memberId,
+          sourceItem: d,
         ),
       );
     }

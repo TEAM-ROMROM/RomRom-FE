@@ -141,7 +141,7 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
     }
   }
 
-  /// ItemDetail 리스트를 HomeFeedItem 리스트로 변환
+  /// 서버 물품 목록 > 좋아요 목록 표시 항목 (주소 병렬 변환)
   Future<List<_LikedItem>> _convertToLikeItems(List<Item> details) async {
     List<_LikedItem> likeItems = <_LikedItem>[];
     // 주소 변환 병렬 처리 (결과 순서 = 입력 순서)
@@ -225,7 +225,7 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
         itemCount: _items.length + (_hasMoreItems ? 1 : 0),
         separatorBuilder: (_, _) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
         itemBuilder: (context, index) {
-          // ... 기존 itemBuilder 코드 동일
+          // 마지막 행: 다음 페이지 하단 (실패 시 다시 시도, 그 외 로딩)
           if (_hasMoreItems && index == _items.length) {
             return _buildNextPageFooter();
           }

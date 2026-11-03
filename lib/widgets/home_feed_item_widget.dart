@@ -46,6 +46,17 @@ class HomeFeedItemWidget extends ConsumerStatefulWidget {
     this.onAiRecommend,
   });
 
+  /// 카드 이미지 표시 크기: 화면 폭 x (화면 높이 - 하단 안전영역 - 네비게이션바 높이 2배)
+  /// 다음 카드 이미지 미리 받기와 같은 디코딩 크기를 쓰도록 단일 원본 (크기가 다르면 캐시 키가 달라 공유 안 됨)
+  static Size imageDisplaySize(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final availableHeight = screenSize.height - MediaQuery.paddingOf(context).bottom - _navigationBarHeight;
+    return Size(screenSize.width, availableHeight - _navigationBarHeight);
+  }
+
+  // 네비게이션바 높이 (카드 이미지 높이 계산 기준)
+  static double get _navigationBarHeight => 100.h;
+
   /// 블러 안내 문구: 교환 완료 물품만 있음 > 새 물품 등록 안내, 등록 이력 없음 > 첫 등록 안내
   @visibleForTesting
   static String toRegisterPromptMessage({required bool hasExchangedItems}) {
@@ -59,7 +70,6 @@ class HomeFeedItemWidget extends ConsumerStatefulWidget {
 class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
   int _currentImageIndex = 0;
   late PageController pageController;
-  late bool _useAiPrice; // AI 가격 여부
   bool _isAiLoading = false; // AI 추천 API 호출 중 여부
   bool _isAiButtonActive = false; // AI 추천 버튼 활성화F
   // _isLiked, _likeCount, _isLiking 제거됨 - itemLikeProvider 캐시로 일원화
@@ -68,7 +78,6 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
   void initState() {
     super.initState();
     pageController = PageController(initialPage: _currentImageIndex);
-    _useAiPrice = widget.item.aiPrice; // AI 가격 여부
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -83,6 +92,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
     _fetchItemLikeStatus();
   }
 
+  /// 좋아요 상태 동기화: 목록 응답에 좋아요 여부(isLiked)가 없어 상세 조회 (AI 가격 여부는 목록 응답 사용)
   Future<void> _fetchItemLikeStatus() async {
     try {
       if (widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {
@@ -92,9 +102,6 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
       final response = await ref.read(itemRepositoryProvider).getItemDetail(widget.item.itemUuid);
 
       if (!mounted) return;
-      setState(() {
-        _useAiPrice = response.item?.isAiPredictedPrice ?? false;
-      });
       final id = widget.item.itemUuid!;
       ref
           .read(itemLikeProvider.notifier)
@@ -166,6 +173,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    final imageDisplaySize = HomeFeedItemWidget.imageDisplaySize(context);
 
     final id = widget.item.itemUuid;
     final liked = ref.watch(
@@ -178,10 +186,6 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
         (s) => (id != null && id.isNotEmpty) ? (s[id]?.likeCount ?? widget.item.likeCount) : widget.item.likeCount,
       ),
     );
-    // 네비게이션바 && 상태바 높이 : 실제 사용 가능 높이 계산
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final navigationBarHeight = 100.h; // 네비게이션바 높이 (80.h)
-    final availableHeight = screenHeight - bottomPadding - navigationBarHeight; // 네비게이션바 높이(80.h)를 고려
     final registerBlurTextTopPosition = 191.h;
 
     return Container(
@@ -232,10 +236,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                             bottomRight: HomeFeedCardLayout.imageBottomCornerRadius,
                             bottomLeft: HomeFeedCardLayout.imageBottomCornerRadius,
                           ),
-                          child: _buildImage(
-                            widget.item.imageUrls[index],
-                            Size(screenWidth, availableHeight - navigationBarHeight),
-                          ),
+                          child: _buildImage(widget.item.imageUrls[index], imageDisplaySize),
                         ),
                       ),
                     ),
@@ -301,7 +302,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
                   Expanded(
                     child: BlurWrapper(
                       enabled: widget.showBlur,
-                      child: HomeFeedItemSummary(item: widget.item, isAiPrice: _useAiPrice),
+                      child: HomeFeedItemSummary(item: widget.item, isAiPrice: widget.item.aiPrice),
                     ),
                   ),
 

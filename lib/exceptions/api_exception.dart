@@ -13,12 +13,13 @@ class ApiException implements Exception {
   final bool isAfterTokenRefresh;
 
   ApiException({required this.statusCode, required this.responseBody, this.isAfterTokenRefresh = false})
-    : errorCode = _parseErrorCode(responseBody);
+    : errorCode = parseErrorCode(responseBody);
 
   /// 응답 body > JSON 객체 (비JSON·객체 아님이면 null)
   Map<String, dynamic>? get responseJson => _decodeJsonObject(responseBody);
 
-  static String? _parseErrorCode(String responseBody) {
+  /// 응답 body > errorCode (비JSON·누락·비문자열이면 null)
+  static String? parseErrorCode(String responseBody) {
     final errorCode = _decodeJsonObject(responseBody)?['errorCode'];
     return errorCode is String ? errorCode : null;
   }

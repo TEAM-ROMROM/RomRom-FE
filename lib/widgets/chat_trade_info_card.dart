@@ -155,7 +155,7 @@ class ChatTradeInfoCard extends StatelessWidget {
     required String heroTag,
     String? imageUrl,
   }) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     context.navigateTo(
       screen: ItemDetailDescriptionScreen(
         itemId: itemId ?? '',

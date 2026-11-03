@@ -70,4 +70,7 @@ class AppMotion {
 
   /// 리스트 stagger 간격 — 아이템 인덱스 당 딜레이 (ms)
   static const int staggerDelayMs = 30;
+
+  /// 리스트 stagger 최대 지연 (8번째 이후 항목은 함께 등장, 긴 목록 뒤쪽이 오래 투명한 문제 방지)
+  static const Duration maximumStaggerDelay = Duration(milliseconds: 240);
 }

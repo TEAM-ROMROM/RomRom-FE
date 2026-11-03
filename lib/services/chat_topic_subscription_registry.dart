@@ -81,16 +81,23 @@ class ChatTopicSubscriptionRegistry<T> {
     debugPrint('[WebSocket] ✅ Fully unsubscribed from $topicLabel $chatRoomId');
   }
 
-  /// 연결 해제 시 전부 정리: STOMP 구독 해제 > 스트림 닫기 > 참조 카운트 초기화
+  /// 연결 해제 시 전부 정리: 목록 복사 후 비움 > STOMP 구독 해제 > 스트림 닫기
+  /// 첫 await 전에 비움 > 정리 도중 새로 들어온 구독은 닫지 않음
   Future<void> closeAll() async {
-    for (final stompUnsubscribe in _stompUnsubscribeByChatRoomId.values) {
-      stompUnsubscribe();
-    }
+    final stompUnsubscribes = _stompUnsubscribeByChatRoomId.values.toList();
+    final controllers = _controllerByChatRoomId.values.toList();
     _stompUnsubscribeByChatRoomId.clear();
-    for (final controller in _controllerByChatRoomId.values) {
-      await controller.close();
-    }
     _controllerByChatRoomId.clear();
     _referenceCountByChatRoomId.clear();
+    for (final stompUnsubscribe in stompUnsubscribes) {
+      try {
+        stompUnsubscribe();
+      } catch (error) {
+        debugPrint('[WebSocket] $topicLabel unsubscribe error: $error');
+      }
+    }
+    for (final controller in controllers) {
+      await controller.close();
+    }
   }
 }

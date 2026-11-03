@@ -3,15 +3,13 @@ part of '../chat_room_screen.dart';
 
 // WS 이미지 URL 일괄 조회 대기 시간 (연속 수신 묶음)
 const Duration _wsImageFetchBatchDelay = Duration(milliseconds: 500);
-// 하단 스크롤 전 레이아웃 반영 대기 시간
-const Duration _scrollToBottomLayoutDelay = Duration(milliseconds: 100);
 // 서버 에코 대기 시간 (초과 시 전송 실패 표시)
 const Duration _sendEchoTimeout = Duration(seconds: 10);
 
 const String _imageMessageContent = '사진을 보냈습니다.';
 const String _sendFailedMessage = '메시지를 보내지 못했어요. 연결 상태를 확인해 주세요.';
 
-mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
+mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom {
   /// 재연결 시 호출: 서버 최신 메시지 재조회 > 서버에 이미 저장된 내 로컬 메시지 정리 > 유실분 병합
   Future<void> _resyncMessages() async {
     if (_isResyncing || !mounted) return;
@@ -104,7 +102,7 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
 
     // WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API로 보완
     if (newMessage.type == MessageType.image && (newMessage.imageUrls == null || newMessage.imageUrls!.isEmpty)) {
-      final tempId = 'ws_img_${DateTime.now().microsecondsSinceEpoch}';
+      final tempId = '$webSocketImageMessageIdPrefix${DateTime.now().microsecondsSinceEpoch}';
       _messages.insert(0, newMessage.copyWith(chatMessageId: tempId));
       _pendingWsImageTempIds.add(tempId);
       _wsImageFetchTimer?.cancel();
@@ -281,16 +279,6 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields {
       });
     } catch (e) {
       debugPrint('[ChatRoom] WebSocket 이미지 URL 일괄 보완 실패: $e');
-    }
-  }
-
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(_scrollToBottomLayoutDelay, () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(0.0, duration: AppMotion.normal, curve: AppMotion.entry);
-        }
-      });
     }
   }
 
