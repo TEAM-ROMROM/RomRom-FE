@@ -76,7 +76,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     }
   }
 
-  /// 홈 피드 첫 로딩 완료 시 공지·이벤트 팝업 (#652, 알림 권한 안내는 교환 요청·물품 등록 성공 직후로 이동 #986)
+  /// 홈 피드 첫 로딩 완료 시 공지·이벤트 팝업 (#652)
   Future<void> _onHomeLoaded() async {
     if (!mounted) return;
     await HomePopupPresenter.showIfNeeded(context, ref);

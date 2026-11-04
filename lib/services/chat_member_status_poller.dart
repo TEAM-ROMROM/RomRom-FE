@@ -4,20 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 
-/// 채팅방에서 상대방의 온라인 상태를 주기적으로 폴링하는 싱글톤 클래스
-///
-/// [HeartbeatManager]가 60초마다 서버에 내 활동 상태를 전송하는 것과 달리,
-/// 이 클래스는 상대방의 [Member] 정보를 30초마다 서버에서 가져와
-/// [lastActiveAt]을 갱신하는 역할을 한다.
-///
-/// 온라인 여부 판단은 서버 정책에 따라 클라이언트에서 직접 계산한다.
-///   → 현재시각 - lastActiveAt < 90초이면 온라인
-///
-/// 사용 흐름:
-///   1. 채팅방 진입 시 [start]에 화면 소유 토큰과 함께 호출
-///   2. [streamOf]로 내 상대 [Member]만 수신 (다른 화면 상대 결과 제외)
-///   3. 채팅방 퇴장 시 [stop]에 같은 토큰 전달 (다른 화면 폴링은 유지)
-/// 여러 채팅방이 쌓이면 맨 위(마지막 start) 화면 상대만 폴링 > 위 화면 종료 시 아래 화면 상대 폴링 재개
+/// 채팅 상대 접속 상태 폴링 싱글톤: 상대 [Member] 30초 주기 조회, 화면별 결과 스트림([streamOf]), 백그라운드 중단
+/// 화면 소유자별 [start]/[stop] > 맨 위(마지막 start) 화면 상대만 폴링 > 위 화면 종료 시 아래 화면 상대 재개
 class ChatMemberStatusPoller with WidgetsBindingObserver {
   ChatMemberStatusPoller._() : _fetchMemberProfile = _fetchMemberProfileFromServer;
 
@@ -130,7 +118,7 @@ class ChatMemberStatusPoller with WidgetsBindingObserver {
     try {
       final member = await _fetchMemberProfile(targetMemberId);
       if (_controller.isClosed) return;
-      _controller.add((memberId: targetMemberId, member: member)); // 새 Member를 스트림에 방출
+      _controller.add((memberId: targetMemberId, member: member)); // 요청 회원 ID와 함께 방출
     } catch (e) {
       debugPrint('[StatusPoller] failed: $e');
     }

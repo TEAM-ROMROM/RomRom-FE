@@ -115,8 +115,8 @@ class ChatRoomMessageList extends StatelessWidget {
   Widget _buildMessageItem(BuildContext context, int index) {
     final message = messages[index];
     final bool showDateDivider = shouldShowDateDivider(messages: messages, index: index);
-    final bool showUnreadDivider = message.chatMessageId != null && message.chatMessageId == firstUnreadMessageId;
-    final double topGap = (showDateDivider || showUnreadDivider)
+    final bool shouldShowUnreadDivider = message.chatMessageId != null && message.chatMessageId == firstUnreadMessageId;
+    final double topGap = (showDateDivider || shouldShowUnreadDivider)
         ? 16.h
         : isGroupedWithOlderMessage(messages: messages, index: index)
         ? 8.h
@@ -160,13 +160,13 @@ class ChatRoomMessageList extends StatelessWidget {
       onRetrySend: messageId == null ? null : () => onRetryFailedMessage(messageId),
       onDeleteFailedMessage: messageId == null ? null : () => onDeleteFailedMessage(messageId),
     );
-    if (!showDateDivider && !showUnreadDivider) return messageItem;
+    if (!showDateDivider && !shouldShowUnreadDivider) return messageItem;
 
     // reverse 목록이라 Column 위쪽 = 더 오래된 쪽 (안 읽음 구분선 > 날짜 구분선 > 안 읽은 첫 메시지)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showUnreadDivider) ChatUnreadDivider(key: unreadDividerKey),
+        if (shouldShowUnreadDivider) ChatUnreadDivider(key: unreadDividerKey),
         if (showDateDivider) ChatDateDivider(date: message.createdDate!),
         messageItem,
       ],

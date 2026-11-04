@@ -22,7 +22,7 @@ mixin _ChatRoomExitActions on _ChatRoomScreenStateFields, _ChatRoomMessaging {
     if (shouldPop && mounted) _popChatRoomScreen(result: hasRoomListChanged ? true : null);
   }
 
-  /// 상대 차단: memberBlockProvider 경유 (실패 시 provider가 롤백·에러 안내, 방 유지) > 안내 > 방 나가기
+  /// 상대 차단: memberBlockProvider 경유 (실패 시 provider가 롤백·에러 안내, 위 모달만 닫고 방 유지) > 안내 > 방 나가기
   Future<void> _blockOpponentAndLeave() async {
     final opponentId = _opponentId;
     if (opponentId == null) throw Exception('상대방 정보를 찾을 수 없습니다.');

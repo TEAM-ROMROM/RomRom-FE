@@ -95,7 +95,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     );
   }
 
-  /// WebSocket 초기화 및 연결
+  /// WebSocket 초기화: 회원 ID 확인 > 보류된 목록 구독 > 연결 > 재연결 시 재구독 등록
   Future<void> _initializeWebSocket() async {
     try {
       _myMemberId = await MemberManager.getCurrentMemberId();

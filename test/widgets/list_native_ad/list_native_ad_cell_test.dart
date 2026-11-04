@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:romrom_fe/services/native_ad_handle.dart';
 import 'package:romrom_fe/widgets/list_native_ad/list_native_ad_cell.dart';
 
+import '../../helpers/native_ad_fakes.dart';
 import '../../helpers/pump_design_screen.dart';
 
 /// 목록 광고 칸: 로드 중 자리 확보, 광고 없음·실패 > 높이 0 (구분선 포함), 종료 시 폐기
@@ -20,7 +20,7 @@ void main() {
   NativeAdHandle requestFakeAd(BuildContext context) {
     loadCompleter = Completer<bool>();
     requestedHandle = NativeAdHandle(
-      nativeAd: NativeAd(adUnitId: 'test', factoryId: 'test', listener: NativeAdListener(), request: const AdRequest()),
+      nativeAd: buildTestNativeAd(),
       isLoadedFuture: loadCompleter.future,
       requestedAt: DateTime(2026, 11, 4),
     );

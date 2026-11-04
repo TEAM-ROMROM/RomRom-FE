@@ -80,11 +80,11 @@ void main() {
 
   group('GpsLocationVerifier.checkCurrentLocation', () {
     test('허용 + 정확한 실제 위치 > 좌표·동네 반환, 고정밀·시간 제한 조회', () async {
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.isLocated, isTrue);
-      expect(result.address?.eupMyoenDong, '군자동');
-      expect(result.latitude, 37.5);
+      expect(locationCheckResult.isLocated, isTrue);
+      expect(locationCheckResult.address?.eupMyoenDong, '군자동');
+      expect(locationCheckResult.latitude, 37.5);
       expect(platform.lastLocationSettings?.accuracy, LocationAccuracy.high);
       expect(platform.lastLocationSettings?.timeLimit, GpsLocationVerifier.positionTimeLimit);
       expect(platform.requestPermissionCount, 0);
@@ -93,9 +93,9 @@ void main() {
     test('위치 서비스 꺼짐 > 권한 요청·좌표 조회 없이 실패', () async {
       platform.isServiceEnabled = false;
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.locationServiceDisabled);
+      expect(locationCheckResult.failure, LocationVerificationFailure.locationServiceDisabled);
       expect(platform.requestPermissionCount, 0);
       expect(platform.getCurrentPositionCount, 0);
     });
@@ -104,9 +104,9 @@ void main() {
       platform.permission = LocationPermission.denied;
       platform.permissionAfterRequest = LocationPermission.denied;
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.permissionDenied);
+      expect(locationCheckResult.failure, LocationVerificationFailure.permissionDenied);
       expect(platform.requestPermissionCount, 1);
       expect(platform.getCurrentPositionCount, 0);
     });
@@ -114,80 +114,80 @@ void main() {
     test('권한 미결정 + 요청 금지(설정 복귀 재확인) > 요청 없이 권한 거부 실패', () async {
       platform.permission = LocationPermission.denied;
 
-      final result = await platform.buildVerifier().checkCurrentLocation(shouldRequestPermission: false);
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation(shouldRequestPermission: false);
 
-      expect(result.failure, LocationVerificationFailure.permissionDenied);
+      expect(locationCheckResult.failure, LocationVerificationFailure.permissionDenied);
       expect(platform.requestPermissionCount, 0);
     });
 
     test('권한 미결정 > 요청 후 허용 > 인증 위치 확인 진행', () async {
       platform.permission = LocationPermission.denied;
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.isLocated, isTrue);
+      expect(locationCheckResult.isLocated, isTrue);
       expect(platform.requestPermissionCount, 1);
     });
 
     test('영구 거부 > 시스템 요청 없이 설정 안내 실패', () async {
       platform.permission = LocationPermission.deniedForever;
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.permissionDeniedForever);
-      expect(result.failure?.isSettingsPrimaryAction, isTrue);
+      expect(locationCheckResult.failure, LocationVerificationFailure.permissionDeniedForever);
+      expect(locationCheckResult.failure?.isSettingsPrimaryAction, isTrue);
       expect(platform.requestPermissionCount, 0);
     });
 
     test('대략적 위치만 허용 > 정확한 위치 필요 실패', () async {
       platform.accuracyStatus = LocationAccuracyStatus.reduced;
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.approximateLocationOnly);
+      expect(locationCheckResult.failure, LocationVerificationFailure.approximateLocationOnly);
       expect(platform.getCurrentPositionCount, 0);
     });
 
     test('가상 위치(모의 위치·시뮬레이션) > 주소 조회 없이 거부', () async {
       platform.position = buildPosition(isMocked: true);
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.mockedLocation);
-      expect(result.isLocated, isFalse);
+      expect(locationCheckResult.failure, LocationVerificationFailure.mockedLocation);
+      expect(locationCheckResult.isLocated, isFalse);
     });
 
     test('오차 100m 초과 > 낮은 정확도 실패 (창가 재시도 안내)', () async {
       platform.position = buildPosition(accuracy: 150);
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.lowAccuracy);
-      expect(result.failure?.description, contains('창가'));
+      expect(locationCheckResult.failure, LocationVerificationFailure.lowAccuracy);
+      expect(locationCheckResult.failure?.description, contains('창가'));
     });
 
     test('오차 정확히 100m > 통과', () async {
       platform.position = buildPosition(accuracy: GpsLocationVerifier.maximumAccuracyMeters);
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.isLocated, isTrue);
+      expect(locationCheckResult.isLocated, isTrue);
     });
 
     test('좌표 조회 시간 초과 > 현재 위치 없음 실패', () async {
       platform.positionError = TimeoutException('timeout');
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.positionUnavailable);
+      expect(locationCheckResult.failure, LocationVerificationFailure.positionUnavailable);
     });
 
     test('역지오코딩 실패 > 동네 확인 실패', () async {
       platform.address = null;
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.addressNotFound);
+      expect(locationCheckResult.failure, LocationVerificationFailure.addressNotFound);
     });
   });
 
@@ -195,39 +195,39 @@ void main() {
     test('국내 실제 위치 > GPS 동네 인증 (지도 선택 아님)', () async {
       platform.position = buildPosition(latitude: 35.1796, longitude: 129.0756);
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.isLocated, isTrue);
-      expect(result.isOutsideServiceArea, isFalse);
+      expect(locationCheckResult.isLocated, isTrue);
+      expect(locationCheckResult.isOutsideServiceArea, isFalse);
     });
 
     test('해외 실제 위치 > 서비스 지역 밖 결과 (실패 아님, 역지오코딩 생략)', () async {
       platform.position = buildPosition(latitude: 37.3349, longitude: -122.0090);
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, isNull);
-      expect(result.isOutsideServiceArea, isTrue);
-      expect(result.isLocated, isFalse);
-      expect(result.latitude, 37.3349);
+      expect(locationCheckResult.failure, isNull);
+      expect(locationCheckResult.isOutsideServiceArea, isTrue);
+      expect(locationCheckResult.isLocated, isFalse);
+      expect(locationCheckResult.latitude, 37.3349);
       expect(platform.lookupAddressCount, 0);
     });
 
     test('해외 + 가상 위치 > 서비스 지역 밖이어도 가상 위치 거부', () async {
       platform.position = buildPosition(latitude: 37.3349, longitude: -122.0090, isMocked: true);
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.mockedLocation);
-      expect(result.isOutsideServiceArea, isFalse);
+      expect(locationCheckResult.failure, LocationVerificationFailure.mockedLocation);
+      expect(locationCheckResult.isOutsideServiceArea, isFalse);
     });
 
     test('해외 + 오차 100m 초과 > 낮은 정확도 거부', () async {
       platform.position = buildPosition(latitude: 51.5, longitude: -0.12, accuracy: 300);
 
-      final result = await platform.buildVerifier().checkCurrentLocation();
+      final locationCheckResult = await platform.buildVerifier().checkCurrentLocation();
 
-      expect(result.failure, LocationVerificationFailure.lowAccuracy);
+      expect(locationCheckResult.failure, LocationVerificationFailure.lowAccuracy);
     });
 
     test('범위 경계 > 제주 남단·독도 포함, 대마도 동쪽 밖', () {
