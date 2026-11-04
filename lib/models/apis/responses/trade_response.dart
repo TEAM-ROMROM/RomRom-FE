@@ -1,6 +1,8 @@
 // lib/models/apis/responses/trade_response.dart
 import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/enums/sent_request_progress.dart';
+import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/models/apis/objects/api_page.dart';
 import 'package:romrom_fe/models/apis/objects/base_entity.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -44,6 +46,18 @@ class TradeRequestHistory extends BaseEntity {
   final String? tradeStatus;
   final bool? isNew;
 
+  /// 추가금 (원, 없거나 구버전 요청 > null)
+  final int? extraChargeAmount;
+
+  /// 한 줄 메시지 (없으면 null)
+  final String? requestMessage;
+
+  /// 받은 사람이 처음 확인한 시각 (보낸 쪽 '확인함' 판정)
+  final DateTime? checkedAt;
+
+  /// 거절 시각 (REJECTED일 때만)
+  final DateTime? rejectedAt;
+
   TradeRequestHistory({
     required this.tradeRequestHistoryId,
     required this.takeItem,
@@ -51,6 +65,10 @@ class TradeRequestHistory extends BaseEntity {
     required this.itemTradeOptions,
     required this.tradeStatus,
     this.isNew,
+    this.extraChargeAmount,
+    this.requestMessage,
+    this.checkedAt,
+    this.rejectedAt,
     super.createdDate,
     super.updatedDate,
   });
@@ -67,6 +85,10 @@ class TradeRequestHistory extends BaseEntity {
     itemTradeOptions: itemTradeOptions,
     tradeStatus: tradeStatus,
     isNew: isNew,
+    extraChargeAmount: extraChargeAmount,
+    requestMessage: requestMessage,
+    checkedAt: checkedAt,
+    rejectedAt: rejectedAt,
     createdDate: createdDate,
     updatedDate: updatedDate,
   );
@@ -82,6 +104,19 @@ extension TradeRequestHistoryDisplayX on TradeRequestHistory {
 
   /// 요청 보낸 회원 (요청 보낸 물품 giveItem의 회원, 응답에 없으면 null)
   Member? get requester => giveItem.member;
+
+  /// 요청 시 적은 추가금 (EXTRA_CHARGE 미선택이면 서버 값이 있어도 null)
+  int? get requestedExtraChargeAmount =>
+      requestedTradeOptions.contains(ItemTradeOption.additionalPrice) ? extraChargeAmount : null;
+
+  /// 보낸 쪽 진행 표시: 거절 > 거절됨, 대기 + 받은 사람 확인 > 확인함, 대기 > 대기 (채팅 중·교환완료 등 > null)
+  SentRequestProgress? get sentRequestProgress {
+    final status = TradeStatus.fromServerName(tradeStatus);
+    if (status == TradeStatus.rejected) return SentRequestProgress.rejected;
+    if (status != TradeStatus.pending) return null;
+    final isCheckedByReceiver = checkedAt != null || isNew == false;
+    return isCheckedByReceiver ? SentRequestProgress.checked : SentRequestProgress.waiting;
+  }
 }
 
 /// `Paged<TradeRequestHistory>`

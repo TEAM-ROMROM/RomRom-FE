@@ -88,6 +88,8 @@ class RequestReceivedList extends StatelessWidget {
           isNew: request.isNew ?? false,
           tradeOptions: request.requestedTradeOptions,
           tradeStatus: TradeStatus.fromServerName(request.tradeStatus) ?? TradeStatus.chatting,
+          extraChargeAmount: request.requestedExtraChargeAmount,
+          requestMessage: request.requestMessage,
           onTap: () => onCardTap(request),
           onMenuTap: () => onMenuTap(request),
         ),

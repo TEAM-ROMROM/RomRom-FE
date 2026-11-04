@@ -77,6 +77,13 @@ enum ErrorCode {
   tradeCompletionStateMismatch(code: 'TRADE_COMPLETION_STATE_MISMATCH', koMessage: '거래 완료 상태가 맞지 않습니다.'),
   tradeCompletionRequestForbidden(code: 'TRADE_COMPLETION_REQUEST_FORBIDDEN', koMessage: '거래 완료 요청 권한이 없습니다.'),
 
+  // TRADE REQUEST 추가금·한 줄 메시지 (#1005)
+  invalidTradeExtraChargeAmount(
+    code: 'INVALID_TRADE_EXTRA_CHARGE_AMOUNT',
+    koMessage: '추가금은 0원 이상 10,000,000원 이하로 입력해 주세요.',
+  ),
+  invalidTradeRequestMessage(code: 'INVALID_TRADE_REQUEST_MESSAGE', koMessage: '요청 메시지는 100자 이하의 일반 문자로 입력해 주세요.'),
+
   // CHAT
   cannotSendMessageToDeletedChatroom(
     code: 'CANNOT_SEND_MESSAGE_TO_DELETED_CHATROOM',
