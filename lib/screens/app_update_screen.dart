@@ -3,14 +3,23 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/services/forced_update_lock.dart';
 import 'package:romrom_fe/utils/app_store_launcher.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 
 class AppUpdateScreen extends StatefulWidget {
   const AppUpdateScreen({super.key});
+
+  /// 강제 업데이트 화면 표시: 잠금 > 스택 교체 (스플래시·앱 복귀 공통 진입점, 잠금 후 딥링크·세션 종료 이동 차단)
+  static Future<void> showForcedUpdate(BuildContext context) async {
+    ForcedUpdateLock.instance.lock();
+    await context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+  }
 
   @override
   State<AppUpdateScreen> createState() => _AppUpdateScreenState();

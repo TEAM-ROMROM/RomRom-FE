@@ -17,6 +17,7 @@ import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/item_deleted_screen.dart';
 import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/services/deep_link_gate.dart';
+import 'package:romrom_fe/services/forced_update_lock.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
@@ -48,8 +49,9 @@ class RomRomDeepLinkRouter {
   // 공유 링크 도메인 (AppUrls.itemShareBaseUrl 단일 원본)
   static final String _sharedLinkHost = Uri.parse(AppUrls.itemShareBaseUrl).host;
 
-  /// 링크 수신 (푸시 탭·앱 링크): 메인 진입 전이면 게이트에 보관, 진입 후면 바로 열기
+  /// 링크 수신 (푸시 탭·앱 링크): 강제 업데이트 표시 중이면 폐기, 메인 진입 전이면 게이트에 보관, 진입 후면 바로 열기
   static void receive(PendingDeepLink deepLink) {
+    if (_isBlockedByForcedUpdate()) return;
     final deepLinkToOpen = DeepLinkGate.instance.receive(deepLink);
     if (deepLinkToOpen == null) return;
     final navigatorContext = navigatorKey.currentContext;
@@ -67,8 +69,8 @@ class RomRomDeepLinkRouter {
     final pendingDeepLink = DeepLinkGate.instance.enterMainScreen();
     if (pendingDeepLink == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 프레임 사이 세션 종료 > 열지 않음
-      if (!DeepLinkGate.instance.isMainScreenEntered) return;
+      // 프레임 사이 세션 종료·강제 업데이트 > 열지 않음
+      if (!DeepLinkGate.instance.isMainScreenEntered || _isBlockedByForcedUpdate()) return;
       final navigatorContext = navigatorKey.currentContext;
       if (navigatorContext == null || !navigatorContext.mounted) return;
       openFromUri(
@@ -80,6 +82,13 @@ class RomRomDeepLinkRouter {
     });
     // 다음 프레임 보장 (화면 전환이 없는 호출에서도 보관 링크 열기)
     WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  /// 강제 업데이트 화면 표시 중 > 링크 이동 차단 (업데이트 화면 위 화면 쌓임 방지, 앱 종료까지 유지라 보관 없이 폐기)
+  static bool _isBlockedByForcedUpdate() {
+    if (!ForcedUpdateLock.instance.isForcedUpdateShowing) return false;
+    debugPrint('[deep link] dropped : forced update showing');
+    return true;
   }
 
   /// 문자열 딥링크 열기 (알림함 탭 등), [isNotificationFallbackEnabled] false면 모르는 경로 무시
