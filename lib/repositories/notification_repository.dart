@@ -1,8 +1,9 @@
+import 'package:romrom_fe/models/apis/objects/announcement.dart';
 import 'package:romrom_fe/models/apis/requests/notification_history_request.dart';
 import 'package:romrom_fe/models/apis/responses/notification_history_response.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
 
-/// 알림 API 래핑: 목록 조회, 미확인 개수, 읽음 처리, 삭제 (UI 모름)
+/// 알림 API 래핑: 목록 조회, 미확인 개수, 읽음 처리, 삭제, 공지 상세 (UI 모름)
 class NotificationRepository {
   final NotificationApi _api;
 
@@ -23,4 +24,11 @@ class NotificationRepository {
       _api.deleteNotification(NotificationHistoryRequest(notificationHistoryId: notificationHistoryId));
 
   Future<void> deleteAll() => _api.deleteAllNotifications();
+
+  /// 공지 상세 1건 (응답에 공지 없음 > StateError)
+  Future<Announcement> getAnnouncementDetail(String announcementId) async {
+    final announcement = (await _api.getAnnouncementDetail(announcementId)).announcement;
+    if (announcement == null) throw StateError('announcement is null');
+    return announcement;
+  }
 }

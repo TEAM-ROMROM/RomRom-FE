@@ -13,8 +13,10 @@ import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
 import 'package:romrom_fe/providers/notification_unread_count_provider.dart';
+import 'package:romrom_fe/providers/do_not_disturb_setting_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/providers/promotion_provider.dart';
+import 'package:romrom_fe/providers/received_reviews_refresh_trigger_provider.dart';
 import 'package:romrom_fe/providers/sent_requests_focus_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 
@@ -39,6 +41,9 @@ final List<ProviderOrFamily> userScopedProviders = [
   sentRequestsFocusTriggerProvider,
   promotionProvider,
   locationVerificationProvider,
+  // 알림 확장 (#1007)
+  receivedReviewsRefreshTriggerProvider,
+  doNotDisturbSettingProvider,
 ];
 
 /// 사용자 범위 provider 전부 무효화 (WidgetRef·ProviderContainer의 invalidate 전달)

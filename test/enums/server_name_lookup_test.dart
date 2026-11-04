@@ -40,6 +40,12 @@ void main() {
       // BE NotificationType.ANNOUNCEMENT (옛 값 SYSTEM_NOTICE는 BE에 없음, #942)
       expect(NotificationType.fromServerName('ANNOUNCEMENT'), NotificationType.announcement);
       expect(NotificationType.fromServerName('SYSTEM_NOTICE'), isNull);
+      // 확장 타입 (BE #861), unknown 폴백은 서버 이름 조회 대상 아님
+      expect(NotificationType.fromServerName('TRADE_REQUEST_ACCEPTED'), NotificationType.tradeRequestAccepted);
+      expect(NotificationType.fromServerName('TRADE_REQUEST_REJECTED'), NotificationType.tradeRequestRejected);
+      expect(NotificationType.fromServerName('TRADE_COMPLETED'), NotificationType.tradeCompleted);
+      expect(NotificationType.fromServerName('TRADE_REVIEW_RECEIVED'), NotificationType.tradeReviewReceived);
+      expect(NotificationType.fromServerName(''), isNull);
       expect(NotificationType.fromServerName(unknownServerName), isNull);
       expect(NotificationType.fromServerName(null), isNull);
     });

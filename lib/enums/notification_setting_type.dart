@@ -25,13 +25,13 @@ extension NotificationSettingTypeExtension on NotificationSettingType {
       case NotificationSettingType.marketing:
         return '이벤트, 혜택 등 광고성 정보 수신';
       case NotificationSettingType.activity:
-        return '작성한 글에 대한 좋아요 알림';
+        return '작성한 글에 대한 좋아요, 받은 후기 알림';
       case NotificationSettingType.chat:
         return '메시지 도착 시 실시간 알림';
       case NotificationSettingType.content:
         return '인기글, 정보성글 등의 콘텐츠 알림';
       case NotificationSettingType.transaction:
-        return '교환 요청 등의 알림';
+        return '교환 요청·수락·거절·완료 알림';
     }
   }
 }

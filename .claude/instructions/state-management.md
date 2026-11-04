@@ -135,6 +135,8 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `itemLikeProvider` | `providers/item_like_provider.dart` | Notifier(토글) | 좋아요 `Map<itemId, ItemLikeState>` |
 | `memberBlockProvider` | `providers/member_block_provider.dart` | Notifier(토글) | 차단 `Set<memberId>` |
 | `notificationSettingProvider` | `providers/notification_setting_provider.dart` | Notifier(토글) | 알림설정 `Map<type, bool>` |
+| `doNotDisturbSettingProvider` | `providers/do_not_disturb_setting_provider.dart` | Notifier(optimistic) | 방해금지 시간 `{isEnabled, startTime, endTime}` (KST, 설정 화면이 회원 정보로 seed, 저장 중 중복 무시·실패 롤백, #1007) |
+| `receivedReviewsRefreshTriggerProvider` | `providers/received_reviews_refresh_trigger_provider.dart` | Notifier(int) | 받은 후기 재조회 신호 (후기 도착 푸시 > 열린 내 프로필 후기 영역 재조회, #1007) |
 | `currentTabIndexProvider` | `providers/current_tab_index_provider.dart` | Notifier(int) | MainScreen 탭 인덱스 (0 홈, 1 요청관리, 2 등록, 3 채팅, 4 마이페이지) |
 | `coachMarkTriggerProvider` | `providers/coach_mark_trigger_provider.dart` | Notifier(bool) | 첫 등록 후 코치마크 일회성 신호 |
 | `sentRequestsFocusTriggerProvider` | `providers/sent_requests_focus_trigger_provider.dart` | Notifier(bool) | 교환 요청 화면 '보낸 요청 보기' > 요청관리 탭 보낸 요청 토글 일회성 신호 |

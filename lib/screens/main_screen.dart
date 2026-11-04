@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/navigation_tab_items.dart';
 import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
+import 'package:romrom_fe/providers/chat_rooms_provider.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
@@ -13,6 +14,7 @@ import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/providers/notification_unread_count_provider.dart';
+import 'package:romrom_fe/providers/received_reviews_refresh_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/foreground_push_refresher.dart';
@@ -163,7 +165,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     unawaited(ref.read(homeFeedProvider.notifier).flushSeenItemIds());
   }
 
-  /// 앱 사용 중 푸시 > 종류별 상태 재조회 (알림 목록·배지, 받은 요청, 내 물품) (#964)
+  /// 앱 사용 중 푸시 > 종류별 상태 재조회 (알림 목록·배지, 받은·보낸 요청, 내 물품, 채팅방, 받은 후기) (#964, #1007)
   /// 아직 만든 적 없는 provider(알림 화면·요청관리 탭 미방문)는 건너뜀 > 처음 볼 때 새로 조회 (배지는 미확인 수만)
   void _listenForegroundPush() {
     // 호출 시점에 notifier를 읽음 (세션 초기화 뒤에도 최신 인스턴스 사용)
@@ -179,6 +181,15 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
         await ref.read(tradeRequestsProvider.notifier).reloadReceivedOfRequestedCard();
       },
       reloadMyItems: () => ref.read(myItemsProvider.notifier).reload(),
+      reloadSentTradeRequests: () async {
+        if (!ref.exists(tradeRequestsProvider)) return;
+        await ref.read(tradeRequestsProvider.notifier).reloadSent();
+      },
+      reloadChatRooms: () async {
+        if (!ref.exists(chatRoomsProvider)) return;
+        await ref.read(chatRoomsProvider.notifier).refreshFirstPage();
+      },
+      reloadReceivedReviews: () async => ref.read(receivedReviewsRefreshTriggerProvider.notifier).requestRefresh(),
     );
     _foregroundPushSubscription = FirebaseService().onForegroundMessage.listen(
       (message) => foregroundPushRefresher.onForegroundPush(message.data),
