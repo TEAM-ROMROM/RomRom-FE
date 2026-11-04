@@ -14,3 +14,12 @@ List<ChatRoomDetailDto> mergeFirstPageRooms({
   final keptRooms = currentRooms.where((room) => !firstPageRoomIds.contains(room.chatRoomId));
   return [...firstPageRooms, ...keptRooms];
 }
+
+/// 목록 상태에 있는데 아직 소켓 구독 안 한 방 ID (상태 변경마다 차이만 구독, 목록에서 빠진 방 구독은 유지 > 새 메시지로 목록 복귀)
+Set<String> findChatRoomIdsToSubscribe({
+  required List<ChatRoomDetailDto> rooms,
+  required Set<String> subscribedChatRoomIds,
+}) => {
+  for (final room in rooms)
+    if (room.chatRoomId != null && !subscribedChatRoomIds.contains(room.chatRoomId)) room.chatRoomId!,
+};

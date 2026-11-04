@@ -39,13 +39,18 @@ class ChatTopicSubscriptionRegistry<T> {
   }
 
   /// 실제 STOMP 구독 실행 (최초 구독·재연결 공통)
+  /// 닫힌 소켓이면 실패 로그만 (스트림 유지 > 재연결 시 subscribedChatRoomIds로 재구독)
   void subscribeOnStomp(String chatRoomId, StompClient stompClient) {
     final destination = destinationOf(chatRoomId);
     debugPrint('[WebSocket] ✅ Subscribing to: $destination');
-    _stompUnsubscribeByChatRoomId[chatRoomId] = stompClient.subscribe(
-      destination: destination,
-      callback: (StompFrame frame) => handleFrameBody(chatRoomId, frame.body),
-    );
+    try {
+      _stompUnsubscribeByChatRoomId[chatRoomId] = stompClient.subscribe(
+        destination: destination,
+        callback: (StompFrame frame) => handleFrameBody(chatRoomId, frame.body),
+      );
+    } catch (error) {
+      debugPrint('[WebSocket] $topicLabel subscribe failed, retry on reconnect : $error');
+    }
   }
 
   /// 프레임 본문 > 모델 > 해당 방 스트림 전달 (본문 없음·파싱 실패 > 무시)

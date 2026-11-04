@@ -242,37 +242,52 @@ ChatMessage mergeServerEchoIntoLocalMessage({required ChatMessage localMessage, 
   );
 }
 
-/// 이미지 주소 없는 WS 임시 메시지 > 서버 이미지 메시지 교체 목록 (발신자별 순서대로 짝지음)
-/// 결과: (임시 ID, 목록 index, 교체할 서버 메시지)
+/// 이미지 주소 없는 WS 이미지 메시지 > 서버 이미지 메시지 교체 목록
+/// 짝짓기 2단계: 같은 메시지 ID > 발신자별 순서 (ID 없이 온 메시지, 이미 화면에 있는 서버 메시지 제외 > 중복 말풍선 방지)
+/// 결과: (대기 ID, 목록 index, 교체할 서버 메시지)
 List<(String placeholderId, int index, ChatMessage replacement)> matchWebSocketImagePlaceholders({
   required List<ChatMessage> messages,
   required Set<String> placeholderIds,
   required List<ChatMessage> serverMessages,
 }) {
-  // 발신자별 서버 이미지 메시지 (이미지 주소 있는 것만)
-  final serverImagesBySender = <String, List<ChatMessage>>{};
-  for (final message in serverMessages) {
-    if (message.type != MessageType.image || message.imageUrls == null || message.imageUrls!.isEmpty) continue;
-    serverImagesBySender.putIfAbsent(message.senderId ?? '', () => []).add(message);
-  }
+  // 이미지 주소 있는 서버 이미지 메시지, 화면에 이미 표시된 서버 메시지 ID
+  final serverImages = serverMessages
+      .where((message) => message.type == MessageType.image && (message.imageUrls?.isNotEmpty ?? false))
+      .toList();
+  final displayedMessageIds = {
+    for (final message in messages)
+      if (message.chatMessageId != null && !placeholderIds.contains(message.chatMessageId)) message.chatMessageId!,
+  };
 
-  // 발신자별 임시 메시지 위치
-  final placeholdersBySender = <String, List<(String, int)>>{};
+  // 1단계: 같은 ID 교체 (서버 ID 그대로 둔 대기 메시지)
+  final replacements = <(String, int, ChatMessage)>[];
+  final usedServerMessageIds = <String>{};
+  final unmatchedPlaceholdersBySender = <String, List<(String, int)>>{};
   for (int index = 0; index < messages.length; index++) {
     final id = messages[index].chatMessageId;
-    if (id != null && placeholderIds.contains(id)) {
-      placeholdersBySender.putIfAbsent(messages[index].senderId ?? '', () => []).add((id, index));
+    if (id == null || !placeholderIds.contains(id)) continue;
+    final sameIdServerImage = serverImages.where((message) => message.chatMessageId == id).firstOrNull;
+    if (sameIdServerImage != null) {
+      replacements.add((id, index, sameIdServerImage));
+      usedServerMessageIds.add(id);
+    } else {
+      unmatchedPlaceholdersBySender.putIfAbsent(messages[index].senderId ?? '', () => []).add((id, index));
     }
   }
 
-  // 같은 발신자 안에서 순서대로 짝지음 (개수 적은 쪽까지)
-  final replacements = <(String, int, ChatMessage)>[];
-  for (final entry in placeholdersBySender.entries) {
+  // 2단계: 같은 발신자 안에서 순서대로 짝지음 (개수 적은 쪽까지, 표시·사용된 서버 메시지 제외)
+  final remainingServerImagesBySender = <String, List<ChatMessage>>{};
+  for (final message in serverImages) {
+    final id = message.chatMessageId;
+    if (id != null && (displayedMessageIds.contains(id) || usedServerMessageIds.contains(id))) continue;
+    remainingServerImagesBySender.putIfAbsent(message.senderId ?? '', () => []).add(message);
+  }
+  for (final entry in unmatchedPlaceholdersBySender.entries) {
     final placeholders = entry.value;
-    final serverImages = serverImagesBySender[entry.key] ?? [];
-    for (int order = 0; order < placeholders.length && order < serverImages.length; order++) {
+    final senderServerImages = remainingServerImagesBySender[entry.key] ?? [];
+    for (int order = 0; order < placeholders.length && order < senderServerImages.length; order++) {
       final (placeholderId, index) = placeholders[order];
-      replacements.add((placeholderId, index, serverImages[order]));
+      replacements.add((placeholderId, index, senderServerImages[order]));
     }
   }
   return replacements;

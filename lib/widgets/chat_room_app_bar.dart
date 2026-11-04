@@ -15,8 +15,8 @@ import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
 /// 채팅방 앱바
-/// [onBlockConfirm] 차단 확인 시 호출 - API 호출 및 채팅방 나가기 처리
-/// [onLeaveChatRoomConfirm] 채팅방 나가기 확인 시 호출 - API 호출 및 화면 이동 처리
+/// [onBlockConfirm] 차단 확인 시 호출 - API 호출, 확인 모달 닫기, 채팅방 나가기 처리
+/// [onLeaveChatRoomConfirm] 채팅방 나가기 확인 시 호출 - API 호출, 확인 모달 닫기, 화면 이동 처리
 /// iPad(너비 600px 초과)에서는 두 줄 타이틀을 위해 toolbarHeight를 88로 확장, iPhone은 64px 유지
 PreferredSizeWidget buildChatRoomAppBar({
   required BuildContext context,
@@ -141,8 +141,8 @@ Widget _buildContextMenu({
               onCancel: () => Navigator.of(context).pop(),
               onConfirm: () async {
                 try {
+                  // 성공 시 확인 모달·채팅방 닫기는 콜백이 처리 (모달만 닫히고 방에 남는 문제 방지)
                   await onBlockConfirm();
-                  if (context.mounted) Navigator.of(context).pop(true);
                 } catch (e) {
                   if (context.mounted) {
                     Navigator.of(context).pop();
@@ -173,8 +173,8 @@ Widget _buildContextMenu({
               onCancel: () => Navigator.of(context).pop(),
               onConfirm: () async {
                 try {
+                  // 성공 시 확인 모달·채팅방 닫기는 콜백이 처리 (모달만 닫히고 방에 남는 문제 방지)
                   await onLeaveChatRoomConfirm();
-                  if (context.mounted) Navigator.of(context).pop(true);
                 } catch (e) {
                   if (context.mounted) {
                     Navigator.of(context).pop();

@@ -259,6 +259,62 @@ void main() {
       expect(index, 0);
       expect(replacement.chatMessageId, 's2');
     });
+
+    test('서버 ID 유지한 대기 메시지 > 같은 ID 서버 메시지로 교체 (발신자 순서보다 우선)', () {
+      final messages = [
+        buildChatMessage('s3', sender: 'other', type: MessageType.image),
+        buildChatMessage('s2', sender: 'other', type: MessageType.image, imageUrls: const ['old.webp']),
+      ];
+      final serverMessages = [
+        buildChatMessage('s3', sender: 'other', type: MessageType.image, imageUrls: const ['new.webp']),
+        buildChatMessage('s2', sender: 'other', type: MessageType.image, imageUrls: const ['old.webp']),
+      ];
+
+      final replacements = matchWebSocketImagePlaceholders(
+        messages: messages,
+        placeholderIds: {'s3'},
+        serverMessages: serverMessages,
+      );
+
+      expect(replacements.single.$1, 's3');
+      expect(replacements.single.$3.imageUrls, ['new.webp']);
+    });
+
+    test('ID 없이 온 대기 메시지 > 이미 화면에 있는 서버 이미지와 짝짓지 않음 (중복 말풍선 방지)', () {
+      final messages = [
+        buildChatMessage('ws_img_1', sender: 'other', type: MessageType.image),
+        buildChatMessage('s1', sender: 'other', type: MessageType.image, imageUrls: const ['shown.webp']),
+      ];
+      final serverMessages = [
+        buildChatMessage('s1', sender: 'other', type: MessageType.image, imageUrls: const ['shown.webp']),
+      ];
+
+      final replacements = matchWebSocketImagePlaceholders(
+        messages: messages,
+        placeholderIds: {'ws_img_1'},
+        serverMessages: serverMessages,
+      );
+
+      expect(replacements, isEmpty);
+    });
+
+    test('보완 실패 후 재연결 동기화: 서버 ID 유지한 대기 메시지는 병합 시 서버 원본 1개로', () {
+      final current = [buildChatMessage('s3', sender: 'other', type: MessageType.image, createdDate: baseTime)];
+      final serverMessages = [
+        buildChatMessage(
+          's3',
+          sender: 'other',
+          type: MessageType.image,
+          imageUrls: const ['a.webp'],
+          createdDate: baseTime,
+        ),
+      ];
+
+      final merged = mergeServerMessages(current: current, serverMessages: serverMessages);
+
+      expect(merged.map((message) => message.chatMessageId), ['s3']);
+      expect(merged.single.imageUrls, ['a.webp']);
+    });
   });
 
   group('resolveMessageSendStatus', () {
