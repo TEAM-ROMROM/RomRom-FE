@@ -101,6 +101,23 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
     unawaited(refreshLoadedPages());
   }
 
+  /// 방별 알림 끄기·켜기: 서버 반영 > 확정 값으로 목록의 해당 방만 갱신 > 확정 값 반환
+  /// 실패 시 예외 전달 (목록 유지, 화면이 안내), 목록에 없는 방은 갱신 생략
+  Future<bool> setNotificationMuted({required String chatRoomId, required bool isNotificationMuted}) async {
+    final confirmedIsMuted = await _repo.updateNotificationMute(
+      chatRoomId: chatRoomId,
+      isNotificationMuted: isNotificationMuted,
+    );
+    final currentState = state.valueOrNull;
+    if (currentState == null) return confirmedIsMuted;
+    final roomIndex = currentState.rooms.indexWhere((room) => room.chatRoomId == chatRoomId);
+    if (roomIndex == -1) return confirmedIsMuted;
+    final updatedRooms = [...currentState.rooms];
+    updatedRooms[roomIndex] = updatedRooms[roomIndex].copyWith(isNotificationMuted: confirmedIsMuted);
+    state = AsyncData(currentState.copyWith(rooms: updatedRooms));
+    return confirmedIsMuted;
+  }
+
   /// 다음 페이지 로드 (무한스크롤). 실패 시 기존 목록 유지 + 예외 전달 (화면이 안내)
   Future<void> loadMore() async {
     final cur = state.valueOrNull;

@@ -1,12 +1,14 @@
 // lib/services/apis/chat_api.dart
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/objects/api_pageable.dart';
+import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/api_client.dart';
+import 'package:romrom_fe/utils/date_time_display_utils.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -304,5 +306,83 @@ class ChatApi {
         debugPrint('채팅방 교환 완료 요청 취소 성공: $chatRoomId');
       },
     );
+  }
+
+  /// 방별 알림 끄기·켜기 API > 서버 확정 값
+  /// POST /api/chat/rooms/notification-mute/update
+  Future<bool> updateNotificationMute({required String chatRoomId, required bool isNotificationMuted}) async {
+    final response = await _postForChatRoomResponse(
+      path: '/api/chat/rooms/notification-mute/update',
+      fields: {'chatRoomId': chatRoomId, 'isNotificationMuted': isNotificationMuted.toString()},
+    );
+    return response.isNotificationMuted ?? isNotificationMuted;
+  }
+
+  /// 내 메시지 삭제 API > 삭제 반영본
+  /// POST /api/chat/rooms/messages/delete
+  Future<ChatMessage?> deleteMessage({required String chatRoomId, required String chatMessageId}) async {
+    final response = await _postForChatRoomResponse(
+      path: '/api/chat/rooms/messages/delete',
+      fields: {'chatRoomId': chatRoomId, 'chatMessageId': chatMessageId},
+    );
+    return response.chatMessage;
+  }
+
+  /// 약속 제안 API (일시는 기기 로컬 시각 그대로 전송, 좌표는 둘 다 있을 때만)
+  /// POST /api/chat/rooms/appointments/propose
+  Future<ChatMessage?> proposeAppointment({
+    required String chatRoomId,
+    required DateTime appointmentAt,
+    required String placeName,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final bool hasCoordinates = latitude != null && longitude != null;
+    final response = await _postForChatRoomResponse(
+      path: '/api/chat/rooms/appointments/propose',
+      fields: {
+        'chatRoomId': chatRoomId,
+        'appointmentAt': formatServerLocalDateTime(appointmentAt),
+        'placeName': placeName,
+        if (hasCoordinates) 'latitude': latitude.toString(),
+        if (hasCoordinates) 'longitude': longitude.toString(),
+      },
+    );
+    return response.chatMessage;
+  }
+
+  /// 약속 수락 API (제안 받은 사람만)
+  /// POST /api/chat/rooms/appointments/accept
+  Future<ChatMessage?> acceptAppointment({required String chatRoomId, required String chatMessageId}) async {
+    final response = await _postForChatRoomResponse(
+      path: '/api/chat/rooms/appointments/accept',
+      fields: {'chatRoomId': chatRoomId, 'chatMessageId': chatMessageId},
+    );
+    return response.chatMessage;
+  }
+
+  /// 약속 취소 API (양쪽 모두)
+  /// POST /api/chat/rooms/appointments/cancel
+  Future<ChatMessage?> cancelAppointment({required String chatRoomId, required String chatMessageId}) async {
+    final response = await _postForChatRoomResponse(
+      path: '/api/chat/rooms/appointments/cancel',
+      fields: {'chatRoomId': chatRoomId, 'chatMessageId': chatMessageId},
+    );
+    return response.chatMessage;
+  }
+
+  /// 채팅 확장 API 공통: multipart 전송 > 응답 본문 > ChatRoomResponse (본문 없음 > 빈 응답, 실패는 ApiException)
+  Future<ChatRoomResponse> _postForChatRoomResponse({
+    required String path,
+    required Map<String, dynamic> fields,
+  }) async {
+    final http.Response response = await ApiClient.sendMultipartRequest(
+      url: '${AppUrls.baseUrl}$path',
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {},
+    );
+    if (response.body.isEmpty) return ChatRoomResponse();
+    return ChatRoomResponse.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 }

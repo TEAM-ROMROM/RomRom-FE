@@ -1,10 +1,11 @@
 // lib/repositories/chat_repository.dart
+import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/apis/responses/chat_response.dart';
 import 'package:romrom_fe/services/apis/chat_api.dart';
 
-/// 채팅 API 래핑: 방 목록·생성·삭제, 메시지·읽음 커서, 거래 완료 요청 흐름 (UI 모름)
+/// 채팅 API 래핑: 방 목록·생성·삭제, 메시지·읽음 커서, 거래 완료 요청 흐름, 방별 알림·메시지 삭제·약속 (UI 모름)
 class ChatRepository {
   final ChatApi _api;
 
@@ -62,5 +63,42 @@ class ChatRepository {
   /// 거래 완료 확정 (수신자)
   Future<void> confirmTradeCompletion({required String chatRoomId}) {
     return _api.confirmTradeCompletion(chatRoomId: chatRoomId);
+  }
+
+  /// 방별 알림 끄기·켜기 > 서버 확정 값
+  Future<bool> updateNotificationMute({required String chatRoomId, required bool isNotificationMuted}) {
+    return _api.updateNotificationMute(chatRoomId: chatRoomId, isNotificationMuted: isNotificationMuted);
+  }
+
+  /// 내 메시지 삭제 > 삭제 반영본 (응답에 없으면 null)
+  Future<ChatMessage?> deleteMessage({required String chatRoomId, required String chatMessageId}) {
+    return _api.deleteMessage(chatRoomId: chatRoomId, chatMessageId: chatMessageId);
+  }
+
+  /// 약속 제안 > 생성된 약속 메시지
+  Future<ChatMessage?> proposeAppointment({
+    required String chatRoomId,
+    required DateTime appointmentAt,
+    required String placeName,
+    double? latitude,
+    double? longitude,
+  }) {
+    return _api.proposeAppointment(
+      chatRoomId: chatRoomId,
+      appointmentAt: appointmentAt,
+      placeName: placeName,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
+
+  /// 약속 수락 > 상태 반영본
+  Future<ChatMessage?> acceptAppointment({required String chatRoomId, required String chatMessageId}) {
+    return _api.acceptAppointment(chatRoomId: chatRoomId, chatMessageId: chatMessageId);
+  }
+
+  /// 약속 취소 > 상태 반영본
+  Future<ChatMessage?> cancelAppointment({required String chatRoomId, required String chatMessageId}) {
+    return _api.cancelAppointment(chatRoomId: chatRoomId, chatMessageId: chatMessageId);
   }
 }

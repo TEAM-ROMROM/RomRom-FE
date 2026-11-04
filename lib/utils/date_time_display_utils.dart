@@ -97,3 +97,15 @@ String formatChatDateDividerLabel(DateTime dateTime) {
   final local = dateTime.toLocal();
   return '${local.year}년 ${local.month}월 ${local.day}일 ${koreanWeekdayNames[local.weekday - 1]}';
 }
+
+/// 약속 일시 > "11월 6일 (목) 오후 3:00" (로컬 기준, 약속 카드·약속 잡기 시트 공통)
+String formatAppointmentDateTime(DateTime appointmentAt) {
+  final local = appointmentAt.toLocal();
+  final weekdayInitial = koreanWeekdayNames[local.weekday - 1].substring(0, 1);
+  return '${local.month}월 ${local.day}일 ($weekdayInitial) ${formatMessageTime(local)}';
+}
+
+/// 기기 로컬 시각 > 서버 LocalDateTime 문자열 "2026-11-06T15:00:00" (시간대 표기 없음, 서버 KST 기준)
+String formatServerLocalDateTime(DateTime dateTime) {
+  return DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(dateTime.toLocal());
+}

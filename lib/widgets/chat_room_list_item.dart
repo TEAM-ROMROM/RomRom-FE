@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
@@ -24,6 +25,8 @@ class ChatRoomListItem extends StatelessWidget {
   final String? myItemImageUrl;
   final int unreadCount;
   final bool isNew;
+  // 방별 알림 끈 방 (닉네임 옆 알림 꺼짐 아이콘)
+  final bool isNotificationMuted;
   final VoidCallback onTap;
   final VoidCallback? onProfileTap;
 
@@ -40,6 +43,7 @@ class ChatRoomListItem extends StatelessWidget {
     this.myItemImageUrl,
     this.unreadCount = 0,
     this.isNew = false,
+    this.isNotificationMuted = false,
     required this.onTap,
     this.onProfileTap,
   });
@@ -120,6 +124,15 @@ class ChatRoomListItem extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (isNotificationMuted) ...[
+                        SizedBox(width: 4.w),
+                        Icon(
+                          AppIcons.alertOff,
+                          size: 14.sp,
+                          color: AppColors.chatLocationTimeMessage,
+                          semanticLabel: '알림 꺼짐',
+                        ),
+                      ],
 
                       SizedBox(width: 8.h),
 
