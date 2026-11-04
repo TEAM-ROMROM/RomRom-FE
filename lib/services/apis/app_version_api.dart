@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/models/apis/responses/app_version_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/utils/app_version_comparison.dart';
 import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
 import 'package:romrom_fe/utils/secured_api_utils.dart';
 
@@ -46,32 +47,11 @@ class AppVersionApi {
     return info.version; // e.g. "1.9.67"
   }
 
-  /// 버전 문자열 비교: current < minimum 이면 true
-  /// "1.9.0" < "1.9.67" → true
-  bool isVersionLower(String current, String minimum) {
-    final List<int> currentParts = current.split('.').map(int.parse).toList();
-    final List<int> minimumParts = minimum.split('.').map(int.parse).toList();
-
-    // 길이 맞춤 (짧은 쪽에 0 패딩)
-    while (currentParts.length < minimumParts.length) {
-      currentParts.add(0);
-    }
-    while (minimumParts.length < currentParts.length) {
-      minimumParts.add(0);
-    }
-
-    for (int i = 0; i < currentParts.length; i++) {
-      if (currentParts[i] < minimumParts[i]) return true;
-      if (currentParts[i] > minimumParts[i]) return false;
-    }
-    return false; // 같으면 false (업데이트 불필요)
-  }
-
-  /// 업데이트 타입 결정: 서버 버전 조회 > 현재 버전 비교 (조회·비교 실패 시 none, 차단하지 않음)
-  Future<UpdateType> checkUpdateType() async {
+  /// 업데이트 타입 판정: 서버 버전 조회 > 현재 버전 비교 (조회·설치 버전 확인 실패 시 null)
+  Future<UpdateType?> fetchUpdateType() async {
     try {
       final AppVersionResponse? versionInfo = await getAppVersion();
-      if (versionInfo == null) return UpdateType.none; // API 실패 시 차단하지 않음
+      if (versionInfo == null) return null;
 
       final String currentVersion = await getCurrentAppVersion();
       debugPrint(
@@ -82,24 +62,9 @@ class AppVersionApi {
         minimumVersion: versionInfo.minimumVersion,
         latestVersion: versionInfo.latestVersion,
       );
-    } catch (e) {
-      debugPrint('[AppVersionApi] 버전 체크 실패, 정상 진행: $e');
-      return UpdateType.none; // 실패 시 차단하지 않음
-    }
-  }
-
-  /// 현재 <-> 최소 버전 미달 > force, 최신 버전 미달 > recommend, 그 외 none
-  /// 최신 버전 형식 오류는 권장 판정만 생략 (강제 판정 유지)
-  UpdateType resolveUpdateType({
-    required String currentVersion,
-    required String minimumVersion,
-    required String latestVersion,
-  }) {
-    if (isVersionLower(currentVersion, minimumVersion)) return UpdateType.force;
-    try {
-      return isVersionLower(currentVersion, latestVersion) ? UpdateType.recommend : UpdateType.none;
-    } on FormatException {
-      return UpdateType.none;
+    } catch (error) {
+      debugPrint('[app version] check failed : $error');
+      return null;
     }
   }
 }
