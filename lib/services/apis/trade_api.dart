@@ -27,6 +27,9 @@ class TradeApi {
       'giveItemId': request.giveItemId,
       if (request.itemTradeOptions != null && request.itemTradeOptions!.isNotEmpty)
         'itemTradeOptions': request.itemTradeOptions!.join(','),
+      // 추가금·한 줄 메시지: 입력했을 때만 전송 (서버 선택 파라미터)
+      if (request.extraChargeAmount != null) 'extraChargeAmount': request.extraChargeAmount.toString(),
+      if (request.requestMessage != null) 'requestMessage': request.requestMessage,
     };
 
     await ApiClient.sendMultipartRequest(
@@ -103,6 +106,8 @@ class TradeApi {
       'giveItemId': request.giveItemId,
       if (request.sortField != null) 'sortField': request.sortField,
       if (request.sortDirection != null) 'sortDirection': request.sortDirection,
+      // 거절 건 포함 요청 (미전송 시 서버는 기존 목록과 동일하게 제외)
+      if (request.includeRejected != null) 'includeRejected': request.includeRejected.toString(),
     };
 
     http.Response response = await ApiClient.sendMultipartRequest(

@@ -9,6 +9,8 @@ class FakeReportApi implements ReportApi {
   String? lastTargetMemberId;
   Set<int>? lastMemberReportReasons;
   String? lastExtraComment;
+  String? lastChatRoomId;
+  String? lastChatMessageId;
 
   @override
   Future<void> reportItem({required String itemId, required Set<int> itemReportReasons, String? extraComment}) async {
@@ -24,6 +26,19 @@ class FakeReportApi implements ReportApi {
     String? extraComment,
   }) async {
     lastTargetMemberId = targetMemberId;
+    lastMemberReportReasons = memberReportReasons;
+    lastExtraComment = extraComment;
+  }
+
+  @override
+  Future<void> reportChatMessage({
+    required String chatRoomId,
+    required String chatMessageId,
+    required Set<int> memberReportReasons,
+    String? extraComment,
+  }) async {
+    lastChatRoomId = chatRoomId;
+    lastChatMessageId = chatMessageId;
     lastMemberReportReasons = memberReportReasons;
     lastExtraComment = extraComment;
   }
@@ -53,6 +68,20 @@ void main() {
       expect(fakeApi.lastTargetMemberId, 'member-1');
       expect(fakeApi.lastMemberReportReasons, {2});
       expect(fakeApi.lastExtraComment, '');
+    });
+
+    test('reportChatMessage는 방 id·메시지 id·회원 신고 사유·추가 의견을 그대로 전달', () async {
+      await repository.reportChatMessage(
+        chatRoomId: 'room-1',
+        chatMessageId: 'message-1',
+        memberReportReasons: {1, 5},
+        extraComment: '욕설',
+      );
+
+      expect(fakeApi.lastChatRoomId, 'room-1');
+      expect(fakeApi.lastChatMessageId, 'message-1');
+      expect(fakeApi.lastMemberReportReasons, {1, 5});
+      expect(fakeApi.lastExtraComment, '욕설');
     });
   });
 }

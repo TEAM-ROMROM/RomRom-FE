@@ -56,6 +56,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   bool _reviewLoaded = false;
   bool get _showContent => !_isLoading && _exchangeLoaded && _reviewLoaded;
 
+  // 서버에 저장된 내 닉네임 (같으면 규칙 이전 닉네임도 저장 허용, 타인 프로필 > null)
+  String? get _savedNickname => _isMyProfile ? ref.read(memberProfileProvider).valueOrNull?.member?.nickname : null;
+
   // 표시 데이터 (타인 분기는 로컬 state, 본인 분기는 provider에서 파생)
   String _accountStatus = '';
   String _nickname = '';
@@ -189,7 +192,7 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   /// 내 프로필 저장 — provider.updateProfile 경유로 캐시 자동 갱신
   Future<void> _handleSave() async {
     if (_isSaving) return;
-    if (!_isProfileEdited || findNicknameInputError(_nickname) != null) return;
+    if (!_isProfileEdited || findNicknameInputError(_nickname, savedNickname: _savedNickname) != null) return;
 
     setState(() => _isSaving = true);
     try {
@@ -313,7 +316,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
                             child: Text(
                               '저장',
                               style: CustomTextStyles.h2.copyWith(
-                                color: _isProfileEdited && findNicknameInputError(_nickname) == null
+                                color:
+                                    _isProfileEdited &&
+                                        findNicknameInputError(_nickname, savedNickname: _savedNickname) == null
                                     ? AppColors.primaryYellow
                                     : AppColors.secondaryBlack2,
                               ),
@@ -345,6 +350,7 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
             ProfileOverviewSection(
               isEditable: _isMyProfile,
               nickname: _nickname,
+              savedNickname: _savedNickname,
               imageUrl: _profileUrl,
               location: _location,
               receivedLikes: _totalLikeCount,

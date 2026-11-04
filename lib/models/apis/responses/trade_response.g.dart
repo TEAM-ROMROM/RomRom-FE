@@ -21,6 +21,9 @@ TradeResponse _$TradeResponseFromJson(Map<String, dynamic> json) => TradeRespons
   tradeReviewStats: json['tradeReviewStats'] == null
       ? null
       : TradeReviewStats.fromJson(json['tradeReviewStats'] as Map<String, dynamic>),
+  ongoingTradeRequestHistories: json['ongoingTradeRequestHistories'] == null
+      ? const []
+      : _tradeHistoryListFromJson(json['ongoingTradeRequestHistories']),
 );
 
 Map<String, dynamic> _$TradeResponseToJson(TradeResponse instance) => <String, dynamic>{
@@ -30,6 +33,7 @@ Map<String, dynamic> _$TradeResponseToJson(TradeResponse instance) => <String, d
   'tradeRequestHistoryExists': instance.tradeRequestHistoryExists,
   'tradeReviewPage': instance.tradeReviewPage?.toJson(),
   'tradeReviewStats': instance.tradeReviewStats?.toJson(),
+  'ongoingTradeRequestHistories': _tradeHistoryListToJson(instance.ongoingTradeRequestHistories),
 };
 
 TradeRequestHistory _$TradeRequestHistoryFromJson(Map<String, dynamic> json) => TradeRequestHistory(
@@ -40,6 +44,10 @@ TradeRequestHistory _$TradeRequestHistoryFromJson(Map<String, dynamic> json) => 
   tradeStatus: json['tradeStatus'] as String?,
   isNew: json['isNew'] as bool?,
   chatRoomId: json['chatRoomId'] as String?,
+  extraChargeAmount: (json['extraChargeAmount'] as num?)?.toInt(),
+  requestMessage: json['requestMessage'] as String?,
+  checkedAt: json['checkedAt'] == null ? null : DateTime.parse(json['checkedAt'] as String),
+  rejectedAt: json['rejectedAt'] == null ? null : DateTime.parse(json['rejectedAt'] as String),
   createdDate: json['createdDate'] == null ? null : DateTime.parse(json['createdDate'] as String),
   updatedDate: json['updatedDate'] == null ? null : DateTime.parse(json['updatedDate'] as String),
 );
@@ -54,6 +62,10 @@ Map<String, dynamic> _$TradeRequestHistoryToJson(TradeRequestHistory instance) =
   'tradeStatus': instance.tradeStatus,
   'isNew': instance.isNew,
   'chatRoomId': instance.chatRoomId,
+  'extraChargeAmount': instance.extraChargeAmount,
+  'requestMessage': instance.requestMessage,
+  'checkedAt': instance.checkedAt?.toIso8601String(),
+  'rejectedAt': instance.rejectedAt?.toIso8601String(),
 };
 
 PagedTradeRequestHistory _$PagedTradeRequestHistoryFromJson(Map<String, dynamic> json) => PagedTradeRequestHistory(

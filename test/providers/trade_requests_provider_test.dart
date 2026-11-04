@@ -38,6 +38,8 @@ class FakeTradeRepository implements TradeRepository {
   String? lastTakeItemId;
   String? lastGiveItemId;
   List<String>? lastItemTradeOptions;
+  int? lastExtraChargeAmount;
+  String? lastRequestMessage;
 
   // 받은 요청: 카드 ID별 응답, 지연 응답, 호출 기록 (카드 ID·정렬)
   Map<String, List<TradeRequestHistory>> receivedByTakeItemId = {};
@@ -79,12 +81,16 @@ class FakeTradeRepository implements TradeRepository {
     required String? takeItemId,
     required String? giveItemId,
     required List<String> itemTradeOptions,
+    int? extraChargeAmount,
+    String? requestMessage,
   }) async {
     requestTradeCallCount++;
     if (shouldFailRequestTrade) throw Exception('request failed');
     lastTakeItemId = takeItemId;
     lastGiveItemId = giveItemId;
     lastItemTradeOptions = itemTradeOptions;
+    lastExtraChargeAmount = extraChargeAmount;
+    lastRequestMessage = requestMessage;
   }
 
   @override
@@ -228,6 +234,23 @@ void main() {
       expect(fakeRepository.lastTakeItemId, 'take');
       expect(fakeRepository.lastGiveItemId, 'give');
       expect(fakeRepository.lastItemTradeOptions, ['DIRECT_ONLY']);
+      expect(fakeRepository.lastExtraChargeAmount, isNull);
+      expect(fakeRepository.lastRequestMessage, isNull);
+    });
+
+    test('추가금·한 줄 메시지 그대로 저장소 전달 (#1005)', () async {
+      await container.read(tradeRequestsProvider.future);
+
+      await readNotifier().sendRequest(
+        takeItemId: 'take',
+        giveItemId: 'give',
+        itemTradeOptions: const ['EXTRA_CHARGE'],
+        extraChargeAmount: 5000,
+        requestMessage: '주말 가능해요',
+      );
+
+      expect(fakeRepository.lastExtraChargeAmount, 5000);
+      expect(fakeRepository.lastRequestMessage, '주말 가능해요');
     });
 
     test('실패 시 예외 전달 + 상태 변경 없음', () async {

@@ -1,5 +1,6 @@
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/item_search_query.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/services/apis/item_api.dart';
@@ -56,6 +57,27 @@ class ItemRepository {
   Future<List<Item>> getLikedItems({required int pageNumber, required int pageSize}) async {
     final res = await _api.getLikeList(ItemRequest(pageNumber: pageNumber, pageSize: pageSize));
     return res.itemPage?.content ?? <Item>[];
+  }
+
+  /// 물품 검색 한 페이지 + 다음 페이지 여부 (서버 전체 페이지 수 기준, 없으면 받은 개수 = 페이지 크기) (#1008)
+  Future<({List<Item> items, bool hasMore})> searchItemsPage(
+    ItemSearchQuery searchQuery, {
+    required int pageNumber,
+    required int pageSize,
+  }) async {
+    final searchResponse = await _api.searchItems(
+      ItemRequest(
+        searchKeyword: searchQuery.keyword,
+        searchItemCategories: searchQuery.categories.map((category) => category.serverName).toList(),
+        searchSortField: searchQuery.sortField.serverName,
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+      ),
+    );
+    final items = searchResponse.itemPage?.content ?? const <Item>[];
+    final totalPages = searchResponse.itemPage?.page?.totalPages ?? searchResponse.itemPage?.totalPages;
+    final hasMore = totalPages != null ? pageNumber + 1 < totalPages : items.length >= pageSize;
+    return (items: items, hasMore: hasMore);
   }
 
   /// 타인 회원의 등록 물품 목록 조회 (프로필 교환 물건)

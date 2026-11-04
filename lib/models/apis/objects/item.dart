@@ -23,6 +23,9 @@ class Item extends BaseEntity {
   final double? latitude;
   final bool? isAiPredictedPrice;
 
+  /// 희망 교환 카테고리 서버 이름 목록 (0~3개, 구버전 서버·미설정 > null 또는 빈 목록) (#1008)
+  final List<String>? wantedItemCategories;
+
   /// 우선노출(롬업) 종료 시각 (노출 이력 없으면 null)
   final DateTime? promotionExpiresAt;
 
@@ -31,6 +34,9 @@ class Item extends BaseEntity {
 
   /// 현재 회원 좋아요 여부 (피드 목록·상세 응답, 구버전 서버 > null)
   final bool? isLiked;
+
+  /// 예약중 여부 (채팅이 시작된 진행 중 거래 있음, 구버전 서버 > null)
+  final bool? isReserved;
 
   @JsonKey(includeFromJson: true)
   String? address;
@@ -52,9 +58,11 @@ class Item extends BaseEntity {
     this.longitude,
     this.latitude,
     this.isAiPredictedPrice,
+    this.wantedItemCategories,
     this.promotionExpiresAt,
     this.isPromoted,
     this.isLiked,
+    this.isReserved,
     this.address, // 선택적 주입 가능
   });
 

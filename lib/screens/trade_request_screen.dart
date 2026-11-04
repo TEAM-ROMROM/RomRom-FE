@@ -9,7 +9,6 @@ import 'package:romrom_fe/enums/navigation_tab_items.dart';
 import 'package:romrom_fe/enums/trade_request_existence_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/request_management_item_card.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
@@ -19,11 +18,11 @@ import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/location_verification_gate.dart';
+import 'package:romrom_fe/utils/trade_request_input_rules.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/notification_permission_prompt_modal.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
-import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/request_management/request_page_indicator.dart';
 import 'package:romrom_fe/widgets/request_management_item_card_widget.dart';
@@ -32,6 +31,8 @@ import 'package:romrom_fe/widgets/trade_request_existence_notice.dart';
 import 'package:romrom_fe/widgets/trade_request_target_preview.dart';
 import 'package:romrom_fe/widgets/trade_request_text_action_button.dart';
 import 'package:romrom_fe/widgets/trade_request_trade_option_selector.dart';
+import 'package:romrom_fe/widgets/trade_request/trade_request_empty_my_items.dart';
+import 'package:romrom_fe/widgets/trade_request/trade_request_extra_inputs.dart';
 
 /// 요청하기 화면
 /// 내 물품 카드 선택 후 거래방식을 선택하여 요청을 전송하는 화면
@@ -88,6 +89,10 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
   /// 선택된 거래 옵션들
   final Set<ItemTradeOption> _selectedTradeOptions = {};
 
+  // 추가금 금액·한 줄 메시지 입력 (선택, #1005)
+  final TextEditingController _extraChargeAmountController = TextEditingController();
+  final TextEditingController _requestMessageController = TextEditingController();
+
   /// API 요청 진행 중 여부
   bool _isSubmitting = false;
 
@@ -107,6 +112,8 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _extraChargeAmountController.dispose();
+    _requestMessageController.dispose();
     super.dispose();
   }
 
@@ -252,10 +259,18 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  /// 거래 요청: 교환 방식 확인 > 요청 전송 > 알림 권한 1회 안내 > 화면 닫기
+  /// 거래 요청: 교환 방식·추가금 확인 > 요청 전송 > 알림 권한 1회 안내 > 화면 닫기
   Future<void> _submitTradeRequest() async {
     if (_selectedTradeOptions.isEmpty) {
       CommonSnackBar.show(context: context, message: '교환 방식을 선택해주세요.', type: SnackBarType.info);
+      return;
+    }
+    final extraChargeAmount = parseTradeExtraChargeAmount(
+      selectedOptions: _selectedTradeOptions,
+      amountText: _extraChargeAmountController.text,
+    );
+    if (!isTradeExtraChargeAmountValid(extraChargeAmount)) {
+      CommonSnackBar.show(context: context, message: '추가금은 최대 1,000만 원까지 입력할 수 있어요.', type: SnackBarType.info);
       return;
     }
 
@@ -268,6 +283,8 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
             takeItemId: widget.targetItem.itemId,
             giveItemId: _myItems[_selectedCardIndex].itemId,
             itemTradeOptions: _selectedTradeOptions.map((o) => o.serverName).toList(),
+            extraChargeAmount: extraChargeAmount,
+            requestMessage: normalizeTradeRequestMessage(_requestMessageController.text),
           );
 
       if (!mounted) return;
@@ -306,7 +323,8 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      // 추가금·메시지 입력 시 키보드만큼 줄이고 스크롤 (#1005)
+      resizeToAvoidBottomInset: true,
       extendBodyBehindAppBar: true,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       appBar: const CommonAppBar(title: '요청하기'),
@@ -336,44 +354,8 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
                   child: _isLoading
                       ? const Center(child: CommonLoadingIndicator())
                       : _myItemCards.isEmpty
-                      ? _buildEmptyState()
+                      ? TradeRequestEmptyMyItems(onBackPressed: () => Navigator.pop(context))
                       : _buildTradeRequestStep(),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 빈 상태 UI (내 물품이 없을 때)
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.inventory_2_outlined, size: 64.sp, color: AppColors.opacity50White),
-                SizedBox(height: 16.h),
-                Text('등록된 물품이 없습니다', style: CustomTextStyles.h2.copyWith(color: AppColors.opacity80White)),
-                SizedBox(height: 8.h),
-                Text(
-                  '교환 요청을 하려면 먼저\n물품을 등록해주세요.',
-                  style: CustomTextStyles.p1.copyWith(color: AppColors.opacity50White, height: 1.2),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 24.h),
-                CustomFloatingButton(
-                  isEnabled: true,
-                  enabledOnPressed: () => Navigator.pop(context),
-                  buttonText: '돌아가기',
-                  buttonWidth: 120,
-                  buttonHeight: 44,
                 ),
               ],
             ),
@@ -387,7 +369,8 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
   Widget _buildTradeRequestStep() {
     final bool isRequestDisabled = _isSubmitting || _existenceStatus != TradeRequestExistenceStatus.notRequested;
 
-    return Padding(
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.symmetric(horizontal: 24.0.w),
       child: Column(
         children: [
@@ -462,6 +445,8 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
             onCancel: () => Navigator.pop(context),
             onRequest: _submitTradeRequest,
           ),
+          // 스크롤 끝 여백 (하단 홈 인디케이터와 버튼 간격)
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
         ],
       ),
     );
@@ -488,15 +473,25 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
           onActionTap: () => _checkTradeRequestExistence(_selectedCardIndex),
         );
       case TradeRequestExistenceStatus.notRequested:
-        return TradeRequestTradeOptionSelector(
-          selectedOptions: _selectedTradeOptions,
-          onChanged: (next) {
-            setState(() {
-              _selectedTradeOptions
-                ..clear()
-                ..addAll(next);
-            });
-          },
+        return Column(
+          children: [
+            TradeRequestTradeOptionSelector(
+              selectedOptions: _selectedTradeOptions,
+              onChanged: (next) {
+                setState(() {
+                  _selectedTradeOptions
+                    ..clear()
+                    ..addAll(next);
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            TradeRequestExtraInputs(
+              isExtraChargeSelected: _selectedTradeOptions.contains(ItemTradeOption.additionalPrice),
+              extraChargeAmountController: _extraChargeAmountController,
+              requestMessageController: _requestMessageController,
+            ),
+          ],
         );
     }
   }

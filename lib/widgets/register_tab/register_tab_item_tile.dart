@@ -1,8 +1,7 @@
 // 등록 탭 내 물품 한 줄: 썸네일(Hero), 이름·등록 시각·가격·좋아요 수, 거래 상태 태그, 더보기 메뉴(상태 변경·수정·삭제)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:romrom_fe/enums/item_status.dart';
-import 'package:romrom_fe/enums/trade_status.dart';
+import 'package:romrom_fe/widgets/common/item_trade_state_tag.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -12,7 +11,6 @@ import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
-import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 
 /// 등록 탭 물품 행: 물품 요약 표시, 탭·메뉴 동작은 화면 콜백으로 전달
 class RegisterTabItemTile extends StatelessWidget {
@@ -92,13 +90,7 @@ class RegisterTabItemTile extends StatelessWidget {
             ],
           ),
         ),
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: TradeStatusTagWidget(
-            status: item.itemStatus == ItemStatus.exchanged.serverName ? TradeStatus.traded : TradeStatus.pending,
-          ),
-        ),
+        Positioned(right: 0, bottom: 0, child: ItemTradeStateTag(item: item)),
         Positioned(
           top: 0,
           right: 0,

@@ -22,6 +22,10 @@ class ChatRoomResponse {
   final ChatActionRecommendation? latestRecommendation;
   // 내가 이 거래 후기를 썼는지 (messages/get 응답만, 구버전 서버 > null)
   final bool? isReviewWrittenByMe;
+  // 내 방별 알림 끄기 상태 (messages/get·notification-mute/update 응답)
+  final bool? isNotificationMuted;
+  // 변경된 메시지 1건 (메시지 삭제·약속 제안·수락·취소 응답)
+  final ChatMessage? chatMessage;
 
   ChatRoomResponse({
     this.chatRoom,
@@ -31,6 +35,8 @@ class ChatRoomResponse {
     this.opponentState,
     this.latestRecommendation,
     this.isReviewWrittenByMe,
+    this.isNotificationMuted,
+    this.chatMessage,
   });
 
   factory ChatRoomResponse.fromJson(Map<String, dynamic> json) => _$ChatRoomResponseFromJson(json);

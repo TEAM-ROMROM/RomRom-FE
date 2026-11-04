@@ -26,7 +26,7 @@ class TradeRepository {
     return response.content;
   }
 
-  /// 특정 카드(giveItemId)의 보낸 거래 요청 목록 조회 (정렬 기준 포함)
+  /// 특정 카드(giveItemId)의 보낸 거래 요청 목록 조회 (정렬 기준 포함, 거절 건 포함)
   Future<List<TradeRequestHistory>> getSent({
     required String giveItemId,
     RequestSortType sortType = RequestSortType.latest,
@@ -36,6 +36,7 @@ class TradeRepository {
         giveItemId: giveItemId,
         sortField: sortType.serverSortField,
         sortDirection: sortType.serverDirection,
+        includeRejected: true,
       ),
     );
     return response.content;
@@ -87,14 +88,22 @@ class TradeRepository {
     return _api.checkTradeRequestExistence(TradeRequest(takeItemId: takeItemId, giveItemId: giveItemId));
   }
 
-  /// 교환 요청 전송 (거래 방식 serverName 목록 포함)
+  /// 교환 요청 전송 (거래 방식 serverName 목록 + 선택 추가금·한 줄 메시지)
   Future<void> requestTrade({
     required String? takeItemId,
     required String? giveItemId,
     required List<String> itemTradeOptions,
+    int? extraChargeAmount,
+    String? requestMessage,
   }) {
     return _api.requestTrade(
-      TradeRequest(takeItemId: takeItemId, giveItemId: giveItemId, itemTradeOptions: itemTradeOptions),
+      TradeRequest(
+        takeItemId: takeItemId,
+        giveItemId: giveItemId,
+        itemTradeOptions: itemTradeOptions,
+        extraChargeAmount: extraChargeAmount,
+        requestMessage: requestMessage,
+      ),
     );
   }
 

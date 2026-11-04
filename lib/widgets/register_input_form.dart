@@ -15,6 +15,7 @@ import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/models/item_wanted_category_policy.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/models/register_form_snapshot.dart';
 import 'package:romrom_fe/models/user_info.dart';
@@ -28,12 +29,14 @@ import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completion_button.dart';
+import 'package:romrom_fe/widgets/common/item_category_multi_select_bottom_sheet.dart';
 import 'package:romrom_fe/screens/item_price_input_screen.dart';
 import 'package:romrom_fe/widgets/register_input_form/register_category_bottom_sheet.dart';
 import 'package:romrom_fe/widgets/register_input_form/register_category_field.dart';
 import 'package:romrom_fe/widgets/register_input_form/register_image_picker_section.dart';
 import 'package:romrom_fe/widgets/register_input_form/register_option_selector.dart';
 import 'package:romrom_fe/widgets/register_input_form/register_price_suffix_icon.dart';
+import 'package:romrom_fe/widgets/register_input_form/register_wanted_category_field.dart';
 import 'package:romrom_fe/widgets/register_text_field.dart';
 import 'package:romrom_fe/widgets/skeletons/register_input_form_skeleton.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +52,7 @@ import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
 part 'register_input_form/register_input_form_image_selection.dart';
 part 'register_input_form/register_input_form_submission.dart';
 part 'register_input_form/register_input_form_unsaved_changes.dart';
+part 'register_input_form/register_input_form_field_handlers.dart';
 
 /// 물품 등록 입력 폼 위젯
 /// 물품 등록 화면에서 사용되는 입력 폼 위젯
@@ -76,6 +80,8 @@ class RegisterInputForm extends ConsumerStatefulWidget {
 abstract class _RegisterInputFormStateFields extends ConsumerState<RegisterInputForm> {
   // 임시 상태 변수들
   ItemCategories? selectedCategory;
+  // 희망 교환 카테고리 (선택 순서 유지, 0~3개, 비면 상관없음)
+  List<ItemCategories> selectedWantedCategories = [];
   ItemCondition? selectedCondition;
   List<ItemCondition> selectedItemConditionTypes = [];
   List<ItemTradeOption> selectedTradeOptions = [];
@@ -175,9 +181,13 @@ abstract class _RegisterInputFormStateFields extends ConsumerState<RegisterInput
   }
 }
 
-/// 물품 등록 폼: 수명주기·초기값·필드 입력 처리·화면 구성 (로직 mixin 3개: 사진 선택, 제출, 이탈 경고 스냅샷)
+/// 물품 등록 폼: 수명주기·초기값·화면 구성 (로직 mixin 4개: 사진 선택, 제출, 이탈 경고 스냅샷, 필드 입력 처리)
 class _RegisterInputFormState extends _RegisterInputFormStateFields
-    with _RegisterInputFormImageSelection, _RegisterInputFormSubmission, _RegisterInputFormUnsavedChanges {
+    with
+        _RegisterInputFormImageSelection,
+        _RegisterInputFormSubmission,
+        _RegisterInputFormUnsavedChanges,
+        _RegisterInputFormFieldHandlers {
   Future<void> _initControllers() async {
     // 수정 모드에서 초기화
     if (widget.isEditMode && widget.item != null) {
@@ -204,6 +214,7 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
       priceController.value = formatted;
 
       selectedCategory = ItemCategories.fromServerName(item?.itemCategory);
+      selectedWantedCategories = ItemCategories.fromServerNamesSkippingUnknown(item?.wantedItemCategories);
       selectedItemConditionTypes = [?ItemCondition.fromServerName(item?.itemCondition)];
       selectedTradeOptions = ItemTradeOption.fromServerNamesSkippingUnknown(item?.itemTradeOptions);
       // 수정 모드에서는 이미 선택된 값이 있으므로 touched 상태로 설정
@@ -277,103 +288,6 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
     super.dispose();
   }
 
-  bool get canUseAiPrice {
-    return titleController.text.isNotEmpty &&
-        descriptionController.text.isNotEmpty &&
-        selectedItemConditionTypes.isNotEmpty;
-  }
-
-  /// 카테고리 칸 탭 > 선택 바텀시트 > 고른 값 반영
-  Future<void> _onCategoryFieldTap() async {
-    setState(() {
-      _hasCategoryBeenTouched = true;
-    });
-    final ItemCategories? pickedCategory = await RegisterCategoryBottomSheet.show(
-      context: context,
-      selectedCategory: selectedCategory,
-    );
-    setState(() {
-      selectedCategory = pickedCategory;
-    });
-  }
-
-  /// 사용감 칩 탭 > 단일 선택 (이미 고른 칩이면 해제) > AI 가격 기준 바뀌면 AI 표시 해제
-  void _onConditionOptionTap(ItemCondition option) {
-    final newList = <ItemCondition>[];
-    if (!selectedItemConditionTypes.contains(option)) newList.add(option);
-    setState(() {
-      _hasConditionBeenTouched = true;
-      selectedItemConditionTypes = newList;
-      _clearAiPriceIfBasisChanged();
-    });
-  }
-
-  /// 거래 방식 칩 탭 > 복수 선택 토글
-  void _onTradeOptionTap(ItemTradeOption option) {
-    final newList = List<ItemTradeOption>.from(selectedTradeOptions);
-    if (newList.contains(option)) {
-      newList.remove(option);
-    } else {
-      newList.add(option);
-    }
-    setState(() {
-      _hasTradeOptionBeenTouched = true;
-      selectedTradeOptions = newList;
-    });
-  }
-
-  /// 가격 칸 탭 > 가격 입력 화면 (AI 추천 가능 여부 전달) > 고른 가격·AI 사용 여부·AI 측정 기준 반영
-  Future<void> _openPriceInputScreen() async {
-    final initialPrice = int.tryParse(priceController.text.replaceAll(',', '')) ?? 0;
-    // 가격 화면에 보낸 입력 = AI 측정 기준
-    final priceInputBasis = AiPriceBasis(
-      itemName: titleController.text,
-      itemDescription: descriptionController.text,
-      itemCondition: _selectedConditionServerName,
-    );
-    await context.navigateTo(
-      type: NavigationTypes.slideUp,
-      screen: ItemPriceInputScreen(
-        initialPrice: initialPrice,
-        initialUseAiPrice: useAiPrice,
-        canUseAiPrice: canUseAiPrice,
-        itemName: priceInputBasis.itemName,
-        itemDescription: priceInputBasis.itemDescription,
-        itemCondition: priceInputBasis.itemCondition,
-        onPriceSelected: (price, aiUsed) {
-          if (mounted) {
-            setState(() {
-              useAiPrice = aiUsed;
-              _aiPriceBasis = aiUsed ? priceInputBasis : null;
-              priceController.value = const PriceCommaFormatter().formatEditUpdate(
-                const TextEditingValue(),
-                TextEditingValue(text: price.toString()),
-              );
-            });
-          }
-        },
-      ),
-    );
-  }
-
-  /// 위치 칸 탭 > 위치 선택 화면 > 주소 문구·좌표 반영
-  Future<void> _openLocationScreen() async {
-    await context.navigateTo<LocationAddress>(
-      screen: ItemRegisterLocationScreen(
-        initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
-        onLocationSelected: (address) {
-          setState(() {
-            locationController.text = address.siDoSiGunGuEupMyoenDongText;
-            // 위치 좌표·행정구역 저장 (행정구역은 등록·수정 요청으로 서버 주소 저장)
-            _selectedAddress = address;
-            _latitude = address.latitude;
-            _longitude = address.longitude;
-          });
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     _reportUnsavedChangesAfterFrame();
@@ -426,6 +340,15 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
                     selectedCategory: selectedCategory,
                     shouldShowError: _hasCategoryBeenTouched || _forceValidateAll,
                     onTap: _onCategoryFieldTap,
+                  ),
+                ),
+
+                // 희망 교환 카테고리 필드 (선택)
+                RegisterCustomLabeledField(
+                  label: '$wantedItemCategoryTitle (선택)',
+                  field: RegisterWantedCategoryField(
+                    selectedCategories: selectedWantedCategories,
+                    onTap: _onWantedCategoryFieldTap,
                   ),
                 ),
 

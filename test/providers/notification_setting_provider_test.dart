@@ -9,6 +9,7 @@ import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/repositories/member_repository.dart';
 import 'package:romrom_fe/repositories/notification_setting_repository.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/states/do_not_disturb_setting_state.dart';
 
 class FakeNotificationSettingRepository implements NotificationSettingRepository {
   bool shouldThrow = false;
@@ -26,6 +27,12 @@ class FakeNotificationSettingRepository implements NotificationSettingRepository
   Future<void> updateAll(Map<NotificationSettingType, bool> values) async {
     updateAllCallCount++;
     lastUpdateAllValues = values;
+    if (shouldThrow) throw Exception('boom');
+  }
+
+  @override
+  Future<void> updateDoNotDisturb(DoNotDisturbSettingState setting) async {
+    callCount++;
     if (shouldThrow) throw Exception('boom');
   }
 }

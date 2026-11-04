@@ -130,15 +130,15 @@ class NotificationItemWidget extends StatelessWidget {
           child: RomRomContextMenu(
             customTrigger: Icon(AppIcons.dotsVerticalDefault, size: 24.sp, color: AppColors.textColorWhite),
             items: [
-              ContextMenuItem(
-                id: 'mute',
-                icon: isMuted ? AppIcons.alert : AppIcons.alertOff,
-                title: isMuted ? '알림 켜기' : '알림 끄기',
-                onTap: () {
-                  if (onMuteTap != null) onMuteTap!();
-                },
-                showDividerAfter: true,
-              ),
+              // 끄기·켜기: 대응 설정 있는 유형만 (onMuteTap 없으면 숨김)
+              if (onMuteTap != null)
+                ContextMenuItem(
+                  id: 'mute',
+                  icon: isMuted ? AppIcons.alert : AppIcons.alertOff,
+                  title: isMuted ? '알림 켜기' : '알림 끄기',
+                  onTap: () => onMuteTap?.call(),
+                  showDividerAfter: true,
+                ),
               ContextMenuItem(
                 id: 'delete',
                 icon: AppIcons.trash,

@@ -1,3 +1,6 @@
+import 'package:romrom_fe/models/item_wanted_category_policy.dart';
+import 'package:romrom_fe/utils/nickname_rules.dart';
+
 enum ErrorCode {
   internalServerError(code: 'INTERNAL_SERVER_ERROR', koMessage: '서버에 문제가 발생했습니다.'),
   invalidRequest(code: 'INVALID_REQUEST', koMessage: '잘못된 요청입니다.'),
@@ -77,6 +80,13 @@ enum ErrorCode {
   tradeCompletionStateMismatch(code: 'TRADE_COMPLETION_STATE_MISMATCH', koMessage: '거래 완료 상태가 맞지 않습니다.'),
   tradeCompletionRequestForbidden(code: 'TRADE_COMPLETION_REQUEST_FORBIDDEN', koMessage: '거래 완료 요청 권한이 없습니다.'),
 
+  // TRADE REQUEST 추가금·한 줄 메시지 (#1005)
+  invalidTradeExtraChargeAmount(
+    code: 'INVALID_TRADE_EXTRA_CHARGE_AMOUNT',
+    koMessage: '추가금은 0원 이상 10,000,000원 이하로 입력해 주세요.',
+  ),
+  invalidTradeRequestMessage(code: 'INVALID_TRADE_REQUEST_MESSAGE', koMessage: '요청 메시지는 100자 이하의 일반 문자로 입력해 주세요.'),
+
   // CHAT
   cannotSendMessageToDeletedChatroom(
     code: 'CANNOT_SEND_MESSAGE_TO_DELETED_CHATROOM',
@@ -131,6 +141,28 @@ enum ErrorCode {
   // MEMBER LOCATION VERIFICATION (#1004, 서버 스위치 켜짐 시 미인증 회원 등록·교환 요청·채팅방 생성 거부)
   locationNotVerified(code: 'LOCATION_NOT_VERIFIED', koMessage: '동네 인증이 필요합니다.'),
   invalidLocationVerification(code: 'INVALID_LOCATION_VERIFICATION', koMessage: '동네 인증 위치를 다시 확인해 주세요.'),
+  // CHAT 확장: 메시지 삭제·약속·메시지 신고 (#1006)
+  chatMessageNotFound(code: 'CHAT_MESSAGE_NOT_FOUND', koMessage: '메시지를 찾을 수 없습니다.'),
+  chatMessageDeleteNotSender(code: 'CHAT_MESSAGE_DELETE_NOT_SENDER', koMessage: '내가 보낸 메시지만 삭제할 수 있어요.'),
+  chatMessageDeletePeriodExpired(
+    code: 'CHAT_MESSAGE_DELETE_PERIOD_EXPIRED',
+    koMessage: '보낸 지 24시간이 지난 메시지는 삭제할 수 없어요.',
+  ),
+  chatMessageNotDeletable(code: 'CHAT_MESSAGE_NOT_DELETABLE', koMessage: '삭제할 수 없는 메시지입니다.'),
+  invalidChatAppointment(code: 'INVALID_CHAT_APPOINTMENT', koMessage: '약속 일시나 장소를 다시 확인해 주세요.'),
+  chatAppointmentAcceptForbidden(code: 'CHAT_APPOINTMENT_ACCEPT_FORBIDDEN', koMessage: '상대방이 보낸 약속만 수락할 수 있어요.'),
+  chatAppointmentStatusConflict(code: 'CHAT_APPOINTMENT_STATUS_CONFLICT', koMessage: '이미 처리된 약속입니다.'),
+  duplicateChatMessageReport(code: 'DUPLICATE_CHAT_MESSAGE_REPORT', koMessage: '이미 신고한 메시지입니다.'),
+  // ===== 검색·희망 카테고리·탈퇴 사유·닉네임 규칙 (#1008, 서버 #862) =====
+  invalidSearchKeyword(code: 'INVALID_SEARCH_KEYWORD', koMessage: '검색어를 1자 이상 입력해 주세요.'),
+  tooManyWantedItemCategories(
+    code: 'TOO_MANY_WANTED_ITEM_CATEGORIES',
+    koMessage: '희망 교환 카테고리는 최대 $maximumWantedItemCategoryCount개까지 고를 수 있어요.',
+  ),
+  tooLongWithdrawalReasonDetail(code: 'TOO_LONG_WITHDRAWAL_REASON_DETAIL', koMessage: '탈퇴 사유는 500자까지 입력할 수 있어요.'),
+  invalidNicknameLength(code: 'INVALID_NICKNAME_LENGTH', koMessage: nicknameInvalidLengthMessage),
+  invalidNicknameCharacter(code: 'INVALID_NICKNAME_CHARACTER', koMessage: nicknameInvalidCharacterMessage),
+  reservedNickname(code: 'RESERVED_NICKNAME', koMessage: nicknameReservedMessage),
 
   // JSON
   unknown(code: 'UNKNOWN', koMessage: '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');

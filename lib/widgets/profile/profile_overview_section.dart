@@ -32,10 +32,13 @@ class ProfileOverviewSection extends ConsumerStatefulWidget {
   final VoidCallback? onUploadFailed;
   final void Function(String imageUrl)? onImageUploaded;
   final void Function(String nickname)? onNicknameChanged;
+  // 서버에 저장된 닉네임 (입력값과 같으면 규칙 검사 생략, 없으면 null)
+  final String? savedNickname;
 
   const ProfileOverviewSection({
     super.key,
     required this.nickname,
+    this.savedNickname,
     required this.imageUrl,
     required this.location,
     required this.receivedLikes,
@@ -217,7 +220,7 @@ class _ProfileOverviewSectionState extends ConsumerState<ProfileOverviewSection>
   /// 닉네임 섹션 (편집 모드에서는 TextField + 안내·글자 수, 일반 모드에서는 텍스트 + 편집 아이콘)
   Widget _buildNicknameSection() {
     final TextStyle style = CustomTextStyles.h2;
-    final String? nicknameInputError = findNicknameInputError(_nickname);
+    final String? nicknameInputError = findNicknameInputError(_nickname, savedNickname: widget.savedNickname);
 
     if (!widget.isEditable) {
       return Text(_nickname, style: style);

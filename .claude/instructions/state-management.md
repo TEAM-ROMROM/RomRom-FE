@@ -135,6 +135,8 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `itemLikeProvider` | `providers/item_like_provider.dart` | Notifier(토글) | 좋아요 `Map<itemId, ItemLikeState>` |
 | `memberBlockProvider` | `providers/member_block_provider.dart` | Notifier(토글) | 차단 `Set<memberId>` |
 | `notificationSettingProvider` | `providers/notification_setting_provider.dart` | Notifier(토글) | 알림설정 `Map<type, bool>` |
+| `doNotDisturbSettingProvider` | `providers/do_not_disturb_setting_provider.dart` | Notifier(optimistic) | 방해금지 시간 `{isEnabled, startTime, endTime}` (KST, 설정 화면이 회원 정보로 seed, 저장 중 중복 무시·실패 롤백, #1007) |
+| `receivedReviewsRefreshTriggerProvider` | `providers/received_reviews_refresh_trigger_provider.dart` | Notifier(int) | 받은 후기 재조회 신호 (후기 도착 푸시 > 열린 내 프로필 후기 영역 재조회, #1007) |
 | `currentTabIndexProvider` | `providers/current_tab_index_provider.dart` | Notifier(int) | MainScreen 탭 인덱스 (0 홈, 1 요청관리, 2 등록, 3 채팅, 4 마이페이지) |
 | `coachMarkTriggerProvider` | `providers/coach_mark_trigger_provider.dart` | Notifier(bool) | 첫 등록 후 코치마크 일회성 신호 |
 | `sentRequestsFocusTriggerProvider` | `providers/sent_requests_focus_trigger_provider.dart` | Notifier(bool) | 교환 요청 화면 '보낸 요청 보기' > 요청관리 탭 보낸 요청 토글 일회성 신호 |
@@ -142,7 +144,10 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `chatInputDraftProvider` | `providers/chat_input_draft_provider.dart` | Notifier(Map) | 채팅방별 보내지 않은 입력 글 `Map<chatRoomId, text>` — 메모리 보관(기기 저장 안 함), 입력마다 저장·빈 글 삭제, 재진입 시 복원 (#987) |
 | `homePopupProvider` | `providers/home_popup_provider.dart` | Notifier | 홈 공지·이벤트 팝업 `{hasCheckedThisSession, displayedPopup}` — 세션 1회 노출 판정, 다시 보지 않기 저장 (회원 무관 > userScoped 예외) |
 | `locationVerificationProvider` | `providers/location_verification_provider.dart` | AsyncNotifier | GPS 동네 인증 `{record}` (회원 ID·인증 시각·좌표, 로컬 저장) — `isCurrentMemberVerified`(서버 `memberLocation.isLocationVerified` 우선, 구버전 서버·조회 실패 > 로컬 기록), `verifyWithCurrentLocation`·`verifyWithManualSelection`(서버 위치 저장 + 인증 방식 > 기록), `resyncAfterServerRejection`(403 LOCATION_NOT_VERIFIED 후), 다른 회원 기록 = 미인증 (#986, #1004) |
+| `itemSearchProvider` | `providers/item_search_provider.dart` | AsyncNotifier.autoDispose(페이징) | 물품 검색 `{searchQuery, items, nextPageNumber, hasMore, isLoadingMore, hasNextPageError}` — 검색 화면 전용(닫으면 해제), 새 검색마다 세대 증가로 늦은 응답 폐기 (#1008) |
+| `recentSearchKeywordsProvider` | `providers/recent_search_keywords_provider.dart` | AsyncNotifier | 최근 검색어 `List<String>` (최신 순, 최대 10개, 기기·회원별 저장) — 추가·삭제·전체 삭제 (#1008) |
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
+| `recentSearchKeywordRepositoryProvider` | `providers/recent_search_keywords_provider.dart` | Provider | RecentSearchKeywordRepository 주입 (최근 검색어 SharedPreferences, 회원별 키) |
 | `homeFeedRepositoryProvider` | `providers/home_feed_repository_provider.dart` | Provider | HomeFeedRepository 주입 |
 | `imageRepositoryProvider` | `providers/image_repository_provider.dart` | Provider | ImageRepository 주입 (이미지 업로드·삭제 공용) |
 | `memberRepositoryProvider` | `providers/member_repository_provider.dart` | Provider | MemberRepository 주입 (내 정보 조회마다 `UserInfo` 프로필 필드 동기화, 회원 ID·온보딩 플래그 제외) |

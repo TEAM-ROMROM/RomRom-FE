@@ -22,6 +22,7 @@ void main() {
         tester,
         HomeTabTopActions(
           hasUnreadNotification: false,
+          onSearchTap: () {},
           onNotificationTap: () => notificationTapCount++,
           onReportPressed: () {},
         ),
@@ -33,10 +34,32 @@ void main() {
       expect(notificationTapCount, 1);
     });
 
+    testWidgets('검색 아이콘 라벨 > 탭 시 검색 콜백 (#1008)', (tester) async {
+      int searchTapCount = 0;
+      await pumpHomeTabWidget(
+        tester,
+        HomeTabTopActions(
+          hasUnreadNotification: false,
+          onSearchTap: () => searchTapCount++,
+          onNotificationTap: () {},
+          onReportPressed: () {},
+        ),
+      );
+
+      await tester.tap(find.bySemanticsLabel('물품 검색'));
+      await tester.pump();
+      expect(searchTapCount, 1);
+    });
+
     testWidgets('미확인 알림 있음: 배지 아이콘 라벨', (tester) async {
       await pumpHomeTabWidget(
         tester,
-        HomeTabTopActions(hasUnreadNotification: true, onNotificationTap: () {}, onReportPressed: () {}),
+        HomeTabTopActions(
+          hasUnreadNotification: true,
+          onSearchTap: () {},
+          onNotificationTap: () {},
+          onReportPressed: () {},
+        ),
       );
 
       expect(find.bySemanticsLabel('읽지 않은 알림 있음, 알림 목록'), findsOneWidget);
