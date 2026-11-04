@@ -19,18 +19,19 @@ import 'package:romrom_fe/firebase_options.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/pending_deep_link.dart';
+import 'package:romrom_fe/providers/app_version_repository_provider.dart';
 import 'package:romrom_fe/screens/app_update_screen.dart';
 import 'package:romrom_fe/screens/splash_screen.dart';
-import 'package:romrom_fe/services/apis/app_version_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
+import 'package:romrom_fe/services/forced_update_lock.dart';
+import 'package:romrom_fe/services/resume_version_check_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/device_type.dart';
 import 'package:romrom_fe/utils/text_scale_utils.dart';
 import 'package:romrom_fe/utils/user_session_lifecycle.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// 백그라운드에서 알림 설정(최상단에 위치 해야 함)
 @pragma('vm:entry-point')
@@ -98,10 +99,11 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
-  static const String _lastVersionCheckKey = 'last_version_check_timestamp';
-  static const Duration _checkInterval = Duration(hours: 24);
-
   final _appLinks = AppLinks();
+  // 복귀 버전 확인 (repository provider 경유, 진행 중 중복 차단 상태 유지용 단일 인스턴스)
+  late final ResumeVersionCheckService _resumeVersionCheckService = ResumeVersionCheckService(
+    fetchServerUpdateType: ref.read(appVersionRepositoryProvider).fetchServerUpdateType,
+  );
   StreamSubscription<Uri>? _linkSubscription;
 
   @override
@@ -119,8 +121,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     _initFcmInitialMessage();
   }
 
-  /// 루트 navigator 화면 전환 (세션 종료용, 컨텍스트 없음·해제 시 무시)
+  /// 루트 navigator 화면 전환 (세션 종료용, 컨텍스트 없음·해제·강제 업데이트 표시 중 무시)
   void _navigateFromRoot(Widget screen, NavigationTypes type) {
+    if (ForcedUpdateLock.instance.isForcedUpdateShowing) return;
     final navigatorContext = navigatorKey.currentContext;
     if (navigatorContext != null && navigatorContext.mounted) {
       navigatorContext.navigateTo(screen: screen, type: type);
@@ -198,27 +201,17 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     }
   }
 
+  /// 복귀 버전 확인: 주기 경과 시 서버 확인 > 강제 업데이트면 화면 교체 (이미 표시 중이면 생략)
   Future<void> _checkVersionOnResume() async {
+    if (ForcedUpdateLock.instance.isForcedUpdateShowing) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final lastCheckMs = prefs.getInt(_lastVersionCheckKey) ?? 0;
-      final lastCheck = DateTime.fromMillisecondsSinceEpoch(lastCheckMs);
-      final elapsed = DateTime.now().difference(lastCheck);
-
-      if (elapsed < _checkInterval) return; // 24시간 미경과 → 스킵
-
-      final UpdateType updateType = await AppVersionApi().checkUpdateType();
-
-      // 체크 시간 갱신
-      await prefs.setInt(_lastVersionCheckKey, DateTime.now().millisecondsSinceEpoch);
-
-      if (updateType == UpdateType.force) {
-        final context = navigatorKey.currentContext;
-        if (context == null || !context.mounted) return;
-        context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
-      }
-    } catch (e) {
-      debugPrint('[MyApp] 포그라운드 복귀 버전 체크 실패: $e');
+      final UpdateType updateType = await _resumeVersionCheckService.checkIfDue();
+      if (updateType != UpdateType.force) return;
+      final context = navigatorKey.currentContext;
+      if (context == null || !context.mounted) return;
+      await AppUpdateScreen.showForcedUpdate(context);
+    } catch (error) {
+      debugPrint('[app version] resume check failed : $error');
     }
   }
 
