@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_status.dart';
+import 'package:romrom_fe/widgets/common/item_reserved_tag.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -244,7 +245,10 @@ class _ProfileExchangeSectionState extends ConsumerState<ProfileExchangeSection>
                             ),
                             child: Text('거래완료', style: CustomTextStyles.p3.copyWith(fontWeight: FontWeight.w500)),
                           ),
-                        ),
+                        )
+                      // 예약중 물품 (#1005)
+                      else if (item.isReserved == true)
+                        Positioned(bottom: 4.h, right: 4.w, child: const ItemReservedTag()),
                     ],
                   ),
           ),

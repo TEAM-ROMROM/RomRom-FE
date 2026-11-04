@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_status.dart';
+import 'package:romrom_fe/widgets/common/item_trade_state_tag.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
-import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -21,7 +21,6 @@ import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
-import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/widgets/list_native_ad/list_native_ad_cell.dart';
@@ -238,11 +237,7 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
                   Positioned(
                     right: 4.w,
                     bottom: 4.h,
-                    child: TradeStatusTagWidget(
-                      status: item.itemStatus == ItemStatus.exchanged.serverName
-                          ? TradeStatus.traded
-                          : TradeStatus.pending,
-                    ),
+                    child: ItemTradeStateTag(item: item),
                   ),
                 ],
               ),
