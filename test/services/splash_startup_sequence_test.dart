@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/exceptions/api_exception.dart';
+import 'package:romrom_fe/repositories/app_version_repository.dart';
+import 'package:romrom_fe/services/apis/app_version_api.dart';
 import 'package:romrom_fe/services/splash_startup_sequence.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 
@@ -141,6 +143,29 @@ void main() {
     });
   });
 
+  group('버전 확인 제한 시간 (AppVersionRepository 경유)', () {
+    testWidgets('버전 API 무응답 > 5초 후 업데이트 불필요로 통과, 초기 화면 결정 진행', (tester) async {
+      final repository = AppVersionRepository(UnresponsiveAppVersionApi());
+      SplashStartupResult<String>? startupResult;
+
+      unawaited(
+        runSplashStartupSequence<String>(
+          checkUpdateType: repository.checkUpdateType,
+          determineInitialScreen: () async => 'main',
+          isAborted: () => false,
+          minimumSplashDuration: minimumSplashDuration,
+        ).then((result) => startupResult = result),
+      );
+      await tester.pump(AppVersionRepository.versionCheckTimeout - const Duration(milliseconds: 100));
+      expect(startupResult, isNull);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(startupResult?.nextScreen, 'main');
+      expect(startupResult?.isForcedUpdate, isFalse);
+      expect(startupResult?.isRecommendedUpdate, isFalse);
+    });
+  });
+
   group('isRetryableMemberLoadError (토큰 재발급 성공 후 회원 정보 조회 오류)', () {
     test('연결 실패·시간 초과·5xx·408·429 > 다시 시도', () {
       expect(isRetryableMemberLoadError(const SocketException('offline')), isTrue);
@@ -176,4 +201,13 @@ void main() {
 /// 네트워크 오류 대역 (dart:io SocketException 대신 순수 타입)
 class SocketExceptionStub implements Exception {
   const SocketExceptionStub();
+}
+
+/// 응답 없는 버전 API 대역 (서버 지연 상황)
+class UnresponsiveAppVersionApi implements AppVersionApi {
+  @override
+  Future<UpdateType?> fetchUpdateType() => Completer<UpdateType?>().future;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

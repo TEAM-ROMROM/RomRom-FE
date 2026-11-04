@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/models/pending_deep_link.dart';
 import 'package:romrom_fe/screens/item_deleted_screen.dart';
 import 'package:romrom_fe/services/deep_link_gate.dart';
+import 'package:romrom_fe/services/forced_update_lock.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 
@@ -16,7 +17,11 @@ void main() {
     extraData: const {'itemName': '테스트물품', 'deleteReason': '가이드라인 위반'},
   );
 
-  setUp(DeepLinkGate.instance.resetForTest);
+  setUp(() {
+    DeepLinkGate.instance.resetForTest();
+    ForcedUpdateLock.instance.resetForTest();
+  });
+  tearDown(ForcedUpdateLock.instance.resetForTest);
 
   Future<void> pumpRootApp(WidgetTester tester) async {
     useDesignScreenView(tester);
@@ -56,6 +61,26 @@ void main() {
 
     RomRomDeepLinkRouter.onMainScreenEntered();
     DeepLinkGate.instance.leaveMainScreen();
+    await tester.pumpAndSettle();
+    expect(find.byType(ItemDeletedScreen), findsNothing);
+  });
+
+  testWidgets('강제 업데이트 표시 중 수신 (메인 진입 후) > 화면 이동 없음', (tester) async {
+    await pumpRootApp(tester);
+    RomRomDeepLinkRouter.onMainScreenEntered();
+    ForcedUpdateLock.instance.lock();
+
+    RomRomDeepLinkRouter.receive(itemDeletedLink);
+    await tester.pumpAndSettle();
+    expect(find.byType(ItemDeletedScreen), findsNothing);
+  });
+
+  testWidgets('보관 링크 열기 전 강제 업데이트 > 열지 않음', (tester) async {
+    await pumpRootApp(tester);
+    RomRomDeepLinkRouter.receive(itemDeletedLink);
+
+    RomRomDeepLinkRouter.onMainScreenEntered();
+    ForcedUpdateLock.instance.lock();
     await tester.pumpAndSettle();
     expect(find.byType(ItemDeletedScreen), findsNothing);
   });
