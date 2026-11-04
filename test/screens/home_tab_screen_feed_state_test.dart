@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/item_sort_field.dart';
+import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/enums/item_status.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
@@ -17,7 +18,10 @@ import 'package:romrom_fe/repositories/home_feed_repository.dart';
 import 'package:romrom_fe/repositories/item_repository.dart';
 import 'package:romrom_fe/repositories/notification_repository.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
+import 'package:romrom_fe/screens/item_register_screen.dart';
+import 'package:romrom_fe/utils/location_verification_gate.dart';
 import 'package:romrom_fe/widgets/home_feed_item_widget.dart';
+import 'package:romrom_fe/widgets/home_tab/home_tab_register_button.dart';
 
 import '../helpers/pump_design_screen.dart';
 
@@ -84,10 +88,24 @@ class _FailingNotificationRepository implements NotificationRepository {
   dynamic noSuchMethod(Invocation invocation) => Future<Never>.error(Exception('not needed'));
 }
 
+/// 동네 인증 확인 대역: 요청 목적 기록, 결과 지정 (기본 미인증·취소)
+class _RecordingLocationVerificationGate extends LocationVerificationGate {
+  final List<LocationVerificationPurpose> requestedPurposes = [];
+
+  _RecordingLocationVerificationGate(super.ref);
+
+  @override
+  Future<bool> ensureVerified(BuildContext context, {required LocationVerificationPurpose purpose}) async {
+    requestedPurposes.add(purpose);
+    return false;
+  }
+}
+
 Future<ProviderContainer> pumpHomeTab(
   WidgetTester tester, {
   required List<Item> feedItems,
   required ItemRepository itemRepository,
+  List<Override> extraOverrides = const [],
 }) async {
   useDesignScreenView(tester);
   await tester.pumpWidget(
@@ -96,6 +114,7 @@ Future<ProviderContainer> pumpHomeTab(
         homeFeedRepositoryProvider.overrideWithValue(_FirstPageOnlyFeedRepository(feedItems)),
         itemRepositoryProvider.overrideWithValue(itemRepository),
         notificationRepositoryProvider.overrideWithValue(_FailingNotificationRepository()),
+        ...extraOverrides,
       ],
       child: buildDesignScreenApp(home: const Scaffold(body: HomeTabScreen())),
     ),
@@ -199,6 +218,30 @@ void main() {
 
       expect(tester.widget<HomeFeedItemWidget>(find.byType(HomeFeedItemWidget)).hasExchangedItems, false);
       expect(find.text('교환을 시작하려면\n먼저 나의 물품을 등록해 주세요!'), findsOneWidget);
+    });
+  });
+
+  group('HomeTabScreen 동네 인증', () {
+    testWidgets('블러 등록 버튼 > 물품 등록 인증 확인, 미인증·취소 > 등록 화면 미진입 (홈 계속 사용)', (tester) async {
+      late _RecordingLocationVerificationGate recordingGate;
+      await pumpHomeTab(
+        tester,
+        feedItems: [_feedItem('a')],
+        itemRepository: _MyItemsRepository(availableItems: const []),
+        extraOverrides: [
+          locationVerificationGateProvider.overrideWith(
+            (ref) => recordingGate = _RecordingLocationVerificationGate(ref),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byType(HomeTabRegisterButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(recordingGate.requestedPurposes, [LocationVerificationPurpose.itemRegistration]);
+      expect(find.byType(ItemRegisterScreen), findsNothing);
+      expect(find.byType(HomeFeedItemWidget), findsOneWidget);
     });
   });
 }

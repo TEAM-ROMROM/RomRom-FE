@@ -67,12 +67,8 @@ void main() async {
     isGestureMode = true;
   }
 
+  // 알림 권한은 시작 시 요청하지 않음 (교환 요청·물품 등록 성공 직후 안내 후 요청, #986)
   runApp(ProviderScope(child: MyApp(isGestureMode: isGestureMode)));
-
-  // 첫 프레임(스플래시) 이후 알림 권한 요청 1회 (권한 응답이 스플래시 표시를 막지 않게)
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    unawaited(FirebaseService().requestNotificationPermission());
-  });
 }
 
 /// Firebase 메시징 초기화: Firebase 앱 > 백그라운드 핸들러 > 포그라운드 표시 옵션 > 메시지 리스너 (권한 요청 제외)
