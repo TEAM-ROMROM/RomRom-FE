@@ -16,7 +16,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-/// 받은 요청 카드: 요청 물품 이미지·이름, 요청자, 주소·요청 시각, 요청 거래 방식, 거래 상태
+/// 받은 요청 카드: 요청 물품 이미지·이름, 요청자, 주소·요청 시각, 요청 거래 방식·추가금·한 줄 메시지, 거래 상태
 class RequestListItemCardWidget extends StatelessWidget {
   final String imageUrl;
   final String title;

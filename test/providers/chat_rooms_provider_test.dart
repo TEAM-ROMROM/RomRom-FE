@@ -53,14 +53,14 @@ class FakeChatRepository implements ChatRepository {
 
   // 방별 알림 끄기 요청 기록 (방 ID, 요청 값) / 서버 확정 값 (null > 요청 값 그대로)
   final List<(String, bool)> requestedNotificationMutes = [];
-  bool? confirmedNotificationMute;
+  bool? isConfirmedNotificationMuted;
   bool shouldFailNotificationMute = false;
 
   @override
   Future<bool> updateNotificationMute({required String chatRoomId, required bool isNotificationMuted}) async {
     requestedNotificationMutes.add((chatRoomId, isNotificationMuted));
     if (shouldFailNotificationMute) throw Exception('mute failed');
-    return confirmedNotificationMute ?? isNotificationMuted;
+    return isConfirmedNotificationMuted ?? isNotificationMuted;
   }
 
   @override
@@ -287,14 +287,14 @@ void main() {
 
     test('setNotificationMuted는 서버 확정 값으로 해당 방만 갱신하고 확정 값을 반환한다', () async {
       await container.read(chatRoomsProvider.future);
-      fakeRepository.confirmedNotificationMute = true;
+      fakeRepository.isConfirmedNotificationMuted = true;
 
-      final confirmedIsMuted = await container
+      final isConfirmedMuted = await container
           .read(chatRoomsProvider.notifier)
           .setNotificationMuted(chatRoomId: 'a', isNotificationMuted: true);
 
       final rooms = container.read(chatRoomsProvider).valueOrNull!.rooms;
-      expect(confirmedIsMuted, isTrue);
+      expect(isConfirmedMuted, isTrue);
       expect(fakeRepository.requestedNotificationMutes, [('a', true)]);
       expect(rooms.firstWhere((room) => room.chatRoomId == 'a').isNotificationMuted, isTrue);
       expect(rooms.firstWhere((room) => room.chatRoomId == 'b').isNotificationMuted, isNull);

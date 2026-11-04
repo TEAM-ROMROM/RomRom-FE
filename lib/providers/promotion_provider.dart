@@ -38,7 +38,7 @@ class PromotionNotifier extends Notifier<PromotionState> {
     }
   }
 
-  /// 광고 전 사전 자격: 불가 > 사유 결과, 가능·판단 불가(구버전 서버·조회 실패) > null (기존처럼 광고 진행, 서버 활성화가 최종 판정)
+  /// 광고 전 사전 자격: 불가 > 사유 결과, 가능·판단 불가(구버전 서버·조회 실패) > null (광고 진행, 서버 활성화가 최종 판정)
   Future<PromoteResult?> _findIneligibleResult(String itemId) async {
     try {
       final eligibility = await ref.read(promotionRepositoryProvider).getEligibility(itemId);

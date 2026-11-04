@@ -124,7 +124,7 @@ class ChatRoomMessageList extends StatelessWidget {
     );
   }
 
-  /// 메시지 1건: 날짜·안 읽음 구분선 > 간격(구분선 아래 16.h, 같은 발신자·종류 8.h, 그 외 24.h) > 시각 표시 > 교환 요청 버튼 콜백 > 전송 상태 > 메시지 아이템
+  /// 메시지 1건: 날짜·안 읽음 구분선 > 간격(구분선 아래 16.h, 같은 발신자·종류 8.h, 그 외 24.h) > 시각 표시 > 교환 요청 버튼 콜백 > 삭제·신고·약속 콜백 > 전송 상태 > 메시지 아이템
   Widget _buildMessageItem(BuildContext context, int index) {
     final message = messages[index];
     final bool showDateDivider = shouldShowDateDivider(messages: messages, index: index);

@@ -36,7 +36,7 @@ class TradeRepository {
         giveItemId: giveItemId,
         sortField: sortType.serverSortField,
         sortDirection: sortType.serverDirection,
-        includeRejected: true,
+        isRejectedIncluded: true,
       ),
     );
     return response.content;

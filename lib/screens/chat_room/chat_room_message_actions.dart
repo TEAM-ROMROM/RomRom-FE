@@ -37,14 +37,14 @@ mixin _ChatRoomMessageActions on _ChatRoomScreenStateFields, _ChatRoomScrollToBo
     if (_isUpdatingNotificationMute) return;
     _isUpdatingNotificationMute = true;
     try {
-      final bool confirmedIsMuted = await ref
+      final bool isConfirmedMuted = await ref
           .read(chatRoomsProvider.notifier)
           .setNotificationMuted(chatRoomId: widget.chatRoomId, isNotificationMuted: !_isNotificationMuted);
       if (!mounted) return;
-      setState(() => _isNotificationMuted = confirmedIsMuted);
+      setState(() => _isNotificationMuted = isConfirmedMuted);
       CommonSnackBar.show(
         context: context,
-        message: confirmedIsMuted ? '이 채팅방 알림을 껐어요' : '이 채팅방 알림을 켰어요',
+        message: isConfirmedMuted ? '이 채팅방 알림을 껐어요' : '이 채팅방 알림을 켰어요',
         type: SnackBarType.success,
       );
     } catch (error) {

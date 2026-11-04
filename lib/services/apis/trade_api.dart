@@ -106,8 +106,8 @@ class TradeApi {
       'giveItemId': request.giveItemId,
       if (request.sortField != null) 'sortField': request.sortField,
       if (request.sortDirection != null) 'sortDirection': request.sortDirection,
-      // 거절 건 포함 요청 (미전송 시 서버는 기존 목록과 동일하게 제외)
-      if (request.includeRejected != null) 'includeRejected': request.includeRejected.toString(),
+      // 거절 건 포함 요청 (미전송 > 서버 기본값: 거절 건 제외)
+      if (request.isRejectedIncluded != null) 'includeRejected': request.isRejectedIncluded.toString(),
     };
 
     http.Response response = await ApiClient.sendMultipartRequest(

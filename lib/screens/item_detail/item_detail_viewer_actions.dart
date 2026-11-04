@@ -59,7 +59,7 @@ mixin _ItemDetailViewerActions on _ItemDetailDescriptionScreenStateFields {
     ref.read(itemLikeProvider.notifier).toggle(id, authorMemberId: item?.member?.memberId);
   }
 
-  /// 채팅하기(받은 요청 수락 = 거래 시작): 진행 중이면 무시 > GPS 동네 인증 > 채팅방 생성 > 목록 갱신 > 채팅방 이동
+  /// 채팅하기(받은 요청 수락 = 거래 시작): 진행 중이면 무시 > GPS 동네 인증 > 채팅방 생성 > 목록 갱신 > 채팅방 이동 (서버 인증 거부 > 인증 안내)
   Future<void> _handleChatButtonPressed() async {
     if (_isChatCreationInProgress) return;
     if (item == null || widget.tradeRequestHistoryId == null) {

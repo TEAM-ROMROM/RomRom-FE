@@ -199,9 +199,9 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     unawaited(_loadSent());
   }
 
-  /// 보낸 요청의 채팅방 ID: 서버 응답 chatRoomId 우선
-  /// 없으면(구버전 서버) 내 물품 채팅방 목록 > 내가 보낸 방 + 상대 회원 일치 > 상대 물품 대표 이미지 일치
-  /// (못 찾거나 구분 불가 > null, 조회 실패 시 예외 전달, 이미지 있으면 방 1개여도 이미지 일치 필수, 없으면 방 1개일 때만)
+  /// 보낸 요청의 채팅방 ID 찾기: 서버 응답 chatRoomId 우선, 없으면 내 물품 채팅방 목록 > 내가 보낸 방 + 상대 회원 일치 > 상대 물품 대표 이미지 일치
+  /// (서버 채팅방 생성은 요청 받은 사람만 가능 > 보낸 사람은 목록에서 찾음, 못 찾거나 구분 불가 > null, 조회 실패 시 예외 전달)
+  /// 이미지 있으면 방 1개여도 이미지 일치 필수 (같은 상대의 다른 요청 방 열기 방지), 이미지 없으면 방 1개일 때만
   Future<String?> findChatRoomIdOfSentRequest(TradeRequestHistory request) async {
     final serverChatRoomId = request.chatRoomId;
     if (serverChatRoomId != null && serverChatRoomId.isNotEmpty) return serverChatRoomId;

@@ -406,7 +406,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     );
   }
 
-  /// 메시지 목록 (날짜·안 읽음 구분선, 전송 상태, 교환 요청 버튼)
+  /// 메시지 목록 (날짜·안 읽음 구분선, 전송 상태, 교환 요청 버튼, 메시지 삭제·신고, 약속 수락·취소)
   Widget _buildMessageList() {
     return ChatRoomMessageList(
       messages: _messages,

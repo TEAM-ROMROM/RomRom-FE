@@ -79,7 +79,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
     }
   }
 
-  /// 서버에서 현재 알림 설정 값 로딩 (실패 시 다시 시도 화면)
+  /// 서버에서 현재 알림 설정 값·방해금지 시간 로딩 (실패 시 다시 시도 화면)
   Future<void> _loadNotificationSettings() async {
     try {
       final memberProfile = await ref.read(memberProfileProvider.notifier).fetchLatest();
@@ -127,7 +127,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
     );
   }
 
-  /// 본문: 로딩 > 스켈레톤, 실패 > 다시 시도, 그 외 > 권한 배너 + 설정 그룹
+  /// 본문: 로딩 > 스켈레톤, 실패 > 다시 시도, 그 외 > 권한 배너 + 설정 그룹 + 방해금지 시간
   Widget _buildBody() {
     if (_isLoading) return const NotificationSettingsSkeleton();
     if (_hasLoadError) {

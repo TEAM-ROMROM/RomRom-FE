@@ -37,9 +37,13 @@ class ItemSearchResultList extends StatelessWidget {
         separatorBuilder: (_, _) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
         itemBuilder: (context, index) {
           if (index == items.length) return _buildNextPageFooter();
-          final item = items[index];
-          final heroTag = toHeroTag(item);
-          return ItemSearchResultTile(item: item, heroTag: heroTag, onTap: () => onItemTap(item, heroTag));
+          final searchResultItem = items[index];
+          final heroTag = toHeroTag(searchResultItem);
+          return ItemSearchResultTile(
+            item: searchResultItem,
+            heroTag: heroTag,
+            onTap: () => onItemTap(searchResultItem, heroTag),
+          );
         },
       ),
     );
