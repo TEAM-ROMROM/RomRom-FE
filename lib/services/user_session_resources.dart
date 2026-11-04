@@ -6,6 +6,6 @@ import 'package:romrom_fe/services/heart_beat_manager.dart';
 /// 모두 멱등 (로그아웃·탈퇴의 기존 정리와 겹쳐도 안전)
 Future<void> releaseUserSessionResources() async {
   HeartbeatManager.instance.stop();
-  ChatMemberStatusPoller.instance.stop();
+  ChatMemberStatusPoller.instance.stopAll();
   await ChatWebSocketService().disconnect();
 }

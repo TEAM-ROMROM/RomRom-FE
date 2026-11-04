@@ -18,7 +18,6 @@ import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/foreground_push_refresher.dart';
 import 'package:romrom_fe/screens/chat_tab_screen.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
-import 'package:romrom_fe/widgets/common/notification_bottom_sheet.dart';
 import 'package:romrom_fe/screens/home_tab_screen.dart';
 import 'package:romrom_fe/screens/my_page_tab_screen.dart';
 import 'package:romrom_fe/screens/register_tab_screen.dart';
@@ -77,38 +76,14 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     }
   }
 
-  /// 홈 피드 첫 로딩 완료 시 바텀시트 1개만: 알림 권한 안내 > (안 띄웠으면) 공지·이벤트 팝업 (#652)
+  /// 홈 피드 첫 로딩 완료 시 공지·이벤트 팝업 (#652)
   Future<void> _onHomeLoaded() async {
     if (!mounted) return;
-    final isNotificationSheetShown = await _showNotificationBottomSheetIfNeeded();
-    // 알림 안내를 띄운 실행은 팝업 생략 (연속 모달 방지, 다음 실행 때 노출)
-    if (isNotificationSheetShown || !mounted) return;
     await HomePopupPresenter.showIfNeeded(context, ref);
   }
 
-  /// 알림 권한 OFF일 때 안내 바텀시트 > 노출 여부
-  ///   1) 회원가입 후 최초 1회 → showNotificationBottomSheetAfterSiginIn
-  ///   2) 이후 7일 주기 → showdNotificationBottomSheetCycle
-  Future<bool> _showNotificationBottomSheetIfNeeded() async {
-    final service = NotificationPermissionService();
-
-    // 회원가입 최초 1회 (권한 OFF + 미노출 시에만)
-    if (await service.shouldShowBottomSheet(isSignup: true)) {
-      if (mounted) await NotificationBottomSheet.showNotificationBottomSheetAfterSiginIn(context);
-      await service.markShownOnSignup();
-      return true; // 동일 세션에서 7일 주기 바텀시트 중복 노출 방지
-    }
-
-    // 7일 주기 (권한 OFF인 경우에만)
-    if (await service.shouldShowBottomSheet()) {
-      if (mounted) await NotificationBottomSheet.showdNotificationBottomSheetCycle(context);
-      return true;
-    }
-    return false;
-  }
-
   /// 시스템 알림 권한이 거부된 경우 백엔드 설정과 동기화
-  /// - 시스템 OFF → 백엔드 5개 항목 전체 false
+  /// - 시스템 거부 → 백엔드 5개 항목 전체 false (미결정은 유지)
   Future<void> _syncNotificationPermissionToBackend() async {
     const requestKey = 'sync_notification_permission';
     if (_pendingRequests.contains(requestKey)) return;
@@ -117,8 +92,9 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     final memberProfileNotifier = ref.read(memberProfileProvider.notifier);
     final notificationSettingNotifier = ref.read(notificationSettingProvider.notifier);
     try {
-      final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
-      if (permissionGranted) return;
+      // 거부한 경우만 동기화 (미결정 = 아직 안내 전 > 서버 설정 유지)
+      final bool isPermissionDeclined = await NotificationPermissionService().isPermissionDeclined();
+      if (!isPermissionDeclined) return;
 
       // 공유 회원 프로필 (알림 설정 변경 시 notificationSettingProvider가 무효화)
       final memberProfile = await memberProfileNotifier.fetchCachedOrReload();

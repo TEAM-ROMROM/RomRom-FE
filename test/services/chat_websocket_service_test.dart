@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
@@ -8,6 +10,8 @@ class _FakeStompClient extends StompClient {
 
   bool isActivated = false;
   bool isDeactivated = false;
+  // true > 닫힌 소켓 흉내 (구독 요청 시 StompBadStateException)
+  bool isSocketClosed = false;
   final List<String> subscribedDestinations = [];
 
   @override
@@ -22,6 +26,7 @@ class _FakeStompClient extends StompClient {
     required StompFrameCallback callback,
     Map<String, String>? headers,
   }) {
+    if (isSocketClosed) throw StompBadStateException('socket closed');
     subscribedDestinations.add(destination);
     return ({Map<String, String>? unsubscribeHeaders}) {};
   }
@@ -34,9 +39,21 @@ class _FakeStompClient extends StompClient {
 
   /// STOMP 에러 흉내 (토큰 만료 등 > 서비스가 재발급 후 재연결)
   void simulateStompError() => config.onStompError(StompFrame(command: 'ERROR'));
+
+  /// 오류 없이 소켓 닫힘 흉내 (망 전환·앱 복귀·서버 재배포, onDisconnect 호출 없음)
+  void simulateSocketClosedSilently() {
+    isSocketClosed = true;
+    config.onWebSocketDone();
+  }
+
+  /// 자동 재연결 성공 흉내 (같은 클라이언트)
+  void simulateReconnected() {
+    isSocketClosed = false;
+    simulateConnected();
+  }
 }
 
-/// 웹소켓 회원 단위 연결 검증: 같은 회원 재사용, 회원 변경 시 이전 연결·구독 정리 후 새 토큰으로 연결, 이전 클라이언트 늦은 콜백 무시
+/// 웹소켓 회원 단위 연결 검증: 같은 회원 재사용, 회원 변경 시 이전 연결·구독 정리 후 새 토큰으로 연결, 이전 클라이언트 늦은 콜백 무시, 오류 없이 닫힌 소켓 재연결
 void main() {
   late String currentMemberId;
   late String currentAccessToken;
@@ -203,5 +220,75 @@ void main() {
 
     expect(isNewRoomStreamDone, isFalse);
     expect(createdClients.last.subscribedDestinations, ['/sub/chat.room.room-new']);
+  });
+
+  group('소켓이 오류 없이 닫힘 (#984)', () {
+    test('닫힘 > 미연결 표시, 그 사이 채팅방 진입 구독은 예외 없이 보류 > 자동 재연결 시 구독', () async {
+      await webSocketService.connect();
+      final client = createdClients.single..simulateConnected();
+
+      client.simulateSocketClosedSilently();
+      expect(webSocketService.isConnected, isFalse);
+
+      expect(() => webSocketService.subscribeToChatRoom('room-1'), returnsNormally);
+      expect(client.subscribedDestinations, isEmpty);
+
+      client.simulateReconnected();
+      expect(webSocketService.isConnected, isTrue);
+      expect(client.subscribedDestinations, ['/sub/chat.room.room-1']);
+      expect(createdClients, hasLength(1), reason: '재연결은 같은 StompClient 자동 재연결');
+    });
+
+    test('닫힘 감지 전 구독 실패 (StompBadStateException) > 예외 없이 미연결 표시, 재연결 시 구독', () async {
+      await webSocketService.connect();
+      final client = createdClients.single..simulateConnected();
+      client.isSocketClosed = true;
+
+      expect(() => webSocketService.subscribeToChatRoom('room-1'), returnsNormally);
+      expect(() => webSocketService.subscribeToReadEvents('room-1'), returnsNormally);
+      expect(webSocketService.isConnected, isFalse);
+
+      client.simulateReconnected();
+      expect(client.subscribedDestinations, containsAll(['/sub/chat.room.room-1', '/sub/chat.read.room-1']));
+    });
+
+    test('닫힘 상태 메시지 전송 > 연결 안 됨 예외 (호출부 전송 실패 처리)', () async {
+      await webSocketService.connect();
+      createdClients.single
+        ..simulateConnected()
+        ..simulateSocketClosedSilently();
+
+      expect(() => webSocketService.sendMessage(chatRoomId: 'room-1', content: '안녕'), throwsException);
+    });
+
+    test('waitUntilConnected > 연결 상태면 즉시, 아니면 다음 CONNECTED에 완료', () async {
+      await webSocketService.connect();
+      var isWaitCompleted = false;
+      unawaited(webSocketService.waitUntilConnected().then((_) => isWaitCompleted = true));
+      await pumpEventQueue();
+      expect(isWaitCompleted, isFalse);
+
+      createdClients.single.simulateConnected();
+      await pumpEventQueue();
+      expect(isWaitCompleted, isTrue);
+      await expectLater(webSocketService.waitUntilConnected(), completes);
+    });
+
+    test('connectionStatus > 연결·닫힘·재연결마다 값 변화만 알림 (채팅방 연결 중 표시 원본)', () async {
+      final connectionHistory = <bool>[];
+      void recordConnectionStatus() => connectionHistory.add(webSocketService.connectionStatus.value);
+      webSocketService.connectionStatus.addListener(recordConnectionStatus);
+      addTearDown(() => webSocketService.connectionStatus.removeListener(recordConnectionStatus));
+
+      await webSocketService.connect();
+      final client = createdClients.single..simulateConnected();
+      client
+        ..simulateSocketClosedSilently()
+        ..simulateDisconnected()
+        ..simulateReconnected();
+
+      expect(connectionHistory, [true, false, true], reason: '같은 값(닫힘 후 끊김)은 다시 알리지 않음');
+      expect(webSocketService.connectionStatus.value, webSocketService.isConnected);
+    });
   });
 }

@@ -4,8 +4,6 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/screens/notification_settings_screen.dart';
 import 'package:romrom_fe/widgets/common/notification_bottom_sheet_chatting_preview.dart';
-import 'package:romrom_fe/widgets/common/notification_bottom_sheet_request_preview.dart';
-import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
 /// 알림 안내 공용 바텀시트
@@ -49,72 +47,6 @@ class NotificationBottomSheet {
         onButton1: onButton1,
         onButton2: onButton2,
       ),
-    );
-  }
-
-  /// 회원가입 후 첫 알림 유도 바텀시트 (회원가입 후 한 번만)
-  /// - "나중에 하기" / "알림 설정하기"
-  static Future<void> showNotificationBottomSheetAfterSiginIn(BuildContext context) {
-    return show(
-      context: context,
-      title: Text('교환 소식을 놓치지 마세요!', style: titleStyle),
-      description: RichText(
-        text: TextSpan(
-          style: descriptionStyle,
-          children: [
-            const TextSpan(text: '내 물품에 대한 실시간 '),
-            const TextSpan(
-              text: '교환 제안',
-              style: TextStyle(color: AppColors.primaryYellow),
-            ),
-            const TextSpan(text: '과\n'),
-            const TextSpan(
-              text: '채팅 알림',
-              style: TextStyle(color: AppColors.primaryYellow),
-            ),
-            const TextSpan(text: '을 보내드려요.'),
-          ],
-        ),
-      ),
-      body: const NotificationBottomSheetRequestPreview(),
-      buttonText1: '나중에 하기',
-      buttonText2: '알림 설정하기',
-      onButton1: () {},
-      onButton2: () {
-        context.navigateTo(screen: const NotificationSettingsScreen());
-      },
-    );
-  }
-
-  /// 7일 주기 알림 허용 유도 바텀 시트
-  /// - "7일 동안 보지 않기" / "알림 설정하기"
-  static Future<void> showdNotificationBottomSheetCycle(BuildContext context) {
-    return show(
-      context: context,
-      title: RichText(
-        text: TextSpan(
-          style: titleStyle,
-          children: [
-            const TextSpan(text: '아직 '),
-            const TextSpan(
-              text: '알림',
-              style: TextStyle(color: AppColors.primaryYellow),
-            ),
-            const TextSpan(text: '이 꺼져 있어요!'),
-          ],
-        ),
-      ),
-      description: Text('알림을 켜지 않으면 상대방의 교환 요청 제안을\n바로 확인하기 어려워요.', style: descriptionStyle),
-      body: const NotificationBottomSheetRequestPreview(),
-      buttonText1: '7일 동안 보지 않기',
-      buttonText2: '알림 설정하기',
-      onButton1: () {
-        NotificationPermissionService().recordDismissed();
-      },
-      onButton2: () {
-        NotificationPermissionService().recordDismissed();
-        context.navigateTo(screen: const NotificationSettingsScreen());
-      },
     );
   }
 

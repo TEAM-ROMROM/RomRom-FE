@@ -100,7 +100,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
   /// 스플래시 최소 노출 시간 (2초, 버전 확인과 동시에 시작)
   static const Duration _minimumSplashDuration = Duration(seconds: 2);
 
-  /// 시작 흐름: 버전·초기 화면 결정(타임아웃) > 실패 시 다시 시도 화면 > 권장 업데이트 안내 > 다음 화면 이동
+  /// 시작 흐름: 버전·초기 화면 결정(타임아웃) > 실패 시 다시 시도 화면 > 강제 업데이트 화면 또는 권장 업데이트 안내 > 다음 화면 이동
   /// 다시 시도마다 세대 증가 > 타임아웃된 이전 실행이 늦게 끝나도 화면 이동 안 함
   Future<void> _initAndNavigate() async {
     final generation = ++_startupGeneration;
