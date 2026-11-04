@@ -1,3 +1,6 @@
+import 'package:romrom_fe/models/item_wanted_category_policy.dart';
+import 'package:romrom_fe/utils/nickname_rules.dart';
+
 enum ErrorCode {
   internalServerError(code: 'INTERNAL_SERVER_ERROR', koMessage: '서버에 문제가 발생했습니다.'),
   invalidRequest(code: 'INVALID_REQUEST', koMessage: '잘못된 요청입니다.'),
@@ -147,6 +150,16 @@ enum ErrorCode {
   chatAppointmentAcceptForbidden(code: 'CHAT_APPOINTMENT_ACCEPT_FORBIDDEN', koMessage: '상대방이 보낸 약속만 수락할 수 있어요.'),
   chatAppointmentStatusConflict(code: 'CHAT_APPOINTMENT_STATUS_CONFLICT', koMessage: '이미 처리된 약속입니다.'),
   duplicateChatMessageReport(code: 'DUPLICATE_CHAT_MESSAGE_REPORT', koMessage: '이미 신고한 메시지입니다.'),
+  // ===== 검색·희망 카테고리·탈퇴 사유·닉네임 규칙 (#1008, 서버 #862) =====
+  invalidSearchKeyword(code: 'INVALID_SEARCH_KEYWORD', koMessage: '검색어를 1자 이상 입력해 주세요.'),
+  tooManyWantedItemCategories(
+    code: 'TOO_MANY_WANTED_ITEM_CATEGORIES',
+    koMessage: '희망 교환 카테고리는 최대 $maximumWantedItemCategoryCount개까지 고를 수 있어요.',
+  ),
+  tooLongWithdrawalReasonDetail(code: 'TOO_LONG_WITHDRAWAL_REASON_DETAIL', koMessage: '탈퇴 사유는 500자까지 입력할 수 있어요.'),
+  invalidNicknameLength(code: 'INVALID_NICKNAME_LENGTH', koMessage: nicknameInvalidLengthMessage),
+  invalidNicknameCharacter(code: 'INVALID_NICKNAME_CHARACTER', koMessage: nicknameInvalidCharacterMessage),
+  reservedNickname(code: 'RESERVED_NICKNAME', koMessage: nicknameReservedMessage),
 
   // JSON
   unknown(code: 'UNKNOWN', koMessage: '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');

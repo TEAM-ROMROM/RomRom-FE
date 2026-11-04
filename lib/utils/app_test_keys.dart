@@ -11,6 +11,7 @@ class AppTestKeys {
 
   /// 홈 탭 알림함 진입 버튼 (미확인 배지 유무로 아이콘이 바뀜)
   static const Key homeNotificationButton = ValueKey<String>('homeNotificationButton');
+  static const Key homeSearchButton = ValueKey<String>('homeSearchButton');
 
   /// 요청하기 화면 하단 '요청하기' 제출 버튼 (앱바 제목과 문구 중복)
   static const Key tradeRequestSubmitButton = ValueKey<String>('tradeRequestSubmitButton');

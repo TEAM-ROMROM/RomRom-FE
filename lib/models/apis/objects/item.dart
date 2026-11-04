@@ -23,6 +23,9 @@ class Item extends BaseEntity {
   final double? latitude;
   final bool? isAiPredictedPrice;
 
+  /// 희망 교환 카테고리 서버 이름 목록 (0~3개, 구버전 서버·미설정 > null 또는 빈 목록) (#1008)
+  final List<String>? wantedItemCategories;
+
   /// 우선노출(롬업) 종료 시각 (노출 이력 없으면 null)
   final DateTime? promotionExpiresAt;
 
@@ -52,6 +55,7 @@ class Item extends BaseEntity {
     this.longitude,
     this.latitude,
     this.isAiPredictedPrice,
+    this.wantedItemCategories,
     this.promotionExpiresAt,
     this.isPromoted,
     this.isReserved,

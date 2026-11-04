@@ -35,6 +35,14 @@ void main() {
       expect(ItemCategories.fromServerName(null), isNull);
     });
 
+    test('ItemCategories 목록 (희망 교환 카테고리, 모르는 값 제외·순서 유지) (#1008)', () {
+      expect(ItemCategories.fromServerNamesSkippingUnknown(['BEAUTY', unknownServerName, 'SHOES']), [
+        ItemCategories.beauty,
+        ItemCategories.shoes,
+      ]);
+      expect(ItemCategories.fromServerNamesSkippingUnknown(null), isEmpty);
+    });
+
     test('NotificationType', () {
       expect(NotificationType.fromServerName('ITEM_LIKED'), NotificationType.itemLiked);
       // BE NotificationType.ANNOUNCEMENT (옛 값 SYSTEM_NOTICE는 BE에 없음, #942)

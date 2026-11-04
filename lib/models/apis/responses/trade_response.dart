@@ -18,12 +18,17 @@ class TradeResponse {
   final bool? tradeRequestHistoryExists; // 거래 요청 이력 존재 여부
   final PagedTradeReview? tradeReviewPage;
 
+  /// 탈퇴 전 안내용 진행 중 거래 (대기·채팅 중·교환 완료 요청, 구버전 서버 > 빈 목록) (#1008)
+  @JsonKey(fromJson: _tradeHistoryListFromJson, toJson: _tradeHistoryListToJson)
+  final List<TradeRequestHistory> ongoingTradeRequestHistories;
+
   TradeResponse({
     this.tradeRequestHistory,
     this.tradeRequestHistoryPage,
     this.itemPage,
     this.tradeRequestHistoryExists,
     this.tradeReviewPage,
+    this.ongoingTradeRequestHistories = const [],
   });
 
   factory TradeResponse.fromJson(Map<String, dynamic> json) => _$TradeResponseFromJson(json);

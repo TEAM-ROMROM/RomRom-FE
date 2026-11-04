@@ -4,7 +4,7 @@ import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
 
 /// 물품 등록·수정 폼 값 스냅샷: 진입 시점 값 <-> 현재 값 비교로 미저장 변경 판정
-/// 비교 대상 8종: 사진, 이름, 설명, 카테고리, 상태, 거래 방식, 가격(AI 여부 포함), 위치
+/// 비교 대상 9종: 사진, 이름, 설명, 카테고리, 희망 교환 카테고리, 상태, 거래 방식, 가격(AI 여부 포함), 위치
 @immutable
 class RegisterFormSnapshot {
   final List<String> existingImageUrls;
@@ -12,6 +12,8 @@ class RegisterFormSnapshot {
   final String itemName;
   final String itemDescription;
   final ItemCategories? category;
+  // 선택 순서는 의미 없음 > Set 비교
+  final Set<ItemCategories> wantedCategories;
   final List<ItemCondition> conditions;
   // 선택 순서는 의미 없음 > Set 비교
   final Set<ItemTradeOption> tradeOptions;
@@ -27,6 +29,7 @@ class RegisterFormSnapshot {
     required this.itemName,
     required this.itemDescription,
     required this.category,
+    this.wantedCategories = const {},
     required this.conditions,
     required this.tradeOptions,
     required this.priceText,
@@ -47,6 +50,7 @@ class RegisterFormSnapshot {
           itemName == other.itemName &&
           itemDescription == other.itemDescription &&
           category == other.category &&
+          setEquals(wantedCategories, other.wantedCategories) &&
           listEquals(conditions, other.conditions) &&
           setEquals(tradeOptions, other.tradeOptions) &&
           priceText == other.priceText &&
@@ -61,6 +65,7 @@ class RegisterFormSnapshot {
     itemName,
     itemDescription,
     category,
+    Object.hashAllUnordered(wantedCategories),
     Object.hashAll(conditions),
     Object.hashAllUnordered(tradeOptions),
     priceText,

@@ -79,6 +79,8 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
       itemCategory: selectedCategory!.serverName,
       itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
       itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
+      // 항상 전송 (빈 목록 > 서버가 전부 해제)
+      wantedItemCategories: selectedWantedCategories.map((category) => category.serverName).toList(),
       itemPrice: int.parse(priceController.text.replaceAll(',', '')),
       itemImageUrls: allImageUrls,
       longitude: _longitude,

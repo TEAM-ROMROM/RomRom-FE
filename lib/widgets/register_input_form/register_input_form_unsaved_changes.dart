@@ -10,6 +10,7 @@ mixin _RegisterInputFormUnsavedChanges on _RegisterInputFormStateFields {
       itemName: titleController.text,
       itemDescription: descriptionController.text,
       category: selectedCategory,
+      wantedCategories: selectedWantedCategories.toSet(),
       conditions: List.unmodifiable(selectedItemConditionTypes),
       tradeOptions: selectedTradeOptions.toSet(),
       priceText: priceController.text,
