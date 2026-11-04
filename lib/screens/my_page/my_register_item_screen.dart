@@ -14,6 +14,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/list_ad_placement.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
@@ -23,6 +24,7 @@ import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dar
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/list_native_ad/list_native_ad_cell.dart';
 import 'package:romrom_fe/widgets/my_page/my_item_promote_control.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 
@@ -140,7 +142,9 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
       return [SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())];
     }
 
-    final itemCountWithSeparators = displayItems.length * 2 - 1;
+    // 8개마다 광고 1칸: 목록 항목(물품·광고) 사이 구분선 > 짝수 index 항목, 홀수 index 구분선
+    final listItemCount = ListAdPlacement.itemList.listItemCount(displayItems.length);
+    final itemCountWithSeparators = listItemCount * 2 - 1;
 
     return [
       SliverToBoxAdapter(
@@ -148,24 +152,40 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
       ),
       SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
+          final listIndex = index ~/ 2;
+          final isAdEntry = ListAdPlacement.itemList.isAdAtListIndex(listIndex, displayItems.length);
           if (index.isOdd) {
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-              child: Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h),
+            // 광고 칸 아래 구분선은 광고 칸이 함께 그림 (실패로 접히면 구분선도 접혀 중복 없음)
+            return isAdEntry ? const SizedBox.shrink() : _buildItemDivider();
+          }
+          if (isAdEntry) {
+            return ListNativeAdCell(
+              key: ValueKey('my_register_item_ad_$listIndex'),
+              horizontalPadding: 24.0.w,
+              bottomSeparator: listIndex == listItemCount - 1 ? null : _buildItemDivider(),
             );
           }
-          final item = displayItems[index ~/ 2];
+          final itemIndex = ListAdPlacement.itemList.contentIndexAtListIndex(listIndex);
+          final item = displayItems[itemIndex];
           return AppFadeSlideIn(
-            delay: Duration(milliseconds: (index ~/ 2) * AppMotion.staggerDelayMs),
+            delay: Duration(milliseconds: itemIndex * AppMotion.staggerDelayMs),
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-              child: _buildItemTile(item, index ~/ 2),
+              child: _buildItemTile(item, itemIndex),
             ),
           );
         }, childCount: itemCountWithSeparators),
       ),
       SliverToBoxAdapter(child: SizedBox(height: 24.h)),
     ];
+  }
+
+  /// 물품 행 구분선 (행 사이·광고 칸 아래 공통)
+  Widget _buildItemDivider() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.0.w),
+      child: Divider(thickness: 1.5, color: AppColors.opacity10White, height: 32.h),
+    );
   }
 
   /// 불러오기 실패 뷰 재시도: 중복 탭 차단 > 서버 재조회

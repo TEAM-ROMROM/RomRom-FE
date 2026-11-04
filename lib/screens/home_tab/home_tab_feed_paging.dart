@@ -16,9 +16,15 @@ mixin _HomeTabFeedPaging on _HomeTabScreenStateFields {
         _adSlotSchedule.reset();
         _adSlotSchedule.scheduleAdsForFeedLength(feedItems.length);
       });
-      _upcomingPagePreparer.resetPrecachedImages();
+      _upcomingPagePreparer.resetForReplacedFeed();
       _prepareUpcomingPages(feedItems);
     });
+  }
+
+  /// 첫 피드 도착 (이전 값 없음 > 교체·추가 분기 밖): 광고 자리 배치 > 다음 페이지 준비 (첫 광고 칸 광고 미리 요청)
+  void _onInitialFeedLoaded(List<HomeFeedItem> feedItems) {
+    setState(() => _adSlotSchedule.scheduleAdsForFeedLength(feedItems.length));
+    _prepareUpcomingPages(feedItems);
   }
 
   /// 피드 items가 append될 때 (loadMore) — 광고 슬롯 추가 스케줄 > 다음 페이지 준비.
@@ -108,6 +114,7 @@ mixin _HomeTabFeedPaging on _HomeTabScreenStateFields {
     var shouldJumpToCurrentPage = isBeforeCurrentPage;
     setState(() {
       _adSlotSchedule.removeAdAtVirtualIndex(adVirtualIndex);
+      _upcomingPagePreparer.adPreloader.removeAdSlot(adVirtualIndex);
       if (isBeforeCurrentPage) _currentVirtualIndex--;
       if (_clampCurrentPageToFeed(feedItems)) shouldJumpToCurrentPage = true;
     });

@@ -22,5 +22,12 @@ import google_mobile_ads
       factoryId: "feedNativeAd",
       nativeAdFactory: FeedNativeAdFactory()
     )
+
+    // 목록(채팅·좋아요·내 물품) 네이티브 광고 팩토리 등록
+    FLTGoogleMobileAdsPlugin.registerNativeAdFactory(
+      engineBridge.pluginRegistry,
+      factoryId: "listNativeAd",
+      nativeAdFactory: ListNativeAdFactory()
+    )
   }
 }

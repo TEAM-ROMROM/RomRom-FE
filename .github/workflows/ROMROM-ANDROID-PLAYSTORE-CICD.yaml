@@ -29,6 +29,10 @@ env:
   #   store_prepare : production draft 승급 (Play Console에서 사람이 "출시 시작")
   #   store_submit  : production completed 승급 (Google 심사 자동 등록) — 기존 기본 동작
   DEPLOY_MODE: ${{ github.event.inputs.deploy_mode || vars.ANDROID_DEPLOY_MODE || 'store_submit' }}
+  # Play '출시 노트' 고정 문구 (store_prepare·store_submit에서만, store_only·빈 값이면 CHANGELOG 해당 버전)
+  # 심사 제출물이라 매번 같은 일반 문구 사용. Firebase 테스터 노트는 CHANGELOG 그대로
+  # iOS(ROMROM-IOS-TESTFLIGHT.yaml) 같은 이름 설정과 함께 바꾼다
+  STORE_WHATS_NEW_OVERRIDE: "앱 안정성과 사용성을 개선했습니다."
 
 jobs:
   prepare-build:
@@ -629,7 +633,12 @@ jobs:
           CHANGELOG_DIR="android/fastlane/metadata/android/ko-KR/changelogs"
           mkdir -p "$CHANGELOG_DIR"
           
-          if [ -f "final_release_notes.txt" ]; then
+          if [ -n "$STORE_WHATS_NEW_OVERRIDE" ] && [ "$DEPLOY_MODE" != "store_only" ]; then
+            printf '%s\n' "$STORE_WHATS_NEW_OVERRIDE" > "$CHANGELOG_DIR/${VERSION_CODE}.txt"
+            echo "✅ 고정 Changelog 사용 (버전 코드: $VERSION_CODE)"
+          elif [ -f "final_release_notes.txt" ]; then
+            # Play 출시 노트 한도 500자, 여유 두고 480자
+            bash ./.github/scripts/truncate_release_notes.sh final_release_notes.txt 480 char
             cp final_release_notes.txt "$CHANGELOG_DIR/${VERSION_CODE}.txt"
             echo "✅ Changelog 준비 완료 (버전 코드: $VERSION_CODE)"
           else

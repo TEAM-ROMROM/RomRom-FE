@@ -9,9 +9,6 @@ import google_mobile_ads
 /// 치수·글자·색은 Dart HomeFeedNativeAdStyle customOptions에서 받음 (없으면 393x852 기준 기본값)
 class FeedNativeAdFactory: NSObject, FLTNativeAdFactory {
 
-    // Pretendard 폰트 파일 경로 > 등록된 PostScript 이름 (팩토리 1개, 메인 스레드 호출)
-    private var fontNameByAssetPath: [String: String] = [:]
-
     func createNativeAd(_ nativeAd: NativeAd, customOptions: [AnyHashable: Any]? = nil) -> NativeAdView? {
         let options = FeedNativeAdOptions(values: customOptions ?? [:])
         let nativeAdView = NativeAdView()
@@ -172,33 +169,10 @@ class FeedNativeAdFactory: NSObject, FLTNativeAdFactory {
     private func applyTextStyle(to label: UILabel, options: FeedNativeAdOptions, fallback: FeedNativeAdTextFallback) {
         let fontSize = options.number("fontSize", fallback: fallback.fontSize)
         let fontAssetPath = options.string("fontAssetPath", fallback: fallback.fontAssetPath)
-        label.font = pretendardFont(assetPath: fontAssetPath, size: fontSize)
+        label.font = PretendardFontRegistry.shared.font(assetPath: fontAssetPath, size: fontSize)
         label.textColor = options.color("colorArgb", fallback: fallback.colorArgb)
         label.numberOfLines = options.integer("maxLines", fallback: fallback.maxLines)
         label.lineBreakMode = .byTruncatingTail
-    }
-
-    /// Flutter 에셋 Pretendard > UIFont (첫 사용 시 프로세스에 등록, 실패 시 시스템 폰트)
-    private func pretendardFont(assetPath: String, size: CGFloat) -> UIFont {
-        if let fontName = fontNameByAssetPath[assetPath] ?? registerFont(assetPath: assetPath),
-           let font = UIFont(name: fontName, size: size) {
-            return font
-        }
-        return UIFont.systemFont(ofSize: size, weight: .semibold)
-    }
-
-    /// 에셋 경로 > 번들 파일 등록 > PostScript 이름 (이미 등록된 폰트면 등록 실패를 무시하고 이름만 사용)
-    private func registerFont(assetPath: String) -> String? {
-        let lookupKey = FlutterDartProject.lookupKey(forAsset: assetPath)
-        guard let filePath = Bundle.main.path(forResource: lookupKey, ofType: nil) else { return nil }
-        let fontUrl = URL(fileURLWithPath: filePath) as CFURL
-        CTFontManagerRegisterFontsForURL(fontUrl, .process, nil)
-        guard let descriptors = CTFontManagerCreateFontDescriptorsFromURL(fontUrl) as? [CTFontDescriptor],
-              let firstDescriptor = descriptors.first,
-              let fontName = CTFontDescriptorCopyAttribute(firstDescriptor, kCTFontNameAttribute) as? String
-        else { return nil }
-        fontNameByAssetPath[assetPath] = fontName
-        return fontName
     }
 }
 
@@ -223,8 +197,39 @@ private struct FeedNativeAdTextFallback {
         fontSize: 16, fontAssetPath: semiBoldAssetPath, colorArgb: 0xFFFFFFFF, maxLines: 1)
 }
 
-/// customOptions 읽기: 숫자·정수·문자열·ARGB 색·중첩 옵션
-private struct FeedNativeAdOptions {
+/// Flutter 에셋 Pretendard 폰트 등록·조회 (홈 피드·목록 광고 팩토리 공통, 메인 스레드 호출)
+final class PretendardFontRegistry {
+    static let shared = PretendardFontRegistry()
+
+    // Pretendard 폰트 파일 경로 > 등록된 PostScript 이름
+    private var fontNameByAssetPath: [String: String] = [:]
+
+    /// Flutter 에셋 Pretendard > UIFont (첫 사용 시 프로세스에 등록, 실패 시 시스템 폰트)
+    func font(assetPath: String, size: CGFloat) -> UIFont {
+        if let fontName = fontNameByAssetPath[assetPath] ?? registerFont(assetPath: assetPath),
+           let font = UIFont(name: fontName, size: size) {
+            return font
+        }
+        return UIFont.systemFont(ofSize: size, weight: .semibold)
+    }
+
+    /// 에셋 경로 > 번들 파일 등록 > PostScript 이름 (이미 등록된 폰트면 등록 실패를 무시하고 이름만 사용)
+    private func registerFont(assetPath: String) -> String? {
+        let lookupKey = FlutterDartProject.lookupKey(forAsset: assetPath)
+        guard let filePath = Bundle.main.path(forResource: lookupKey, ofType: nil) else { return nil }
+        let fontUrl = URL(fileURLWithPath: filePath) as CFURL
+        CTFontManagerRegisterFontsForURL(fontUrl, .process, nil)
+        guard let descriptors = CTFontManagerCreateFontDescriptorsFromURL(fontUrl) as? [CTFontDescriptor],
+              let firstDescriptor = descriptors.first,
+              let fontName = CTFontDescriptorCopyAttribute(firstDescriptor, kCTFontNameAttribute) as? String
+        else { return nil }
+        fontNameByAssetPath[assetPath] = fontName
+        return fontName
+    }
+}
+
+/// customOptions 읽기: 숫자·정수·문자열·ARGB 색·중첩 옵션 (목록 광고 팩토리 공통)
+struct FeedNativeAdOptions {
     let values: [AnyHashable: Any]
 
     func number(_ key: String, fallback: CGFloat) -> CGFloat {
@@ -293,8 +298,8 @@ private final class CornerClippingView: UIView {
     }
 }
 
-/// 안쪽 여백 있는 알약형 라벨 (모서리 반경은 높이 절반 이하로 제한)
-private final class PaddedLabel: UILabel {
+/// 안쪽 여백 있는 알약형 라벨 (모서리 반경은 높이 절반 이하로 제한, 목록 광고 팩토리 공통)
+final class PaddedLabel: UILabel {
     var contentInsets: UIEdgeInsets = .zero
     var maximumCornerRadius: CGFloat = 0
 

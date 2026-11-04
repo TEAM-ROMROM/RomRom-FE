@@ -22,6 +22,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/app_version_repository_provider.dart';
 import 'package:romrom_fe/providers/auth_repository_provider.dart';
+import 'package:romrom_fe/repositories/app_version_repository.dart';
 import 'package:romrom_fe/repositories/auth_repository.dart';
 import 'package:romrom_fe/screens/login_screen.dart';
 import 'package:romrom_fe/screens/main_screen.dart';
@@ -33,6 +34,7 @@ import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
+import 'package:romrom_fe/utils/log_http_client_interceptor.dart';
 import 'package:romrom_fe/utils/user_session_lifecycle.dart';
 import 'package:romrom_fe/widgets/auth_button_group.dart';
 import 'package:romrom_fe/widgets/login_button.dart';
@@ -91,9 +93,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
     }
   }
 
-  /// 스플래시 초기화 전체 타임아웃 (15초)
-  /// 개별 HTTP 요청 타임아웃(10초)이 1차 방어, 이 값은 2차 안전망
-  static const Duration _splashTimeout = Duration(seconds: 15);
+  /// 스플래시 초기화 전체 타임아웃 (20초 = 버전 확인 제한 5초 + HTTP 요청 제한 15초)
+  /// 버전 확인·개별 HTTP 요청 제한 시간이 1차 방어, 이 값은 2차 안전망
+  static final Duration _splashTimeout = AppVersionRepository.versionCheckTimeout + LoggingHttpClient.defaultTimeout;
 
   /// 스플래시 최소 노출 시간 (2초, 버전 확인과 동시에 시작)
   static const Duration _minimumSplashDuration = Duration(seconds: 2);
@@ -118,7 +120,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
     if (isStale() || startupResult.isAborted) return;
 
     if (startupResult.isForcedUpdate) {
-      context.navigateTo(screen: const AppUpdateScreen(), type: NavigationTypes.fadeTransition);
+      unawaited(AppUpdateScreen.showForcedUpdate(context));
       return;
     }
     if (startupResult.isRecommendedUpdate) {
