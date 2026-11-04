@@ -427,7 +427,8 @@ jobs:
       - name: Build APK with Fastlane
         working-directory: android
         run: |
-          bundle exec fastlane build --verbose
+          # 테스트 빌드 > 최소 버전 강제 업데이트 예외 (#996)
+          bundle exec fastlane build is_test_build:true --verbose
           ls -la ../build/app/outputs/flutter-apk/ || true
           echo "APK built with Fastlane"
 
