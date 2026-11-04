@@ -19,12 +19,14 @@ import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/list_ad_placement.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/triple_toggle_switch.dart';
+import 'package:romrom_fe/widgets/list_native_ad/list_native_ad_cell.dart';
 import 'package:romrom_fe/widgets/skeletons/chat_room_list_skeleton.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 
@@ -402,7 +404,15 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
               // 데이터 있을 때: 채팅방 리스트
               if (filteredRooms.isNotEmpty)
                 SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
+                  delegate: SliverChildBuilderDelegate((context, listIndex) {
+                    // 3번째 방 뒤 광고 1칸 (방 행과 같은 여백·아래 간격, 실패 시 간격째 접힘)
+                    if (ListAdPlacement.chatRoomList.isAdAtListIndex(listIndex, filteredRooms.length)) {
+                      return ListNativeAdCell(
+                        horizontalPadding: 24.w,
+                        bottomSeparator: SizedBox(height: 8.h),
+                      );
+                    }
+                    final index = ListAdPlacement.chatRoomList.contentIndexAtListIndex(listIndex);
                     final chatRoomDetail = filteredRooms[index];
 
                     return AppFadeSlideIn(
@@ -450,7 +460,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
                         ],
                       ),
                     );
-                  }, childCount: filteredRooms.length),
+                  }, childCount: ListAdPlacement.chatRoomList.listItemCount(filteredRooms.length)),
                 ),
 
               // 추가 페이지 로딩: 작은 인디케이터 (무한 스크롤)

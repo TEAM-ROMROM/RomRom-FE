@@ -64,6 +64,17 @@ class AdMobService {
     return _releaseAdUnitId(androidEnvKey: nativeAdUnitIdAndroidEnvKey, iosEnvKey: nativeAdUnitIdIosEnvKey);
   }
 
+  // .env: 목록(채팅·좋아요·내 물품) 네이티브 실제 광고 단위 ID (선택, 없으면 홈 피드 네이티브 ID 사용)
+  static const String nativeListAdUnitIdAndroidEnvKey = 'NATIVE_LIST_ADMOB_UNIT_ID_ANDROID';
+  static const String nativeListAdUnitIdIosEnvKey = 'NATIVE_LIST_ADMOB_UNIT_ID_IOS';
+
+  // 목록 네이티브 광고 ID: 디버그·테스트 빌드 > 구글 테스트 네이티브 ID, 릴리스 > 목록 전용 ID > 홈 피드 네이티브 ID
+  static String? get nativeListAdUnitId {
+    if (kDebugMode || DebugConfig.isTestBuild) return nativeAdUnitId;
+    return _releaseAdUnitId(androidEnvKey: nativeListAdUnitIdAndroidEnvKey, iosEnvKey: nativeListAdUnitIdIosEnvKey) ??
+        nativeAdUnitId;
+  }
+
   /// 릴리스 광고 단위 ID: 현재 플랫폼 .env 키 > 값 (없거나 빈 값이면 null = 광고 미노출)
   static String? _releaseAdUnitId({required String androidEnvKey, required String iosEnvKey}) {
     final unitId = dotenv.maybeGet(Platform.isIOS ? iosEnvKey : androidEnvKey)?.trim();

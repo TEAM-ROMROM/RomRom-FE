@@ -139,12 +139,12 @@ class _HomeTabScreenState extends _HomeTabScreenStateFields
 
     // 피드 상태 변경 감지 → page 0 점프 + 광고 슬롯 리셋
     ref.listen<AsyncValue<HomeFeedState>>(homeFeedProvider, (prev, next) {
-      // onLoaded는 최초 데이터 진입 시 1회만 (첫 카드 뒤 이미지 미리 받기 함께)
+      // onLoaded는 최초 데이터 진입 시 1회만 (첫 피드 광고 자리 배치 > 이미지·첫 광고 미리 받기 함께)
       if (!_onLoadedFired && next is AsyncData<HomeFeedState>) {
         _onLoadedFired = true;
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
-          _prepareUpcomingPages(next.value.items);
+          _onInitialFeedLoaded(next.value.items);
           await widget.onLoaded?.call();
         });
       }
@@ -259,6 +259,7 @@ class _HomeTabScreenState extends _HomeTabScreenStateFields
                 }
                 if (_adSlotSchedule.isAdAtVirtualIndex(index)) {
                   return NativeAdWidget(
+                    adVirtualIndex: index,
                     adPreloader: _upcomingPagePreparer.adPreloader,
                     onLoadFailed: () => _collapseFailedAdSlot(index),
                   );

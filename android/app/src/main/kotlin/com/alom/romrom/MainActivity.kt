@@ -11,6 +11,8 @@ import io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "romrom/navigation_mode"
     private val NATIVE_AD_FACTORY_ID = "feedNativeAd"
+    // 목록 광고 팩토리 ID (lib/widgets/list_native_ad/list_native_ad_cell.dart listNativeAdFactoryId와 같은 값)
+    private val LIST_NATIVE_AD_FACTORY_ID = "listNativeAd"
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -20,6 +22,13 @@ class MainActivity : FlutterActivity() {
             flutterEngine,
             NATIVE_AD_FACTORY_ID,
             FeedNativeAdFactory(this)
+        )
+
+        // 목록(채팅·좋아요·내 물품) 네이티브 광고 팩토리 등록
+        GoogleMobileAdsPlugin.registerNativeAdFactory(
+            flutterEngine,
+            LIST_NATIVE_AD_FACTORY_ID,
+            ListNativeAdFactory(this)
         )
 
         MethodChannel(
@@ -37,6 +46,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         GoogleMobileAdsPlugin.unregisterNativeAdFactory(flutterEngine, NATIVE_AD_FACTORY_ID)
+        GoogleMobileAdsPlugin.unregisterNativeAdFactory(flutterEngine, LIST_NATIVE_AD_FACTORY_ID)
         super.onDestroy()
     }
 
