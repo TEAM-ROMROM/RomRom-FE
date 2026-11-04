@@ -50,7 +50,7 @@ List<ChatMessage> appendOlderMessages({required List<ChatMessage> current, requi
 }
 
 /// 서버 확인 전 화면 전용 메시지 ID인지 (낙관적 전송·업로드 중·WS 이미지 임시·교환 요청 임시)
-bool _isLocalOptimisticId(String? id) =>
+bool isLocalOptimisticMessageId(String? id) =>
     id != null &&
     (id.startsWith(localMessageIdPrefix) ||
         id.startsWith(uploadingMessageIdPrefix) ||
@@ -82,7 +82,7 @@ List<ChatMessage> mergeServerMessages({required List<ChatMessage> current, requi
     if (id != null && serverById.containsKey(id)) {
       merged.add(serverById[id]!);
       keptIds.add(id);
-    } else if (_isLocalOptimisticId(id)) {
+    } else if (isLocalOptimisticMessageId(id)) {
       merged.add(m);
     } else if (id != null) {
       merged.add(m);
@@ -184,7 +184,7 @@ String? findLastReadMyMessageId({
   if (opponentState == null || myMemberId == null) return null;
   for (final message in messages) {
     if (message.senderId != myMemberId) continue;
-    if (message.chatMessageId == null || _isLocalOptimisticId(message.chatMessageId)) continue;
+    if (message.chatMessageId == null || isLocalOptimisticMessageId(message.chatMessageId)) continue;
     // WS 실시간 이벤트로 isPresent가 즉시 갱신되므로 그대로 신뢰
     // 잠금/백그라운드는 lifecycle observer가 isPresent=false로 갱신
     if (opponentState.isPresent) return message.chatMessageId;

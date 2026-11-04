@@ -222,9 +222,10 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
     }
   }
 
-  /// 로컬 메시지 목록 추가 (setState 안에서 호출): 전송됨 > 에코 대기 타이머, 즉시 실패 > 실패 표시
+  /// 로컬 메시지 목록 추가 (setState 안에서 호출): 안 읽음 구분선 숨김 > 전송됨 > 에코 대기 타이머, 즉시 실패 > 실패 표시
   void _addLocalMessage(ChatMessage localMessage, {required bool isSent}) {
     final localId = localMessage.chatMessageId!;
+    _firstUnreadMessageId = null;
     _messages.insert(0, localMessage);
     _pendingLocalMessages[localId] = localMessage;
     if (isSent) {

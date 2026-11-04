@@ -49,7 +49,10 @@ class ChatWebSocketService {
   final StompClient Function(StompConfig config) _createStompClient;
 
   StompClient? _stompClient;
-  bool _isConnected = false;
+  // STOMP 연결 상태 원본 (값이 바뀔 때만 구독자 알림 > 채팅방 '연결 중' 표시)
+  final ValueNotifier<bool> _connectionStatus = ValueNotifier<bool>(false);
+  bool get _isConnected => _connectionStatus.value;
+  set _isConnected(bool isConnected) => _connectionStatus.value = isConnected;
   final Map<String, StreamController<ChatMessage>> _subscriptions = {};
   final Map<String, StompUnsubscribe> _stompSubscriptions = {};
 
@@ -96,6 +99,9 @@ class ChatWebSocketService {
 
   /// 연결 상태 확인
   bool get isConnected => _isConnected;
+
+  /// 연결 상태 변화 구독 (true 연결, false 끊김·재연결 대기)
+  ValueListenable<bool> get connectionStatus => _connectionStatus;
 
   /// STOMP 연결 완료 대기 (이미 연결이면 즉시 완료, 연결 해제(disconnect) 시 대기 폐기)
   Future<void> waitUntilConnected() {

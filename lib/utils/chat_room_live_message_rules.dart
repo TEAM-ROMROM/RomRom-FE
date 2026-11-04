@@ -1,4 +1,4 @@
-// 채팅방 실시간(소켓) 수신 판정 순수 함수: 진입 조회 중 보관분 병합, 내 나가기 이벤트, 새 메시지 자동 스크롤
+// 채팅방 실시간(소켓) 수신 판정 순수 함수: 진입 조회 중 보관분 병합, 내 나가기 이벤트, 새 메시지 자동 스크롤·새 메시지 알림
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 
@@ -27,6 +27,22 @@ List<ChatMessage> findUnseenLiveMessages({
 bool isOwnLeaveMessage({required ChatMessage message, required String? myMemberId}) =>
     message.type == MessageType.system && myMemberId != null && message.senderId == myMemberId;
 
+// 새 메시지 알림 표시 최대 개수 (초과 시 '99+')
+const int maximumDisplayedNewMessageCount = 99;
+
+/// 맨 아래(최신) 근처인지 (자동 스크롤·맨 아래로 버튼 공통 기준)
+bool isNearBottom({required double distanceFromBottomPixels}) =>
+    distanceFromBottomPixels <= nearBottomAutoScrollThresholdPixels;
+
 /// 새 메시지 수신 시 맨 아래 자동 스크롤 여부 (내 메시지 > 항상, 상대 메시지 > 맨 아래 근처일 때만 > 이전 메시지 읽는 중 유지)
 bool shouldAutoScrollOnIncomingMessage({required bool isMyMessage, required double distanceFromBottomPixels}) =>
-    isMyMessage || distanceFromBottomPixels <= nearBottomAutoScrollThresholdPixels;
+    isMyMessage || isNearBottom(distanceFromBottomPixels: distanceFromBottomPixels);
+
+/// 위로 올려 보는 중 쌓인 상대 새 메시지 수 (내 메시지·자동 스크롤된 메시지 > 그대로)
+int countUnseenIncomingMessages({required int currentCount, required bool isMyMessage, required bool isAutoScrolled}) =>
+    (isMyMessage || isAutoScrolled) ? currentCount : currentCount + 1;
+
+/// 새 메시지 알림 문구 (예: 새 메시지 3, 100개 이상 > 새 메시지 99+)
+String formatNewMessageCountLabel(int unseenMessageCount) => unseenMessageCount > maximumDisplayedNewMessageCount
+    ? '새 메시지 $maximumDisplayedNewMessageCount+'
+    : '새 메시지 $unseenMessageCount';

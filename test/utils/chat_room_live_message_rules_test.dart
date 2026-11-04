@@ -88,4 +88,27 @@ void main() {
       );
     });
   });
+
+  group('새 메시지 알림 (#987)', () {
+    test('isNearBottom > 자동 스크롤과 같은 기준 (기준 거리까지 근처, 넘으면 멀어짐)', () {
+      expect(isNearBottom(distanceFromBottomPixels: nearBottomAutoScrollThresholdPixels), isTrue);
+      expect(isNearBottom(distanceFromBottomPixels: nearBottomAutoScrollThresholdPixels + 1), isFalse);
+    });
+
+    test('countUnseenIncomingMessages > 자동 스크롤 안 된 상대 메시지만 +1', () {
+      expect(countUnseenIncomingMessages(currentCount: 2, isMyMessage: false, isAutoScrolled: false), 3);
+      expect(
+        countUnseenIncomingMessages(currentCount: 2, isMyMessage: false, isAutoScrolled: true),
+        2,
+        reason: '맨 아래 근처에서 받아 따라 내려간 메시지',
+      );
+      expect(countUnseenIncomingMessages(currentCount: 2, isMyMessage: true, isAutoScrolled: true), 2);
+    });
+
+    test('formatNewMessageCountLabel > 개수 표시, 99 초과는 99+', () {
+      expect(formatNewMessageCountLabel(3), '새 메시지 3');
+      expect(formatNewMessageCountLabel(maximumDisplayedNewMessageCount), '새 메시지 99');
+      expect(formatNewMessageCountLabel(maximumDisplayedNewMessageCount + 1), '새 메시지 99+');
+    });
+  });
 }

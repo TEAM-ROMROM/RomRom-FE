@@ -273,5 +273,22 @@ void main() {
       expect(isWaitCompleted, isTrue);
       await expectLater(webSocketService.waitUntilConnected(), completes);
     });
+
+    test('connectionStatus > 연결·닫힘·재연결마다 값 변화만 알림 (채팅방 연결 중 표시 원본)', () async {
+      final connectionHistory = <bool>[];
+      void recordConnectionStatus() => connectionHistory.add(webSocketService.connectionStatus.value);
+      webSocketService.connectionStatus.addListener(recordConnectionStatus);
+      addTearDown(() => webSocketService.connectionStatus.removeListener(recordConnectionStatus));
+
+      await webSocketService.connect();
+      final client = createdClients.single..simulateConnected();
+      client
+        ..simulateSocketClosedSilently()
+        ..simulateDisconnected()
+        ..simulateReconnected();
+
+      expect(connectionHistory, [true, false, true], reason: '같은 값(닫힘 후 끊김)은 다시 알리지 않음');
+      expect(webSocketService.connectionStatus.value, webSocketService.isConnected);
+    });
   });
 }

@@ -446,7 +446,10 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
                               ref.read(chatRoomsProvider.notifier).markRoomAsRead(roomId);
 
                               final refreshed = await context.navigateTo<bool>(
-                                screen: ChatRoomScreen(chatRoomId: roomId),
+                                screen: ChatRoomScreen(
+                                  chatRoomId: roomId,
+                                  unreadCountAtEntry: chatRoomDetail.unreadCount,
+                                ),
                               );
 
                               // pop(true) 신호: 목록에 영향 있는 변경 (차단 등) > 불러온 페이지 유지한 채 재조회

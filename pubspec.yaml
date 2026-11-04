@@ -26,6 +26,8 @@ dependencies:
   flutter_screenutil: ^5.9.3
   flutter_secure_storage: ^10.0.0
   flutter_svg: ^2.0.17
+  # 채팅 사진 기기 앨범 저장 (Android 10+ MediaStore 저장 > 저장소 권한 불필요, iOS 추가 전용 권한)
+  gal: ^2.3.3
   geolocator: ^14.0.2
   geocoding: ^4.0.0
   google_mobile_ads: ^7.0.0
