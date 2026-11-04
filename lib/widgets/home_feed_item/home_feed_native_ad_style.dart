@@ -48,9 +48,9 @@ class HomeFeedNativeAdStyle {
       // AdChoices: 광고 슬롯에서 숨기는 신고 버튼 자리 (상태바 아래, 노치에 가리지 않게)
       'adChoicesTopInset': topSafeAreaInset + HomeFeedCardLayout.topActionsTopOffset,
       'adChoicesTrailingInset': HomeFeedCardLayout.topActionsTrailingInset,
-      'headlineText': _buildTextOptions(HomeFeedItemSummary.titleTextStyle, textScaler, headlineMaxLines),
-      'bodyText': _buildTextOptions(HomeFeedItemSummary.metaTextStyle, textScaler, bodyMaxLines),
-      'callToActionText': _buildTextOptions(HomeFeedItemSummary.priceTextStyle, textScaler, callToActionMaxLines),
+      'headlineText': buildTextOptions(HomeFeedItemSummary.titleTextStyle, textScaler, headlineMaxLines),
+      'bodyText': buildTextOptions(HomeFeedItemSummary.metaTextStyle, textScaler, bodyMaxLines),
+      'callToActionText': buildTextOptions(HomeFeedItemSummary.priceTextStyle, textScaler, callToActionMaxLines),
       'adBadge': _buildAdBadgeOptions(textScaler),
     };
   }
@@ -61,7 +61,7 @@ class HomeFeedNativeAdStyle {
     final BoxConstraints constraints = ItemDetailConditionTag.constraints;
     return {
       'label': adBadgeLabel,
-      'text': _buildTextOptions(ItemDetailConditionTag.textStyle, textScaler, 1),
+      'text': buildTextOptions(ItemDetailConditionTag.textStyle, textScaler, 1),
       'backgroundColorArgb': ItemDetailConditionTag.backgroundColor.toARGB32(),
       'horizontalPadding': padding.left,
       'verticalPadding': padding.top,
@@ -72,7 +72,7 @@ class HomeFeedNativeAdStyle {
   }
 
   /// TextStyle > 글자 크기(글자 배율 반영), 폰트 파일, 색, 최대 줄 수
-  static Map<String, Object> _buildTextOptions(TextStyle style, TextScaler textScaler, int maxLines) {
+  static Map<String, Object> buildTextOptions(TextStyle style, TextScaler textScaler, int maxLines) {
     final int fontWeightValue = (style.fontWeight ?? FontWeight.w400).value;
     return {
       'fontSize': textScaler.scale(style.fontSize!),

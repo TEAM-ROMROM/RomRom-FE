@@ -29,8 +29,6 @@ import io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin
 /// 치수·글자·색은 Dart HomeFeedNativeAdStyle customOptions에서 받음 (dp 값, 없으면 393x852 기준 기본값)
 class FeedNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.NativeAdFactory {
 
-    // Pretendard 폰트 파일 경로 > Typeface (팩토리 1개, 메인 스레드 호출)
-    private val typefaceByAssetPath = mutableMapOf<String, Typeface>()
     private val density = context.resources.displayMetrics.density
 
     override fun createNativeAd(
@@ -194,23 +192,12 @@ class FeedNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.
     private fun applyTextStyle(textView: TextView, options: FeedNativeAdOptions, fallback: FeedNativeAdTextFallback) {
         // Dart에서 앱 글자 배율(1.0~1.2) 반영한 값이라 시스템 글자 배율 재적용 방지 (DIP)
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, options.number("fontSize", fallback.fontSize))
-        textView.typeface = pretendardTypeface(options.string("fontAssetPath", fallback.fontAssetPath))
+        textView.typeface = PretendardTypefaces.typeface(context, options.string("fontAssetPath", fallback.fontAssetPath))
         textView.setTextColor(options.color("colorArgb", fallback.colorArgb))
         textView.maxLines = options.integer("maxLines", fallback.maxLines)
         textView.ellipsize = TextUtils.TruncateAt.END
         // Flutter 글자 상자(height 1.0)에 가깝게 위아래 폰트 여백 제거
         textView.includeFontPadding = false
-    }
-
-    /// Flutter 에셋 Pretendard > Typeface (첫 사용 시 로드, 실패 시 시스템 굵은 글꼴)
-    private fun pretendardTypeface(assetPath: String): Typeface {
-        typefaceByAssetPath[assetPath]?.let { return it }
-        return try {
-            val lookupKey = FlutterInjector.instance().flutterLoader().getLookupKeyForAsset(assetPath)
-            Typeface.createFromAsset(context.assets, lookupKey).also { typefaceByAssetPath[assetPath] = it }
-        } catch (exception: RuntimeException) {
-            Typeface.DEFAULT_BOLD
-        }
     }
 
     private fun toPx(dp: Float): Float = dp * density
@@ -230,8 +217,25 @@ private enum class FeedNativeAdTextFallback(
     CALL_TO_ACTION(16f, "assets/fonts/pretendard/Pretendard-SemiBold.otf", 0xFFFFFFFF.toInt(), 1),
 }
 
-/// customOptions 읽기: 숫자·정수·문자열·ARGB 색·중첩 옵션
-private class FeedNativeAdOptions(private val values: Map<*, *>) {
+/// Flutter 에셋 Pretendard > Typeface (홈 피드·목록 광고 팩토리 공통, 첫 사용 시 로드, 메인 스레드 호출)
+internal object PretendardTypefaces {
+    // Pretendard 폰트 파일 경로 > Typeface
+    private val typefaceByAssetPath = mutableMapOf<String, Typeface>()
+
+    /// 로드 실패 시 시스템 굵은 글꼴
+    fun typeface(context: Context, assetPath: String): Typeface {
+        typefaceByAssetPath[assetPath]?.let { return it }
+        return try {
+            val lookupKey = FlutterInjector.instance().flutterLoader().getLookupKeyForAsset(assetPath)
+            Typeface.createFromAsset(context.assets, lookupKey).also { typefaceByAssetPath[assetPath] = it }
+        } catch (exception: RuntimeException) {
+            Typeface.DEFAULT_BOLD
+        }
+    }
+}
+
+/// customOptions 읽기: 숫자·정수·문자열·ARGB 색·중첩 옵션 (목록 광고 팩토리 공통)
+internal class FeedNativeAdOptions(private val values: Map<*, *>) {
     fun number(key: String, fallback: Float): Float = (values[key] as? Number)?.toFloat() ?: fallback
 
     fun integer(key: String, fallback: Int): Int = (values[key] as? Number)?.toInt() ?: fallback

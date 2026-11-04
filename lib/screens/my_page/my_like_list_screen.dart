@@ -19,10 +19,12 @@ import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/list_ad_placement.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 import 'package:romrom_fe/enums/item_condition.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
+import 'package:romrom_fe/widgets/list_native_ad/list_native_ad_cell.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
@@ -178,6 +180,9 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  // 좋아요 목록 행 구분선 (행 사이·광고 칸 아래 공통)
+  static const Widget _likeListDivider = Divider(color: AppColors.opacity10White, thickness: 1.5);
+
   // 좋아요 해제한 물품은 빈 하트로 목록에 남김 (다시 눌러 되돌리기 가능, 새로고침·재진입 시 정리)
   @override
   Widget build(BuildContext context) {
@@ -217,18 +222,31 @@ class _MyLikeListScreenState extends ConsumerState<MyLikeListScreen> {
       );
     }
 
+    final listItemCount = ListAdPlacement.itemList.listItemCount(_items.length);
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: ListView.separated(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-        itemCount: _items.length + (_hasMoreItems ? 1 : 0),
-        separatorBuilder: (_, _) => const Divider(color: AppColors.opacity10White, thickness: 1.5),
-        itemBuilder: (context, index) {
+        itemCount: listItemCount + (_hasMoreItems ? 1 : 0),
+        // 광고 칸 아래 구분선은 광고 칸이 함께 그림 (실패로 접히면 구분선도 접혀 중복 없음)
+        separatorBuilder: (_, listIndex) => ListAdPlacement.itemList.isAdAtListIndex(listIndex, _items.length)
+            ? const SizedBox.shrink()
+            : _likeListDivider,
+        itemBuilder: (context, listIndex) {
           // 마지막 행: 다음 페이지 하단 (실패 시 다시 시도, 그 외 로딩)
-          if (_hasMoreItems && index == _items.length) {
+          if (_hasMoreItems && listIndex == listItemCount) {
             return _buildNextPageFooter();
           }
+          // 8개마다 광고 1칸 (마지막 칸이면 아래 구분선 없음)
+          if (ListAdPlacement.itemList.isAdAtListIndex(listIndex, _items.length)) {
+            final isLastListEntry = !_hasMoreItems && listIndex == listItemCount - 1;
+            return ListNativeAdCell(
+              key: ValueKey('like_list_ad_$listIndex'),
+              bottomSeparator: isLastListEntry ? null : _likeListDivider,
+            );
+          }
+          final index = ListAdPlacement.itemList.contentIndexAtListIndex(listIndex);
           final item = _items[index];
 
           return AppFadeSlideIn(

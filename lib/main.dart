@@ -21,6 +21,7 @@ import 'package:romrom_fe/models/pending_deep_link.dart';
 import 'package:romrom_fe/providers/app_version_repository_provider.dart';
 import 'package:romrom_fe/screens/app_update_screen.dart';
 import 'package:romrom_fe/screens/splash_screen.dart';
+import 'package:romrom_fe/services/ad_sdk_initializer.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
@@ -43,6 +44,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 광고 동의·SDK 초기화 가장 먼저 시작 (기다리지 않음, 다른 초기화와 병렬 > 첫 광고 요청 앞당김)
+  AdSdkInitializer.start();
   if (kDebugMode) {
     await RuntimeUrlManager().init();
   }
