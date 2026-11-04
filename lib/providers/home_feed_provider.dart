@@ -25,6 +25,9 @@ final homeFeedProvider = AsyncNotifierProvider<HomeFeedNotifier, HomeFeedState>(
 @visibleForTesting
 const Duration kHomeFeedRefreshThrottle = Duration(seconds: 30);
 
+/// 홈 탭 진입 시 피드를 오래된 것으로 보는 경과 시간 (#995)
+const Duration kHomeFeedStaleAfter = Duration(minutes: 10);
+
 /// seen-set LRU 최대 크기 — spec §2.1.
 @visibleForTesting
 const int kHomeFeedSeenSetMaxSize = HomeFeedSeenItemHistory.maximumSeenItemCount;
@@ -59,8 +62,8 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   // build 세대 (세션 초기화(invalidate)마다 증가 > 이전 세션의 늦은 loadMore·refresh 결과 폐기)
   int _buildGeneration = 0;
 
-  // 이번 세션에 신고한 물품 id (서버가 피드에서 빼 준다는 보장이 없어 클라이언트에서 거름)
-  final Set<String> _reportedItemIds = {};
+  // 이번 세션에 신고·볼 수 없게 된 물품 id (서버가 피드에서 빼 준다는 보장이 없어 클라이언트에서 거름)
+  final Set<String> _excludedItemIds = {};
 
   // 본 물품 기록 (화면 상태와 분리 > 넘길 때 피드 상태 변화 없음, 기기 저장은 묶음)
   HomeFeedSeenItemHistory _seenItemHistory = HomeFeedSeenItemHistory(
@@ -94,7 +97,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     _buildGeneration++;
     _isLoadMoreInFlight = false;
     _lastLoadMoreFailedAt = null;
-    _reportedItemIds.clear();
+    _excludedItemIds.clear();
     _inFlightRefresh = null;
     _queuedBypassRefresh = null;
     final buildGeneration = _buildGeneration;
@@ -111,14 +114,20 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     );
     // 복원 중 세션이 바뀌었으면 새 세션 기록 유지
     if (buildGeneration == _buildGeneration) _seenItemHistory = sessionSeenItemHistory;
-    return _fetchInitial();
+    return _fetchInitialWithRefreshTime();
+  }
+
+  /// 첫 페이지 조회 > 조회 시각 기록 (오래됨 판정 기준, 최초 로드·재시도 공통)
+  Future<HomeFeedState> _fetchInitialWithRefreshTime() async {
+    final initialState = await _fetchInitial();
+    return initialState.copyWith(lastRefreshAt: now());
   }
 
   /// 대기 중 본 물품 기록 즉시 저장 (앱 비활성·홈 탭 이탈 시 호출)
   Future<void> flushSeenItemIds() => _seenItemHistory.flush();
 
   /// 정렬 폴백을 돌아 첫 비어있지 않은 결과를 반환 (새 세션: 새 시드 + 최근 본 물품 스냅샷 고정).
-  /// 시간 함수(DateTime.now())는 호출하지 않는다 — lastRefreshAt는 호출자가 결정.
+  /// 시간 함수는 호출하지 않는다 — lastRefreshAt은 호출부에서 기록.
   Future<HomeFeedState> _fetchInitial() async {
     List<Item> items = const [];
     ItemSortField pickedSort = ItemSortField.recommended;
@@ -272,7 +281,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
       state = AsyncData(
         next.copyWith(
           items: _excludeHiddenItems(next.items),
-          lastRefreshAt: DateTime.now(),
+          lastRefreshAt: now(),
           feedRevision: current.feedRevision + 1,
         ),
       );
@@ -289,8 +298,20 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
 
   /// 신고한 물품 제외: 세션 동안 기억 > 현재 목록에서 제거 (진행 중 로딩 상태 유지, 이후 refresh·loadMore 결과에서도 제외)
   void excludeReportedItem(String itemId) {
-    _reportedItemIds.add(itemId);
+    _excludedItemIds.add(itemId);
     _applyHiddenItemFilter();
+  }
+
+  /// 볼 수 없는 물품(삭제·거래완료 등) 제외: 신고 제외와 같은 집합 사용
+  void excludeUnavailableItem(String itemId) => excludeReportedItem(itemId);
+
+  /// 오래된 피드(마지막 조회 10분 초과)만 새로 조회 (데이터 없음·오래되지 않음 > skipped)
+  Future<HomeFeedRefreshResult> refreshIfStale() {
+    final lastRefreshAt = state.valueOrNull?.lastRefreshAt;
+    if (lastRefreshAt == null || now().difference(lastRefreshAt) <= kHomeFeedStaleAfter) {
+      return Future.value(HomeFeedRefreshResult.skipped);
+    }
+    return refresh(trigger: RefreshTrigger.homeTabEntryAfterStale);
   }
 
   /// 현재 목록에서 숨김 물품(신고·차단 회원) 제거 (진행 중 로딩 상태 유지, 바뀐 게 없으면 상태 유지)
@@ -309,7 +330,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     return feedItems
         .where(
           (feedItem) =>
-              !_reportedItemIds.contains(feedItem.itemUuid) && !blockedMemberIds.contains(feedItem.authorMemberId),
+              !_excludedItemIds.contains(feedItem.itemUuid) && !blockedMemberIds.contains(feedItem.authorMemberId),
         )
         .toList();
   }
@@ -320,7 +341,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     if (state.hasValue || state.isLoading) return;
 
     state = const AsyncLoading<HomeFeedState>();
-    state = await AsyncValue.guard(_fetchInitial);
+    state = await AsyncValue.guard(_fetchInitialWithRefreshTime);
   }
 
   /// 본 물품 기록 (LRU 갱신 > 묶음 저장 예약, 피드 상태는 바꾸지 않음 > 넘길 때 화면 재빌드 없음)
@@ -333,7 +354,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   Future<List<HomeFeedItem>> _toFeedItems(List<Item> items, {required int startIndex}) async {
     final blockedMemberIds = ref.read(memberBlockProvider).blockedIds;
     final visibleItems = items
-        .where((item) => !_reportedItemIds.contains(item.itemId) && !blockedMemberIds.contains(item.member?.memberId))
+        .where((item) => !_excludedItemIds.contains(item.itemId) && !blockedMemberIds.contains(item.member?.memberId))
         .toList();
     final locationTexts = await ref.read(itemAddressResolverProvider).resolveLocationTexts(visibleItems);
     return HomeFeedItem.fromItems(visibleItems, startIndex: startIndex, locationTexts: locationTexts);
@@ -347,7 +368,7 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
 
   bool _shouldThrottle(DateTime? last) {
     if (last == null) return false;
-    return DateTime.now().difference(last) < kHomeFeedRefreshThrottle;
+    return now().difference(last) < kHomeFeedRefreshThrottle;
   }
 
   /// seen 아이템을 응답 끝으로 재정렬 (필터링하지 않음).

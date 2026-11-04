@@ -18,6 +18,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 import 'package:romrom_fe/models/location_address.dart';
+import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
