@@ -447,7 +447,7 @@ class ChatWebSocketService {
     }
   }
 
-  /// 연결 해제: 클라이언트·구독·스트림·참조 카운트·재연결 판정 전부 초기화 (다음 connect는 최초 연결)
+  /// 연결 해제: 클라이언트·구독·스트림·참조 카운트·연결 대기·재연결 판정 전부 초기화 (다음 connect는 최초 연결)
   /// 첫 await 전에 상태·목록을 비움 > 정리 도중 새로 들어온 구독은 닫지 않고 다음 연결 때 구독
   Future<void> disconnect() async {
     debugPrint('[WebSocket] Disconnecting...');

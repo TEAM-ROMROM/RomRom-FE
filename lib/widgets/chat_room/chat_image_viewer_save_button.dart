@@ -1,13 +1,12 @@
 // 채팅 사진 전체 보기 저장 버튼: 오른쪽 위, 현재 장 앨범 저장 > 결과 토스트 (권한 거부 > 설정 열기 안내, 채팅은 그대로)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:romrom_fe/enums/chat_image_save_result.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/providers/chat_image_gallery_saver_provider.dart';
+import 'package:romrom_fe/utils/permission_settings_modal.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
-import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
@@ -57,17 +56,7 @@ class _ChatImageViewerSaveButtonState extends ConsumerState<ChatImageViewerSaveB
       case ChatImageSaveResult.failed:
         CommonSnackBar.show(context: context, message: '사진을 저장하지 못했어요. 다시 시도해 주세요.', type: SnackBarType.error);
       case ChatImageSaveResult.permissionDenied:
-        await CommonModal.confirm(
-          context: context,
-          message: '사진 저장 권한이 꺼져 있어요.\n설정에서 사진 추가를 허용해 주세요.',
-          cancelText: '취소',
-          confirmText: '설정 열기',
-          onCancel: () => Navigator.of(context).pop(),
-          onConfirm: () {
-            Navigator.of(context).pop();
-            openAppSettings();
-          },
-        );
+        await showPermissionSettingsModal(context: context, message: '사진 저장 권한이 꺼져 있어요.\n설정에서 사진 추가를 허용해 주세요.');
     }
   }
 

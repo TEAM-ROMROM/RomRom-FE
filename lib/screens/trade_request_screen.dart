@@ -251,7 +251,7 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  /// 거래 요청 API 호출
+  /// 거래 요청: 교환 방식 확인 > 요청 전송 > 알림 권한 1회 안내 > 화면 닫기
   Future<void> _submitTradeRequest() async {
     if (_selectedTradeOptions.isEmpty) {
       CommonSnackBar.show(context: context, message: '교환 방식을 선택해주세요.', type: SnackBarType.info);

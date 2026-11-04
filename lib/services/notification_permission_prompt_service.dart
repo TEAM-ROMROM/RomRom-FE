@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/storage_keys.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
+import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 알림 권한 1회 안내 판단·요청: 안내 필요 여부(설치당 1회) > 안내 기록 > 시스템 권한 요청 > 허용 시 FCM 토큰 등록
@@ -37,7 +38,7 @@ class NotificationPermissionPromptService {
       if (preferences.getBool(StorageKeys.notificationPermissionPromptAsked.key) == true) return _stopPrompt();
 
       final authorizationStatus = await _readAuthorizationStatus();
-      if (_isGranted(authorizationStatus)) return _stopPrompt();
+      if (NotificationPermissionService.isGrantedStatus(authorizationStatus)) return _stopPrompt();
       if (_isIos && authorizationStatus == AuthorizationStatus.denied) return _stopPrompt();
 
       // 응답과 무관하게 설치당 1회 (거절·닫기 후 재안내 없음)
@@ -53,7 +54,7 @@ class NotificationPermissionPromptService {
   Future<bool> requestPermissionAndRegisterToken() async {
     try {
       await _requestSystemPermission();
-      final isGranted = _isGranted(await _readAuthorizationStatus());
+      final isGranted = NotificationPermissionService.isGrantedStatus(await _readAuthorizationStatus());
       // 허용 직후 토큰 재등록 (권한 전 발급·저장 실패분 보정)
       if (isGranted) await _registerFcmToken();
       return isGranted;
@@ -70,9 +71,6 @@ class NotificationPermissionPromptService {
     _isPrompting = false;
     return false;
   }
-
-  static bool _isGranted(AuthorizationStatus status) =>
-      status == AuthorizationStatus.authorized || status == AuthorizationStatus.provisional;
 
   static Future<AuthorizationStatus> _readFirebaseAuthorizationStatus() async =>
       (await FirebaseMessaging.instance.getNotificationSettings()).authorizationStatus;

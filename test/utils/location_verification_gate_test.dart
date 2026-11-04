@@ -28,10 +28,10 @@ void seedVerificationRecord(String? memberId) {
   SharedPreferences.setMockInitialValues({StorageKeys.locationVerificationRecord.key: jsonEncode(record.toJson())});
 }
 
-/// 인증 확인 실행 버튼 화면: 인증 화면 이동은 대역 ([verificationScreenResult] 반환, 이동 횟수 기록)
+/// 인증 확인 실행 버튼 화면: 인증 화면 이동은 대역 ([isVerifiedOnScreen] 반환: null 뒤로, 이동 횟수 기록)
 class GateHarness {
   int verificationScreenOpenCount = 0;
-  bool? verificationScreenResult = true;
+  bool? isVerifiedOnScreen = true;
   // 탭 1번에 인증 확인 호출 횟수 (연속 호출 중복 차단 검증용)
   int gateCallCountPerTap = 1;
   final List<bool> gateResults = [];
@@ -49,7 +49,7 @@ class GateHarness {
               ref,
               openVerificationScreen: (context) async {
                 verificationScreenOpenCount++;
-                return verificationScreenResult;
+                return isVerifiedOnScreen;
               },
             ),
           ),
@@ -129,7 +129,7 @@ void main() {
 
   testWidgets('미인증 > 인증 화면에서 거부·뒤로 > 중단, 자동 재안내 없음', (tester) async {
     seedVerificationRecord(null);
-    harness.verificationScreenResult = false;
+    harness.isVerifiedOnScreen = false;
     await harness.pump(tester);
 
     await tester.tap(find.text('기능 실행'));

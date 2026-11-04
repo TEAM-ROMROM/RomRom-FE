@@ -1,22 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:romrom_fe/services/native_ad_handle.dart';
 import 'package:romrom_fe/widgets/home_tab/home_feed_native_ad_preloader.dart';
+
+import '../../helpers/native_ad_fakes.dart';
 
 /// 광고 요청 결과 대역 (플랫폼 호출 없음, 폐기 횟수 기록)
 class _FakeNativeAdHandle extends NativeAdHandle {
   _FakeNativeAdHandle({required this.loadCompleter, required super.requestedAt})
-    : super(
-        nativeAd: NativeAd(
-          adUnitId: 'test',
-          factoryId: 'test',
-          listener: NativeAdListener(),
-          request: const AdRequest(),
-        ),
-        isLoadedFuture: loadCompleter.future,
-      );
+    : super(nativeAd: buildTestNativeAd(), isLoadedFuture: loadCompleter.future);
 
   final Completer<bool> loadCompleter;
   int disposeCount = 0;

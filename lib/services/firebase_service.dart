@@ -121,8 +121,8 @@ class FirebaseService {
     });
   }
 
-  /// FCM 토큰 발급 및 갱신
-  /// 온보딩 완료 또는 토큰 갱신 시 호출
+  /// FCM 토큰 발급 (iOS는 APNs 토큰 도착 대기 후, 실패 시 null)
+  /// handleFcmToken에서 호출
   Future<String?> getFcmToken() async {
     try {
       final messaging = FirebaseMessaging.instance;

@@ -10,7 +10,7 @@ const String _imageMessageContent = '사진을 보냈습니다.';
 const String _sendFailedMessage = '메시지를 보내지 못했어요. 연결 상태를 확인해 주세요.';
 
 mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom {
-  /// 재연결 시 호출: 서버 최신 메시지 재조회 > 서버에 이미 저장된 내 로컬 메시지 정리 > 유실분 병합
+  /// 재연결 시 호출: 서버 최신 메시지 재조회 > 서버에 이미 저장된 내 로컬 메시지 정리 > 주소 대기 이미지 교체 > 유실분 병합
   Future<void> _resyncMessages() async {
     if (_isResyncing || !mounted) return;
     _isResyncing = true;

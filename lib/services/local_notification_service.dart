@@ -38,7 +38,7 @@ Future<void> _initializeNotificationPlugin() async {
 /// 로컬 알림 탭 (Android 포그라운드 표시분): payload(FCM data) > 딥링크 이동
 @visibleForTesting
 void onLocalNotificationTapped(NotificationResponse response) {
-  final data = decodePushNotificationPayload(response.payload);
-  if (data == null) return;
-  routePushNotificationData(data);
+  final pushData = decodePushNotificationPayload(response.payload);
+  if (pushData == null) return;
+  routePushNotificationData(pushData);
 }

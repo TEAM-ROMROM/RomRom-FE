@@ -53,7 +53,7 @@ class _FakeStompClient extends StompClient {
   }
 }
 
-/// 웹소켓 회원 단위 연결 검증: 같은 회원 재사용, 회원 변경 시 이전 연결·구독 정리 후 새 토큰으로 연결, 이전 클라이언트 늦은 콜백 무시
+/// 웹소켓 회원 단위 연결 검증: 같은 회원 재사용, 회원 변경 시 이전 연결·구독 정리 후 새 토큰으로 연결, 이전 클라이언트 늦은 콜백 무시, 오류 없이 닫힌 소켓 재연결
 void main() {
   late String currentMemberId;
   late String currentAccessToken;

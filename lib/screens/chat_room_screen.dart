@@ -78,7 +78,7 @@ part 'chat_room/chat_room_input_convenience.dart';
 class ChatRoomScreen extends ConsumerStatefulWidget {
   final String chatRoomId;
   final bool autoTriggerExchangeRequest;
-  // 채팅 목록에서 본 안 읽음 수 (목록이 진입 전에 0으로 바꿈 > 전달, 없으면 목록 상태에서 찾음)
+  // 진입 시 안 읽음 수 (채팅 목록은 진입 전 0으로 초기화 > 목록이 전달, 없으면 목록 상태에서 조회)
   final int? unreadCountAtEntry;
 
   const ChatRoomScreen({

@@ -41,9 +41,9 @@ mixin _ChatRoomInputConvenience on _ChatRoomScreenStateFields {
 
   /// 입력 변경: 전송 버튼 활성 > 임시 저장 (빈 글 > 삭제) > 입력 높이
   void _onMessageChanged() {
-    final has = _messageController.text.trim().isNotEmpty;
-    if (_hasText != has && mounted) {
-      setState(() => _hasText = has);
+    final hasEnteredText = _messageController.text.trim().isNotEmpty;
+    if (_hasText != hasEnteredText && mounted) {
+      setState(() => _hasText = hasEnteredText);
     }
     _chatInputDraftNotifier.saveDraft(chatRoomId: widget.chatRoomId, text: _messageController.text);
     if (mounted) _updateInputFieldHeight();
