@@ -150,6 +150,9 @@ class AppColors {
   // 홈 피드 카드 바탕 (물품 카드·네이티브 광고 카드 공통)
   static const Color homeFeedCardBackground = Colors.black;
 
+  // 목록 네이티브 광고 칸 바탕 (목록 행 바탕 primaryBlack과 구분 > 콘텐츠로 위장하지 않음, AdMob 정책)
+  static const Color listNativeAdBackground = Color(0xFF282933);
+
   // 홈 피드 - blackGradient container 그라데이션
   static List<Color> blackGradient1 = [
     Colors.black,
