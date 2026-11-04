@@ -11,6 +11,7 @@ RegisterFormSnapshot buildSnapshot({
   String itemName = '자전거',
   String itemDescription = '거의 새 것인 자전거입니다',
   ItemCategories? category = ItemCategories.shoes,
+  Set<ItemCategories> wantedCategories = const {},
   List<ItemCondition> conditions = const [ItemCondition.sealed],
   Set<ItemTradeOption> tradeOptions = const {ItemTradeOption.directTradeOnly},
   String priceText = '12,000',
@@ -24,6 +25,7 @@ RegisterFormSnapshot buildSnapshot({
     itemName: itemName,
     itemDescription: itemDescription,
     category: category,
+    wantedCategories: wantedCategories,
     conditions: conditions,
     tradeOptions: tradeOptions,
     priceText: priceText,
@@ -36,6 +38,15 @@ RegisterFormSnapshot buildSnapshot({
 void main() {
   group('RegisterFormSnapshot 미저장 변경 판정', () {
     final initialSnapshot = buildSnapshot();
+
+    test('희망 교환 카테고리 변경 > 변경 있음, 순서만 다르면 변경 없음 (#1008)', () {
+      final wantedSnapshot = buildSnapshot(wantedCategories: {ItemCategories.shoes, ItemCategories.beauty});
+      expect(wantedSnapshot.hasChangesFrom(initialSnapshot), isTrue);
+      expect(
+        buildSnapshot(wantedCategories: {ItemCategories.beauty, ItemCategories.shoes}).hasChangesFrom(wantedSnapshot),
+        isFalse,
+      );
+    });
 
     test('같은 값 > 변경 없음', () {
       expect(buildSnapshot().hasChangesFrom(initialSnapshot), isFalse);

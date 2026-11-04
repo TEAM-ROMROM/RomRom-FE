@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/responses/member_response.dart';
+import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 
 class MemberRepository {
@@ -54,6 +55,12 @@ class MemberRepository {
     eupMyoenDong: eupMyoenDong,
     ri: ri,
   );
+
+  /// 탈퇴 전 진행 중 거래 목록 (탈퇴 시 서버가 자동 취소) (#1008)
+  Future<List<TradeRequestHistory>> getOngoingTradesBeforeWithdrawal() async {
+    final tradeResponse = await _api.getOngoingTradesBeforeWithdrawal();
+    return tradeResponse.ongoingTradeRequestHistories;
+  }
 
   /// 탐색 범위 저장 (미터 단위 > 서버 저장 성공 여부)
   Future<bool> saveSearchRadius(double searchRadiusInMeters) => _api.saveSearchRadius(searchRadiusInMeters);

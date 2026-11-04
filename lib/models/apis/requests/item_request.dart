@@ -33,6 +33,14 @@ class ItemRequest {
   List<String>? recentlySeenItemIds;
   @JsonKey(includeFromJson: false, includeToJson: false)
   int? feedSeed;
+  // 희망 교환 카테고리 서버 이름 (#1008): null > 미전송(수정 시 서버 기존 값 유지), 빈 목록 > 전부 해제 > item_api가 직접 전송
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String>? wantedItemCategories;
+  // 물품 검색 전용 (#1008): 카테고리 필터 서버 이름, 정렬 서버 이름 > item_api가 직접 전송
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String>? searchItemCategories;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  String? searchSortField;
 
   ItemRequest({
     this.memberId,
@@ -60,6 +68,9 @@ class ItemRequest {
     this.searchKeyword,
     this.recentlySeenItemIds,
     this.feedSeed,
+    this.wantedItemCategories,
+    this.searchItemCategories,
+    this.searchSortField,
   });
 
   factory ItemRequest.fromJson(Map<String, dynamic> json) => _$ItemRequestFromJson(json);

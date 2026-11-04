@@ -7,6 +7,7 @@ import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
+import 'package:romrom_fe/providers/item_search_provider.dart';
 import 'package:romrom_fe/providers/location_verification_provider.dart';
 import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
@@ -15,6 +16,7 @@ import 'package:romrom_fe/providers/notification_list_provider.dart';
 import 'package:romrom_fe/providers/notification_unread_count_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/providers/promotion_provider.dart';
+import 'package:romrom_fe/providers/recent_search_keywords_provider.dart';
 import 'package:romrom_fe/providers/sent_requests_focus_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 
@@ -39,6 +41,8 @@ final List<ProviderOrFamily> userScopedProviders = [
   sentRequestsFocusTriggerProvider,
   promotionProvider,
   locationVerificationProvider,
+  itemSearchProvider,
+  recentSearchKeywordsProvider,
 ];
 
 /// 사용자 범위 provider 전부 무효화 (WidgetRef·ProviderContainer의 invalidate 전달)

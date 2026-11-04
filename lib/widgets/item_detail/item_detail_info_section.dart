@@ -1,4 +1,4 @@
-// 물품 상세 본문: 카테고리·등록 시각, 제목, 사용감·거래 방식 태그, 가격(AI 배지), 설명
+// 물품 상세 본문: 카테고리·등록 시각, 제목, 사용감·거래 방식 태그, 가격(AI 배지), 설명, 희망 교환 카테고리
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_categories.dart';
@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
+import 'package:romrom_fe/widgets/item_detail/item_detail_wanted_category_section.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
 
@@ -43,6 +44,7 @@ class ItemDetailInfoSection extends StatelessWidget {
           ),
           SizedBox(height: 24.h),
           Text(item.itemDescription ?? '설명이 없습니다.', style: CustomTextStyles.p2.copyWith(height: 1.4)),
+          ItemDetailWantedCategorySection(wantedCategoryServerNames: item.wantedItemCategories),
         ],
       ),
     );

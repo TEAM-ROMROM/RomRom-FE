@@ -1,3 +1,6 @@
+import 'package:romrom_fe/models/item_wanted_category_policy.dart';
+import 'package:romrom_fe/utils/nickname_rules.dart';
+
 enum ErrorCode {
   internalServerError(code: 'INTERNAL_SERVER_ERROR', koMessage: '서버에 문제가 발생했습니다.'),
   invalidRequest(code: 'INVALID_REQUEST', koMessage: '잘못된 요청입니다.'),
@@ -127,6 +130,17 @@ enum ErrorCode {
   // NOTIFICATION
   notificationHistoryNotFound(code: 'NOTIFICATION_HISTORY_NOT_FOUND', koMessage: '알림 히스토리를 찾을 수 없습니다.'),
   invalidNotificationHistoryOwner(code: 'INVALID_NOTIFICATION_HISTORY_OWNER', koMessage: '해당 알림의 수신자가 아닙니다.'),
+
+  // ===== 검색·희망 카테고리·탈퇴 사유·닉네임 규칙 (#1008, 서버 #862) =====
+  invalidSearchKeyword(code: 'INVALID_SEARCH_KEYWORD', koMessage: '검색어를 1자 이상 입력해 주세요.'),
+  tooManyWantedItemCategories(
+    code: 'TOO_MANY_WANTED_ITEM_CATEGORIES',
+    koMessage: '희망 교환 카테고리는 최대 $maximumWantedItemCategoryCount개까지 고를 수 있어요.',
+  ),
+  tooLongWithdrawalReasonDetail(code: 'TOO_LONG_WITHDRAWAL_REASON_DETAIL', koMessage: '탈퇴 사유는 500자까지 입력할 수 있어요.'),
+  invalidNicknameLength(code: 'INVALID_NICKNAME_LENGTH', koMessage: nicknameInvalidLengthMessage),
+  invalidNicknameCharacter(code: 'INVALID_NICKNAME_CHARACTER', koMessage: nicknameInvalidCharacterMessage),
+  reservedNickname(code: 'RESERVED_NICKNAME', koMessage: nicknameReservedMessage),
 
   // JSON
   unknown(code: 'UNKNOWN', koMessage: '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');

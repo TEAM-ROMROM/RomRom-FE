@@ -10,7 +10,9 @@ enum StorageKeys {
   // SharedPreferences: GPS 동네 인증 기록 (JSON {memberId, verifiedAt, latitude, longitude}, 로그아웃 시 삭제) (#986)
   locationVerificationRecord('locationVerificationRecord'),
   // SharedPreferences: 알림 권한 안내 노출 여부 (bool, 설치당 1회, 로그아웃·탈퇴에도 유지) (#986)
-  notificationPermissionPromptAsked('notificationPermissionPromptAsked');
+  notificationPermissionPromptAsked('notificationPermissionPromptAsked'),
+  // SharedPreferences: 물품 검색 최근 검색어 (StringList, 최신 순, 최대 10개, 회원별 키 '{key}_{memberId}') (#1008)
+  recentItemSearchKeywords('recentItemSearchKeywords');
 
   final String key;
   const StorageKeys(this.key);
