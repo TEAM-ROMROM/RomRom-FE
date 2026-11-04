@@ -19,6 +19,10 @@ ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
   isProfanityDetected: json['isProfanityDetected'] as bool?,
   latitude: (json['latitude'] as num?)?.toDouble(),
   longitude: (json['longitude'] as num?)?.toDouble(),
+  isDeleted: json['isDeleted'] as bool?,
+  appointment: json['appointment'] == null
+      ? null
+      : ChatAppointment.fromJson(json['appointment'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) => <String, dynamic>{
@@ -34,6 +38,8 @@ Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) => <String, dynam
   'isProfanityDetected': instance.isProfanityDetected,
   'latitude': instance.latitude,
   'longitude': instance.longitude,
+  'isDeleted': instance.isDeleted,
+  'appointment': instance.appointment?.toJson(),
 };
 
 const _$MessageTypeEnumMap = {

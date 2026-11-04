@@ -17,6 +17,7 @@ ChatRoomDetailDto _$ChatRoomDetailDtoFromJson(Map<String, dynamic> json) => Chat
   targetItemImageUrl: json['targetItemImageUrl'] as String?,
   myItemImageUrl: json['myItemImageUrl'] as String?,
   blocked: json['blocked'] as bool?,
+  isNotificationMuted: json['isNotificationMuted'] as bool?,
 );
 
 Map<String, dynamic> _$ChatRoomDetailDtoToJson(ChatRoomDetailDto instance) => <String, dynamic>{
@@ -30,6 +31,7 @@ Map<String, dynamic> _$ChatRoomDetailDtoToJson(ChatRoomDetailDto instance) => <S
   'targetItemImageUrl': instance.targetItemImageUrl,
   'myItemImageUrl': instance.myItemImageUrl,
   'blocked': instance.blocked,
+  'isNotificationMuted': instance.isNotificationMuted,
 };
 
 const _$ChatRoomTypeEnumMap = {ChatRoomType.requested: 'REQUESTED', ChatRoomType.received: 'RECEIVED'};

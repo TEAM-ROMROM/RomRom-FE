@@ -20,6 +20,10 @@ class ChatRoomResponse {
   // 현재 사용자 기준 AI 행동 추천 (messages/get 응답만, 상대 탈퇴 시 null)
   @JsonKey(fromJson: _chatActionRecommendationFromJson, toJson: _chatActionRecommendationToJson)
   final ChatActionRecommendation? latestRecommendation;
+  // 내 방별 알림 끄기 상태 (messages/get·notification-mute/update 응답)
+  final bool? isNotificationMuted;
+  // 변경된 메시지 1건 (메시지 삭제·약속 제안·수락·취소 응답)
+  final ChatMessage? chatMessage;
 
   ChatRoomResponse({
     this.chatRoom,
@@ -28,6 +32,8 @@ class ChatRoomResponse {
     this.isOpponentDeleted = false,
     this.opponentState,
     this.latestRecommendation,
+    this.isNotificationMuted,
+    this.chatMessage,
   });
 
   factory ChatRoomResponse.fromJson(Map<String, dynamic> json) => _$ChatRoomResponseFromJson(json);

@@ -128,6 +128,19 @@ enum ErrorCode {
   notificationHistoryNotFound(code: 'NOTIFICATION_HISTORY_NOT_FOUND', koMessage: '알림 히스토리를 찾을 수 없습니다.'),
   invalidNotificationHistoryOwner(code: 'INVALID_NOTIFICATION_HISTORY_OWNER', koMessage: '해당 알림의 수신자가 아닙니다.'),
 
+  // CHAT 확장: 메시지 삭제·약속·메시지 신고 (#1006)
+  chatMessageNotFound(code: 'CHAT_MESSAGE_NOT_FOUND', koMessage: '메시지를 찾을 수 없습니다.'),
+  chatMessageDeleteNotSender(code: 'CHAT_MESSAGE_DELETE_NOT_SENDER', koMessage: '내가 보낸 메시지만 삭제할 수 있어요.'),
+  chatMessageDeletePeriodExpired(
+    code: 'CHAT_MESSAGE_DELETE_PERIOD_EXPIRED',
+    koMessage: '보낸 지 24시간이 지난 메시지는 삭제할 수 없어요.',
+  ),
+  chatMessageNotDeletable(code: 'CHAT_MESSAGE_NOT_DELETABLE', koMessage: '삭제할 수 없는 메시지입니다.'),
+  invalidChatAppointment(code: 'INVALID_CHAT_APPOINTMENT', koMessage: '약속 일시나 장소를 다시 확인해 주세요.'),
+  chatAppointmentAcceptForbidden(code: 'CHAT_APPOINTMENT_ACCEPT_FORBIDDEN', koMessage: '상대방이 보낸 약속만 수락할 수 있어요.'),
+  chatAppointmentStatusConflict(code: 'CHAT_APPOINTMENT_STATUS_CONFLICT', koMessage: '이미 처리된 약속입니다.'),
+  duplicateChatMessageReport(code: 'DUPLICATE_CHAT_MESSAGE_REPORT', koMessage: '이미 신고한 메시지입니다.'),
+
   // JSON
   unknown(code: 'UNKNOWN', koMessage: '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
 
