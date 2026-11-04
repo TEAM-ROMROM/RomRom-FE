@@ -2,8 +2,14 @@
 part of '../chat_room_screen.dart';
 
 mixin _ChatRoomInitialLoad
-    on _ChatRoomScreenStateFields, _ChatRoomMessaging, _ChatRoomTradeActions, _ChatRoomRecommendationActions {
-  /// 채팅방 초기화: 회원 ID > 메시지 구독 > 소켓 연결·메시지(AI 추천 포함)·읽음 상태 동시 조회 > 보관분 병합 > 상대 상태 폴링 > 추천·읽음·재연결 구독 > 안내 (알림 시트 > 모달)
+    on
+        _ChatRoomScreenStateFields,
+        _ChatRoomNewMessageIndicator,
+        _ChatRoomMessaging,
+        _ChatRoomUnreadPosition,
+        _ChatRoomTradeActions,
+        _ChatRoomRecommendationActions {
+  /// 채팅방 초기화: 회원 ID > 메시지 구독 > 소켓 연결·메시지(AI 추천 포함)·읽음 상태 동시 조회 > 보관분 병합 > 상대 상태 폴링 > 안 읽은 위치 > 추천·읽음·재연결 구독 > 안내 (알림 시트 > 모달)
   Future<void> _loadInitialData() async {
     try {
       setState(() {
@@ -43,12 +49,15 @@ mixin _ChatRoomInitialLoad
         _isLoading = false;
       });
       _recommendationNotifier.applyServerRecommendation(widget.chatRoomId, response.latestRecommendation);
+      // 조회 최신 메시지 기준 안 읽음 계산 (보관분 병합 전 기록)
+      final newestFetchedMessageId = _messages.firstOrNull?.chatMessageId;
       _applyLiveMessagesReceivedDuringLoad();
       if (!isSubscribedBeforeFetch) unawaited(_resyncAfterFirstConnection());
 
       _startOpponentStatusPolling();
       _subscribeToRecommendations();
-      _scrollToBottom();
+      // 안 읽은 첫 메시지 위치(구분선), 없으면 맨 아래
+      unawaited(_positionAtFirstUnreadMessage(newestFetchedMessageId: newestFetchedMessageId));
       _updateReadCursorInBackground(isEntered: true);
       // 채팅 목록·탭바 안 읽음 해제 (알림 등 목록 밖 진입 포함)
       ref.read(chatRoomsProvider.notifier).markRoomAsRead(widget.chatRoomId);
@@ -130,7 +139,7 @@ mixin _ChatRoomInitialLoad
     });
   }
 
-  /// 채팅방 메시지 수신: 조회 중 보관 > 내 나가기 무시 > 목록 반영 > 맨 아래 근처·내 메시지면 스크롤 > 비속어 경고 > 상대 퇴장 모달 > 거래 완료 시 후기 화면
+  /// 채팅방 메시지 수신: 조회 중 보관 > 내 나가기 무시 > 목록 반영 > 맨 아래 근처·내 메시지면 스크롤 (아니면 새 메시지 수 +1) > 비속어 경고 > 상대 퇴장 모달 > 거래 완료 시 후기 화면
   void _onChatRoomMessageReceived(ChatMessage newMessage) {
     debugPrint(
       '[ChatRoom] 🔔 메시지 수신: type=${newMessage.type}, id=${newMessage.chatMessageId}, senderId=${newMessage.senderId}',
@@ -152,6 +161,10 @@ mixin _ChatRoomInitialLoad
     setState(() => isMessageAdded = _handleIncomingMessage(newMessage));
     if (!isMessageAdded) return;
     if (shouldScrollToBottom) _scrollToBottom();
+    _countIncomingMessageWhileAway(
+      isMyMessage: newMessage.senderId == _myMemberId,
+      isAutoScrolled: shouldScrollToBottom,
+    );
 
     // 비속어 경고 (발신자 본인에게만 표시)
     if (newMessage.isProfanityDetected == true && newMessage.senderId == _myMemberId) {

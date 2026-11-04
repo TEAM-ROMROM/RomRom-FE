@@ -33,6 +33,11 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
 
+    <!-- 채팅 사진 앨범 저장 (gal 요구 선언 API 29 이하): 실제 권한 요청은 Android 9 이하만, Android 10+는 MediaStore 저장 -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29"/>
+
     <application
         android:label="롬롬"
         android:name="${applicationName}"

@@ -6,6 +6,7 @@ import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/services/app_image_cache_manager.dart';
 import 'package:romrom_fe/utils/image_decode_size.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_image_viewer_save_button.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
@@ -180,9 +181,13 @@ Widget chatImageBubble(BuildContext context, ChatMessage message) {
   );
 
   void onTap(int initialPage) {
+    // 저장 버튼이 읽을 현재 장 (넘길 때마다 갱신)
+    final pageTracker = PhotoViewerPageTracker(currentPageIndex: initialPage);
     showPhotoViewer(
       context: context,
       heroTagBuilder: heroTag,
+      onPageChanged: (pageIndex) => pageTracker.currentPageIndex = pageIndex,
+      overlayBuilder: (_) => ChatImageViewerSaveButton(imageUrls: urls, pageTracker: pageTracker),
       builders: urls.indexed.map<WidgetBuilder>((indexedUrl) {
         final (index, url) = indexedUrl;
         // 전체 보기는 확대용 원본 해상도, 디코딩 중에는 셀 이미지 > 없으면 스피너
