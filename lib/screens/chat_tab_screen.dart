@@ -430,6 +430,7 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
                             targetItemImageUrl: chatRoomDetail.targetItemImageUrl,
                             myItemImageUrl: chatRoomDetail.myItemImageUrl,
                             isNew: chatRoomDetail.unreadCount != null && chatRoomDetail.unreadCount! > 0,
+                            isNotificationMuted: chatRoomDetail.isNotificationMuted == true,
                             onProfileTap: () {
                               final targetMember = chatRoomDetail.targetMember;
                               if (targetMember?.memberId != null) {

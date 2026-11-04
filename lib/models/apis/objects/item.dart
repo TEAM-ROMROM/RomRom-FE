@@ -29,6 +29,9 @@ class Item extends BaseEntity {
   /// 우선노출 활성 여부 (서버 응답 시점 기준)
   final bool? isPromoted;
 
+  /// 예약중 여부 (채팅이 시작된 진행 중 거래 있음, 구버전 서버 > null)
+  final bool? isReserved;
+
   @JsonKey(includeFromJson: true)
   String? address;
 
@@ -51,6 +54,7 @@ class Item extends BaseEntity {
     this.isAiPredictedPrice,
     this.promotionExpiresAt,
     this.isPromoted,
+    this.isReserved,
     this.address, // 선택적 주입 가능
   });
 

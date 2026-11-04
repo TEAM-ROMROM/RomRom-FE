@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/item_trade_option.dart';
+import 'package:romrom_fe/enums/sent_request_progress.dart';
 import 'package:romrom_fe/enums/trade_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
@@ -11,6 +12,8 @@ import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
+import 'package:romrom_fe/widgets/common/sent_request_progress_tag.dart';
+import 'package:romrom_fe/widgets/common/trade_request_note.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 
@@ -24,6 +27,11 @@ class SentRequestItemCard extends StatelessWidget {
   final DateTime? requestedDate;
   final List<ItemTradeOption> tradeOptions;
   final TradeStatus? tradeStatus;
+  // 대기·확인함·거절됨 표시 (채팅 중·교환완료 > null)
+  final SentRequestProgress? sentRequestProgress;
+  // 요청 시 적은 추가금·한 줄 메시지 (없으면 null)
+  final int? extraChargeAmount;
+  final String? requestMessage;
   // 메뉴 '수정' 노출 여부 (서버가 대기 상태 요청만 수정 허용)
   final bool canEdit;
   final VoidCallback? onEditTap;
@@ -40,6 +48,9 @@ class SentRequestItemCard extends StatelessWidget {
     required this.requestedDate,
     required this.tradeOptions,
     this.tradeStatus,
+    this.sentRequestProgress,
+    this.extraChargeAmount,
+    this.requestMessage,
     this.canEdit = true,
     this.onEditTap,
     this.onCancelTap,
@@ -98,10 +109,15 @@ class SentRequestItemCard extends StatelessWidget {
               _buildLocationAndTime(),
               const SizedBox(height: 12),
               _buildTagsAndStatus(),
+              if (extraChargeAmount != null || requestMessage != null) ...[
+                const SizedBox(height: 8),
+                TradeRequestNote(extraChargeAmount: extraChargeAmount, requestMessage: requestMessage),
+              ],
             ],
           ),
         ),
-        if (tradeStatus != TradeStatus.traded) _buildMenuIcon(),
+        // 교환완료·거절됨: 수정·취소 불가 > 메뉴 숨김
+        if (tradeStatus != TradeStatus.traded && sentRequestProgress != SentRequestProgress.rejected) _buildMenuIcon(),
       ],
     );
   }
@@ -206,9 +222,10 @@ class SentRequestItemCard extends StatelessWidget {
             ),
           ),
         ),
-        if (tradeStatus == TradeStatus.chatting || tradeStatus == TradeStatus.traded) ...[
-          TradeStatusTagWidget(status: tradeStatus!),
-        ],
+        if (tradeStatus == TradeStatus.chatting || tradeStatus == TradeStatus.traded)
+          TradeStatusTagWidget(status: tradeStatus!)
+        else if (sentRequestProgress != null)
+          SentRequestProgressTag(progress: sentRequestProgress!),
       ],
     );
   }

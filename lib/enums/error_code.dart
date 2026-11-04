@@ -77,6 +77,13 @@ enum ErrorCode {
   tradeCompletionStateMismatch(code: 'TRADE_COMPLETION_STATE_MISMATCH', koMessage: '거래 완료 상태가 맞지 않습니다.'),
   tradeCompletionRequestForbidden(code: 'TRADE_COMPLETION_REQUEST_FORBIDDEN', koMessage: '거래 완료 요청 권한이 없습니다.'),
 
+  // TRADE REQUEST 추가금·한 줄 메시지 (#1005)
+  invalidTradeExtraChargeAmount(
+    code: 'INVALID_TRADE_EXTRA_CHARGE_AMOUNT',
+    koMessage: '추가금은 0원 이상 10,000,000원 이하로 입력해 주세요.',
+  ),
+  invalidTradeRequestMessage(code: 'INVALID_TRADE_REQUEST_MESSAGE', koMessage: '요청 메시지는 100자 이하의 일반 문자로 입력해 주세요.'),
+
   // CHAT
   cannotSendMessageToDeletedChatroom(
     code: 'CANNOT_SEND_MESSAGE_TO_DELETED_CHATROOM',
@@ -127,6 +134,19 @@ enum ErrorCode {
   // NOTIFICATION
   notificationHistoryNotFound(code: 'NOTIFICATION_HISTORY_NOT_FOUND', koMessage: '알림 히스토리를 찾을 수 없습니다.'),
   invalidNotificationHistoryOwner(code: 'INVALID_NOTIFICATION_HISTORY_OWNER', koMessage: '해당 알림의 수신자가 아닙니다.'),
+
+  // CHAT 확장: 메시지 삭제·약속·메시지 신고 (#1006)
+  chatMessageNotFound(code: 'CHAT_MESSAGE_NOT_FOUND', koMessage: '메시지를 찾을 수 없습니다.'),
+  chatMessageDeleteNotSender(code: 'CHAT_MESSAGE_DELETE_NOT_SENDER', koMessage: '내가 보낸 메시지만 삭제할 수 있어요.'),
+  chatMessageDeletePeriodExpired(
+    code: 'CHAT_MESSAGE_DELETE_PERIOD_EXPIRED',
+    koMessage: '보낸 지 24시간이 지난 메시지는 삭제할 수 없어요.',
+  ),
+  chatMessageNotDeletable(code: 'CHAT_MESSAGE_NOT_DELETABLE', koMessage: '삭제할 수 없는 메시지입니다.'),
+  invalidChatAppointment(code: 'INVALID_CHAT_APPOINTMENT', koMessage: '약속 일시나 장소를 다시 확인해 주세요.'),
+  chatAppointmentAcceptForbidden(code: 'CHAT_APPOINTMENT_ACCEPT_FORBIDDEN', koMessage: '상대방이 보낸 약속만 수락할 수 있어요.'),
+  chatAppointmentStatusConflict(code: 'CHAT_APPOINTMENT_STATUS_CONFLICT', koMessage: '이미 처리된 약속입니다.'),
+  duplicateChatMessageReport(code: 'DUPLICATE_CHAT_MESSAGE_REPORT', koMessage: '이미 신고한 메시지입니다.'),
 
   // JSON
   unknown(code: 'UNKNOWN', koMessage: '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');

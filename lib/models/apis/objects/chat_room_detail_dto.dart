@@ -17,6 +17,8 @@ class ChatRoomDetailDto {
   final String? targetItemImageUrl;
   final String? myItemImageUrl;
   final bool? blocked;
+  // 내가 이 방 알림을 끈 상태 (푸시만 제외, 안 읽음 수는 유지)
+  final bool? isNotificationMuted;
 
   ChatRoomDetailDto({
     this.chatRoomId,
@@ -29,6 +31,7 @@ class ChatRoomDetailDto {
     this.targetItemImageUrl,
     this.myItemImageUrl,
     this.blocked,
+    this.isNotificationMuted,
   });
 
   factory ChatRoomDetailDto.fromJson(Map<String, dynamic> json) => _$ChatRoomDetailDtoFromJson(json);
@@ -58,6 +61,7 @@ extension ChatRoomDetailDtoCopy on ChatRoomDetailDto {
     String? targetItemImageUrl,
     String? myItemImageUrl,
     bool? blocked,
+    bool? isNotificationMuted,
   }) => ChatRoomDetailDto(
     chatRoomId: chatRoomId ?? this.chatRoomId,
     targetMember: targetMember ?? this.targetMember,
@@ -69,5 +73,6 @@ extension ChatRoomDetailDtoCopy on ChatRoomDetailDto {
     targetItemImageUrl: targetItemImageUrl ?? this.targetItemImageUrl,
     myItemImageUrl: myItemImageUrl ?? this.myItemImageUrl,
     blocked: blocked ?? this.blocked,
+    isNotificationMuted: isNotificationMuted ?? this.isNotificationMuted,
   );
 }

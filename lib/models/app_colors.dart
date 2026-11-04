@@ -181,6 +181,12 @@ class AppColors {
   static const Color tradeStatusIsChatting = Color(0x80FFC300); // 채팅 중 색상
   static const Color tradeStatusIsCompleted = Color(0xFF34353D); // 거래 완료 색상
 
+  // 교환 요청 개선 (#1005): 보낸 요청 진행 태그·예약중 태그 (기존 상태 색 재사용)
+  static const Color sentRequestProgressWaiting = tradeStatusIsCompleted; // 대기
+  static const Color sentRequestProgressChecked = secondaryBlack2; // 확인함
+  static const Color sentRequestProgressRejected = errorContainer; // 거절됨 배경 (글자 warningRed)
+  static const Color itemReservedTag = tradeStatusIsChatting; // 예약중 (채팅 중과 같은 진행 색)
+
   // 알림 화면
   static const Color notificationUnReadIndicator = Color(0xB334353D); // 읽지 않은 알림 표시 색상
 

@@ -1,6 +1,6 @@
 import 'package:romrom_fe/services/apis/report_api.dart';
 
-/// 신고 저장소: 물품 신고, 회원 신고 (ReportApi 래핑, UI 모름)
+/// 신고 저장소: 물품 신고, 회원 신고, 채팅 메시지 신고 (ReportApi 래핑, UI 모름)
 class ReportRepository {
   final ReportApi _api;
 
@@ -19,6 +19,21 @@ class ReportRepository {
   }) {
     return _api.reportMember(
       targetMemberId: targetMemberId,
+      memberReportReasons: memberReportReasons,
+      extraComment: extraComment,
+    );
+  }
+
+  /// 채팅 메시지 신고 (방 ID·메시지 ID + 회원 신고 사유 id 집합, 빈 의견은 미전송)
+  Future<void> reportChatMessage({
+    required String chatRoomId,
+    required String chatMessageId,
+    required Set<int> memberReportReasons,
+    String? extraComment,
+  }) {
+    return _api.reportChatMessage(
+      chatRoomId: chatRoomId,
+      chatMessageId: chatMessageId,
       memberReportReasons: memberReportReasons,
       extraComment: extraComment,
     );

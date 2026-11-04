@@ -56,4 +56,31 @@ class ReportApi {
       },
     );
   }
+
+  /// 채팅 메시지 신고 API (사유는 회원 신고 사유 코드)
+  /// POST /api/report/chat-message/post
+  Future<void> reportChatMessage({
+    required String chatRoomId,
+    required String chatMessageId,
+    required Set<int> memberReportReasons,
+    String? extraComment,
+  }) async {
+    final String url = '${AppUrls.baseUrl}/api/report/chat-message/post';
+
+    final Map<String, dynamic> fields = {
+      'chatRoomId': chatRoomId,
+      'chatMessageId': chatMessageId,
+      'memberReportReasons': memberReportReasons.join(','),
+      if (extraComment != null && extraComment.isNotEmpty) 'extraComment': extraComment,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (_) {
+        debugPrint('채팅 메시지 신고 성공');
+      },
+    );
+  }
 }

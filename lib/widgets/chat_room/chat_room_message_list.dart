@@ -5,6 +5,7 @@ import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/chat_message_action_rules.dart';
 import 'package:romrom_fe/utils/chat_room_message_rules.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_date_divider.dart';
@@ -43,6 +44,13 @@ class ChatRoomMessageList extends StatelessWidget {
   // 진입 시 안 읽은 첫 메시지 ID ('여기까지 읽었어요' 구분선 위치, null > 숨김) / 구분선 위치 이동용 키
   final String? firstUnreadMessageId;
   final Key? unreadDividerKey;
+  // 길게 누르기 삭제(내 메시지)·신고(상대 메시지), 약속 수락·취소 (가능 여부는 메시지별 판정)
+  final void Function(ChatMessage message)? onDeleteMessage;
+  final void Function(ChatMessage message)? onReportMessage;
+  final void Function(ChatMessage message)? onAcceptAppointment;
+  final void Function(ChatMessage message)? onCancelAppointment;
+  // 삭제·약속 API 진행 중인 메시지 ID (약속 버튼 비활성)
+  final Set<String> pendingMessageActionIds;
 
   const ChatRoomMessageList({
     super.key,
@@ -67,6 +75,11 @@ class ChatRoomMessageList extends StatelessWidget {
     required this.onWriteReview,
     this.firstUnreadMessageId,
     this.unreadDividerKey,
+    this.onDeleteMessage,
+    this.onReportMessage,
+    this.onAcceptAppointment,
+    this.onCancelAppointment,
+    this.pendingMessageActionIds = const {},
   });
 
   @override
@@ -138,6 +151,21 @@ class ChatRoomMessageList extends StatelessWidget {
     }
 
     final String? messageId = message.chatMessageId;
+    final appointment = message.appointment;
+    final now = DateTime.now();
+    final onDeleteMessage = this.onDeleteMessage;
+    final onReportMessage = this.onReportMessage;
+    final onAcceptAppointment = this.onAcceptAppointment;
+    final onCancelAppointment = this.onCancelAppointment;
+    final bool canAccept =
+        appointment != null &&
+        canAcceptAppointment(
+          appointment: appointment,
+          proposerMemberId: message.senderId,
+          myMemberId: myMemberId,
+          now: now,
+        );
+    final bool canCancel = appointment != null && canCancelAppointment(appointment: appointment);
     final messageItem = ChatMessageItem(
       key: ValueKey(message.chatMessageId ?? '${message.senderId}_${message.createdDate?.millisecondsSinceEpoch}'),
       message: message,
@@ -159,6 +187,16 @@ class ChatRoomMessageList extends StatelessWidget {
       ),
       onRetrySend: messageId == null ? null : () => onRetryFailedMessage(messageId),
       onDeleteFailedMessage: messageId == null ? null : () => onDeleteFailedMessage(messageId),
+      onDeleteMessage:
+          onDeleteMessage != null && canDeleteChatMessage(message: message, myMemberId: myMemberId, now: now)
+          ? () => onDeleteMessage(message)
+          : null,
+      onReportMessage: onReportMessage != null && canReportChatMessage(message: message, myMemberId: myMemberId)
+          ? () => onReportMessage(message)
+          : null,
+      onAcceptAppointment: onAcceptAppointment != null && canAccept ? () => onAcceptAppointment(message) : null,
+      onCancelAppointment: onCancelAppointment != null && canCancel ? () => onCancelAppointment(message) : null,
+      isAppointmentActionPending: messageId != null && pendingMessageActionIds.contains(messageId),
     );
     if (!showDateDivider && !shouldShowUnreadDivider) return messageItem;
 
