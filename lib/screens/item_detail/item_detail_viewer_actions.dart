@@ -59,13 +59,17 @@ mixin _ItemDetailViewerActions on _ItemDetailDescriptionScreenStateFields {
     ref.read(itemLikeProvider.notifier).toggle(id, authorMemberId: item?.member?.memberId);
   }
 
-  /// 채팅하기: 진행 중이면 무시 > 채팅방 생성 > 목록 갱신 > 채팅방 이동
+  /// 채팅하기(받은 요청 수락 = 거래 시작): 진행 중이면 무시 > GPS 동네 인증 > 채팅방 생성 > 목록 갱신 > 채팅방 이동
   Future<void> _handleChatButtonPressed() async {
     if (_isChatCreationInProgress) return;
     if (item == null || widget.tradeRequestHistoryId == null) {
       CommonSnackBar.show(context: context, message: '채팅방을 생성할 수 없습니다', type: SnackBarType.error);
       return;
     }
+    final isLocationVerified = await ref
+        .read(locationVerificationGateProvider)
+        .ensureVerified(context, purpose: LocationVerificationPurpose.chatStart);
+    if (!mounted || !isLocationVerified) return;
 
     setState(() => _isChatCreationInProgress = true);
     try {
@@ -89,8 +93,13 @@ mixin _ItemDetailViewerActions on _ItemDetailDescriptionScreenStateFields {
     }
   }
 
-  void _navigateToRequestScreen() {
+  /// 요청하기: GPS 동네 인증 > 교환 요청 화면
+  Future<void> _navigateToRequestScreen() async {
     if (item == null) return;
+    final isLocationVerified = await ref
+        .read(locationVerificationGateProvider)
+        .ensureVerified(context, purpose: LocationVerificationPurpose.tradeRequest);
+    if (!mounted || !isLocationVerified || item == null) return;
 
     context.navigateTo(
       screen: TradeRequestScreen(targetItem: item!, targetImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : null),

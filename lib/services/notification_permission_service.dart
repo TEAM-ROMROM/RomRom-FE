@@ -4,29 +4,27 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 알림 권한 유도 관련 로직 서비스
-/// - 회원가입 직후 최초 1회 바텀시트 표시
-/// - 앱 실행 시 7일 주기 바텀시트 재노출
-/// - 모든 상태는 SharedPreferences 로컬 저장 (백엔드 불필요)
+/// 알림 권한 상태 확인·설정 이동 서비스
+/// - 권한 요청은 교환 요청·물품 등록 성공 직후 1회 안내(NotificationPermissionPromptService)와 사용자가 누른 설정 동작에서만
+/// - 상태 조회는 시스템 권한 창을 띄우지 않음
 class NotificationPermissionService {
   static final NotificationPermissionService _instance = NotificationPermissionService._internal();
   factory NotificationPermissionService() => _instance;
   NotificationPermissionService._internal();
 
+  // 이전 버전 바텀시트 노출 기록 키 (회원탈퇴 시 정리만)
   static const String _kDismissedAtKey = 'notificationPermissionDismissedAt';
   static const String _kShownOnSignupKey = 'notificationPermissionShownOnSignup';
-  static const Duration _kReshowInterval = Duration(days: 7);
 
-  // 시작 시 권한 요청 Future (첫 프레임 이후 1회분 공유, 테스트에서 교체)
-  // 시작 권한 체인은 이 서비스를 호출하지 않음 > 대기 순환 없음
+  // 진행 중 권한 요청 응답 대기 (요청 없으면 즉시 완료, 새 요청 안 함, 테스트에서 교체)
   @visibleForTesting
-  static Future<void> Function() waitForStartupPermissionRequest = FirebaseService().requestNotificationPermission;
+  static Future<void> Function() waitForPendingPermissionRequest = FirebaseService().waitForPendingPermissionRequest;
 
   /// 알림 권한 허용 여부 확인
-  /// Firebase Messaging 기준으로 확인 (앱 초기화 시 requestPermission과 동일한 채널)
+  /// Firebase Messaging 기준으로 확인 (시스템 권한 창 없음)
   Future<bool> isPermissionGranted() async {
-    // 시작 시 권한 응답 완료 후 상태 조회
-    await waitForStartupPermissionRequest();
+    // 진행 중 권한 요청이 있으면 응답 후 상태 조회
+    await waitForPendingPermissionRequest();
     try {
       final settings = await FirebaseMessaging.instance.getNotificationSettings();
       final status = settings.authorizationStatus;
@@ -39,69 +37,25 @@ class NotificationPermissionService {
     }
   }
 
-  /// 바텀시트 표시 여부 결정
-  ///
-  /// [isSignup]: true → 회원가입 최초 1회 여부 체크
-  ///             false → 7일 주기 재노출 여부 체크
-  Future<bool> shouldShowBottomSheet({bool isSignup = false}) async {
-    debugPrint('[NotificationPermission] 바텀시트 표시 여부 체크 (${isSignup ? '회원가입' : '7일 주기'})');
-
-    if (await isPermissionGranted()) {
-      debugPrint('[NotificationPermission] → 권한 이미 허용됨 → 바텀시트 표시 안 함');
+  /// 사용자가 알림 권한을 거부했는지 (미결정·허용·조회 실패 > false, 시스템 권한 창 없음)
+  /// Android 13+는 미결정도 거부로 응답 > 거부로 판정
+  Future<bool> isPermissionDeclined() async {
+    await waitForPendingPermissionRequest();
+    try {
+      final settings = await FirebaseMessaging.instance.getNotificationSettings();
+      return settings.authorizationStatus == AuthorizationStatus.denied;
+    } catch (e) {
+      debugPrint('[NotificationPermission] 상태 조회 실패: $e');
       return false;
     }
-
-    final prefs = await SharedPreferences.getInstance();
-
-    if (isSignup) {
-      final alreadyShown = prefs.getBool(_kShownOnSignupKey) ?? false;
-      debugPrint('[NotificationPermission] → 회원가입 최초 노출 여부: ${alreadyShown ? '이미 노출됨 → 표시 안 함' : '미노출 → 표시'}');
-      return !alreadyShown;
-    }
-
-    // 7일 주기 재노출 체크
-    final dismissedAtStr = prefs.getString(_kDismissedAtKey);
-    if (dismissedAtStr == null) {
-      debugPrint('[NotificationPermission] → 이전 닫은 기록 없음 → 표시');
-      return true;
-    }
-    final dismissedAt = DateTime.tryParse(dismissedAtStr);
-    if (dismissedAt == null) {
-      debugPrint('[NotificationPermission] → dismissedAt 파싱 실패 ($dismissedAtStr) → 표시');
-      return true;
-    }
-    final elapsed = DateTime.now().difference(dismissedAt);
-    final shouldShow = elapsed >= _kReshowInterval;
-    debugPrint('[NotificationPermission] → 마지막 닫은 시각: $dismissedAt');
-    debugPrint(
-      '[NotificationPermission] → 경과: ${elapsed.inHours}시간 / 기준: ${_kReshowInterval.inDays}일 → ${shouldShow ? '표시' : '표시 안 함'}',
-    );
-    return shouldShow;
-  }
-
-  /// 회원가입 최초 노출 완료 기록
-  Future<void> markShownOnSignup() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kShownOnSignupKey, true);
-    debugPrint('[NotificationPermission] 회원가입 최초 노출 기록 저장 완료');
-  }
-
-  /// 바텀시트 노출 시점 기록 (7일 후 재노출 기준)
-  /// "다음에", "알림 받기" 모두 호출하여 중복 노출 방지
-  Future<void> recordDismissed() async {
-    final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now().toIso8601String();
-    await prefs.setString(_kDismissedAtKey, now);
-    debugPrint('[NotificationPermission] 바텀시트 닫힘 기록 저장 → $now (${_kReshowInterval.inDays}일 후 재노출)');
   }
 
   /// 알림 권한 요청 또는 시스템 설정 화면 이동
   ///
-  /// Firebase로 권한 요청 시도 → 허용되지 않으면 앱 설정 화면으로 이동
-  /// (앱 초기화 시 Firebase가 이미 시스템 팝업을 소진했으므로 Firebase 기준으로 처리)
+  /// Firebase로 권한 요청 시도 → 허용되지 않으면 앱 설정 화면으로 이동 (사용자가 누른 동작에서만 호출)
   Future<void> requestOrOpenSettings() async {
-    // 시작 시 권한 요청 진행 중이면 응답 후 재요청 (동시 requestPermission 충돌 방지)
-    await waitForStartupPermissionRequest();
+    // 진행 중 권한 요청이 있으면 응답 후 재요청 (동시 requestPermission 충돌 방지)
+    await waitForPendingPermissionRequest();
     debugPrint('[NotificationPermission] 권한 요청 시작');
     final settings = await FirebaseMessaging.instance.requestPermission(alert: true, badge: true, sound: true);
     final status = settings.authorizationStatus;
@@ -112,11 +66,28 @@ class NotificationPermissionService {
     }
   }
 
-  /// 앱 시스템 설정 화면으로 바로 이동
-  /// 사용자가 명시적으로 설정으로 이동을 선택한 경우 사용
+  /// 사용자가 누른 알림 켜기·설정 이동: 권한 미결정 > 시스템 권한 요청 + 허용 시 FCM 토큰 등록, 그 외 > 앱 설정 이동
+  /// (iOS는 한 번도 요청하지 않은 앱의 설정에 알림 항목이 없음 > 시작 시 요청 제거 후 대비)
   Future<void> openSettings() async {
+    if (await _isPermissionUndetermined()) {
+      debugPrint('[NotificationPermission] 미결정 > 시스템 권한 요청');
+      await FirebaseService().requestNotificationPermission();
+      if (await isPermissionGranted()) await FirebaseService().handleFcmToken();
+      return;
+    }
     debugPrint('[NotificationPermission] 설정 화면으로 이동');
     await openAppSettings();
+  }
+
+  /// 권한 미결정 여부 (iOS 미요청, 조회 실패 > false)
+  Future<bool> _isPermissionUndetermined() async {
+    try {
+      final settings = await FirebaseMessaging.instance.getNotificationSettings();
+      return settings.authorizationStatus == AuthorizationStatus.notDetermined;
+    } catch (e) {
+      debugPrint('[NotificationPermission] 상태 조회 실패: $e');
+      return false;
+    }
   }
 
   /// 로컬 알림 권한 관련 데이터 초기화 (회원탈퇴 시 호출)

@@ -7,6 +7,7 @@ import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
 import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
+import 'package:romrom_fe/providers/location_verification_provider.dart';
 import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
@@ -37,6 +38,7 @@ final List<ProviderOrFamily> userScopedProviders = [
   coachMarkTriggerProvider,
   sentRequestsFocusTriggerProvider,
   promotionProvider,
+  locationVerificationProvider,
 ];
 
 /// 사용자 범위 provider 전부 무효화 (WidgetRef·ProviderContainer의 invalidate 전달)
