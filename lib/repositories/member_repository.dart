@@ -1,5 +1,6 @@
 // lib/repositories/member_repository.dart
 import 'package:flutter/foundation.dart';
+import 'package:romrom_fe/enums/location_verification_method.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/responses/member_response.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
@@ -39,7 +40,7 @@ class MemberRepository {
   Future<bool> savePreferredCategories(List<int> preferredCategories) =>
       _api.savePreferredCategories(preferredCategories);
 
-  /// 회원 위치 저장 (좌표 + 행정구역)
+  /// 회원 위치 저장 (좌표 + 행정구역, 인증 방식 있으면 서버 동네 인증 기록)
   Future<void> saveLocation({
     required double longitude,
     required double latitude,
@@ -47,6 +48,9 @@ class MemberRepository {
     required String siGunGu,
     required String eupMyoenDong,
     String? ri,
+    LocationVerificationMethod? verificationMethod,
+    double? gpsLatitude,
+    double? gpsLongitude,
   }) => _api.saveMemberLocation(
     longitude: longitude,
     latitude: latitude,
@@ -54,6 +58,9 @@ class MemberRepository {
     siGunGu: siGunGu,
     eupMyoenDong: eupMyoenDong,
     ri: ri,
+    verificationMethod: verificationMethod,
+    gpsLatitude: gpsLatitude,
+    gpsLongitude: gpsLongitude,
   );
 
   /// 탈퇴 전 진행 중 거래 목록 (탈퇴 시 서버가 자동 취소) (#1008)

@@ -130,6 +130,45 @@ class TradeApi {
     return tradeResponse;
   }
 
+  /// 내 보낸 거래 요청 전체 조회 API (내 모든 물품 한 번에, 페이지 단위)
+  /// `POST /api/trade/get/sent/all` (구버전 서버 > ApiException 404)
+  Future<PagedTradeRequestHistory> getAllSentTradeRequests(TradeRequest request) async {
+    final String url = '${AppUrls.baseUrl}/api/trade/get/sent/all';
+    PagedTradeRequestHistory? sentPage;
+
+    final Map<String, dynamic> fields = {
+      'pageNumber': request.pageNumber.toString(),
+      'pageSize': request.pageSize.toString(),
+      if (request.sortField != null) 'sortField': request.sortField,
+      if (request.sortDirection != null) 'sortDirection': request.sortDirection,
+    };
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) => sentPage = TradeResponse.fromJson(responseData).tradeRequestHistoryPage,
+    );
+
+    return sentPage ?? PagedTradeRequestHistory(content: const [], page: null);
+  }
+
+  /// 받은 거래 후기 통계 API (평균 평점·평점별·태그별 수, 블라인드 제외)
+  /// `POST /api/trade/review/stats` (구버전 서버 > ApiException 404)
+  Future<TradeReviewStats?> getTradeReviewStats(String memberId) async {
+    final String url = '${AppUrls.baseUrl}/api/trade/review/stats';
+    TradeReviewStats? tradeReviewStats;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {'memberId': memberId},
+      isAuthRequired: true,
+      onSuccess: (responseData) => tradeReviewStats = TradeResponse.fromJson(responseData).tradeReviewStats,
+    );
+
+    return tradeReviewStats;
+  }
+
   /// 거래율 기준 정렬된 목록 조회 API
   /// `POST /api/trade/get/rate`
   Future<TradeResponse> getSortedTradeRate(TradeRequest request) async {

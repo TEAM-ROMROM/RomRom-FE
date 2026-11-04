@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/home_feed_refresh_result.dart';
-import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';

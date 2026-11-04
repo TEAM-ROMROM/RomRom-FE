@@ -138,6 +138,9 @@ enum ErrorCode {
   notificationHistoryNotFound(code: 'NOTIFICATION_HISTORY_NOT_FOUND', koMessage: '알림 히스토리를 찾을 수 없습니다.'),
   invalidNotificationHistoryOwner(code: 'INVALID_NOTIFICATION_HISTORY_OWNER', koMessage: '해당 알림의 수신자가 아닙니다.'),
 
+  // MEMBER LOCATION VERIFICATION (#1004, 서버 스위치 켜짐 시 미인증 회원 등록·교환 요청·채팅방 생성 거부)
+  locationNotVerified(code: 'LOCATION_NOT_VERIFIED', koMessage: '동네 인증이 필요합니다.'),
+  invalidLocationVerification(code: 'INVALID_LOCATION_VERIFICATION', koMessage: '동네 인증 위치를 다시 확인해 주세요.'),
   // CHAT 확장: 메시지 삭제·약속·메시지 신고 (#1006)
   chatMessageNotFound(code: 'CHAT_MESSAGE_NOT_FOUND', koMessage: '메시지를 찾을 수 없습니다.'),
   chatMessageDeleteNotSender(code: 'CHAT_MESSAGE_DELETE_NOT_SENDER', koMessage: '내가 보낸 메시지만 삭제할 수 있어요.'),

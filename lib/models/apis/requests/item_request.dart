@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:romrom_fe/models/location_address.dart';
 
 part 'item_request.g.dart';
 
@@ -33,6 +34,9 @@ class ItemRequest {
   List<String>? recentlySeenItemIds;
   @JsonKey(includeFromJson: false, includeToJson: false)
   int? feedSeed;
+  // 등록·수정 전용 (#1004): 거래 희망 위치 행정구역 > item_api가 직접 전송, 서버 물품 address 저장
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  LocationAddress? tradeLocationAddress;
   // 희망 교환 카테고리 서버 이름 (#1008): null > 미전송(수정 시 서버 기존 값 유지), 빈 목록 > 전부 해제 > item_api가 직접 전송
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String>? wantedItemCategories;
@@ -68,6 +72,7 @@ class ItemRequest {
     this.searchKeyword,
     this.recentlySeenItemIds,
     this.feedSeed,
+    this.tradeLocationAddress,
     this.wantedItemCategories,
     this.searchItemCategories,
     this.searchSortField,

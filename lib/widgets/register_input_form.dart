@@ -46,6 +46,7 @@ import 'package:romrom_fe/utils/app_test_keys.dart';
 import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/location_verification_gate.dart';
 import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
 
 part 'register_input_form/register_input_form_image_selection.dart';

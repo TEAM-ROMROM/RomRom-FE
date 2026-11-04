@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/error_code.dart';
-import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
@@ -95,6 +94,8 @@ abstract class _ItemDetailDescriptionScreenStateFields extends ConsumerState<Ite
   String errorMessage = '';
   // 삭제됐거나 없는 물품 (재시도해도 같은 결과 > 다시 시도 없이 안내만)
   bool _isDeletedItem = false;
+  // 작성자 탈퇴 물품 (서버 errorCode DELETED_MEMBER 기준)
+  bool _isDeletedMember = false;
 
   Item? item;
   String locationName = '위치 정보 로딩 중...';
@@ -134,7 +135,7 @@ class _ItemDetailDescriptionScreenState extends _ItemDetailDescriptionScreenStat
     }
 
     // 작성자가 탈퇴한 게시글인 경우 별도 화면 표시
-    if (errorMessage == ErrorCode.deletedMember.koMessage) {
+    if (_isDeletedMember) {
       return const ErrorScaffold(message: '작성자가 탈퇴한 게시글입니다.');
     }
 

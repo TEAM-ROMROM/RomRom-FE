@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
-import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';

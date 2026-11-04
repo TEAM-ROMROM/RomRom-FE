@@ -28,6 +28,7 @@ Item _$ItemFromJson(Map<String, dynamic> json) => Item(
   wantedItemCategories: (json['wantedItemCategories'] as List<dynamic>?)?.map((e) => e as String).toList(),
   promotionExpiresAt: json['promotionExpiresAt'] == null ? null : DateTime.parse(json['promotionExpiresAt'] as String),
   isPromoted: json['isPromoted'] as bool?,
+  isLiked: json['isLiked'] as bool?,
   isReserved: json['isReserved'] as bool?,
   address: json['address'] as String?,
 );
@@ -52,6 +53,7 @@ Map<String, dynamic> _$ItemToJson(Item instance) => <String, dynamic>{
   'wantedItemCategories': instance.wantedItemCategories,
   'promotionExpiresAt': instance.promotionExpiresAt?.toIso8601String(),
   'isPromoted': instance.isPromoted,
+  'isLiked': instance.isLiked,
   'isReserved': instance.isReserved,
   'address': instance.address,
 };

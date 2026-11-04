@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/api_client.dart';
 
 class ItemApi {
@@ -28,6 +29,8 @@ class ItemApi {
       'itemImageUrls': request.itemImageUrls?.join(','),
       'isAiPredictedPrice': request.isAiPredictedPrice,
     };
+
+    _addTradeLocationAreaFields(fields, request.tradeLocationAddress);
 
     // 위치 정보 추가 (필수값)
     if (request.longitude != null) {
@@ -292,6 +295,8 @@ class ItemApi {
       'itemImageUrls': request.itemImageUrls?.join(','),
     };
 
+    _addTradeLocationAreaFields(fields, request.tradeLocationAddress);
+
     // 위치 정보 추가 (필수값)
     if (request.longitude != null) {
       fields['longitude'] = request.longitude!.toString();
@@ -443,5 +448,15 @@ class ItemApi {
     );
 
     return recommendedCategories;
+  }
+
+  /// 거래 희망 위치 행정구역 > 등록·수정 필드 (없음 > 미전송 = 서버 주소 미저장, 앱이 좌표로 변환)
+  static void _addTradeLocationAreaFields(Map<String, dynamic> fields, LocationAddress? tradeLocationAddress) {
+    if (tradeLocationAddress == null) return;
+    fields['siDo'] = tradeLocationAddress.siDo;
+    fields['siGunGu'] = tradeLocationAddress.siGunGu;
+    fields['eupMyoenDong'] = tradeLocationAddress.eupMyoenDong;
+    final ri = tradeLocationAddress.ri;
+    if (ri != null && ri.isNotEmpty) fields['ri'] = ri;
   }
 }

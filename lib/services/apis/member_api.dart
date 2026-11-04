@@ -1,5 +1,6 @@
 // lib/services/apis/member_api.dart
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/enums/location_verification_method.dart';
 import 'package:romrom_fe/enums/member_withdrawal_reason.dart';
 import 'package:romrom_fe/models/apis/responses/member_response.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
@@ -70,6 +71,7 @@ class MemberApi {
 
   /// 회원 위치정보 저장 API
   /// `POST /api/members/post/location`
+  /// [verificationMethod] 있으면 동네 인증 기록 (없음 > 서버 미인증), 지도 직접 선택은 실제 GPS 좌표 함께 전송
   Future<void> saveMemberLocation({
     required double longitude,
     required double latitude,
@@ -77,6 +79,9 @@ class MemberApi {
     required String siGunGu,
     required String eupMyoenDong,
     String? ri,
+    LocationVerificationMethod? verificationMethod,
+    double? gpsLatitude,
+    double? gpsLongitude,
   }) async {
     final String url = '${AppUrls.baseUrl}/api/members/post/location';
 
@@ -87,6 +92,9 @@ class MemberApi {
       'siGunGu': siGunGu,
       'eupMyoenDong': eupMyoenDong,
       'ri': ri ?? '',
+      if (verificationMethod != null) 'locationVerificationMethod': verificationMethod.serverName,
+      if (gpsLatitude != null) 'gpsLatitude': gpsLatitude.toString(),
+      if (gpsLongitude != null) 'gpsLongitude': gpsLongitude.toString(),
     };
 
     await ApiClient.sendMultipartRequest(

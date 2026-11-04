@@ -128,7 +128,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `myItemsProvider` | `providers/my_items_provider.dart` | AsyncNotifier | 내 물건 `{available, exchanged}` |
 | `memberProfileProvider` | `providers/member_profile_provider.dart` | AsyncNotifier | 내 회원 정보 `{member, location, itemCategories}` |
 | `chatRoomsProvider` | `providers/chat_rooms_provider.dart` | AsyncNotifier(페이징) | 채팅방 목록 `{rooms, currentPage, hasMore}` |
-| `tradeRequestsProvider` | `providers/trade_requests_provider.dart` | AsyncNotifier | 요청관리 `{received, sent, myItemIds, 정렬 기준, 받은 조회 실패 여부, 보낸 조회 실패 카드 ID}` — 보낸 요청은 카드 5개씩 묶어 조회, 다시 시도는 실패 카드만 |
+| `tradeRequestsProvider` | `providers/trade_requests_provider.dart` | AsyncNotifier | 요청관리 `{received, sent, myItemIds, 정렬 기준, 받은 조회 실패 여부, 보낸 조회 실패 카드 ID}` — 보낸 요청은 전체 조회 API(`/api/trade/get/sent/all`) 1회, 구버전 서버(404)·실패 시 카드 5개씩 묶어 조회, 다시 시도는 실패 카드만. 보낸 요청 채팅방은 응답 `chatRoomId` 우선 (#1004) |
 | `homeFeedProvider` | `providers/home_feed_provider.dart` | AsyncNotifier(페이징) | 홈 피드 `{items, currentPage, hasMoreItems, 정렬 기준}` — 본 물품 기록은 상태 밖(notifier 소유, 2초 묶음 저장)이라 넘길 때 상태 변화 없음, 신고·차단 회원 물품 제외 |
 | `notificationListProvider` | `providers/notification_list_provider.dart` | AsyncNotifier(페이징) | 알림 목록 `{notifications, unreadCount, nextPageNumber, hasMore, isLoadingMore}` — 페이지 크기 `notificationPageSize`(20), 미확인 수는 `notificationUnreadCountProvider` 경유 조회 |
 | `notificationUnreadCountProvider` | `providers/notification_unread_count_provider.dart` | AsyncNotifier | 미확인 알림 수 `int` — 홈 알림 배지 (목록 조회 없이 개수만) |
@@ -143,7 +143,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `chatNotificationGuideProvider` | `providers/chat_notification_guide_provider.dart` | Notifier(bool) | 채팅 알림 꺼짐 안내 시트 로그인 세션 1회 노출 여부 (#984) |
 | `chatInputDraftProvider` | `providers/chat_input_draft_provider.dart` | Notifier(Map) | 채팅방별 보내지 않은 입력 글 `Map<chatRoomId, text>` — 메모리 보관(기기 저장 안 함), 입력마다 저장·빈 글 삭제, 재진입 시 복원 (#987) |
 | `homePopupProvider` | `providers/home_popup_provider.dart` | Notifier | 홈 공지·이벤트 팝업 `{hasCheckedThisSession, displayedPopup}` — 세션 1회 노출 판정, 다시 보지 않기 저장 (회원 무관 > userScoped 예외) |
-| `locationVerificationProvider` | `providers/location_verification_provider.dart` | AsyncNotifier | GPS 동네 인증 `{record}` (회원 ID·인증 시각·좌표, 로컬 저장) — `isCurrentMemberVerified`, `verifyWithCurrentLocation`(서버 위치 저장 + 기록), 다른 회원 기록 = 미인증 (#986) |
+| `locationVerificationProvider` | `providers/location_verification_provider.dart` | AsyncNotifier | GPS 동네 인증 `{record}` (회원 ID·인증 시각·좌표, 로컬 저장) — `isCurrentMemberVerified`(서버 `memberLocation.isLocationVerified` 우선, 구버전 서버·조회 실패 > 로컬 기록), `verifyWithCurrentLocation`·`verifyWithManualSelection`(서버 위치 저장 + 인증 방식 > 기록), `resyncAfterServerRejection`(403 LOCATION_NOT_VERIFIED 후), 다른 회원 기록 = 미인증 (#986, #1004) |
 | `itemSearchProvider` | `providers/item_search_provider.dart` | AsyncNotifier.autoDispose(페이징) | 물품 검색 `{searchQuery, items, nextPageNumber, hasMore, isLoadingMore, hasNextPageError}` — 검색 화면 전용(닫으면 해제), 새 검색마다 세대 증가로 늦은 응답 폐기 (#1008) |
 | `recentSearchKeywordsProvider` | `providers/recent_search_keywords_provider.dart` | AsyncNotifier | 최근 검색어 `List<String>` (최신 순, 최대 10개, 기기·회원별 저장) — 추가·삭제·전체 삭제 (#1008) |
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
@@ -163,7 +163,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `itemAddressResolverProvider` | `providers/item_address_resolver_provider.dart` | Provider | ItemAddressResolver 주입 (주소 변환, 테스트 override) |
 | `locationVerificationRepositoryProvider` | `providers/location_verification_provider.dart` | Provider | LocationVerificationRepository 주입 (인증 기록 SharedPreferences, 현재 회원 ID) |
 | `gpsLocationVerifierProvider` | `providers/location_verification_provider.dart` | Provider | GpsLocationVerifier 주입 (권한·실제 GPS·가상 위치·정확도·역지오코딩, 테스트 override) |
-| `locationVerificationGateProvider` | `utils/location_verification_gate.dart` | Provider | 동네 인증 필요 기능 공통 진입 확인 `ensureVerified(context, purpose:)` — 등록·교환 요청·채팅 시작·탐색 범위 (화면 이동 포함 > utils) |
+| `locationVerificationGateProvider` | `utils/location_verification_gate.dart` | Provider | 동네 인증 필요 기능 공통 진입 확인 `ensureVerified(context, purpose:)` — 등록·교환 요청·채팅 시작·탐색 범위 (화면 이동 포함 > utils), 서버 거부 처리 `recoverFromServerRejection` (#1004) |
 | `notificationPermissionPromptServiceProvider` | `providers/notification_permission_prompt_service_provider.dart` | Provider | NotificationPermissionPromptService 주입 (알림 권한 설치당 1회 안내 판단·요청·FCM 토큰 등록, 교환 요청·물품 등록 성공 직후) |
 | `openChatRoomRegistryProvider` | `providers/open_chat_room_registry_provider.dart` | Provider | OpenChatRoomRegistry 주입 (열린 채팅방 화면 목록: 같은 방 푸시 탭 중복 열기 방지, 같은 방 다른 화면 생존 시 퇴장 생략, #984) |
 | `chatImageGallerySaverProvider` | `providers/chat_image_gallery_saver_provider.dart` | Provider | ChatImageGallerySaver 주입 (채팅 사진 전체 보기 앨범 저장: 버튼 탭 시 권한 확인·요청 1회 > JPEG 저장, 테스트 override, #987) |

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/chat_room_type.dart';
 import 'package:romrom_fe/enums/request_sort_type.dart';
+import 'package:romrom_fe/exceptions/api_exception.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/objects/item_image.dart';
@@ -52,6 +53,10 @@ class FakeTradeRepository implements TradeRepository {
   final List<String> sentRequestedGiveItemIds = [];
   final List<RequestSortType> sentRequestedSortTypes = [];
 
+  // 보낸 요청 전체 조회: 응답 (null > 구버전 서버 404), 호출 기록
+  List<TradeRequestHistory>? allSentResponse;
+  int allSentCallCount = 0;
+
   // 조회 실패시킬 카드 ID (받은: takeItemId, 보낸: giveItemId)
   Set<String> failingReceivedTakeItemIds = {};
   Set<String> failingSentGiveItemIds = {};
@@ -99,6 +104,14 @@ class FakeTradeRepository implements TradeRepository {
     final pendingReceived = pendingReceivedByTakeItemId[takeItemId];
     if (pendingReceived != null) return pendingReceived.future;
     return receivedByTakeItemId[takeItemId] ?? const [];
+  }
+
+  @override
+  Future<List<TradeRequestHistory>> getAllSent({RequestSortType sortType = RequestSortType.latest}) async {
+    allSentCallCount++;
+    final response = allSentResponse;
+    if (response == null) throw ApiException(statusCode: 404, responseBody: '');
+    return response;
   }
 
   @override
@@ -594,7 +607,53 @@ void main() {
     });
   });
 
+  group('tradeRequestsProvider 보낸 요청 전체 조회 API', () {
+    test('전체 조회 가능 > 1회 호출, 카드별 조회 없음, 카드 순서대로 합침', () async {
+      await container.read(tradeRequestsProvider.future);
+      fakeRepository.allSentResponse = [
+        buildTradeRequestHistory('sent-b', giveItemId: 'b'),
+        buildTradeRequestHistory('sent-a', giveItemId: 'a'),
+        buildTradeRequestHistory('sent-unknown-card', giveItemId: 'z'),
+      ];
+
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a');
+
+      expect(fakeRepository.allSentCallCount, 1);
+      expect(fakeRepository.sentRequestedGiveItemIds, isEmpty);
+      final sentIds = container.read(tradeRequestsProvider).valueOrNull?.sent.map((r) => r.tradeRequestHistoryId);
+      expect(sentIds, ['sent-a', 'sent-b']);
+    });
+
+    test('구버전 서버(404) > 카드별 조회로 대체, 이후 세션 동안 전체 조회 생략', () async {
+      await container.read(tradeRequestsProvider.future);
+      fakeRepository.sentByGiveItemId = {
+        'a': [buildTradeRequestHistory('sent-a')],
+      };
+
+      await readNotifier().loadForItems(myItemIds: const ['a'], takeItemId: 'a');
+      await readNotifier().loadForItems(myItemIds: const ['a', 'b'], takeItemId: 'a');
+
+      expect(fakeRepository.allSentCallCount, 1);
+      expect(fakeRepository.sentRequestedGiveItemIds, ['a', 'a', 'b']);
+    });
+  });
+
   group('tradeRequestsProvider.findChatRoomIdOfSentRequest', () {
+    test('서버 응답 chatRoomId 있음 > 채팅방 목록 조회 없이 그 ID', () async {
+      final requestWithChatRoom = buildSentRequest();
+      final sentRequest = TradeRequestHistory(
+        tradeRequestHistoryId: requestWithChatRoom.tradeRequestHistoryId,
+        takeItem: requestWithChatRoom.takeItem,
+        giveItem: requestWithChatRoom.giveItem,
+        itemTradeOptions: const [],
+        tradeStatus: 'CHATTING',
+        chatRoomId: 'server-room',
+      );
+
+      expect(await readNotifier().findChatRoomIdOfSentRequest(sentRequest), 'server-room');
+      expect(fakeChatRepository.requestedItemIds, isEmpty);
+    });
+
     test('내 물품 채팅방 중 내가 보낸 방 + 상대 회원 일치 1개 > 그 방 ID', () async {
       fakeChatRepository.roomsByItem = [
         buildChatRoom('received-room', chatRoomType: ChatRoomType.received),

@@ -6,7 +6,7 @@ import 'package:romrom_fe/services/location_service.dart';
 /// 좌표 > 주소 조회 함수 (실패 시 null)
 typedef AddressLookup = Future<LocationAddress?> Function(NLatLng position);
 
-/// 물품 좌표 > 표시 주소 변환: 피드·좋아요 표시 문자열, 물품 address 채움
+/// 물품 표시 주소: 서버 address(거래 위치 행정구역) 우선, 없으면 좌표 > 주소 변환 (피드·좋아요 표시 문자열, 물품 address 채움)
 /// 조회는 LocationService 캐시 경유 (테스트에서 [AddressLookup] 교체)
 class ItemAddressResolver {
   ItemAddressResolver({AddressLookup? lookupAddress})
@@ -17,8 +17,10 @@ class ItemAddressResolver {
 
   final AddressLookup _lookupAddress;
 
-  /// 물품 좌표 > '시도 시군구 읍면동' (좌표 없음·조회 결과 없음 > '미지정')
+  /// 물품 > '시도 시군구 읍면동' (서버 주소 > 좌표 변환, 좌표 없음·조회 결과 없음 > '미지정')
   Future<String> resolveLocationText(Item item) async {
+    final serverAddress = _serverAddressOf(item);
+    if (serverAddress != null) return serverAddress;
     final position = _toPosition(item);
     if (position == null) return unknownLocationText;
     final address = await _lookupAddress(position);
@@ -29,9 +31,9 @@ class ItemAddressResolver {
   /// 물품 목록 > 표시 주소 목록 (병렬 조회, 결과 순서 = 입력 순서)
   Future<List<String>> resolveLocationTexts(List<Item> items) => Future.wait(items.map(resolveLocationText));
 
-  /// 물품 좌표 > address 채움 후 반환 (앞뒤 공백 제거, 좌표 없음·빈 주소·조회 실패 > '미지정')
+  /// 물품 address 채움 후 반환 (서버 주소 > 좌표 변환, 앞뒤 공백 제거, 좌표 없음·빈 주소·조회 실패 > '미지정')
   Future<String> resolveAndCacheAddress(Item item) async {
-    item.address = await _resolveTrimmedAddress(item);
+    item.address = _serverAddressOf(item) ?? await _resolveTrimmedAddress(item);
     return item.address!;
   }
 
@@ -49,6 +51,13 @@ class ItemAddressResolver {
     } catch (_) {
       return unknownLocationText;
     }
+  }
+
+  /// 서버 응답 주소 (없음·빈 값·'미지정' > null, 앞뒤 공백 제거)
+  String? _serverAddressOf(Item item) {
+    final serverAddress = item.address?.trim();
+    if (serverAddress == null || serverAddress.isEmpty || serverAddress == unknownLocationText) return null;
+    return serverAddress;
   }
 
   NLatLng? _toPosition(Item item) {

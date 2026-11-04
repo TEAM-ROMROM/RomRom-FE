@@ -1,5 +1,6 @@
 // lib/providers/member_profile_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/location_verification_method.dart';
 import 'package:romrom_fe/providers/member_repository_provider.dart';
 import 'package:romrom_fe/repositories/member_repository.dart';
 import 'package:romrom_fe/states/member_profile_state.dart';
@@ -59,7 +60,7 @@ class MemberProfileNotifier extends AsyncNotifier<MemberProfileState> {
     return isSaved;
   }
 
-  /// 회원 위치 저장 > 재조회 (실패 시 예외 전달)
+  /// 회원 위치 저장 > 재조회 (인증 방식 있으면 서버 동네 인증 기록, 실패 시 예외 전달)
   Future<void> saveLocation({
     required double longitude,
     required double latitude,
@@ -67,6 +68,9 @@ class MemberProfileNotifier extends AsyncNotifier<MemberProfileState> {
     required String siGunGu,
     required String eupMyoenDong,
     String? ri,
+    LocationVerificationMethod? verificationMethod,
+    double? gpsLatitude,
+    double? gpsLongitude,
   }) async {
     await _repo.saveLocation(
       longitude: longitude,
@@ -75,6 +79,9 @@ class MemberProfileNotifier extends AsyncNotifier<MemberProfileState> {
       siGunGu: siGunGu,
       eupMyoenDong: eupMyoenDong,
       ri: ri,
+      verificationMethod: verificationMethod,
+      gpsLatitude: gpsLatitude,
+      gpsLongitude: gpsLongitude,
     );
     await reload();
   }
