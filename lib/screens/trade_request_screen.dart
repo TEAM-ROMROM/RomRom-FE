@@ -20,6 +20,7 @@ import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
+import 'package:romrom_fe/widgets/common/notification_permission_prompt_modal.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common/custom_floating_button.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
@@ -250,7 +251,7 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  /// 거래 요청 API 호출
+  /// 거래 요청: 교환 방식 확인 > 요청 전송 > 알림 권한 1회 안내 > 화면 닫기
   Future<void> _submitTradeRequest() async {
     if (_selectedTradeOptions.isEmpty) {
       CommonSnackBar.show(context: context, message: '교환 방식을 선택해주세요.', type: SnackBarType.info);
@@ -271,7 +272,8 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
       if (!mounted) return;
 
       CommonSnackBar.show(context: context, message: '교환 요청이 전송되었습니다.', type: SnackBarType.success);
-
+      await showNotificationPermissionPromptOnce(context, ref);
+      if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
       debugPrint('거래 요청 실패: $e');

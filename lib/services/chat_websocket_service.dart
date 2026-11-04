@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
+import 'package:romrom_fe/services/chat_message_frame_parser.dart';
 import 'package:romrom_fe/services/chat_topic_subscription_registry.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/single_flight.dart';
@@ -48,7 +49,10 @@ class ChatWebSocketService {
   final StompClient Function(StompConfig config) _createStompClient;
 
   StompClient? _stompClient;
-  bool _isConnected = false;
+  // STOMP 연결 상태 원본 (값이 바뀔 때만 구독자 알림 > 채팅방 '연결 중' 표시)
+  final ValueNotifier<bool> _connectionStatus = ValueNotifier<bool>(false);
+  bool get _isConnected => _connectionStatus.value;
+  set _isConnected(bool isConnected) => _connectionStatus.value = isConnected;
   final Map<String, StreamController<ChatMessage>> _subscriptions = {};
   final Map<String, StompUnsubscribe> _stompSubscriptions = {};
 
@@ -90,8 +94,22 @@ class ChatWebSocketService {
   // 동시 connect 호출은 같은 연결 시도 공유 (채팅 탭·채팅방 동시 진입 시 중복 클라이언트 방지)
   final SingleFlight<void> _connectFlight = SingleFlight<void>();
 
+  // 다음 CONNECTED 대기 (waitUntilConnected 호출부, 연결 시 전부 완료)
+  final List<Completer<void>> _connectionWaiters = [];
+
   /// 연결 상태 확인
   bool get isConnected => _isConnected;
+
+  /// 연결 상태 변화 구독 (true 연결, false 끊김·재연결 대기)
+  ValueListenable<bool> get connectionStatus => _connectionStatus;
+
+  /// STOMP 연결 완료 대기 (이미 연결이면 즉시 완료, 연결 해제(disconnect) 시 대기 폐기)
+  Future<void> waitUntilConnected() {
+    if (_isConnected) return Future<void>.value();
+    final waiter = Completer<void>();
+    _connectionWaiters.add(waiter);
+    return waiter.future;
+  }
 
   ///  STOMP 연결 (진행 중이면 같은 시도 공유)
   Future<void> connect() => _connectFlight.run(_connectForCurrentMember);
@@ -145,6 +163,10 @@ class ChatWebSocketService {
           onWebSocketError: (error) {
             if (isCurrentConnection()) _onWebSocketError(error);
           },
+          // 오류 없이 닫힌 소켓 (망 전환·앱 복귀·서버 재배포): onDisconnect는 직접 끊을 때만 호출됨
+          onWebSocketDone: () {
+            if (isCurrentConnection()) _onWebSocketDone();
+          },
           stompConnectHeaders: {'Authorization': 'Bearer $accessToken'},
           webSocketConnectHeaders: {'Authorization': 'Bearer $accessToken'},
           reconnectDelay: const Duration(seconds: 2),
@@ -174,6 +196,7 @@ class ChatWebSocketService {
 
     // 기존 구독 재연결
     _resubscribeAll();
+    _completeConnectionWaiters();
 
     // 최초 연결이 아니라면(= 재연결) 화면에 재동기화 신호를 보낸다.
     // 단절 구간에 브로드캐스트되어 유실된 메시지를 REST 재조회로 복구하기 위함.
@@ -184,6 +207,15 @@ class ChatWebSocketService {
       }
     }
     _hasConnectedBefore = true;
+  }
+
+  /// 연결 대기 전부 완료 (구독 재연결 이후)
+  void _completeConnectionWaiters() {
+    final waiters = [..._connectionWaiters];
+    _connectionWaiters.clear();
+    for (final waiter in waiters) {
+      if (!waiter.isCompleted) waiter.complete();
+    }
   }
 
   /// 연결 해제 콜백
@@ -208,6 +240,12 @@ class ChatWebSocketService {
   /// WebSocket 에러 콜백
   void _onWebSocketError(dynamic error) {
     debugPrint('[WebSocket] ❌ WebSocket Error: $error');
+    _isConnected = false;
+  }
+
+  /// 소켓 닫힘 콜백: 미연결 표시 (재연결은 StompClient가 reconnectDelay 후 시도 > CONNECTED 시 재구독)
+  void _onWebSocketDone() {
+    debugPrint('[WebSocket] socket closed > waiting for auto reconnect');
     _isConnected = false;
   }
 
@@ -302,70 +340,26 @@ class ChatWebSocketService {
     final destination = '/sub/chat.room.$chatRoomId';
     debugPrint('[WebSocket] ✅ Subscribing to: $destination');
 
-    final unsubscribe = _stompClient!.subscribe(
+    try {
+      _stompSubscriptions[chatRoomId] = _subscribeRoomOnStomp(chatRoomId, destination);
+    } catch (error) {
+      // 닫힌 소켓 감지 전 구독 (StompBadStateException) > 미연결 표시, 스트림 유지 > 재연결 시 재구독
+      debugPrint('[WebSocket] subscribe failed, retry on reconnect : $error');
+      _isConnected = false;
+    }
+  }
+
+  /// STOMP 채팅방 구독 요청 + 프레임 > 메시지 변환 콜백
+  StompUnsubscribe _subscribeRoomOnStomp(String chatRoomId, String destination) {
+    return _stompClient!.subscribe(
       destination: destination,
       callback: (StompFrame frame) {
-        debugPrint('[WebSocket] 📨 Frame 수신 from $destination');
-        if (kDebugMode) {
-          debugPrint('[WebSocket]   headers(keys): ${frame.headers.keys.toList()}');
-          debugPrint('[WebSocket]   bodyLength: ${frame.body?.length ?? 0}');
-        }
-
-        if (frame.body == null) {
-          debugPrint('[WebSocket]   ⚠️ body가 null → 무시');
-          return;
-        }
-
-        try {
-          final jsonBody = jsonDecode(frame.body!);
-          debugPrint('[WebSocket]   type 필드: ${jsonBody["type"]}');
-
-          // 1) STOMP 헤더 timestamp(ms) → DateTime
-          DateTime? headerTs;
-          final tsHdr = frame.headers['timestamp'];
-          if (tsHdr != null) {
-            final ms = int.tryParse(tsHdr);
-            if (ms != null) {
-              headerTs = DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true).toLocal();
-            }
-          }
-
-          // 2) 페이로드 시간 파싱(createdDate/clientSentAt)
-          DateTime? payloadTs;
-          final createdDate = jsonBody['createdDate'];
-          if (createdDate is int) {
-            payloadTs = DateTime.fromMillisecondsSinceEpoch(createdDate, isUtc: true).toLocal();
-          } else if (createdDate is String) {
-            final parsed = DateTime.tryParse(createdDate);
-            if (parsed != null) payloadTs = parsed.toLocal();
-          } else if (jsonBody['clientSentAt'] is int) {
-            payloadTs = DateTime.fromMillisecondsSinceEpoch(jsonBody['clientSentAt'], isUtc: true).toLocal();
-          }
-
-          // 3) 최종 시간 확정: 헤더 → 페이로드 (둘 다 없으면 null 유지)
-          // DateTime.now() 폴백을 쓰면 지연 수신 메시지가 '수신 시각'으로 밀려 표시되므로 제거.
-          // 시각 출처가 없으면 null로 두고, 재연결 동기화 시 서버 createdDate로 교정된다.
-          final finalCreated = headerTs ?? payloadTs;
-
-          // 모델로 변환
-          final message = ChatMessage.fromJson(jsonBody).copyWith(createdDate: finalCreated);
-          if (kDebugMode) {
-            debugPrint('[WebSocket]   → 파싱 완료: type=${message.type}, hasId=${message.chatMessageId != null}');
-          }
-
-          _subscriptions[chatRoomId]?.add(message);
-          debugPrint('[WebSocket]   → StreamController 전달 완료');
-        } catch (e, st) {
-          debugPrint('[WebSocket]   ❌ 파싱 실패: $e');
-          if (kDebugMode) {
-            debugPrint('[WebSocket]   rawBodyLength: ${frame.body?.length ?? 0}');
-            debugPrint('[WebSocket]   $st');
-          }
-        }
+        final message = decodeChatRoomMessageFrame(frame, destination: destination);
+        if (message == null) return;
+        _subscriptions[chatRoomId]?.add(message);
+        debugPrint('[WebSocket]   → StreamController 전달 완료');
       },
     );
-
-    _stompSubscriptions[chatRoomId] = unsubscribe;
   }
 
   /// 메시지 전송
@@ -404,11 +398,18 @@ class ChatWebSocketService {
     }
 
     debugPrint('[WebSocket] Sending message to /app/chat.send\n$payload');
-    _stompClient!.send(
-      destination: '/app/chat.send',
-      body: jsonEncode(payload),
-      headers: {'content-type': 'application/json'},
-    );
+    try {
+      _stompClient!.send(
+        destination: '/app/chat.send',
+        body: jsonEncode(payload),
+        headers: {'content-type': 'application/json'},
+      );
+    } on StompBadStateException catch (error) {
+      // 닫힌 소켓 감지 전 전송 > 미연결 표시 (호출부는 전송 실패 처리)
+      debugPrint('[WebSocket] send failed, socket closed : $error');
+      _isConnected = false;
+      throw Exception('STOMP not connected');
+    }
   }
 
   /// 채팅방 구독 해제
@@ -446,7 +447,7 @@ class ChatWebSocketService {
     }
   }
 
-  /// 연결 해제: 클라이언트·구독·스트림·참조 카운트·재연결 판정 전부 초기화 (다음 connect는 최초 연결)
+  /// 연결 해제: 클라이언트·구독·스트림·참조 카운트·연결 대기·재연결 판정 전부 초기화 (다음 connect는 최초 연결)
   /// 첫 await 전에 상태·목록을 비움 > 정리 도중 새로 들어온 구독은 닫지 않고 다음 연결 때 구독
   Future<void> disconnect() async {
     debugPrint('[WebSocket] Disconnecting...');
@@ -462,6 +463,7 @@ class ChatWebSocketService {
     _stompClient = null;
     _connectedMemberId = null;
     _hasConnectedBefore = false;
+    _connectionWaiters.clear();
     _subscriptionRefCounts.clear();
     final stompUnsubscribes = _stompSubscriptions.values.toList();
     _stompSubscriptions.clear();

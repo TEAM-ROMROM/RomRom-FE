@@ -18,6 +18,7 @@ import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/widgets/common/app_fade_slide_in.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
+import 'package:romrom_fe/utils/chat_room_list_rules.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/list_ad_placement.dart';
 import 'package:romrom_fe/widgets/chat_room_list_item.dart';
@@ -86,9 +87,15 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
 
     _initializeWebSocket();
     _scrollController.addListener(_onScroll);
+    // 목록 상태 바뀔 때마다 새로 생긴 방 구독 (새로고침·페이징·병합·생성 경로 공통, 첫 상태 포함)
+    ref.listenManual<AsyncValue<ChatRoomsState>>(
+      chatRoomsProvider,
+      (previous, next) => _subscribeToRoomsInState(),
+      fireImmediately: true,
+    );
   }
 
-  /// WebSocket 초기화 및 연결
+  /// WebSocket 초기화: 회원 ID 확인 > 보류된 목록 구독 > 연결 > 재연결 시 재구독 등록
   Future<void> _initializeWebSocket() async {
     try {
       _myMemberId = await MemberManager.getCurrentMemberId();
@@ -96,6 +103,8 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
         debugPrint('채팅방 목록: 사용자 ID를 가져올 수 없습니다');
         return;
       }
+      // 회원 ID 확인 전 도착한 목록 구독 보충
+      _subscribeToRoomsInState();
 
       await _wsService.connect();
 
@@ -110,20 +119,19 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     }
   }
 
-  /// 모든 채팅방에 대해 WebSocket 구독
-  void _subscribeToRooms(List<ChatRoomDetailDto> rooms) {
-    if (_myMemberId == null) return;
-
-    for (final room in rooms) {
-      if (room.chatRoomId == null) continue;
-      if (_roomSubscriptions.containsKey(room.chatRoomId)) continue;
-
-      final subscription = _wsService.subscribeToChatRoom(room.chatRoomId!).listen((message) {
+  /// 목록 상태의 방 중 미구독 방만 WebSocket 구독 (회원 ID 확인 전이면 보류)
+  void _subscribeToRoomsInState() {
+    if (_myMemberId == null || !mounted) return;
+    final rooms = ref.read(chatRoomsProvider).valueOrNull?.rooms ?? const <ChatRoomDetailDto>[];
+    final chatRoomIdsToSubscribe = findChatRoomIdsToSubscribe(
+      rooms: rooms,
+      subscribedChatRoomIds: _roomSubscriptions.keys.toSet(),
+    );
+    for (final chatRoomId in chatRoomIdsToSubscribe) {
+      _roomSubscriptions[chatRoomId] = _wsService.subscribeToChatRoom(chatRoomId).listen((message) {
         if (!mounted) return;
         ref.read(chatRoomsProvider.notifier).onMessageReceived(message: message, myMemberId: _myMemberId);
       });
-
-      _roomSubscriptions[room.chatRoomId!] = subscription;
     }
   }
 
@@ -137,13 +145,10 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     });
   }
 
-  /// 채팅 탭 선택 시 첫 페이지 병합 재조회 > 새 방 구독
+  /// 채팅 탭 선택 시 첫 페이지 병합 재조회 (새 방 구독은 목록 상태 구독이 처리)
   /// (상대가 새로 만든 방은 구독 전이라 실시간 수신 불가, 이후 페이지·페이징 위치는 유지)
   Future<void> _refreshOnChatTabSelected() async {
     await ref.read(chatRoomsProvider.notifier).refreshFirstPage();
-    if (!mounted) return;
-    final updated = ref.read(chatRoomsProvider).valueOrNull;
-    if (updated != null) _subscribeToRooms(updated.rooms);
   }
 
   /// 무한 스크롤 트리거
@@ -175,9 +180,6 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
     try {
       await ref.read(chatRoomsProvider.notifier).loadMore();
       _loadMoreFailedAt = null;
-      // 새로 로드된 방들 구독
-      final updated = ref.read(chatRoomsProvider).valueOrNull;
-      if (updated != null) _subscribeToRooms(updated.rooms);
     } catch (e) {
       debugPrint('[ChatTab] next page load failed: $e');
       _loadMoreFailedAt = DateTime.now();
@@ -217,8 +219,8 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
       _autoPrefetchCount = 0;
       await _autoPrefetch();
 
-      final updated = ref.read(chatRoomsProvider).valueOrNull;
-      if (updated != null) _subscribeToRooms(updated.rooms);
+      // 재조회 결과가 이전과 같아 상태 알림이 없어도 비운 구독 복구
+      _subscribeToRoomsInState();
     } catch (e) {
       debugPrint('채팅방 목록 새로고침 실패: $e');
       if (mounted) {
@@ -255,8 +257,6 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
       _showLoadMoreFailedSnackBar();
       return false;
     }
-    final updated = ref.read(chatRoomsProvider).valueOrNull;
-    if (updated != null) _subscribeToRooms(updated.rooms);
     return true;
   }
 
@@ -311,10 +311,9 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
   Widget build(BuildContext context) {
     final chatAsync = ref.watch(chatRoomsProvider);
 
-    // 최초 로드 완료 직후 WS 구독 + 자동 프리패치
+    // 최초 로드 완료 직후 자동 프리패치 (WS 구독은 initState 상태 구독이 처리)
     ref.listen<AsyncValue<ChatRoomsState>>(chatRoomsProvider, (prev, next) {
       if (prev is AsyncLoading && next is AsyncData<ChatRoomsState>) {
-        _subscribeToRooms(next.value.rooms);
         _autoPrefetchCount = 0;
         SchedulerBinding.instance.addPostFrameCallback((_) {
           if (mounted) _autoPrefetch();
@@ -447,12 +446,15 @@ class _ChatTabScreenState extends ConsumerState<ChatTabScreen> with TickerProvid
                               ref.read(chatRoomsProvider.notifier).markRoomAsRead(roomId);
 
                               final refreshed = await context.navigateTo<bool>(
-                                screen: ChatRoomScreen(chatRoomId: roomId),
+                                screen: ChatRoomScreen(
+                                  chatRoomId: roomId,
+                                  unreadCountAtEntry: chatRoomDetail.unreadCount,
+                                ),
                               );
 
-                              // pop(true) 신호: 채팅방에서 변경 발생 (나가기·삭제·거래완료 등)
-                              if (refreshed == true) {
-                                ref.read(chatRoomsProvider.notifier).reload();
+                              // pop(true) 신호: 목록에 영향 있는 변경 (차단 등) > 불러온 페이지 유지한 채 재조회
+                              if (refreshed == true && mounted) {
+                                unawaited(ref.read(chatRoomsProvider.notifier).refreshLoadedPages());
                               }
                             },
                           ),

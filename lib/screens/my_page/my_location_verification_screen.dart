@@ -1,209 +1,197 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/models/gps_location_check_result.dart';
 import 'package:romrom_fe/models/location_address.dart';
-import 'package:romrom_fe/providers/member_profile_provider.dart';
-import 'package:romrom_fe/services/location_service.dart';
+import 'package:romrom_fe/providers/location_verification_provider.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
-import 'package:romrom_fe/widgets/common/completion_button.dart';
-import 'package:romrom_fe/widgets/common/current_location_button.dart';
+import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
-import 'package:shadex/shadex.dart';
+import 'package:romrom_fe/widgets/location_verification/location_verification_explanation_modal.dart';
+import 'package:romrom_fe/widgets/location_verification/location_verification_failure_view.dart';
+import 'package:romrom_fe/widgets/location_verification/location_verification_manual_selection_view.dart';
+import 'package:romrom_fe/widgets/location_verification/location_verification_map_view.dart';
 
+/// 동네 인증 화면: (권한 미결정 + 안내 미노출 > 안내 모달) > 실제 GPS 확인 > 확인된 동네 표시 > 이 동네로 인증
+/// 국내는 GPS 위치만 (지도 선택 없음), 실제 GPS가 서비스 지역 밖 > 지도 선택, 거부·가상 위치·낮은 정확도 > 사유 안내, 인증 성공 > pop(true)
 class MyLocationVerificationScreen extends ConsumerStatefulWidget {
-  const MyLocationVerificationScreen({super.key});
+  // 진입 전 안내 모달 노출 여부 (공통 인증 확인 경유 > true, 마이페이지 직접 진입 > false)
+  final bool isExplanationShown;
+
+  const MyLocationVerificationScreen({super.key, this.isExplanationShown = false});
 
   @override
   ConsumerState<MyLocationVerificationScreen> createState() => _MyLocationVerificationScreenState();
 }
 
-class _MyLocationVerificationScreenState extends ConsumerState<MyLocationVerificationScreen> {
-  final _locationService = LocationService();
-  NLatLng? _currentPosition;
-  LocationAddress? _selectedAddress;
-  NLatLng? _selectedPosition;
-  bool _isVerifying = false;
-  bool _hasLocationPermission = false;
-  int _addressUpdateToken = 0;
-  final Completer<NaverMapController> _mapControllerCompleter = Completer();
-
-  // 대한민국 중심 좌표 (전국이 보이는 줌 레벨용)
-  static const NLatLng _koreaCenter = NLatLng(36.5, 127.5);
+class _MyLocationVerificationScreenState extends ConsumerState<MyLocationVerificationScreen>
+    with WidgetsBindingObserver {
+  GpsLocationCheckResult? _checkResult;
+  bool _isCheckingLocation = false;
+  bool _isSaving = false;
+  // 설정 화면으로 보낸 뒤 복귀 대기 (복귀 시 권한 요청 없이 1회 재확인)
+  bool _isWaitingSettingsReturn = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeLocation();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prepareVerification());
   }
 
-  Future<void> _initializeLocation() async {
-    final hasPermission = await _locationService.requestPermission();
-    if (!hasPermission) {
-      // 권한 없음 → 전국 지도에서 핀으로 선택
-      if (mounted) setState(() => _hasLocationPermission = false);
-      return;
-    }
-    if (mounted) setState(() => _hasLocationPermission = true);
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
-    final position = await _locationService.getCurrentPosition();
-    if (mounted && position != null) {
-      final latLng = _locationService.positionToLatLng(position);
-      setState(() {
-        _currentPosition = latLng;
-      });
-      // 지도 컨트롤러가 준비됐으면 현재 위치로 카메라 이동
-      _mapControllerCompleter.future.then((controller) {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !_isWaitingSettingsReturn) return;
+    _isWaitingSettingsReturn = false;
+    _checkCurrentLocation(shouldRequestPermission: false);
+  }
+
+  /// 진입 준비: 권한 미결정 + 안내 미노출 > 안내 모달 (나중에 > 닫기) > 위치 확인
+  Future<void> _prepareVerification() async {
+    if (!widget.isExplanationShown) {
+      final permission = await ref.read(gpsLocationVerifierProvider).checkPermission();
+      if (!mounted) return;
+      if (permission == LocationPermission.denied) {
+        final isExplanationAccepted = await showLocationVerificationExplanation(context);
         if (!mounted) return;
-        controller.updateCamera(NCameraUpdate.fromCameraPosition(NCameraPosition(target: latLng, zoom: 15)));
-        controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-      });
-      await _updateAddress(latLng);
-    } else if (mounted) {
-      setState(() {});
+        if (!isExplanationAccepted) {
+          Navigator.pop(context, false);
+          return;
+        }
+      }
     }
+    await _checkCurrentLocation();
   }
 
-  Future<void> _updateAddress(NLatLng position) async {
-    final token = ++_addressUpdateToken;
-    final address = await _locationService.getAddressFromCoordinates(position);
-    if (mounted && address != null && token == _addressUpdateToken) {
-      setState(() {
-        _selectedPosition = position;
-        _selectedAddress = address;
-      });
-    }
-  }
-
-  Future<void> _onVerifyLocationPressed() async {
-    if (_isVerifying || _selectedAddress == null || _selectedPosition == null) return;
-    setState(() => _isVerifying = true);
+  /// 현재 GPS 위치 확인 (진행 중이면 무시)
+  Future<void> _checkCurrentLocation({bool shouldRequestPermission = true}) async {
+    if (_isCheckingLocation) return;
+    setState(() => _isCheckingLocation = true);
     try {
-      await ref
-          .read(memberProfileProvider.notifier)
-          .saveLocation(
-            longitude: _selectedPosition!.longitude,
-            latitude: _selectedPosition!.latitude,
-            siDo: _selectedAddress!.siDo,
-            siGunGu: _selectedAddress!.siGunGu,
-            eupMyoenDong: _selectedAddress!.eupMyoenDong,
-            ri: _selectedAddress!.ri,
-          );
-      if (!mounted) return;
-      CommonSnackBar.show(context: context, message: '위치가 등록되었습니다.', type: SnackBarType.success);
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
+      final checkResult = await ref
+          .read(gpsLocationVerifierProvider)
+          .checkCurrentLocation(shouldRequestPermission: shouldRequestPermission);
+      if (mounted) setState(() => _checkResult = checkResult);
     } finally {
-      if (mounted) setState(() => _isVerifying = false);
+      if (mounted) setState(() => _isCheckingLocation = false);
+    }
+  }
+
+  /// 실패 사유에 맞는 시스템 설정 열기 > 복귀 시 재확인
+  Future<void> _openSettings() async {
+    final failure = _checkResult?.failure;
+    if (failure == null) return;
+    final isOpened = await ref.read(gpsLocationVerifierProvider).openSettingsFor(failure);
+    if (isOpened) _isWaitingSettingsReturn = true;
+  }
+
+  /// GPS 위치로 인증 (국내 실제 위치)
+  Future<void> _onVerifyPressed() async {
+    final checkResult = _checkResult;
+    if (checkResult == null || !checkResult.isLocated) return;
+    await _saveVerification(
+      () => ref.read(locationVerificationProvider.notifier).verifyWithCurrentLocation(checkResult),
+    );
+  }
+
+  /// 서비스 지역 밖 > 지도에서 고른 동네로 인증
+  Future<void> _onManualSelectionVerifyPressed(NLatLng selectedPosition, LocationAddress selectedAddress) async {
+    final checkResult = _checkResult;
+    if (checkResult == null || !checkResult.isOutsideServiceArea) return;
+    await _saveVerification(
+      () => ref
+          .read(locationVerificationProvider.notifier)
+          .verifyWithManualSelection(
+            outsideServiceAreaResult: checkResult,
+            latitude: selectedPosition.latitude,
+            longitude: selectedPosition.longitude,
+            selectedAddress: selectedAddress,
+          ),
+    );
+  }
+
+  /// 인증 저장 공통: 진행 중이면 무시 > 저장 > 완료 안내 > pop(true), 실패 > 오류 안내
+  Future<void> _saveVerification(Future<void> Function() saveVerifiedLocation) async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
+      await saveVerifiedLocation();
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: '동네 인증이 완료되었어요.', type: SnackBarType.success);
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(error), type: SnackBarType.error);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final initialTarget = _currentPosition ?? _koreaCenter;
-    final initialZoom = _currentPosition != null ? 15.0 : 6.5;
-
     return Scaffold(
-      appBar: CommonAppBar(title: '내 위치 등록', showBottomBorder: true, onBackPressed: () => Navigator.pop(context)),
-      body: Stack(
+      backgroundColor: AppColors.primaryBlack,
+      appBar: CommonAppBar(title: '동네 인증', showBottomBorder: true, onBackPressed: () => Navigator.pop(context, false)),
+      body: _buildBody(),
+    );
+  }
+
+  /// 단계별 본문: 확인 중 > 로딩, 확인 전(안내 모달 중) > 빈 화면, 실패 > 사유 안내, 서비스 지역 밖 > 지도 선택, 성공 > 확인된 동네 지도
+  Widget _buildBody() {
+    final checkResult = _checkResult;
+    if (_isCheckingLocation) return _buildCheckingView();
+    if (checkResult == null) return const SizedBox.shrink();
+
+    final failure = checkResult.failure;
+    if (failure != null) {
+      return LocationVerificationFailureView(
+        failure: failure,
+        onRetryPressed: _checkCurrentLocation,
+        onOpenSettingsPressed: _openSettings,
+      );
+    }
+
+    if (checkResult.isOutsideServiceArea) {
+      return LocationVerificationManualSelectionView(
+        lookupAddress: ref.read(gpsLocationVerifierProvider).lookupAddress,
+        isSaving: _isSaving,
+        onVerifyPressed: _onManualSelectionVerifyPressed,
+        onRecheckPressed: _checkCurrentLocation,
+      );
+    }
+
+    return LocationVerificationMapView(
+      position: NLatLng(checkResult.latitude!, checkResult.longitude!),
+      neighborhoodText: checkResult.address!.siDoSiGunGuEupMyoenDongText,
+      isSaving: _isSaving,
+      onVerifyPressed: _onVerifyPressed,
+      onRecheckPressed: _checkCurrentLocation,
+    );
+  }
+
+  Widget _buildCheckingView() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 지도 전체 채우기
-          Positioned.fill(
-            child: NaverMap(
-              options: NaverMapViewOptions(
-                initialCameraPosition: NCameraPosition(target: initialTarget, zoom: initialZoom),
-                logoAlign: NLogoAlign.leftBottom,
-                logoMargin: NEdgeInsets.fromEdgeInsets(const EdgeInsets.only(left: 24, bottom: 137)),
-                indoorEnable: true,
-                locationButtonEnable: false,
-              ),
-              onMapReady: (controller) {
-                if (!_mapControllerCompleter.isCompleted) {
-                  _mapControllerCompleter.complete(controller);
-                  if (_currentPosition != null) {
-                    controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-                  }
-                }
-              },
-              onCameraIdle: () async {
-                final controller = await _mapControllerCompleter.future;
-                final cameraPos = await controller.getCameraPosition();
-                await _updateAddress(cameraPos.target);
-              },
-            ),
-          ),
-
-          // 중앙 핀
-          Center(
-            child: Container(
-              margin: EdgeInsets.only(bottom: 40.h),
-              child: Shadex(
-                shadowColor: AppColors.opacity20Black,
-                shadowBlurRadius: 2.0,
-                shadowOffset: const Offset(2, 2),
-                child: SvgPicture.asset('assets/images/location-pin.svg'),
-              ),
-            ),
-          ),
-
-          // 현재 위치 버튼 (권한 있을 때만 표시)
-          if (_hasLocationPermission)
-            Positioned(
-              bottom: 160.h,
-              left: 24.w,
-              child: CurrentLocationButton(
-                onTap: () async {
-                  final controller = await _mapControllerCompleter.future;
-                  final position = await _locationService.getCurrentPosition();
-                  if (position != null) {
-                    final newPos = _locationService.positionToLatLng(position);
-                    await controller.updateCamera(
-                      NCameraUpdate.fromCameraPosition(NCameraPosition(target: newPos, zoom: 15)),
-                    );
-                    controller.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-                    if (mounted) setState(() => _currentPosition = newPos);
-                    await _updateAddress(newPos);
-                  }
-                },
-                iconSize: 24.h,
-              ),
-            ),
-
-          // 하단 주소 + 버튼 영역
-          Positioned(
-            left: 24.w,
-            right: 24.w,
-            bottom: 57.h + MediaQuery.of(context).padding.bottom,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_selectedAddress != null)
-                  Container(
-                    margin: EdgeInsets.only(bottom: 12.h),
-                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.locationVerificationAreaLabel,
-                      borderRadius: BorderRadius.circular(100.r),
-                    ),
-                    child: Text(_selectedAddress!.siDoSiGunGuEupMyoenDongText, style: CustomTextStyles.p2),
-                  ),
-                CompletionButton(
-                  isEnabled: _selectedAddress != null,
-                  isLoading: _isVerifying,
-                  buttonText: '이 위치로 등록하기',
-                  enabledOnPressed: _onVerifyLocationPressed,
-                ),
-              ],
-            ),
+          const CommonLoadingIndicator(),
+          SizedBox(height: 16.h),
+          Text(
+            '지금 있는 위치를 확인하고 있어요',
+            style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

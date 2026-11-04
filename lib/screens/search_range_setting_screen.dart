@@ -4,16 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
+import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
+import 'package:romrom_fe/providers/location_verification_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
-import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
-import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/utils/latest_value_save_queue.dart';
+import 'package:romrom_fe/utils/location_verification_gate.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/current_location_button.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
@@ -47,7 +48,10 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
         .saveSearchRadius(defaultSearchRangeOptions[rangeIndex].distanceKm * 1000),
   );
   NCircleOverlay? _rangeCircle;
-  bool _locationNotSet = false;
+  // GPS 동네 인증 필요 (서버 위치 없음 또는 미인증 > 범위 변경 대신 인증 안내)
+  bool _isLocationVerificationRequired = false;
+  // 인증 안내 버튼 진행 중 (중복 탭 방지)
+  bool _isVerifyingLocation = false;
   // 위치·범위 조회 실패 (위치 미설정 안내와 구분 > 다시 시도)
   bool _hasLoadError = false;
 
@@ -57,18 +61,19 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
     _initializeData();
   }
 
-  /// 서버에서 위치 및 탐색 범위 로드: 위치 없음 > 위치 설정 안내, 조회 실패 > 다시 시도
+  /// 서버에서 위치 및 탐색 범위 로드: 위치 없음·GPS 미인증 > 동네 인증 안내, 조회 실패 > 다시 시도
   Future<void> _initializeData() async {
     if (_hasLoadError) setState(() => _hasLoadError = false);
     try {
       final memberProfile = await ref.read(memberProfileProvider.notifier).fetchLatest();
+      final isLocationVerified = await ref.read(locationVerificationProvider.notifier).isCurrentMemberVerified();
       final location = memberProfile.location;
       final searchRadiusInMeters = memberProfile.member?.searchRadiusInMeters ?? 7500.0;
 
       if (!mounted) return;
 
-      if (location?.latitude == null || location?.longitude == null) {
-        setState(() => _locationNotSet = true);
+      if (location?.latitude == null || location?.longitude == null || !isLocationVerified) {
+        setState(() => _isLocationVerificationRequired = true);
         return;
       }
 
@@ -90,8 +95,8 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
       appBar: const CommonAppBar(title: '탐색 범위 설정', showBottomBorder: true),
       body: _hasLoadError
           ? EmptyStateView.error(centerText: '탐색 범위를 불러오지 못했어요', onRetry: _initializeData)
-          : _locationNotSet
-          ? _buildLocationNotSetView()
+          : _isLocationVerificationRequired
+          ? _buildLocationVerificationRequiredView()
           : _currentPosition == null
           ? const Center(child: CommonLoadingIndicator())
           : Column(
@@ -153,57 +158,35 @@ class _SearchRangeSettingScreenState extends ConsumerState<SearchRangeSettingScr
     );
   }
 
-  /// 위치 미설정 시 안내 UI
-  Widget _buildLocationNotSetView() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 40.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.location_off_outlined, size: 64.sp, color: AppColors.opacity60White),
-            SizedBox(height: 24.h),
-            Text(
-              '내 위치를 먼저 설정해주세요',
-              style: CustomTextStyles.h3.copyWith(color: AppColors.textColorWhite),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              '탐색 범위를 설정하려면 먼저 내 위치인증이 필요합니다.',
-              style: CustomTextStyles.p2.copyWith(color: AppColors.opacity60White),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 32.h),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryYellow,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                ),
-                onPressed: () async {
-                  await context.navigateTo(screen: const MyLocationVerificationScreen());
-                  // 위치인증 후 돌아오면 데이터 재로드
-                  if (mounted) {
-                    setState(() {
-                      _locationNotSet = false;
-                      _currentPosition = null;
-                    });
-                    _initializeData();
-                  }
-                },
-                child: Text(
-                  '위치 설정하러 가기',
-                  style: CustomTextStyles.p1.copyWith(fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  /// 동네 인증 필요 안내: 인증 버튼 > 공통 인증 확인 > 인증되면 위치·범위 다시 로드
+  Widget _buildLocationVerificationRequiredView() {
+    return EmptyStateView(
+      icon: AppIcons.location,
+      centerText: '위치 인증이 필요해요',
+      descriptionText: '탐색 범위는 인증한 동네를 기준으로 정해져요.\n지금 있는 위치로 동네를 인증해 주세요.',
+      buttonText: '동네 인증하기',
+      isButtonLoading: _isVerifyingLocation,
+      onButtonTap: _onVerifyLocationPressed,
     );
+  }
+
+  /// 동네 인증하기: 진행 중이면 무시 > 공통 인증 확인 > 인증되면 다시 로드 (취소 > 안내 유지)
+  Future<void> _onVerifyLocationPressed() async {
+    if (_isVerifyingLocation) return;
+    setState(() => _isVerifyingLocation = true);
+    try {
+      final isLocationVerified = await ref
+          .read(locationVerificationGateProvider)
+          .ensureVerified(context, purpose: LocationVerificationPurpose.searchRangeChange);
+      if (!mounted || !isLocationVerified) return;
+      setState(() {
+        _isLocationVerificationRequired = false;
+        _currentPosition = null;
+      });
+      await _initializeData();
+    } finally {
+      if (mounted) setState(() => _isVerifyingLocation = false);
+    }
   }
 
   /// 범위 변경 처리: 화면 즉시 반영 > 저장

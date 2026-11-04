@@ -1,15 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/models/app_colors.dart';
-import 'package:romrom_fe/models/pending_deep_link.dart';
 import 'package:romrom_fe/services/local_notification_service.dart';
 import 'package:romrom_fe/services/apis/notification_api.dart';
+import 'package:romrom_fe/services/push_notification_routing.dart';
 import 'package:romrom_fe/services/token_manager.dart';
-import 'package:romrom_fe/utils/deep_link_router.dart';
 
 class FirebaseService {
   // 싱글톤 구현
@@ -35,14 +34,21 @@ class FirebaseService {
   // 알림 권한 요청 1회분 (첫 호출 Future 공유)
   Future<void>? _notificationPermissionRequest;
 
-  /// 알림 권한 요청 1회: 로컬 알림 초기화(iOS 권한 창) > FCM 권한 요청 > 결과 로그
-  /// 첫 프레임 이후 호출 (스플래시 표시 후 권한 창), 이후 호출은 같은 Future 반환
+  // iOS APNs 토큰 도착 대기 (1초 간격 최대 5회, 권한과 무관하게 앱 시작 시 등록됨)
+  static const int apnsTokenWaitAttemptCount = 5;
+  static const Duration apnsTokenWaitInterval = Duration(seconds: 1);
+
+  /// 알림 권한 요청 1회: 로컬 알림 초기화 > FCM 권한 요청(시스템 권한 창) > 결과 로그
+  /// 사용자가 앱 안내에서 알림 켜기를 고른 뒤에만 호출 (앱 시작 시 호출 금지), 이후 호출은 같은 Future 반환
   Future<void> requestNotificationPermission() {
     return _notificationPermissionRequest ??= _initNotificationPluginAndRequestPermission();
   }
 
+  /// 진행 중인 권한 요청 응답 대기 (요청 없었으면 즉시 완료, 새 요청 안 함)
+  Future<void> waitForPendingPermissionRequest() => _notificationPermissionRequest ?? Future<void>.value();
+
   Future<void> _initNotificationPluginAndRequestPermission() async {
-    // 로컬 알림 초기화 (Android 기본 아이콘, iOS 권한 창 포함)
+    // 로컬 알림 초기화 (Android 기본 아이콘, 권한 요청 없음)
     try {
       await initNotificationPlugin();
     } catch (e) {
@@ -55,6 +61,7 @@ class FirebaseService {
         alert: true,
         badge: true,
         sound: true,
+        providesAppNotificationSettings: true,
       );
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         debugPrint('[FCM] 푸시 알림 권한이 허용됨');
@@ -94,6 +101,8 @@ class FirebaseService {
                 colorized: true,
               ),
             ),
+            // 탭 시 딥링크 이동용 FCM data (local_notification_service 탭 처리)
+            payload: encodePushNotificationPayload(message.data),
           );
         }
       } catch (e) {
@@ -108,32 +117,18 @@ class FirebaseService {
     // 백그라운드 상태에서 알림 탭으로 앱이 열린 경우
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint("[FCM] 알림 클릭 후 앱이 열림: ${message.data}");
-      _routeFromFcmData(message.data);
+      routePushNotificationData(message.data);
     });
   }
 
-  /// FCM data 페이로드 > deepLink + notificationType 파싱 > 딥링크 게이트 (로그인·온보딩 중이면 보관)
-  static void _routeFromFcmData(Map<String, dynamic> data) {
-    final deepLink = data['deepLink'] as String?;
-    if (deepLink == null || deepLink.isEmpty) return;
-
-    final uri = Uri.tryParse(deepLink);
-    if (uri == null) return;
-
-    final typeRaw = data['notificationType'] as String?;
-    final notificationType = NotificationType.fromServerName(typeRaw);
-    if (typeRaw != null && notificationType == null) {
-      debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
-    }
-
-    RomRomDeepLinkRouter.receive(PendingDeepLink(uri: uri, notificationType: notificationType, extraData: data));
-  }
-
-  /// FCM 토큰 발급 및 갱신
-  /// 온보딩 완료 또는 토큰 갱신 시 호출
+  /// FCM 토큰 발급 (iOS는 APNs 토큰 도착 대기 후, 실패 시 null)
+  /// handleFcmToken에서 호출
   Future<String?> getFcmToken() async {
     try {
       final messaging = FirebaseMessaging.instance;
+
+      // iOS: APNs 토큰 도착 후 발급 (도착 전 getToken 실패 방지)
+      if (Platform.isIOS) await _waitForApnsToken(messaging);
 
       // FCM 토큰 발급
       final token = await messaging.getToken();
@@ -148,6 +143,15 @@ class FirebaseService {
       debugPrint('[FCM] 토큰 발급 중 오류: $e');
       return null;
     }
+  }
+
+  /// APNs 토큰 도착 대기 (최대 [apnsTokenWaitAttemptCount]회, 못 받아도 발급 시도는 계속)
+  Future<void> _waitForApnsToken(FirebaseMessaging messaging) async {
+    for (var attemptIndex = 0; attemptIndex < apnsTokenWaitAttemptCount; attemptIndex++) {
+      if (await messaging.getAPNSToken() != null) return;
+      await Future<void>.delayed(apnsTokenWaitInterval);
+    }
+    debugPrint('[FCM] APNs 토큰 대기 시간 초과');
   }
 
   /// FCM 토큰 갱신 감지 및 처리
@@ -166,12 +170,12 @@ class FirebaseService {
   static bool _tokenRefreshListenerSet = false;
 
   /// FCM 토큰 발급 및 백엔드 저장
-  /// 온보딩 완료 시 호출
+  /// 자동 로그인·로그인·온보딩 완료 시 + 알림 권한 허용 직후 호출 (권한 요청 안 함)
   Future<void> handleFcmToken() async {
     try {
       final notificationApi = NotificationApi();
-      // 0. 권한 응답 후 발급 (시작 시 순서 유지: 권한 > 토큰, iOS APNs 토큰 도착 전 발급 실패 방지)
-      await requestNotificationPermission();
+      // 0. 진행 중인 권한 요청만 응답 대기 (새 권한 요청 없음)
+      await waitForPendingPermissionRequest();
       // 1. FCM 토큰 발급
       final fcmToken = await getFcmToken();
       if (fcmToken == null) {

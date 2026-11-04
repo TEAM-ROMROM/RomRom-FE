@@ -4,18 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/enums/item_status.dart';
+import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/enums/my_item_toggle_status.dart';
 import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
-import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/screens/item_modification_screen.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
-import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/widgets/skeletons/register_tab_skeleton.dart';
 import 'package:romrom_fe/widgets/register_tab/register_tab_floating_register_button.dart';
 import 'package:romrom_fe/widgets/register_tab/register_tab_item_tile.dart';
@@ -23,8 +22,10 @@ import 'package:romrom_fe/widgets/common/glass_header_delegate.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
+import 'package:romrom_fe/widgets/common/notification_permission_prompt_modal.dart';
 import 'dart:async';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/location_verification_gate.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 
 import 'package:romrom_fe/models/app_motion.dart';
@@ -33,7 +34,6 @@ import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/models/trade_complete_partner_selection.dart';
 import 'package:romrom_fe/screens/trade_complete_partner_select_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterTabScreen extends ConsumerStatefulWidget {
   const RegisterTabScreen({super.key});
@@ -272,20 +272,15 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
     );
   }
 
-  /// 등록 버튼: 중복 탭 차단 > 위치 인증 > 등록 가능 개수 확인 > 등록 화면 > 첫 등록이면 홈 코치마크
+  /// 등록 버튼: 중복 탭 차단 > GPS 동네 인증 > 등록 가능 개수 확인 > 등록 화면 > 알림 권한 1회 안내 > 첫 등록이면 홈 코치마크
   Future<void> _onRegisterButtonPressed() async {
     if (_isFabProcessing) return;
     setState(() => _isFabProcessing = true);
     try {
-      final userInfo = UserInfo();
-      if (userInfo.isMemberLocationSaved != true) {
-        final locationResult = await context.navigateTo<bool>(screen: const MyLocationVerificationScreen());
-        if (!mounted) return;
-        if (locationResult != true) return;
-        userInfo.isMemberLocationSaved = true;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isMemberLocationSaved', true);
-      }
+      final isLocationVerified = await ref
+          .read(locationVerificationGateProvider)
+          .ensureVerified(context, purpose: LocationVerificationPurpose.itemRegistration);
+      if (!mounted || !isLocationVerified) return;
 
       // 거래중(AVAILABLE) 물품 개수 확인 - 최대 10개 제한
       // provider 미로딩 시(null) 등록 차단 — stale 0으로 제한 우회 방지
@@ -320,6 +315,9 @@ class _RegisterTabScreenState extends ConsumerState<RegisterTabScreen> with Tick
         ),
       );
 
+      if (!mounted) return;
+      // 등록 성공(결과 Map) 직후 알림 권한 1회 안내 (코치마크 전)
+      if (result is Map<String, dynamic>) await showNotificationPermissionPromptOnce(context, ref);
       if (!mounted) return;
 
       debugPrint('====================================');

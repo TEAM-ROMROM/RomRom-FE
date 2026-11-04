@@ -166,12 +166,12 @@ class _MyRegisterItemScreenState extends ConsumerState<MyRegisterItemScreen> wit
             );
           }
           final itemIndex = ListAdPlacement.itemList.contentIndexAtListIndex(listIndex);
-          final item = displayItems[itemIndex];
+          final registeredItem = displayItems[itemIndex];
           return AppFadeSlideIn(
             delay: Duration(milliseconds: itemIndex * AppMotion.staggerDelayMs),
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.0.w),
-              child: _buildItemTile(item, itemIndex),
+              child: _buildItemTile(registeredItem, itemIndex),
             ),
           );
         }, childCount: itemCountWithSeparators),

@@ -1,4 +1,4 @@
-// 채팅방 메시지 목록: 빈 목록 안내 / 최신이 아래인 reverse 목록 (날짜 구분선·간격·시각·읽음·전송 상태·교환 요청 버튼 판정, 맨 위 이전 메시지 로딩)
+// 채팅방 메시지 목록: 빈 목록 안내 / 최신이 아래인 reverse 목록 (날짜·안 읽음 구분선·간격·시각·읽음·전송 상태·교환 요청 버튼 판정, 맨 위 이전 메시지 로딩)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/message_type.dart';
@@ -8,6 +8,7 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/chat_room_message_rules.dart';
 import 'package:romrom_fe/widgets/chat_message_item.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_date_divider.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_unread_divider.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 class ChatRoomMessageList extends StatelessWidget {
@@ -39,6 +40,9 @@ class ChatRoomMessageList extends StatelessWidget {
   final void Function(String localMessageId) onDeleteFailedMessage;
   // 완료 카드 '후기 쓰기' (작성 불가면 null)
   final VoidCallback? onWriteReview;
+  // 진입 시 안 읽은 첫 메시지 ID ('여기까지 읽었어요' 구분선 위치, null > 숨김) / 구분선 위치 이동용 키
+  final String? firstUnreadMessageId;
+  final Key? unreadDividerKey;
 
   const ChatRoomMessageList({
     super.key,
@@ -61,6 +65,8 @@ class ChatRoomMessageList extends StatelessWidget {
     required this.onRetryFailedMessage,
     required this.onDeleteFailedMessage,
     required this.onWriteReview,
+    this.firstUnreadMessageId,
+    this.unreadDividerKey,
   });
 
   @override
@@ -105,11 +111,12 @@ class ChatRoomMessageList extends StatelessWidget {
     );
   }
 
-  /// 메시지 1건: 날짜 구분선 > 간격(구분선 아래 16.h, 같은 발신자·종류 8.h, 그 외 24.h) > 시각 표시 > 교환 요청 버튼 콜백 > 전송 상태 > 메시지 아이템
+  /// 메시지 1건: 날짜·안 읽음 구분선 > 간격(구분선 아래 16.h, 같은 발신자·종류 8.h, 그 외 24.h) > 시각 표시 > 교환 요청 버튼 콜백 > 전송 상태 > 메시지 아이템
   Widget _buildMessageItem(BuildContext context, int index) {
     final message = messages[index];
     final bool showDateDivider = shouldShowDateDivider(messages: messages, index: index);
-    final double topGap = showDateDivider
+    final bool shouldShowUnreadDivider = message.chatMessageId != null && message.chatMessageId == firstUnreadMessageId;
+    final double topGap = (showDateDivider || shouldShowUnreadDivider)
         ? 16.h
         : isGroupedWithOlderMessage(messages: messages, index: index)
         ? 8.h
@@ -153,13 +160,14 @@ class ChatRoomMessageList extends StatelessWidget {
       onRetrySend: messageId == null ? null : () => onRetryFailedMessage(messageId),
       onDeleteFailedMessage: messageId == null ? null : () => onDeleteFailedMessage(messageId),
     );
-    if (!showDateDivider) return messageItem;
+    if (!showDateDivider && !shouldShowUnreadDivider) return messageItem;
 
-    // reverse 목록이라 Column 위쪽 = 더 오래된 쪽 (구분선이 그날 첫 메시지 위에 위치)
+    // reverse 목록이라 Column 위쪽 = 더 오래된 쪽 (안 읽음 구분선 > 날짜 구분선 > 안 읽은 첫 메시지)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ChatDateDivider(date: message.createdDate!),
+        if (shouldShowUnreadDivider) ChatUnreadDivider(key: unreadDividerKey),
+        if (showDateDivider) ChatDateDivider(date: message.createdDate!),
         messageItem,
       ],
     );

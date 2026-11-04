@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:romrom_fe/services/native_ad_handle.dart';
 import 'package:romrom_fe/widgets/home_tab/home_feed_native_ad_preloader.dart';
 import 'package:romrom_fe/widgets/native_ad_widget.dart';
 
+import '../helpers/native_ad_fakes.dart';
 import '../helpers/pump_design_screen.dart';
 
 /// 홈 피드 광고 칸: 보관소에서 빌리고 종료 시 반납만 (폐기 안 함), 실패 > 칸 접기 알림
@@ -18,7 +18,7 @@ void main() {
   NativeAdHandle requestFakeAd(BuildContext context) {
     final loadCompleter = Completer<bool>();
     final handle = NativeAdHandle(
-      nativeAd: NativeAd(adUnitId: 'test', factoryId: 'test', listener: NativeAdListener(), request: const AdRequest()),
+      nativeAd: buildTestNativeAd(),
       isLoadedFuture: loadCompleter.future,
       requestedAt: DateTime.now(),
     );

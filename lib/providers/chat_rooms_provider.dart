@@ -49,6 +49,22 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
     state = next.hasError ? next.copyWithPrevious(state) : next;
   }
 
+  /// 불러온 페이지 전체 재조회 (페이지 수·페이징 위치 유지 > 목록 스크롤 유지)
+  /// page 0에서 불러온 페이지 수만큼 한 번에 조회 > 실패 시 기존 목록 유지 (조용히 무시)
+  Future<void> refreshLoadedPages() async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return reload();
+    _ignoredUnknownRoomIds.clear();
+    try {
+      final loadedPageCount = currentState.currentPage + 1;
+      final paged = await _repo.getChatRooms(pageNumber: 0, pageSize: _pageSize * loadedPageCount);
+      final filtered = paged.content.where((room) => room.blocked != true).toList();
+      state = AsyncData(ChatRoomsState(rooms: filtered, currentPage: currentState.currentPage, hasMore: !paged.last));
+    } catch (_) {
+      // 백그라운드 갱신 실패 > 기존 목록 유지, 다음 탭 전환·당겨서 새로고침에서 재시도
+    }
+  }
+
   /// 첫 페이지만 재조회해 기존 목록에 병합 (새 방 추가·기존 방 갱신, 이후 페이지·페이징 위치 유지)
   /// 탭 전환·모르는 방 메시지용 백그라운드 갱신 > 실패 시 기존 목록 유지 (동시 호출은 1회로 묶음)
   Future<void> refreshFirstPage() => _firstPageRefreshFlight.run(_mergeFirstPage);
@@ -68,21 +84,21 @@ class ChatRoomsNotifier extends AsyncNotifier<ChatRoomsState> {
     }
   }
 
-  /// 채팅방 생성 > 목록 재조회 > 생성(또는 기존) 방 반환
+  /// 채팅방 생성 > 불러온 페이지 재조회 > 생성(또는 기존) 방 반환
   /// (재조회는 기다리지 않음: 채팅방 이동 지연 방지, 실패해도 이전 목록 유지)
   Future<ChatRoom> createRoom({required String opponentMemberId, required String tradeRequestHistoryId}) async {
     final createdRoom = await _repo.createChatRoom(
       opponentMemberId: opponentMemberId,
       tradeRequestHistoryId: tradeRequestHistoryId,
     );
-    unawaited(reload());
+    unawaited(refreshLoadedPages());
     return createdRoom;
   }
 
-  /// 채팅방 삭제(나가기) > 목록 재조회 (삭제 실패 시 예외 전달, 재조회 생략)
+  /// 채팅방 삭제(나가기) > 불러온 페이지 재조회 (삭제 실패 시 예외 전달, 재조회 생략)
   Future<void> deleteRoom(String chatRoomId) async {
     await _repo.deleteChatRoom(chatRoomId: chatRoomId);
-    unawaited(reload());
+    unawaited(refreshLoadedPages());
   }
 
   /// 다음 페이지 로드 (무한스크롤). 실패 시 기존 목록 유지 + 예외 전달 (화면이 안내)

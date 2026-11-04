@@ -10,7 +10,7 @@ const String _imageMessageContent = '사진을 보냈습니다.';
 const String _sendFailedMessage = '메시지를 보내지 못했어요. 연결 상태를 확인해 주세요.';
 
 mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom {
-  /// 재연결 시 호출: 서버 최신 메시지 재조회 > 서버에 이미 저장된 내 로컬 메시지 정리 > 유실분 병합
+  /// 재연결 시 호출: 서버 최신 메시지 재조회 > 서버에 이미 저장된 내 로컬 메시지 정리 > 주소 대기 이미지 교체 > 유실분 병합
   Future<void> _resyncMessages() async {
     if (_isResyncing || !mounted) return;
     _isResyncing = true;
@@ -34,6 +34,8 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
       );
       setState(() {
         confirmedLocalIds.forEach(_forgetLocalMessage);
+        // 주소 보완 대기 이미지 먼저 교체 (ID 없이 온 대기 메시지 + 서버 원본 중복 표시 방지)
+        _replaceWebSocketImagePlaceholders(serverMessages);
         _messages = mergeServerMessages(current: _messages, serverMessages: serverMessages);
       });
       // 단절 구간에 놓친 AI 추천 교정 (닫은 추천은 provider가 재노출 차단)
@@ -51,13 +53,14 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
 
   /// 수신 메시지 반영: 중복 무시 > 내 에코 처리(대기 로컬 확정·대체된 원래 메시지 흡수) > 새로 삽입
   /// 텍스트 전송 잠금은 전송 상태에서 계산 > 중복으로 무시돼도 잠김 없음
-  void _handleIncomingMessage(ChatMessage newMessage) {
+  /// 반환: 화면 목록 반영 여부 (중복·흡수 > false, 호출부 후속 처리 생략)
+  bool _handleIncomingMessage(ChatMessage newMessage) {
     debugPrint('[ChatRoom] _handleIncomingMessage: type=${newMessage.type}, id=${newMessage.chatMessageId}');
     final newId = newMessage.chatMessageId;
     final isDuplicate = (newId != null) && _messages.any((m) => m.chatMessageId != null && m.chatMessageId == newId);
     if (isDuplicate) {
       debugPrint('[ChatRoom] 중복 메시지 수신 무시: chatMessageId=$newId');
-      return;
+      return false;
     }
 
     final echoDecision = resolveIncomingEcho(
@@ -72,7 +75,7 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
     if (absorbedSupersededLocalId != null) {
       _supersededLocalMessages.remove(absorbedSupersededLocalId);
       debugPrint('[ChatRoom] late echo of superseded message absorbed: $absorbedSupersededLocalId');
-      return;
+      return false;
     }
 
     // 대기 로컬 메시지 확정 (낙관적 말풍선 > 서버 메시지 교체, 실패 표시였어도 확정)
@@ -87,7 +90,7 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
       } else {
         _messages.insert(0, confirmedMessage);
       }
-      return;
+      return true;
     }
 
     // 교환 완료 요청 WS 에코 도착: 낙관적 로컬 메시지를 실제 서버 메시지로 교체
@@ -101,15 +104,17 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
     }
 
     // WebSocket 브로드캐스트에 imageUrls 미포함 시 REST API로 보완
+    // 서버 ID 유지 (보완 실패 후 재연결 동기화가 같은 ID로 교체 > 중복 말풍선 방지), ID 없을 때만 임시 ID
     if (newMessage.type == MessageType.image && (newMessage.imageUrls == null || newMessage.imageUrls!.isEmpty)) {
-      final tempId = '$webSocketImageMessageIdPrefix${DateTime.now().microsecondsSinceEpoch}';
-      _messages.insert(0, newMessage.copyWith(chatMessageId: tempId));
-      _pendingWsImageTempIds.add(tempId);
+      final placeholderId = newId ?? buildLocalMessageId(prefix: webSocketImageMessageIdPrefix);
+      _messages.insert(0, newMessage.copyWith(chatMessageId: placeholderId));
+      _pendingWsImageTempIds.add(placeholderId);
       _wsImageFetchTimer?.cancel();
       _wsImageFetchTimer = Timer(_wsImageFetchBatchDelay, _batchFetchWsImageUrls);
     } else {
       _messages.insert(0, newMessage);
     }
+    return true;
   }
 
   /// 텍스트 전송: 소켓 전송 시도 > 즉시 실패면 입력 글 유지·안내 > 성공 시 전송 중 말풍선·입력창 비움
@@ -217,9 +222,10 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
     }
   }
 
-  /// 로컬 메시지 목록 추가 (setState 안에서 호출): 전송됨 > 에코 대기 타이머, 즉시 실패 > 실패 표시
+  /// 로컬 메시지 목록 추가 (setState 안에서 호출): 안 읽음 구분선 숨김 > 전송됨 > 에코 대기 타이머, 즉시 실패 > 실패 표시
   void _addLocalMessage(ChatMessage localMessage, {required bool isSent}) {
     final localId = localMessage.chatMessageId!;
+    _firstUnreadMessageId = null;
     _messages.insert(0, localMessage);
     _pendingLocalMessages[localId] = localMessage;
     if (isSent) {
@@ -266,19 +272,23 @@ mixin _ChatRoomMessaging on _ChatRoomScreenStateFields, _ChatRoomScrollToBottom 
       );
       if (!mounted) return;
 
-      final replacements = matchWebSocketImagePlaceholders(
-        messages: _messages,
-        placeholderIds: _pendingWsImageTempIds,
-        serverMessages: response.messages?.content ?? [],
-      );
-      setState(() {
-        for (final (placeholderId, index, replacement) in replacements) {
-          _messages[index] = replacement;
-          _pendingWsImageTempIds.remove(placeholderId);
-        }
-      });
+      setState(() => _replaceWebSocketImagePlaceholders(response.messages?.content ?? []));
     } catch (e) {
       debugPrint('[ChatRoom] WebSocket 이미지 URL 일괄 보완 실패: $e');
+    }
+  }
+
+  /// 주소 보완 대기 이미지 > 서버 이미지 메시지 교체 (setState 안에서 호출, 교체된 것은 대기 해제)
+  void _replaceWebSocketImagePlaceholders(List<ChatMessage> serverMessages) {
+    if (_pendingWsImageTempIds.isEmpty) return;
+    final replacements = matchWebSocketImagePlaceholders(
+      messages: _messages,
+      placeholderIds: _pendingWsImageTempIds,
+      serverMessages: serverMessages,
+    );
+    for (final (placeholderId, index, replacement) in replacements) {
+      _messages[index] = replacement;
+      _pendingWsImageTempIds.remove(placeholderId);
     }
   }
 

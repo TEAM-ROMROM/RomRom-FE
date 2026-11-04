@@ -10,7 +10,7 @@ import 'package:romrom_fe/utils/deep_link_router.dart';
 
 import '../helpers/pump_design_screen.dart';
 
-/// 라우터 게이트 경로: 메인 진입 전 receive > 화면 이동 없음, onMainScreenEntered > 보관 링크 1회 이동
+/// 라우터 게이트 경로: 메인 진입 전 receive > 화면 이동 없음, onMainScreenEntered > 보관 링크 1회 이동, 강제 업데이트 중 > 열지 않음
 void main() {
   final itemDeletedLink = PendingDeepLink(
     uri: Uri.parse('romrom://item/deleted'),

@@ -12,19 +12,28 @@ import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/screens/chat_location_picker_screen.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
+import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/repositories/chat_repository.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/chat_message_send_rules.dart';
+import 'package:romrom_fe/utils/chat_room_live_message_rules.dart';
+import 'package:romrom_fe/utils/camera_permission_helper.dart';
+import 'package:romrom_fe/utils/chat_input_convenience_rules.dart';
 import 'package:romrom_fe/utils/chat_room_message_rules.dart';
+import 'package:romrom_fe/utils/chat_room_unread_rules.dart';
 import 'package:romrom_fe/utils/image_compressor.dart';
+import 'package:romrom_fe/utils/reverse_list_scroll_to_item.dart';
 import 'package:romrom_fe/utils/widget_instance_cache.dart';
 import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
+import 'package:romrom_fe/services/open_chat_room_registry.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/chat_input_draft_provider.dart';
+import 'package:romrom_fe/providers/chat_notification_guide_provider.dart';
 import 'package:romrom_fe/providers/chat_recommendation_provider.dart';
 import 'package:romrom_fe/providers/chat_repository_provider.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
@@ -32,13 +41,18 @@ import 'package:romrom_fe/providers/image_repository_provider.dart';
 import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/providers/open_chat_room_registry_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/common/error_scaffold.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_connection_banner.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_image_send_preview_sheet.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_quick_reply_bar.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_recommendation_banner.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_room_message_list.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_scroll_to_latest_button.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/chat_room_app_bar.dart';
 import 'package:romrom_fe/widgets/chat_trade_info_card.dart';
@@ -57,12 +71,22 @@ part 'chat_room/chat_room_initial_load.dart';
 part 'chat_room/chat_room_older_messages_paging.dart';
 part 'chat_room/chat_room_header.dart';
 part 'chat_room/chat_room_scroll_to_bottom.dart';
+part 'chat_room/chat_room_new_message_indicator.dart';
+part 'chat_room/chat_room_unread_position.dart';
+part 'chat_room/chat_room_input_convenience.dart';
 
 class ChatRoomScreen extends ConsumerStatefulWidget {
   final String chatRoomId;
   final bool autoTriggerExchangeRequest;
+  // 진입 시 안 읽음 수 (채팅 목록은 진입 전 0으로 초기화 > 목록이 전달, 없으면 목록 상태에서 조회)
+  final int? unreadCountAtEntry;
 
-  const ChatRoomScreen({super.key, required this.chatRoomId, this.autoTriggerExchangeRequest = false});
+  const ChatRoomScreen({
+    super.key,
+    required this.chatRoomId,
+    this.autoTriggerExchangeRequest = false,
+    this.unreadCountAtEntry,
+  });
 
   @override
   ConsumerState<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -79,6 +103,12 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
 
   List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSubscription;
+
+  // 진입 시 안 읽은 첫 메시지 ID ('여기까지 읽었어요' 위치, 내가 보내면 숨김)
+  String? _firstUnreadMessageId;
+
+  // 진입 조회 중(실패 화면 포함) 소켓으로 받은 메시지 (조회 결과와 중복 제거 후 반영)
+  final List<ChatMessage> _liveMessagesDuringInitialLoad = [];
 
   // 재연결 동기화 중복 실행 방지
   bool _isResyncing = false;
@@ -126,7 +156,6 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
 
   bool _isLoading = true;
   bool _hasError = false;
-  bool _notificationSnackBarShown = false;
   bool _deleteModalShown = false;
   bool _systemMessageModalShown = false;
 
@@ -194,85 +223,108 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
 
   // 방 나가기 중복 실행 방지
   bool _isLeaving = false;
+
+  // 열린 채팅방 화면 목록 (initState에서 보관 > dispose 중 ref 사용 없이 해제)
+  late final OpenChatRoomRegistry _openChatRoomRegistry;
+  bool _isRegisteredAsOpenChatRoom = false;
+
+  /// 채팅방 메시지 소켓 구독 시작 (이미 구독 중이면 무시, 구현: _ChatRoomInitialLoad)
+  void _startRoomMessageSubscription();
+
+  /// 채팅방 메시지 소켓 구독 해제 (구독 안 했으면 무시, 구현: _ChatRoomInitialLoad)
+  void _stopRoomMessageSubscription();
+
+  /// 읽음 커서 갱신 (기다리지 않음, 실패는 로그만 > 다음 진입·복귀 때 다시 갱신)
+  void _updateReadCursorInBackground({required bool isEntered}) {
+    unawaited(
+      _chatRepository
+          .updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: isEntered)
+          .catchError(
+            (Object error) => debugPrint('[ChatRoom] read cursor update failed (entered: $isEntered) : $error'),
+          ),
+    );
+  }
 }
 
-/// 채팅방 화면: 수명주기·입력 높이·화면 구성 (로직은 mixin 9개: 맨 아래 스크롤, 송수신, 이전 메시지 페이징, 교환 액션, 첨부, 나가기, 상단 캐시, AI 추천, 초기화)
+/// 채팅방 화면: 수명주기·화면 구성 (로직은 mixin 12개: 맨 아래 스크롤, 새 메시지 알림, 송수신, 이전 메시지 페이징, 안 읽은 위치, 교환 액션, 첨부, 나가기, 상단 캐시, AI 추천, 입력 편의, 초기화)
 class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     with
         WidgetsBindingObserver,
         _ChatRoomScrollToBottom,
+        _ChatRoomNewMessageIndicator,
         _ChatRoomMessaging,
         _ChatRoomOlderMessagesPaging,
+        _ChatRoomUnreadPosition,
         _ChatRoomTradeActions,
         _ChatRoomAttachmentSending,
         _ChatRoomExitActions,
         _ChatRoomHeader,
         _ChatRoomRecommendationActions,
+        _ChatRoomInputConvenience,
         _ChatRoomInitialLoad {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _openChatRoomRegistry = ref.read(openChatRoomRegistryProvider);
+    _captureUnreadCountAtEntry();
+    _startInputConvenience();
     _loadInitialData();
-    _messageController.addListener(_onMessageChanged);
     _scrollController.addListener(_onMessageListScrolled);
+    _scrollController.addListener(_onScrollPositionChangedForLatestButton);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 열린 채팅방 등록 1회 (맨 위 판정에 route 필요 > initState 다음 시점)
+    if (_isRegisteredAsOpenChatRoom) return;
+    _isRegisteredAsOpenChatRoom = true;
+    final chatRoomRoute = ModalRoute.of(context);
+    _openChatRoomRegistry.register(
+      owner: this,
+      chatRoomId: widget.chatRoomId,
+      isRouteCurrent: () => chatRoomRoute?.isCurrent ?? false,
+    );
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       // 잠금화면 또는 background 진입 시 퇴장 처리 → isPresent=false
-      unawaited(
-        _chatRepository
-            .updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: false)
-            .catchError((e) => debugPrint('[ChatRoom] paused read-cursor 업데이트 실패: $e')),
-      );
+      _updateReadCursorInBackground(isEntered: false);
     } else if (state == AppLifecycleState.resumed) {
       // foreground 복귀 시 재입장 처리 → isPresent=true
-      unawaited(_chatRepository.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true));
-    }
-  }
-
-  void _onMessageChanged() {
-    final has = _messageController.text.trim().isNotEmpty;
-    if (_hasText != has && mounted) {
-      setState(() => _hasText = has);
-    }
-    if (mounted) _updateInputFieldHeight();
-  }
-
-  void _updateInputFieldHeight() {
-    final newHeight = ChatInputBar.calculateInputFieldHeight(
-      text: _messageController.text,
-      screenWidth: MediaQuery.sizeOf(context).width,
-    );
-    if (_inputFieldHeight != newHeight && mounted) {
-      setState(() => _inputFieldHeight = newHeight);
+      _updateReadCursorInBackground(isEntered: true);
     }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _messageSubscription?.cancel();
-    _readEventSubscription?.cancel();
+    _openChatRoomRegistry.unregister(owner: this);
+    _stopRoomMessageSubscription();
     _reconnectSubscription?.cancel();
-    _wsService.unsubscribeFromReadEvents(widget.chatRoomId);
-    _recommendationSubscription?.cancel();
-    _wsService.unsubscribeFromRecommendations(widget.chatRoomId);
+    // 읽음·추천: 이 화면이 구독한 경우만 해제 (같은 방 다른 화면 참조 카운트 보호)
+    if (_readEventSubscription != null) {
+      _readEventSubscription?.cancel();
+      _wsService.unsubscribeFromReadEvents(widget.chatRoomId);
+    }
+    if (_recommendationSubscription != null) {
+      _recommendationSubscription?.cancel();
+      _wsService.unsubscribeFromRecommendations(widget.chatRoomId);
+    }
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
     for (final timer in _sendEchoTimeoutTimers.values) {
       timer.cancel();
     }
-    if (chatRoom.chatRoomId != null) {
-      _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
-    }
-    _messageController.removeListener(_onMessageChanged);
+    _stopInputConvenience();
     _messageController.dispose();
     _scrollController.removeListener(_onMessageListScrolled);
+    _scrollController.removeListener(_onScrollPositionChangedForLatestButton);
     _scrollController.dispose();
-    ChatMemberStatusPoller.instance.stop();
+    ChatMemberStatusPoller.instance.stop(owner: this);
     super.dispose();
   }
 
@@ -292,7 +344,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     if (_hasError) {
       return ErrorScaffold(
         message: _errorMessage,
-        onBackPressed: () => Navigator.of(context).pop(true),
+        onBackPressed: () => Navigator.of(context).pop(),
         onRetry: _loadInitialData,
       );
     }
@@ -310,27 +362,13 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
           body: Column(
             children: [
               _buildCachedTradeInfoCard(),
+              ChatConnectionBanner(connectionStatus: _wsService.connectionStatus),
               Expanded(
-                child: ChatRoomMessageList(
-                  messages: _messages,
-                  scrollController: _scrollController,
-                  myMemberId: _myMemberId,
-                  opponentNickname: _opponentNickname,
-                  uploadingMessageIds: _uploadingLocalIds,
-                  pendingLocalMessageIds: _pendingLocalMessages.keys.toSet(),
-                  failedLocalMessageIds: _failedLocalMessageIds,
-                  isLoadingOlderMessages: _isLoadingOlderMessages,
-                  hasOlderMessagesLoadFailed: _hasOlderMessagesLoadFailed,
-                  onRetryOlderMessages: _retryOlderMessages,
-                  lastReadMyMessageId: _lastReadMyMessageId,
-                  isTradeCompleted: _isTradeCompleted,
-                  isTradeActionPending: _isPendingTradeAction,
-                  onCancelTradeRequest: _onCancelTradeRequest,
-                  onRejectTradeRequest: _onRejectTradeRequest,
-                  onConfirmTradeRequest: _onConfirmTradeRequest,
-                  onRetryFailedMessage: _retryFailedMessage,
-                  onDeleteFailedMessage: _deleteFailedMessage,
-                  onWriteReview: _canWriteReview ? _openTradeReviewScreen : null,
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: _buildMessageList()),
+                    _buildScrollToLatestButton(),
+                  ],
                 ),
               ),
               ChatRecommendationBanner(
@@ -338,8 +376,10 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
                 onActionPressed: _onRecommendedActionPressed,
                 onDismissed: _onRecommendationDismissed,
               ),
+              ChatQuickReplyBar(isVisible: _shouldShowQuickReplies, onPhraseSelected: _onQuickReplySelected),
               ChatInputBar(
                 controller: _messageController,
+                focusNode: _messageFocusNode,
                 isInputDisabled: _isInputDisabled,
                 isSendingMessage: _isSendingMessage,
                 hasText: _hasText,
@@ -347,6 +387,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
                 hintText: _inputHintText,
                 onSend: _sendMessage,
                 onPickImage: _onPickImage,
+                onTakePhoto: _onTakePhoto,
                 onSendLocation: _onSendLocation,
                 onRequestExchange: _onRequestExchange,
               ),
@@ -354,6 +395,33 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
           ),
         ),
       ),
+    );
+  }
+
+  /// 메시지 목록 (날짜·안 읽음 구분선, 전송 상태, 교환 요청 버튼)
+  Widget _buildMessageList() {
+    return ChatRoomMessageList(
+      messages: _messages,
+      scrollController: _scrollController,
+      myMemberId: _myMemberId,
+      opponentNickname: _opponentNickname,
+      uploadingMessageIds: _uploadingLocalIds,
+      pendingLocalMessageIds: _pendingLocalMessages.keys.toSet(),
+      failedLocalMessageIds: _failedLocalMessageIds,
+      isLoadingOlderMessages: _isLoadingOlderMessages,
+      hasOlderMessagesLoadFailed: _hasOlderMessagesLoadFailed,
+      onRetryOlderMessages: _retryOlderMessages,
+      lastReadMyMessageId: _lastReadMyMessageId,
+      isTradeCompleted: _isTradeCompleted,
+      isTradeActionPending: _isPendingTradeAction,
+      onCancelTradeRequest: _onCancelTradeRequest,
+      onRejectTradeRequest: _onRejectTradeRequest,
+      onConfirmTradeRequest: _onConfirmTradeRequest,
+      onRetryFailedMessage: _retryFailedMessage,
+      onDeleteFailedMessage: _deleteFailedMessage,
+      onWriteReview: _canWriteReview ? _openTradeReviewScreen : null,
+      firstUnreadMessageId: _firstUnreadMessageId,
+      unreadDividerKey: _unreadDividerKey,
     );
   }
 }

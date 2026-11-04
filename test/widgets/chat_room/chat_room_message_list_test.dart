@@ -4,6 +4,7 @@ import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_date_divider.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_room_message_list.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_unread_divider.dart';
 import '../../helpers/pump_design_screen.dart';
 
 /// 교환 요청·실패 메시지·후기 쓰기 콜백 호출 기록
@@ -27,6 +28,7 @@ Future<MessageListCallbackRecords> pumpChatRoomMessageList(
   Set<String> failedLocalMessageIds = const {},
   bool canWriteReview = false,
   bool hasOlderMessagesLoadFailed = false,
+  String? firstUnreadMessageId,
 }) async {
   useDesignScreenView(tester);
   final callbackCounts = MessageListCallbackRecords();
@@ -56,6 +58,7 @@ Future<MessageListCallbackRecords> pumpChatRoomMessageList(
           onRetryFailedMessage: callbackCounts.retriedMessageIds.add,
           onDeleteFailedMessage: callbackCounts.deletedMessageIds.add,
           onWriteReview: canWriteReview ? () => callbackCounts.writeReviewCount++ : null,
+          firstUnreadMessageId: firstUnreadMessageId,
         ),
       ),
     ),
@@ -208,6 +211,24 @@ void main() {
       await tester.tap(find.text('이전 메시지를 불러오지 못했어요 · 다시 불러오기'));
 
       expect(callbackCounts.retryOlderMessagesCount, 1);
+    });
+
+    testWidgets('안 읽은 첫 메시지 위에만 여기까지 읽었어요 구분선 (#987), 없으면 미노출', (tester) async {
+      final messages = [
+        ChatMessage(chatMessageId: 'm3', senderId: 'other', type: MessageType.text, content: '세번째'),
+        ChatMessage(chatMessageId: 'm2', senderId: 'other', type: MessageType.text, content: '두번째'),
+        ChatMessage(chatMessageId: 'm1', senderId: 'me', type: MessageType.text, content: '첫번째'),
+      ];
+      await pumpChatRoomMessageList(tester, messages: messages, firstUnreadMessageId: 'm2');
+
+      expect(find.text(ChatUnreadDivider.label), findsOneWidget);
+      // 구분선이 읽은 메시지(m1)와 첫 안 읽은 메시지(m2) 사이 (reverse 목록 > 화면 위쪽이 오래된 메시지)
+      final dividerTop = tester.getTopLeft(find.byType(ChatUnreadDivider)).dy;
+      expect(tester.getTopLeft(find.text('첫번째')).dy, lessThan(dividerTop));
+      expect(tester.getTopLeft(find.text('두번째')).dy, greaterThan(dividerTop));
+
+      await pumpChatRoomMessageList(tester, messages: messages);
+      expect(find.byType(ChatUnreadDivider), findsNothing);
     });
   });
 }

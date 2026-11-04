@@ -12,7 +12,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/debug/debug_config.dart';
 import 'package:romrom_fe/debug/debug_overlay_manager.dart';
 import 'package:romrom_fe/debug/runtime_url_manager.dart';
-import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/firebase_options.dart';
@@ -27,6 +26,7 @@ import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:romrom_fe/services/forced_update_lock.dart';
+import 'package:romrom_fe/services/push_notification_routing.dart';
 import 'package:romrom_fe/services/resume_version_check_service.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
@@ -71,12 +71,8 @@ void main() async {
     isGestureMode = true;
   }
 
+  // 알림 권한은 시작 시 요청하지 않음 (교환 요청·물품 등록 성공 직후 안내 후 요청, #986)
   runApp(ProviderScope(child: MyApp(isGestureMode: isGestureMode)));
-
-  // 첫 프레임(스플래시) 이후 알림 권한 요청 1회 (권한 응답이 스플래시 표시를 막지 않게)
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    unawaited(FirebaseService().requestNotificationPermission());
-  });
 }
 
 /// Firebase 메시징 초기화: Firebase 앱 > 백그라운드 핸들러 > 포그라운드 표시 옵션 > 메시지 리스너 (권한 요청 제외)
@@ -141,21 +137,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
       debugPrint('[FCM] 콜드 스타트 초기 메시지: ${message.data}');
 
-      final deepLink = message.data['deepLink'] as String?;
-      if (deepLink == null || deepLink.isEmpty) return;
-
-      final uri = Uri.tryParse(deepLink);
-      if (uri == null) return;
-
-      final typeRaw = message.data['notificationType'] as String?;
-      final notificationType = NotificationType.fromServerName(typeRaw);
-      if (typeRaw != null && notificationType == null) {
-        debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
-      }
-
-      RomRomDeepLinkRouter.receive(
-        PendingDeepLink(uri: uri, notificationType: notificationType, extraData: message.data),
-      );
+      routePushNotificationData(message.data);
     } catch (e) {
       debugPrint('[FCM] 콜드 스타트 초기 메시지 처리 실패: $e');
     }

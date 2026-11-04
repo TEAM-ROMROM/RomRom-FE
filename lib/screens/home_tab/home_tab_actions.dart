@@ -9,12 +9,18 @@ mixin _HomeTabActions on _HomeTabScreenStateFields, _HomeTabCoachMark {
     debugPrint('AI 추천 하이라이트 업데이트: $itemIds');
   }
 
+  /// 카드 드롭 교환 요청: 대상 물품 확정 > GPS 동네 인증 > 요청 중복 확인 > 교환 요청 화면
   Future<void> _handleCardDrop(String cardId) async {
     final feed = ref.read(homeFeedProvider).valueOrNull;
     if (feed == null || feed.items.isEmpty) return;
     if (_currentFeedIndex >= feed.items.length) return;
 
     final feedItem = feed.items[_currentFeedIndex];
+    final isLocationVerified = await ref
+        .read(locationVerificationGateProvider)
+        .ensureVerified(context, purpose: LocationVerificationPurpose.tradeRequest);
+    if (!mounted || !isLocationVerified) return;
+
     final targetItem = Item(
       itemId: feedItem.itemUuid,
       itemName: feedItem.name,
@@ -93,11 +99,18 @@ mixin _HomeTabActions on _HomeTabScreenStateFields, _HomeTabCoachMark {
     }
   }
 
-  /// 블러 상태 등록 버튼: 등록 화면 > 첫 등록이면 코치마크
+  /// 블러 상태 등록 버튼: GPS 동네 인증 > 등록 화면 > 알림 권한 1회 안내 > 첫 등록이면 코치마크
   Future<void> _onRegisterButtonPressed() async {
+    final isLocationVerified = await ref
+        .read(locationVerificationGateProvider)
+        .ensureVerified(context, purpose: LocationVerificationPurpose.itemRegistration);
+    if (!mounted || !isLocationVerified) return;
     final registerResult = await context.navigateTo<Map<String, dynamic>>(
       screen: ItemRegisterScreen(onClose: () => Navigator.pop(context)),
     );
+    if (!mounted) return;
+    // 등록 성공 직후 알림 권한 1회 안내 (코치마크 전)
+    if (registerResult is Map<String, dynamic>) await showNotificationPermissionPromptOnce(context, ref);
     if (!mounted) return;
     if (registerResult is Map<String, dynamic> && registerResult['isFirstItemPosted'] == true) {
       showCoachMark();

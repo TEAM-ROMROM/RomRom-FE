@@ -12,6 +12,8 @@ import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 /// 채팅방 하단 메시지 입력 바
 class ChatInputBar extends StatelessWidget {
   final TextEditingController controller;
+  // 입력 포커스 (빠른 답장 노출 판정용, 화면 소유)
+  final FocusNode? focusNode;
   final bool isInputDisabled;
   final bool isSendingMessage;
   final bool hasText;
@@ -19,12 +21,14 @@ class ChatInputBar extends StatelessWidget {
   final String hintText;
   final VoidCallback onSend;
   final VoidCallback onPickImage;
+  final VoidCallback onTakePhoto;
   final VoidCallback onSendLocation;
   final VoidCallback onRequestExchange;
 
   const ChatInputBar({
     super.key,
     required this.controller,
+    this.focusNode,
     required this.isInputDisabled,
     required this.isSendingMessage,
     required this.hasText,
@@ -32,6 +36,7 @@ class ChatInputBar extends StatelessWidget {
     required this.hintText,
     required this.onSend,
     required this.onPickImage,
+    required this.onTakePhoto,
     required this.onSendLocation,
     required this.onRequestExchange,
   });
@@ -103,6 +108,13 @@ class ChatInputBar extends StatelessWidget {
                       onTap: () => onPickImage(),
                     ),
                     ContextMenuItem(
+                      id: 'take_photo',
+                      icon: AppIcons.camera,
+                      iconColor: AppColors.opacity60White,
+                      title: '사진 찍기',
+                      onTap: () => onTakePhoto(),
+                    ),
+                    ContextMenuItem(
                       id: 'send_location',
                       icon: AppIcons.location,
                       iconColor: AppColors.opacity60White,
@@ -127,6 +139,7 @@ class ChatInputBar extends StatelessWidget {
               height: clampedHeight,
               child: TextField(
                 controller: controller,
+                focusNode: focusNode,
                 enabled: !isInputDisabled,
                 style: CustomTextStyles.p2.copyWith(
                   color: AppColors.textColorWhite,
