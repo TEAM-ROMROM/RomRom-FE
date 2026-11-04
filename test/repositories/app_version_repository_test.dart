@@ -9,9 +9,13 @@ import 'package:romrom_fe/services/apis/app_version_api.dart';
 class FakeAppVersionApi implements AppVersionApi {
   UpdateType? updateType = UpdateType.none;
   Completer<UpdateType?>? pendingResponse;
+  int fetchCallCount = 0;
 
   @override
-  Future<UpdateType?> fetchUpdateType() => pendingResponse?.future ?? Future.value(updateType);
+  Future<UpdateType?> fetchUpdateType() {
+    fetchCallCount++;
+    return pendingResponse?.future ?? Future.value(updateType);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -59,5 +63,20 @@ void main() {
     fakeApi.pendingResponse!.complete(UpdateType.force); // 늦은 응답
     await tester.pump();
     expect(serverUpdateType, isNull);
+  });
+
+  test('테스트 빌드는 API 호출 없이 none', () async {
+    fakeApi.updateType = UpdateType.force;
+    final skippedRepository = AppVersionRepository(fakeApi, isUpdateCheckSkipped: true);
+    expect(await skippedRepository.checkUpdateType(), UpdateType.none);
+    expect(await skippedRepository.fetchServerUpdateType(), UpdateType.none);
+    expect(fakeApi.fetchCallCount, 0);
+  });
+
+  test('일반 빌드는 기존대로 force', () async {
+    fakeApi.updateType = UpdateType.force;
+    final normalRepository = AppVersionRepository(fakeApi, isUpdateCheckSkipped: false);
+    expect(await normalRepository.checkUpdateType(), UpdateType.force);
+    expect(fakeApi.fetchCallCount, 1);
   });
 }
