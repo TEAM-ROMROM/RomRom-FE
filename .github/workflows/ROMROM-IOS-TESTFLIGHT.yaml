@@ -38,7 +38,7 @@ env:
   # App Store '새로운 기능' 고정 문구 (appstore_prepare·appstore_submit에서만, 비우면 CHANGELOG 해당 버전)
   # 심사 제출물이라 매번 같은 일반 문구 사용. TestFlight 'What to Test'는 항상 CHANGELOG 전체
   # Android(ROMROM-ANDROID-PLAYSTORE-CICD.yaml) 같은 이름 설정과 함께 바꾼다
-  STORE_WHATS_NEW_OVERRIDE: "앱 안정성과 사용성을 개선했습니다."
+  STORE_WHATS_NEW_OVERRIDE: "Improved app stability and usability."
 
 jobs:
   prepare-build:

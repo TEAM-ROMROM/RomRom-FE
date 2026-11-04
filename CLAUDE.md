@@ -115,7 +115,7 @@ Future<void> _onToggle(NotificationType type) async {
 ### ⛔ 출시노트(릴리스 노트) 규칙 — 스토어 고정 문구 + CHANGELOG 전체 (#988)
 > **배경**: `deploy`는 iOS App Store + Android Play Store 심사로 이어진다(이슈 #930·#931). 스토어 문구는 심사 제출물이고 Play는 500자 한도가 있어, elum·passQL과 같은 projectops 템플릿 방식으로 **스토어에는 고정 문구, 프로젝트 CHANGELOG에는 전체 내용**을 쓴다.
 
-- **스토어 문구**: `ROMROM-IOS-TESTFLIGHT.yaml`·`ROMROM-ANDROID-PLAYSTORE-CICD.yaml` env `STORE_WHATS_NEW_OVERRIDE`("앱 안정성과 사용성을 개선했습니다.") — 출시 모드(iOS `appstore_prepare`·`appstore_submit`, Android `store_prepare`·`store_submit`)에서만 적용. 두 파일을 함께 바꾼다. iOS는 수동 실행 입력 `whats_new_override`로 그 실행만 다른 문구 가능
+- **스토어 문구**: `ROMROM-IOS-TESTFLIGHT.yaml`·`ROMROM-ANDROID-PLAYSTORE-CICD.yaml` env `STORE_WHATS_NEW_OVERRIDE`("Improved app stability and usability.") — 출시 모드(iOS `appstore_prepare`·`appstore_submit`, Android `store_prepare`·`store_submit`)에서만 적용. 두 파일을 함께 바꾼다. iOS는 수동 실행 입력 `whats_new_override`로 그 실행만 다른 문구 가능
 - **CHANGELOG·GitHub 릴리스·TestFlight 'What to Test'·Firebase 테스터 노트**: `/pro-changelog-deploy`가 만든 전체 릴리스 노트 그대로 (TestFlight 3800바이트, 고정 문구가 꺼진 Play 480자는 `truncate_release_notes.sh`로 자동 절단)
 - **CHANGELOG 릴리스 노트 작성 원칙**(사용자에게 보이는 문서라 유지): CICD·빌드·워크플로우·테스트·리팩터링·문서·의존성 등 사용자가 체감 못 하는 내부 변경 제외, 기술 prefix·내부 구현 용어 금지, 일반 사용자 관점으로 작성
 - **deploy 전 사용자 확인**: 스토어 문구가 고정이라 릴리스 노트는 매번 승인받지 않아도 된다. 고정 문구를 바꾸거나 `whats_new_override`를 쓸 때만 문안을 보여주고 승인받는다
