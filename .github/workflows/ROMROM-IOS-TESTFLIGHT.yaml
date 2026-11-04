@@ -18,6 +18,11 @@ on:
           - testflight_only
           - appstore_prepare
           - appstore_submit
+      whats_new_override:
+        description: "이번 실행만 App Store '새로운 기능' 문구를 이 값으로 (비우면 env STORE_WHATS_NEW_OVERRIDE 사용)"
+        required: false
+        default: ""
+        type: string
 
 env:
   FLUTTER_VERSION: "3.38.9"
@@ -30,6 +35,10 @@ env:
   # - appstore_submit (=store_submit)  : pilot 후 deliver로 App Store 심사 자동 제출.
   # (store_* 공통 네이밍도 Fastfile에서 인식 — Android와 통일)
   DEPLOY_MODE: ${{ github.event.inputs.deploy_mode || vars.IOS_DEPLOY_MODE || 'testflight_only' }}
+  # App Store '새로운 기능' 고정 문구 (appstore_prepare·appstore_submit에서만, 비우면 CHANGELOG 해당 버전)
+  # 심사 제출물이라 매번 같은 일반 문구 사용. TestFlight 'What to Test'는 항상 CHANGELOG 전체
+  # Android(ROMROM-ANDROID-PLAYSTORE-CICD.yaml) 같은 이름 설정과 함께 바꾼다
+  STORE_WHATS_NEW_OVERRIDE: "앱 안정성과 사용성을 개선했습니다."
 
 jobs:
   prepare-build:
@@ -500,8 +509,18 @@ jobs:
               #       "Could not infer your App's Bundle Identifier"로 비대화형에서 crash (이슈 #931)
               if prepare_appstore
                 app_ver = ENV["APP_VERSION"]
-                release_notes = (ENV["RELEASE_NOTES"] || "버그를 수정하고 안정성을 개선했습니다.").strip
-                release_notes = "버그를 수정하고 안정성을 개선했습니다." if release_notes.empty?
+                # '새로운 기능' 문구: 고정 문구 > CHANGELOG > 기본 문구 (공백만 있는 값은 없는 것으로 봄)
+                release_notes = (ENV["STORE_WHATS_NEW_OVERRIDE"] || "").strip
+                notes_source = "STORE_WHATS_NEW_OVERRIDE"
+                if release_notes.empty?
+                  release_notes = (ENV["RELEASE_NOTES"] || "").strip
+                  notes_source = "CHANGELOG"
+                end
+                if release_notes.empty?
+                  release_notes = "버그를 수정하고 안정성을 개선했습니다."
+                  notes_source = "기본 문구"
+                end
+                UI.message("📝 whatsNew 출처: #{notes_source}")
 
                 # ⭐ 4차 수정: whatsNew(릴리스 노트) 메타 디렉토리를 절대 경로로 생성.
                 #   App Store는 업데이트 버전 심사 제출 시 whatsNew를 필수로 요구한다.
@@ -572,6 +591,10 @@ jobs:
 
       # TestFlight 업로드 (+ DEPLOY_MODE=appstore_submit 시 App Store 심사 자동 제출)
       - name: Upload to TestFlight (+ App Store Submit if appstore_submit)
+        env:
+          STORE_WHATS_NEW_OVERRIDE: ${{ env.STORE_WHATS_NEW_OVERRIDE }}
+          # 수동 실행 입력은 step env로 받아 셸 주입 방지
+          INPUT_WHATS_NEW_OVERRIDE: ${{ github.event.inputs.whats_new_override }}
         run: |
           # 절대 경로로 IPA 파일 찾기
           IPA_PATH=$(find $GITHUB_WORKSPACE/ios/build/ipa -name "*.ipa" | head -1)
@@ -584,8 +607,9 @@ jobs:
             exit 1
           fi
 
-          # Release notes 준비
+          # Release notes 준비 (TestFlight 'What to Test' 한도 4000바이트, 여유 두고 3800)
           if [ -f "final_release_notes.txt" ]; then
+            bash ./.github/scripts/truncate_release_notes.sh final_release_notes.txt 3800 byte
             RELEASE_NOTES=$(cat final_release_notes.txt)
             echo "Release Notes 포함하여 업로드:"
             echo "$RELEASE_NOTES"
@@ -602,6 +626,10 @@ jobs:
           export RELEASE_NOTES="$RELEASE_NOTES"
           export APP_IDENTIFIER="com.alom.romrom"   # deliver/pilot Bundle ID (비대화형 추론 실패 방지)
           export DEPLOY_MODE="${{ env.DEPLOY_MODE }}"   # testflight_only(기본) | appstore_prepare | appstore_submit
+          # 수동 실행 입력이 있으면 그 실행만 우선
+          if [ -n "$(printf '%s' "$INPUT_WHATS_NEW_OVERRIDE" | tr -d '[:space:]')" ]; then
+            export STORE_WHATS_NEW_OVERRIDE="$INPUT_WHATS_NEW_OVERRIDE"
+          fi
           export APP_VERSION="${{ needs.prepare-build.outputs.version }}"   # deliver editable 버전 생성/선택용
           export BUILD_NUMBER="${{ needs.prepare-build.outputs.build_number }}"   # deliver가 붙일 빌드 번호 명시 선택용
 
