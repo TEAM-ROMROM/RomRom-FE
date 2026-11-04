@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/chat_notification_guide_provider.dart';
 import 'package:romrom_fe/providers/chat_recommendation_provider.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
 import 'package:romrom_fe/providers/coach_mark_trigger_provider.dart';
@@ -22,6 +23,7 @@ final List<ProviderOrFamily> userScopedProviders = [
   memberProfileProvider,
   chatRoomsProvider,
   chatRecommendationProvider,
+  chatNotificationGuideProvider,
   notificationListProvider,
   notificationUnreadCountProvider,
   notificationSettingProvider,

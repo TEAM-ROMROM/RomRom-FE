@@ -12,7 +12,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/debug/debug_config.dart';
 import 'package:romrom_fe/debug/debug_overlay_manager.dart';
 import 'package:romrom_fe/debug/runtime_url_manager.dart';
-import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/enums/navigation_types.dart';
 import 'package:romrom_fe/enums/app_update_type.dart';
 import 'package:romrom_fe/firebase_options.dart';
@@ -25,6 +24,7 @@ import 'package:romrom_fe/services/apis/app_version_api.dart';
 import 'package:romrom_fe/services/app_initializer.dart';
 import 'package:romrom_fe/services/android_navigation_mode.dart';
 import 'package:romrom_fe/services/firebase_service.dart';
+import 'package:romrom_fe/services/push_notification_routing.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 import 'package:romrom_fe/utils/device_type.dart';
@@ -135,21 +135,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
       debugPrint('[FCM] 콜드 스타트 초기 메시지: ${message.data}');
 
-      final deepLink = message.data['deepLink'] as String?;
-      if (deepLink == null || deepLink.isEmpty) return;
-
-      final uri = Uri.tryParse(deepLink);
-      if (uri == null) return;
-
-      final typeRaw = message.data['notificationType'] as String?;
-      final notificationType = NotificationType.fromServerName(typeRaw);
-      if (typeRaw != null && notificationType == null) {
-        debugPrint('[FCM] 알 수 없는 notificationType: $typeRaw');
-      }
-
-      RomRomDeepLinkRouter.receive(
-        PendingDeepLink(uri: uri, notificationType: notificationType, extraData: message.data),
-      );
+      routePushNotificationData(message.data);
     } catch (e) {
       debugPrint('[FCM] 콜드 스타트 초기 메시지 처리 실패: $e');
     }

@@ -22,10 +22,13 @@ class FakeChatRepository implements ChatRepository {
   bool shouldFailFirstPage = false;
   // 페이지별 서버 방 (없으면 serverRooms)
   Map<int, List<ChatRoomDetailDto>> roomsByPage = {};
+  // 조회 요청 기록 (페이지 번호, 페이지 크기)
+  final List<(int, int)> requestedPages = [];
 
   @override
   Future<PagedChatRoomDetail> getChatRooms({required int pageNumber, int pageSize = 10}) async {
     getChatRoomsCallCount++;
+    requestedPages.add((pageNumber, pageSize));
     if (pageNumber > 0 && shouldFailNextPage) throw Exception('next page failed');
     if (pageNumber == 0 && shouldFailFirstPage) throw Exception('first page failed');
     return PagedChatRoomDetail(
@@ -199,6 +202,63 @@ void main() {
       final roomsState = container.read(chatRoomsProvider).valueOrNull;
       expect(roomsState?.rooms.map((room) => room.chatRoomId), ['a']);
       expect(roomsState?.hasMore, isTrue);
+    });
+  });
+
+  group('chatRoomsProvider 불러온 페이지 유지 재조회 (#984)', () {
+    late FakeChatRepository fakeRepository;
+    late ProviderContainer container;
+
+    setUp(() {
+      fakeRepository = FakeChatRepository()
+        ..isFirstPageLast = false
+        ..roomsByPage = {
+          0: [ChatRoomDetailDto(chatRoomId: 'a')],
+          1: [ChatRoomDetailDto(chatRoomId: 'page2')],
+        };
+      container = ProviderContainer(overrides: [chatRepositoryProvider.overrideWithValue(fakeRepository)]);
+    });
+    tearDown(() => container.dispose());
+
+    test('refreshLoadedPages는 불러온 페이지 수만큼 page 0에서 한 번에 조회하고 페이징 위치를 유지한다', () async {
+      await container.read(chatRoomsProvider.future);
+      await container.read(chatRoomsProvider.notifier).loadMore();
+      fakeRepository.roomsByPage = {
+        0: [ChatRoomDetailDto(chatRoomId: 'a'), ChatRoomDetailDto(chatRoomId: 'page2', unreadCount: 1)],
+      };
+
+      await container.read(chatRoomsProvider.notifier).refreshLoadedPages();
+
+      expect(fakeRepository.requestedPages.last, (0, 20));
+      final roomsState = container.read(chatRoomsProvider).valueOrNull!;
+      expect(roomsState.rooms.map((room) => room.chatRoomId), unorderedEquals(['a', 'page2']));
+      expect(roomsState.currentPage, 1, reason: '다음 페이지 이어 불러오기 위치 유지');
+    });
+
+    test('refreshLoadedPages 실패 > 기존 목록 유지 (조용히 무시)', () async {
+      await container.read(chatRoomsProvider.future);
+      await container.read(chatRoomsProvider.notifier).loadMore();
+      fakeRepository.shouldFailFirstPage = true;
+
+      await container.read(chatRoomsProvider.notifier).refreshLoadedPages();
+
+      final roomsState = container.read(chatRoomsProvider);
+      expect(roomsState.hasError, isFalse);
+      expect(roomsState.valueOrNull?.rooms.map((room) => room.chatRoomId), unorderedEquals(['a', 'page2']));
+    });
+
+    test('2페이지 방에서 나가기(삭제) > 1페이지로 줄지 않고 불러온 범위 재조회', () async {
+      await container.read(chatRoomsProvider.future);
+      await container.read(chatRoomsProvider.notifier).loadMore();
+      fakeRepository.roomsByPage = {
+        0: [ChatRoomDetailDto(chatRoomId: 'a')],
+      };
+
+      await container.read(chatRoomsProvider.notifier).deleteRoom('page2');
+      await flushMicrotasks();
+
+      expect(fakeRepository.requestedPages.last, (0, 20));
+      expect(container.read(chatRoomsProvider).valueOrNull?.currentPage, 1);
     });
   });
 }

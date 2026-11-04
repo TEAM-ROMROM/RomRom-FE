@@ -14,4 +14,28 @@ void main() {
       expect(merged.firstWhere((room) => room.chatRoomId == 'a').unreadCount, 2);
     });
   });
+
+  group('findChatRoomIdsToSubscribe (목록 상태 > 소켓 구독 차이)', () {
+    test('상태에 있는데 미구독인 방만, ID 없는 방 제외', () {
+      final roomIds = findChatRoomIdsToSubscribe(
+        rooms: [
+          ChatRoomDetailDto(chatRoomId: 'a'),
+          ChatRoomDetailDto(chatRoomId: 'page2'),
+          ChatRoomDetailDto(),
+        ],
+        subscribedChatRoomIds: {'a'},
+      );
+
+      expect(roomIds, {'page2'});
+    });
+
+    test('전부 구독 중 > 빈 결과 (목록에서 빠진 방 구독은 해제 대상 아님)', () {
+      final roomIds = findChatRoomIdsToSubscribe(
+        rooms: [ChatRoomDetailDto(chatRoomId: 'a')],
+        subscribedChatRoomIds: {'a', 'removed'},
+      );
+
+      expect(roomIds, isEmpty);
+    });
+  });
 }

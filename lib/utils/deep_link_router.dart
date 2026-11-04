@@ -11,6 +11,7 @@ import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/models/pending_deep_link.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
+import 'package:romrom_fe/providers/open_chat_room_registry_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/item_deleted_screen.dart';
@@ -150,7 +151,7 @@ class RomRomDeepLinkRouter {
           heroTag: 'share_item_${uri.queryParameters['itemId']}',
         );
       case DeepLinkRoute.chatRoom:
-        await context.navigateTo(screen: ChatRoomScreen(chatRoomId: uri.queryParameters['chatRoomId']!));
+        await _openChatRoom(context, chatRoomId: uri.queryParameters['chatRoomId']!);
       case DeepLinkRoute.itemDeleted:
         // 게시글 삭제 제재 안내. 표시값은 FCM data·알림 payload에서 읽음 (한글 쿼리 인코딩 회피)
         await context.navigateTo(
@@ -165,6 +166,16 @@ class RomRomDeepLinkRouter {
       case DeepLinkRoute.ignored:
         return;
     }
+  }
+
+  /// 채팅방 이동: 같은 방이 맨 위에 보이면 그대로 둠 (그 방 푸시 배너 탭 > 같은 방 겹침 방지)
+  static Future<void> _openChatRoom(BuildContext context, {required String chatRoomId}) async {
+    final openChatRoomRegistry = ProviderScope.containerOf(context, listen: false).read(openChatRoomRegistryProvider);
+    if (openChatRoomRegistry.isShowingOnTop(chatRoomId)) {
+      debugPrint('[deep link] chat room already on top : skip push');
+      return;
+    }
+    await context.navigateTo(screen: ChatRoomScreen(chatRoomId: chatRoomId));
   }
 
   /// 물품 상세 이동: 알림 타입으로 판정 가능하면 그 값, 아니면 물품 조회로 판정 (조회 중 로딩 표시)

@@ -17,6 +17,7 @@ import 'package:romrom_fe/repositories/chat_repository.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/utils/chat_message_send_rules.dart';
+import 'package:romrom_fe/utils/chat_room_live_message_rules.dart';
 import 'package:romrom_fe/utils/chat_room_message_rules.dart';
 import 'package:romrom_fe/utils/image_compressor.dart';
 import 'package:romrom_fe/utils/widget_instance_cache.dart';
@@ -24,7 +25,9 @@ import 'package:romrom_fe/services/chat_member_status_poller.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
 import 'package:romrom_fe/services/member_manager_service.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
+import 'package:romrom_fe/services/open_chat_room_registry.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/providers/chat_notification_guide_provider.dart';
 import 'package:romrom_fe/providers/chat_recommendation_provider.dart';
 import 'package:romrom_fe/providers/chat_repository_provider.dart';
 import 'package:romrom_fe/providers/chat_rooms_provider.dart';
@@ -32,6 +35,7 @@ import 'package:romrom_fe/providers/image_repository_provider.dart';
 import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
+import 'package:romrom_fe/providers/open_chat_room_registry_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
@@ -80,6 +84,9 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSubscription;
 
+  // 진입 조회 중(실패 화면 포함) 소켓으로 받은 메시지 (조회 결과와 중복 제거 후 반영)
+  final List<ChatMessage> _liveMessagesDuringInitialLoad = [];
+
   // 재연결 동기화 중복 실행 방지
   bool _isResyncing = false;
   // 재연결 이벤트 구독
@@ -126,7 +133,6 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
 
   bool _isLoading = true;
   bool _hasError = false;
-  bool _notificationSnackBarShown = false;
   bool _deleteModalShown = false;
   bool _systemMessageModalShown = false;
 
@@ -194,6 +200,27 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
 
   // 방 나가기 중복 실행 방지
   bool _isLeaving = false;
+
+  // 열린 채팅방 화면 목록 (initState에서 보관 > dispose 중 ref 사용 없이 해제)
+  late final OpenChatRoomRegistry _openChatRoomRegistry;
+  bool _isRegisteredAsOpenChatRoom = false;
+
+  /// 채팅방 메시지 소켓 구독 시작 (이미 구독 중이면 무시, 구현: _ChatRoomInitialLoad)
+  void _startRoomMessageSubscription();
+
+  /// 채팅방 메시지 소켓 구독 해제 (구독 안 했으면 무시, 구현: _ChatRoomInitialLoad)
+  void _stopRoomMessageSubscription();
+
+  /// 읽음 커서 갱신 (기다리지 않음, 실패는 로그만 > 다음 진입·복귀 때 다시 갱신)
+  void _updateReadCursorInBackground({required bool isEntered}) {
+    unawaited(
+      _chatRepository
+          .updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: isEntered)
+          .catchError(
+            (Object error) => debugPrint('[ChatRoom] read cursor update failed (entered: $isEntered) : $error'),
+          ),
+    );
+  }
 }
 
 /// 채팅방 화면: 수명주기·입력 높이·화면 구성 (로직은 mixin 9개: 맨 아래 스크롤, 송수신, 이전 메시지 페이징, 교환 액션, 첨부, 나가기, 상단 캐시, AI 추천, 초기화)
@@ -213,23 +240,34 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _openChatRoomRegistry = ref.read(openChatRoomRegistryProvider);
     _loadInitialData();
     _messageController.addListener(_onMessageChanged);
     _scrollController.addListener(_onMessageListScrolled);
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 열린 채팅방 등록 1회 (맨 위 판정에 route 필요 > initState 다음 시점)
+    if (_isRegisteredAsOpenChatRoom) return;
+    _isRegisteredAsOpenChatRoom = true;
+    final chatRoomRoute = ModalRoute.of(context);
+    _openChatRoomRegistry.register(
+      owner: this,
+      chatRoomId: widget.chatRoomId,
+      isRouteCurrent: () => chatRoomRoute?.isCurrent ?? false,
+    );
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       // 잠금화면 또는 background 진입 시 퇴장 처리 → isPresent=false
-      unawaited(
-        _chatRepository
-            .updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: false)
-            .catchError((e) => debugPrint('[ChatRoom] paused read-cursor 업데이트 실패: $e')),
-      );
+      _updateReadCursorInBackground(isEntered: false);
     } else if (state == AppLifecycleState.resumed) {
       // foreground 복귀 시 재입장 처리 → isPresent=true
-      unawaited(_chatRepository.updateChatRoomReadCursor(chatRoomId: widget.chatRoomId, isEntered: true));
+      _updateReadCursorInBackground(isEntered: true);
     }
   }
 
@@ -254,25 +292,28 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _messageSubscription?.cancel();
-    _readEventSubscription?.cancel();
+    _openChatRoomRegistry.unregister(owner: this);
+    _stopRoomMessageSubscription();
     _reconnectSubscription?.cancel();
-    _wsService.unsubscribeFromReadEvents(widget.chatRoomId);
-    _recommendationSubscription?.cancel();
-    _wsService.unsubscribeFromRecommendations(widget.chatRoomId);
+    // 읽음·추천: 이 화면이 구독한 경우만 해제 (같은 방 다른 화면 참조 카운트 보호)
+    if (_readEventSubscription != null) {
+      _readEventSubscription?.cancel();
+      _wsService.unsubscribeFromReadEvents(widget.chatRoomId);
+    }
+    if (_recommendationSubscription != null) {
+      _recommendationSubscription?.cancel();
+      _wsService.unsubscribeFromRecommendations(widget.chatRoomId);
+    }
     _pollerSubscription?.cancel();
     _wsImageFetchTimer?.cancel();
     for (final timer in _sendEchoTimeoutTimers.values) {
       timer.cancel();
     }
-    if (chatRoom.chatRoomId != null) {
-      _wsService.unsubscribeFromChatRoom(chatRoom.chatRoomId!);
-    }
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.removeListener(_onMessageListScrolled);
     _scrollController.dispose();
-    ChatMemberStatusPoller.instance.stop();
+    ChatMemberStatusPoller.instance.stop(owner: this);
     super.dispose();
   }
 
@@ -292,7 +333,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     if (_hasError) {
       return ErrorScaffold(
         message: _errorMessage,
-        onBackPressed: () => Navigator.of(context).pop(true),
+        onBackPressed: () => Navigator.of(context).pop(),
         onRetry: _loadInitialData,
       );
     }
