@@ -1,3 +1,4 @@
+import 'package:romrom_fe/enums/storage_keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 통합 사용자 정보 관리 클래스
@@ -297,6 +298,8 @@ class UserInfo {
       'isMemberLocationSaved',
       'isMarketingInfoAgreed',
       'isRequiredTermsAgreed',
+      // 동네 인증 기록 (다음 로그인 시 다시 GPS 인증, #986)
+      StorageKeys.locationVerificationRecord.key,
       // 'isCoachMarkShown' - 디바이스에 영구 저장
     ];
 
