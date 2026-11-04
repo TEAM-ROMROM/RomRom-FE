@@ -12,6 +12,7 @@ import 'package:romrom_fe/services/location_service.dart';
 /// 권한 요청은 [checkCurrentLocation] 호출 시에만 (호출 전 앱 안내 필수), 지도 선택은 서비스 지역 밖 결과일 때만
 class GpsLocationVerifier {
   // 서비스 지역(대한민국) 대략 범위: 위도 33.0~38.7, 경도 124.5~131.9 (네이버 역지오코딩 지원 범위, 해외 심사 대응)
+  // 서버 RomRom-BE KoreaServiceArea 와 같은 값 (지도 직접 선택 인증 검증, 함께 변경)
   static const GeographicBounds koreaServiceAreaBounds = GeographicBounds(
     minimumLatitude: 33.0,
     maximumLatitude: 38.7,

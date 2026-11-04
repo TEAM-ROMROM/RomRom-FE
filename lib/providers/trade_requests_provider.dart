@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:romrom_fe/enums/chat_room_type.dart';
 import 'package:romrom_fe/enums/request_sort_type.dart';
+import 'package:romrom_fe/exceptions/api_exception.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/providers/chat_repository_provider.dart';
@@ -22,6 +23,7 @@ final tradeRequestsProvider = AsyncNotifierProvider<TradeRequestsNotifier, Trade
 
 /// 요청관리 거래 요청 단일 소유: 받은·보낸 조회(정렬·주소 변환), 읽음 처리, 전송·수정·취소·거절 후 재조회
 /// 받은 요청은 카드별 캐시 먼저 표시 후 서버 재조회, 조회 실패 시 해당 목록 빈 목록 + 실패 플래그 (상태는 AsyncData 유지)
+/// 보낸 요청은 전체 조회 API 1회 우선, 구버전 서버(404)·실패 > 카드별 조회로 대체
 class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
   // 보낸 요청 동시 조회 카드 수 (카드 수 제한 없음 > 카드별 호출이 한 번에 몰리지 않게 묶음 처리)
   static const int sentLoadConcurrency = 5;
@@ -53,6 +55,9 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
   @visibleForTesting
   DateTime Function() now = DateTime.now;
 
+  // 보낸 요청 전체 조회 API 사용 가능 여부 (구버전 서버 404 > 세션 동안 카드별 조회만)
+  bool _isAllSentApiAvailable = true;
+
   // 카드 ID > 받은 요청 마지막 서버 결과 (카드 전환 시 즉시 표시용, 현재 정렬 기준)
   final Map<String, List<TradeRequestHistory>> _receivedCacheByTakeItemId = {};
 
@@ -66,6 +71,7 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     _inFlightLoadForItemsKey = null;
     _isInFlightLoadIncludingSent = false;
     _sentReloadPolicy.reset();
+    _isAllSentApiAvailable = true;
     _receivedCacheByTakeItemId.clear();
     return const TradeRequestsState();
   }
@@ -182,10 +188,12 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     unawaited(_loadSent());
   }
 
-  /// 보낸 요청의 채팅방 ID 찾기: 내 물품 채팅방 목록 > 내가 보낸 방 + 상대 회원 일치 > 상대 물품 대표 이미지 일치
-  /// (서버 채팅방 생성은 요청 받은 사람만 가능 > 보낸 사람은 목록에서 찾음, 못 찾거나 구분 불가 > null, 조회 실패 시 예외 전달)
-  /// 이미지 있으면 방 1개여도 이미지 일치 필수 (같은 상대의 다른 요청 방 열기 방지), 이미지 없으면 방 1개일 때만
+  /// 보낸 요청의 채팅방 ID: 서버 응답 chatRoomId 우선
+  /// 없으면(구버전 서버) 내 물품 채팅방 목록 > 내가 보낸 방 + 상대 회원 일치 > 상대 물품 대표 이미지 일치
+  /// (못 찾거나 구분 불가 > null, 조회 실패 시 예외 전달, 이미지 있으면 방 1개여도 이미지 일치 필수, 없으면 방 1개일 때만)
   Future<String?> findChatRoomIdOfSentRequest(TradeRequestHistory request) async {
+    final serverChatRoomId = request.chatRoomId;
+    if (serverChatRoomId != null && serverChatRoomId.isNotEmpty) return serverChatRoomId;
     final myItemId = request.giveItem.itemId;
     final opponentMemberId = request.takeItem.member?.memberId;
     if (myItemId == null || opponentMemberId == null) return null;
@@ -274,8 +282,8 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     );
   }
 
-  /// 보낸 요청 조회: 대상 카드 묶음별 병렬 > 카드 순서대로 합침 > 주소 변환 > 최신 요청일 때만 반영
-  /// 대상: 전체 카드 또는 실패 카드만(isFailedItemsOnly, 다른 카드 기존 결과 유지)
+  /// 보낸 요청 조회: 전체 조회 API 1회 (실패 카드만 재조회 제외) > 실패 시 카드별 조회 > 주소 변환 > 최신 요청일 때만 반영
+  /// 카드별 조회 대상: 전체 카드 또는 실패 카드만(isFailedItemsOnly, 다른 카드 기존 결과 유지)
   /// 카드별 실패 > 성공 카드 결과 유지 + 실패 카드 ID 기록
   Future<void> _loadSent({bool isFailedItemsOnly = false}) async {
     final generation = ++_sentLoadGeneration;
@@ -283,6 +291,9 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     final myItemIds = current.myItemIds;
     if (!isFailedItemsOnly) _sentReloadPolicy.recordFullLoad(myItemIds, startedAt: now());
     final sortType = current.sentSortType;
+    if (!isFailedItemsOnly && _isAllSentApiAvailable && await _loadAllSentAtOnce(generation, myItemIds, sortType)) {
+      return;
+    }
     final targetItemIds = isFailedItemsOnly ? current.sentFailedItemIds.where(myItemIds.contains).toList() : myItemIds;
 
     // 실패 카드만 재조회 > 나머지 카드 기존 결과를 카드 ID별로 유지
@@ -321,6 +332,27 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     }
     if (generation != _sentLoadGeneration) return;
     state = AsyncData(_currentState.copyWith(sent: sent, sentFailedItemIds: List.unmodifiable(failedItemIds)));
+  }
+
+  /// 전체 조회 API로 보낸 요청 반영 (처리됨 > true, 실패 > false = 카드별 조회로 대체, 404 > 이후 세션 생략)
+  /// 표시 순서: 카드 순서대로, 카드 안은 서버 정렬 그대로 (카드별 조회 결과와 같은 순서)
+  Future<bool> _loadAllSentAtOnce(int generation, List<String> myItemIds, RequestSortType sortType) async {
+    try {
+      final allSent = await _repository.getAllSent(sortType: sortType);
+      final sentByItemId = <String, List<TradeRequestHistory>>{};
+      for (final request in allSent) {
+        sentByItemId.putIfAbsent(request.giveItem.itemId ?? '', () => []).add(request);
+      }
+      final sent = [for (final itemId in myItemIds) ...?sentByItemId[itemId]];
+      await _addressResolver.resolveAndCacheAddresses(_itemsOf(sent));
+      if (generation != _sentLoadGeneration) return true;
+      state = AsyncData(_currentState.copyWith(sent: sent, sentFailedItemIds: const []));
+      return true;
+    } catch (error) {
+      if (error is ApiException && error.statusCode == 404) _isAllSentApiAvailable = false;
+      debugPrint('[trade requests] sent all load failed, fallback to per item : $error');
+      return false;
+    }
   }
 
   /// 카드 1개 보낸 요청 조회 (실패 > null, 다른 카드 결과는 유지)

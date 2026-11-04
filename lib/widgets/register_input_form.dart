@@ -43,6 +43,7 @@ import 'package:romrom_fe/utils/app_test_keys.dart';
 import 'package:romrom_fe/utils/camera_permission_helper.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/location_verification_gate.dart';
 import 'package:romrom_fe/widgets/common/image_source_bottom_sheet.dart';
 
 part 'register_input_form/register_input_form_image_selection.dart';
@@ -361,14 +362,13 @@ class _RegisterInputFormState extends _RegisterInputFormStateFields
       screen: ItemRegisterLocationScreen(
         initialLocation: _latitude != null && _longitude != null ? _selectedAddress : null,
         onLocationSelected: (address) {
-          debugPrint('위치 선택됨: latitude=${address.latitude}, longitude=${address.longitude}');
           setState(() {
             locationController.text = address.siDoSiGunGuEupMyoenDongText;
-            // 위치 좌표 저장
+            // 위치 좌표·행정구역 저장 (행정구역은 등록·수정 요청으로 서버 주소 저장)
+            _selectedAddress = address;
             _latitude = address.latitude;
             _longitude = address.longitude;
           });
-          debugPrint('저장된 좌표: _latitude=$_latitude, _longitude=$_longitude');
         },
       ),
     );

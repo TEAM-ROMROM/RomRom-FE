@@ -34,7 +34,11 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
     } on UgcViolationException catch (e) {
       if (context.mounted) _showUgcViolationModal(e);
     } catch (e) {
-      if (context.mounted) {
+      // 서버 동네 인증 거부 > 인증 안내로 이동 (오류 안내 생략)
+      final gate = ref.read(locationVerificationGateProvider);
+      if (context.mounted &&
+          !await gate.recoverFromServerRejection(context, e, purpose: LocationVerificationPurpose.itemRegistration) &&
+          context.mounted) {
         CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
@@ -83,6 +87,7 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
       itemImageUrls: allImageUrls,
       longitude: _longitude,
       latitude: _latitude,
+      tradeLocationAddress: _selectedAddress,
       isAiPredictedPrice: useAiPrice,
     );
   }

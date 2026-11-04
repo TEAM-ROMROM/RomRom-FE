@@ -54,6 +54,15 @@ void main() {
     expect(identical(feedItems[0].sourceItem, items[0]), true);
   });
 
+  test('fromItems > 목록 응답 좋아요 여부 반영, 없으면(구버전 서버) false + 서버 값 없음 표시', () {
+    final items = [Item(itemId: 'a', isLiked: true), Item(itemId: 'b', isLiked: false), Item(itemId: 'c')];
+
+    final feedItems = HomeFeedItem.fromItems(items, locationTexts: const ['', '', '']);
+
+    expect(feedItems.map((feedItem) => feedItem.isLiked), [true, false, false]);
+    expect(feedItems.map((feedItem) => feedItem.hasServerLikeStatus), [true, true, false]);
+  });
+
   test('previewItemFor > 같은 물품이면 목록 원본, 다른 물품·빈 id면 null (상세 첫 표시용)', () {
     final feedItem = HomeFeedItem.fromItems(
       [Item(itemId: 'a', itemName: '물품')],

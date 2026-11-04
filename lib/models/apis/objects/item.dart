@@ -29,6 +29,9 @@ class Item extends BaseEntity {
   /// 우선노출 활성 여부 (서버 응답 시점 기준)
   final bool? isPromoted;
 
+  /// 현재 회원 좋아요 여부 (피드 목록·상세 응답, 구버전 서버 > null)
+  final bool? isLiked;
+
   @JsonKey(includeFromJson: true)
   String? address;
 
@@ -51,6 +54,7 @@ class Item extends BaseEntity {
     this.isAiPredictedPrice,
     this.promotionExpiresAt,
     this.isPromoted,
+    this.isLiked,
     this.address, // 선택적 주입 가능
   });
 

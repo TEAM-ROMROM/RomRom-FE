@@ -47,6 +47,9 @@ class HomeFeedItem {
     this.sourceItem,
   });
 
+  /// 목록 응답에 좋아요 여부가 있는지 (구버전 서버 > false > 카드에서 상세 조회로 확인)
+  bool get hasServerLikeStatus => sourceItem?.isLiked != null;
+
   /// 상세 화면 첫 표시용 목록 원본 (같은 물품일 때만, 상세 응답 오면 교체)
   Item? previewItemFor(String itemId) {
     final previewItem = sourceItem;
@@ -86,6 +89,7 @@ class HomeFeedItem {
           aiPrice: d.isAiPredictedPrice ?? false,
           latitude: d.latitude,
           longitude: d.longitude,
+          isLiked: d.isLiked ?? false,
           authorMemberId: d.member?.memberId,
           sourceItem: d,
         ),

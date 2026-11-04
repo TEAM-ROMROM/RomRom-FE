@@ -15,6 +15,7 @@ class TradeResponse {
   final PagedItem? itemPage;
   final bool? tradeRequestHistoryExists; // 거래 요청 이력 존재 여부
   final PagedTradeReview? tradeReviewPage;
+  final TradeReviewStats? tradeReviewStats; // 받은 후기 통계 (/review/stats)
 
   TradeResponse({
     this.tradeRequestHistory,
@@ -22,6 +23,7 @@ class TradeResponse {
     this.itemPage,
     this.tradeRequestHistoryExists,
     this.tradeReviewPage,
+    this.tradeReviewStats,
   });
 
   factory TradeResponse.fromJson(Map<String, dynamic> json) => _$TradeResponseFromJson(json);
@@ -44,6 +46,9 @@ class TradeRequestHistory extends BaseEntity {
   final String? tradeStatus;
   final bool? isNew;
 
+  /// 이 요청의 채팅방 ID (방 없음·구버전 서버 > null)
+  final String? chatRoomId;
+
   TradeRequestHistory({
     required this.tradeRequestHistoryId,
     required this.takeItem,
@@ -51,6 +56,7 @@ class TradeRequestHistory extends BaseEntity {
     required this.itemTradeOptions,
     required this.tradeStatus,
     this.isNew,
+    this.chatRoomId,
     super.createdDate,
     super.updatedDate,
   });
@@ -67,6 +73,7 @@ class TradeRequestHistory extends BaseEntity {
     itemTradeOptions: itemTradeOptions,
     tradeStatus: tradeStatus,
     isNew: isNew,
+    chatRoomId: chatRoomId,
     createdDate: createdDate,
     updatedDate: updatedDate,
   );
@@ -140,6 +147,20 @@ class TradeReview extends BaseEntity {
   factory TradeReview.fromJson(Map<String, dynamic> json) => _$TradeReviewFromJson(json);
   @override
   Map<String, dynamic> toJson() => _$TradeReviewToJson(this);
+}
+
+/// 받은 후기 통계: 총 수, 평균 평점(BAD 1·GOOD 2·GREAT 3), 평점별·태그별 수 (서버 값 > 개수, 블라인드 제외)
+@JsonSerializable()
+class TradeReviewStats {
+  final int? totalReviewCount;
+  final double? averageRatingScore;
+  final Map<String, int>? ratingCounts;
+  final Map<String, int>? tagCounts;
+
+  TradeReviewStats({this.totalReviewCount, this.averageRatingScore, this.ratingCounts, this.tagCounts});
+
+  factory TradeReviewStats.fromJson(Map<String, dynamic> json) => _$TradeReviewStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$TradeReviewStatsToJson(this);
 }
 
 /// `Paged<TradeReview>` — flat Spring Page structure

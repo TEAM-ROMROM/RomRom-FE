@@ -18,6 +18,7 @@ import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/providers/trade_requests_provider.dart';
 import 'package:romrom_fe/utils/item_label_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
+import 'package:romrom_fe/utils/location_verification_gate.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/notification_permission_prompt_modal.dart';
@@ -278,10 +279,15 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
     } catch (e) {
       debugPrint('거래 요청 실패: $e');
       if (!mounted) return;
-
-      final errorMessage = ErrorUtils.getErrorMessage(e);
-
-      await CommonModal.error(context: context, message: errorMessage, onConfirm: () => Navigator.of(context).pop());
+      // 서버 동네 인증 거부 > 인증 안내로 이동 (오류 모달 생략)
+      final gate = ref.read(locationVerificationGateProvider);
+      if (await gate.recoverFromServerRejection(context, e, purpose: LocationVerificationPurpose.tradeRequest)) return;
+      if (!mounted) return;
+      await CommonModal.error(
+        context: context,
+        message: ErrorUtils.getErrorMessage(e),
+        onConfirm: () => Navigator.of(context).pop(),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

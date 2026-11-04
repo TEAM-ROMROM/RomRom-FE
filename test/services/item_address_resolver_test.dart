@@ -40,6 +40,21 @@ void main() {
       expect(requestedPosition?.longitude, 126.9780);
     });
 
+    test('서버 주소 있음 > 좌표 조회 없이 서버 주소 (address 채움도 동일)', () async {
+      var lookupCount = 0;
+      final resolver = ItemAddressResolver(
+        lookupAddress: (position) async {
+          lookupCount++;
+          return buildAddress();
+        },
+      );
+      final item = Item(latitude: 37.5, longitude: 127.0, address: ' 경기도 구리시 교문동 ');
+
+      expect(await resolver.resolveLocationText(item), '경기도 구리시 교문동');
+      expect(await resolver.resolveAndCacheAddress(item), '경기도 구리시 교문동');
+      expect(lookupCount, 0);
+    });
+
     test('조회 결과 null > 미지정', () async {
       final resolver = ItemAddressResolver(lookupAddress: (_) async => null);
 

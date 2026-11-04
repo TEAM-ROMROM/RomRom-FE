@@ -188,12 +188,11 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   // 후기 화면 열림 여부 (확인 API·소켓 완료 동시 도착, 후기 쓰기 연타 시 1개만)
   bool _isTradeReviewScreenOpen = false;
 
-  // 이번 진입에서 후기 작성 완료 여부 (완료 카드 '후기 쓰기' 숨김, 서버 작성 여부 필드 없음)
-  bool _hasWrittenReviewInThisVisit = false;
+  // 내 후기 작성 여부 (진입 시 서버 isReviewWrittenByMe, 구버전 서버 > false, 작성 완료 시 true)
+  bool _isReviewWrittenByMe = false;
 
-  // 완료 카드 '후기 쓰기' 노출 여부 (거래 기록 ID 있고 이번 진입에서 아직 안 씀)
-  bool get _canWriteReview =>
-      chatRoom.tradeRequestHistory?.tradeRequestHistoryId != null && !_hasWrittenReviewInThisVisit;
+  // 완료 카드 '후기 쓰기' 노출 여부 (거래 기록 ID 있고 아직 안 씀)
+  bool get _canWriteReview => chatRoom.tradeRequestHistory?.tradeRequestHistoryId != null && !_isReviewWrittenByMe;
 
   String _errorMessage = '';
   String? _myMemberId;

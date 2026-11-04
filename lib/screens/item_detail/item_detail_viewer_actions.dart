@@ -85,7 +85,10 @@ mixin _ItemDetailViewerActions on _ItemDetailDescriptionScreenStateFields {
     } catch (e) {
       debugPrint('채팅방 생성 실패: $e');
       if (!mounted) return;
-
+      // 서버 동네 인증 거부 > 인증 안내로 이동 (오류 안내 생략)
+      final gate = ref.read(locationVerificationGateProvider);
+      if (await gate.recoverFromServerRejection(context, e, purpose: LocationVerificationPurpose.chatStart)) return;
+      if (!mounted) return;
       CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
     } finally {
       // 버튼 잠금 해제 (성공·실패 공통)

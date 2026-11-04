@@ -18,6 +18,9 @@ TradeResponse _$TradeResponseFromJson(Map<String, dynamic> json) => TradeRespons
   tradeReviewPage: json['tradeReviewPage'] == null
       ? null
       : PagedTradeReview.fromJson(json['tradeReviewPage'] as Map<String, dynamic>),
+  tradeReviewStats: json['tradeReviewStats'] == null
+      ? null
+      : TradeReviewStats.fromJson(json['tradeReviewStats'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$TradeResponseToJson(TradeResponse instance) => <String, dynamic>{
@@ -26,6 +29,7 @@ Map<String, dynamic> _$TradeResponseToJson(TradeResponse instance) => <String, d
   'itemPage': instance.itemPage?.toJson(),
   'tradeRequestHistoryExists': instance.tradeRequestHistoryExists,
   'tradeReviewPage': instance.tradeReviewPage?.toJson(),
+  'tradeReviewStats': instance.tradeReviewStats?.toJson(),
 };
 
 TradeRequestHistory _$TradeRequestHistoryFromJson(Map<String, dynamic> json) => TradeRequestHistory(
@@ -35,6 +39,7 @@ TradeRequestHistory _$TradeRequestHistoryFromJson(Map<String, dynamic> json) => 
   itemTradeOptions: _stringListFromJson(json['itemTradeOptions']),
   tradeStatus: json['tradeStatus'] as String?,
   isNew: json['isNew'] as bool?,
+  chatRoomId: json['chatRoomId'] as String?,
   createdDate: json['createdDate'] == null ? null : DateTime.parse(json['createdDate'] as String),
   updatedDate: json['updatedDate'] == null ? null : DateTime.parse(json['updatedDate'] as String),
 );
@@ -48,6 +53,7 @@ Map<String, dynamic> _$TradeRequestHistoryToJson(TradeRequestHistory instance) =
   'itemTradeOptions': _stringListToJson(instance.itemTradeOptions),
   'tradeStatus': instance.tradeStatus,
   'isNew': instance.isNew,
+  'chatRoomId': instance.chatRoomId,
 };
 
 PagedTradeRequestHistory _$PagedTradeRequestHistoryFromJson(Map<String, dynamic> json) => PagedTradeRequestHistory(
@@ -98,6 +104,20 @@ Map<String, dynamic> _$TradeReviewToJson(TradeReview instance) => <String, dynam
   'tradeReviewRating': instance.tradeReviewRating,
   'tradeReviewTags': instance.tradeReviewTags,
   'reviewComment': instance.reviewComment,
+};
+
+TradeReviewStats _$TradeReviewStatsFromJson(Map<String, dynamic> json) => TradeReviewStats(
+  totalReviewCount: (json['totalReviewCount'] as num?)?.toInt(),
+  averageRatingScore: (json['averageRatingScore'] as num?)?.toDouble(),
+  ratingCounts: (json['ratingCounts'] as Map<String, dynamic>?)?.map((k, e) => MapEntry(k, (e as num).toInt())),
+  tagCounts: (json['tagCounts'] as Map<String, dynamic>?)?.map((k, e) => MapEntry(k, (e as num).toInt())),
+);
+
+Map<String, dynamic> _$TradeReviewStatsToJson(TradeReviewStats instance) => <String, dynamic>{
+  'totalReviewCount': instance.totalReviewCount,
+  'averageRatingScore': instance.averageRatingScore,
+  'ratingCounts': instance.ratingCounts,
+  'tagCounts': instance.tagCounts,
 };
 
 PagedTradeReview _$PagedTradeReviewFromJson(Map<String, dynamic> json) => PagedTradeReview(

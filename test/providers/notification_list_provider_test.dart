@@ -398,6 +398,19 @@ void main() {
       expect(fake.readIds, ['a']);
     });
 
+    test('한 탭만 봤어도 서버 미확인이 모두 그 탭 알림 > 전체 읽음 1회 (건별 호출 없음)', () async {
+      fake.serverNotifications = [notification('a'), notification('b')];
+      fake.serverUnreadCount = 2;
+      await container.read(notificationListProvider.future);
+
+      await container
+          .read(notificationListProvider.notifier)
+          .markVisitedTabsAsRead(hasVisitedActivityTab: true, hasVisitedNewsTab: false);
+
+      expect(fake.markAllAsReadCount, 1);
+      expect(fake.readIds, isEmpty);
+    });
+
     test('한 탭 개별 읽음 > 동시 요청 수 제한', () async {
       fake.serverNotifications = notifications(10);
       await container.read(notificationListProvider.future);

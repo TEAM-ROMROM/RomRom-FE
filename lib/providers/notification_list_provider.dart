@@ -138,17 +138,22 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
     await reload();
   }
 
-  /// 알림함 나갈 때 읽음: 두 탭 모두 봄 > 전체 읽음, 한 탭만 봄 > 그 탭의 읽지 않은 알림만 읽음 > 재조회
-  /// (보지 않은 탭 알림은 읽지 않음 상태 유지)
+  /// 알림함 나갈 때 읽음: 두 탭 모두 봄 > 전체 읽음 1회, 한 탭만 봄 > 그 탭의 읽지 않은 알림만 읽음 > 재조회
+  /// 한 탭만 봤어도 서버 미확인 수 = 그 탭 미확인 수(다른 탭 미확인 없음) > 전체 읽음 1회 (건별 호출 생략)
+  /// (보지 않은 탭 알림은 읽지 않음 상태 유지, 서버 전체 읽음 API는 탭 구분 없음)
   Future<void> markVisitedTabsAsRead({required bool hasVisitedActivityTab, required bool hasVisitedNewsTab}) async {
     if (hasVisitedActivityTab && hasVisitedNewsTab) return markAllAsRead();
 
+    final currentState = state.valueOrNull;
     final unreadNotificationIds = findUnreadNotificationIdsInTabs(
-      state.valueOrNull?.notifications ?? const <NotificationHistory>[],
+      currentState?.notifications ?? const <NotificationHistory>[],
       isActivityTabIncluded: hasVisitedActivityTab,
       isNewsTabIncluded: hasVisitedNewsTab,
     );
     if (unreadNotificationIds.isEmpty) return;
+    // 미확인 수 0(개수 조회 실패 폴백)은 판단 불가 > 건별 처리
+    final serverUnreadCount = currentState?.unreadCount ?? 0;
+    if (serverUnreadCount > 0 && unreadNotificationIds.length >= serverUnreadCount) return markAllAsRead();
     // 동시 실행 수 제한 묶음 순차 처리 (건별 실패는 로그만, 나머지 계속)
     for (var start = 0; start < unreadNotificationIds.length; start += notificationMarkAsReadConcurrency) {
       final end = min(start + notificationMarkAsReadConcurrency, unreadNotificationIds.length);

@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/enums/storage_keys.dart';
+import 'package:romrom_fe/models/apis/objects/member.dart';
+import 'package:romrom_fe/models/apis/responses/member_response.dart';
 import 'package:romrom_fe/models/location_verification_record.dart';
+import 'package:romrom_fe/providers/member_repository_provider.dart';
+import 'package:romrom_fe/repositories/member_repository.dart';
 import 'package:romrom_fe/providers/location_verification_provider.dart';
 import 'package:romrom_fe/repositories/location_verification_repository.dart';
 import 'package:romrom_fe/utils/location_verification_gate.dart';
@@ -28,6 +31,15 @@ void seedVerificationRecord(String? memberId) {
   SharedPreferences.setMockInitialValues({StorageKeys.locationVerificationRecord.key: jsonEncode(record.toJson())});
 }
 
+/// 회원 repository 대역: 회원 정보만 (서버 위치·인증 필드 없음)
+class _NoLocationMemberRepository implements MemberRepository {
+  @override
+  Future<MemberResponse> getMemberInfo() async => MemberResponse(member: Member(memberId: 'member-a'));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 /// 인증 확인 실행 버튼 화면: 인증 화면 이동은 대역 ([isVerifiedOnScreen] 반환: null 뒤로, 이동 횟수 기록)
 class GateHarness {
   int verificationScreenOpenCount = 0;
@@ -44,6 +56,8 @@ class GateHarness {
           locationVerificationRepositoryProvider.overrideWithValue(
             LocationVerificationRepository(readCurrentMemberId: () async => 'member-a'),
           ),
+          // 서버 회원 위치 없음 > 기기 기록으로 판정
+          memberRepositoryProvider.overrideWithValue(_NoLocationMemberRepository()),
           locationVerificationGateProvider.overrideWith(
             (ref) => LocationVerificationGate(
               ref,

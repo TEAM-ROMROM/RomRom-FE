@@ -42,6 +42,7 @@ mixin _ChatRoomInitialLoad
 
       setState(() {
         chatRoom = response.chatRoom!;
+        _isReviewWrittenByMe = response.isReviewWrittenByMe ?? false;
         _messages = response.messages?.content ?? [];
         _opponentState = opponentState;
         _nextOlderMessagePageNumber = 1;
