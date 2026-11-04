@@ -41,4 +41,18 @@ void main() {
     expect(pendingDeepLink?.notificationType, isNull);
     expect(pendingDeepLink?.uri.host, 'chat');
   });
+
+  test('딥링크 없는 공지 푸시 > announcementId로 공지 상세 보정, 다른 타입은 보정 없음 (#1007)', () {
+    final pendingDeepLink = buildPendingDeepLinkFromPushData(const {
+      'notificationType': 'ANNOUNCEMENT',
+      'announcementId': 'notice-1',
+    });
+    expect(pendingDeepLink?.uri.toString(), 'romrom://notice/detail?announcementId=notice-1');
+    expect(pendingDeepLink?.notificationType, NotificationType.announcement);
+
+    expect(
+      buildPendingDeepLinkFromPushData(const {'notificationType': 'ITEM_LIKED', 'announcementId': 'notice-1'}),
+      isNull,
+    );
+  });
 }

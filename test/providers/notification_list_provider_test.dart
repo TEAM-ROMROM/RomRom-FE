@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
+import 'package:romrom_fe/models/apis/objects/announcement.dart';
 import 'package:romrom_fe/models/apis/objects/notification_history.dart';
 import 'package:romrom_fe/models/apis/responses/notification_history_response.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
@@ -54,6 +55,10 @@ class FakeNotificationRepository implements NotificationRepository {
       ),
     );
   }
+
+  @override
+  Future<Announcement> getAnnouncementDetail(String announcementId) async =>
+      Announcement(announcementId: announcementId);
 
   @override
   Future<int> getUnreadCount() async {

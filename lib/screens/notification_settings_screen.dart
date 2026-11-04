@@ -7,9 +7,11 @@ import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/providers/do_not_disturb_setting_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
+import 'package:romrom_fe/states/do_not_disturb_setting_state.dart';
 import 'package:romrom_fe/utils/marketing_consent_message.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
@@ -17,9 +19,10 @@ import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/notification/do_not_disturb_settings_section.dart';
 import 'package:romrom_fe/widgets/skeletons/notification_settings_skeleton.dart';
 
-/// 알림 설정 화면: 서버 설정 불러오기(실패 시 다시 시도), 시스템 권한 꺼짐 배너, 항목별 토글
+/// 알림 설정 화면: 서버 설정 불러오기(실패 시 다시 시도), 시스템 권한 꺼짐 배너, 항목별 토글, 방해금지 시간
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
   const NotificationSettingsScreen({super.key});
 
@@ -90,6 +93,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
         NotificationSettingType.content: member.isContentNotificationAgreed ?? false,
         NotificationSettingType.transaction: member.isTradeNotificationAgreed ?? false,
       }, force: true);
+      ref.read(doNotDisturbSettingProvider.notifier).seed(DoNotDisturbSettingState.fromMember(member));
       setState(() {
         _isLoading = false;
         _hasLoadError = false;
@@ -146,6 +150,10 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
             SizedBox(height: 16.h), // 그룹 간 간격
             // 하단 그룹 (거래)
             _buildSettingsGroup([NotificationSettingType.transaction]),
+
+            SizedBox(height: 16.h),
+            // 방해금지 시간 (#1007)
+            const DoNotDisturbSettingsSection(),
           ],
         ),
       ),

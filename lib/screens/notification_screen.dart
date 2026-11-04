@@ -141,25 +141,10 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     final bool permissionGranted = await NotificationPermissionService().isPermissionGranted();
     if (!permissionGranted) return; // 거부 시 UI 변경 없음
 
-    // 권한 허용됨 → provider 경유 업데이트
+    // 권한 허용됨 → 유형별 대응 설정 켜기 (대응 설정 없는 유형은 변경 없음)
     final notifier = ref.read(notificationSettingProvider.notifier);
-    switch (type) {
-      case NotificationType.announcement:
-        await notifier.setEnabled(NotificationSettingType.content, true);
-        await notifier.setEnabled(NotificationSettingType.marketing, true);
-        break;
-      case NotificationType.chatMessageReceived:
-        await notifier.setEnabled(NotificationSettingType.chat, true);
-        break;
-      case NotificationType.itemLiked:
-        await notifier.setEnabled(NotificationSettingType.activity, true);
-        break;
-      case NotificationType.tradeRequestReceived:
-        await notifier.setEnabled(NotificationSettingType.transaction, true);
-        break;
-      case NotificationType.itemDeletedByAdmin:
-        // 관리자 제재 통보는 사용자가 끌 수 없는 강제 알림 → 설정 토글 대상 아님
-        break;
+    for (final settingType in toNotificationSettingTypes(type)) {
+      await notifier.setEnabled(settingType, true);
     }
   }
 
@@ -208,8 +193,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
 
       if (isRomromNewsNotification(item) != isRomromNewsTab) continue;
 
-      // 모르는 알림 타입 > 공지사항
-      final type = NotificationType.fromServerName(item.notificationType) ?? NotificationType.announcement;
+      // 모르는 알림 타입 > unknown (끄기 메뉴 없음, 공지 설정 오변경 방지)
+      final type = NotificationType.fromServerName(item.notificationType) ?? NotificationType.unknown;
 
       notificationItems.add(
         NotificationItemData(

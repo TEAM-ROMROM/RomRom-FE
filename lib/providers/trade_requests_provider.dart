@@ -137,6 +137,9 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     await _loadSent();
   }
 
+  /// 보낸 요청 모든 카드 즉시 재조회 (상대 수락·거절 푸시, 최소 간격 무시, #1007)
+  Future<void> reloadSent() => _loadSent();
+
   /// 거래 상태 변경(채팅 거래완료 거절 등) 후 현재 카드 받은 요청 + 모든 카드 보낸 요청 서버 재조회
   Future<void> reloadReceivedAndSent() => Future.wait([reloadReceivedOfRequestedCard(), _loadSent()]);
 

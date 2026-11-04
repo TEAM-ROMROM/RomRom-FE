@@ -6,6 +6,9 @@ void main() {
   late int notificationUnreadCountRefreshCount;
   late int receivedTradeRequestsReloadCount;
   late int myItemsReloadCount;
+  late int sentTradeRequestsReloadCount;
+  late int chatRoomsReloadCount;
+  late int receivedReviewsReloadCount;
   late bool shouldFailReceivedTradeRequestsReload;
   late ForegroundPushRefresher refresher;
 
@@ -14,6 +17,9 @@ void main() {
     notificationUnreadCountRefreshCount = 0;
     receivedTradeRequestsReloadCount = 0;
     myItemsReloadCount = 0;
+    sentTradeRequestsReloadCount = 0;
+    chatRoomsReloadCount = 0;
+    receivedReviewsReloadCount = 0;
     shouldFailReceivedTradeRequestsReload = false;
     refresher = ForegroundPushRefresher(
       reloadNotificationList: () async => notificationListReloadCount++,
@@ -23,6 +29,9 @@ void main() {
         if (shouldFailReceivedTradeRequestsReload) throw Exception('received reload failed');
       },
       reloadMyItems: () async => myItemsReloadCount++,
+      reloadSentTradeRequests: () async => sentTradeRequestsReloadCount++,
+      reloadChatRooms: () async => chatRoomsReloadCount++,
+      reloadReceivedReviews: () async => receivedReviewsReloadCount++,
     );
   });
 
@@ -63,6 +72,41 @@ void main() {
 
       await refresher.onForegroundPush({});
       expect(reloadCounts(), [2, 0, 0]);
+    });
+
+    // 확장 알림 갱신 횟수 (보낸 요청, 채팅방, 받은 후기)
+    List<int> extendedReloadCounts() => [
+      sentTradeRequestsReloadCount,
+      chatRoomsReloadCount,
+      receivedReviewsReloadCount,
+    ];
+
+    test('교환 수락은 알림 목록·보낸 요청·채팅방을 갱신한다 (#1007)', () async {
+      await refresher.onForegroundPush({'notificationType': 'TRADE_REQUEST_ACCEPTED'});
+
+      expect(reloadCounts(), [1, 0, 0]);
+      expect(extendedReloadCounts(), [1, 1, 0]);
+    });
+
+    test('교환 거절은 알림 목록·보낸 요청을 갱신한다 (#1007)', () async {
+      await refresher.onForegroundPush({'notificationType': 'TRADE_REQUEST_REJECTED'});
+
+      expect(reloadCounts(), [1, 0, 0]);
+      expect(extendedReloadCounts(), [1, 0, 0]);
+    });
+
+    test('교환 완료는 알림 목록·내 물품·채팅방을 갱신한다 (#1007)', () async {
+      await refresher.onForegroundPush({'notificationType': 'TRADE_COMPLETED'});
+
+      expect(reloadCounts(), [1, 0, 1]);
+      expect(extendedReloadCounts(), [0, 1, 0]);
+    });
+
+    test('후기 도착은 알림 목록·받은 후기를 갱신한다 (#1007)', () async {
+      await refresher.onForegroundPush({'notificationType': 'TRADE_REVIEW_RECEIVED'});
+
+      expect(reloadCounts(), [1, 0, 0]);
+      expect(extendedReloadCounts(), [0, 0, 1]);
     });
 
     test('갱신 하나가 실패해도 나머지는 실행되고 예외가 밖으로 나가지 않는다', () async {

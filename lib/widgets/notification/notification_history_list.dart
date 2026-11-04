@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
+import 'package:romrom_fe/utils/notification_mute_rules.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
 import 'package:romrom_fe/models/app_theme.dart';
@@ -98,7 +99,8 @@ class _NotificationHistoryListState extends State<NotificationHistoryList> {
       data: notification,
       isMuted: widget.isMutedFor(notification.type),
       onTap: () => widget.onNotificationTap(notification),
-      onMuteTap: () => widget.onMuteTap(notification.type),
+      // 대응 설정 없는 유형(관리자 제재·모르는 알림) > 끄기 메뉴 숨김
+      onMuteTap: canToggleNotificationType(notification.type) ? () => widget.onMuteTap(notification.type) : null,
       onDeleteTap: () => widget.onDeleteTap(notification.id),
     );
     if (_hasFirstRowsFrameEnded) return row;
