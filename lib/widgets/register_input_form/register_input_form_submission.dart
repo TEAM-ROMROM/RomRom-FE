@@ -2,7 +2,7 @@
 part of '../register_input_form.dart';
 
 mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
-  /// 완료 버튼: 미입력 > 오류 전체 표시, 위치 없음 > 안내, 그 외 저장 (저장 중 이탈 차단)
+  /// 완료 버튼: 미입력 > 오류 전체 표시, 위치 없음 > 안내, 그 외 저장 (저장 중 이탈 차단, 서버 인증 거부 > 인증 안내)
   Future<void> _onSubmitButtonPressed() async {
     if (!isFormValid) {
       _revealAllValidationErrors();

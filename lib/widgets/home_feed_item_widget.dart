@@ -99,7 +99,7 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
     if (!hasServerLikeStatus) _fetchItemLikeStatus();
   }
 
-  /// 좋아요 상태 동기화 (구버전 서버: 목록 응답에 isLiked 없음 > 상세 조회)
+  /// 좋아요 상태 동기화: 목록 응답에 좋아요 여부(isLiked)가 없을 때 상세 조회 (AI 가격 여부는 목록 응답 사용)
   Future<void> _fetchItemLikeStatus() async {
     try {
       if (widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {

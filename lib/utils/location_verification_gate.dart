@@ -44,7 +44,7 @@ class LocationVerificationGate {
   }
 
   /// 서버 거부(LOCATION_NOT_VERIFIED) 처리: 서버 상태 재조회·로컬 기록 삭제 > 안내 모달 > 인증 화면
-  /// 해당 오류 > true (호출부는 오류 안내 생략), 그 외 오류 > false (호출부가 기존 오류 안내)
+  /// 해당 오류 > true (호출부는 오류 안내 생략), 그 외 오류 > false (호출부가 일반 오류 안내)
   Future<bool> recoverFromServerRejection(
     BuildContext context,
     Object error, {

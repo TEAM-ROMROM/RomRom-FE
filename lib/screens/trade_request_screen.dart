@@ -452,7 +452,7 @@ class _TradeRequestScreenState extends ConsumerState<TradeRequestScreen> {
     );
   }
 
-  /// 거래 방식 영역: 확인 중 로딩, 이미 요청 > 보낸 요청 보기, 확인 실패 > 다시 확인, 요청 없음 > 선택 탭
+  /// 거래 방식 영역: 확인 중 로딩, 이미 요청 > 보낸 요청 보기, 확인 실패 > 다시 확인, 요청 없음 > 선택 탭 + 추가금·한 줄 메시지
   Widget _buildTradeOptionSection() {
     switch (_existenceStatus) {
       case TradeRequestExistenceStatus.checking:

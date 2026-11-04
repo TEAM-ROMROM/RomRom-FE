@@ -272,7 +272,7 @@ class MemberApi {
     return isSuccess;
   }
 
-  /// 알림 수신 설정 업데이트 API (개별 알림 타입별)
+  /// 알림 수신 설정 업데이트 API (개별 알림 타입별, 방해금지 시간)
   /// `POST /api/members/notification/update`
   /// 변경하지 않는 필드는 null로 전달
   Future<MemberResponse> updateNotificationSetting({

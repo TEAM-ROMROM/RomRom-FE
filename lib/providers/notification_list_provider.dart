@@ -138,9 +138,8 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
     await reload();
   }
 
-  /// 알림함 나갈 때 읽음: 두 탭 모두 봄 > 전체 읽음 1회, 한 탭만 봄 > 그 탭의 읽지 않은 알림만 읽음 > 재조회
-  /// 한 탭만 봤어도 서버 미확인 수 = 그 탭 미확인 수(다른 탭 미확인 없음) > 전체 읽음 1회 (건별 호출 생략)
-  /// (보지 않은 탭 알림은 읽지 않음 상태 유지, 서버 전체 읽음 API는 탭 구분 없음)
+  /// 알림함 나갈 때 읽음: 두 탭 모두 봄 > 전체 읽음, 한 탭만 봄 > 그 탭의 읽지 않은 알림만 읽음 > 재조회
+  /// (보지 않은 탭 알림은 읽지 않음 상태 유지, 그 탭 미확인 수 >= 서버 미확인 수 > 전체 읽음 1회)
   Future<void> markVisitedTabsAsRead({required bool hasVisitedActivityTab, required bool hasVisitedNewsTab}) async {
     if (hasVisitedActivityTab && hasVisitedNewsTab) return markAllAsRead();
 

@@ -30,7 +30,7 @@ class FakeRewardedAdService extends RewardedAdService {
   }
 }
 
-/// 우선노출 저장소 대역: 활성화 시 내 물건 서버 데이터에 노출 필드 반영, 예외 지정
+/// 우선노출 저장소 대역: 사전 자격 응답·예외 지정, 활성화 시 내 물건 서버 데이터에 노출 필드 반영, 예외 지정
 class FakePromotionRepository implements PromotionRepository {
   FakePromotionRepository(this.itemRepository);
 
@@ -128,9 +128,9 @@ void main() {
         ineligibleReason: 'ITEM_PROMOTION_DAILY_LIMIT_EXCEEDED',
       );
 
-      final result = await container.read(promotionProvider.notifier).promoteItem('A');
+      final promoteResult = await container.read(promotionProvider.notifier).promoteItem('A');
 
-      expect(result, PromoteResult.dailyLimitExceeded);
+      expect(promoteResult, PromoteResult.dailyLimitExceeded);
       expect(rewardedAdService.showCount, 0);
       expect(promotionRepository.promotedItemIds, isEmpty);
       expect(container.read(promotionProvider).isPromoting('A'), isFalse);
@@ -139,9 +139,9 @@ void main() {
     test('사전 자격 조회 실패(구버전 서버 404) > 광고 진행 후 서버 활성화', () async {
       promotionRepository.eligibilityErrorToThrow = buildApiException(404, null);
 
-      final result = await container.read(promotionProvider.notifier).promoteItem('A');
+      final promoteResult = await container.read(promotionProvider.notifier).promoteItem('A');
 
-      expect(result, PromoteResult.success);
+      expect(promoteResult, PromoteResult.success);
       expect(rewardedAdService.showCount, 1);
     });
 
