@@ -64,6 +64,8 @@ class _RecordingRepository with _InMemoryRecentlySeenStorage implements HomeFeed
 class _FakeRepository with _InMemoryRecentlySeenStorage implements HomeFeedRepository {
   final Map<String, Map<int, List<Item>>> pages;
   int callCount = 0;
+  // 설정되면 조회 시 던짐 (새로고침 실패 재현)
+  Object? errorToThrow;
 
   _FakeRepository(this.pages);
 
@@ -76,6 +78,8 @@ class _FakeRepository with _InMemoryRecentlySeenStorage implements HomeFeedRepos
     int? feedSeed,
   }) async {
     callCount++;
+    final error = errorToThrow;
+    if (error != null) throw error;
     return pages[sortField.serverName]?[pageNumber] ?? const <Item>[];
   }
 }
@@ -220,6 +224,11 @@ ProviderContainer _makeContainer(HomeFeedRepository repository) {
   return container;
 }
 
+/// 첫 로드 직후의 30초 제한 해제 (테스트 시계를 1분 뒤로)
+void _expireFirstLoadThrottle(HomeFeedNotifier notifier) {
+  notifier.now = () => DateTime.now().add(const Duration(minutes: 1));
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -247,6 +256,7 @@ void main() {
       });
       final container = _makeContainer(repository);
       await container.read(homeFeedProvider.future);
+      _expireFirstLoadThrottle(container.read(homeFeedProvider.notifier));
       final callsAfterInitial = repository.callCount;
 
       // 최초 refresh — lastRefreshAt 세팅
@@ -267,6 +277,7 @@ void main() {
       });
       final container = _makeContainer(repository);
       await container.read(homeFeedProvider.future);
+      _expireFirstLoadThrottle(container.read(homeFeedProvider.notifier));
 
       // 'a'를 봤다고 마킹
       container.read(homeFeedProvider.notifier).markSeen('a');
@@ -292,6 +303,7 @@ void main() {
       });
       final container = _makeContainer(repository);
       await container.read(homeFeedProvider.future);
+      _expireFirstLoadThrottle(container.read(homeFeedProvider.notifier));
       final initialRev = container.read(homeFeedProvider).value!.feedRevision;
 
       // loadMore: revision 불변 (append)
@@ -410,6 +422,7 @@ void main() {
       var nextSeed = 1;
       notifier.generateFeedSeed = () => nextSeed++;
       await container.read(homeFeedProvider.future);
+      _expireFirstLoadThrottle(notifier);
 
       notifier.markSeen('a');
       await notifier.refresh(trigger: RefreshTrigger.foregroundResume);
@@ -426,6 +439,7 @@ void main() {
       final notifier = container.read(homeFeedProvider.notifier);
       notifier.generateFeedSeed = () => 5;
       await container.read(homeFeedProvider.future);
+      _expireFirstLoadThrottle(notifier);
 
       final failingRefreshRepository = _ThrowingRepository();
       container.updateOverrides([homeFeedRepositoryProvider.overrideWithValue(failingRefreshRepository)]);
@@ -779,6 +793,7 @@ void main() {
       final container = _makeContainer(repository);
       await container.read(homeFeedProvider.future);
       final notifier = container.read(homeFeedProvider.notifier);
+      _expireFirstLoadThrottle(notifier);
       repository.gateByPageNumber[0] = Completer<void>();
 
       final autoRefresh = notifier.refresh(trigger: RefreshTrigger.foregroundResume);
@@ -894,6 +909,110 @@ void main() {
       await container.read(homeFeedProvider.notifier).loadMore();
 
       expect(container.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['a', 'c']);
+    });
+  });
+
+  group('HomeFeedNotifier #995 오래된 피드', () {
+    final firstLoadAt = DateTime(2026, 11, 4, 12);
+
+    _FakeRepository makeRepository() => _FakeRepository({
+      ItemSortField.recommended.serverName: {
+        0: [_item('a'), _item('b')],
+      },
+    });
+
+    // now를 첫 로드 전에 고정한 컨테이너
+    Future<HomeFeedNotifier> loadAt(ProviderContainer container, DateTime Function() clock) async {
+      final notifier = container.read(homeFeedProvider.notifier);
+      notifier.now = clock;
+      await container.read(homeFeedProvider.future);
+      return notifier;
+    }
+
+    test('첫 로드 상태에 lastRefreshAt 기록', () async {
+      final container = _makeContainer(makeRepository());
+      await loadAt(container, () => firstLoadAt);
+
+      expect(container.read(homeFeedProvider).valueOrNull?.lastRefreshAt, firstLoadAt);
+    });
+
+    test('10분 이내 refreshIfStale은 조회 안 함', () async {
+      final repository = makeRepository();
+      final container = _makeContainer(repository);
+      var currentTime = firstLoadAt;
+      final notifier = await loadAt(container, () => currentTime);
+      final callsAfterLoad = repository.callCount;
+
+      currentTime = firstLoadAt.add(const Duration(minutes: 9));
+
+      expect(await notifier.refreshIfStale(), HomeFeedRefreshResult.skipped);
+      expect(repository.callCount, callsAfterLoad);
+    });
+
+    test('10분 초과 refreshIfStale은 새로 조회', () async {
+      final repository = makeRepository();
+      final container = _makeContainer(repository);
+      var currentTime = firstLoadAt;
+      final notifier = await loadAt(container, () => currentTime);
+      final callsAfterLoad = repository.callCount;
+
+      currentTime = firstLoadAt.add(const Duration(minutes: 11));
+
+      expect(await notifier.refreshIfStale(), HomeFeedRefreshResult.refreshed);
+      expect(repository.callCount, greaterThan(callsAfterLoad));
+      expect(container.read(homeFeedProvider).valueOrNull?.lastRefreshAt, currentTime);
+    });
+
+    test('새로고침 실패 시 lastRefreshAt 유지 > 다음 refreshIfStale 재시도', () async {
+      final repository = makeRepository();
+      final container = _makeContainer(repository);
+      var currentTime = firstLoadAt;
+      final notifier = await loadAt(container, () => currentTime);
+      currentTime = firstLoadAt.add(const Duration(minutes: 11));
+
+      repository.errorToThrow = Exception('boom');
+      expect(await notifier.refreshIfStale(), HomeFeedRefreshResult.failed);
+      expect(container.read(homeFeedProvider).valueOrNull?.lastRefreshAt, firstLoadAt);
+
+      repository.errorToThrow = null;
+      expect(await notifier.refreshIfStale(), HomeFeedRefreshResult.refreshed);
+    });
+
+    test('excludeUnavailableItem은 카드 제거 + 이후 조회에서도 제외', () async {
+      final repository = makeRepository();
+      final container = _makeContainer(repository);
+      var currentTime = firstLoadAt;
+      final notifier = await loadAt(container, () => currentTime);
+
+      notifier.excludeUnavailableItem('a');
+      expect(container.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['b']);
+
+      currentTime = firstLoadAt.add(const Duration(minutes: 11));
+      await notifier.refreshIfStale();
+      expect(container.read(homeFeedProvider).valueOrNull?.items.map((item) => item.itemUuid), ['b']);
+    });
+
+    test('첫 로드 실패 > retryInitialLoad 성공 시 lastRefreshAt 기록 > 10분 초과 refreshIfStale 조회', () async {
+      final repository = _FailThenSucceedRepository(failCount: 1, items: [_item('a')]);
+      final container = _makeContainer(repository);
+      var currentTime = firstLoadAt;
+      final notifier = container.read(homeFeedProvider.notifier);
+      notifier.now = () => currentTime;
+      await expectLater(container.read(homeFeedProvider.future), throwsException);
+
+      await notifier.retryInitialLoad();
+      expect(container.read(homeFeedProvider).valueOrNull?.lastRefreshAt, firstLoadAt);
+
+      currentTime = firstLoadAt.add(const Duration(minutes: 11));
+      expect(await notifier.refreshIfStale(), HomeFeedRefreshResult.refreshed);
+    });
+
+    test('피드 로드 전 호출은 무시', () async {
+      final container = _makeContainer(makeRepository());
+      final notifier = container.read(homeFeedProvider.notifier);
+
+      expect(await notifier.refreshIfStale(), HomeFeedRefreshResult.skipped);
+      expect(() => notifier.excludeUnavailableItem('x'), returnsNormally);
     });
   });
 }

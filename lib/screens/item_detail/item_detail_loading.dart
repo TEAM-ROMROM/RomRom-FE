@@ -73,6 +73,10 @@ mixin _ItemDetailLoading on _ItemDetailDescriptionScreenStateFields {
       }
 
       final errorCode = ErrorUtils.getErrorCode(e);
+      // 볼 수 없는 물품 > 홈 피드에서 즉시 제거·이후 조회에서도 제외 (#995)
+      if (errorCode.isUnavailableItemError) {
+        ref.read(homeFeedProvider.notifier).excludeUnavailableItem(widget.itemId);
+      }
       setState(() {
         hasError = true;
         errorMessage = errorCode.koMessage;
