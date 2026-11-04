@@ -138,6 +138,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `currentTabIndexProvider` | `providers/current_tab_index_provider.dart` | Notifier(int) | MainScreen 탭 인덱스 (0 홈, 1 요청관리, 2 등록, 3 채팅, 4 마이페이지) |
 | `coachMarkTriggerProvider` | `providers/coach_mark_trigger_provider.dart` | Notifier(bool) | 첫 등록 후 코치마크 일회성 신호 |
 | `sentRequestsFocusTriggerProvider` | `providers/sent_requests_focus_trigger_provider.dart` | Notifier(bool) | 교환 요청 화면 '보낸 요청 보기' > 요청관리 탭 보낸 요청 토글 일회성 신호 |
+| `chatNotificationGuideProvider` | `providers/chat_notification_guide_provider.dart` | Notifier(bool) | 채팅 알림 꺼짐 안내 시트 로그인 세션 1회 노출 여부 (#984) |
 | `homePopupProvider` | `providers/home_popup_provider.dart` | Notifier | 홈 공지·이벤트 팝업 `{hasCheckedThisSession, displayedPopup}` — 세션 1회 노출 판정, 다시 보지 않기 저장 (회원 무관 > userScoped 예외) |
 | `locationVerificationProvider` | `providers/location_verification_provider.dart` | AsyncNotifier | GPS 동네 인증 `{record}` (회원 ID·인증 시각·좌표, 로컬 저장) — `isCurrentMemberVerified`, `verifyWithCurrentLocation`(서버 위치 저장 + 기록), 다른 회원 기록 = 미인증 (#986) |
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
@@ -158,6 +159,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `gpsLocationVerifierProvider` | `providers/location_verification_provider.dart` | Provider | GpsLocationVerifier 주입 (권한·실제 GPS·가상 위치·정확도·역지오코딩, 테스트 override) |
 | `locationVerificationGateProvider` | `utils/location_verification_gate.dart` | Provider | 동네 인증 필요 기능 공통 진입 확인 `ensureVerified(context, purpose:)` — 등록·교환 요청·채팅 시작·탐색 범위 (화면 이동 포함 > utils) |
 | `notificationPermissionPromptServiceProvider` | `providers/notification_permission_prompt_service_provider.dart` | Provider | NotificationPermissionPromptService 주입 (알림 권한 설치당 1회 안내 판단·요청·FCM 토큰 등록, 교환 요청·물품 등록 성공 직후) |
+| `openChatRoomRegistryProvider` | `providers/open_chat_room_registry_provider.dart` | Provider | OpenChatRoomRegistry 주입 (열린 채팅방 화면 목록: 같은 방 푸시 탭 중복 열기 방지, 같은 방 다른 화면 생존 시 퇴장 생략, #984) |
 
 > 화면·위젯은 `services/apis/*`를 직접 import하지 않는다 (`presentation-must-not-import-api` 규칙). 공유 상태 변경은 notifier 메서드(`memberBlockProvider.fetchBlockedMembers`, `tradeRequestsProvider.sendRequest` 등), 1회성 조회·제출(신고·가격 예측·후기·타인 프로필·좋아요 목록)은 `ref.read(xxxRepositoryProvider)`로 호출한다.
 

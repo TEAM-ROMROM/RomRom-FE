@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:romrom_fe/services/push_notification_routing.dart';
 
 /// 로컬 알림 플러그인 초기화
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -27,5 +29,16 @@ Future<void> _initializeNotificationPlugin() async {
     ),
   );
 
-  await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(
+    settings: initializationSettings,
+    onDidReceiveNotificationResponse: onLocalNotificationTapped,
+  );
+}
+
+/// 로컬 알림 탭 (Android 포그라운드 표시분): payload(FCM data) > 딥링크 이동
+@visibleForTesting
+void onLocalNotificationTapped(NotificationResponse response) {
+  final data = decodePushNotificationPayload(response.payload);
+  if (data == null) return;
+  routePushNotificationData(data);
 }

@@ -7,6 +7,10 @@ import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
+// 안 읽음 배지 최소 지름·가로 여백 (px, 화면 비례 없음 > iPad에서 비율 유지)
+const double _unreadBadgeMinSizePixels = 16;
+const double _unreadBadgeHorizontalPaddingPixels = 4;
+
 /// 채팅방 리스트 아이템 위젯
 class ChatRoomListItem extends StatelessWidget {
   final String? accountStatus;
@@ -167,16 +171,22 @@ class ChatRoomListItem extends StatelessWidget {
                       ),
 
                       // 읽지 않은 메시지 뱃지 (99 초과 시 '99+' 표시)
+                      // 고정 크기 원 > 두 자리·99+ 넘침, iPad 찌그러짐 > 최소 크기 + 가로 여백 알약 (고정 px)
                       if (unreadCount > 0) ...[
                         Padding(
                           padding: EdgeInsets.only(right: 10.0.w, left: 8.w),
                           child: Container(
-                            width: 16.w,
-                            height: 16.h,
-                            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.chatUnreadBadge),
+                            constraints: const BoxConstraints(
+                              minWidth: _unreadBadgeMinSizePixels,
+                              minHeight: _unreadBadgeMinSizePixels,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: _unreadBadgeHorizontalPaddingPixels),
+                            // 알약 모양: 글자 높이가 최소 크기를 넘어도(iPad 글자 확대) 양끝 반원 유지
+                            decoration: const ShapeDecoration(shape: StadiumBorder(), color: AppColors.chatUnreadBadge),
                             alignment: Alignment.center,
                             child: Text(
                               unreadCount > 99 ? '99+' : '$unreadCount',
+                              maxLines: 1,
                               style: CustomTextStyles.p3.copyWith(
                                 color: AppColors.textColorWhite,
                                 fontWeight: FontWeight.w500,

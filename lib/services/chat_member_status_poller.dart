@@ -14,9 +14,10 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 ///   → 현재시각 - lastActiveAt < 90초이면 온라인
 ///
 /// 사용 흐름:
-///   1. 채팅방 진입 시 [start] 호출
-///   2. [stream]을 구독해 갱신된 [Member]를 수신
-///   3. 채팅방 퇴장 시 [stop] 호출
+///   1. 채팅방 진입 시 [start]에 화면 소유 토큰과 함께 호출
+///   2. [streamOf]로 내 상대 [Member]만 수신 (다른 화면 상대 결과 제외)
+///   3. 채팅방 퇴장 시 [stop]에 같은 토큰 전달 (다른 화면 폴링은 유지)
+/// 여러 채팅방이 쌓이면 맨 위(마지막 start) 화면 상대만 폴링 > 위 화면 종료 시 아래 화면 상대 폴링 재개
 class ChatMemberStatusPoller with WidgetsBindingObserver {
   ChatMemberStatusPoller._() : _fetchMemberProfile = _fetchMemberProfileFromServer;
 
@@ -40,25 +41,63 @@ class ChatMemberStatusPoller with WidgetsBindingObserver {
   }
 
   Timer? _timer;
-  String? _targetMemberId;
 
-  /// 폴링 결과를 방출하는 broadcast 스트림 컨트롤러
-  /// broadcast: 여러 위젯이 동시에 구독 가능
-  final _controller = StreamController<Member>.broadcast();
+  // 폴링 요청 화면 순서 (마지막 = 맨 위 화면 > 폴링 대상)
+  final List<({Object owner, String memberId})> _pollingRequests = [];
+  bool _isObservingLifecycle = false;
 
-  /// 외부에서 구독할 스트림 (새 Member 데이터가 들어올 때마다 방출)
-  Stream<Member> get stream => _controller.stream;
+  String? get _targetMemberId => _pollingRequests.isEmpty ? null : _pollingRequests.last.memberId;
 
-  /// 폴링 시작
-  ///
-  /// 이전에 실행 중인 폴링이 있으면 [stop]으로 먼저 정리 후 재시작
-  void start(String memberId) {
-    stop(); // 혹시 이전 것 정리
-    _targetMemberId = memberId;
-    WidgetsBinding.instance.addObserver(this); // 백그라운드 전환 감지
+  /// 폴링 결과 broadcast 스트림 컨트롤러 (조회한 회원 ID 포함, 여러 화면 동시 구독)
+  final _controller = StreamController<({String memberId, Member member})>.broadcast();
 
+  /// [memberId] 조회 결과만 방출하는 스트림 (응답 memberId 누락과 무관하게 요청 ID로 판정)
+  Stream<Member> streamOf(String memberId) =>
+      _controller.stream.where((result) => result.memberId == memberId).map((result) => result.member);
+
+  /// 폴링 시작: 같은 소유자 이전 요청 교체 > 맨 위로 등록 > 즉시 1회 조회 후 주기 반복
+  void start(String memberId, {required Object owner}) {
+    _pollingRequests.removeWhere((request) => identical(request.owner, owner));
+    _pollingRequests.add((owner: owner, memberId: memberId));
+    _activateTopRequest();
+  }
+
+  /// 소유자 폴링 중단: 맨 위였으면 아래 화면 상대로 재개, 남은 요청 없으면 정지
+  void stop({required Object owner}) {
+    final isTopRequest = _pollingRequests.isNotEmpty && identical(_pollingRequests.last.owner, owner);
+    _pollingRequests.removeWhere((request) => identical(request.owner, owner));
+    if (!isTopRequest) return;
+    if (_pollingRequests.isEmpty) {
+      _halt();
+    } else {
+      _activateTopRequest(); // 아래 화면 상대 즉시 갱신 후 주기 재개
+    }
+  }
+
+  /// 전체 폴링 중단 (세션 종료)
+  void stopAll() {
+    _pollingRequests.clear();
+    _halt();
+  }
+
+  /// 맨 위 요청 폴링 시작 (백그라운드 전환 감지 등록 포함)
+  void _activateTopRequest() {
+    if (!_isObservingLifecycle) {
+      WidgetsBinding.instance.addObserver(this);
+      _isObservingLifecycle = true;
+    }
     _fetch(); // 진입 즉시 1회 호출 (첫 폴링 응답 전에 UI 공백 방지)
     _startTimer(); // 이후 30초마다 반복
+  }
+
+  /// 타이머·감지 해제
+  void _halt() {
+    if (_isObservingLifecycle) {
+      WidgetsBinding.instance.removeObserver(this);
+      _isObservingLifecycle = false;
+    }
+    _timer?.cancel();
+    _timer = null;
   }
 
   void _startTimer() {
@@ -81,16 +120,6 @@ class ChatMemberStatusPoller with WidgetsBindingObserver {
     }
   }
 
-  /// 폴링 중단
-  ///
-  /// 채팅방 퇴장 또는 [start] 재호출 시 타이머와 타겟 초기화
-  void stop() {
-    WidgetsBinding.instance.removeObserver(this);
-    _timer?.cancel();
-    _timer = null;
-    _targetMemberId = null;
-  }
-
   /// 상대방 Member 정보를 서버에서 조회 후 스트림에 방출
   ///
   /// 실패 시 조용히 무시하고 다음 주기에 재시도
@@ -101,7 +130,7 @@ class ChatMemberStatusPoller with WidgetsBindingObserver {
     try {
       final member = await _fetchMemberProfile(targetMemberId);
       if (_controller.isClosed) return;
-      _controller.add(member); // 새 Member를 스트림에 방출
+      _controller.add((memberId: targetMemberId, member: member)); // 새 Member를 스트림에 방출
     } catch (e) {
       debugPrint('[StatusPoller] failed: $e');
     }
@@ -110,9 +139,9 @@ class ChatMemberStatusPoller with WidgetsBindingObserver {
   /// 스트림 컨트롤러 영구 종료
   ///
   /// 앱 종료 등 완전히 더 이상 사용하지 않을 때 호출
-  /// [stop]과 달리 스트림 자체를 닫아 재사용 불가 상태가 됨
+  /// [stopAll]과 달리 스트림 자체를 닫아 재사용 불가 상태가 됨
   void dispose() {
-    stop();
+    stopAll();
     _controller.close();
   }
 }
