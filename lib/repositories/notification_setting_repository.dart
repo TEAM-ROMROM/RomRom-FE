@@ -1,5 +1,6 @@
 import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
+import 'package:romrom_fe/states/do_not_disturb_setting_state.dart';
 
 class NotificationSettingRepository {
   final MemberApi _api;
@@ -24,6 +25,15 @@ class NotificationSettingRepository {
       isChatNotificationAgreed: values[NotificationSettingType.chat],
       isContentNotificationAgreed: values[NotificationSettingType.content],
       isTradeNotificationAgreed: values[NotificationSettingType.transaction],
+    );
+  }
+
+  /// 방해금지 설정 저장: 사용 여부·시작·종료 한 번에 (요청 1회)
+  Future<void> updateDoNotDisturb(DoNotDisturbSettingState setting) async {
+    await _api.updateNotificationSetting(
+      isDoNotDisturbEnabled: setting.isEnabled,
+      doNotDisturbStartTime: setting.startTimeText,
+      doNotDisturbEndTime: setting.endTimeText,
     );
   }
 }

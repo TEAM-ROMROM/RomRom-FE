@@ -39,6 +39,10 @@ TradeRequestHistory _$TradeRequestHistoryFromJson(Map<String, dynamic> json) => 
   itemTradeOptions: _stringListFromJson(json['itemTradeOptions']),
   tradeStatus: json['tradeStatus'] as String?,
   isNew: json['isNew'] as bool?,
+  extraChargeAmount: (json['extraChargeAmount'] as num?)?.toInt(),
+  requestMessage: json['requestMessage'] as String?,
+  checkedAt: json['checkedAt'] == null ? null : DateTime.parse(json['checkedAt'] as String),
+  rejectedAt: json['rejectedAt'] == null ? null : DateTime.parse(json['rejectedAt'] as String),
   createdDate: json['createdDate'] == null ? null : DateTime.parse(json['createdDate'] as String),
   updatedDate: json['updatedDate'] == null ? null : DateTime.parse(json['updatedDate'] as String),
 );
@@ -52,6 +56,10 @@ Map<String, dynamic> _$TradeRequestHistoryToJson(TradeRequestHistory instance) =
   'itemTradeOptions': _stringListToJson(instance.itemTradeOptions),
   'tradeStatus': instance.tradeStatus,
   'isNew': instance.isNew,
+  'extraChargeAmount': instance.extraChargeAmount,
+  'requestMessage': instance.requestMessage,
+  'checkedAt': instance.checkedAt?.toIso8601String(),
+  'rejectedAt': instance.rejectedAt?.toIso8601String(),
 };
 
 PagedTradeRequestHistory _$PagedTradeRequestHistoryFromJson(Map<String, dynamic> json) => PagedTradeRequestHistory(

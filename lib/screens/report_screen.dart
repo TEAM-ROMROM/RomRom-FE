@@ -12,21 +12,32 @@ import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
 
-/// 신고하기 페이지: 물품·회원 공용 (대상 종류별 사유 목록·신고 API)
+/// 신고하기 페이지: 물품·회원·채팅 메시지 공용 (대상 종류별 사유 목록·신고 API)
 /// 신고 성공 시 pop(true), 실패 시 오류 모달 후 화면 유지
 class ReportScreen extends ConsumerStatefulWidget {
   final ReportTargetType targetType;
-  final String targetId; // 신고 대상 ID (물품 ID 또는 회원 ID)
+  final String targetId; // 신고 대상 ID (물품 ID·회원 ID·채팅 메시지 ID)
+  // 채팅 메시지 신고의 채팅방 ID (그 외 대상 null)
+  final String? chatRoomId;
 
-  const ReportScreen({super.key, required this.targetType, required this.targetId});
+  const ReportScreen({super.key, required this.targetType, required this.targetId, this.chatRoomId});
 
   /// 물품 신고
-  const ReportScreen.item({super.key, required String itemId}) : targetType = ReportTargetType.item, targetId = itemId;
+  const ReportScreen.item({super.key, required String itemId})
+    : targetType = ReportTargetType.item,
+      targetId = itemId,
+      chatRoomId = null;
 
   /// 회원 신고
   const ReportScreen.member({super.key, required String memberId})
     : targetType = ReportTargetType.member,
-      targetId = memberId;
+      targetId = memberId,
+      chatRoomId = null;
+
+  /// 채팅 메시지 신고 (상대 메시지 길게 누르기)
+  const ReportScreen.chatMessage({super.key, required String this.chatRoomId, required String chatMessageId})
+    : targetType = ReportTargetType.chatMessage,
+      targetId = chatMessageId;
 
   @override
   ConsumerState<ReportScreen> createState() => _ReportScreenState();
@@ -181,7 +192,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     );
   }
 
-  /// 대상 종류별 신고 API 호출 (물품 > reportItem, 회원 > reportMember)
+  /// 대상 종류별 신고 API 호출 (물품 > reportItem, 회원 > reportMember, 채팅 메시지 > reportChatMessage)
   Future<void> _submitReport({required Set<int> reasonIds, required String extraComment}) {
     final reportRepository = ref.read(reportRepositoryProvider);
     switch (widget.targetType) {
@@ -194,6 +205,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       case ReportTargetType.member:
         return reportRepository.reportMember(
           targetMemberId: widget.targetId,
+          memberReportReasons: reasonIds,
+          extraComment: extraComment,
+        );
+      case ReportTargetType.chatMessage:
+        return reportRepository.reportChatMessage(
+          chatRoomId: widget.chatRoomId ?? '',
+          chatMessageId: widget.targetId,
           memberReportReasons: reasonIds,
           extraComment: extraComment,
         );

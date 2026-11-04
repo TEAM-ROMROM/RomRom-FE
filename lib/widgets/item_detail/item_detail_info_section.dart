@@ -9,6 +9,7 @@ import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/ai_badge.dart';
+import 'package:romrom_fe/widgets/common/item_reserved_tag.dart';
 import 'package:romrom_fe/widgets/item_detail/item_detail_wanted_category_section.dart';
 import 'package:romrom_fe/widgets/item_detail_condition_tag.dart';
 import 'package:romrom_fe/widgets/item_detail_trade_option_tag.dart';
@@ -66,10 +67,11 @@ class ItemDetailInfoSection extends StatelessWidget {
     );
   }
 
-  /// 사용감 태그 + 거래 방식 태그 목록
+  /// 예약중 태그 + 사용감 태그 + 거래 방식 태그 목록
   Widget _buildTags() {
     return Row(
       children: [
+        if (item.isReserved == true) ...[const ItemReservedTag(), SizedBox(width: 4.w)],
         if (ItemCondition.fromServerName(item.itemCondition) case final condition?)
           ItemDetailConditionTag(condition: condition.label),
         SizedBox(width: 4.w),

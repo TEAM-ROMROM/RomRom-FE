@@ -12,12 +12,21 @@ void main() {
       expect(RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://item/detail?itemId=A')), DeepLinkRoute.itemDetail);
       expect(RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://chat/room?chatRoomId=C')), DeepLinkRoute.chatRoom);
       expect(RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://item/deleted')), DeepLinkRoute.itemDeleted);
+      expect(
+        RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://notice/detail?announcementId=N')),
+        DeepLinkRoute.noticeDetail,
+      );
+      expect(RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://profile/reviews')), DeepLinkRoute.receivedReviews);
     });
 
     test('모르는 romrom 경로·필수 id 없음 > 알림함', () {
       expect(RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://event/new')), DeepLinkRoute.notificationFallback);
       expect(RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://item/detail')), DeepLinkRoute.notificationFallback);
       expect(RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://chat/room')), DeepLinkRoute.notificationFallback);
+      expect(
+        RomRomDeepLinkRouter.resolveRoute(Uri.parse('romrom://notice/detail')),
+        DeepLinkRoute.notificationFallback,
+      );
     });
 
     test('공유 링크 > 공유 물품, 다른 도메인·경로 > 무시', () {

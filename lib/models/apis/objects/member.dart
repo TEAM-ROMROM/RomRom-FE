@@ -24,6 +24,10 @@ class Member extends BaseEntity {
   final bool? isChatNotificationAgreed;
   final bool? isContentNotificationAgreed;
   final bool? isTradeNotificationAgreed;
+  // 방해금지 시간 (BE #861): 사용 여부, 시작·종료 "HH:mm" (KST)
+  final bool? isDoNotDisturbEnabled;
+  final String? doNotDisturbStartTime;
+  final String? doNotDisturbEndTime;
   final double? latitude;
   final double? longitude;
   final int? totalLikeCount;
@@ -57,6 +61,9 @@ class Member extends BaseEntity {
     this.isChatNotificationAgreed,
     this.isContentNotificationAgreed,
     this.isTradeNotificationAgreed,
+    this.isDoNotDisturbEnabled,
+    this.doNotDisturbStartTime,
+    this.doNotDisturbEndTime,
     this.latitude,
     this.longitude,
     this.totalLikeCount,

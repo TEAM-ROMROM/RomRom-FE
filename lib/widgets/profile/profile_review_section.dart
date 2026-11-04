@@ -12,6 +12,7 @@ import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/received_reviews_refresh_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/services/reviewer_address_resolver.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
@@ -69,6 +70,12 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
     }
   }
 
+  /// 후기 도착 푸시 > 내 후기 목록이면 조용히 재조회 (타인 프로필은 무시, #1007)
+  Future<void> _reloadIfMyReviews() async {
+    final isMyReviews = widget.memberId == null || await UserInfo().isSameMember(widget.memberId);
+    if (isMyReviews && mounted) await _loadReviews();
+  }
+
   /// 다시 시도: 로딩 표시 > 재조회
   void _retryLoadReviews() {
     setState(() => _isLoading = true);
@@ -118,6 +125,8 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(receivedReviewsRefreshTriggerProvider, (_, _) => _reloadIfMyReviews());
+
     if (_isLoading) {
       return const Center(child: CommonLoadingIndicator());
     }

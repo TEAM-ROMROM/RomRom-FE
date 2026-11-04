@@ -15,6 +15,24 @@ void main() {
       ]);
       expect(toNotificationSettingTypes(NotificationType.itemDeletedByAdmin), isEmpty);
     });
+
+    test('확장 유형: 수락·거절·완료는 교환 알림, 후기는 활동 알림, 모르는 알림은 없음 (#1007)', () {
+      for (final tradeType in [
+        NotificationType.tradeRequestAccepted,
+        NotificationType.tradeRequestRejected,
+        NotificationType.tradeCompleted,
+      ]) {
+        expect(toNotificationSettingTypes(tradeType), [NotificationSettingType.transaction]);
+      }
+      expect(toNotificationSettingTypes(NotificationType.tradeReviewReceived), [NotificationSettingType.activity]);
+      expect(toNotificationSettingTypes(NotificationType.unknown), isEmpty);
+    });
+
+    test('끄기 메뉴: 대응 설정 없는 관리자 제재·모르는 알림은 숨김', () {
+      expect(canToggleNotificationType(NotificationType.tradeCompleted), isTrue);
+      expect(canToggleNotificationType(NotificationType.itemDeletedByAdmin), isFalse);
+      expect(canToggleNotificationType(NotificationType.unknown), isFalse);
+    });
   });
 
   group('isNotificationTypeMuted', () {

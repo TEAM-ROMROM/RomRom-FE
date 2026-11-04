@@ -137,6 +137,9 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     await _loadSent();
   }
 
+  /// 보낸 요청 모든 카드 즉시 재조회 (상대 수락·거절 푸시, 최소 간격 무시, #1007)
+  Future<void> reloadSent() => _loadSent();
+
   /// 거래 상태 변경(채팅 거래완료 거절 등) 후 현재 카드 받은 요청 + 모든 카드 보낸 요청 서버 재조회
   Future<void> reloadReceivedAndSent() => Future.wait([reloadReceivedOfRequestedCard(), _loadSent()]);
 
@@ -160,13 +163,21 @@ class TradeRequestsNotifier extends AsyncNotifier<TradeRequestsState> {
     state = AsyncData(current.copyWith(received: updatedReceived));
   }
 
-  /// 교환 요청 전송 (실패 시 예외 전달) > 보낸 요청 백그라운드 재조회
+  /// 교환 요청 전송 (추가금·한 줄 메시지 선택, 실패 시 예외 전달) > 보낸 요청 백그라운드 재조회
   Future<void> sendRequest({
     required String? takeItemId,
     required String? giveItemId,
     required List<String> itemTradeOptions,
+    int? extraChargeAmount,
+    String? requestMessage,
   }) async {
-    await _repository.requestTrade(takeItemId: takeItemId, giveItemId: giveItemId, itemTradeOptions: itemTradeOptions);
+    await _repository.requestTrade(
+      takeItemId: takeItemId,
+      giveItemId: giveItemId,
+      itemTradeOptions: itemTradeOptions,
+      extraChargeAmount: extraChargeAmount,
+      requestMessage: requestMessage,
+    );
     unawaited(_loadSent());
   }
 

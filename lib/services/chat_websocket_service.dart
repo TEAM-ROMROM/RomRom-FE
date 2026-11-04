@@ -9,7 +9,7 @@ import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/chat_message_frame_parser.dart';
-import 'package:romrom_fe/services/chat_topic_subscription_registry.dart';
+import 'package:romrom_fe/services/chat_room_topic_registries.dart';
 import 'package:romrom_fe/services/token_manager.dart';
 import 'package:romrom_fe/utils/single_flight.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
@@ -59,19 +59,8 @@ class ChatWebSocketService {
   // 구독 참조 카운팅 (여러 화면에서 같은 채팅방을 구독할 수 있도록)
   final Map<String, int> _subscriptionRefCounts = {};
 
-  // 읽음 이벤트 구독 (/sub/chat.read.{chatRoomId})
-  final ChatTopicSubscriptionRegistry<ChatUserState> _readEventRegistry = ChatTopicSubscriptionRegistry(
-    destinationOf: (chatRoomId) => '/sub/chat.read.$chatRoomId',
-    parseBody: ChatUserState.fromJson,
-    topicLabel: 'read event',
-  );
-
-  // AI 행동 추천 구독: 사용자 전용 큐 (BE convertAndSendToUser '/queue/chat.recommend.{chatRoomId}', #759)
-  final ChatTopicSubscriptionRegistry<ChatActionRecommendation> _recommendationRegistry = ChatTopicSubscriptionRegistry(
-    destinationOf: (chatRoomId) => '/user/queue/chat.recommend.$chatRoomId',
-    parseBody: ChatActionRecommendation.fromJson,
-    topicLabel: 'recommendation',
-  );
+  // 채팅방 부가 토픽 구독: 읽음, AI 추천, 메시지 변경
+  final ChatRoomTopicRegistries _topicRegistries = ChatRoomTopicRegistries();
 
   // 토큰 갱신 중 중복 실행 방지
   bool _isRefreshingToken = false;
@@ -283,12 +272,7 @@ class ChatWebSocketService {
       _subscribeToRoom(chatRoomId);
     }
     final stompClient = _stompClient;
-    if (stompClient == null) return;
-    for (final registry in [_readEventRegistry, _recommendationRegistry]) {
-      for (final chatRoomId in registry.subscribedChatRoomIds) {
-        registry.subscribeOnStomp(chatRoomId, stompClient);
-      }
-    }
+    if (stompClient != null) _topicRegistries.resubscribeAll(stompClient);
   }
 
   /// 채팅방 구독
@@ -318,17 +302,24 @@ class ChatWebSocketService {
 
   /// 읽음 이벤트 구독 (/sub/chat.read.{chatRoomId})
   Stream<ChatUserState> subscribeToReadEvents(String chatRoomId) =>
-      _readEventRegistry.subscribe(chatRoomId, stompClient: _stompClient, isConnected: _isConnected);
+      _topicRegistries.readEvents.subscribe(chatRoomId, stompClient: _stompClient, isConnected: _isConnected);
 
   /// 읽음 이벤트 구독 해제
-  void unsubscribeFromReadEvents(String chatRoomId) => _readEventRegistry.unsubscribe(chatRoomId);
+  void unsubscribeFromReadEvents(String chatRoomId) => _topicRegistries.readEvents.unsubscribe(chatRoomId);
 
   /// AI 행동 추천 구독 (/user/queue/chat.recommend.{chatRoomId}, 현재 사용자 전용)
   Stream<ChatActionRecommendation> subscribeToRecommendations(String chatRoomId) =>
-      _recommendationRegistry.subscribe(chatRoomId, stompClient: _stompClient, isConnected: _isConnected);
+      _topicRegistries.recommendations.subscribe(chatRoomId, stompClient: _stompClient, isConnected: _isConnected);
 
   /// AI 행동 추천 구독 해제
-  void unsubscribeFromRecommendations(String chatRoomId) => _recommendationRegistry.unsubscribe(chatRoomId);
+  void unsubscribeFromRecommendations(String chatRoomId) => _topicRegistries.recommendations.unsubscribe(chatRoomId);
+
+  /// 메시지 변경 구독 (/sub/chat.update.{chatRoomId}: 삭제·약속 상태 변경본)
+  Stream<ChatMessage> subscribeToMessageUpdates(String chatRoomId) =>
+      _topicRegistries.messageUpdates.subscribe(chatRoomId, stompClient: _stompClient, isConnected: _isConnected);
+
+  /// 메시지 변경 구독 해제
+  void unsubscribeFromMessageUpdates(String chatRoomId) => _topicRegistries.messageUpdates.unsubscribe(chatRoomId);
 
   /// 실제 채팅방 구독 실행
   void _subscribeToRoom(String chatRoomId) {
@@ -479,9 +470,8 @@ class ChatWebSocketService {
       }
     }
 
-    // 읽음·추천 구독, 채팅방 스트림 닫기
-    await _readEventRegistry.closeAll();
-    await _recommendationRegistry.closeAll();
+    // 읽음·추천·메시지 변경 구독, 채팅방 스트림 닫기
+    await _topicRegistries.closeAll();
     for (final controller in roomControllers) {
       await controller.close();
     }

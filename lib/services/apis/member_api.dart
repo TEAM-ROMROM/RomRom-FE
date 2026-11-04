@@ -273,6 +273,9 @@ class MemberApi {
     bool? isChatNotificationAgreed,
     bool? isContentNotificationAgreed,
     bool? isTradeNotificationAgreed,
+    bool? isDoNotDisturbEnabled,
+    String? doNotDisturbStartTime,
+    String? doNotDisturbEndTime,
   }) async {
     final String url = '${AppUrls.baseUrl}/api/members/notification/update';
     late MemberResponse memberResponse;
@@ -283,6 +286,10 @@ class MemberApi {
       if (isChatNotificationAgreed != null) 'isChatNotificationAgreed': isChatNotificationAgreed.toString(),
       if (isContentNotificationAgreed != null) 'isContentNotificationAgreed': isContentNotificationAgreed.toString(),
       if (isTradeNotificationAgreed != null) 'isTradeNotificationAgreed': isTradeNotificationAgreed.toString(),
+      // 방해금지 시간 (BE #861, 시각은 "HH:mm")
+      if (isDoNotDisturbEnabled != null) 'isDoNotDisturbEnabled': isDoNotDisturbEnabled.toString(),
+      'doNotDisturbStartTime': ?doNotDisturbStartTime,
+      'doNotDisturbEndTime': ?doNotDisturbEndTime,
     };
 
     await ApiClient.sendMultipartRequest(

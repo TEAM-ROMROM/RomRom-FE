@@ -17,6 +17,7 @@ import 'package:romrom_fe/widgets/common_app_bar.dart';
 /// 채팅방 앱바
 /// [onBlockConfirm] 차단 확인 시 호출 - API 호출, 확인 모달 닫기, 채팅방 나가기 처리
 /// [onLeaveChatRoomConfirm] 채팅방 나가기 확인 시 호출 - API 호출, 확인 모달 닫기, 화면 이동 처리
+/// [onToggleNotificationMute] 방별 알림 끄기·켜기 (현재 값 [isNotificationMuted]의 반대로 요청)
 /// iPad(너비 600px 초과)에서는 두 줄 타이틀을 위해 toolbarHeight를 88로 확장, iPhone은 64px 유지
 PreferredSizeWidget buildChatRoomAppBar({
   required BuildContext context,
@@ -27,6 +28,8 @@ PreferredSizeWidget buildChatRoomAppBar({
   required VoidCallback onBackPressed,
   required Future<void> Function() onBlockConfirm,
   required Future<void> Function() onLeaveChatRoomConfirm,
+  bool isNotificationMuted = false,
+  VoidCallback? onToggleNotificationMute,
 }) {
   final double appBarHeight = isTablet ? 88 : 64;
 
@@ -51,6 +54,8 @@ PreferredSizeWidget buildChatRoomAppBar({
         opponentId: opponentId,
         onBlockConfirm: onBlockConfirm,
         onLeaveChatRoomConfirm: onLeaveChatRoomConfirm,
+        isNotificationMuted: isNotificationMuted,
+        onToggleNotificationMute: onToggleNotificationMute,
       ),
     ],
   );
@@ -103,11 +108,21 @@ Widget _buildContextMenu({
   required String? opponentId,
   required Future<void> Function() onBlockConfirm,
   required Future<void> Function() onLeaveChatRoomConfirm,
+  required bool isNotificationMuted,
+  required VoidCallback? onToggleNotificationMute,
 }) {
   return Padding(
     padding: EdgeInsets.only(right: 16.0.w, bottom: 8.h, left: 26.w),
     child: RomRomContextMenu(
       items: [
+        if (onToggleNotificationMute != null)
+          ContextMenuItem(
+            id: 'notification_mute',
+            icon: isNotificationMuted ? AppIcons.alert : AppIcons.alertOff,
+            title: isNotificationMuted ? '알림 켜기' : '알림 끄기',
+            onTap: onToggleNotificationMute,
+            showDividerAfter: true,
+          ),
         ContextMenuItem(
           id: 'report',
           icon: AppIcons.report,

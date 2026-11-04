@@ -24,6 +24,8 @@ class ChatInputBar extends StatelessWidget {
   final VoidCallback onTakePhoto;
   final VoidCallback onSendLocation;
   final VoidCallback onRequestExchange;
+  // 약속 잡기 (null > 메뉴 항목 숨김)
+  final VoidCallback? onProposeAppointment;
 
   const ChatInputBar({
     super.key,
@@ -39,6 +41,7 @@ class ChatInputBar extends StatelessWidget {
     required this.onTakePhoto,
     required this.onSendLocation,
     required this.onRequestExchange,
+    this.onProposeAppointment,
   });
 
   /// 입력 텍스트 > 입력 필드 높이 (실제 렌더 줄 수 1~5줄 기준, 40.h~130.h)
@@ -121,6 +124,14 @@ class ChatInputBar extends StatelessWidget {
                       title: '위치 보내기',
                       onTap: () => onSendLocation(),
                     ),
+                    if (onProposeAppointment != null)
+                      ContextMenuItem(
+                        id: 'propose_appointment',
+                        icon: Icons.event_outlined,
+                        iconColor: AppColors.opacity60White,
+                        title: '약속 잡기',
+                        onTap: () => onProposeAppointment?.call(),
+                      ),
                     ContextMenuItem(
                       id: 'request_exchange',
                       icon: AppIcons.change,
