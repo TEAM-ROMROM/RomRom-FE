@@ -15,6 +15,9 @@ enum NotificationType {
   // 등록 키워드가 들어간 새 물품 (#1020, BE #873)
   keywordItemRegistered(label: '키워드 알림', serverName: 'KEYWORD_ITEM_REGISTERED'),
 
+  // 관리자 광고성 푸시 (마케팅 수신 동의자 대상, #1021)
+  marketing(label: '이벤트·혜택', serverName: 'MARKETING'),
+
   // 모르는 서버 값 폴백 (서버 이름 조회 대상 아님, 끌 수 있는 설정 없음)
   unknown(label: '알림', serverName: '');
 
@@ -39,6 +42,7 @@ enum NotificationType {
       case NotificationType.announcement:
       case NotificationType.itemDeletedByAdmin:
       case NotificationType.keywordItemRegistered:
+      case NotificationType.marketing:
       case NotificationType.unknown:
         return 'assets/images/notificationAnnouncement.svg';
     }

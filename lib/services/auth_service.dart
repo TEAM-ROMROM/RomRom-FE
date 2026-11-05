@@ -9,6 +9,7 @@ import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
+import 'package:romrom_fe/services/logout_fcm_token_reader.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
@@ -24,7 +25,9 @@ class AuthService {
   /// 로그아웃 처리 메소드
   Future<void> logout(BuildContext context) async {
     try {
-      await _romAuthApi.logout();
+      // 이 기기 FCM 토큰 (최대 2초, 없으면 생략) > 로그아웃 후 이 기기로 푸시 차단
+      final fcmToken = await readFcmTokenForLogout();
+      await _romAuthApi.logout(fcmToken: fcmToken);
     } catch (e) {
       debugPrint('로그아웃 중 오류 발생: $e');
     } finally {

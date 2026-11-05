@@ -59,6 +59,12 @@ void main() {
       expect(reloadCounts(), [2, 0, 0]);
     });
 
+    test('이벤트·혜택은 공지처럼 알림 목록만 갱신한다 (#1021)', () async {
+      await refresher.onForegroundPush({'notificationType': 'MARKETING'});
+
+      expect(reloadCounts(), [1, 0, 0]);
+    });
+
     test('키워드 알림은 알림 목록만 갱신한다 (#1020)', () async {
       await refresher.onForegroundPush({'notificationType': 'KEYWORD_ITEM_REGISTERED'});
 

@@ -20,6 +20,7 @@ import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/deep_link_gate.dart';
 import 'package:romrom_fe/services/forced_update_lock.dart';
+import 'package:romrom_fe/services/push_open_reporter.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
@@ -68,6 +69,8 @@ class RomRomDeepLinkRouter {
 
   /// 메인 화면 진입 (스플래시·로그인·온보딩 완료): 게이트 열기 > 보관 링크는 화면 전환 다음 프레임에 열기
   static void onMainScreenEntered() {
+    // 로그인 전 열린 캠페인 푸시 열람 보고 (인증 확보 시점)
+    PushOpenReporter.instance.onMainScreenEntered();
     final pendingDeepLink = DeepLinkGate.instance.enterMainScreen();
     if (pendingDeepLink == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {

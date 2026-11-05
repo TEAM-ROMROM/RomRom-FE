@@ -129,7 +129,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     }
   }
 
-  /// 콜드 스타트 알림 탭: 딥링크 게이트에 전달 (메인 진입 전이면 보관 > 메인 진입 후 열림)
+  /// 콜드 스타트 알림 탭: 열람 보고·딥링크 게이트에 전달 (메인 진입 전이면 보관 > 메인 진입 후 처리)
   Future<void> _initFcmInitialMessage() async {
     try {
       final message = await FirebaseMessaging.instance.getInitialMessage();
@@ -137,7 +137,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
       debugPrint('[FCM] 콜드 스타트 초기 메시지: ${message.data}');
 
-      routePushNotificationData(message.data);
+      handleOpenedPushNotification(message.data);
     } catch (e) {
       debugPrint('[FCM] 콜드 스타트 초기 메시지 처리 실패: $e');
     }

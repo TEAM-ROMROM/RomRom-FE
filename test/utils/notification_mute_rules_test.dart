@@ -41,6 +41,21 @@ void main() {
     });
   });
 
+  group('이벤트·혜택 (#1021)', () {
+    test('대응 설정은 마케팅 수신 하나 > 끄기 메뉴 제공', () {
+      expect(toNotificationSettingTypes(NotificationType.marketing), [NotificationSettingType.marketing]);
+      expect(canToggleNotificationType(NotificationType.marketing), isTrue);
+    });
+
+    test('마케팅 수신만 보고 판정 (콘텐츠 설정과 무관)', () {
+      final marketingOffSettings = {NotificationSettingType.content: true, NotificationSettingType.marketing: false};
+      final marketingOnSettings = {NotificationSettingType.content: false, NotificationSettingType.marketing: true};
+
+      expect(isNotificationTypeMuted(marketingOffSettings, NotificationType.marketing), isTrue);
+      expect(isNotificationTypeMuted(marketingOnSettings, NotificationType.marketing), isFalse);
+    });
+  });
+
   group('isNotificationTypeMuted', () {
     test('롬롬 소식: 둘 중 하나라도 꺼지면 꺼짐, 둘 다 켜져야 켜짐', () {
       final partlyEnabledSettings = {NotificationSettingType.content: true, NotificationSettingType.marketing: false};

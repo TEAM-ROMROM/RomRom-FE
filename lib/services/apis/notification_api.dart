@@ -175,4 +175,15 @@ class NotificationApi {
     }
     return announcementResponse!;
   }
+
+  /// 캠페인 푸시 열람 보고 (서버가 회원·캠페인당 1회로 집계)
+  /// `POST /api/notification/push-open` (form: campaignId)
+  Future<void> reportPushOpen(String campaignId) async {
+    await ApiClient.sendMultipartRequest(
+      url: '${AppUrls.baseUrl}/api/notification/push-open',
+      fields: {'campaignId': campaignId},
+      isAuthRequired: true,
+      onSuccess: (_) => debugPrint('[push open] reported : campaignId=$campaignId'),
+    );
+  }
 }

@@ -65,6 +65,7 @@ class ForegroundPushRefresher {
         return [notificationListTarget, (name: 'received reviews', reload: reloadReceivedReviews)];
       case NotificationType.itemLiked:
       case NotificationType.announcement:
+      case NotificationType.marketing:
       case NotificationType.keywordItemRegistered:
       case NotificationType.unknown:
       case null:
