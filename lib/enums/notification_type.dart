@@ -12,6 +12,9 @@ enum NotificationType {
   tradeCompleted(label: '교환 완료', serverName: 'TRADE_COMPLETED'),
   tradeReviewReceived(label: '받은 후기', serverName: 'TRADE_REVIEW_RECEIVED'),
 
+  // 등록 키워드가 들어간 새 물품 (#1020, BE #873)
+  keywordItemRegistered(label: '키워드 알림', serverName: 'KEYWORD_ITEM_REGISTERED'),
+
   // 모르는 서버 값 폴백 (서버 이름 조회 대상 아님, 끌 수 있는 설정 없음)
   unknown(label: '알림', serverName: '');
 
@@ -35,6 +38,7 @@ enum NotificationType {
         return 'assets/images/notificationLike.svg';
       case NotificationType.announcement:
       case NotificationType.itemDeletedByAdmin:
+      case NotificationType.keywordItemRegistered:
       case NotificationType.unknown:
         return 'assets/images/notificationAnnouncement.svg';
     }

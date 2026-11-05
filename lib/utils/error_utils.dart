@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/enums/error_code.dart';
 import 'package:romrom_fe/exceptions/api_exception.dart';
+import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 
 class ErrorUtils {
   // 연결 끊김·시간 초과 공통 문구
@@ -21,6 +22,18 @@ class ErrorUtils {
     // 네트워크 오류 > 연결 확인 문구 (서버 응답 없음)
     if (isNetworkError(error)) return networkErrorMessage;
     return getErrorCode(error).koMessage;
+  }
+
+  /// 예외 객체 > 서버가 준 사용자 문구 우선 메시지 (앱에 없는 신규 errorCode 대응)
+  /// 순서: 네트워크 > 금칙어 문구 > 4xx 응답 errorMessage > errorCode 매핑
+  static String getServerProvidedErrorMessage(Object error) {
+    if (isNetworkError(error)) return networkErrorMessage;
+    if (error is UgcViolationException) return error.errorMessage;
+    if (error is ApiException && error.statusCode >= 400 && error.statusCode < 500) {
+      final serverMessage = error.responseJson?['errorMessage'];
+      if (serverMessage is String && serverMessage.trim().isNotEmpty) return serverMessage.trim();
+    }
+    return getErrorMessage(error);
   }
 
   /// 예외 객체 > 오류 코드 (화면이 코드별로 분기할 때, 모르는 형식 > unknown)

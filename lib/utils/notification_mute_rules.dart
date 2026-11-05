@@ -21,6 +21,9 @@ List<NotificationSettingType> toNotificationSettingTypes(NotificationType type) 
     case NotificationType.itemDeletedByAdmin:
       // 관리자 제재 통보는 끌 수 없는 강제 알림 → 대응 설정 없음(항상 활성으로 간주)
       return const [];
+    case NotificationType.keywordItemRegistered:
+      // 키워드 등록 = 수신 동의 > 대응 설정 없음 (끄기는 키워드 삭제로)
+      return const [];
     case NotificationType.unknown:
       // 모르는 알림 > 대응 설정 없음 (끄기 메뉴 숨김)
       return const [];

@@ -19,8 +19,9 @@ import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 import 'package:romrom_fe/widgets/item_search/item_search_filter_bar.dart';
 import 'package:romrom_fe/widgets/item_search/item_search_recent_keywords_view.dart';
 import 'package:romrom_fe/widgets/item_search/item_search_result_list.dart';
+import 'package:romrom_fe/widgets/keyword_alert/keyword_alert_bell_button.dart';
 
-/// 물품 검색 화면: 검색어 입력(제출 시 검색) > 카테고리·정렬 필터 > 결과 목록 (#1008)
+/// 물품 검색 화면: 검색어 입력(제출 시 검색) > 카테고리·정렬 필터 > 결과 목록 (#1008), 검색어 키워드 알림 종 (#1020)
 /// 검색 전 최근 검색어, 결과 없음·실패는 공통 빈 상태 뷰, 필터 변경 시 같은 검색어로 다시 검색
 class ItemSearchScreen extends ConsumerStatefulWidget {
   static const String keywordHintText = '어떤 물건을 찾으세요?';
@@ -135,10 +136,12 @@ class _ItemSearchScreenState extends ConsumerState<ItemSearchScreen> {
     );
   }
 
-  /// 상단: 뒤로 가기 + 검색어 입력칸 (지우기 버튼)
+  /// 상단: 뒤로 가기 + 검색어 입력칸 (지우기 버튼) + 검색 후 키워드 알림 종 (검색 중 숨김)
   Widget _buildSearchHeader() {
+    final searchAsync = ref.watch(itemSearchProvider);
+    final searchedKeyword = searchAsync.isLoading ? null : searchAsync.valueOrNull?.searchQuery?.keyword;
     return Padding(
-      padding: EdgeInsets.only(left: 8.w, right: 24.w, top: 8.h),
+      padding: EdgeInsets.only(left: 8.w, right: searchedKeyword == null ? 24.w : 12.w, top: 8.h),
       child: Row(
         children: [
           IconButton(
@@ -182,6 +185,7 @@ class _ItemSearchScreenState extends ConsumerState<ItemSearchScreen> {
               ),
             ),
           ),
+          if (searchedKeyword != null) ...[SizedBox(width: 4.w), KeywordAlertBellButton(keyword: searchedKeyword)],
         ],
       ),
     );

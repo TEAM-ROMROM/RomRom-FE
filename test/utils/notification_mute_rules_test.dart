@@ -33,6 +33,12 @@ void main() {
       expect(canToggleNotificationType(NotificationType.itemDeletedByAdmin), isFalse);
       expect(canToggleNotificationType(NotificationType.unknown), isFalse);
     });
+
+    test('키워드 알림: 대응 설정 없음 > 끄기 메뉴 숨김, 항상 켜짐 (끄기 = 키워드 삭제, #1020)', () {
+      expect(toNotificationSettingTypes(NotificationType.keywordItemRegistered), isEmpty);
+      expect(canToggleNotificationType(NotificationType.keywordItemRegistered), isFalse);
+      expect(isNotificationTypeMuted(const {}, NotificationType.keywordItemRegistered), isFalse);
+    });
   });
 
   group('isNotificationTypeMuted', () {

@@ -8,6 +8,7 @@ import 'package:romrom_fe/providers/current_tab_index_provider.dart';
 import 'package:romrom_fe/providers/home_feed_provider.dart';
 import 'package:romrom_fe/providers/item_like_provider.dart';
 import 'package:romrom_fe/providers/item_search_provider.dart';
+import 'package:romrom_fe/providers/keyword_alerts_provider.dart';
 import 'package:romrom_fe/providers/location_verification_provider.dart';
 import 'package:romrom_fe/providers/member_block_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
@@ -48,6 +49,8 @@ final List<ProviderOrFamily> userScopedProviders = [
   // 알림 확장 (#1007)
   receivedReviewsRefreshTriggerProvider,
   doNotDisturbSettingProvider,
+  // 키워드 알림 (#1020)
+  keywordAlertsProvider,
 ];
 
 /// 사용자 범위 provider 전부 무효화 (WidgetRef·ProviderContainer의 invalidate 전달)

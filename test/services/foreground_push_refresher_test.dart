@@ -59,6 +59,12 @@ void main() {
       expect(reloadCounts(), [2, 0, 0]);
     });
 
+    test('키워드 알림은 알림 목록만 갱신한다 (#1020)', () async {
+      await refresher.onForegroundPush({'notificationType': 'KEYWORD_ITEM_REGISTERED'});
+
+      expect(reloadCounts(), [1, 0, 0]);
+    });
+
     test('채팅 메시지는 미확인 개수만 다시 받고 목록·요청·물품은 갱신하지 않는다', () async {
       await refresher.onForegroundPush({'notificationType': 'CHAT_MESSAGE_RECEIVED'});
 

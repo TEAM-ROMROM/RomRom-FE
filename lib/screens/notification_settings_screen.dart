@@ -3,26 +3,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/notification_setting_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
-import 'package:romrom_fe/icons/app_icons.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/providers/do_not_disturb_setting_provider.dart';
 import 'package:romrom_fe/providers/member_profile_provider.dart';
 import 'package:romrom_fe/providers/notification_setting_provider.dart';
+import 'package:romrom_fe/screens/keyword_alert_settings_screen.dart';
 import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:romrom_fe/states/do_not_disturb_setting_state.dart';
+import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/marketing_consent_message.dart';
-import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/common/common_modal.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/completed_toggle_switch.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common_app_bar.dart';
+import 'package:romrom_fe/widgets/keyword_alert/keyword_alert_settings_entry_row.dart';
 import 'package:romrom_fe/widgets/notification/do_not_disturb_settings_section.dart';
+import 'package:romrom_fe/widgets/notification/system_notification_permission_banner.dart';
 import 'package:romrom_fe/widgets/skeletons/notification_settings_skeleton.dart';
 
-/// 알림 설정 화면: 서버 설정 불러오기(실패 시 다시 시도), 시스템 권한 꺼짐 배너, 항목별 토글, 방해금지 시간
+/// 알림 설정 화면: 서버 설정 불러오기(실패 시 다시 시도), 시스템 권한 꺼짐 배너, 항목별 토글, 키워드 알림 진입, 방해금지 시간
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
   const NotificationSettingsScreen({super.key});
 
@@ -127,7 +129,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
     );
   }
 
-  /// 본문: 로딩 > 스켈레톤, 실패 > 다시 시도, 그 외 > 권한 배너 + 설정 그룹 + 방해금지 시간
+  /// 본문: 로딩 > 스켈레톤, 실패 > 다시 시도, 그 외 > 권한 배너 + 설정 그룹 + 키워드 알림 + 방해금지 시간
   Widget _buildBody() {
     if (_isLoading) return const NotificationSettingsSkeleton();
     if (_hasLoadError) {
@@ -138,7 +140,10 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
         padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 24.h),
         child: Column(
           children: [
-            if (_isSystemPermissionGranted == false) ...[_buildSystemPermissionBanner(), SizedBox(height: 16.h)],
+            if (_isSystemPermissionGranted == false) ...[
+              const SystemNotificationPermissionBanner(),
+              SizedBox(height: 16.h),
+            ],
             // 상단 그룹 (마케팅, 활동, 채팅, 콘텐츠)
             _buildSettingsGroup([
               NotificationSettingType.marketing,
@@ -152,53 +157,12 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
             _buildSettingsGroup([NotificationSettingType.transaction]),
 
             SizedBox(height: 16.h),
+            // 키워드 알림 (#1020)
+            KeywordAlertSettingsEntryRow(onTap: () => context.navigateTo(screen: const KeywordAlertSettingsScreen())),
+
+            SizedBox(height: 16.h),
             // 방해금지 시간 (#1007)
             const DoNotDisturbSettingsSection(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 휴대폰 알림 꺼짐 배너: 안내 + 탭하면 시스템 설정
-  Widget _buildSystemPermissionBanner() {
-    return AppPressable(
-      onTap: NotificationPermissionService().openSettings,
-      scaleDown: AppPressable.scaleCard,
-      enableRipple: false,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.errorContainer,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: AppColors.errorBorder),
-        ),
-        child: Row(
-          children: [
-            Icon(AppIcons.alertOff, size: 20.sp, color: AppColors.warningRed),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '휴대폰 알림이 꺼져 있어요',
-                    style: CustomTextStyles.p2.copyWith(color: AppColors.textColorWhite, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '설정에서 롬롬 알림을 허용해야 알림을 받을 수 있어요',
-                    style: CustomTextStyles.p3.copyWith(color: AppColors.opacity60White, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 8.w),
-            Text(
-              '설정 열기',
-              style: CustomTextStyles.p3.copyWith(color: AppColors.primaryYellow, fontWeight: FontWeight.w600),
-            ),
           ],
         ),
       ),
