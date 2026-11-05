@@ -1,11 +1,35 @@
 {
   "metadata": {
-    "lastUpdated": "2026-11-04T19:05:56Z",
-    "currentVersion": "1.10.148",
-    "totalReleases": 129,
+    "lastUpdated": "2026-11-05T08:43:53Z",
+    "currentVersion": "1.10.150",
+    "totalReleases": 130,
     "projectType": "flutter"
   },
   "releases": [
+    {
+      "version": "1.10.150",
+      "project_type": "flutter",
+      "date": "2026-11-05",
+      "pr_number": 1024,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 키워드 알림: 원하는 단어를 등록하면 새 물품이 올라올 때 알려드려요\n  * 검색 결과에서 종 버튼으로 바로 키워드 알림 받기\n  * 이벤트·혜택 알림\n\n* **버그 수정**\n  * 로그아웃한 기기로 알림이 계속 오던 문제",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "키워드 알림: 원하는 단어를 등록하면 새 물품이 올라올 때 알려드려요",
+            "검색 결과에서 종 버튼으로 바로 키워드 알림 받기",
+            "이벤트·혜택 알림"
+          ]
+        },
+        "버그_수정": {
+          "title": "버그 수정",
+          "items": [
+            "로그아웃한 기기로 알림이 계속 오던 문제"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "1.10.148",
       "project_type": "flutter",
