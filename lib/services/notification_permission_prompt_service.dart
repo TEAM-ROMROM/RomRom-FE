@@ -8,7 +8,7 @@ import 'package:romrom_fe/services/notification_permission_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 알림 권한 1회 안내 판단·요청: 안내 필요 여부(설치당 1회) > 안내 기록 > 시스템 권한 요청 > 허용 시 FCM 토큰 등록
-/// 안내 시점: 교환 요청·물품 등록 성공 직후, 거절·닫기 후 자동 재안내 없음
+/// 안내 시점: 교환 요청·물품 등록·키워드 등록 성공 직후, 거절·닫기 후 자동 재안내 없음
 class NotificationPermissionPromptService {
   final Future<AuthorizationStatus> Function() _readAuthorizationStatus;
   final Future<void> Function() _requestSystemPermission;

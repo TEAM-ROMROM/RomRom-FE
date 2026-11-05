@@ -5,7 +5,7 @@ import 'package:romrom_fe/services/firebase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 알림 권한 상태 확인·설정 이동 서비스
-/// - 권한 요청은 교환 요청·물품 등록 성공 직후 1회 안내(NotificationPermissionPromptService)와 사용자가 누른 설정 동작에서만
+/// - 권한 요청은 교환 요청·물품 등록·키워드 등록 성공 직후 1회 안내(NotificationPermissionPromptService)와 사용자가 누른 설정 동작에서만
 /// - 상태 조회는 시스템 권한 창을 띄우지 않음
 class NotificationPermissionService {
   static final NotificationPermissionService _instance = NotificationPermissionService._internal();

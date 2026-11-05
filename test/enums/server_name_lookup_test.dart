@@ -53,6 +53,8 @@ void main() {
       expect(NotificationType.fromServerName('TRADE_REQUEST_REJECTED'), NotificationType.tradeRequestRejected);
       expect(NotificationType.fromServerName('TRADE_COMPLETED'), NotificationType.tradeCompleted);
       expect(NotificationType.fromServerName('TRADE_REVIEW_RECEIVED'), NotificationType.tradeReviewReceived);
+      // 키워드 알림 (BE #873)
+      expect(NotificationType.fromServerName('KEYWORD_ITEM_REGISTERED'), NotificationType.keywordItemRegistered);
       expect(NotificationType.fromServerName(''), isNull);
       expect(NotificationType.fromServerName(unknownServerName), isNull);
       expect(NotificationType.fromServerName(null), isNull);

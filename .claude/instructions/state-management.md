@@ -146,6 +146,7 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `locationVerificationProvider` | `providers/location_verification_provider.dart` | AsyncNotifier | GPS 동네 인증 `{record}` (회원 ID·인증 시각·좌표, 로컬 저장) — `isCurrentMemberVerified`(서버 `memberLocation.isLocationVerified` 우선, 구버전 서버·조회 실패 > 로컬 기록), `verifyWithCurrentLocation`·`verifyWithManualSelection`(서버 위치 저장 + 인증 방식 > 기록), `resyncAfterServerRejection`(403 LOCATION_NOT_VERIFIED 후), 다른 회원 기록 = 미인증 (#986, #1004) |
 | `itemSearchProvider` | `providers/item_search_provider.dart` | AsyncNotifier.autoDispose(페이징) | 물품 검색 `{searchQuery, items, nextPageNumber, hasMore, isLoadingMore, hasNextPageError}` — 검색 화면 전용(닫으면 해제), 새 검색마다 세대 증가로 늦은 응답 폐기 (#1008) |
 | `recentSearchKeywordsProvider` | `providers/recent_search_keywords_provider.dart` | AsyncNotifier | 최근 검색어 `List<String>` (최신 순, 최대 10개, 기기·회원별 저장) — 추가·삭제·전체 삭제 (#1008) |
+| `keywordAlertsProvider` | `providers/keyword_alerts_provider.dart` | AsyncNotifier | 키워드 알림 `{keywordAlerts, maximumKeywordAlertCount}` (최신 등록순, 최대 10) — 등록·삭제 응답이 서버 최신 목록이라 그대로 반영, 실패 시 이전 목록 유지 + 예외 전달. 구독: 알림 설정 진입 행(개수)·키워드 알림 설정 화면·검색 결과 종 버튼 (#1020) |
 | `itemRepositoryProvider` | `providers/item_repository_provider.dart` | Provider | ItemRepository 주입 (공용) |
 | `recentSearchKeywordRepositoryProvider` | `providers/recent_search_keywords_provider.dart` | Provider | RecentSearchKeywordRepository 주입 (최근 검색어 SharedPreferences, 회원별 키) |
 | `homeFeedRepositoryProvider` | `providers/home_feed_repository_provider.dart` | Provider | HomeFeedRepository 주입 |
@@ -164,7 +165,8 @@ class _FooScreenState extends ConsumerState<FooScreen> {
 | `locationVerificationRepositoryProvider` | `providers/location_verification_provider.dart` | Provider | LocationVerificationRepository 주입 (인증 기록 SharedPreferences, 현재 회원 ID) |
 | `gpsLocationVerifierProvider` | `providers/location_verification_provider.dart` | Provider | GpsLocationVerifier 주입 (권한·실제 GPS·가상 위치·정확도·역지오코딩, 테스트 override) |
 | `locationVerificationGateProvider` | `utils/location_verification_gate.dart` | Provider | 동네 인증 필요 기능 공통 진입 확인 `ensureVerified(context, purpose:)` — 등록·교환 요청·채팅 시작·탐색 범위 (화면 이동 포함 > utils), 서버 거부 처리 `recoverFromServerRejection` (#1004) |
-| `notificationPermissionPromptServiceProvider` | `providers/notification_permission_prompt_service_provider.dart` | Provider | NotificationPermissionPromptService 주입 (알림 권한 설치당 1회 안내 판단·요청·FCM 토큰 등록, 교환 요청·물품 등록 성공 직후) |
+| `keywordAlertRepositoryProvider` | `providers/keyword_alerts_provider.dart` | Provider | KeywordAlertRepository 주입 (키워드 알림 조회·등록·삭제) |
+| `notificationPermissionPromptServiceProvider` | `providers/notification_permission_prompt_service_provider.dart` | Provider | NotificationPermissionPromptService 주입 (알림 권한 설치당 1회 안내 판단·요청·FCM 토큰 등록, 교환 요청·물품 등록·키워드 등록 성공 직후) |
 | `openChatRoomRegistryProvider` | `providers/open_chat_room_registry_provider.dart` | Provider | OpenChatRoomRegistry 주입 (열린 채팅방 화면 목록: 같은 방 푸시 탭 중복 열기 방지, 같은 방 다른 화면 생존 시 퇴장 생략, #984) |
 | `chatImageGallerySaverProvider` | `providers/chat_image_gallery_saver_provider.dart` | Provider | ChatImageGallerySaver 주입 (채팅 사진 전체 보기 앨범 저장: 버튼 탭 시 권한 확인·요청 1회 > JPEG 저장, 테스트 override, #987) |
 
