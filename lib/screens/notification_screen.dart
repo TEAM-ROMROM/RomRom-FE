@@ -179,7 +179,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   }
 
   /// 서버 알림 > 화면 표시 데이터 (탭 필터, 필수값 없는 알림 제외)
-  /// 롬롬 소식 탭: announcement만, 활동 및 채팅 탭: 그 외 전부
+  /// 롬롬 소식 탭: announcement·marketing, 활동 및 채팅 탭: 그 외 전부
   List<NotificationItemData> _toNotificationItems(
     List<NotificationHistory> notificationHistories, {
     required bool isRomromNewsTab,

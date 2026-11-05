@@ -1,9 +1,15 @@
 import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/models/apis/objects/notification_history.dart';
 
-/// 알림함 탭 소속: 공지(announcement) > 롬롬 소식 탭, 그 외 > 활동 및 채팅 탭
+// 롬롬 소식 탭 알림 종류 2개: 공지, 이벤트·혜택 (관리자 발송분)
+final Set<String> _romromNewsServerNames = {
+  NotificationType.announcement.serverName,
+  NotificationType.marketing.serverName,
+};
+
+/// 알림함 탭 소속: 공지·이벤트·혜택 > 롬롬 소식 탭, 그 외 > 활동 및 채팅 탭
 bool isRomromNewsNotification(NotificationHistory notification) =>
-    notification.notificationType == NotificationType.announcement.serverName;
+    _romromNewsServerNames.contains(notification.notificationType);
 
 /// 방문한 탭의 읽지 않은 알림 id (불러온 목록 기준)
 List<String> findUnreadNotificationIdsInTabs(

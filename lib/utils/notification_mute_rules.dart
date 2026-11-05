@@ -18,6 +18,9 @@ List<NotificationSettingType> toNotificationSettingTypes(NotificationType type) 
     case NotificationType.announcement:
       // announcement는 content + marketing 묶음
       return [NotificationSettingType.content, NotificationSettingType.marketing];
+    case NotificationType.marketing:
+      // 이벤트·혜택 > 마케팅 수신 동의 하나
+      return [NotificationSettingType.marketing];
     case NotificationType.itemDeletedByAdmin:
       // 관리자 제재 통보는 끌 수 없는 강제 알림 → 대응 설정 없음(항상 활성으로 간주)
       return const [];

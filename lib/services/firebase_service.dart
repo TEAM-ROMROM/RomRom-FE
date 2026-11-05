@@ -117,7 +117,7 @@ class FirebaseService {
     // 백그라운드 상태에서 알림 탭으로 앱이 열린 경우
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint("[FCM] 알림 클릭 후 앱이 열림: ${message.data}");
-      routePushNotificationData(message.data);
+      handleOpenedPushNotification(message.data);
     });
   }
 

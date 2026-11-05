@@ -55,6 +55,8 @@ void main() {
       expect(NotificationType.fromServerName('TRADE_REVIEW_RECEIVED'), NotificationType.tradeReviewReceived);
       // 키워드 알림 (BE #873)
       expect(NotificationType.fromServerName('KEYWORD_ITEM_REGISTERED'), NotificationType.keywordItemRegistered);
+      // 이벤트·혜택 (관리자 광고성 캠페인, #1021)
+      expect(NotificationType.fromServerName('MARKETING'), NotificationType.marketing);
       expect(NotificationType.fromServerName(''), isNull);
       expect(NotificationType.fromServerName(unknownServerName), isNull);
       expect(NotificationType.fromServerName(null), isNull);
