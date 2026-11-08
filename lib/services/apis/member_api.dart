@@ -1,6 +1,9 @@
 // lib/services/apis/member_api.dart
 import 'package:flutter/material.dart';
+import 'package:romrom_fe/enums/location_verification_method.dart';
+import 'package:romrom_fe/enums/member_withdrawal_reason.dart';
 import 'package:romrom_fe/models/apis/responses/member_response.dart';
+import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/api_client.dart';
 
@@ -68,6 +71,7 @@ class MemberApi {
 
   /// 회원 위치정보 저장 API
   /// `POST /api/members/post/location`
+  /// [verificationMethod] 있으면 동네 인증 기록 (없음 > 서버 미인증), 지도 직접 선택은 실제 GPS 좌표 함께 전송
   Future<void> saveMemberLocation({
     required double longitude,
     required double latitude,
@@ -75,6 +79,9 @@ class MemberApi {
     required String siGunGu,
     required String eupMyoenDong,
     String? ri,
+    LocationVerificationMethod? verificationMethod,
+    double? gpsLatitude,
+    double? gpsLongitude,
   }) async {
     final String url = '${AppUrls.baseUrl}/api/members/post/location';
 
@@ -85,6 +92,9 @@ class MemberApi {
       'siGunGu': siGunGu,
       'eupMyoenDong': eupMyoenDong,
       'ri': ri ?? '',
+      if (verificationMethod != null) 'locationVerificationMethod': verificationMethod.serverName,
+      if (gpsLatitude != null) 'gpsLatitude': gpsLatitude.toString(),
+      if (gpsLongitude != null) 'gpsLongitude': gpsLongitude.toString(),
     };
 
     await ApiClient.sendMultipartRequest(
@@ -115,14 +125,22 @@ class MemberApi {
     return memberResponse;
   }
 
-  /// 회원 탈퇴 API
+  /// 회원 탈퇴 API (사유 선택, 미선택 > 미전송)
   /// `POST /api/members/delete`
-  Future<bool> deleteMember() async {
+  Future<bool> deleteMember({MemberWithdrawalReason? withdrawalReason, String? withdrawalReasonDetail}) async {
     final String url = '${AppUrls.baseUrl}/api/members/delete';
     bool isSuccess = false;
 
+    // null 값은 'null' 문자열로 전송되므로 값 있을 때만 추가
+    final Map<String, dynamic> fields = {
+      if (withdrawalReason != null) 'withdrawalReason': withdrawalReason.serverName,
+      if (withdrawalReasonDetail != null && withdrawalReasonDetail.trim().isNotEmpty)
+        'withdrawalReasonDetail': withdrawalReasonDetail.trim(),
+    };
+
     await ApiClient.sendMultipartRequest(
       url: url,
+      fields: fields,
       isAuthRequired: true,
       onSuccess: (_) {
         debugPrint('회원 탈퇴 성공');
@@ -130,6 +148,22 @@ class MemberApi {
       },
     );
     return isSuccess;
+  }
+
+  /// 탈퇴 전 진행 중 거래 조회 API (탈퇴 시 서버가 자동 취소할 거래) (#1008)
+  /// `POST /api/members/withdrawal/ongoing-trades`
+  Future<TradeResponse> getOngoingTradesBeforeWithdrawal() async {
+    final String url = '${AppUrls.baseUrl}/api/members/withdrawal/ongoing-trades';
+    late TradeResponse tradeResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        tradeResponse = TradeResponse.fromJson(responseData);
+      },
+    );
+    return tradeResponse;
   }
 
   /// 탐색 범위 설정 API
@@ -238,7 +272,7 @@ class MemberApi {
     return isSuccess;
   }
 
-  /// 알림 수신 설정 업데이트 API (개별 알림 타입별)
+  /// 알림 수신 설정 업데이트 API (개별 알림 타입별, 방해금지 시간)
   /// `POST /api/members/notification/update`
   /// 변경하지 않는 필드는 null로 전달
   Future<MemberResponse> updateNotificationSetting({
@@ -247,6 +281,9 @@ class MemberApi {
     bool? isChatNotificationAgreed,
     bool? isContentNotificationAgreed,
     bool? isTradeNotificationAgreed,
+    bool? isDoNotDisturbEnabled,
+    String? doNotDisturbStartTime,
+    String? doNotDisturbEndTime,
   }) async {
     final String url = '${AppUrls.baseUrl}/api/members/notification/update';
     late MemberResponse memberResponse;
@@ -257,6 +294,10 @@ class MemberApi {
       if (isChatNotificationAgreed != null) 'isChatNotificationAgreed': isChatNotificationAgreed.toString(),
       if (isContentNotificationAgreed != null) 'isContentNotificationAgreed': isContentNotificationAgreed.toString(),
       if (isTradeNotificationAgreed != null) 'isTradeNotificationAgreed': isTradeNotificationAgreed.toString(),
+      // 방해금지 시간 (BE #861, 시각은 "HH:mm")
+      if (isDoNotDisturbEnabled != null) 'isDoNotDisturbEnabled': isDoNotDisturbEnabled.toString(),
+      'doNotDisturbStartTime': ?doNotDisturbStartTime,
+      'doNotDisturbEndTime': ?doNotDisturbEndTime,
     };
 
     await ApiClient.sendMultipartRequest(

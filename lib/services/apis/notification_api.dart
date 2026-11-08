@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/requests/notification_history_request.dart';
+import 'package:romrom_fe/models/apis/responses/announcement_response.dart';
 import 'package:romrom_fe/models/apis/responses/notification_history_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
 import 'package:romrom_fe/services/api_client.dart';
@@ -14,6 +15,9 @@ class NotificationApi {
   factory NotificationApi() => _instance;
 
   NotificationApi._internal();
+
+  // 확장 알림 타입(수락·거절·완료·후기) 표시 가능 앱 표시 > 서버가 목록·미확인 개수에 포함 (BE #861)
+  static const Map<String, String> _extendedTypeSupportedFields = {'isExtendedTypeSupported': 'true'};
 
   /// FCM 토큰 저장 API
   /// `POST /api/notification/post/token`
@@ -75,6 +79,7 @@ class NotificationApi {
 
     await ApiClient.sendMultipartRequest(
       url: url,
+      fields: _extendedTypeSupportedFields,
       isAuthRequired: true,
       onSuccess: (responseData) {
         try {
@@ -102,6 +107,7 @@ class NotificationApi {
     final Map<String, dynamic> fields = {
       'pageNumber': request.pageNumber.toString(),
       'pageSize': request.pageSize.toString(),
+      ..._extendedTypeSupportedFields,
     };
 
     await ApiClient.sendMultipartRequest(
@@ -147,6 +153,37 @@ class NotificationApi {
       onSuccess: (_) {
         debugPrint('모든 알림 삭제 성공');
       },
+    );
+  }
+
+  /// 공지 상세 조회 (BE #861)
+  /// `POST /api/notification/get/announcement`
+  Future<AnnouncementResponse> getAnnouncementDetail(String announcementId) async {
+    final String url = '${AppUrls.baseUrl}/api/notification/get/announcement';
+    AnnouncementResponse? announcementResponse;
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: {'announcementId': announcementId},
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        announcementResponse = AnnouncementResponse.fromJson(responseData);
+      },
+    );
+    if (announcementResponse == null) {
+      throw StateError('공지 상세 조회 응답이 비어있습니다.');
+    }
+    return announcementResponse!;
+  }
+
+  /// 캠페인 푸시 열람 보고 (서버가 회원·캠페인당 1회로 집계)
+  /// `POST /api/notification/push-open` (form: campaignId)
+  Future<void> reportPushOpen(String campaignId) async {
+    await ApiClient.sendMultipartRequest(
+      url: '${AppUrls.baseUrl}/api/notification/push-open',
+      fields: {'campaignId': campaignId},
+      isAuthRequired: true,
+      onSuccess: (_) => debugPrint('[push open] reported : campaignId=$campaignId'),
     );
   }
 }

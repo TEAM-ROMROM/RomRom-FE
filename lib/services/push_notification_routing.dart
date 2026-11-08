@@ -3,15 +3,31 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
 import 'package:romrom_fe/models/pending_deep_link.dart';
+import 'package:romrom_fe/services/push_open_reporter.dart';
 import 'package:romrom_fe/utils/deep_link_router.dart';
 
 /// 푸시 알림 탭 공통 경로 3개: 콜드 스타트 FCM, 백그라운드 FCM 탭, Android 포그라운드 로컬 알림 탭
 /// FCM data > 딥링크 > 딥링크 게이트 (로그인·온보딩 중이면 보관)
 
+// 공지 상세 딥링크 접두사 (서버 AnnouncementEvent와 동일, #1007)
+const String noticeDetailDeepLinkPrefix = 'romrom://notice/detail?announcementId=';
+
+/// FCM data > 딥링크 문자열 (없으면 공지 푸시만 announcementId로 공지 상세 보정 — 딥링크 추가 전 서버 발송분)
+String? resolvePushDeepLink(Map<String, dynamic> data) {
+  final deepLink = data['deepLink'];
+  if (deepLink is String && deepLink.isNotEmpty) return deepLink;
+  final announcementId = data['announcementId'];
+  final isAnnouncementPush = data['notificationType'] == NotificationType.announcement.serverName;
+  if (isAnnouncementPush && announcementId is String && announcementId.isNotEmpty) {
+    return '$noticeDetailDeepLinkPrefix$announcementId';
+  }
+  return null;
+}
+
 /// FCM data > 열 딥링크 (deepLink 없음·주소 오류 > null, 모르는 알림 타입은 타입 없이)
 PendingDeepLink? buildPendingDeepLinkFromPushData(Map<String, dynamic> data) {
-  final deepLink = data['deepLink'] as String?;
-  if (deepLink == null || deepLink.isEmpty) return null;
+  final deepLink = resolvePushDeepLink(data);
+  if (deepLink == null) return null;
 
   final uri = Uri.tryParse(deepLink);
   if (uri == null) return null;
@@ -37,6 +53,12 @@ Map<String, dynamic>? decodePushNotificationPayload(String? payload) {
     debugPrint('[FCM] local notification payload parse failed : $error');
     return null;
   }
+}
+
+/// 푸시 알림 열림 공통 (경로 3개 모두 거침): 캠페인 열람 보고 > 딥링크 이동
+void handleOpenedPushNotification(Map<String, dynamic> data) {
+  PushOpenReporter.instance.onPushOpened(data);
+  routePushNotificationData(data);
 }
 
 /// FCM data > 딥링크 게이트 전달 (열 딥링크 없으면 무시)

@@ -9,13 +9,14 @@ import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/widgets/common/request_management_trade_option_tag.dart';
 import 'package:romrom_fe/widgets/common/romrom_context_menu.dart';
 import 'package:romrom_fe/widgets/common/trade_status_tag.dart';
+import 'package:romrom_fe/widgets/common/trade_request_note.dart';
 import 'package:romrom_fe/widgets/common/error_image_placeholder.dart';
 import 'package:romrom_fe/widgets/common/cached_image.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/app_pressable.dart';
 import 'package:romrom_fe/widgets/user_profile_circular_avatar.dart';
 
-/// 받은 요청 카드: 요청 물품 이미지·이름, 요청자, 주소·요청 시각, 요청 거래 방식, 거래 상태
+/// 받은 요청 카드: 요청 물품 이미지·이름, 요청자, 주소·요청 시각, 요청 거래 방식·추가금·한 줄 메시지, 거래 상태
 class RequestListItemCardWidget extends StatelessWidget {
   final String imageUrl;
   final String title;
@@ -28,6 +29,9 @@ class RequestListItemCardWidget extends StatelessWidget {
   final bool isNew; // 새로운 요청 여부
   final List<ItemTradeOption> tradeOptions;
   final TradeStatus tradeStatus;
+  // 요청 시 적은 추가금·한 줄 메시지 (없으면 null)
+  final int? extraChargeAmount;
+  final String? requestMessage;
   final VoidCallback onMenuTap;
   final VoidCallback? onTap;
 
@@ -42,6 +46,8 @@ class RequestListItemCardWidget extends StatelessWidget {
     this.isNew = false,
     required this.tradeOptions,
     required this.tradeStatus,
+    this.extraChargeAmount,
+    this.requestMessage,
     required this.onMenuTap,
     this.onTap,
   });
@@ -148,6 +154,11 @@ class RequestListItemCardWidget extends StatelessWidget {
                                   .toList(),
                             ),
                           ),
+
+                          if (extraChargeAmount != null || requestMessage != null) ...[
+                            const SizedBox(height: 8),
+                            TradeRequestNote(extraChargeAmount: extraChargeAmount, requestMessage: requestMessage),
+                          ],
                         ],
                       ),
                     ),

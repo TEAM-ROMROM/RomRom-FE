@@ -687,3 +687,16 @@ jobs:
         run: |
           echo "❌ Play Store 배포 실패!"
           echo "로그를 확인해주세요."
+
+  # 프로덕션 심사 등록(store_submit) 성공 후에만 백엔드 Android 최신 버전 갱신 (#1004)
+  # 내부 테스트(store_only)·draft(store_prepare)는 사용자에게 아직 없는 버전 > 갱신 안 함
+  # 모드 식은 상단 env.DEPLOY_MODE 와 같게 유지 (job if 에서는 env 사용 불가)
+  sync-backend-latest-version:
+    name: 백엔드 Android 최신 버전 동기화
+    needs: [prepare-build, deploy-playstore]
+    if: ${{ success() && (github.event.inputs.deploy_mode || vars.ANDROID_DEPLOY_MODE || 'store_submit') == 'store_submit' }}
+    uses: ./.github/workflows/ROMROM-BACKEND-VERSION-SYNC.yaml
+    with:
+      platform: android
+      version: ${{ needs.prepare-build.outputs.version }}
+    secrets: inherit

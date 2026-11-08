@@ -8,7 +8,8 @@ mixin _ChatRoomInitialLoad
         _ChatRoomMessaging,
         _ChatRoomUnreadPosition,
         _ChatRoomTradeActions,
-        _ChatRoomRecommendationActions {
+        _ChatRoomRecommendationActions,
+        _ChatRoomMessageActions {
   /// 채팅방 초기화: 회원 ID > 메시지 구독 > 소켓 연결·메시지(AI 추천 포함)·읽음 상태 동시 조회 > 보관분 병합 > 상대 상태 폴링 > 안 읽은 위치 > 추천·읽음·재연결 구독 > 안내 (알림 시트 > 모달)
   Future<void> _loadInitialData() async {
     try {
@@ -42,10 +43,12 @@ mixin _ChatRoomInitialLoad
 
       setState(() {
         chatRoom = response.chatRoom!;
+        _isReviewWrittenByMe = response.isReviewWrittenByMe ?? false;
         _messages = response.messages?.content ?? [];
         _opponentState = opponentState;
         _nextOlderMessagePageNumber = 1;
         _hasMoreOlderMessages = !(response.messages?.last ?? true);
+        _isNotificationMuted = response.isNotificationMuted ?? false;
         _isLoading = false;
       });
       _recommendationNotifier.applyServerRecommendation(widget.chatRoomId, response.latestRecommendation);
@@ -62,6 +65,8 @@ mixin _ChatRoomInitialLoad
       // 채팅 목록·탭바 안 읽음 해제 (알림 등 목록 밖 진입 포함)
       ref.read(chatRoomsProvider.notifier).markRoomAsRead(widget.chatRoomId);
       _subscribeToReadEvents();
+      // 삭제·약속 상태 변경본 구독 (옛 메시지 교체)
+      _startMessageUpdateSubscription();
       // WebSocket 재연결 시 메시지 재동기화 (단절 구간 유실 복구)
       _reconnectSubscription ??= _wsService.onReconnected.listen((_) => _resyncMessages());
 

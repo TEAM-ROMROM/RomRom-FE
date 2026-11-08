@@ -79,20 +79,27 @@ class _HomeFeedItemWidgetState extends ConsumerState<HomeFeedItemWidget> {
     super.initState();
     pageController = PageController(initialPage: _currentImageIndex);
 
+    // 목록 응답 좋아요 여부 있음 > 그 값으로 확정 (상세 조회 없음: 추천 조회 점수 부풀림 방지)
+    final hasServerLikeStatus = widget.item.hasServerLikeStatus;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final id = widget.item.itemUuid;
       if (id != null && id.isNotEmpty) {
         ref
             .read(itemLikeProvider.notifier)
-            .seed(itemId: id, isLiked: widget.item.isLiked, likeCount: widget.item.likeCount);
+            .seed(
+              itemId: id,
+              isLiked: widget.item.isLiked,
+              likeCount: widget.item.likeCount,
+              force: hasServerLikeStatus,
+            );
       }
     });
 
-    _fetchItemLikeStatus();
+    if (!hasServerLikeStatus) _fetchItemLikeStatus();
   }
 
-  /// 좋아요 상태 동기화: 목록 응답에 좋아요 여부(isLiked)가 없어 상세 조회 (AI 가격 여부는 목록 응답 사용)
+  /// 좋아요 상태 동기화: 목록 응답에 좋아요 여부(isLiked)가 없을 때 상세 조회 (AI 가격 여부는 목록 응답 사용)
   Future<void> _fetchItemLikeStatus() async {
     try {
       if (widget.item.itemUuid == null || widget.item.itemUuid!.isEmpty) {

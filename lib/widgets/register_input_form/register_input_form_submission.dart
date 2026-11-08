@@ -2,7 +2,7 @@
 part of '../register_input_form.dart';
 
 mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
-  /// 완료 버튼: 미입력 > 오류 전체 표시, 위치 없음 > 안내, 그 외 저장 (저장 중 이탈 차단)
+  /// 완료 버튼: 미입력 > 오류 전체 표시, 위치 없음 > 안내, 그 외 저장 (저장 중 이탈 차단, 서버 인증 거부 > 인증 안내)
   Future<void> _onSubmitButtonPressed() async {
     if (!isFormValid) {
       _revealAllValidationErrors();
@@ -34,7 +34,11 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
     } on UgcViolationException catch (e) {
       if (context.mounted) _showUgcViolationModal(e);
     } catch (e) {
-      if (context.mounted) {
+      // 서버 동네 인증 거부 > 인증 안내로 이동 (오류 안내 생략)
+      final gate = ref.read(locationVerificationGateProvider);
+      if (context.mounted &&
+          !await gate.recoverFromServerRejection(context, e, purpose: LocationVerificationPurpose.itemRegistration) &&
+          context.mounted) {
         CommonSnackBar.show(context: context, message: ErrorUtils.getErrorMessage(e), type: SnackBarType.error);
       }
     } finally {
@@ -79,10 +83,13 @@ mixin _RegisterInputFormSubmission on _RegisterInputFormStateFields {
       itemCategory: selectedCategory!.serverName,
       itemCondition: selectedItemConditionTypes.isNotEmpty ? selectedItemConditionTypes.first.serverName : null,
       itemTradeOptions: selectedTradeOptions.map((e) => e.serverName).toList(),
+      // 항상 전송 (빈 목록 > 서버가 전부 해제)
+      wantedItemCategories: selectedWantedCategories.map((category) => category.serverName).toList(),
       itemPrice: int.parse(priceController.text.replaceAll(',', '')),
       itemImageUrls: allImageUrls,
       longitude: _longitude,
       latitude: _latitude,
+      tradeLocationAddress: _selectedAddress,
       isAiPredictedPrice: useAiPrice,
     );
   }

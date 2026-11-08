@@ -10,6 +10,10 @@ class TradeRequest {
   String? giveItemId;
   String? tradeRequestHistoryId;
   List<String>? itemTradeOptions;
+  int? extraChargeAmount; // 추가금 (원, EXTRA_CHARGE 선택 시만, 미입력 null)
+  String? requestMessage; // 한 줄 메시지 (최대 100자, 미입력 null)
+  @JsonKey(name: 'includeRejected')
+  bool? isRejectedIncluded; // 보낸 요청 목록에 거절 건 포함 여부
   int pageNumber;
   int pageSize;
   String? tradeReviewRating;
@@ -24,6 +28,9 @@ class TradeRequest {
     this.giveItemId,
     this.tradeRequestHistoryId,
     this.itemTradeOptions,
+    this.extraChargeAmount,
+    this.requestMessage,
+    this.isRejectedIncluded,
     this.pageNumber = 0,
     this.pageSize = 10,
     this.tradeReviewRating,

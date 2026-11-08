@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/notification_type.dart';
+import 'package:romrom_fe/models/apis/objects/announcement.dart';
 import 'package:romrom_fe/models/apis/objects/notification_history.dart';
 import 'package:romrom_fe/models/apis/responses/notification_history_response.dart';
 import 'package:romrom_fe/providers/notification_list_provider.dart';
@@ -54,6 +55,10 @@ class FakeNotificationRepository implements NotificationRepository {
       ),
     );
   }
+
+  @override
+  Future<Announcement> getAnnouncementDetail(String announcementId) async =>
+      Announcement(announcementId: announcementId);
 
   @override
   Future<int> getUnreadCount() async {
@@ -396,6 +401,19 @@ void main() {
 
       expect(fake.markAllAsReadCount, 0);
       expect(fake.readIds, ['a']);
+    });
+
+    test('한 탭만 봤어도 서버 미확인이 모두 그 탭 알림 > 전체 읽음 1회 (건별 호출 없음)', () async {
+      fake.serverNotifications = [notification('a'), notification('b')];
+      fake.serverUnreadCount = 2;
+      await container.read(notificationListProvider.future);
+
+      await container
+          .read(notificationListProvider.notifier)
+          .markVisitedTabsAsRead(hasVisitedActivityTab: true, hasVisitedNewsTab: false);
+
+      expect(fake.markAllAsReadCount, 1);
+      expect(fake.readIds, isEmpty);
     });
 
     test('한 탭 개별 읽음 > 동시 요청 수 제한', () async {

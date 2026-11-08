@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:romrom_fe/enums/home_feed_refresh_result.dart';
-import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/enums/refresh_trigger.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
@@ -17,6 +16,7 @@ import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/notification_unread_count_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
 import 'package:romrom_fe/screens/item_register_screen.dart';
+import 'package:romrom_fe/screens/item_search_screen.dart';
 import 'package:romrom_fe/screens/notification_screen.dart';
 import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/screens/search_range_setting_screen.dart';
@@ -304,6 +304,7 @@ class _HomeTabScreenState extends _HomeTabScreenStateFields
               offstage: _adSlotSchedule.isAdAtVirtualIndex(_currentVirtualIndex),
               child: HomeTabTopActions(
                 hasUnreadNotification: hasUnreadNotification,
+                onSearchTap: () => context.navigateTo(screen: const ItemSearchScreen()),
                 onNotificationTap: () async {
                   // 복귀 후 배지는 알림 화면 dispose의 방문 탭 읽음 > 재조회로 provider가 갱신
                   await context.navigateTo(screen: const NotificationScreen());

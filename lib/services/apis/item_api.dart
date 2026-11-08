@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:romrom_fe/models/apis/requests/item_request.dart';
 import 'package:romrom_fe/models/apis/responses/item_response.dart';
 import 'package:romrom_fe/models/app_urls.dart';
+import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/services/api_client.dart';
 
 class ItemApi {
@@ -29,6 +30,8 @@ class ItemApi {
       'isAiPredictedPrice': request.isAiPredictedPrice,
     };
 
+    _addTradeLocationAreaFields(fields, request.tradeLocationAddress);
+
     // 위치 정보 추가 (필수값)
     if (request.longitude != null) {
       fields['longitude'] = request.longitude!.toString();
@@ -41,6 +44,12 @@ class ItemApi {
       debugPrint('latitude 추가됨: ${request.latitude}');
     } else {
       debugPrint('latitude가 null입니다!');
+    }
+
+    // 희망 교환 카테고리 (#1008): null > 미전송 (수정 시 서버 기존 값 유지), 빈 목록 > 빈 값 전송 (전부 해제)
+    final wantedItemCategories = request.wantedItemCategories;
+    if (wantedItemCategories != null) {
+      fields['wantedItemCategories'] = wantedItemCategories.join(',');
     }
 
     debugPrint('최종 전송 필드: $fields');
@@ -111,6 +120,39 @@ class ItemApi {
       onSuccess: (responseData) {
         itemResponse = ItemResponse.fromJson(responseData);
         debugPrint('물품 목록 조회 성공: ${itemResponse.itemPage?.content.length}개');
+      },
+    );
+
+    return itemResponse;
+  }
+
+  /// 물품 검색 API (#1008)
+  /// `POST /api/item/search`
+  Future<ItemResponse> searchItems(ItemRequest request) async {
+    final String url = '${AppUrls.baseUrl}/api/item/search';
+    late ItemResponse itemResponse;
+
+    final Map<String, dynamic> fields = {
+      'searchKeyword': request.searchKeyword ?? '',
+      'pageNumber': request.pageNumber.toString(),
+      'pageSize': request.pageSize.toString(),
+    };
+    // 카테고리 미선택 > 미전송 (서버 전체 조회)
+    final searchItemCategories = request.searchItemCategories;
+    if (searchItemCategories != null && searchItemCategories.isNotEmpty) {
+      fields['searchItemCategories'] = searchItemCategories.join(',');
+    }
+    final searchSortField = request.searchSortField;
+    if (searchSortField != null) {
+      fields['searchSortField'] = searchSortField;
+    }
+
+    await ApiClient.sendMultipartRequest(
+      url: url,
+      fields: fields,
+      isAuthRequired: true,
+      onSuccess: (responseData) {
+        itemResponse = ItemResponse.fromJson(responseData);
       },
     );
 
@@ -253,6 +295,8 @@ class ItemApi {
       'itemImageUrls': request.itemImageUrls?.join(','),
     };
 
+    _addTradeLocationAreaFields(fields, request.tradeLocationAddress);
+
     // 위치 정보 추가 (필수값)
     if (request.longitude != null) {
       fields['longitude'] = request.longitude!.toString();
@@ -265,6 +309,12 @@ class ItemApi {
       debugPrint('latitude 추가됨: ${request.latitude}');
     } else {
       debugPrint('latitude가 null입니다!');
+    }
+
+    // 희망 교환 카테고리 (#1008): null > 미전송 (수정 시 서버 기존 값 유지), 빈 목록 > 빈 값 전송 (전부 해제)
+    final wantedItemCategories = request.wantedItemCategories;
+    if (wantedItemCategories != null) {
+      fields['wantedItemCategories'] = wantedItemCategories.join(',');
     }
 
     debugPrint('최종 전송 필드: $fields');
@@ -398,5 +448,15 @@ class ItemApi {
     );
 
     return recommendedCategories;
+  }
+
+  /// 거래 희망 위치 행정구역 > 등록·수정 필드 (없음 > 미전송 = 서버 주소 미저장, 앱이 좌표로 변환)
+  static void _addTradeLocationAreaFields(Map<String, dynamic> fields, LocationAddress? tradeLocationAddress) {
+    if (tradeLocationAddress == null) return;
+    fields['siDo'] = tradeLocationAddress.siDo;
+    fields['siGunGu'] = tradeLocationAddress.siGunGu;
+    fields['eupMyoenDong'] = tradeLocationAddress.eupMyoenDong;
+    final ri = tradeLocationAddress.ri;
+    if (ri != null && ri.isNotEmpty) fields['ri'] = ri;
   }
 }

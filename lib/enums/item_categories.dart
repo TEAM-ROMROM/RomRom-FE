@@ -114,4 +114,10 @@ enum ItemCategories {
   static ItemCategories? fromServerName(String? serverName) {
     return ItemCategories.values.where((e) => e.serverName == serverName).firstOrNull;
   }
+
+  /// 서버 이름 목록 > 카테고리 목록 (모르는 값 제외, 순서 유지, null > 빈 목록)
+  static List<ItemCategories> fromServerNamesSkippingUnknown(Iterable<String>? serverNames) {
+    if (serverNames == null) return const [];
+    return [for (final serverName in serverNames) ?fromServerName(serverName)];
+  }
 }

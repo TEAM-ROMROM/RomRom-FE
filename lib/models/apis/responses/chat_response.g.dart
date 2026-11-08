@@ -17,6 +17,9 @@ ChatRoomResponse _$ChatRoomResponseFromJson(Map<String, dynamic> json) => ChatRo
       ? null
       : ChatUserState.fromJson(json['opponentState'] as Map<String, dynamic>),
   latestRecommendation: _chatActionRecommendationFromJson(json['latestRecommendation']),
+  isReviewWrittenByMe: json['isReviewWrittenByMe'] as bool?,
+  isNotificationMuted: json['isNotificationMuted'] as bool?,
+  chatMessage: json['chatMessage'] == null ? null : ChatMessage.fromJson(json['chatMessage'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ChatRoomResponseToJson(ChatRoomResponse instance) => <String, dynamic>{
@@ -26,6 +29,9 @@ Map<String, dynamic> _$ChatRoomResponseToJson(ChatRoomResponse instance) => <Str
   'isOpponentDeleted': instance.isOpponentDeleted,
   'opponentState': instance.opponentState?.toJson(),
   'latestRecommendation': _chatActionRecommendationToJson(instance.latestRecommendation),
+  'isReviewWrittenByMe': instance.isReviewWrittenByMe,
+  'isNotificationMuted': instance.isNotificationMuted,
+  'chatMessage': instance.chatMessage?.toJson(),
 };
 
 PagedChatMessage _$PagedChatMessageFromJson(Map<String, dynamic> json) => PagedChatMessage(

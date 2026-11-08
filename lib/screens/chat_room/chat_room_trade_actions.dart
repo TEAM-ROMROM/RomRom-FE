@@ -154,7 +154,7 @@ mixin _ChatRoomTradeActions on _ChatRoomScreenStateFields, _ChatRoomMessaging {
         screen: TradeReviewScreen(tradeRequestHistoryId: tradeRequestHistoryId, opponentNickname: _opponentNickname),
       );
       if (isReviewSubmitted == true && mounted) {
-        setState(() => _hasWrittenReviewInThisVisit = true);
+        setState(() => _isReviewWrittenByMe = true);
       }
     } finally {
       _isTradeReviewScreenOpen = false;

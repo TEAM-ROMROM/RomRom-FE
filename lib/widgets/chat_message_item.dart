@@ -3,22 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:romrom_fe/enums/chat_message_action.dart';
 import 'package:romrom_fe/enums/chat_message_send_status.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
+import 'package:romrom_fe/utils/chat_message_action_rules.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/chat_image_bubble.dart';
 import 'package:romrom_fe/widgets/chat_location_bubble.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_appointment_card.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_message_action_sheet.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_message_send_status_view.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_trade_system_message.dart';
 import 'package:romrom_fe/widgets/common/common_snack_bar.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
 /// 채팅 메시지 아이템 위젯
-/// system / text / image (업로드 중 포함) / 위치 / 거래 완료 시스템 메시지 모든 타입 처리, 내 메시지 전송 상태 표시
+/// system / text / image (업로드 중 포함) / 위치 / 거래 완료 시스템 메시지 / 약속 카드 / 삭제된 메시지 처리, 내 메시지 전송 상태 표시
+/// 길게 누르기: 글 > 선택 툴바(복사) + 삭제·신고, 사진·위치 > 동작 시트
 class ChatMessageItem extends StatelessWidget {
   final ChatMessage message;
   final String? myMemberId;
@@ -50,6 +55,15 @@ class ChatMessageItem extends StatelessWidget {
   final VoidCallback? onRetrySend;
   final VoidCallback? onDeleteFailedMessage;
 
+  /// 내 메시지 삭제·상대 메시지 신고 콜백 (가능할 때만 non-null > 길게 누르기 메뉴 항목)
+  final VoidCallback? onDeleteMessage;
+  final VoidCallback? onReportMessage;
+
+  /// 약속 수락·취소 콜백 (버튼 노출 조건일 때만 non-null) / 진행 중 여부
+  final VoidCallback? onAcceptAppointment;
+  final VoidCallback? onCancelAppointment;
+  final bool isAppointmentActionPending;
+
   const ChatMessageItem({
     super.key,
     required this.message,
@@ -67,7 +81,18 @@ class ChatMessageItem extends StatelessWidget {
     this.sendStatus = ChatMessageSendStatus.sent,
     this.onRetrySend,
     this.onDeleteFailedMessage,
+    this.onDeleteMessage,
+    this.onReportMessage,
+    this.onAcceptAppointment,
+    this.onCancelAppointment,
+    this.isAppointmentActionPending = false,
   });
+
+  // 길게 누르기 메뉴에 보일 동작 (삭제·신고 중 가능한 것만)
+  List<ChatMessageAction> get _availableActions => [
+    if (onDeleteMessage != null) ChatMessageAction.delete,
+    if (onReportMessage != null) ChatMessageAction.report,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +113,54 @@ class ChatMessageItem extends StatelessWidget {
         isTradeActionPending: isTradeActionPending,
       );
     }
+    final appointment = message.appointment;
+    if (appointment != null && message.isDeleted != true) {
+      return ChatAppointmentCard(
+        appointment: appointment,
+        isMine: message.senderId == myMemberId,
+        opponentNickname: opponentNickname,
+        topGap: topGap,
+        onAccept: onAcceptAppointment,
+        onCancel: onCancelAppointment,
+        isActionPending: isAppointmentActionPending,
+      );
+    }
     return _buildRegularMessage(context);
+  }
+
+  /// 고른 동작 실행 (삭제·신고)
+  void _runAction(ChatMessageAction? action) {
+    switch (action) {
+      case ChatMessageAction.delete:
+        onDeleteMessage?.call();
+      case ChatMessageAction.report:
+        onReportMessage?.call();
+      case null:
+        return;
+    }
+  }
+
+  /// 사진·위치 말풍선 길게 누르기 > 동작 시트
+  Future<void> _showActionSheet(BuildContext context) async {
+    final action = await showChatMessageActionSheet(context: context, actions: _availableActions);
+    _runAction(action);
+  }
+
+  /// 삭제된 메시지 말풍선 (흐린 글자, 길게 누르기 메뉴 없음)
+  Widget _buildDeletedBubble() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      constraints: BoxConstraints(maxWidth: 264.w),
+      decoration: BoxDecoration(
+        color: AppColors.transparent,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: AppColors.opacity20White),
+      ),
+      child: Text(
+        deletedChatMessagePlaceholder,
+        style: CustomTextStyles.p2.copyWith(color: AppColors.opacity50White, fontWeight: FontWeight.w400, height: 1.2),
+      ),
+    );
   }
 
   // 심플 캡슐형 시스템 메시지 (채팅방 나감 등)
@@ -145,11 +217,14 @@ class ChatMessageItem extends StatelessWidget {
   }
 
   Widget _buildBubble(BuildContext context, {required bool isMine}) {
+    if (message.isDeleted == true) return _buildDeletedBubble();
     if (message.type == MessageType.location) {
-      return ChatLocationBubble(message: message);
+      return _wrapWithActionSheet(context, ChatLocationBubble(message: message));
     }
     if (message.type == MessageType.image) {
-      return isUploading ? _buildUploadingBubble(context) : chatImageBubble(context, message);
+      return isUploading
+          ? _buildUploadingBubble(context)
+          : _wrapWithActionSheet(context, chatImageBubble(context, message));
     }
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
@@ -176,10 +251,29 @@ class ChatMessageItem extends StatelessWidget {
         ),
         onOpen: (link) => _openUrl(context, link.url),
         // flutter_linkify 기본값 null이면 길게 눌러도 메뉴 없음 > 플랫폼 기본 선택 메뉴(복사·전체 선택)
-        contextMenuBuilder: (context, editableTextState) =>
-            AdaptiveTextSelectionToolbar.editableText(editableTextState: editableTextState),
+        // 기본 항목(복사·전체 선택) 뒤에 삭제·신고 추가
+        contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
+          anchors: editableTextState.contextMenuAnchors,
+          buttonItems: [
+            ...editableTextState.contextMenuButtonItems,
+            for (final action in _availableActions)
+              ContextMenuButtonItem(
+                label: action.label,
+                onPressed: () {
+                  editableTextState.hideToolbar();
+                  _runAction(action);
+                },
+              ),
+          ],
+        ),
       ),
     );
+  }
+
+  /// 길게 누르기 동작이 있으면 시트 연결 (없으면 그대로)
+  Widget _wrapWithActionSheet(BuildContext context, Widget bubble) {
+    if (_availableActions.isEmpty) return bubble;
+    return GestureDetector(onLongPress: () => _showActionSheet(context), child: bubble);
   }
 
   Future<void> _openUrl(BuildContext context, String url) async {

@@ -51,6 +51,18 @@ class FakeChatRepository implements ChatRepository {
     serverRooms = serverRooms.where((room) => room.chatRoomId != chatRoomId).toList();
   }
 
+  // 방별 알림 끄기 요청 기록 (방 ID, 요청 값) / 서버 확정 값 (null > 요청 값 그대로)
+  final List<(String, bool)> requestedNotificationMutes = [];
+  bool? isConfirmedNotificationMuted;
+  bool shouldFailNotificationMute = false;
+
+  @override
+  Future<bool> updateNotificationMute({required String chatRoomId, required bool isNotificationMuted}) async {
+    requestedNotificationMutes.add((chatRoomId, isNotificationMuted));
+    if (shouldFailNotificationMute) throw Exception('mute failed');
+    return isConfirmedNotificationMuted ?? isNotificationMuted;
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -259,6 +271,45 @@ void main() {
 
       expect(fakeRepository.requestedPages.last, (0, 20));
       expect(container.read(chatRoomsProvider).valueOrNull?.currentPage, 1);
+    });
+  });
+
+  group('chatRoomsProvider 방별 알림 끄기', () {
+    late FakeChatRepository fakeRepository;
+    late ProviderContainer container;
+
+    setUp(() {
+      fakeRepository = FakeChatRepository()
+        ..serverRooms = [ChatRoomDetailDto(chatRoomId: 'a'), ChatRoomDetailDto(chatRoomId: 'b')];
+      container = ProviderContainer(overrides: [chatRepositoryProvider.overrideWithValue(fakeRepository)]);
+    });
+    tearDown(() => container.dispose());
+
+    test('setNotificationMuted는 서버 확정 값으로 해당 방만 갱신하고 확정 값을 반환한다', () async {
+      await container.read(chatRoomsProvider.future);
+      fakeRepository.isConfirmedNotificationMuted = true;
+
+      final isConfirmedMuted = await container
+          .read(chatRoomsProvider.notifier)
+          .setNotificationMuted(chatRoomId: 'a', isNotificationMuted: true);
+
+      final rooms = container.read(chatRoomsProvider).valueOrNull!.rooms;
+      expect(isConfirmedMuted, isTrue);
+      expect(fakeRepository.requestedNotificationMutes, [('a', true)]);
+      expect(rooms.firstWhere((room) => room.chatRoomId == 'a').isNotificationMuted, isTrue);
+      expect(rooms.firstWhere((room) => room.chatRoomId == 'b').isNotificationMuted, isNull);
+    });
+
+    test('setNotificationMuted 실패 시 예외 전달, 목록 유지', () async {
+      await container.read(chatRoomsProvider.future);
+      fakeRepository.shouldFailNotificationMute = true;
+
+      await expectLater(
+        container.read(chatRoomsProvider.notifier).setNotificationMuted(chatRoomId: 'a', isNotificationMuted: true),
+        throwsException,
+      );
+      final rooms = container.read(chatRoomsProvider).valueOrNull!.rooms;
+      expect(rooms.firstWhere((room) => room.chatRoomId == 'a').isNotificationMuted, isNull);
     });
   });
 }

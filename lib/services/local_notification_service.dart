@@ -35,10 +35,10 @@ Future<void> _initializeNotificationPlugin() async {
   );
 }
 
-/// 로컬 알림 탭 (Android 포그라운드 표시분): payload(FCM data) > 딥링크 이동
+/// 로컬 알림 탭 (Android 포그라운드 표시분): payload(FCM data) > 열람 보고·딥링크 이동
 @visibleForTesting
 void onLocalNotificationTapped(NotificationResponse response) {
   final pushData = decodePushNotificationPayload(response.payload);
   if (pushData == null) return;
-  routePushNotificationData(pushData);
+  handleOpenedPushNotification(pushData);
 }

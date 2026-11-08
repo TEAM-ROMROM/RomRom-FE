@@ -4,7 +4,7 @@ import 'package:romrom_fe/enums/item_trade_option.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
 import 'package:romrom_fe/models/home_feed_item.dart';
 
-/// 피드 변환 검증: 결과 순서·id 입력 순서 유지, 주소는 전달받은 표시 문자열 그대로, AI 가격 여부, 상세 첫 표시용 원본
+/// 피드 변환 검증: 결과 순서·id 입력 순서 유지, 주소는 전달받은 표시 문자열 그대로, AI 가격 여부, 좋아요 여부, 상세 첫 표시용 원본
 void main() {
   test('fromItems > 결과 순서·id 입력 순서 유지, location = 같은 순서의 주소 문자열', () {
     final items = [
@@ -52,6 +52,15 @@ void main() {
 
     expect(feedItems.map((feedItem) => feedItem.aiPrice), [true, false, false]);
     expect(identical(feedItems[0].sourceItem, items[0]), true);
+  });
+
+  test('fromItems > 목록 응답 좋아요 여부 반영, 없으면(구버전 서버) false + 서버 값 없음 표시', () {
+    final items = [Item(itemId: 'a', isLiked: true), Item(itemId: 'b', isLiked: false), Item(itemId: 'c')];
+
+    final feedItems = HomeFeedItem.fromItems(items, locationTexts: const ['', '', '']);
+
+    expect(feedItems.map((feedItem) => feedItem.isLiked), [true, false, false]);
+    expect(feedItems.map((feedItem) => feedItem.hasServerLikeStatus), [true, true, false]);
   });
 
   test('previewItemFor > 같은 물품이면 목록 원본, 다른 물품·빈 id면 null (상세 첫 표시용)', () {

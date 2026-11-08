@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:romrom_fe/enums/location_verification_method.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/objects/member_item_category.dart';
 import 'package:romrom_fe/models/apis/responses/member_response.dart';
@@ -53,6 +54,9 @@ class FakeMemberRepository implements MemberRepository {
     required String siGunGu,
     required String eupMyoenDong,
     String? ri,
+    LocationVerificationMethod? verificationMethod,
+    double? gpsLatitude,
+    double? gpsLongitude,
   }) async {
     saveLocationCallCount++;
     lastSiGunGu = siGunGu;

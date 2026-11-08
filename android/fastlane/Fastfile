@@ -1,11 +1,14 @@
-lane :build do
+lane :build do |options|
   flutter_build(
     build: 'apk',
-    project_dir: '..'
+    project_dir: '..',
+    is_test_build: options[:is_test_build]
   )
 end
 
 def flutter_build(options)
+  # 테스트 빌드 > 최소 버전 강제 업데이트 예외 (#996)
+  test_build_arguments = options[:is_test_build] ? ["--dart-define=IS_TEST_BUILD=true"] : []
   Dir.chdir(options[:project_dir]) do
     sh(
       "flutter",
@@ -14,6 +17,7 @@ def flutter_build(options)
       "--release",
       "--no-tree-shake-icons",
       "--target-platform=android-arm64",
+      *test_build_arguments,
       "-v"
     )
   end

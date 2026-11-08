@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:romrom_fe/enums/rewarded_ad_outcome.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/item_promotion_eligibility.dart';
 import 'package:romrom_fe/providers/promotion_repository_provider.dart';
+import 'package:romrom_fe/repositories/promotion_repository.dart';
 import 'package:romrom_fe/services/rewarded_ad_service.dart';
 import 'package:romrom_fe/widgets/my_page/my_item_promote_control.dart';
 
@@ -26,6 +28,15 @@ class _CountingRewardedAdService extends RewardedAdService {
   }
 }
 
+/// 우선노출 저장소 대역: 사전 자격 판단 불가(null) > 광고 진행 (서버 호출 없음)
+class _UnknownEligibilityPromotionRepository implements PromotionRepository {
+  @override
+  Future<ItemPromotionEligibility?> getEligibility(String itemId) async => null;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 Future<void> pumpPromoteControl(
   WidgetTester tester,
   Item item, {
@@ -34,7 +45,10 @@ Future<void> pumpPromoteControl(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [if (rewardedAdService != null) rewardedAdServiceProvider.overrideWithValue(rewardedAdService)],
+      overrides: [
+        if (rewardedAdService != null) rewardedAdServiceProvider.overrideWithValue(rewardedAdService),
+        promotionRepositoryProvider.overrideWithValue(_UnknownEligibilityPromotionRepository()),
+      ],
       child: buildDesignScreenApp(
         home: Scaffold(
           body: MyItemPromoteControl(item: item, clock: clock ?? () => referenceTime),

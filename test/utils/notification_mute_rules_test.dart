@@ -15,6 +15,45 @@ void main() {
       ]);
       expect(toNotificationSettingTypes(NotificationType.itemDeletedByAdmin), isEmpty);
     });
+
+    test('확장 유형: 수락·거절·완료는 교환 알림, 후기는 활동 알림, 모르는 알림은 없음 (#1007)', () {
+      for (final tradeType in [
+        NotificationType.tradeRequestAccepted,
+        NotificationType.tradeRequestRejected,
+        NotificationType.tradeCompleted,
+      ]) {
+        expect(toNotificationSettingTypes(tradeType), [NotificationSettingType.transaction]);
+      }
+      expect(toNotificationSettingTypes(NotificationType.tradeReviewReceived), [NotificationSettingType.activity]);
+      expect(toNotificationSettingTypes(NotificationType.unknown), isEmpty);
+    });
+
+    test('끄기 메뉴: 대응 설정 없는 관리자 제재·모르는 알림은 숨김', () {
+      expect(canToggleNotificationType(NotificationType.tradeCompleted), isTrue);
+      expect(canToggleNotificationType(NotificationType.itemDeletedByAdmin), isFalse);
+      expect(canToggleNotificationType(NotificationType.unknown), isFalse);
+    });
+
+    test('키워드 알림: 대응 설정 없음 > 끄기 메뉴 숨김, 항상 켜짐 (끄기 = 키워드 삭제, #1020)', () {
+      expect(toNotificationSettingTypes(NotificationType.keywordItemRegistered), isEmpty);
+      expect(canToggleNotificationType(NotificationType.keywordItemRegistered), isFalse);
+      expect(isNotificationTypeMuted(const {}, NotificationType.keywordItemRegistered), isFalse);
+    });
+  });
+
+  group('이벤트·혜택 (#1021)', () {
+    test('대응 설정은 마케팅 수신 하나 > 끄기 메뉴 제공', () {
+      expect(toNotificationSettingTypes(NotificationType.marketing), [NotificationSettingType.marketing]);
+      expect(canToggleNotificationType(NotificationType.marketing), isTrue);
+    });
+
+    test('마케팅 수신만 보고 판정 (콘텐츠 설정과 무관)', () {
+      final marketingOffSettings = {NotificationSettingType.content: true, NotificationSettingType.marketing: false};
+      final marketingOnSettings = {NotificationSettingType.content: false, NotificationSettingType.marketing: true};
+
+      expect(isNotificationTypeMuted(marketingOffSettings, NotificationType.marketing), isTrue);
+      expect(isNotificationTypeMuted(marketingOnSettings, NotificationType.marketing), isFalse);
+    });
   });
 
   group('isNotificationTypeMuted', () {

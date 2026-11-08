@@ -26,7 +26,7 @@ class TradeRepository {
     return response.content;
   }
 
-  /// 특정 카드(giveItemId)의 보낸 거래 요청 목록 조회 (정렬 기준 포함)
+  /// 특정 카드(giveItemId)의 보낸 거래 요청 목록 조회 (정렬 기준 포함, 거절 건 포함)
   Future<List<TradeRequestHistory>> getSent({
     required String giveItemId,
     RequestSortType sortType = RequestSortType.latest,
@@ -36,9 +36,34 @@ class TradeRepository {
         giveItemId: giveItemId,
         sortField: sortType.serverSortField,
         sortDirection: sortType.serverDirection,
+        isRejectedIncluded: true,
       ),
     );
     return response.content;
+  }
+
+  // 보낸 요청 전체 조회 페이지 크기·최대 페이지 수 (100건 x 20쪽 = 2,000건까지, 무한 반복 방지)
+  static const int allSentPageSize = 100;
+  static const int allSentMaximumPageCount = 20;
+
+  /// 내 보낸 거래 요청 전체 (모든 물품 한 번에, 마지막 페이지까지 이어 조회, 정렬 기준 포함)
+  /// 구버전 서버(API 없음)·조회 실패 > 예외 전달 (호출부가 물품별 조회로 대체)
+  Future<List<TradeRequestHistory>> getAllSent({RequestSortType sortType = RequestSortType.latest}) async {
+    final allSent = <TradeRequestHistory>[];
+    for (var pageNumber = 0; pageNumber < allSentMaximumPageCount; pageNumber++) {
+      final sentPage = await _api.getAllSentTradeRequests(
+        TradeRequest(
+          pageNumber: pageNumber,
+          pageSize: allSentPageSize,
+          sortField: sortType.serverSortField,
+          sortDirection: sortType.serverDirection,
+        ),
+      );
+      allSent.addAll(sentPage.content);
+      final totalPages = sentPage.page?.totalPages ?? 0;
+      if (sentPage.content.length < allSentPageSize || pageNumber + 1 >= totalPages) break;
+    }
+    return allSent;
   }
 
   /// 거래 요청 상세 조회 (서버 읽음 처리 후 이력 반환, 없으면 null)
@@ -63,14 +88,22 @@ class TradeRepository {
     return _api.checkTradeRequestExistence(TradeRequest(takeItemId: takeItemId, giveItemId: giveItemId));
   }
 
-  /// 교환 요청 전송 (거래 방식 serverName 목록 포함)
+  /// 교환 요청 전송 (거래 방식 serverName 목록 + 선택 추가금·한 줄 메시지)
   Future<void> requestTrade({
     required String? takeItemId,
     required String? giveItemId,
     required List<String> itemTradeOptions,
+    int? extraChargeAmount,
+    String? requestMessage,
   }) {
     return _api.requestTrade(
-      TradeRequest(takeItemId: takeItemId, giveItemId: giveItemId, itemTradeOptions: itemTradeOptions),
+      TradeRequest(
+        takeItemId: takeItemId,
+        giveItemId: giveItemId,
+        itemTradeOptions: itemTradeOptions,
+        extraChargeAmount: extraChargeAmount,
+        requestMessage: requestMessage,
+      ),
     );
   }
 
@@ -96,6 +129,9 @@ class TradeRepository {
       ),
     );
   }
+
+  /// 회원이 받은 거래 후기 통계 (구버전 서버·실패 > 예외 전달)
+  Future<TradeReviewStats?> getTradeReviewStats(String memberId) => _api.getTradeReviewStats(memberId);
 
   /// 회원이 받은 거래 후기 한 페이지 조회
   Future<List<TradeReview>> getTradeReviews({required String? memberId, int pageNumber = 0, int pageSize = 10}) async {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -54,13 +55,13 @@ class AppVersionApi {
       if (versionInfo == null) return null;
 
       final String currentVersion = await getCurrentAppVersion();
-      debugPrint(
-        '[AppVersionApi] 현재 버전: $currentVersion, 최소 버전: ${versionInfo.minimumVersion}, 최신 버전: ${versionInfo.latestVersion}',
-      );
+      // 실행 플랫폼 스토어 출시 버전 기준 (다른 스토어만 출시된 버전으로 권장 업데이트 안내 방지)
+      final String latestVersion = versionInfo.latestVersionFor(isIos: Platform.isIOS);
+      debugPrint('[AppVersionApi] 현재 버전: $currentVersion, 최소 버전: ${versionInfo.minimumVersion}, 최신 버전: $latestVersion');
       return resolveUpdateType(
         currentVersion: currentVersion,
         minimumVersion: versionInfo.minimumVersion,
-        latestVersion: versionInfo.latestVersion,
+        latestVersion: latestVersion,
       );
     } catch (error) {
       debugPrint('[app version] check failed : $error');

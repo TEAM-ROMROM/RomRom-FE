@@ -17,6 +17,9 @@ MemberLocation _$MemberLocationFromJson(Map<String, dynamic> json) => MemberLoca
   siGunGu: json['siGunGu'] as String?,
   eupMyoenDong: json['eupMyoenDong'] as String?,
   ri: json['ri'] as String?,
+  isLocationVerified: json['isLocationVerified'] as bool?,
+  locationVerifiedAt: json['locationVerifiedAt'] == null ? null : DateTime.parse(json['locationVerifiedAt'] as String),
+  locationVerificationMethod: json['locationVerificationMethod'] as String?,
 );
 
 Map<String, dynamic> _$MemberLocationToJson(MemberLocation instance) => <String, dynamic>{
@@ -30,4 +33,7 @@ Map<String, dynamic> _$MemberLocationToJson(MemberLocation instance) => <String,
   'siGunGu': instance.siGunGu,
   'eupMyoenDong': instance.eupMyoenDong,
   'ri': instance.ri,
+  'isLocationVerified': instance.isLocationVerified,
+  'locationVerifiedAt': instance.locationVerifiedAt?.toIso8601String(),
+  'locationVerificationMethod': instance.locationVerificationMethod,
 };

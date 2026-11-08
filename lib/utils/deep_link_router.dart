@@ -15,9 +15,12 @@ import 'package:romrom_fe/providers/open_chat_room_registry_provider.dart';
 import 'package:romrom_fe/screens/item_detail_description_screen.dart';
 import 'package:romrom_fe/screens/chat_room_screen.dart';
 import 'package:romrom_fe/screens/item_deleted_screen.dart';
+import 'package:romrom_fe/screens/notice_detail_screen.dart';
 import 'package:romrom_fe/screens/notification_screen.dart';
+import 'package:romrom_fe/screens/profile/member_profile_screen.dart';
 import 'package:romrom_fe/services/deep_link_gate.dart';
 import 'package:romrom_fe/services/forced_update_lock.dart';
+import 'package:romrom_fe/services/push_open_reporter.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/widgets/common/loading_indicator.dart';
 
@@ -66,6 +69,8 @@ class RomRomDeepLinkRouter {
 
   /// 메인 화면 진입 (스플래시·로그인·온보딩 완료): 게이트 열기 > 보관 링크는 화면 전환 다음 프레임에 열기
   static void onMainScreenEntered() {
+    // 로그인 전 열린 캠페인 푸시 열람 보고 (인증 확보 시점)
+    PushOpenReporter.instance.onMainScreenEntered();
     final pendingDeepLink = DeepLinkGate.instance.enterMainScreen();
     if (pendingDeepLink == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -129,6 +134,10 @@ class RomRomDeepLinkRouter {
         return _hasQuery(uri, 'chatRoomId') ? DeepLinkRoute.chatRoom : DeepLinkRoute.notificationFallback;
       case 'item/deleted':
         return DeepLinkRoute.itemDeleted;
+      case 'notice/detail':
+        return _hasQuery(uri, 'announcementId') ? DeepLinkRoute.noticeDetail : DeepLinkRoute.notificationFallback;
+      case 'profile/reviews':
+        return DeepLinkRoute.receivedReviews;
       default:
         return DeepLinkRoute.notificationFallback;
     }
@@ -169,12 +178,23 @@ class RomRomDeepLinkRouter {
             deleteReason: extraData?['deleteReason'] as String? ?? '',
           ),
         );
+      case DeepLinkRoute.noticeDetail:
+        await context.navigateTo(screen: NoticeDetailScreen(announcementId: uri.queryParameters['announcementId']!));
+      case DeepLinkRoute.receivedReviews:
+        await _openMyProfile(context);
       case DeepLinkRoute.notificationFallback:
         debugPrint('[deep link] unknown route : ${uri.host}${uri.path} (fallback: $isNotificationFallbackEnabled)');
         if (isNotificationFallbackEnabled) await context.navigateTo(screen: const NotificationScreen());
       case DeepLinkRoute.ignored:
         return;
     }
+  }
+
+  /// 내 프로필(받은 후기 포함) 이동 (회원 id 없음 > 이동 없음)
+  static Future<void> _openMyProfile(BuildContext context) async {
+    final currentMemberId = await UserInfo().getCurrentMemberId();
+    if (currentMemberId == null || !context.mounted) return;
+    await context.navigateTo(screen: MemberProfileScreen(memberId: currentMemberId));
   }
 
   /// 채팅방 이동: 같은 방이 맨 위에 보이면 그대로 둠 (그 방 푸시 배너 탭 > 같은 방 겹침 방지)

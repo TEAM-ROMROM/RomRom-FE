@@ -7,12 +7,15 @@ import 'package:flutter_svg/svg.dart';
 import 'package:romrom_fe/enums/account_status.dart';
 import 'package:romrom_fe/enums/trade_review_rating.dart';
 import 'package:romrom_fe/enums/trade_review_tag.dart';
+import 'package:romrom_fe/models/trade_review_summary.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
 import 'package:romrom_fe/models/apis/responses/trade_response.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_theme.dart';
 import 'package:romrom_fe/models/user_info.dart';
+import 'package:romrom_fe/providers/received_reviews_refresh_trigger_provider.dart';
 import 'package:romrom_fe/providers/trade_repository_provider.dart';
+import 'package:romrom_fe/repositories/trade_repository.dart';
 import 'package:romrom_fe/services/reviewer_address_resolver.dart';
 import 'package:romrom_fe/widgets/common/empty_state_view.dart';
 import 'package:romrom_fe/widgets/common/expandable_text.dart';
@@ -31,6 +34,8 @@ class ProfileReviewSection extends ConsumerStatefulWidget {
 
 class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
   List<TradeReview> _reviews = [];
+  // 평점·태그 요약 (서버 통계 우선, 구버전 서버 > 불러온 후기로 계산)
+  TradeReviewSummary _reviewSummary = TradeReviewSummary.fromReviews(const []);
   bool _isLoading = true;
   // 후기 조회 실패 (후기 0건과 구분 > 다시 시도 표시)
   bool _hasLoadError = false;
@@ -47,10 +52,15 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
     final tradeRepository = ref.read(tradeRepositoryProvider);
     try {
       final memberId = widget.memberId ?? await UserInfo().getCurrentMemberId();
+      final reviewStatsLoading = _loadReviewStatsOrNull(tradeRepository, memberId);
       final reviews = await tradeRepository.getTradeReviews(memberId: memberId, pageNumber: 0, pageSize: 10);
+      final reviewStats = await reviewStatsLoading;
       if (mounted) {
         setState(() {
           _reviews = reviews;
+          _reviewSummary = reviewStats == null
+              ? TradeReviewSummary.fromReviews(reviews)
+              : TradeReviewSummary.fromStats(reviewStats);
           _hasLoadError = false;
         });
       }
@@ -69,6 +79,12 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
     }
   }
 
+  /// 후기 도착 푸시 > 내 후기 목록이면 조용히 재조회 (타인 프로필은 무시, #1007)
+  Future<void> _reloadIfMyReviews() async {
+    final isMyReviews = widget.memberId == null || await UserInfo().isSameMember(widget.memberId);
+    if (isMyReviews && mounted) await _loadReviews();
+  }
+
   /// 다시 시도: 로딩 표시 > 재조회
   void _retryLoadReviews() {
     setState(() => _isLoading = true);
@@ -82,42 +98,21 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
     setState(() => _fetchedAddresses.addAll(fetchedAddressByMemberId));
   }
 
-  Map<TradeReviewRating, int> get _ratingCounts {
-    final counts = <TradeReviewRating, int>{for (final r in TradeReviewRating.values) r: 0};
-    for (final review in _reviews) {
-      for (final r in TradeReviewRating.values) {
-        if (r.serverName == review.tradeReviewRating) {
-          counts[r] = counts[r]! + 1;
-          break;
-        }
-      }
+  /// 받은 후기 통계 (구버전 서버·실패·회원 ID 없음 > null = 목록으로 계산)
+  Future<TradeReviewStats?> _loadReviewStatsOrNull(TradeRepository tradeRepository, String? memberId) async {
+    if (memberId == null || memberId.isEmpty) return null;
+    try {
+      return await tradeRepository.getTradeReviewStats(memberId);
+    } catch (error) {
+      debugPrint('[profile review] stats load failed, fallback to recent reviews : $error');
+      return null;
     }
-    return counts;
-  }
-
-  List<MapEntry<TradeReviewTag, int>> get _sortedTagCounts {
-    final counts = <TradeReviewTag, int>{};
-    for (final review in _reviews) {
-      for (final tagStr in review.tradeReviewTags ?? []) {
-        for (final tag in TradeReviewTag.values) {
-          if (tag.serverName == tagStr) {
-            counts[tag] = (counts[tag] ?? 0) + 1;
-            break;
-          }
-        }
-      }
-    }
-    // 전체 태그 포함, 카운트 내림차순 정렬
-    final result = <MapEntry<TradeReviewTag, int>>[];
-    for (final tag in TradeReviewTag.values) {
-      result.add(MapEntry(tag, counts[tag] ?? 0));
-    }
-    result.sort((a, b) => b.value.compareTo(a.value));
-    return result;
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(receivedReviewsRefreshTriggerProvider, (_, _) => _reloadIfMyReviews());
+
     if (_isLoading) {
       return const Center(child: CommonLoadingIndicator());
     }
@@ -134,8 +129,8 @@ class _ProfileReviewSectionState extends ConsumerState<ProfileReviewSection> {
 
     final topRadius = BorderRadius.only(topLeft: Radius.circular(10.r), topRight: Radius.circular(10.r));
     final bottomRadius = BorderRadius.only(bottomLeft: Radius.circular(10.r), bottomRight: Radius.circular(10.r));
-    final ratingCounts = _ratingCounts;
-    final sortedTags = _sortedTagCounts;
+    final ratingCounts = _reviewSummary.ratingCounts;
+    final sortedTags = _reviewSummary.sortedTagCounts;
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 24.h),

@@ -6,6 +6,7 @@ import 'package:romrom_fe/enums/rewarded_ad_outcome.dart';
 import 'package:romrom_fe/enums/snack_bar_type.dart';
 import 'package:romrom_fe/exceptions/api_exception.dart';
 import 'package:romrom_fe/models/apis/objects/item.dart';
+import 'package:romrom_fe/models/item_promotion_eligibility.dart';
 import 'package:romrom_fe/providers/item_repository_provider.dart';
 import 'package:romrom_fe/providers/my_items_provider.dart';
 import 'package:romrom_fe/providers/promotion_provider.dart';
@@ -29,13 +30,23 @@ class FakeRewardedAdService extends RewardedAdService {
   }
 }
 
-/// 우선노출 저장소 대역: 활성화 시 내 물건 서버 데이터에 노출 필드 반영, 예외 지정
+/// 우선노출 저장소 대역: 사전 자격 응답·예외 지정, 활성화 시 내 물건 서버 데이터에 노출 필드 반영, 예외 지정
 class FakePromotionRepository implements PromotionRepository {
   FakePromotionRepository(this.itemRepository);
 
   final FakeItemRepository itemRepository;
   Object? errorToThrow;
   final List<String> promotedItemIds = [];
+  // 사전 자격 응답 (null > 판단 불가), 조회 예외 (구버전 서버 404 등)
+  ItemPromotionEligibility? eligibility;
+  Object? eligibilityErrorToThrow;
+
+  @override
+  Future<ItemPromotionEligibility?> getEligibility(String itemId) async {
+    final error = eligibilityErrorToThrow;
+    if (error != null) throw error;
+    return eligibility;
+  }
 
   @override
   Future<Item?> promote(String itemId) async {
@@ -109,6 +120,29 @@ void main() {
       expect(promotedItem.isPromoted, isTrue);
       expect(promotedItem.isPromotionActiveAt(DateTime.now()), isTrue);
       expect(container.read(promotionProvider).isPromoting('A'), isFalse);
+    });
+
+    test('사전 자격 불가(하루 횟수) > 광고 없이 dailyLimitExceeded', () async {
+      promotionRepository.eligibility = const ItemPromotionEligibility(
+        isEligible: false,
+        ineligibleReason: 'ITEM_PROMOTION_DAILY_LIMIT_EXCEEDED',
+      );
+
+      final promoteResult = await container.read(promotionProvider.notifier).promoteItem('A');
+
+      expect(promoteResult, PromoteResult.dailyLimitExceeded);
+      expect(rewardedAdService.showCount, 0);
+      expect(promotionRepository.promotedItemIds, isEmpty);
+      expect(container.read(promotionProvider).isPromoting('A'), isFalse);
+    });
+
+    test('사전 자격 조회 실패(구버전 서버 404) > 광고 진행 후 서버 활성화', () async {
+      promotionRepository.eligibilityErrorToThrow = buildApiException(404, null);
+
+      final promoteResult = await container.read(promotionProvider.notifier).promoteItem('A');
+
+      expect(promoteResult, PromoteResult.success);
+      expect(rewardedAdService.showCount, 1);
     });
 
     test('시청 중 이탈 > adNotEarned, 서버 미호출', () async {

@@ -251,18 +251,35 @@ class RomAuthApi {
     return null;
   }
 
-  /// POST : `/api/auth/logout` 서버 로그아웃 API 호출
-  Future<void> logout() async {
+  /// POST : `/api/auth/logout` 서버 로그아웃 API 호출 ([fcmToken] 있으면 서버가 이 기기 푸시 토큰 삭제)
+  Future<void> logout({String? fcmToken}) async {
     await MemberManager.clearMemberInfo();
     final String url = '${AppUrls.baseUrl}/api/auth/logout';
     await ApiClient.sendMultipartRequest(
       url: url,
-      fields: {
-        TokenKeys.accessToken.name: await _tokenManager.getAccessToken(),
-        TokenKeys.refreshToken.name: await _tokenManager.getRefreshToken(),
-      },
+      fields: buildLogoutRequestFields(
+        accessToken: await _tokenManager.getAccessToken(),
+        refreshToken: await _tokenManager.getRefreshToken(),
+        fcmToken: fcmToken,
+      ),
       isAuthRequired: true,
       onSuccess: (_) {},
     );
   }
+}
+
+// 로그아웃 form 필드: 이 기기 FCM 토큰 (선택, 없으면 생략)
+const String logoutFcmTokenFieldName = 'fcmToken';
+
+/// 로그아웃 form 필드 (액세스·리프레시 토큰 + FCM 토큰은 있을 때만)
+Map<String, dynamic> buildLogoutRequestFields({
+  required String? accessToken,
+  required String? refreshToken,
+  required String? fcmToken,
+}) {
+  return {
+    TokenKeys.accessToken.name: accessToken,
+    TokenKeys.refreshToken.name: refreshToken,
+    if (fcmToken != null && fcmToken.isNotEmpty) logoutFcmTokenFieldName: fcmToken,
+  };
 }

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:romrom_fe/enums/error_code.dart';
 import 'package:romrom_fe/exceptions/api_exception.dart';
+import 'package:romrom_fe/exceptions/ugc_violation_exception.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 
 void main() {
@@ -35,6 +36,46 @@ void main() {
 
     test('JSON 없는 Exception > unknown 메시지', () {
       expect(ErrorUtils.getErrorMessage(Exception('plain')), ErrorCode.unknown.koMessage);
+    });
+  });
+
+  group('ErrorUtils.getServerProvidedErrorMessage', () {
+    test('4xx 응답 errorMessage > 서버 문구 그대로 (앱에 없는 errorCode 대응)', () {
+      final exception = ApiException(
+        statusCode: 400,
+        responseBody: '{"errorCode":"NEW_SERVER_CODE","errorMessage":" 키워드는 최대 10개까지 등록할 수 있어요 "}',
+      );
+
+      expect(ErrorUtils.getServerProvidedErrorMessage(exception), '키워드는 최대 10개까지 등록할 수 있어요');
+    });
+
+    test('errorMessage 없음·5xx > errorCode 매핑 문구', () {
+      final withoutMessage = ApiException(statusCode: 400, responseBody: '{"errorCode":"DUPLICATE_REPORT"}');
+      final serverError = ApiException(
+        statusCode: 500,
+        responseBody: '{"errorCode":"INTERNAL_SERVER_ERROR","errorMessage":"NullPointerException"}',
+      );
+
+      expect(
+        ErrorUtils.getServerProvidedErrorMessage(withoutMessage),
+        ErrorCode.fromCode('DUPLICATE_REPORT').koMessage,
+      );
+      expect(ErrorUtils.getServerProvidedErrorMessage(serverError), ErrorCode.internalServerError.koMessage);
+    });
+
+    test('금칙어 > 서버 문구, 네트워크 오류 > 인터넷 연결 문구', () {
+      final ugcViolation = UgcViolationException(
+        errorCode: 'PROHIBITED_CONTENT',
+        errorMessage: '부적절한 표현이 포함되어 있습니다.',
+        violatingText: 'x',
+        fieldName: 'keyword',
+      );
+
+      expect(ErrorUtils.getServerProvidedErrorMessage(ugcViolation), '부적절한 표현이 포함되어 있습니다.');
+      expect(
+        ErrorUtils.getServerProvidedErrorMessage(const SocketException('Failed host lookup')),
+        ErrorUtils.networkErrorMessage,
+      );
     });
   });
 

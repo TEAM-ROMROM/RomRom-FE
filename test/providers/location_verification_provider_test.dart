@@ -6,6 +6,7 @@ import 'package:romrom_fe/enums/location_verification_failure.dart';
 import 'package:romrom_fe/enums/location_verification_method.dart';
 import 'package:romrom_fe/enums/storage_keys.dart';
 import 'package:romrom_fe/models/apis/objects/member.dart';
+import 'package:romrom_fe/models/apis/objects/member_location.dart';
 import 'package:romrom_fe/models/apis/responses/member_response.dart';
 import 'package:romrom_fe/models/gps_location_check_result.dart';
 import 'package:romrom_fe/models/location_address.dart';
@@ -18,15 +19,22 @@ import 'package:romrom_fe/repositories/location_verification_repository.dart';
 import 'package:romrom_fe/repositories/member_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 회원 repository 대역: 위치 저장 호출 기록, 저장 실패 조절
+/// 회원 repository 대역: 위치 저장 호출 기록(인증 방식·실제 GPS 좌표 포함), 저장 실패 조절, 서버 회원 위치 지정
 class _FakeMemberRepository implements MemberRepository {
   int saveLocationCallCount = 0;
   bool shouldFailSaveLocation = false;
   String? lastEupMyoenDong;
   double? lastLatitude;
+  LocationVerificationMethod? lastVerificationMethod;
+  double? lastGpsLatitude;
+  // 서버 회원 위치 (null > 위치 없음·구버전 서버처럼 인증 필드 없음)
+  MemberLocation? serverLocation;
 
   @override
-  Future<MemberResponse> getMemberInfo() async => MemberResponse(member: Member(memberId: 'member-a'));
+  Future<MemberResponse> getMemberInfo() async => MemberResponse(
+    member: Member(memberId: 'member-a'),
+    memberLocation: serverLocation,
+  );
 
   @override
   Future<void> saveLocation({
@@ -36,11 +44,16 @@ class _FakeMemberRepository implements MemberRepository {
     required String siGunGu,
     required String eupMyoenDong,
     String? ri,
+    LocationVerificationMethod? verificationMethod,
+    double? gpsLatitude,
+    double? gpsLongitude,
   }) async {
     saveLocationCallCount++;
     if (shouldFailSaveLocation) throw Exception('save failed');
     lastEupMyoenDong = eupMyoenDong;
     lastLatitude = latitude;
+    lastVerificationMethod = verificationMethod;
+    lastGpsLatitude = gpsLatitude;
   }
 
   @override
@@ -120,6 +133,21 @@ void main() {
       expect(await container.read(locationVerificationProvider.notifier).isCurrentMemberVerified(), isFalse);
     });
 
+    test('서버 미인증(재인증 필요 기존 회원) > 기기 기록 있어도 미인증', () async {
+      seedStoredRecord('member-a');
+      memberRepository.serverLocation = MemberLocation(isLocationVerified: false);
+      rebuildContainer();
+
+      expect(await container.read(locationVerificationProvider.notifier).isCurrentMemberVerified(), isFalse);
+    });
+
+    test('서버 인증됨 > 기기 기록 없어도 인증됨 (다른 기기 인증 포함)', () async {
+      memberRepository.serverLocation = MemberLocation(isLocationVerified: true);
+      rebuildContainer();
+
+      expect(await container.read(locationVerificationProvider.notifier).isCurrentMemberVerified(), isTrue);
+    });
+
     test('저장 형식 오류 > 미인증 (예외 없음)', () async {
       SharedPreferences.setMockInitialValues({StorageKeys.locationVerificationRecord.key: '{broken'});
       rebuildContainer();
@@ -138,6 +166,8 @@ void main() {
       expect(memberRepository.saveLocationCallCount, 1);
       expect(memberRepository.lastEupMyoenDong, '군자동');
       expect(memberRepository.lastLatitude, 37.55);
+      expect(memberRepository.lastVerificationMethod, LocationVerificationMethod.gps);
+      expect(memberRepository.lastGpsLatitude, isNull);
       expect(await notifier.isCurrentMemberVerified(), isTrue);
       final storedRecord = await LocationVerificationRepository(readCurrentMemberId: () async => null).loadRecord();
       expect(storedRecord?.memberId, 'member-a');
@@ -184,6 +214,9 @@ void main() {
       );
 
       expect(memberRepository.lastLatitude, 37.55);
+      // 서버 검증용 실제 GPS 좌표(서비스 지역 밖) 함께 전송
+      expect(memberRepository.lastVerificationMethod, LocationVerificationMethod.manualOutsideServiceArea);
+      expect(memberRepository.lastGpsLatitude, 37.3349);
       expect(await notifier.isCurrentMemberVerified(), isTrue);
       final storedRecord = await LocationVerificationRepository(readCurrentMemberId: () async => null).loadRecord();
       expect(storedRecord?.method, LocationVerificationMethod.manualOutsideServiceArea);

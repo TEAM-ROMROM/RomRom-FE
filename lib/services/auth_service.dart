@@ -2,12 +2,14 @@
 import 'package:firebase_auth/firebase_auth.dart' hide UserInfo;
 import 'package:flutter/material.dart';
 import 'package:romrom_fe/enums/login_platforms.dart';
+import 'package:romrom_fe/enums/member_withdrawal_reason.dart';
 import 'package:romrom_fe/models/user_info.dart';
 import 'package:romrom_fe/services/apple_auth_service.dart';
 import 'package:romrom_fe/services/apis/member_api.dart';
 import 'package:romrom_fe/services/apis/rom_auth_api.dart';
 import 'package:romrom_fe/services/google_auth_service.dart';
 import 'package:romrom_fe/services/kakao_auth_service.dart';
+import 'package:romrom_fe/services/logout_fcm_token_reader.dart';
 import 'package:romrom_fe/services/login_platform_manager.dart';
 import 'package:romrom_fe/services/api_client.dart';
 import 'package:romrom_fe/services/chat_websocket_service.dart';
@@ -23,7 +25,9 @@ class AuthService {
   /// 로그아웃 처리 메소드
   Future<void> logout(BuildContext context) async {
     try {
-      await _romAuthApi.logout();
+      // 이 기기 FCM 토큰 (최대 2초, 없으면 생략) > 로그아웃 후 이 기기로 푸시 차단
+      final fcmToken = await readFcmTokenForLogout();
+      await _romAuthApi.logout(fcmToken: fcmToken);
     } catch (e) {
       debugPrint('로그아웃 중 오류 발생: $e');
     } finally {
@@ -40,10 +44,13 @@ class AuthService {
     }
   }
 
-  /// 회원 탈퇴 처리 메소드
+  /// 회원 탈퇴 처리 메소드 (사유 선택, 진행 중 거래는 서버가 자동 취소)
   /// 성공 시 true, 실패 시 false 반환 (화면 이동은 호출부에서 처리)
-  Future<bool> deleteAccount() async {
-    final isSuccess = await MemberApi().deleteMember();
+  Future<bool> deleteAccount({MemberWithdrawalReason? withdrawalReason, String? withdrawalReasonDetail}) async {
+    final isSuccess = await MemberApi().deleteMember(
+      withdrawalReason: withdrawalReason,
+      withdrawalReasonDetail: withdrawalReasonDetail,
+    );
     if (!isSuccess) return false;
 
     // 탈퇴 성공 즉시 HeartbeatManager 중지 (Apple 재인증 시 앱 복귀로 인한 403 방지)

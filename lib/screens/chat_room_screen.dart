@@ -11,12 +11,14 @@ import 'package:romrom_fe/models/apis/objects/chat_action_recommendation.dart';
 import 'package:romrom_fe/models/apis/objects/chat_message.dart';
 import 'package:romrom_fe/models/location_address.dart';
 import 'package:romrom_fe/screens/chat_location_picker_screen.dart';
+import 'package:romrom_fe/screens/report_screen.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room.dart';
 import 'package:romrom_fe/models/apis/objects/chat_room_detail_dto.dart';
 import 'package:romrom_fe/models/apis/objects/chat_user_state.dart';
 import 'package:romrom_fe/repositories/chat_repository.dart';
 import 'package:romrom_fe/models/app_colors.dart';
 import 'package:romrom_fe/models/app_motion.dart';
+import 'package:romrom_fe/utils/chat_message_action_rules.dart';
 import 'package:romrom_fe/utils/chat_message_send_rules.dart';
 import 'package:romrom_fe/utils/chat_room_live_message_rules.dart';
 import 'package:romrom_fe/utils/camera_permission_helper.dart';
@@ -47,6 +49,7 @@ import 'package:romrom_fe/utils/common_utils.dart';
 import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/chat_input_bar.dart';
 import 'package:romrom_fe/widgets/common/error_scaffold.dart';
+import 'package:romrom_fe/widgets/chat_room/chat_appointment_proposal_sheet.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_connection_banner.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_image_send_preview_sheet.dart';
 import 'package:romrom_fe/widgets/chat_room/chat_quick_reply_bar.dart';
@@ -74,6 +77,7 @@ part 'chat_room/chat_room_scroll_to_bottom.dart';
 part 'chat_room/chat_room_new_message_indicator.dart';
 part 'chat_room/chat_room_unread_position.dart';
 part 'chat_room/chat_room_input_convenience.dart';
+part 'chat_room/chat_room_message_actions.dart';
 
 class ChatRoomScreen extends ConsumerStatefulWidget {
   final String chatRoomId;
@@ -158,6 +162,8 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   bool _hasError = false;
   bool _deleteModalShown = false;
   bool _systemMessageModalShown = false;
+  // 내가 이 방 알림을 끈 상태 (메시지 조회 응답 > 메뉴 토글로 갱신)
+  bool _isNotificationMuted = false;
 
   bool get _hasSystemMessage => _messages.any((m) => m.type == MessageType.system);
 
@@ -188,12 +194,11 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   // 후기 화면 열림 여부 (확인 API·소켓 완료 동시 도착, 후기 쓰기 연타 시 1개만)
   bool _isTradeReviewScreenOpen = false;
 
-  // 이번 진입에서 후기 작성 완료 여부 (완료 카드 '후기 쓰기' 숨김, 서버 작성 여부 필드 없음)
-  bool _hasWrittenReviewInThisVisit = false;
+  // 내 후기 작성 여부 (진입 시 서버 isReviewWrittenByMe, 구버전 서버 > false, 작성 완료 시 true)
+  bool _isReviewWrittenByMe = false;
 
-  // 완료 카드 '후기 쓰기' 노출 여부 (거래 기록 ID 있고 이번 진입에서 아직 안 씀)
-  bool get _canWriteReview =>
-      chatRoom.tradeRequestHistory?.tradeRequestHistoryId != null && !_hasWrittenReviewInThisVisit;
+  // 완료 카드 '후기 쓰기' 노출 여부 (거래 기록 ID 있고 아직 안 씀)
+  bool get _canWriteReview => chatRoom.tradeRequestHistory?.tradeRequestHistoryId != null && !_isReviewWrittenByMe;
 
   String _errorMessage = '';
   String? _myMemberId;
@@ -246,7 +251,7 @@ abstract class _ChatRoomScreenStateFields extends ConsumerState<ChatRoomScreen> 
   }
 }
 
-/// 채팅방 화면: 수명주기·화면 구성 (로직은 mixin 12개: 맨 아래 스크롤, 새 메시지 알림, 송수신, 이전 메시지 페이징, 안 읽은 위치, 교환 액션, 첨부, 나가기, 상단 캐시, AI 추천, 입력 편의, 초기화)
+/// 채팅방 화면: 수명주기·화면 구성 (로직은 mixin 13개: 맨 아래 스크롤, 새 메시지 알림, 송수신, 이전 메시지 페이징, 안 읽은 위치, 교환 액션, 첨부, 나가기, 메시지 확장 동작, 상단 캐시, AI 추천, 입력 편의, 초기화)
 class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     with
         WidgetsBindingObserver,
@@ -258,6 +263,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
         _ChatRoomTradeActions,
         _ChatRoomAttachmentSending,
         _ChatRoomExitActions,
+        _ChatRoomMessageActions,
         _ChatRoomHeader,
         _ChatRoomRecommendationActions,
         _ChatRoomInputConvenience,
@@ -304,6 +310,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     WidgetsBinding.instance.removeObserver(this);
     _openChatRoomRegistry.unregister(owner: this);
     _stopRoomMessageSubscription();
+    _stopMessageUpdateSubscription();
     _reconnectSubscription?.cancel();
     // 읽음·추천: 이 화면이 구독한 경우만 해제 (같은 방 다른 화면 참조 카운트 보호)
     if (_readEventSubscription != null) {
@@ -390,6 +397,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
                 onTakePhoto: _onTakePhoto,
                 onSendLocation: _onSendLocation,
                 onRequestExchange: _onRequestExchange,
+                onProposeAppointment: _onProposeAppointment,
               ),
             ],
           ),
@@ -398,7 +406,7 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
     );
   }
 
-  /// 메시지 목록 (날짜·안 읽음 구분선, 전송 상태, 교환 요청 버튼)
+  /// 메시지 목록 (날짜·안 읽음 구분선, 전송 상태, 교환 요청 버튼, 메시지 삭제·신고, 약속 수락·취소)
   Widget _buildMessageList() {
     return ChatRoomMessageList(
       messages: _messages,
@@ -422,6 +430,11 @@ class _ChatRoomScreenState extends _ChatRoomScreenStateFields
       onWriteReview: _canWriteReview ? _openTradeReviewScreen : null,
       firstUnreadMessageId: _firstUnreadMessageId,
       unreadDividerKey: _unreadDividerKey,
+      onDeleteMessage: _onDeleteMessage,
+      onReportMessage: _onReportMessage,
+      onAcceptAppointment: _onAcceptAppointment,
+      onCancelAppointment: _onCancelAppointment,
+      pendingMessageActionIds: _pendingMessageActionIds,
     );
   }
 }

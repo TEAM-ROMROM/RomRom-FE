@@ -58,12 +58,15 @@ mixin _ItemDetailLoading on _ItemDetailDescriptionScreenStateFields {
       debugPrint('물품 상세 정보 로드 실패: $e');
       if (!mounted) return;
 
-      if (ErrorUtils.getErrorMessage(e) == ErrorCode.deletedMember.koMessage) {
+      // 오류 분기는 문구가 아닌 서버 errorCode 기준
+      final errorCode = ErrorUtils.getErrorCode(e);
+      final isDeletedMember = errorCode == ErrorCode.deletedMember;
+      if (isDeletedMember) {
         CommonModal.showOnceAfterFrame(
           context: context,
           isShown: () => deleteModalShown,
           markShown: () => deleteModalShown = true,
-          shouldShow: () => ErrorUtils.getErrorMessage(e) == ErrorCode.deletedMember.koMessage,
+          shouldShow: () => isDeletedMember,
           message: '존재하지 않거나 탈퇴한 사용자입니다.',
           onConfirm: () {
             Navigator.of(context).pop();
@@ -72,7 +75,6 @@ mixin _ItemDetailLoading on _ItemDetailDescriptionScreenStateFields {
         );
       }
 
-      final errorCode = ErrorUtils.getErrorCode(e);
       // 볼 수 없는 물품 > 홈 피드에서 즉시 제거·이후 조회에서도 제외 (#995)
       if (errorCode.isUnavailableItemError) {
         ref.read(homeFeedProvider.notifier).excludeUnavailableItem(widget.itemId);
@@ -80,6 +82,7 @@ mixin _ItemDetailLoading on _ItemDetailDescriptionScreenStateFields {
       setState(() {
         hasError = true;
         errorMessage = errorCode.koMessage;
+        _isDeletedMember = isDeletedMember;
         _isDeletedItem = errorCode == ErrorCode.deletedItem || errorCode == ErrorCode.itemNotFound;
         isLoading = false;
       });

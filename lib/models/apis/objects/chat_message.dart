@@ -2,11 +2,12 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:romrom_fe/enums/message_type.dart';
 import 'package:romrom_fe/models/apis/objects/base_entity.dart';
+import 'package:romrom_fe/models/apis/objects/chat_appointment.dart';
 
 part 'chat_message.g.dart';
 
 /// 채팅 메시지 모델 (MongoDB)
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class ChatMessage extends BaseEntity {
   final String? chatMessageId;
   final String? chatRoomId;
@@ -18,6 +19,10 @@ class ChatMessage extends BaseEntity {
   final bool? isProfanityDetected;
   final double? latitude;
   final double? longitude;
+  // 보낸 사람이 삭제한 메시지 (서버가 본문을 안내 문구로 바꿔 내려줌)
+  final bool? isDeleted;
+  // 약속 카드 정보 (약속 메시지만, 그 외 null)
+  final ChatAppointment? appointment;
 
   ChatMessage({
     super.createdDate,
@@ -32,6 +37,8 @@ class ChatMessage extends BaseEntity {
     this.isProfanityDetected,
     this.latitude,
     this.longitude,
+    this.isDeleted,
+    this.appointment,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => _$ChatMessageFromJson(json);
@@ -54,6 +61,8 @@ extension ChatMessageCopy on ChatMessage {
     DateTime? updatedDate,
     double? latitude,
     double? longitude,
+    bool? isDeleted,
+    ChatAppointment? appointment,
   }) => ChatMessage(
     chatMessageId: chatMessageId ?? this.chatMessageId,
     chatRoomId: chatRoomId ?? this.chatRoomId,
@@ -67,5 +76,7 @@ extension ChatMessageCopy on ChatMessage {
     updatedDate: updatedDate ?? this.updatedDate,
     latitude: latitude ?? this.latitude,
     longitude: longitude ?? this.longitude,
+    isDeleted: isDeleted ?? this.isDeleted,
+    appointment: appointment ?? this.appointment,
   );
 }

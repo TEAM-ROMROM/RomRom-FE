@@ -9,17 +9,20 @@ import 'package:romrom_fe/states/promotion_state.dart';
 
 final promotionProvider = NotifierProvider<PromotionNotifier, PromotionState>(PromotionNotifier.new);
 
-/// 우선노출(롬업) 오케스트레이터: 광고 보상 > 서버 활성화 > 내 물건 재조회
+/// 우선노출(롬업) 오케스트레이터: 사전 자격 확인 > 광고 보상 > 서버 활성화 > 내 물건 재조회
 /// 노출 중 표시는 myItemsProvider 물품 필드 기준, 이 상태는 처리 중 itemId만 소유
 class PromotionNotifier extends Notifier<PromotionState> {
   @override
   PromotionState build() => const PromotionState();
 
-  /// 우선노출 1회: 중복 차단 > 광고 시청 (보상 적립 시에만 진행) > 서버 활성화 > 내 물건 재조회
+  /// 우선노출 1회: 중복 차단 > 사전 자격 (불가 > 광고 없이 사유 결과) > 광고 시청 (보상 적립 시에만 진행) > 서버 활성화 > 내 물건 재조회
   Future<PromoteResult> promoteItem(String itemId) async {
     if (state.isPromoting(itemId)) return PromoteResult.alreadyInFlight;
     state = state.copyWith(promotingItemIds: {...state.promotingItemIds, itemId});
     try {
+      final ineligibleResult = await _findIneligibleResult(itemId);
+      if (ineligibleResult != null) return ineligibleResult;
+
       final adOutcome = await ref.read(rewardedAdServiceProvider).showAndAwaitReward();
       if (adOutcome != RewardedAdOutcome.earned) return _toAdFailureResult(adOutcome);
 
@@ -32,6 +35,18 @@ class PromotionNotifier extends Notifier<PromotionState> {
       return toPromoteFailureResult(error);
     } finally {
       state = state.copyWith(promotingItemIds: {...state.promotingItemIds}..remove(itemId));
+    }
+  }
+
+  /// 광고 전 사전 자격: 불가 > 사유 결과, 가능·판단 불가(구버전 서버·조회 실패) > null (광고 진행, 서버 활성화가 최종 판정)
+  Future<PromoteResult?> _findIneligibleResult(String itemId) async {
+    try {
+      final eligibility = await ref.read(promotionRepositoryProvider).getEligibility(itemId);
+      if (eligibility == null || eligibility.isEligible) return null;
+      return _promoteResultByErrorCode[eligibility.ineligibleReason] ?? PromoteResult.failed;
+    } catch (error) {
+      debugPrint('[item promote] eligibility check skipped : $error');
+      return null;
     }
   }
 

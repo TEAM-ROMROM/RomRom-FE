@@ -1,10 +1,15 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:romrom_fe/enums/error_code.dart';
 import 'package:romrom_fe/enums/location_verification_purpose.dart';
 import 'package:romrom_fe/providers/location_verification_provider.dart';
 import 'package:romrom_fe/screens/my_page/my_location_verification_screen.dart';
 import 'package:romrom_fe/utils/common_utils.dart';
+import 'package:romrom_fe/utils/error_utils.dart';
 import 'package:romrom_fe/widgets/location_verification/location_verification_explanation_modal.dart';
+
+// 호출부가 목적 enum을 따로 import 하지 않게 함께 공개
+export 'package:romrom_fe/enums/location_verification_purpose.dart';
 
 final locationVerificationGateProvider = Provider<LocationVerificationGate>((ref) => LocationVerificationGate(ref));
 
@@ -36,6 +41,19 @@ class LocationVerificationGate {
       // (성공·실패 공통)
       _isInProgress = false;
     }
+  }
+
+  /// 서버 거부(LOCATION_NOT_VERIFIED) 처리: 서버 상태 재조회·로컬 기록 삭제 > 안내 모달 > 인증 화면
+  /// 해당 오류 > true (호출부는 오류 안내 생략), 그 외 오류 > false (호출부가 일반 오류 안내)
+  Future<bool> recoverFromServerRejection(
+    BuildContext context,
+    Object error, {
+    required LocationVerificationPurpose purpose,
+  }) async {
+    if (ErrorUtils.getErrorCode(error) != ErrorCode.locationNotVerified) return false;
+    await _ref.read(locationVerificationProvider.notifier).resyncAfterServerRejection();
+    if (context.mounted) await ensureVerified(context, purpose: purpose);
+    return true;
   }
 
   /// GPS 인증 화면 (안내 모달 노출 완료 상태로 진입, 인증 성공 > true)

@@ -37,8 +37,11 @@ void main() {
     settingRepository = _RecordingNotificationSettingRepository();
   });
 
-  /// 버튼 탭 > 1회 안내 실행 화면
-  Future<void> pumpPromptHarness(WidgetTester tester) async {
+  /// 버튼 탭 > 1회 안내 실행 화면 (안내 호출 교체 가능)
+  Future<void> pumpPromptHarness(
+    WidgetTester tester, {
+    Future<void> Function(BuildContext context, WidgetRef ref) showPrompt = showNotificationPermissionPromptOnce,
+  }) async {
     var status = AuthorizationStatus.notDetermined;
     useDesignScreenView(tester);
     await tester.pumpWidget(
@@ -61,10 +64,7 @@ void main() {
           home: Scaffold(
             body: Consumer(
               builder: (context, ref, _) => Center(
-                child: GestureDetector(
-                  onTap: () => showNotificationPermissionPromptOnce(context, ref),
-                  child: const Text('교환 요청 성공'),
-                ),
+                child: GestureDetector(onTap: () => showPrompt(context, ref), child: const Text('교환 요청 성공')),
               ),
             ),
           ),
@@ -120,5 +120,27 @@ void main() {
     await tester.tap(find.text('교환 요청 성공'));
     await tester.pumpAndSettle();
     expect(find.text('알림 켜기'), findsNothing);
+  });
+
+  testWidgets('키워드 등록 안내: 전달 문구 표시 > 허용 > 토큰 등록, 켤 설정 없음 > 설정 변경 없음 (#1020)', (tester) async {
+    await pumpPromptHarness(
+      tester,
+      showPrompt: (context, ref) => showNotificationPermissionPromptOnce(
+        context,
+        ref,
+        message: '키워드 새 물품 소식',
+        settingTypesToEnableOnGrant: const {},
+      ),
+    );
+
+    await tester.tap(find.text('교환 요청 성공'));
+    await tester.pumpAndSettle();
+    expect(find.text('키워드 새 물품 소식'), findsOneWidget);
+    await tester.tap(find.text('알림 켜기'));
+    await tester.pumpAndSettle();
+
+    expect(systemRequestCount, 1);
+    expect(registerTokenCount, 1);
+    expect(settingRepository.updatedValues, isEmpty);
   });
 }
