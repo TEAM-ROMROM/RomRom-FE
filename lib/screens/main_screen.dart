@@ -205,11 +205,15 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final tabIndex = ref.watch(currentTabIndexProvider);
 
-    // 홈 탭을 떠날 때 본 물품 기록 즉시 저장 (탭 재진입 새로고침 없음 > 다녀와도 보던 카드 유지)
+    // 홈 탭 진입: 10분 넘게 지난 피드만 새로고침, 이탈: 본 물품 기록 즉시 저장
     ref.listen<int>(currentTabIndexProvider, (previousTabIndex, nextTabIndex) {
       final isLeavingHomeTab =
           previousTabIndex == NavigationTabItems.home.index && nextTabIndex != NavigationTabItems.home.index;
       if (isLeavingHomeTab) _flushHomeFeedSeenItems();
+
+      final isEnteringHomeTab =
+          previousTabIndex != NavigationTabItems.home.index && nextTabIndex == NavigationTabItems.home.index;
+      if (isEnteringHomeTab) unawaited(ref.read(homeFeedProvider.notifier).refreshIfStale());
     });
 
     return Scaffold(

@@ -62,6 +62,7 @@ enum ErrorCode {
   invalidItemOwner(code: 'INVALID_ITEM_OWNER', koMessage: '해당 물품의 소유자가 아닙니다.'),
   itemValuePredictionFailed(code: 'ITEM_VALUE_PREDICTION_FAILED', koMessage: '물품 가격 예측에 실패하였습니다.'),
   deletedItem(code: 'DELETED_ITEM', koMessage: '삭제된 물품입니다.'),
+  itemAdminHidden(code: 'ITEM_ADMIN_HIDDEN', koMessage: '관리자에 의해 노출이 차단된 물품입니다.'),
   alreadyHiddenItem(code: 'ALREADY_HIDDEN_ITEM', koMessage: '이미 숨김 처리된 물품입니다.'),
   hiddenItemNotFound(code: 'HIDDEN_ITEM_NOT_FOUND', koMessage: '숨김 처리된 물품을 찾을 수 없습니다.'),
 
@@ -171,6 +172,14 @@ enum ErrorCode {
   final String koMessage;
 
   const ErrorCode({required this.code, required this.koMessage});
+
+  /// 물품 상세를 더 볼 수 없는 오류 5종 (탈퇴·제재 회원, 삭제·없음·관리자 차단 물품, #995)
+  bool get isUnavailableItemError =>
+      this == ErrorCode.deletedMember ||
+      this == ErrorCode.suspendedMember ||
+      this == ErrorCode.deletedItem ||
+      this == ErrorCode.itemNotFound ||
+      this == ErrorCode.itemAdminHidden;
 
   static ErrorCode fromCode(String? code) {
     if (code == null) return ErrorCode.unknown;
